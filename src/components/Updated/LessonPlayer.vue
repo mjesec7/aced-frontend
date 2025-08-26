@@ -281,25 +281,21 @@ export default {
 
       try {
         const courseId = this.course._id || this.course.id;
-        console.log('📚 LessonPlayer: Loading Updated Course content for ID:', courseId);
 
         let courseDetails = null;
         let lessons = [];
 
         // ✅ STRATEGY 1: Get specific Updated Course by ID (main method)
         try {
-          console.log('🔍 Fetching specific Updated Course by ID...');
           const response = await fetch(`/api/updated-courses/${courseId}`);
           const result = await response.json();
           
           if (result.success && result.course) {
             courseDetails = result.course;
-            console.log('✅ Updated Course details loaded:', courseDetails.title);
             
             // Extract lessons from curriculum
             if (courseDetails.curriculum && Array.isArray(courseDetails.curriculum)) {
               lessons = this.processCurriculum(courseDetails.curriculum);
-              console.log('✅ Lessons extracted from curriculum:', lessons.length);
             }
           }
         } catch (fetchError) {
@@ -309,7 +305,6 @@ export default {
         // ✅ STRATEGY 2: Fallback to general Updated Courses API
         if (!courseDetails && lessons.length === 0) {
           try {
-            console.log('🔍 Fallback: Searching in all Updated Courses...');
             const coursesResponse = await getUpdatedCourses();
             
             if (coursesResponse && coursesResponse.success && coursesResponse.courses) {
@@ -319,11 +314,9 @@ export default {
               
               if (foundCourse) {
                 courseDetails = foundCourse;
-                console.log('✅ Found course in Updated Courses list');
                 
                 if (foundCourse.curriculum && Array.isArray(foundCourse.curriculum)) {
                   lessons = this.processCurriculum(foundCourse.curriculum);
-                  console.log('✅ Lessons from Updated Courses curriculum:', lessons.length);
                 }
               }
             }
@@ -335,7 +328,6 @@ export default {
         // ✅ STRATEGY 3: Try legacy course endpoints as final fallback
         if (lessons.length === 0) {
           try {
-            console.log('🔍 Final fallback: Trying legacy course endpoints...');
             const courseResponse = await getCourseById(courseId);
             
             if (courseResponse && courseResponse.success && courseResponse.data) {
@@ -358,7 +350,6 @@ export default {
           this.error = 'Содержание уроков для этого курса не найдено';
           console.warn('⚠️ No lessons found for course:', courseId);
         } else {
-          console.log(`✅ Successfully loaded ${lessons.length} lessons`);
         }
         
       } catch (error) {
@@ -389,7 +380,6 @@ export default {
             steps: this.processSteps(lesson.steps || [])
           };
 
-          console.log(`✅ Processed lesson ${index + 1}: "${processedLesson.title}" with ${processedLesson.steps.length} steps`);
           return processedLesson;
 
         } catch (lessonError) {
@@ -430,7 +420,6 @@ export default {
             processedStep.data.content = processedStep.content;
           }
 
-          console.log(`✅ Processed step ${index + 1}: "${processedStep.title}" (${processedStep.type})`);
           return processedStep;
           
         } catch (stepError) {

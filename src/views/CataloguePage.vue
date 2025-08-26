@@ -526,7 +526,6 @@ export default {
         const oldPlan = oldUser?.subscriptionPlan;
         
         if (newPlan !== oldPlan) {
-          console.log('👤 Catalogue: User plan changed:', oldPlan, '→', newPlan);
           this.handleUserStatusChange(newPlan, oldPlan);
         }
       },
@@ -541,7 +540,6 @@ export default {
         const oldPlan = oldUser?.subscriptionPlan;
         
         if (newPlan !== oldPlan) {
-          console.log('👤 Catalogue: GetUser plan changed:', oldPlan, '→', newPlan);
           this.handleUserStatusChange(newPlan, oldPlan);
         }
       },
@@ -553,7 +551,6 @@ export default {
     currentUserStatus: {
       handler(newStatus, oldStatus) {
         if (newStatus !== oldStatus) {
-          console.log('📊 Catalogue: Current user status computed changed:', oldStatus, '→', newStatus);
           this.triggerReactivityUpdate();
         }
       },
@@ -562,7 +559,6 @@ export default {
   },
 
   async mounted() {
-    console.log('📱 Catalogue: Component mounted');
 
     try {
       // Initialize component
@@ -571,7 +567,6 @@ export default {
       // ✅ FIXED: Setup comprehensive event listeners
       this.setupEventListeners();
 
-      console.log('✅ Catalogue: Component mounted successfully');
 
     } catch (error) {
       console.error('❌ Catalogue: Mount error:', error);
@@ -579,7 +574,6 @@ export default {
   },
 
   beforeUnmount() {
-    console.log('📱 Catalogue: Component unmounting');
     this.cleanup();
   },
 
@@ -587,7 +581,6 @@ export default {
     // ===== INITIALIZATION =====
     async initializeComponent() {
       try {
-        console.log('🚀 Catalogue: Initializing component...');
         this.loading = true;
         this.lang = localStorage.getItem('lang') || 'en';
 
@@ -601,7 +594,6 @@ export default {
           // Don't return here - still load public data
         } else {
           this.userId = storedId;
-          console.log('👤 Catalogue: User ID found:', this.userId);
         }
 
         // Load all data in parallel with proper error handling
@@ -625,7 +617,6 @@ export default {
         // Process subjects after all data is loaded
         this.processSubjects();
         
-        console.log('✅ Catalogue: Component initialized successfully');
         
       } catch (error) {
         console.error('❌ Catalogue: Critical initialization error:', error);
@@ -638,14 +629,12 @@ export default {
     // ===== DATA LOADING =====
     async loadLessons() {
       try {
-        console.log('📚 Catalogue: Loading lessons...');
         
         // ✅ FIXED: Use the same API method as MainPage
         const lessonsResult = await getAllLessons();
         
         if (lessonsResult?.success && Array.isArray(lessonsResult.data)) {
           this.lessons = lessonsResult.data;
-          console.log('✅ Catalogue: Loaded lessons:', this.lessons.length);
         } else {
           console.warn('⚠️ Catalogue: Invalid lessons response:', lessonsResult);
           this.lessons = [];
@@ -656,7 +645,6 @@ export default {
         
         // Try fallback approach
         try {
-          console.log('🔄 Catalogue: Trying fallback lessons approach...');
           const topicsResult = await getTopics({ includeStats: true });
           
           if (topicsResult?.success && Array.isArray(topicsResult.data)) {
@@ -675,7 +663,6 @@ export default {
             
             if (allLessons.length > 0) {
               this.lessons = allLessons;
-              console.log('✅ Catalogue: Loaded lessons via fallback:', this.lessons.length);
             }
           }
         } catch (fallbackError) {
@@ -692,7 +679,6 @@ export default {
       }
 
       try {
-        console.log('📊 Catalogue: Loading user progress...');
         
         // ✅ FIXED: Use the same API method as MainPage
         const progressResult = await getUserProgress(this.userId);
@@ -700,11 +686,9 @@ export default {
         if (progressResult?.success && Array.isArray(progressResult.data)) {
           // Calculate topic progress from lesson progress data
           await this.calculateTopicProgressFromLessons(progressResult.data);
-          console.log('✅ Catalogue: Loaded progress for topics:', Object.keys(this.userProgress).length);
         } else if (progressResult?.success && typeof progressResult.data === 'object') {
           // Direct topic progress format
           this.userProgress = progressResult.data || {};
-          console.log('✅ Catalogue: Loaded direct topic progress:', Object.keys(this.userProgress).length);
         } else {
           console.warn('⚠️ Catalogue: Invalid progress response:', progressResult);
           this.userProgress = {};
@@ -723,7 +707,6 @@ export default {
       }
 
       try {
-        console.log('📋 Catalogue: Loading study plan...');
         
         // ✅ FIXED: Use the same API method as MainPage
         const studyListResult = await getUserStudyList(this.userId);
@@ -737,7 +720,6 @@ export default {
             })
             .filter(id => id);
           
-          console.log('✅ Catalogue: Loaded study plan with', this.studyPlanTopics.length, 'topics');
         } else {
           console.warn('⚠️ Catalogue: Invalid study list response:', studyListResult);
           this.studyPlanTopics = [];
@@ -804,12 +786,10 @@ export default {
       });
 
       this.userProgress = topicProgressMap;
-      console.log('✅ Catalogue: Calculated topic progress for', Object.keys(topicProgressMap).length, 'topics');
     },
 
     // ===== DATA PROCESSING =====
     processSubjects() {
-      console.log('🔄 Catalogue: Processing subjects from', this.lessons.length, 'lessons');
 
       if (!Array.isArray(this.lessons) || this.lessons.length === 0) {
         console.warn('⚠️ Catalogue: No lessons available for processing');
@@ -874,11 +854,9 @@ export default {
         topicCount: subject.topics.size
       }));
 
-      console.log('✅ Catalogue: Processed', this.subjects.length, 'subjects');
     },
 
     processLevels() {
-      console.log('🔄 Catalogue: Processing levels for subject:', this.selectedSubject);
 
       if (!Array.isArray(this.lessons) || !this.selectedSubject) {
         this.levels = [];
@@ -891,7 +869,6 @@ export default {
         lesson && lesson.subject === this.selectedSubject
       );
 
-      console.log('📚 Catalogue: Found', subjectLessons.length, 'lessons for subject');
 
       subjectLessons.forEach(lesson => {
         if (!lesson || (lesson.level === null || lesson.level === undefined)) return;
@@ -944,11 +921,9 @@ export default {
         return String(a.name).localeCompare(String(b.name));
       });
 
-      console.log('✅ Catalogue: Processed', this.levels.length, 'levels');
     },
 
     processTopics() {
-      console.log('🔄 Catalogue: Processing topics for:', this.selectedSubject, this.selectedLevel);
 
       if (!Array.isArray(this.lessons) || !this.selectedSubject || !this.selectedLevel) {
         this.topics = [];
@@ -963,7 +938,6 @@ export default {
         String(lesson.level) === String(this.selectedLevel)
       );
 
-      console.log('📚 Catalogue: Found', levelLessons.length, 'lessons for level');
 
       levelLessons.forEach(lesson => {
         if (!lesson) return;
@@ -1004,7 +978,6 @@ export default {
                      this.studyPlanTopics.includes(topic.topicId)
       }));
 
-      console.log('✅ Catalogue: Processed', this.topics.length, 'topics');
     },
 
     calculateLevelProgress(levelName) {
@@ -1036,7 +1009,6 @@ export default {
 
     // ===== NAVIGATION METHODS =====
     selectSubject(subjectName) {
-      console.log('🎯 Selecting subject:', subjectName);
       this.selectedSubject = String(subjectName);
       this.currentView = 'levels';
       this.processLevels();
@@ -1047,7 +1019,6 @@ export default {
     },
 
     selectLevel(levelName) {
-      console.log('🎯 Selecting level:', levelName);
       this.selectedLevel = String(levelName);
       this.currentView = 'topics';
       this.processTopics();
@@ -1056,7 +1027,6 @@ export default {
     },
 
     goBack() {
-      console.log('🔄 Going back from:', this.currentView);
       if (this.currentView === 'topics') {
         this.currentView = 'levels';
         this.selectedLevel = null;
@@ -1314,15 +1284,12 @@ export default {
         return;
       }
 
-      console.log('🚀 Catalogue: Handling topic access:', { topicId, type, userStatus: this.currentUserStatus });
 
       // Check if premium access is required and user doesn't have it
       if ((type === 'premium' || type === 'pro') && !this.isPremiumUser) {
-        console.log('🔒 Catalogue: Premium access required, showing paywall');
         this.requestedTopicId = topicId;
         this.showPaywall = true;
       } else {
-        console.log('✅ Catalogue: Access granted, navigating to topic');
         this.$router.push({ 
           name: 'TopicOverview', 
           params: { id: topicId },
@@ -1350,7 +1317,6 @@ export default {
       }
 
       try {
-        console.log('➕ Catalogue: Adding topic to study plan:', this.selectedTopic);
         
         let topicId = this.selectedTopic.topicId;
         if (typeof topicId === 'object' && topicId !== null) {
@@ -1400,7 +1366,6 @@ export default {
           this.showAddModal = false;
           this.showSuccessModal = true;
           
-          console.log('✅ Catalogue: Topic added to study plan successfully');
         } else {
           throw new Error(result?.error || 'Failed to add topic to study list');
         }
@@ -1435,7 +1400,6 @@ export default {
 
     // ✅ FIXED: Handle plan updates the same way UserSection does
     handlePlanUpdate(newPlan) {
-      console.log('💳 Catalogue: Plan updated to:', newPlan);
       
       // ✅ FIXED: Update store the same way UserSection does
       const updatedUser = {
@@ -1458,7 +1422,6 @@ export default {
     handleUserStatusChange(newStatus, oldStatus) {
       if (!newStatus || newStatus === oldStatus) return;
 
-      console.log(`👤 Catalogue: Handling status change ${oldStatus} → ${newStatus}`);
 
       // Update localStorage immediately
       localStorage.setItem('userStatus', newStatus);
@@ -1475,18 +1438,15 @@ export default {
         }
       }
 
-      console.log(`✅ Catalogue: Status change handled: ${oldStatus} → ${newStatus}`);
     },
 
     // ✅ FIXED: Setup comprehensive event listeners
     setupEventListeners() {
-      console.log('🔧 Catalogue: Setting up event listeners');
 
       // ===== DOM EVENT LISTENERS =====
       if (typeof window !== 'undefined') {
         // Listen for user subscription changes
         this.handleSubscriptionChange = (event) => {
-          console.log('📡 Catalogue: Subscription change received:', event.detail);
           const { plan, oldPlan } = event.detail;
           this.handleUserStatusChange(plan, oldPlan);
         };
@@ -1499,7 +1459,6 @@ export default {
         // Listen for localStorage changes (cross-tab sync)
         this.handleStorageChange = (event) => {
           if (event.key === 'userStatus' && event.newValue !== event.oldValue) {
-            console.log('📡 Catalogue: localStorage userStatus changed:', event.oldValue, '→', event.newValue);
             this.handleUserStatusChange(event.newValue, event.oldValue);
           }
         };
@@ -1514,19 +1473,16 @@ export default {
       if (typeof window !== 'undefined' && window.eventBus) {
         // User status change events
         this.handleUserStatusEvent = (data) => {
-          console.log('📡 Catalogue: User status event received:', data);
           this.handleUserStatusChange(data.newStatus, data.oldStatus);
         };
 
         // Promocode applied events
         this.handlePromocodeEvent = (data) => {
-          console.log('📡 Catalogue: Promocode applied event:', data);
           this.handleUserStatusChange(data.newStatus, data.oldStatus);
         };
 
         // Force update events
         this.handleForceUpdateEvent = () => {
-          console.log('📡 Catalogue: Force update event received');
           this.triggerReactivityUpdate();
         };
 
@@ -1551,20 +1507,17 @@ export default {
           });
         });
 
-        console.log('✅ Catalogue: Event bus listeners registered');
       }
 
       // ===== STORE MUTATION LISTENER =====
       if (this.$store) {
         this.storeUnsubscribe = this.$store.subscribe((mutation) => {
           if (this.isUserRelatedMutation(mutation)) {
-            console.log('📊 Catalogue: Store mutation detected:', mutation.type);
             this.triggerReactivityUpdate();
           }
         });
       }
 
-      console.log('✅ Catalogue: Event listeners setup complete');
     },
 
     // ✅ FIXED: Trigger comprehensive reactivity update
@@ -1581,11 +1534,7 @@ export default {
         this.$forceUpdate();
       });
 
-      console.log('🔄 Catalogue: Reactivity update triggered:', {
-        componentKey: this.componentKey,
-        userStatus: this.currentUserStatus,
-        timestamp: this.lastUpdateTime
-      });
+     
     },
 
     // ✅ FIXED: Check if mutation is user-related
@@ -1608,7 +1557,6 @@ export default {
 
     // ✅ FIXED: Enhanced cleanup method
     cleanup() {
-      console.log('🧹 Catalogue: Performing cleanup...');
 
       // Clean up all event listeners
       this.eventCleanupFunctions.forEach(cleanup => {
@@ -1630,7 +1578,6 @@ export default {
         this.storeUnsubscribe = null;
       }
 
-      console.log('✅ Catalogue: Cleanup completed');
     }
   }
 };

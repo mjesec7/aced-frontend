@@ -480,14 +480,12 @@ const mutations = {
     const startTime = Date.now();
     const oldStatus = state.userStatus;
 
-    console.log('🔧 SET_USER_STATUS mutation called:', { oldStatus, newStatus: status });
 
     // ✅ CRITICAL: Validate status
     const validStatuses = ['free', 'start', 'pro', 'premium'];
     const newStatus = validStatuses.includes(status) ? status : 'free';
 
     if (oldStatus === newStatus) {
-      console.log('ℹ️ Status unchanged, still triggering events for consistency');
     }
 
     // ✅ CRITICAL: Update state with multiple strategies for maximum compatibility
@@ -531,7 +529,6 @@ const mutations = {
         state.cache.lastCacheUpdate = Date.now();
       }
 
-      console.log('✅ State updated successfully:', newStatus);
 
     } catch (stateUpdateError) {
       console.error('❌ State update failed:', stateUpdateError);
@@ -549,7 +546,6 @@ const mutations = {
       localStorage.setItem('statusUpdateTime', Date.now().toString());
       localStorage.setItem('mutationTime', Date.now().toString());
       
-      console.log('✅ localStorage updated with all status fields');
     } catch (storageError) {
       console.error('❌ localStorage update failed:', storageError);
     }
@@ -601,7 +597,6 @@ const mutations = {
       triggerGlobalEvent('finalStatusUpdate', eventData);
     }, 200);
 
-    console.log('✅ SET_USER_STATUS mutation completed:', newStatus);
   },
 
   // Legacy mutation for backward compatibility
@@ -947,7 +942,6 @@ const mutations = {
     const timestamp = Date.now();
     const oldCounter = state.system.forceUpdateCounter;
 
-    console.log('🔧 FORCE_UPDATE mutation called');
 
     // ✅ Update counters and timestamps
     state.system.forceUpdateCounter = (oldCounter || 0) + 1;
@@ -958,7 +952,6 @@ const mutations = {
     state.cache.userStatusCache = state.userStatus;
     state.cache.lastCacheUpdate = timestamp;
 
-    console.log('✅ Force update completed, counter:', state.system.forceUpdateCounter);
 
     // ✅ CRITICAL: Trigger multiple force update events
     const eventData = {
@@ -2367,7 +2360,6 @@ const actions = {
   // 🌐 NEW: Initialize user with global subscription sync
   async initializeWithGlobalSync({ commit, dispatch, state }, userId) {
     try {
-      console.log('🌐 Initializing with global sync...');
       // Get local subscription
       const localSubscriptionJson = localStorage.getItem('subscriptionData');
       let localSubscription = null;
@@ -2388,7 +2380,6 @@ const actions = {
         commit('SET_USER_STATUS', syncResult.subscription.plan);
         commit('UPDATE_SUBSCRIPTION', syncResult.subscription);
 
-        console.log('✅ Global sync completed:', syncResult.subscription.plan);
         
         return {
           success: true,
@@ -2483,7 +2474,6 @@ const actions = {
    * CRITICAL FIX: Enhanced updateUserStatus action with server sync
    */
   async updateUserStatusWithServerSync({ commit, state, dispatch }, { newStatus, source = 'manual' }) {
-    console.log('🌐 Store: Updating user status with server sync:', { newStatus, source });
     try {
       const userId = getUserId(state);
       if (!userId) {
@@ -2554,7 +2544,6 @@ const actions = {
    * CRITICAL FIX: Enhanced applyPromocode action with global persistence
    */
   async applyPromocodeWithGlobalSync({ commit, dispatch, state }, { promoCode, plan }) {
-    console.log('🎟️ Store: Applying promocode with global sync:', { promoCode, plan });
     try {
       const userId = getUserId(state);
       if (!userId) {
@@ -2593,17 +2582,14 @@ const actions = {
 
   // ✅ CRITICAL FIX: loadUserFromServer action
   async loadUserFromServer({ commit, state }) {
-    console.log('🌐 Loading user from server...');
 
     try {
       const userId = getUserId(state);
       if (!userId) {
-        console.log('❌ No user ID for server fetch');
         return { success: false, error: 'No user ID' };
       }
       const token = await getUserToken();
       if (!token) {
-        console.log('❌ No token for server fetch');
         return { success: false, error: 'No token' };
       }
 
@@ -2617,7 +2603,6 @@ const actions = {
       if (data.success && data.user) {
         const serverUser = data.user;
         const serverStatus = serverUser.subscriptionPlan || serverUser.userStatus || 'free';
-        console.log('✅ Server user loaded with status:', serverStatus);
 
         // Update store
         commit('SET_USER', serverUser);

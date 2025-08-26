@@ -1140,7 +1140,6 @@ if (typeof window !== 'undefined') {
     }
   };
   
-  console.log('🚀 Router debug tools available at window.routerDebug');
 }
 
 export default router;

@@ -44,8 +44,7 @@ const api = axios.create({
   timeout: 30000 // ✅ INCREASE timeout
 });
 
-console.log('✅ API Base URL:', `${BASE_URL}/api`);
-console.log('✅ All requests will go to:', `${BASE_URL}/api/[endpoint]`);
+
 
 // ========================================
 // 🚫 REQUEST DEBOUNCING & LOOP PREVENTION
@@ -109,7 +108,6 @@ const getValidToken = async () => {
     }
 
     const token = await currentUser.getIdToken(true);
-    console.log('🔑 Fresh token obtained');
     return token;
   } catch (error) {
     console.error('❌ Failed to get valid token:', error);
@@ -124,14 +122,12 @@ const getValidToken = async () => {
 // ✅ COMPLETELY FIXED REQUEST INTERCEPTOR
 api.interceptors.request.use(async (config) => {
   try {
-    console.log('🔗 Request will go to:', `${config.baseURL}/${config.url}`);
     const requestKey = createRequestKey(config);
 
     // ✅ SIMPLE: Just check if we recently made this request
     if (pendingRequests.has(requestKey)) {
       const lastRequestTime = pendingRequests.get(requestKey);
       if (Date.now() - lastRequestTime < 1000) { // 1 second debounce
-        console.log('🔄 Debouncing duplicate request:', requestKey);
         // Let it proceed but mark it
         config.headers = { ...config.headers, 'X-Debounced': 'true' };
       }
@@ -144,7 +140,6 @@ api.interceptors.request.use(async (config) => {
     if (config.method && config.method.toLowerCase() === 'get') {
       const cached = requestCache.get(requestKey);
       if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-        console.log('📋 Cache hit for:', requestKey);
         config.headers = { ...config.headers, 'X-Cache-Status': 'HIT' };
       }
     }
@@ -269,7 +264,6 @@ api.interceptors.response.use(
       originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
       const delay = RETRY_DELAY * originalRequest._retryCount;
 
-      console.log(`⏳ Rate limited, retrying in ${delay}ms (attempt ${originalRequest._retryCount})`);
 
       await new Promise(resolve => setTimeout(resolve, delay));
       return api(originalRequest);
@@ -476,7 +470,6 @@ function processCurriculum(curriculum) {
  */
 export const getUpdatedCourses = async (filters = {}) => {
   try {
-    console.log('📥 Fetching updated courses with filters:', filters);
 
     const params = new URLSearchParams();
     Object.keys(filters).forEach(key => {
@@ -531,7 +524,6 @@ export const getUpdatedCourses = async (filters = {}) => {
  */
 export const getCourseById = async (courseId) => {
   try {
-    console.log('📥 Fetching course by ID:', courseId);
 
     const { data } = await api.get(`updated-courses/${courseId}`);
 
@@ -552,7 +544,6 @@ export const getCourseById = async (courseId) => {
         curriculum: processCurriculum(data.course.curriculum || [])
       };
 
-      console.log('✅ Course fetched and processed:', processedCourse.title);
       return {
         success: true,
         data: processedCourse
@@ -583,7 +574,6 @@ export const getCourseById = async (courseId) => {
  */
 export const getCourseContent = async (courseId) => {
   try {
-    console.log('📥 Fetching course content for:', courseId);
 
     // Try the course-specific lessons endpoint first
     try {
@@ -604,7 +594,6 @@ export const getCourseContent = async (courseId) => {
           steps: processSteps(lesson.steps || [], index)
         }));
 
-        console.log(`✅ Course lessons processed: ${lessons.length} lessons`);
         return {
           success: true,
           data: lessons,
@@ -637,7 +626,6 @@ export const getCourseContent = async (courseId) => {
           steps: processSteps(lesson.steps || [], index)
         }));
 
-        console.log(`✅ Course curriculum processed: ${lessons.length} lessons`);
         return {
           success: true,
           data: lessons,
@@ -649,7 +637,6 @@ export const getCourseContent = async (courseId) => {
     }
 
     // Final fallback
-    console.log('ℹ️ No course content found, returning empty array');
     return {
       success: true,
       data: [],
@@ -671,7 +658,6 @@ export const getCourseContent = async (courseId) => {
  */
 export const toggleBookmark = async (userId, courseId, isBookmarked) => {
   try {
-    console.log('🔖 Toggling bookmark:', { userId, courseId, isBookmarked });
 
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
@@ -693,7 +679,6 @@ export const toggleBookmark = async (userId, courseId, isBookmarked) => {
       headers,
     });
 
-    console.log('✅ Bookmark toggled successfully');
 
     return {
       success: true,
@@ -701,7 +686,6 @@ export const toggleBookmark = async (userId, courseId, isBookmarked) => {
       bookmarked: isBookmarked
     };
   } catch (error) {
-    console.error('❌ Failed to toggle bookmark:', error);
 
     // Return success for demo purposes even if API fails
     return {
@@ -763,7 +747,6 @@ export const getTopics = async (filters = {}) => {
 // ✅ COMPLETELY FIXED: Get topic by ID with lessons fallback
 export const getTopicById = async (topicId) => {
   try {
-    console.log('🔍 API: Fetching topic by ID:', topicId);
 
     // ✅ BULLETPROOF: Validate topicId
     if (!topicId || typeof topicId !== 'string') {
@@ -779,12 +762,10 @@ export const getTopicById = async (topicId) => {
     // ✅ STRATEGY 1: Try the direct topics endpoint first
     try {
       const { data } = await api.get(`topics/${topicId}`);
-      console.log('📘 API: Raw topic response from /topics:', data);
 
       // Handle all possible response structures from your backend
       if (data && data.success === true) {
         if (data.data) {
-          console.log('✅ API: Using success+data wrapper format');
           return {
             success: true,
             data: data.data,
@@ -796,7 +777,6 @@ export const getTopicById = async (topicId) => {
 
       if (data && data.exists === true) {
         if (data.data) {
-          console.log('✅ API: Using exists+data wrapper format');
           return {
             success: true,
             exists: true,
@@ -807,7 +787,6 @@ export const getTopicById = async (topicId) => {
       }
 
       if (data && (data._id || data.name)) {
-        console.log('✅ API: Using direct topic object format');
         return {
           success: true,
           data: data,
@@ -824,18 +803,15 @@ export const getTopicById = async (topicId) => {
       }
 
       // If it's 404, continue to fallback strategy
-      console.log('🔄 Topic not found in /topics, trying lessons fallback...');
     }
 
     // ✅ STRATEGY 2: Fallback - Build topic from lessons (like CataloguePage does)
     try {
-      console.log('🔄 Building topic from lessons data...');
 
       // Get all lessons
       const { data } = await api.get('lessons');
       const allLessons = Array.isArray(data) ? data : [];
 
-      console.log(`📚 Found ${allLessons.length} total lessons`);
 
       // Filter lessons for this topic
       const topicLessons = allLessons.filter(lesson => {
@@ -853,10 +829,8 @@ export const getTopicById = async (topicId) => {
         return false;
       });
 
-      console.log(`📚 Found ${topicLessons.length} lessons for topic ${topicId}`);
 
       if (topicLessons.length === 0) {
-        console.log('❌ No lessons found for this topicId');
         return {
           success: false,
           error: 'Topic not found',
@@ -938,7 +912,6 @@ export const getTopicById = async (topicId) => {
         }
       };
 
-      console.log('✅ Successfully constructed topic from lessons:', constructedTopic);
 
       return {
         success: true,
@@ -965,7 +938,6 @@ export const getTopicById = async (topicId) => {
 
     // ✅ BULLETPROOF: Detailed error handling
     if (error.response?.status === 404) {
-      console.log('📍 API: Topic not found (404)');
       return {
         success: false,
         error: 'Topic not found',
@@ -1021,7 +993,6 @@ export const getTopicById = async (topicId) => {
 // ✅ COMPLETELY FIXED: Get lessons by topic with comprehensive error handling
 export const getLessonsByTopic = async (topicId) => {
   try {
-    console.log(`📚 API: Fetching lessons for topic: ${topicId}`);
 
     if (!topicId) {
       throw new Error('Topic ID is required');
@@ -1029,14 +1000,11 @@ export const getLessonsByTopic = async (topicId) => {
 
     // ✅ Strategy 1: Try the enhanced lessons endpoint first
     try {
-      console.log('🔄 Strategy 1: Enhanced lessons endpoint...');
       // ✅ FIXED: Clean URL without /api/ prefix
       const { data } = await api.get(`lessons/topic/${topicId}?includeStats=true&sortBy=createdAt&order=asc`);
 
-      console.log('📚 Enhanced endpoint raw response:', data);
 
       if (data && data.success) {
-        console.log(`✅ Enhanced endpoint success: ${data.lessons?.length || 0} lessons`);
         return {
           success: true,
           data: data.lessons || [],
@@ -1049,27 +1017,22 @@ export const getLessonsByTopic = async (topicId) => {
 
       // If it's a 501 (Not Implemented), continue to next strategy
       if (enhancedError.response?.status === 501) {
-        console.log('📍 501 Not Implemented - endpoint not ready yet');
       }
     }
 
     // ✅ Strategy 2: Try legacy topic-specific lessons endpoint
     try {
-      console.log('🔄 Strategy 2: Legacy topic lessons endpoint...');
       // ✅ FIXED: Clean URL without /api/ prefix
       const { data } = await api.get(`topics/${topicId}/lessons`);
 
-      console.log('📚 Legacy endpoint raw response:', data);
 
       if (data && data.success) {
-        console.log(`✅ Legacy endpoint success: ${data.data?.length || data.lessons?.length || 0} lessons`);
         return {
           success: true,
           data: data.data || data.lessons || [],
           source: 'legacy-endpoint'
         };
       } else if (Array.isArray(data)) {
-        console.log(`✅ Legacy endpoint (direct array): ${data.length} lessons`);
         return {
           success: true,
           data: data,
@@ -1081,17 +1044,14 @@ export const getLessonsByTopic = async (topicId) => {
 
       // If it's a 404, this might mean the topic doesn't exist
       if (legacyError.response?.status === 404) {
-        console.log('📍 404 from legacy endpoint - topic might not exist');
       }
     }
 
     // ✅ Strategy 3: Final fallback - get all lessons and filter by topicId
     try {
-      console.log('🔄 Strategy 3: Fallback - filter all lessons...');
       // ✅ FIXED: Clean URL without /api/ prefix
       const { data } = await api.get('lessons');
 
-      console.log(`📚 All lessons response: ${Array.isArray(data) ? data.length : 'not array'} items`);
 
       const allLessons = Array.isArray(data) ? data : [];
       const filteredLessons = allLessons.filter(lesson => {
@@ -1118,7 +1078,6 @@ export const getLessonsByTopic = async (topicId) => {
         return false;
       });
 
-      console.log(`✅ Fallback filter success: ${filteredLessons.length} lessons found for topic ${topicId}`);
 
       return {
         success: true,
@@ -1131,7 +1090,6 @@ export const getLessonsByTopic = async (topicId) => {
     }
 
     // If everything fails, return empty but successful response
-    console.log('ℹ️ All strategies failed, returning empty array');
     return {
       success: true,
       data: [],
@@ -1315,7 +1273,6 @@ export const getLessonProgress = async (userId, lessonId) => {
 
     for (const endpoint of endpoints) {
       try {
-        console.log(`🔍 Trying endpoint: ${endpoint}`);
         const { data } = await api.get(endpoint, { headers });
 
         // Safe check for data structure
@@ -1324,7 +1281,6 @@ export const getLessonProgress = async (userId, lessonId) => {
           const progressData = data.data || data;
 
           if (progressData && (data.success !== false)) {
-            console.log(`✅ Progress found via ${endpoint}:`, progressData);
             return {
               success: true,
               data: progressData
@@ -1346,7 +1302,6 @@ export const getLessonProgress = async (userId, lessonId) => {
     }
 
     // If no endpoint worked, return null progress (not an error)
-    console.log('ℹ️ No progress found for lesson, returning null');
     return {
       success: true,
       data: null
@@ -1381,7 +1336,6 @@ export const getUserProgress = async (userId) => {
 
     for (const endpoint of endpoints) {
       try {
-        console.log(`🔍 Trying progress endpoint: ${endpoint}`);
         const { data } = await api.get(endpoint, { headers });
 
         // Safe check for data structure
@@ -1389,7 +1343,6 @@ export const getUserProgress = async (userId) => {
           const progressData = data.data || data;
 
           if (progressData && (data.success !== false)) {
-            console.log(`✅ User progress found via ${endpoint}:`, progressData);
             return {
               success: true,
               data: progressData
@@ -1411,7 +1364,6 @@ export const getUserProgress = async (userId) => {
     }
 
     // If no endpoint worked, return empty array (not an error)
-    console.log('ℹ️ No user progress found, returning empty array');
     return {
       success: true,
       data: []
@@ -1544,30 +1496,25 @@ const buildHomeworkListFallback = async (token, userId, headers) => {
 
   // Get standalone homework
   try {
-    console.log('📚 Fetching standalone homework...');
     const { data: hwResponse } = await api.get('homeworks', { headers });
     allHomeworks = hwResponse.data || hwResponse || [];
-    console.log(`📚 Found ${allHomeworks.length} standalone homework`);
   } catch (hwError) {
     console.warn('⚠️ Could not fetch standalone homework:', hwError.message);
   }
 
   // Get lessons with homework
   try {
-    console.log('📖 Fetching lessons with homework...');
     const { data: lessonsResponse } = await api.get('lessons', { headers });
     const allLessons = lessonsResponse.data || lessonsResponse || [];
     lessonsWithHomework = allLessons.filter(lesson =>
       lesson.homework && Array.isArray(lesson.homework) && lesson.homework.length > 0
     );
-    console.log(`📖 Found ${lessonsWithHomework.length} lessons with homework`);
   } catch (lessonsError) {
     console.warn('⚠️ Could not fetch lessons:', lessonsError.message);
   }
 
   // Get user progress
   try {
-    console.log('📊 Fetching user progress...');
 
     // Try multiple progress endpoints
     const progressEndpoints = [
@@ -1582,7 +1529,6 @@ const buildHomeworkListFallback = async (token, userId, headers) => {
         userProgress = progressResponse.data || progressResponse || [];
 
         if (Array.isArray(userProgress)) {
-          console.log(`📊 Found ${userProgress.length} progress records from ${endpoint}`);
           break;
         }
       } catch (progressError) {
@@ -1686,7 +1632,6 @@ const buildHomeworkListFallback = async (token, userId, headers) => {
 // ✅ FIXED: Get all homework with comprehensive endpoint support
 export const getAllHomeworks = async (userId) => {
   try {
-    console.log('📥 Fetching all homework for user:', userId);
 
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
@@ -1700,12 +1645,10 @@ export const getAllHomeworks = async (userId) => {
 
     // ✅ STRATEGY 1: Try the enhanced user homework endpoint
     try {
-      console.log('🔄 Trying enhanced user homework endpoint...');
 
       const { data } = await api.get(`homeworks/user/${userId}`, { headers });
 
       if (data && data.success && Array.isArray(data.data)) {
-        console.log(`✅ Enhanced endpoint success: ${data.data.length} homework items`);
         return {
           success: true,
           data: data.data,
@@ -1731,7 +1674,6 @@ export const getAllHomeworks = async (userId) => {
 
     for (const endpoint of alternativeEndpoints) {
       try {
-        console.log(`🔄 Trying alternative endpoint: ${endpoint}`);
 
         const { data } = await api.get(endpoint, { headers });
 
@@ -1739,7 +1681,6 @@ export const getAllHomeworks = async (userId) => {
           const homeworkData = data.data || data;
 
           if (Array.isArray(homeworkData) && homeworkData.length >= 0) {
-            console.log(`✅ Alternative endpoint success: ${homeworkData.length} homework items`);
             return {
               success: true,
               data: homeworkData,
@@ -1755,12 +1696,10 @@ export const getAllHomeworks = async (userId) => {
     }
 
     // ✅ STRATEGY 3: Build homework list from multiple sources (fallback)
-    console.log('🔄 Building homework list from multiple sources...');
 
     const fallbackHomeworks = await buildHomeworkListFallback(token, userId, headers);
 
     if (fallbackHomeworks.length > 0) {
-      console.log(`✅ Fallback success: ${fallbackHomeworks.length} homework items`);
       return {
         success: true,
         data: fallbackHomeworks,
@@ -1769,7 +1708,6 @@ export const getAllHomeworks = async (userId) => {
     }
 
     // ✅ STRATEGY 4: Return empty list if no errors (valid scenario)
-    console.log('ℹ️ No homework found - returning empty list');
     return {
       success: true,
       data: [],
@@ -1789,7 +1727,6 @@ export const getAllHomeworks = async (userId) => {
 // ✅ FIXED: Get homework by lesson with enhanced support
 export const getHomeworkByLesson = async (userId, lessonId) => {
   try {
-    console.log('📥 Fetching homework for lesson:', { userId, lessonId });
 
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
@@ -1806,7 +1743,6 @@ export const getHomeworkByLesson = async (userId, lessonId) => {
       const { data } = await api.get(`homeworks/user/${userId}/lesson/${lessonId}`, { headers });
 
       if (data && data.success) {
-        console.log('✅ Enhanced lesson homework endpoint success');
         return {
           success: true,
           data: data.data,
@@ -1878,7 +1814,6 @@ export const getHomeworkByLesson = async (userId, lessonId) => {
 // ✅ FIXED: Get standalone homework
 export const getStandaloneHomework = async (userId, homeworkId) => {
   try {
-    console.log('📥 Fetching standalone homework:', { userId, homeworkId });
 
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
@@ -1895,7 +1830,6 @@ export const getStandaloneHomework = async (userId, homeworkId) => {
       const { data } = await api.get(`homeworks/user/${userId}/homework/${homeworkId}`, { headers });
 
       if (data && data.success) {
-        console.log('✅ User-specific standalone homework endpoint success');
         return {
           success: true,
           data: data.data,
@@ -1961,7 +1895,6 @@ export const getStandaloneHomework = async (userId, homeworkId) => {
 // ✅ FIXED: Save homework with multiple endpoint support
 export const saveHomework = async (userId, lessonId, answers) => {
   try {
-    console.log('💾 Saving homework:', { userId, lessonId, answerCount: answers.length });
 
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
@@ -1991,7 +1924,6 @@ export const saveHomework = async (userId, lessonId, answers) => {
         const { data } = await api.post(endpoint, requestData, { headers });
 
         if (data && (data.success !== false)) {
-          console.log(`✅ Homework saved via ${endpoint}`);
           return {
             success: true,
             data: data.data || data
@@ -2014,7 +1946,6 @@ export const saveHomework = async (userId, lessonId, answers) => {
 // ✅ FIXED: Submit homework with multiple endpoint support
 export const submitHomework = async (userId, lessonId, answers) => {
   try {
-    console.log('📤 Submitting homework:', { userId, lessonId, answerCount: answers.length });
 
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
@@ -2040,7 +1971,6 @@ export const submitHomework = async (userId, lessonId, answers) => {
         const { data } = await api.post(endpoint, requestData, { headers });
 
         if (data && (data.success !== false)) {
-          console.log(`✅ Homework submitted via ${endpoint}`);
           return {
             success: true,
             data: data.data || data
@@ -2063,7 +1993,6 @@ export const submitHomework = async (userId, lessonId, answers) => {
 // ✅ FIXED: Standalone homework functions
 export const saveStandaloneHomework = async (userId, homeworkId, answers) => {
   try {
-    console.log('💾 Saving standalone homework:', { userId, homeworkId, answerCount: answers.length });
 
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
@@ -2089,7 +2018,6 @@ export const saveStandaloneHomework = async (userId, homeworkId, answers) => {
         const { data } = await api.post(endpoint, requestData, { headers });
 
         if (data && (data.success !== false)) {
-          console.log(`✅ Standalone homework saved via ${endpoint}`);
           return {
             success: true,
             data: data.data || data
@@ -2111,7 +2039,6 @@ export const saveStandaloneHomework = async (userId, homeworkId, answers) => {
 
 export const submitStandaloneHomework = async (userId, homeworkId, answers) => {
   try {
-    console.log('📤 Submitting standalone homework:', { userId, homeworkId, answerCount: answers.length });
 
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
@@ -2137,7 +2064,6 @@ export const submitStandaloneHomework = async (userId, homeworkId, answers) => {
         const { data } = await api.post(endpoint, requestData, { headers });
 
         if (data && (data.success !== false)) {
-          console.log(`✅ Standalone homework submitted via ${endpoint}`);
           return {
             success: true,
             data: data.data || data
@@ -2697,7 +2623,6 @@ export const retryApiCall = async (apiCall, maxRetries = 3, delay = 1000) => {
 export const cleanupRequestCache = () => {
   requestCache.clear();
   pendingRequests.clear();
-  console.log('🧹 Request cache cleaned');
 };
 
 // ✅ ERROR HANDLING WRAPPER
@@ -2734,7 +2659,6 @@ export const withErrorHandling = async (apiCall, context = 'API call') => {
 // 🧪 DEVELOPMENT TESTING HELPERS
 export const checkApiHealth = async () => {
   try {
-    console.log('🏥 Checking API health...');
 
     const healthResponse = await fetch(`${BASE_URL}/health`);
     const healthData = await healthResponse.json();
@@ -2826,7 +2750,6 @@ export const queueOfflineRequest = (request) => {
 // Process offline queue when back online
 export const processOfflineQueue = async () => {
   if (isOnline() && offlineQueue.length > 0) {
-    console.log(`📶 Processing ${offlineQueue.length} offline requests...`);
     const requests = [...offlineQueue];
     offlineQueue.length = 0; // Clear queue
 
@@ -2846,7 +2769,6 @@ export const processOfflineQueue = async () => {
 if (typeof window !== 'undefined') {
   window.addEventListener('online', processOfflineQueue);
   window.addEventListener('offline', () => {
-    console.log('📵 Device went offline');
   });
 }
 
@@ -2858,7 +2780,6 @@ export const diagnosticTool = {
 
   // Test backend connectivity
   async testBackendConnectivity() {
-    console.log('🔍 Testing backend connectivity...');
 
     try {
       // Test basic health check
@@ -2921,7 +2842,6 @@ export const diagnosticTool = {
         };
 
         if (response.ok) {
-          console.log(`✅ ${endpoint.name}: Working`);
         } else {
           console.warn(`⚠️ ${endpoint.name}: ${response.status} - ${data.error || data.message || 'Unknown error'}`);
         }
@@ -3025,7 +2945,6 @@ export {
  */
 export const saveSubscriptionToServer = async (userId, subscriptionData) => {
   try {
-    console.log('🌐 Saving subscription to server:', { userId, subscriptionData });
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
       console.warn('⚠️ No auth token for server save');
@@ -3066,10 +2985,8 @@ export const saveSubscriptionToServer = async (userId, subscriptionData) => {
     ];
     for (const endpoint of endpoints) {
       try {
-        console.log(`🔄 Trying endpoint: ${endpoint}`);
         const response = await api.post(endpoint, serverData, { headers });
         if (response.data && response.data.success !== false) {
-          console.log('✅ Subscription saved to server via:', endpoint);
           return {
             success: true,
             data: response.data,
@@ -3105,7 +3022,6 @@ export const saveSubscriptionToServer = async (userId, subscriptionData) => {
  */
 export const loadSubscriptionFromServer = async (userId) => {
   try {
-    console.log('🌐 Loading subscription from server for user:', userId);
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
       console.warn('⚠️ No auth token for server load');
@@ -3125,7 +3041,6 @@ export const loadSubscriptionFromServer = async (userId) => {
     ];
     for (const endpoint of endpoints) {
       try {
-        console.log(`🔍 Checking endpoint: ${endpoint}`);
         const response = await api.get(endpoint, { headers });
         if (response.data && response.data.success !== false) {
           const serverData = response.data.data || response.data;
@@ -3147,7 +3062,6 @@ export const loadSubscriptionFromServer = async (userId) => {
               const expiryDate = new Date(subscription.expiryDate);
               const now = new Date();
               if (expiryDate > now) {
-                console.log('✅ Valid server subscription found:', subscription);
                 return {
                   success: true,
                   subscription: subscription,
@@ -3155,12 +3069,10 @@ export const loadSubscriptionFromServer = async (userId) => {
                   serverSync: true
                 };
               } else {
-                console.log('⏰ Server subscription expired:', subscription);
                 // Continue to check other endpoints or return expired status
               }
             } else {
               // No expiry date, assume valid for paid plans
-              console.log('✅ Server subscription found (no expiry):', subscription);
               return {
                 success: true,
                 subscription: subscription,
@@ -3175,7 +3087,6 @@ export const loadSubscriptionFromServer = async (userId) => {
         continue;
       }
     }
-    console.log('ℹ️ No valid subscription found on server');
     return {
       success: true,
       subscription: null,
@@ -3195,7 +3106,6 @@ export const loadSubscriptionFromServer = async (userId) => {
  */
 export const syncSubscriptionGlobally = async (userId, localSubscription = null) => {
   try {
-    console.log('🔄 Starting global subscription sync for user:', userId);
     // Step 1: Load from server
     const serverResult = await loadSubscriptionFromServer(userId);
     let finalSubscription = null;
@@ -3242,7 +3152,6 @@ export const syncSubscriptionGlobally = async (userId, localSubscription = null)
     }
     // Step 2: Perform sync action
     if (syncAction === 'local-to-server' && finalSubscription) {
-      console.log('⬆️ Syncing local subscription to server');
       await saveSubscriptionToServer(userId, finalSubscription);
     }
     // Step 3: Update local storage with final subscription
@@ -3251,7 +3160,6 @@ export const syncSubscriptionGlobally = async (userId, localSubscription = null)
       const expiryDate = finalSubscription.expiryDate ? new Date(finalSubscription.expiryDate) : null;
       if (!expiryDate || expiryDate > now) {
         // Valid subscription, persist locally
-        console.log('💾 Persisting synced subscription locally:', finalSubscription);
         localStorage.setItem('subscriptionData', JSON.stringify(finalSubscription));
         localStorage.setItem('userStatus', finalSubscription.plan);
         localStorage.setItem('userPlan', finalSubscription.plan);
@@ -3267,7 +3175,6 @@ export const syncSubscriptionGlobally = async (userId, localSubscription = null)
       }
     }
     // No valid subscription found
-    console.log('ℹ️ No valid subscription after global sync');
     return {
       success: true,
       subscription: null,
@@ -3288,7 +3195,6 @@ export const syncSubscriptionGlobally = async (userId, localSubscription = null)
  */
 export const applyPromocodeGlobally = async (userId, promoCode, plan) => {
   try {
-    console.log('🎟️ Applying promocode globally:', { userId, promoCode, plan });
     // Step 1: Apply promocode via API (this should update server-side)
     const token = await auth.currentUser?.getIdToken();
     const headers = {
@@ -3301,7 +3207,6 @@ export const applyPromocodeGlobally = async (userId, promoCode, plan) => {
       plan: plan
     }, { headers });
     if (response.data && response.data.success) {
-      console.log('✅ Promocode accepted by server');
       // Step 2: Create subscription data
       const now = new Date();
       const expiryDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
@@ -3357,7 +3262,6 @@ export const applyPromocodeGlobally = async (userId, promoCode, plan) => {
  */
 export const completePaymentGlobally = async (userId, paymentData) => {
   try {
-    console.log('💳 Completing payment globally:', { userId, paymentData });
     // Step 1: Verify payment with server
     const token = await auth.currentUser?.getIdToken();
     const headers = {
@@ -3370,7 +3274,6 @@ export const completePaymentGlobally = async (userId, paymentData) => {
       ...paymentData
     }, { headers });
     if (response.data && response.data.success) {
-      console.log('✅ Payment confirmed by server');
       // Step 2: Create subscription data
       const now = new Date();
       const expiryDate = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000); // 1 year for payments
@@ -3431,7 +3334,6 @@ export const completePaymentGlobally = async (userId, paymentData) => {
  */
 export const checkGlobalSyncStatus = async (userId, localSubscription = null) => {
   try {
-    console.log('🔄 Checking global sync status for user:', userId);
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
       console.warn('⚠️ No auth token for status check');
@@ -3460,7 +3362,7 @@ export const checkGlobalSyncStatus = async (userId, localSubscription = null) =>
  * CRITICAL FIX: Enhanced user status update with server persistence
  */
 export const updateUserStatusWithPersistence = async (userId, newStatus, source = 'manual') => {
-  console.log('🌐 Updating user status with global persistence:', { userId, newStatus, source });
+  
 
   try {
     const token = await auth.currentUser?.getIdToken();
@@ -3490,7 +3392,6 @@ export const updateUserStatusWithPersistence = async (userId, newStatus, source 
         });
 
         if (response.status === 200) {
-          console.log('✅ Server status updated via:', endpoint);
           serverUpdateSuccess = true;
           break;
         }
@@ -3549,12 +3450,7 @@ export const updateUserStatusWithPersistence = async (userId, newStatus, source 
       console.warn('⚠️ Failed to update user object:', userUpdateError);
     }
 
-    console.log('✅ Global status persistence completed:', {
-      newStatus,
-      serverSync: serverUpdateSuccess,
-      localStorage: 'updated',
-      subscriptionData: subscriptionData
-    });
+    
 
     return {
       success: true,
@@ -3589,7 +3485,6 @@ export const updateUserStatusWithPersistence = async (userId, newStatus, source 
  * CRITICAL FIX: Enhanced promocode application with global persistence
  */
 export const applyPromocodeWithGlobalPersistence = async (userId, promocode, plan) => {
-  console.log('🎟️ Applying promocode with global persistence:', { userId, promocode, plan });
 
   try {
     // 1. Apply promocode via server
@@ -3603,7 +3498,6 @@ export const applyPromocodeWithGlobalPersistence = async (userId, promocode, pla
     });
 
     if (response.data && response.data.success) {
-      console.log('✅ Promocode accepted by server');
 
       // 2. Update status with global persistence
       const persistenceResult = await updateUserStatusWithPersistence(userId, plan, 'promocode');
@@ -3638,7 +3532,6 @@ export const applyPromocodeWithGlobalPersistence = async (userId, promocode, pla
  * CRITICAL FIX: Enhanced payment completion with global persistence
  */
 export const completePaymentWithGlobalPersistence = async (userId, paymentData) => {
-  console.log('💳 Completing payment with global persistence:', { userId, paymentData });
 
   try {
     // 1. Complete payment via server
@@ -3651,7 +3544,6 @@ export const completePaymentWithGlobalPersistence = async (userId, paymentData) 
     });
 
     if (response.data && response.data.success) {
-      console.log('✅ Payment confirmed by server');
 
       // 2. Update status with global persistence
       const persistenceResult = await updateUserStatusWithPersistence(userId, paymentData.plan, 'payment');

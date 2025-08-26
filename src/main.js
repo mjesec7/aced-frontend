@@ -246,17 +246,14 @@ export const authInitPromise = new Promise((resolve, reject) => {
 // 🔥 ENHANCED STORE INITIALIZATION WITH BULLETPROOF ERROR HANDLING
 // ============================================================================
 async function ensureStoreInitialized() {
-  console.log('🏪 Ensuring store is initialized with server data...');
   try {
     if (store.getters['user/isInitialized']) {
-      console.log('✅ Store already initialized');
 
       // But still check if we need to load from server
       const lastServerLoad = localStorage.getItem('lastServerLoad');
       const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
 
       if (!lastServerLoad || parseInt(lastServerLoad) < fiveMinutesAgo) {
-        console.log('🔄 Loading fresh data from server...');
         await store.dispatch('user/loadUserFromServer');
       }
 
@@ -267,7 +264,6 @@ async function ensureStoreInitialized() {
     // CRITICAL: Load user from server after initialization
     const currentUser = auth.currentUser;
     if (currentUser) {
-      console.log('👤 Loading authenticated user from server...');
       await store.dispatch('user/loadUserFromServer');
     }
     setupStoreInterceptor(store);
@@ -283,7 +279,6 @@ async function ensureStoreInitialized() {
 // CRITICAL FIX 1: Enhanced server status fetch with proper global sync
 // ========================================
 async function fetchUserStatusFromServer(userId, token = null) {
-  console.log('🌐 Fetching user status from server:', userId);
 
   try {
     const headers = { 'Content-Type': 'application/json' };
@@ -301,7 +296,6 @@ async function fetchUserStatusFromServer(userId, token = null) {
 
     for (const endpoint of endpoints) {
       try {
-        console.log('🔍 Checking endpoint:', endpoint);
 
         const response = await Promise.race([
           fetch(endpoint, { headers }),
@@ -312,7 +306,6 @@ async function fetchUserStatusFromServer(userId, token = null) {
 
         if (response.ok) {
           const data = await response.json();
-          console.log('📡 Server response:', data);
 
           // ✅ CRITICAL: Extract status from all possible fields
           const serverStatus = data.user?.subscriptionPlan ||
@@ -323,10 +316,8 @@ async function fetchUserStatusFromServer(userId, token = null) {
                              data.plan ||
                              'free';
 
-          console.log('✅ Server status extracted:', serverStatus);
 
           if (serverStatus && serverStatus !== 'free') {
-            console.log('💾 Updating localStorage with server status:', serverStatus);
 
             // ✅ CRITICAL: Update ALL status fields in localStorage
             localStorage.setItem('userStatus', serverStatus);
@@ -353,7 +344,6 @@ async function fetchUserStatusFromServer(userId, token = null) {
                 userData.serverStatusConfirmed = true;
                 userData.lastServerSync = new Date().toISOString();
                 localStorage.setItem('user', JSON.stringify(userData));
-                console.log('👤 Updated user object with server status');
               }
             } catch (userUpdateError) {
               console.warn('⚠️ Failed to update user object:', userUpdateError);
@@ -378,14 +368,12 @@ async function fetchUserStatusFromServer(userId, token = null) {
 
 // ✅ CRITICAL FIX 2: Enhanced handleUserAuthenticated with MANDATORY server status sync
 async function handleUserAuthenticated(firebaseUser) {
-  console.log('🔐 Handling authenticated user with MANDATORY server status fetch...');
 
   try {
     // Get Firebase token
     const token = await firebaseUser.getIdToken(true);
     const userId = firebaseUser.uid;
 
-    console.log('📡 Starting MANDATORY server user data fetch...');
 
     // ✅ CRITICAL: ALWAYS fetch from server to get latest subscription status
     let serverUser = null;
@@ -403,12 +391,10 @@ async function handleUserAuthenticated(firebaseUser) {
 
       if (response.ok) {
         const userData = await response.json();
-        console.log('✅ Server user data fetched:', userData);
 
         serverUser = userData.user || userData;
         userStatus = serverUser.subscriptionPlan || serverUser.userStatus || 'free';
 
-        console.log('📊 Server user status:', userStatus);
 
         // ✅ CRITICAL: Immediately update localStorage with server status
         localStorage.setItem('userStatus', userStatus);
@@ -428,7 +414,6 @@ async function handleUserAuthenticated(firebaseUser) {
 
     // ✅ CRITICAL: If server fetch failed, try saveUser as fallback
     if (!serverUser) {
-      console.log('🔄 Server fetch failed, trying saveUser...');
 
       const userData = {
         uid: firebaseUser.uid,
@@ -446,7 +431,6 @@ async function handleUserAuthenticated(firebaseUser) {
         if (saveResult && saveResult.success && saveResult.user) {
           serverUser = saveResult.user;
           userStatus = serverUser.subscriptionPlan || serverUser.userStatus || 'free';
-          console.log('✅ SaveUser result status:', userStatus);
 
           // ✅ CRITICAL: Update localStorage with saved user status
           localStorage.setItem('userStatus', userStatus);
@@ -477,7 +461,6 @@ async function handleUserAuthenticated(firebaseUser) {
       lastServerSync: new Date().toISOString()
     };
 
-    console.log('🎯 Final enhanced user with status:', userStatus);
 
     // ✅ CRITICAL: Update store with server status
     store.commit('setUser', enhancedUser);
@@ -566,7 +549,6 @@ async function handleUserAuthenticated(firebaseUser) {
       }
     }, 200);
 
-    console.log('✅ User authentication with server status completed:', userStatus);
 
   } catch (error) {
     console.error('❌ Authentication with server fetch failed:', error);
@@ -581,7 +563,6 @@ async function setupSubscriptionPersistence(plan, source = 'manual') {
     return;
   }
 
-  console.log('💾 Setting up subscription persistence:', plan, 'source:', source);
 
   const now = new Date();
   // ✅ Set expiry to 1 year for paid subscriptions
@@ -640,7 +621,6 @@ async function setupSubscriptionPersistence(plan, source = 'manual') {
     localStorage.setItem('subscriptionStatus', 'active');
     localStorage.setItem('serverConfirmedSubscription', 'true');
 
-    console.log('✅ Subscription persistence completed:', plan);
   } catch (error) {
     console.error('❌ Failed to persist subscription:', error);
   }
@@ -650,7 +630,6 @@ async function setupSubscriptionPersistence(plan, source = 'manual') {
 
 // ✅ CRITICAL FIX 4: Enhanced promocode application with global sync
 window.applyPromocodeGlobally = async (promocode, plan) => {
-  console.log('🎟️ Applying promocode globally:', { promocode, plan });
 
   try {
     // Get current user
@@ -662,7 +641,6 @@ window.applyPromocodeGlobally = async (promocode, plan) => {
     const userId = currentUser.uid;
     const token = await currentUser.getIdToken();
 
-    console.log('📡 Sending promocode to server...');
 
     // ✅ CRITICAL: Use proper API base URL
     const baseUrl = import.meta.env.VITE_API_BASE_URL;
@@ -680,10 +658,8 @@ window.applyPromocodeGlobally = async (promocode, plan) => {
     });
 
     const result = await response.json();
-    console.log('📡 Server promocode response:', result);
 
     if (result?.success) {
-      console.log('✅ Promocode accepted by server, updating local state...');
 
       // ✅ CRITICAL: Update localStorage IMMEDIATELY
       localStorage.setItem('userStatus', plan);
@@ -3023,7 +2999,6 @@ window.testUserStatus = {
 
 // Enhanced handleUserAuthenticated with global sync
 async function handleUserAuthenticatedWithGlobalSync(firebaseUser) {
-  console.log('🌐 Handling authenticated user with global sync...');
 
   try {
     // Get Firebase ID token
@@ -3041,20 +3016,17 @@ async function handleUserAuthenticatedWithGlobalSync(firebaseUser) {
       lastLoginAt: new Date().toISOString()
     };
 
-    console.log('👤 User data prepared, starting global sync...');
 
     // STEP 1: Save/update user on server
     let saveResult = null;
     try {
       saveResult = await store.dispatch('user/saveUser', { userData, token });
-      console.log('💾 User save result:', saveResult.success ? 'success' : 'failed');
     } catch (saveError) {
       console.warn('⚠️ User save failed, continuing with global sync...');
     }
 
     // STEP 2: Perform global subscription sync
     try {
-      console.log('🔄 Starting global subscription sync...');
      
       // Import the global sync functions
       const { syncSubscriptionGlobally } = await import('@/api');
@@ -3066,7 +3038,6 @@ async function handleUserAuthenticatedWithGlobalSync(firebaseUser) {
       if (localSubscriptionJson) {
         try {
           localSubscription = JSON.parse(localSubscriptionJson);
-          console.log('📦 Found local subscription:', localSubscription.plan);
         } catch (parseError) {
           console.warn('⚠️ Invalid local subscription data');
         }
@@ -3076,7 +3047,6 @@ async function handleUserAuthenticatedWithGlobalSync(firebaseUser) {
       const syncResult = await syncSubscriptionGlobally(userId, localSubscription);
      
       if (syncResult.success && syncResult.subscription) {
-        console.log('✅ Global sync successful:', syncResult.subscription.plan);
        
         // Update store with globally synced subscription
         store.commit('user/SET_USER_STATUS', syncResult.subscription.plan);
@@ -3126,10 +3096,8 @@ async function handleUserAuthenticatedWithGlobalSync(firebaseUser) {
         window.triggerGlobalEvent('userSubscriptionChanged', eventData);
         window.triggerGlobalEvent('globalSyncCompleted', eventData);
 
-        console.log('🎉 Global sync authentication completed:', finalStatus);
        
       } else {
-        console.log('ℹ️ No subscription found during global sync');
        
         // Proceed with basic authentication
         await handleBasicUserAuthentication(firebaseUser, token, 'free');
@@ -3157,7 +3125,6 @@ async function handleUserAuthenticatedWithGlobalSync(firebaseUser) {
 
 // Enhanced global promocode application
 window.applyPromocodeGlobally = async (promocode, plan) => {
-  console.log('🌐 Applying promocode globally:', { promocode, plan });
 
   try {
     // Get current user
@@ -3175,7 +3142,6 @@ window.applyPromocodeGlobally = async (promocode, plan) => {
     const result = await applyPromocodeGlobally(userId, promocode, plan);
 
     if (result.success) {
-      console.log('✅ Promocode applied globally:', result);
 
       // Update local store
       store.commit('user/SET_USER_STATUS', plan);
@@ -3225,7 +3191,6 @@ window.applyPromocodeGlobally = async (promocode, plan) => {
 
 // Enhanced global payment completion
 window.completePaymentGlobally = async (transactionId, plan, amount, currency = 'UZS') => {
-  console.log('🌐 Completing payment globally:', { transactionId, plan, amount });
 
   try {
     // Get current user
@@ -3252,7 +3217,6 @@ window.completePaymentGlobally = async (transactionId, plan, amount, currency = 
     const result = await completePaymentGlobally(userId, paymentData);
 
     if (result.success) {
-      console.log('✅ Payment completed globally:', result);
 
       // Update local store
       store.commit('user/SET_USER_STATUS', plan);
@@ -3327,7 +3291,6 @@ window.checkGlobalSyncStatus = async () => {
     const syncResult = await checkGlobalSyncStatus(userId, localSubscription, token);
    
     if (syncResult.syncNeeded) {
-      console.log('🔄 Global sync needed. Triggering sync...');
       // Trigger a full sync
       const fullSyncResult = await syncSubscriptionGlobally(userId, localSubscription, token);
      
@@ -3373,7 +3336,6 @@ window.checkGlobalSyncStatus = async () => {
  * CRITICAL FIX: Enhanced subscription restoration on app load
  */
 function enhancedSubscriptionRestoration() {
-  console.log('🔄 Starting enhanced subscription restoration...');
   try {
     // Check multiple sources for subscription data
     const sources = [
@@ -3420,12 +3382,10 @@ function enhancedSubscriptionRestoration() {
             const expiry = new Date(subscription.expiryDate);
             const now = new Date();
             if (now > expiry) {
-              console.log('⏰ Subscription expired:', subscription.plan);
               continue;
             }
           }
           validSubscription = subscription;
-          console.log('✅ Valid subscription found:', subscription.plan, 'from', subscription.source);
           break;
         }
       } catch (sourceError) {
@@ -3453,10 +3413,8 @@ function enhancedSubscriptionRestoration() {
       localStorage.setItem('subscriptionRestored', 'true');
       localStorage.setItem('restoredPlan', plan);
       localStorage.setItem('restorationTime', Date.now().toString());
-      console.log('✅ Subscription restored:', plan);
       return plan;
     }
-    console.log('ℹ️ No valid subscription found, using free plan');
     return 'free';
   } catch (error) {
     console.error('❌ Subscription restoration failed:', error);

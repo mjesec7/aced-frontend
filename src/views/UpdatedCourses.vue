@@ -492,7 +492,6 @@ export default {
         const oldPlan = oldUser?.subscriptionPlan;
         
         if (newPlan !== oldPlan) {
-          console.log('👤 UpdatedCourses: User plan changed:', oldPlan, '→', newPlan);
           this.handleUserStatusChange(newPlan, oldPlan);
         }
       },
@@ -503,7 +502,6 @@ export default {
     currentUserStatus: {
       handler(newStatus, oldStatus) {
         if (newStatus !== oldStatus) {
-          console.log('📊 UpdatedCourses: Current user status changed:', oldStatus, '→', newStatus);
           this.triggerReactivityUpdate();
         }
       },
@@ -512,13 +510,11 @@ export default {
   },
 
   async mounted() {
-    console.log('📱 UpdatedCourses: Component mounted');
     
     try {
       await this.loadCourses();
       this.setupEventListeners();
       
-      console.log('✅ UpdatedCourses: Component mounted successfully');
     } catch (error) {
       console.error('❌ UpdatedCourses: Mount error:', error);
       this.error = 'Ошибка инициализации компонента';
@@ -526,7 +522,6 @@ export default {
   },
 
   beforeUnmount() {
-    console.log('📱 UpdatedCourses: Component unmounting');
     this.cleanup();
   },
 
@@ -548,7 +543,6 @@ export default {
           this.availableCategories = response.categories || [];
           this.availableLevels = response.difficulties || [];
           
-          console.log(`✅ Loaded ${this.courses.length} courses`);
         } else {
           throw new Error(response?.error || 'Failed to fetch courses');
         }
@@ -736,7 +730,6 @@ export default {
       this.modalLoading = true;
       
       try {
-        console.log('📖 Opening modal for course:', course.title);
         
         const courseId = course._id || course.id;
         const response = await getCourseById(courseId);
@@ -750,7 +743,6 @@ export default {
             title: response.data.title || course.title,
             isPremium: Boolean(response.data.isPremium || course.isPremium)
           };
-          console.log('✅ Course details loaded for modal');
         } else {
           console.warn('⚠️ Failed to fetch detailed course info, using basic data');
           this.selectedCourse = course;
@@ -779,17 +771,9 @@ export default {
         return;
       }
 
-      console.log('🚀 Starting course:', {
-        title: course.title,
-        id: course._id || course.id,
-        isPremium: course.isPremium,
-        userStatus: this.currentUserStatus,
-        isPremiumUser: this.isPremiumUser
-      });
-      
+   
       // Check premium access
       if (course.isPremium && !this.isPremiumUser) {
-        console.log('❌ Course is premium and user lacks access');
         
         const message = `Этот курс доступен только по подписке Start/Pro. Ваш текущий статус: ${this.currentUserStatus}`;
         
@@ -797,13 +781,11 @@ export default {
         return;
       }
       
-      console.log('✅ Access granted - starting course');
       
       // Ensure we have complete course data
       let completeCourse = course;
       if (!course.curriculum || !course.curriculum.length) {
         try {
-          console.log('📚 Fetching complete course data...');
           const response = await getCourseById(course._id || course.id);
           if (response && response.success && response.data) {
             completeCourse = {
@@ -812,7 +794,6 @@ export default {
               _id: response.data._id || course._id,
               id: response.data.id || course.id || response.data._id
             };
-            console.log('✅ Complete course data loaded');
           }
         } catch (error) {
           console.error('❌ Error fetching complete course data:', error);
@@ -824,11 +805,9 @@ export default {
       this.isModalOpen = false;
       this.showStudyInterface = true;
       
-      console.log('🎯 Course interface activated');
     },
 
     goBackToCourses() {
-      console.log('🔙 Going back to courses list');
       this.showStudyInterface = false;
       this.selectedCourse = null;
       this.componentKey++; // Force re-render
@@ -963,7 +942,6 @@ export default {
     handleUserStatusChange(newStatus, oldStatus) {
       if (!newStatus || newStatus === oldStatus) return;
 
-      console.log(`👤 UpdatedCourses: Handling status change ${oldStatus} → ${newStatus}`);
 
       // Update localStorage safely
       this.updateLocalStorage(newStatus);
@@ -975,7 +953,6 @@ export default {
         this.showToast(`🎉 ${planLabel} подписка активирована!`, 'success');
       }
 
-      console.log(`✅ UpdatedCourses: Status change handled: ${oldStatus} → ${newStatus}`);
     },
 
     updateLocalStorage(newStatus) {
@@ -1000,11 +977,7 @@ export default {
         this.$forceUpdate();
       });
 
-      console.log('🔄 UpdatedCourses: Reactivity update triggered:', {
-        componentKey: this.componentKey,
-        userStatus: this.currentUserStatus,
-        timestamp: this.lastUpdateTime
-      });
+       
     },
 
     // =====================================
@@ -1012,12 +985,10 @@ export default {
     // =====================================
     
     setupEventListeners() {
-      console.log('🔧 UpdatedCourses: Setting up event listeners');
 
       // Custom subscription events
       if (typeof window !== 'undefined') {
         this.handleSubscriptionChange = (event) => {
-          console.log('📡 UpdatedCourses: Subscription change received:', event.detail);
           const { plan, oldPlan } = event.detail || {};
           if (plan) {
             this.handleUserStatusChange(plan, oldPlan);
@@ -1029,7 +1000,6 @@ export default {
         // Storage events
         this.handleStorageChange = (event) => {
           if (event.key === 'userStatus' && event.newValue !== event.oldValue) {
-            console.log('📡 UpdatedCourses: localStorage userStatus changed:', event.oldValue, '→', event.newValue);
             this.handleUserStatusChange(event.newValue, event.oldValue);
           }
         };
@@ -1069,20 +1039,17 @@ export default {
         });
 
         this.eventHandlers = eventHandlers;
-        console.log('✅ UpdatedCourses: Event bus listeners registered');
       }
 
       // Store subscription
       if (this.$store) {
         this.storeUnsubscribe = this.$store.subscribe((mutation) => {
           if (this.isUserRelatedMutation(mutation)) {
-            console.log('📊 UpdatedCourses: Store mutation detected:', mutation.type);
             this.triggerReactivityUpdate();
           }
         });
       }
 
-      console.log('✅ UpdatedCourses: Event listeners setup complete');
     },
 
     isUserRelatedMutation(mutation) {
@@ -1108,7 +1075,6 @@ export default {
         this.$toast[type](message, { duration: 4000 });
       } else {
         // Fallback to console and alert
-        console.log(`Toast (${type}): ${message}`);
         if (type === 'error') {
           alert(message);
         }
@@ -1116,7 +1082,6 @@ export default {
     },
 
     cleanup() {
-      console.log('🧹 UpdatedCourses: Performing cleanup...');
 
       // Clear timeouts
       if (this.debounceTimeout) {
@@ -1150,7 +1115,6 @@ export default {
         this.storeUnsubscribe = null;
       }
 
-      console.log('✅ UpdatedCourses: Cleanup completed');
     }
   }
 };
