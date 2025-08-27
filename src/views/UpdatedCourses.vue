@@ -1,5 +1,4 @@
 <template>
-  <!-- Lesson Interface -->
   <LessonLoader 
     v-if="showStudyInterface" 
     :course="selectedCourse"
@@ -7,7 +6,6 @@
     :key="`lesson-${componentKey}`"
   />
 
-  <!-- Courses List Interface -->
   <div v-else class="courses-page" :key="`courses-${componentKey}`">
     <div class="header">
       <div class="container">
@@ -95,14 +93,12 @@
           <div class="results-updated">Обновлено сегодня</div>
         </div>
 
-        <!-- Loading State -->
         <div v-if="loading" class="empty-state">
           <div class="spinner"></div>
           <h3 class="empty-state-title">Загрузка курсов...</h3>
           <p class="empty-state-description">Подготавливаем для вас лучшие курсы</p>
         </div>
 
-        <!-- Error State -->
         <div v-else-if="error" class="empty-state">
           <div class="empty-state-icon-wrapper">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="empty-state-icon">
@@ -118,7 +114,6 @@
           </button>
         </div>
 
-        <!-- Courses Grid -->
         <div v-else-if="courses.length > 0" class="courses-grid">
           <div 
             v-for="course in courses" 
@@ -168,7 +163,6 @@
           </div>
         </div>
 
-        <!-- Empty State -->
         <div v-else class="empty-state">
           <div class="empty-state-icon-wrapper">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="empty-state-icon">
@@ -187,7 +181,6 @@
       </div>
     </div>
 
-    <!-- Course Modal -->
     <Transition name="modal" appear>
       <div v-if="isModalOpen && selectedCourse" class="modal-overlay" @click="closeModal">
         <div class="modal-container" @click.stop>
@@ -198,13 +191,11 @@
             </svg>
           </button>
 
-          <!-- Modal Loading -->
           <div v-if="modalLoading" class="modal-loading-state">
             <div class="spinner"></div>
             <p>Загрузка информации о курсе...</p>
           </div>
 
-          <!-- Modal Content -->
           <div v-else-if="selectedCourse" class="modal-content">
             <div class="modal-header-section">
               <div class="modal-image-container">
@@ -1725,7 +1716,7 @@ export default {
 .modal-container {
   position: relative;
   width: 100%;
-  max-width: 650px;
+  max-width: 600px;
   max-height: 90vh;
   background-color: var(--color-background);
   border-radius: 16px;
@@ -2101,33 +2092,33 @@ export default {
   color: #664d03 !important;
 }
 
-/* Accessible buttons - purple background with white text */
+/* Accessible buttons - NOW: white bg, black text, purple border */
 .modal-action-button.accessible {
-  background-color: var(--color-brand) !important;
+  background-color: #ffffff !important;
   background-image: none !important;
-  background: var(--color-brand) !important;
-  color: #ffffff !important;
-  border-color: var(--color-brand-dark) !important;
+  background: #ffffff !important;
+  color: #000000 !important;
+  border-color: var(--color-brand) !important;
   box-shadow: 0 3px 12px rgba(139, 127, 191, 0.3) !important;
 }
 
 .modal-action-button.accessible span {
-  color: #ffffff !important;
+  color: #000000 !important;
   font-weight: 700 !important;
 }
 
 .modal-action-button.accessible:hover:not(:disabled) {
   transform: translateY(-1px);
-  background-color: var(--color-brand-light) !important;
+  background-color: var(--brand-purple-muted) !important;
   background-image: none !important;
-  background: var(--color-brand-light) !important;
+  background: var(--brand-purple-muted) !important;
   box-shadow: 0 6px 20px rgba(139, 127, 191, 0.4) !important;
-  color: #ffffff !important;
-  border-color: var(--color-brand) !important;
+  color: #000000 !important;
+  border-color: var(--color-brand-dark) !important;
 }
 
 .modal-action-button.accessible:hover:not(:disabled) span {
-  color: #ffffff !important;
+  color: #000000 !important;
 }
 
 .modal-action-button:disabled {
