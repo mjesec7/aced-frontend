@@ -1716,7 +1716,7 @@ export default {
 .modal-container {
   position: relative;
   width: 100%;
-  max-width: 600px;
+  max-width: 540px;
   max-height: 90vh;
   background-color: var(--color-background);
   border-radius: 16px;
@@ -1870,10 +1870,10 @@ export default {
 .modal-body {
   flex: 1;
   overflow-y: auto;
-  padding: 24px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
 .modal-course-info {
