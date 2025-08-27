@@ -1717,7 +1717,7 @@ export default {
 .modal-container {
   position: relative;
   width: 100%;
-  max-width: 500px;
+  max-width: 440px;
   max-height: 90vh;
   background-color: var(--color-background);
   border-radius: 16px;
