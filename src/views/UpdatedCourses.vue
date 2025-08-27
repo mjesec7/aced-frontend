@@ -1147,31 +1147,6 @@ export default {
   --brand-purple-muted: rgba(139, 92, 246, 0.1);
 }
 
-.dark {
-  --color-background: #111827;
-  --color-foreground: #f9fafb;
-  --color-card: #1f2937;
-  --color-card-foreground: #f9fafb;
-  --color-muted: #374151;
-  --color-muted-foreground: #9ca3af;
-  --color-accent: #374151;
-  --color-accent-foreground: #f9fafb;
-  --color-border: rgba(255, 255, 255, 0.1);
-  --color-input-background: #1f2937;
-  --color-ring: #555;
-  --color-brand: #9b8fd9;
-  --color-brand-light: #b5a9e4;
-  --color-brand-dark: #7b6bbf;
-  --color-brand-foreground: #ffffff;
-  --color-success: #22c55e;
-  --color-green-100: #14532d;
-  --color-green-800: #d1fae5;
-  --brand-purple: #A78BFA;
-  --brand-purple-dark: #8B5CF6;
-  --brand-purple-light: #C4B5FD;
-  --brand-purple-muted: rgba(167, 139, 250, 0.1);
-}
-
 /* Base Styles */
 .courses-page {
   background-color: var(--color-background);
@@ -2052,7 +2027,7 @@ export default {
   flex-shrink: 0;
 }
 
-/* Fixed Button Text Colors */
+/* Fixed Button Text Colors - Always Visible */
 .modal-action-button {
   display: flex;
   align-items: center;
@@ -2061,57 +2036,108 @@ export default {
   width: 100%;
   height: 48px;
   padding: 0 24px;
-  border: none;
+  border: 2px solid #dee2e6 !important;
   border-radius: 10px;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700 !important;
   cursor: pointer;
   transition: all 0.3s ease;
   margin-bottom: 8px;
-  /* Default state - dark text on light background */
-  background: #f8f9fa !important;
-  color: #000 !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  /* Default state - HIGH CONTRAST dark text on white background */
+  background-color: #ffffff !important;
+  background-image: none !important;
+  background: #ffffff !important;
+  color: #000000 !important;
+  text-shadow: none !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.modal-action-button span {
+  color: #000000 !important;
+  font-weight: 700 !important;
+  text-shadow: none !important;
 }
 
 .modal-action-button:hover:not(:disabled) {
   transform: translateY(-1px);
-  background: #e9ecef !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  color: #000 !important;
+  background-color: #f8f9fa !important;
+  background-image: none !important;
+  background: #f8f9fa !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  color: #000000 !important;
+  border-color: #adb5bd !important;
 }
 
-/* Premium locked buttons - keep orange warning style but with dark text */
+.modal-action-button:hover:not(:disabled) span {
+  color: #000000 !important;
+}
+
+/* Premium locked buttons - HIGH CONTRAST warning style */
 .modal-action-button.premium {
+  background-color: #fff3cd !important;
+  background-image: none !important;
   background: #fff3cd !important;
-  color: #856404 !important;
-  box-shadow: 0 3px 12px rgba(255, 193, 7, 0.2);
+  color: #664d03 !important;
+  border-color: #ffecb5 !important;
+  box-shadow: 0 3px 12px rgba(255, 193, 7, 0.2) !important;
+}
+
+.modal-action-button.premium span {
+  color: #664d03 !important;
+  font-weight: 700 !important;
 }
 
 .modal-action-button.premium:hover:not(:disabled) {
   transform: translateY(-1px);
-  background: #ffeeba !important;
-  box-shadow: 0 6px 20px rgba(255, 193, 7, 0.3);
-  color: #856404 !important;
+  background-color: #ffeaa7 !important;
+  background-image: none !important;
+  background: #ffeaa7 !important;
+  box-shadow: 0 6px 20px rgba(255, 193, 7, 0.3) !important;
+  color: #664d03 !important;
+  border-color: #ffc107 !important;
 }
 
-/* Accessible buttons - only these should have the purple background with white text */
+.modal-action-button.premium:hover:not(:disabled) span {
+  color: #664d03 !important;
+}
+
+/* Accessible buttons - purple background with white text */
 .modal-action-button.accessible {
-  background: linear-gradient(135deg, var(--color-brand), var(--color-brand-light)) !important;
-  color: white !important;
-  box-shadow: 0 3px 12px rgba(139, 127, 191, 0.3);
+  background-color: var(--color-brand) !important;
+  background-image: none !important;
+  background: var(--color-brand) !important;
+  color: #ffffff !important;
+  border-color: var(--color-brand-dark) !important;
+  box-shadow: 0 3px 12px rgba(139, 127, 191, 0.3) !important;
+}
+
+.modal-action-button.accessible span {
+  color: #ffffff !important;
+  font-weight: 700 !important;
 }
 
 .modal-action-button.accessible:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(139, 127, 191, 0.4);
-  color: white !important;
+  background-color: var(--color-brand-light) !important;
+  background-image: none !important;
+  background: var(--color-brand-light) !important;
+  box-shadow: 0 6px 20px rgba(139, 127, 191, 0.4) !important;
+  color: #ffffff !important;
+  border-color: var(--color-brand) !important;
+}
+
+.modal-action-button.accessible:hover:not(:disabled) span {
+  color: #ffffff !important;
 }
 
 .modal-action-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
   transform: none !important;
+}
+
+.modal-action-button:disabled span {
+  opacity: 0.6 !important;
 }
 
 .modal-action-description {
