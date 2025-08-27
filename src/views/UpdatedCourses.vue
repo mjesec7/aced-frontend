@@ -11,7 +11,7 @@
       <div class="container">
         <div class="header-content">
           <div class="header-badge">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="header-badge-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="header-badge-icon">
               <path d="M5.5 8.5L2 12l3.5 3.5" />
               <path d="M18.5 8.5L22 12l-3.5 3.5" />
               <path d="M12 2l-2 10l2 10l2-10z" />
@@ -1543,7 +1543,7 @@ export default {
 }
 
 .course-card-title {
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: 600;
   line-height: 1.3;
   margin: 0;
@@ -1555,7 +1555,7 @@ export default {
 }
 
 .course-card-description {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--color-muted-foreground);
   line-height: 1.4;
   overflow: hidden;
@@ -1716,7 +1716,7 @@ export default {
 .modal-container {
   position: relative;
   width: 100%;
-  max-width: 540px;
+  max-width: 500px;
   max-height: 90vh;
   background-color: var(--color-background);
   border-radius: 16px;
@@ -1909,7 +1909,7 @@ export default {
 }
 
 .modal-title {
-  font-size: 24px;
+  font-size: 1.5rem;
   font-weight: 700;
   line-height: 1.2;
   margin: 0;
@@ -1917,7 +1917,7 @@ export default {
 }
 
 .modal-description {
-  font-size: 15px;
+  font-size: 0.9375rem;
   line-height: 1.6;
   color: var(--color-muted-foreground);
   margin: 0;
@@ -1959,7 +1959,7 @@ export default {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--color-foreground);
   margin: 0;
@@ -1979,7 +1979,7 @@ export default {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 1.4;
   color: var(--color-foreground);
 }
@@ -1995,7 +1995,7 @@ export default {
 .modal-module-item {
   display: flex;
   gap: 8px;
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 1.4;
 }
 
@@ -2018,7 +2018,6 @@ export default {
   flex-shrink: 0;
 }
 
-/* Fixed Button Text Colors - Always Visible */
 .modal-action-button {
   display: flex;
   align-items: center;
@@ -2027,108 +2026,72 @@ export default {
   width: 100%;
   height: 48px;
   padding: 0 24px;
-  border: 2px solid #dee2e6 !important;
-  border-radius: 10px;
-  font-size: 15px;
-  font-weight: 700 !important;
+  border: 2px solid #dee2e6;
+  border-radius: 12px;
+  font-size: 0.9375rem;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
   margin-bottom: 8px;
-  /* Default state - HIGH CONTRAST dark text on white background */
-  background-color: #ffffff !important;
-  background-image: none !important;
-  background: #ffffff !important;
-  color: #000000 !important;
-  text-shadow: none !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  background-color: #ffffff;
+  color: #000000;
+  text-shadow: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .modal-action-button span {
-  color: #000000 !important;
-  font-weight: 700 !important;
-  text-shadow: none !important;
+  font-weight: 700;
+  text-shadow: none;
 }
 
 .modal-action-button:hover:not(:disabled) {
   transform: translateY(-1px);
-  background-color: #f8f9fa !important;
-  background-image: none !important;
-  background: #f8f9fa !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
-  color: #000000 !important;
-  border-color: #adb5bd !important;
+  background-color: #f8f9fa;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: #adb5bd;
 }
 
-.modal-action-button:hover:not(:disabled) span {
-  color: #000000 !important;
-}
-
-/* Premium locked buttons - HIGH CONTRAST warning style */
+/* Premium locked buttons */
 .modal-action-button.premium {
-  background-color: #fff3cd !important;
-  background-image: none !important;
-  background: #fff3cd !important;
-  color: #664d03 !important;
-  border-color: #ffecb5 !important;
-  box-shadow: 0 3px 12px rgba(255, 193, 7, 0.2) !important;
+  background-color: #fff3cd;
+  color: #664d03;
+  border-color: #ffecb5;
+  box-shadow: 0 3px 12px rgba(255, 193, 7, 0.2);
 }
 
 .modal-action-button.premium span {
-  color: #664d03 !important;
-  font-weight: 700 !important;
+  color: #664d03;
 }
 
 .modal-action-button.premium:hover:not(:disabled) {
-  transform: translateY(-1px);
-  background-color: #ffeaa7 !important;
-  background-image: none !important;
-  background: #ffeaa7 !important;
-  box-shadow: 0 6px 20px rgba(255, 193, 7, 0.3) !important;
-  color: #664d03 !important;
-  border-color: #ffc107 !important;
+  background-color: #ffeaa7;
+  box-shadow: 0 6px 20px rgba(255, 193, 7, 0.3);
+  border-color: #ffc107;
 }
 
-.modal-action-button.premium:hover:not(:disabled) span {
-  color: #664d03 !important;
-}
-
-/* Accessible buttons - NOW: white bg, black text, purple border */
+/* Accessible buttons - PRETTIER VERSION */
 .modal-action-button.accessible {
-  background-color: #ffffff !important;
-  background-image: none !important;
-  background: #ffffff !important;
-  color: #000000 !important;
-  border-color: var(--color-brand) !important;
-  box-shadow: 0 3px 12px rgba(139, 127, 191, 0.3) !important;
+  background: linear-gradient(45deg, var(--brand-purple), var(--brand-purple-light));
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3), 0 1px 2px rgba(0, 0, 0, 0.1) inset;
 }
 
 .modal-action-button.accessible span {
-  color: #000000 !important;
-  font-weight: 700 !important;
+  color: #ffffff;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.15);
 }
 
 .modal-action-button.accessible:hover:not(:disabled) {
-  transform: translateY(-1px);
-  background-color: var(--brand-purple-muted) !important;
-  background-image: none !important;
-  background: var(--brand-purple-muted) !important;
-  box-shadow: 0 6px 20px rgba(139, 127, 191, 0.4) !important;
-  color: #000000 !important;
-  border-color: var(--color-brand-dark) !important;
-}
-
-.modal-action-button.accessible:hover:not(:disabled) span {
-  color: #000000 !important;
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4), 0 1px 2px rgba(0, 0, 0, 0.1) inset;
+  background: linear-gradient(45deg, var(--brand-purple-dark), var(--brand-purple));
 }
 
 .modal-action-button:disabled {
-  opacity: 0.6 !important;
-  cursor: not-allowed !important;
-  transform: none !important;
-}
-
-.modal-action-button:disabled span {
-  opacity: 0.6 !important;
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .modal-action-description {
@@ -2157,7 +2120,7 @@ export default {
   }
 
   .modal-title {
-    font-size: 20px;
+    font-size: 1.25rem;
   }
 
   .modal-details-grid {
@@ -2190,7 +2153,7 @@ export default {
   }
 
   .modal-title {
-    font-size: 18px;
+    font-size: 1.125rem;
   }
 
   .header {
@@ -2227,7 +2190,7 @@ export default {
 .modal-action-button:focus,
 .input-search:focus,
 .select-field:focus {
-  outline: 2px solid var(--color-brand);
+  outline: 2px solid var(--brand-purple);
   outline-offset: 2px;
 }
 
@@ -2256,7 +2219,7 @@ export default {
   }
   
   .modal-action-button {
-    border: 2px solid transparent;
+    border: 2px solid;
   }
 }
 </style>
