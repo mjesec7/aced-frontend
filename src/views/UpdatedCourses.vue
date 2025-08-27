@@ -2068,40 +2068,44 @@ export default {
   cursor: pointer;
   transition: all 0.3s ease;
   margin-bottom: 8px;
-  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-  color: #212529;
+  /* Default state - dark text on light background */
+  background: #f8f9fa !important;
+  color: #000 !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .modal-action-button:hover:not(:disabled) {
   transform: translateY(-1px);
-  background: linear-gradient(135deg, #e9ecef, #dee2e6);
+  background: #e9ecef !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  color: #000;
+  color: #000 !important;
 }
 
+/* Premium locked buttons - keep orange warning style but with dark text */
+.modal-action-button.premium {
+  background: #fff3cd !important;
+  color: #856404 !important;
+  box-shadow: 0 3px 12px rgba(255, 193, 7, 0.2);
+}
+
+.modal-action-button.premium:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: #ffeeba !important;
+  box-shadow: 0 6px 20px rgba(255, 193, 7, 0.3);
+  color: #856404 !important;
+}
+
+/* Accessible buttons - only these should have the purple background with white text */
 .modal-action-button.accessible {
-  background: linear-gradient(135deg, var(--color-brand), var(--color-brand-light));
-  color: white;
+  background: linear-gradient(135deg, var(--color-brand), var(--color-brand-light)) !important;
+  color: white !important;
   box-shadow: 0 3px 12px rgba(139, 127, 191, 0.3);
 }
 
 .modal-action-button.accessible:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 6px 20px rgba(139, 127, 191, 0.4);
-}
-
-.modal-action-button.premium {
-  background: linear-gradient(135deg, #fff3cd, #ffeeba);
-  color: #856404;
-  box-shadow: 0 3px 12px rgba(255, 193, 7, 0.2);
-}
-
-.modal-action-button.premium:hover:not(:disabled) {
-  transform: translateY(-1px);
-  background: linear-gradient(135deg, #ffeeba, #ffdf7e);
-  box-shadow: 0 6px 20px rgba(255, 193, 7, 0.3);
-  color: #533f03;
+  color: white !important;
 }
 
 .modal-action-button:disabled {
