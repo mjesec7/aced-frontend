@@ -1111,6 +1111,7 @@ export default {
 };
 </script>
 
+
 <style scoped>
 /* CSS Variables */
 :root {
@@ -1797,8 +1798,8 @@ export default {
 
 .modal-badge-container {
   position: absolute;
-  top: 16px;
-  left: 16px;
+  top: 24px;
+  left: 24px;
 }
 
 .modal-badge {
@@ -1827,9 +1828,9 @@ export default {
 
 .modal-meta-overlay {
   position: absolute;
-  bottom: 16px;
-  left: 16px;
-  right: 16px;
+  bottom: 24px;
+  left: 24px;
+  right: 24px;
   display: flex;
   justify-content: space-between;
   align-items: end;
@@ -1870,10 +1871,10 @@ export default {
 .modal-body {
   flex: 1;
   overflow-y: auto;
-  padding: 20px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
 }
 
 .modal-course-info {
@@ -2018,85 +2019,56 @@ export default {
   flex-shrink: 0;
 }
 
+/* Modal Action Buttons - Reworked for clarity and style */
 .modal-action-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 0.5rem;
   width: 100%;
   height: 48px;
-  padding: 0 24px;
-  border: 2px solid #dee2e6;
+  padding: 0 1.5rem;
   border-radius: 12px;
   font-size: 0.9375rem;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
-  margin-bottom: 8px;
-  background-color: #ffffff;
-  color: #000000;
-  text-shadow: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.modal-action-button span {
-  font-weight: 700;
-  text-shadow: none;
-}
-
-.modal-action-button:hover:not(:disabled) {
-  transform: translateY(-1px);
-  background-color: #f8f9fa;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  border-color: #adb5bd;
-}
-
-/* Premium locked buttons */
-.modal-action-button.premium {
-  background-color: #fff3cd;
-  color: #664d03;
-  border-color: #ffecb5;
-  box-shadow: 0 3px 12px rgba(255, 193, 7, 0.2);
-}
-
-.modal-action-button.premium span {
-  color: #664d03;
-}
-
-.modal-action-button.premium:hover:not(:disabled) {
-  background-color: #ffeaa7;
-  box-shadow: 0 6px 20px rgba(255, 193, 7, 0.3);
-  border-color: #ffc107;
-}
-
-/* Accessible buttons - PRETTIER VERSION */
-.modal-action-button.accessible {
-  background: linear-gradient(45deg, var(--brand-purple), var(--brand-purple-light));
-  color: #ffffff;
+  transition: all 0.2s ease-in-out;
+  margin-bottom: 0.5rem;
   border: none;
-  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3), 0 1px 2px rgba(0, 0, 0, 0.1) inset;
 }
 
-.modal-action-button.accessible span {
+.modal-action-button.accessible {
+  background-color: #111827; /* Dark charcoal */
   color: #ffffff;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.1);
+}
+.modal-action-button.accessible svg {
+  color: #ffffff;
+}
+.modal-action-button.accessible:hover:not(:disabled) {
+  background-color: #1f2937;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px 0 rgba(0, 0, 0, 0.15);
 }
 
-.modal-action-button.accessible:hover:not(:disabled) {
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4), 0 1px 2px rgba(0, 0, 0, 0.1) inset;
-  background: linear-gradient(45deg, var(--brand-purple-dark), var(--brand-purple));
+.modal-action-button.premium {
+  background-color: #fffbeb;
+  color: #b45309;
+}
+.modal-action-button.premium svg {
+  color: #d97706;
 }
 
 .modal-action-button:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
 }
 
 .modal-action-description {
   text-align: center;
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--color-muted-foreground);
   margin: 0;
   line-height: 1.3;
