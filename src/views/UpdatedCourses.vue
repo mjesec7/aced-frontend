@@ -1111,7 +1111,6 @@ export default {
 };
 </script>
 
-
 <style scoped>
 /* CSS Variables */
 :root {
@@ -1717,7 +1716,7 @@ export default {
 .modal-container {
   position: relative;
   width: 100%;
-  max-width: 440px;
+  max-width: 380px;
   max-height: 90vh;
   background-color: var(--color-background);
   border-radius: 16px;
@@ -1798,8 +1797,8 @@ export default {
 
 .modal-badge-container {
   position: absolute;
-  top: 24px;
-  left: 24px;
+  top: 16px;
+  left: 16px;
 }
 
 .modal-badge {
@@ -1828,9 +1827,9 @@ export default {
 
 .modal-meta-overlay {
   position: absolute;
-  bottom: 24px;
-  left: 24px;
-  right: 24px;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
   display: flex;
   justify-content: space-between;
   align-items: end;
@@ -1871,11 +1870,19 @@ export default {
 .modal-body {
   flex: 1;
   overflow-y: auto;
-  padding: 24px;
+  padding: 24px 0;
   display: flex;
   flex-direction: column;
   gap: 24px;
 }
+
+.modal-course-info,
+.modal-details,
+.modal-actions {
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
 
 .modal-course-info {
   display: flex;
@@ -2081,25 +2088,20 @@ export default {
     max-height: 95vh;
     max-width: none;
   }
-
+  .modal-body {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
   .modal-header-section {
     height: 180px;
   }
-
-  .modal-body {
-    padding: 16px;
-    gap: 16px;
-  }
-
   .modal-title {
     font-size: 1.25rem;
   }
-
   .modal-details-grid {
     grid-template-columns: 1fr;
     gap: 16px;
   }
-
   .filter-bar {
     padding: 1rem;
     gap: 1rem;
@@ -2114,41 +2116,32 @@ export default {
   .modal-container {
     max-width: calc(100vw - 1rem);
   }
-
+  .modal-body {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
   .modal-header-section {
     height: 140px;
   }
-
-  .modal-body {
-    padding: 12px;
-    gap: 12px;
-  }
-
   .modal-title {
     font-size: 1.125rem;
   }
-
   .header {
     padding: 2rem 0;
   }
-
   .header-title {
     font-size: 1.75rem;
   }
-
   .header-subtitle {
     font-size: 1.125rem;
   }
-
   .filter-bar {
     flex-direction: column;
     gap: 0.75rem;
   }
-
   .filter-group-buttons {
     justify-content: center;
   }
-
   .button-filter {
     min-width: 80px;
   }
