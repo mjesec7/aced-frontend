@@ -1121,6 +1121,8 @@ export default {
   background: #f0f0f0;
 }
 
+
+/* u guys are imagining stuff */
 .video-container {
   position: relative;
   width: 100%;
