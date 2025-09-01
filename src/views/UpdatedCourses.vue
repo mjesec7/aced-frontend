@@ -11,7 +11,7 @@
       <div class="container">
         <div class="header-content">
           <div class="header-badge">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="header-badge-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="header-badge-icon">
               <path d="M5.5 8.5L2 12l3.5 3.5" />
               <path d="M18.5 8.5L22 12l-3.5 3.5" />
               <path d="M12 2l-2 10l2 10l2-10z" />
@@ -326,7 +326,12 @@
 </template>
 
 <script>
-import { getUpdatedCourses, getCourseById } from '@/api.js';
+import { 
+  getUpdatedCourses, 
+  getCourseById,
+  getUpdatedCoursesWithFormat,
+  getCourseStructured
+} from '@/api.js';
 import { mapGetters, mapState } from 'vuex';
 import LessonLoader from '../components/Updated/LessonPlayer.vue';
 
