@@ -521,30 +521,141 @@ export default {
     // COURSE LOADING METHODS
     // =====================================
     
-    async loadCourses() {
-      this.loading = true;
-      this.error = null;
+   // Replace existing loadCourses method
+async loadCourses() {
+  this.loading = true;
+  this.error = null;
+  
+  try {
+    const filters = this.buildFilters();
+    
+    // ✅ NEW: Try structured format first, fallback to standard
+    let response = await getUpdatedCoursesWithFormat(filters, 'structured');
+    
+    // If structured format fails or returns empty, try standard format
+    if (!response.success || !response.courses || response.courses.length === 0) {
+      console.warn('⚠️ Structured format failed or empty, trying standard format');
+      response = await getUpdatedCourses(filters);
+    }
+    
+    if (response && response.success) {
+      this.courses = this.processCourses(response.courses || []);
+      this.availableCategories = response.categories || [];
+      this.availableLevels = response.difficulties || [];
       
-      try {
-        const filters = this.buildFilters();
-        const response = await getUpdatedCourses(filters);
-        
-        if (response && response.success) {
-          this.courses = this.processCourses(response.courses || []);
-          this.availableCategories = response.categories || [];
-          this.availableLevels = response.difficulties || [];
-          
-        } else {
-          throw new Error(response?.error || 'Failed to fetch courses');
-        }
-      } catch (error) {
-        console.error('❌ Error loading courses:', error);
-        this.error = this.getErrorMessage(error);
-        this.courses = [];
-      } finally {
-        this.loading = false;
+      // ✅ NEW: Track format type for analytics
+      console.log(`✅ Loaded ${this.courses.length} courses in ${response.format || 'standard'} format`);
+      
+    } else {
+      throw new Error(response?.error || 'Failed to fetch courses');
+    }
+  } catch (error) {
+    console.error('❌ Error loading courses:', error);
+    this.error = this.getErrorMessage(error);
+    this.courses = [];
+  } finally {
+    this.loading = false;
+  }
+},
+
+// ✅ NEW: Enhanced openModal method for structured format support
+async openModal(course) {
+  if (!course || (!course._id && !course.id)) {
+    console.error('❌ Invalid course data for modal:', course);
+    return;
+  }
+
+  this.selectedCourse = null;
+  this.isModalOpen = true;
+  this.modalLoading = true;
+  
+  try {
+    const courseId = course._id || course.id;
+    
+    // ✅ NEW: Try structured format first
+    let response = await getCourseStructured(courseId);
+    
+    // Fallback to standard format
+    if (!response.success) {
+      console.warn('⚠️ Structured course fetch failed, trying standard format');
+      response = await getCourseById(courseId);
+    }
+    
+    if (response && response.success && response.data) {
+      this.selectedCourse = {
+        ...course, // Keep original data as fallback
+        ...response.data, // Override with detailed data
+        id: response.data._id || response.data.id || course.id,
+        _id: response.data._id || course._id,
+        title: response.data.title || course.title,
+        isPremium: Boolean(response.data.isPremium || course.isPremium),
+        format: response.format || 'standard', // ✅ NEW: Track format
+        structuredData: response.format === 'structured' ? response.data : null // ✅ NEW
+      };
+      
+      console.log(`✅ Modal loaded course in ${response.format || 'standard'} format`);
+    } else {
+      console.warn('⚠️ Failed to fetch detailed course info, using basic data');
+      this.selectedCourse = course;
+    }
+  } catch (error) {
+    console.error('❌ Error fetching course details for modal:', error);
+    this.selectedCourse = course;
+  } finally {
+    this.modalLoading = false;
+  }
+},
+
+// ✅ NEW: Enhanced startCourse method
+async startCourse(course) {
+  if (!course) {
+    console.error('❌ No course data to start');
+    return;
+  }
+
+  // Check premium access
+  if (course.isPremium && !this.isPremiumUser) {
+    const message = `Этот курс доступен только по подписке Start/Pro. Ваш текущий статус: ${this.currentUserStatus}`;
+    this.showToast(message, 'error');
+    return;
+  }
+  
+  // ✅ NEW: Ensure we have structured course data for better learning experience
+  let completeCourse = course;
+  
+  // If we don't have structured data, try to fetch it
+  if (!course.structuredData && (!course.curriculum || !course.curriculum.length)) {
+    try {
+      // Try structured format first
+      let response = await getCourseStructured(course._id || course.id);
+      
+      // Fallback to standard format
+      if (!response.success) {
+        response = await getCourseById(course._id || course.id);
       }
-    },
+      
+      if (response && response.success && response.data) {
+        completeCourse = {
+          ...course,
+          ...response.data,
+          _id: response.data._id || course._id,
+          id: response.data.id || course.id || response.data._id,
+          format: response.format,
+          structuredData: response.format === 'structured' ? response.data : null
+        };
+        
+        console.log(`✅ Course data enhanced with ${response.format || 'standard'} format`);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching complete course data:', error);
+      // Continue with original course data
+    }
+  }
+  
+  this.selectedCourse = completeCourse;
+  this.isModalOpen = false;
+  this.showStudyInterface = true;
+},
 
     buildFilters() {
       const filters = {};

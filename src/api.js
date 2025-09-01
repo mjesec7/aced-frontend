@@ -568,7 +568,93 @@ export const getCourseById = async (courseId) => {
     };
   }
 };
+// Add after existing getCourseById function
+/**
+ * ✅ NEW: Get course in structured format
+ */
+export const getCourseStructured = async (courseId) => {
+  try {
+    console.log('🔍 Fetching structured course:', courseId);
 
+    const { data } = await api.get(`updated-courses/${courseId}?format=structured`);
+
+    if (data && data.success && data.course) {
+      return {
+        success: true,
+        data: data.course,
+        format: 'structured'
+      };
+    } else {
+      throw new Error('Structured course not found');
+    }
+  } catch (error) {
+    console.error('❌ Failed to fetch structured course:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to fetch structured course'
+    };
+  }
+};
+
+/**
+ * ✅ NEW: Get all courses with format preference
+ */
+export const getUpdatedCoursesWithFormat = async (filters = {}, preferredFormat = 'standard') => {
+  try {
+    console.log('🔍 Fetching courses with format preference:', preferredFormat);
+
+    const params = new URLSearchParams();
+    Object.keys(filters).forEach(key => {
+      if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
+        params.append(key, filters[key]);
+      }
+    });
+
+    // Add format preference
+    if (preferredFormat === 'structured') {
+      params.append('format', 'structured');
+    }
+
+    const queryString = params.toString();
+    const url = queryString ? `updated-courses?${queryString}` : 'updated-courses';
+
+    const { data } = await api.get(url);
+
+    if (data.success) {
+      const processedCourses = (data.courses || []).map(course => ({
+        ...course,
+        id: course._id || course.id,
+        _id: course._id || course.id,
+        thumbnail: processImageUrl(course.thumbnail),
+        instructor: {
+          ...course.instructor,
+          avatar: processImageUrl(course.instructor?.avatar)
+        },
+        // Keep both curriculum and structured data
+        curriculum: course.curriculum || [],
+        structuredData: course.structuredData || null,
+        format: data.format || 'standard'
+      }));
+
+      return {
+        success: true,
+        courses: processedCourses,
+        format: data.format || 'standard',
+        categories: data.categories || [],
+        difficulties: data.difficulties || []
+      };
+    } else {
+      throw new Error(data.error || 'Failed to fetch courses');
+    }
+  } catch (error) {
+    console.error('❌ Failed to fetch courses with format:', error);
+    return {
+      success: false,
+      courses: [],
+      error: error.message || 'Network error'
+    };
+  }
+};
 /**
  * ✅ Get course content/lessons with proper image processing
  */
