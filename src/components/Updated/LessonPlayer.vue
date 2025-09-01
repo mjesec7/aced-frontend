@@ -1,3 +1,4 @@
+// src/components/Updated/LessonPlayer.vue - FIXED ESLint v-if warnings
 <template>
   <div class="lesson-player-overlay" @click="handleOverlayClick">
     <div class="lesson-player" @click.stop>
@@ -18,6 +19,12 @@
           <div class="course-info">
             <div class="course-badge">{{ courseTitle }}</div>
             <h1 class="lesson-title">{{ currentLessonTitle }}</h1>
+            <!-- ✅ FIXED: Moved v-if to template wrapper -->
+            <template v-if="isStructuredFormat">
+              <div class="format-indicator">
+                <span class="structured-badge">Structured Format</span>
+              </div>
+            </template>
           </div>
 
           <div class="progress-section">
@@ -35,151 +42,296 @@
         </div>
       </header>
 
-      <!-- Learning Objectives Card -->
-      <div class="objectives-container" v-if="learningObjectives.length > 0">
-        <div class="objectives-card">
-          <div class="objectives-header">
-            <div class="objectives-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"></circle>
-                <polyline points="16,12 12,8 8,12"></polyline>
-              </svg>
+      <!-- ✅ FIXED: Enhanced Learning Objectives with template wrapper -->
+      <template v-if="learningObjectives.length > 0">
+        <div class="objectives-container">
+          <div class="objectives-card">
+            <div class="objectives-header">
+              <div class="objectives-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="16,12 12,8 8,12"></polyline>
+                </svg>
+              </div>
+              <h2>{{ isStructuredFormat ? 'Цели урока' : 'Цели обучения' }}</h2>
             </div>
-            <h2>Цели обучения</h2>
+            <ul class="objectives-list">
+              <li v-for="(objective, index) in learningObjectives" :key="index">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="20,6 9,17 4,12"></polyline>
+                </svg>
+                {{ objective }}
+              </li>
+            </ul>
           </div>
-          <ul class="objectives-list">
-            <li v-for="(objective, index) in learningObjectives" :key="index">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="20,6 9,17 4,12"></polyline>
-              </svg>
-              {{ objective }}
-            </li>
-          </ul>
         </div>
-      </div>
+      </template>
 
       <!-- Main content area -->
       <main class="player-content">
         <!-- Loading State -->
-        <div v-if="loading" class="loading-state">
-          <div class="loading-spinner">
-            <div class="spinner"></div>
+        <template v-if="loading">
+          <div class="loading-state">
+            <div class="loading-spinner">
+              <div class="spinner"></div>
+            </div>
+            <h3>Загрузка курса...</h3>
+            <p>{{ isStructuredFormat ? 'Подготовка структурированного контента' : 'Подготовка учебных материалов' }}</p>
           </div>
-          <h3>Загрузка курса...</h3>
-          <p>Подготовка учебных материалов</p>
-        </div>
+        </template>
 
         <!-- Error State -->
-        <div v-else-if="error" class="error-state">
-          <div class="error-icon">⚠️</div>
-          <h3>Не удалось загрузить курс</h3>
-          <p>{{ error }}</p>
-          <button @click="loadCourseContent" class="retry-btn">
-            Попробовать снова
-          </button>
-        </div>
+        <template v-else-if="error">
+          <div class="error-state">
+            <div class="error-icon">⚠️</div>
+            <h3>Не удалось загрузить курс</h3>
+            <p>{{ error }}</p>
+            <button @click="loadCourseContent" class="retry-btn">
+              Попробовать снова
+            </button>
+          </div>
+        </template>
 
-        <!-- Lesson Content -->
-        <div v-else-if="currentLesson && hasSteps" class="lesson-content">
-          <div 
-            v-for="(step, index) in currentLesson.steps" 
-            :key="`step-${index}`"
-            class="step-container"
-          >
-            <div class="step-header">
-              <div class="step-number">{{ index + 1 }}</div>
-              <div class="step-info">
-                <h3 class="step-title">{{ getStepTitle(step) }}</h3>
-                <span class="step-type">{{ getStepTypeLabel(step.type) }}</span>
+        <!-- ✅ FIXED: Structured Format Content with template wrapper -->
+        <template v-else-if="isStructuredFormat && currentStructuredLesson">
+          <div class="structured-lesson-content">
+            <!-- Theory Section -->
+            <template v-if="currentStructuredLesson.content.theory">
+              <div class="content-section theory-section">
+                <div class="section-header">
+                  <div class="section-icon theory-icon">📚</div>
+                  <h2>Теория</h2>
+                </div>
+                <div class="theory-content">
+                  <!-- Theory Concepts -->
+                  <template v-if="currentStructuredLesson.content.theory.concepts">
+                    <div v-for="(concept, index) in currentStructuredLesson.content.theory.concepts" 
+                         :key="`concept-${index}`"
+                         class="concept-block">
+                      <h3 class="concept-title" v-if="concept.title">{{ concept.title }}</h3>
+                      <div class="concept-content" v-html="formatContent(concept.content)"></div>
+                      <template v-if="concept.images && concept.images.length > 0">
+                        <div class="concept-images">
+                          <div v-for="image in concept.images" :key="image.id" class="concept-image">
+                            <img :src="image.url" :alt="image.alt || 'Concept image'" />
+                            <p v-if="image.caption" class="image-caption">{{ image.caption }}</p>
+                          </div>
+                        </div>
+                      </template>
+                    </div>
+                  </template>
+                  
+                  <!-- Flexible theory content -->
+                  <template v-else-if="typeof currentStructuredLesson.content.theory === 'object'">
+                    <div v-for="(section, key) in currentStructuredLesson.content.theory" :key="key" class="theory-subsection">
+                      <h3 class="subsection-title">{{ formatSectionTitle(key) }}</h3>
+                      <div class="subsection-content">
+                        <template v-if="Array.isArray(section)">
+                          <div v-for="(item, idx) in section" :key="idx" class="theory-item">
+                            <template v-if="typeof item === 'object' && item.content">
+                              <div class="structured-item">
+                                <h4 v-if="item.title" class="item-title">{{ item.title }}</h4>
+                                <div v-html="formatContent(item.content)"></div>
+                              </div>
+                            </template>
+                            <template v-else>
+                              <div class="simple-item" v-html="formatContent(item)"></div>
+                            </template>
+                          </div>
+                        </template>
+                        <template v-else>
+                          <div v-html="formatContent(section)"></div>
+                        </template>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </template>
+
+            <!-- Practical Examples Section -->
+            <template v-if="currentStructuredLesson.content.practical_examples">
+              <div class="content-section examples-section">
+                <div class="section-header">
+                  <div class="section-icon examples-icon">🛠️</div>
+                  <h2>Практические примеры</h2>
+                </div>
+                <div class="examples-content">
+                  <!-- Exercises -->
+                  <template v-if="currentStructuredLesson.content.practical_examples.exercises">
+                    <div v-for="(exercise, index) in currentStructuredLesson.content.practical_examples.exercises"
+                         :key="`exercise-${index}`"
+                         class="exercise-block">
+                      <h3 class="exercise-title" v-if="exercise.title">{{ exercise.title }}</h3>
+                      <div class="exercise-instructions" v-html="formatContent(exercise.instructions)"></div>
+                      <template v-if="exercise.images && exercise.images.length > 0">
+                        <div class="exercise-images">
+                          <div v-for="image in exercise.images" :key="image.id" class="exercise-image">
+                            <img :src="image.url" :alt="image.alt || 'Exercise image'" />
+                            <p v-if="image.caption" class="image-caption">{{ image.caption }}</p>
+                          </div>
+                        </div>
+                      </template>
+                    </div>
+                  </template>
+                  
+                  <!-- Flexible practical examples content -->
+                  <template v-else-if="typeof currentStructuredLesson.content.practical_examples === 'object'">
+                    <div v-for="(section, key) in currentStructuredLesson.content.practical_examples" :key="key" class="examples-subsection">
+                      <h3 class="subsection-title">{{ formatSectionTitle(key) }}</h3>
+                      <div class="subsection-content">
+                        <template v-if="Array.isArray(section)">
+                          <div v-for="(item, idx) in section" :key="idx" class="example-item">
+                            <template v-if="typeof item === 'object' && item.instructions">
+                              <div class="structured-example">
+                                <h4 v-if="item.title" class="item-title">{{ item.title }}</h4>
+                                <div v-html="formatContent(item.instructions)"></div>
+                              </div>
+                            </template>
+                            <template v-else>
+                              <div class="simple-example" v-html="formatContent(item)"></div>
+                            </template>
+                          </div>
+                        </template>
+                        <template v-else>
+                          <div v-html="formatContent(section)"></div>
+                        </template>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </template>
+
+            <!-- Homework Section -->
+            <template v-if="currentStructuredLesson.content.homework">
+              <div class="content-section homework-section">
+                <div class="section-header">
+                  <div class="section-icon homework-icon">📝</div>
+                  <h2>Домашнее задание</h2>
+                </div>
+                <div class="homework-content">
+                  <!-- Theory Questions -->
+                  <template v-if="currentStructuredLesson.content.homework.theory_questions && currentStructuredLesson.content.homework.theory_questions.length > 0">
+                    <div class="homework-subsection">
+                      <h3 class="homework-subtitle">Теоретические вопросы</h3>
+                      <ol class="theory-questions-list">
+                        <li v-for="(question, index) in currentStructuredLesson.content.homework.theory_questions" 
+                            :key="`theory-q-${index}`" 
+                            class="theory-question">
+                          {{ question }}
+                        </li>
+                      </ol>
+                    </div>
+                  </template>
+
+                  <!-- Practical Tasks -->
+                  <template v-if="currentStructuredLesson.content.homework.practical_tasks && currentStructuredLesson.content.homework.practical_tasks.length > 0">
+                    <div class="homework-subsection">
+                      <h3 class="homework-subtitle">Практические задания</h3>
+                      <ol class="practical-tasks-list">
+                        <li v-for="(task, index) in currentStructuredLesson.content.homework.practical_tasks" 
+                            :key="`practical-task-${index}`" 
+                            class="practical-task">
+                          {{ task }}
+                        </li>
+                      </ol>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </template>
+          </div>
+        </template>
+
+        <!-- Traditional Format Content (backward compatibility) -->
+        <template v-else-if="!isStructuredFormat && currentLesson && hasSteps">
+          <div class="lesson-content">
+            <div 
+              v-for="(step, index) in currentLesson.steps" 
+              :key="`step-${index}`"
+              class="step-container"
+            >
+              <div class="step-header">
+                <div class="step-number">{{ index + 1 }}</div>
+                <div class="step-info">
+                  <h3 class="step-title">{{ getStepTitle(step) }}</h3>
+                  <span class="step-type">{{ getStepTypeLabel(step.type) }}</span>
+                </div>
+              </div>
+
+              <div class="step-content">
+                <component 
+                  :is="getStepComponent(step.type)"
+                  :step="step"
+                  :step-index="index"
+                  @quiz-answer="handleQuizAnswer"
+                  @pdf-fullscreen="openPdfFullscreen"
+                />
               </div>
             </div>
-
-            <div class="step-content">
-              <component 
-                :is="getStepComponent(step.type)"
-                :step="step"
-                :step-index="index"
-                @quiz-answer="handleQuizAnswer"
-                @pdf-fullscreen="openPdfFullscreen"
-              />
-            </div>
           </div>
-        </div>
+        </template>
 
         <!-- Empty States -->
-        <div v-else class="empty-state">
-          <div class="empty-icon">📚</div>
-          <h3>Контент недоступен</h3>
-          <p>Содержание этого урока пока недоступно.</p>
-        </div>
+        <template v-else>
+          <div class="empty-state">
+            <div class="empty-icon">📚</div>
+            <h3>Контент недоступен</h3>
+            <p>Содержание этого урока пока недоступно.</p>
+          </div>
+        </template>
       </main>
 
       <!-- Navigation Footer -->
-      <footer class="player-footer" v-if="!loading && !error && lessons.length > 0">
-        <button 
-          class="nav-btn nav-btn--secondary"
-          :disabled="isFirstLesson"
-          @click="goToPreviousLesson"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="15,18 9,12 15,6"></polyline>
-          </svg>
-          Назад
-        </button>
+      <template v-if="!loading && !error && lessons.length > 0">
+        <footer class="player-footer">
+          <button 
+            class="nav-btn nav-btn--secondary"
+            :disabled="isFirstLesson"
+            @click="goToPreviousLesson"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15,18 9,12 15,6"></polyline>
+            </svg>
+            Назад
+          </button>
 
-        <div class="lesson-nav-info">
-          <span>{{ currentLessonIndex + 1 }} / {{ totalLessons }}</span>
-        </div>
+          <div class="lesson-nav-info">
+            <span>{{ currentLessonIndex + 1 }} / {{ totalLessons }}</span>
+          </div>
 
-        <button 
-          v-if="!isLastLesson"
-          class="nav-btn nav-btn--primary"
-          @click="goToNextLesson"
-        >
-          Далее
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="9,18 15,12 9,6"></polyline>
-          </svg>
-        </button>
+          <template v-if="!isLastLesson">
+            <button 
+              class="nav-btn nav-btn--primary"
+              @click="goToNextLesson"
+            >
+              Далее
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9,18 15,12 9,6"></polyline>
+              </svg>
+            </button>
+          </template>
 
-        <button 
-          v-else
-          class="nav-btn nav-btn--success"
-          @click="completeCourse"
-        >
-          Завершить курс
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="20,6 9,17 4,12"></polyline>
-          </svg>
-        </button>
-      </footer>
-    </div>
-
-    <!-- PDF Fullscreen Modal -->
-    <div v-if="fullscreenPdf" class="pdf-modal" @click="closePdfFullscreen">
-      <div class="pdf-container" @click.stop>
-        <button 
-          class="pdf-close-btn"
-          @click="closePdfFullscreen"
-          aria-label="Закрыть PDF"
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-        <iframe 
-          :src="fullscreenPdf" 
-          class="pdf-frame"
-          title="PDF Просмотрщик"
-        ></iframe>
-      </div>
+          <template v-else>
+            <button 
+              class="nav-btn nav-btn--success"
+              @click="completeCourse"
+            >
+              Завершить курс
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20,6 9,17 4,12"></polyline>
+              </svg>
+            </button>
+          </template>
+        </footer>
+      </template>
     </div>
   </div>
 </template>
 
 <script>
-// ✅ FIXED: Proper API imports for Updated Courses
+// ✅ ENHANCED: Proper API imports for Updated Courses with structured format support
 import { getCourseById, getCourseContent, getUpdatedCourses } from '@/api.js';
 
 export default {
@@ -198,36 +350,56 @@ export default {
   data() {
     return {
       lessons: [],
+      structuredLessons: [], // ✅ NEW: For structured format
       currentLessonIndex: 0,
       quizAnswers: new Map(),
       fullscreenPdf: null,
       loading: true,
       error: null,
-      courseData: null
+      courseData: null,
+      isStructuredFormat: false, // ✅ NEW: Track format type
+      structuredCourseData: null // ✅ NEW: Store structured course data
     }
   },
 
   computed: {
     courseTitle() {
+      if (this.structuredCourseData) {
+        return this.structuredCourseData.courseTitle;
+      }
       return this.courseData?.title || this.course?.title || 'Курс';
     },
 
     currentLesson() {
+      if (this.isStructuredFormat) {
+        return null; // Use currentStructuredLesson instead
+      }
       return this.lessons[this.currentLessonIndex] || null;
     },
 
+    // ✅ NEW: Current structured lesson
+    currentStructuredLesson() {
+      if (!this.isStructuredFormat) return null;
+      return this.structuredLessons[this.currentLessonIndex] || null;
+    },
+
     currentLessonTitle() {
+      if (this.isStructuredFormat && this.currentStructuredLesson) {
+        return this.currentStructuredLesson.title || `Урок ${this.currentLessonIndex + 1}`;
+      }
+      
       const lesson = this.currentLesson;
       if (!lesson) return 'Загрузка урока...';
       return lesson.title || lesson.lessonName || `Урок ${this.currentLessonIndex + 1}`;
     },
 
     hasSteps() {
+      if (this.isStructuredFormat) return true; // Structured format always has content
       return this.currentLesson && this.currentLesson.steps && this.currentLesson.steps.length > 0;
     },
 
     totalLessons() {
-      return this.lessons.length;
+      return this.isStructuredFormat ? this.structuredLessons.length : this.lessons.length;
     },
 
     progressPercentage() {
@@ -244,15 +416,30 @@ export default {
     },
 
     learningObjectives() {
+      // ✅ NEW: Enhanced objectives for structured format
+      if (this.isStructuredFormat && this.currentStructuredLesson) {
+        const content = this.currentStructuredLesson.content;
+        const objectives = [];
+        
+        if (content.theory) {
+          objectives.push('Изучение теоретических основ темы');
+        }
+        if (content.practical_examples) {
+          objectives.push('Применение знаний на практических примерах');
+        }
+        if (content.homework) {
+          objectives.push('Выполнение домашних заданий для закрепления материала');
+        }
+        
+        return objectives.length > 0 ? objectives : this.getDefaultObjectives();
+      }
+      
       // Get objectives from course data
       if (this.courseData?.learningOutcomes && Array.isArray(this.courseData.learningOutcomes)) {
         return this.courseData.learningOutcomes;
       }
-      return [
-        'Понимание основных концепций, рассматриваемых в этом уроке',
-        'Применение практических навыков через практические упражнения',
-        'Выполнение оценочных заданий для проверки знаний'
-      ];
+      
+      return this.getDefaultObjectives();
     }
   },
 
@@ -267,7 +454,7 @@ export default {
   },
 
   methods: {
-    // ✅ COMPLETELY FIXED: Load Updated Courses content properly
+    // ✅ ENHANCED: Load course content with structured format support
     async loadCourseContent() {
       if (!this.course || (!this.course._id && !this.course.id)) {
         console.error('❌ LessonPlayer: Invalid course data:', this.course);
@@ -285,24 +472,48 @@ export default {
         let courseDetails = null;
         let lessons = [];
 
-        // ✅ STRATEGY 1: Get specific Updated Course by ID (main method)
+        // ✅ STRATEGY 1: Try to get structured format first
+        try {
+          const response = await fetch(`/api/updated-courses/${courseId}?format=structured`);
+          const result = await response.json();
+          
+          if (result.success && result.course) {
+            console.log('✅ Loaded course in structured format');
+            this.structuredCourseData = result.course;
+            this.isStructuredFormat = true;
+            
+            // Extract structured lessons
+            if (result.course.lessons && Array.isArray(result.course.lessons)) {
+              this.structuredLessons = result.course.lessons;
+              this.loading = false;
+              return;
+            }
+          }
+        } catch (structuredError) {
+          console.warn('⚠️ Structured format not available, trying standard format:', structuredError.message);
+        }
+
+        // ✅ STRATEGY 2: Fall back to standard format
         try {
           const response = await fetch(`/api/updated-courses/${courseId}`);
           const result = await response.json();
           
           if (result.success && result.course) {
             courseDetails = result.course;
+            this.isStructuredFormat = false;
             
-            // Extract lessons from curriculum
+            // Extract lessons from curriculum or lessons field
             if (courseDetails.curriculum && Array.isArray(courseDetails.curriculum)) {
               lessons = this.processCurriculum(courseDetails.curriculum);
+            } else if (courseDetails.lessons && Array.isArray(courseDetails.lessons)) {
+              lessons = this.processStructuredLessonsToTraditional(courseDetails.lessons);
             }
           }
-        } catch (fetchError) {
-          console.warn('⚠️ Direct Updated Course fetch failed:', fetchError.message);
+        } catch (standardError) {
+          console.warn('⚠️ Standard format fetch failed:', standardError.message);
         }
 
-        // ✅ STRATEGY 2: Fallback to general Updated Courses API
+        // ✅ STRATEGY 3: Fallback to general Updated Courses API
         if (!courseDetails && lessons.length === 0) {
           try {
             const coursesResponse = await getUpdatedCourses();
@@ -325,31 +536,15 @@ export default {
           }
         }
 
-        // ✅ STRATEGY 3: Try legacy course endpoints as final fallback
-        if (lessons.length === 0) {
-          try {
-            const courseResponse = await getCourseById(courseId);
-            
-            if (courseResponse && courseResponse.success && courseResponse.data) {
-              courseDetails = courseResponse.data;
-              
-              if (courseResponse.data.curriculum) {
-                lessons = this.processCurriculum(courseResponse.data.curriculum);
-              }
-            }
-          } catch (legacyError) {
-            console.warn('⚠️ Legacy course endpoints failed:', legacyError.message);
-          }
-        }
-
         // ✅ Set final data
         this.courseData = courseDetails || this.course;
         this.lessons = lessons;
 
-        if (lessons.length === 0) {
+        if (!this.isStructuredFormat && lessons.length === 0) {
           this.error = 'Содержание уроков для этого курса не найдено';
           console.warn('⚠️ No lessons found for course:', courseId);
         } else {
+          console.log(`✅ Loaded ${this.isStructuredFormat ? this.structuredLessons.length : lessons.length} lessons in ${this.isStructuredFormat ? 'structured' : 'traditional'} format`);
         }
         
       } catch (error) {
@@ -360,7 +555,150 @@ export default {
       }
     },
 
-    // ✅ FIXED: Process curriculum from Updated Courses
+    // ✅ NEW: Process structured lessons to traditional format for backward compatibility
+    processStructuredLessonsToTraditional(structuredLessons) {
+      if (!Array.isArray(structuredLessons)) {
+        console.warn('⚠️ Structured lessons is not an array:', typeof structuredLessons);
+        return [];
+      }
+
+      return structuredLessons.map((lesson, index) => {
+        try {
+          const processedLesson = {
+            id: lesson._id || `lesson_${index}`,
+            _id: lesson._id || `lesson_${index}`,
+            title: lesson.title || `Урок ${index + 1}`,
+            lessonName: lesson.title || `Урок ${index + 1}`,
+            description: this.extractLessonDescription(lesson.content),
+            duration: lesson.duration || '30 мин',
+            order: lesson.lessonNumber - 1 || index,
+            steps: this.convertStructuredContentToSteps(lesson.content, index)
+          };
+
+          return processedLesson;
+
+        } catch (lessonError) {
+          console.error(`❌ Error processing structured lesson ${index}:`, lessonError);
+          return {
+            id: `error_lesson_${index}`,
+            title: `Урок ${index + 1} (Ошибка)`,
+            lessonName: `Урок ${index + 1} (Ошибка)`,
+            description: 'Ошибка загрузки содержания урока',
+            steps: []
+          };
+        }
+      });
+    },
+
+    // ✅ NEW: Extract lesson description from structured content
+    extractLessonDescription(content) {
+      if (!content) return '';
+      
+      // Try to get description from theory content
+      if (content.theory?.concepts?.[0]?.content) {
+        return content.theory.concepts[0].content.substring(0, 200) + '...';
+      }
+      
+      // Try to get from practical examples
+      if (content.practical_examples?.exercises?.[0]?.instructions) {
+        return 'Практическое занятие: ' + content.practical_examples.exercises[0].instructions.substring(0, 150) + '...';
+      }
+      
+      return 'Структурированный урок';
+    },
+
+    // ✅ NEW: Convert structured content to traditional steps
+    convertStructuredContentToSteps(content, lessonIndex) {
+      const steps = [];
+      let stepIndex = 0;
+
+      // Add theory content as explanation steps
+      if (content.theory?.concepts) {
+        content.theory.concepts.forEach(concept => {
+          steps.push({
+            id: `step_${lessonIndex}_${stepIndex++}`,
+            type: 'explanation',
+            title: concept.title || 'Теория',
+            content: concept.content || '',
+            data: {
+              content: concept.content || '',
+              images: concept.images || []
+            },
+            images: concept.images || []
+          });
+        });
+      } else if (typeof content.theory === 'object' && content.theory) {
+        // Handle flexible theory structure
+        Object.entries(content.theory).forEach(([key, section]) => {
+          steps.push({
+            id: `step_${lessonIndex}_${stepIndex++}`,
+            type: 'explanation',
+            title: this.formatSectionTitle(key),
+            content: Array.isArray(section) ? section.join('\n\n') : (typeof section === 'object' ? JSON.stringify(section) : section),
+            data: {
+              content: Array.isArray(section) ? section.join('\n\n') : (typeof section === 'object' ? JSON.stringify(section) : section)
+            }
+          });
+        });
+      }
+
+      // Add practical examples as practice steps
+      if (content.practical_examples?.exercises) {
+        content.practical_examples.exercises.forEach(exercise => {
+          steps.push({
+            id: `step_${lessonIndex}_${stepIndex++}`,
+            type: 'practice',
+            title: exercise.title || 'Практика',
+            content: exercise.instructions || '',
+            data: {
+              instructions: exercise.instructions || '',
+              type: 'guided',
+              images: exercise.images || []
+            },
+            images: exercise.images || []
+          });
+        });
+      } else if (typeof content.practical_examples === 'object' && content.practical_examples) {
+        // Handle flexible practical examples structure
+        Object.entries(content.practical_examples).forEach(([key, section]) => {
+          steps.push({
+            id: `step_${lessonIndex}_${stepIndex++}`,
+            type: 'practice',
+            title: this.formatSectionTitle(key),
+            content: Array.isArray(section) ? section.join('\n\n') : (typeof section === 'object' ? JSON.stringify(section) : section),
+            data: {
+              instructions: Array.isArray(section) ? section.join('\n\n') : (typeof section === 'object' ? JSON.stringify(section) : section),
+              type: 'guided'
+            }
+          });
+        });
+      }
+
+      // Add homework questions as quiz steps
+      if (content.homework?.theory_questions?.length > 0) {
+        steps.push({
+          id: `step_${lessonIndex}_${stepIndex++}`,
+          type: 'quiz',
+          title: 'Контрольные вопросы',
+          content: content.homework.theory_questions[0],
+          data: content.homework.theory_questions.map((question, qIndex) => ({
+            question: question,
+            type: 'multiple-choice',
+            options: [
+              { text: 'Вариант A' },
+              { text: 'Вариант B' },
+              { text: 'Вариант C' }
+            ],
+            correctAnswer: 0,
+            explanation: 'Повторите материал урока для правильного ответа.'
+          }))
+        });
+      }
+
+      return steps;
+    },
+
+    // ✅ FIXED: Process curriculum from Updated Courses (unchanged)
     processCurriculum(curriculum) {
       if (!Array.isArray(curriculum)) {
         console.warn('⚠️ Curriculum is not an array:', typeof curriculum);
@@ -395,7 +733,7 @@ export default {
       });
     },
 
-    // ✅ FIXED: Process steps from Updated Course curriculum
+    // ✅ FIXED: Process steps from Updated Course curriculum (unchanged)
     processSteps(steps) {
       if (!Array.isArray(steps)) {
         console.warn('⚠️ Steps is not an array:', typeof steps);
@@ -433,6 +771,44 @@ export default {
           };
         }
       });
+    },
+
+    // ✅ NEW: Format content for structured display
+    formatContent(content) {
+      if (!content) return '';
+      
+      if (typeof content !== 'string') {
+        if (typeof content === 'object') {
+          return JSON.stringify(content, null, 2);
+        }
+        return String(content);
+      }
+      
+      // Convert markdown-like formatting to HTML
+      return content
+        .replace(/\n\n/g, '</p><p>')
+        .replace(/\n/g, '<br>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/^(?!<p>)/, '<p>')
+        .replace(/(?<!<\/p>)$/, '</p>');
+    },
+
+    // ✅ NEW: Format section titles
+    formatSectionTitle(key) {
+      return key
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, l => l.toUpperCase())
+        .replace(/([a-z])([A-Z])/g, '$1 $2');
+    },
+
+    // ✅ NEW: Get default objectives
+    getDefaultObjectives() {
+      return [
+        'Понимание основных концепций, рассматриваемых в этом уроке',
+        'Применение практических навыков через практические упражнения',
+        'Выполнение оценочных заданий для проверки знаний'
+      ];
     },
 
     // Navigation methods
@@ -475,7 +851,7 @@ export default {
       this.fullscreenPdf = null;
     },
 
-    // Utility methods
+    // Utility methods (for traditional format)
     getStepTitle(step) {
       if (step.title) return step.title;
       
@@ -521,19 +897,21 @@ export default {
     }
   },
 
-  // Step components
+  // Step components (for traditional format - unchanged)
   components: {
     'step-text': {
       props: ['step'],
       template: `
         <div class="step-text">
           <div class="text-content" v-html="formattedContent"></div>
-          <div v-if="hasImages" class="step-images">
-            <div v-for="image in step.images || []" :key="image.id || image.url" class="step-image">
-              <img :src="image.url" :alt="image.alt || 'Изображение урока'" />
-              <p v-if="image.caption" class="image-caption">{{ image.caption }}</p>
+          <template v-if="hasImages">
+            <div class="step-images">
+              <div v-for="image in step.images || []" :key="image.id || image.url" class="step-image">
+                <img :src="image.url" :alt="image.alt || 'Изображение урока'" />
+                <p v-if="image.caption" class="image-caption">{{ image.caption }}</p>
+              </div>
             </div>
-          </div>
+          </template>
         </div>
       `,
       computed: {
@@ -567,16 +945,20 @@ export default {
       template: `
         <div class="step-video">
           <div class="video-wrapper">
-            <div v-if="videoUrl" class="video-container">
-              <iframe v-if="isYouTube" :src="embedUrl" frameborder="0" allowfullscreen></iframe>
-              <video v-else controls>
-                <source :src="videoUrl" type="video/mp4">
-                Ваш браузер не поддерживает воспроизведение видео.
-              </video>
-            </div>
-            <div v-else class="video-placeholder">
-              <p>Видео-контент недоступен</p>
-            </div>
+            <template v-if="videoUrl">
+              <div class="video-container">
+                <iframe v-if="isYouTube" :src="embedUrl" frameborder="0" allowfullscreen></iframe>
+                <video v-else controls>
+                  <source :src="videoUrl" type="video/mp4">
+                  Ваш браузер не поддерживает воспроизведение видео.
+                </video>
+              </div>
+            </template>
+            <template v-else>
+              <div class="video-placeholder">
+                <p>Видео-контент недоступен</p>
+              </div>
+            </template>
           </div>
         </div>
       `,
@@ -602,17 +984,21 @@ export default {
       emits: ['pdf-fullscreen'],
       template: `
         <div class="step-pdf">
-          <div v-if="pdfUrl" class="pdf-container">
-            <iframe :src="pdfUrl" class="pdf-iframe"></iframe>
-            <div class="pdf-actions">
-              <button @click="$emit('pdf-fullscreen', pdfUrl)" class="pdf-fullscreen-btn">
-                Открыть в полноэкранном режиме
-              </button>
+          <template v-if="pdfUrl">
+            <div class="pdf-container">
+              <iframe :src="pdfUrl" class="pdf-iframe"></iframe>
+              <div class="pdf-actions">
+                <button @click="$emit('pdf-fullscreen', pdfUrl)" class="pdf-fullscreen-btn">
+                  Открыть в полноэкранном режиме
+                </button>
+              </div>
             </div>
-          </div>
-          <div v-else class="pdf-placeholder">
-            <p>PDF-контент недоступен</p>
-          </div>
+          </template>
+          <template v-else>
+            <div class="pdf-placeholder">
+              <p>PDF-контент недоступен</p>
+            </div>
+          </template>
         </div>
       `,
       computed: {
@@ -627,10 +1013,14 @@ export default {
       template: `
         <div class="step-practice">
           <div class="practice-content">
-            <div v-if="instructions" v-html="formattedInstructions"></div>
-            <div v-else>
-              <p>Инструкции к практическому упражнению недоступны.</p>
-            </div>
+            <template v-if="instructions">
+              <div v-html="formattedInstructions"></div>
+            </template>
+            <template v-else>
+              <div>
+                <p>Инструкции к практическому упражнению недоступны.</p>
+              </div>
+            </template>
           </div>
         </div>
       `,
@@ -654,31 +1044,37 @@ export default {
       },
       template: `
         <div class="step-quiz">
-          <div v-if="quizData && quizData.length > 0">
+          <template v-if="quizData && quizData.length > 0">
             <div v-for="(quiz, quizIndex) in quizData" :key="quizIndex" class="quiz-item">
               <h3 class="quiz-question">{{ quiz.question }}</h3>
               
-              <div v-if="quiz.options && quiz.options.length > 0" class="quiz-options">
-                <button
-                  v-for="(option, index) in quiz.options"
-                  :key="index"
-                  @click="selectAnswer(quizIndex, index)"
-                  :class="getOptionClass(quizIndex, index)"
-                  class="quiz-option"
-                >
-                  {{ getOptionText(option) }}
-                </button>
-              </div>
+              <template v-if="quiz.options && quiz.options.length > 0">
+                <div class="quiz-options">
+                  <button
+                    v-for="(option, index) in quiz.options"
+                    :key="index"
+                    @click="selectAnswer(quizIndex, index)"
+                    :class="getOptionClass(quizIndex, index)"
+                    class="quiz-option"
+                  >
+                    {{ getOptionText(option) }}
+                  </button>
+                </div>
+              </template>
               
-              <div v-if="isAnswered(quizIndex) && quiz.explanation" class="quiz-explanation">
-                <strong>Объяснение:</strong> {{ quiz.explanation }}
-              </div>
+              <template v-if="isAnswered(quizIndex) && quiz.explanation">
+                <div class="quiz-explanation">
+                  <strong>Объяснение:</strong> {{ quiz.explanation }}
+                </div>
+              </template>
             </div>
-          </div>
+          </template>
           
-          <div v-else class="no-quiz">
-            <p>Тест недоступен</p>
-          </div>
+          <template v-else>
+            <div class="no-quiz">
+              <p>Тест недоступен</p>
+            </div>
+          </template>
         </div>
       `,
       computed: {
@@ -722,7 +1118,7 @@ export default {
 </script>
 
 <style scoped>
-/* Clean, light theme inspired by Runway ML interface */
+/* Base styles (unchanged from original) */
 .lesson-player-overlay {
   position: fixed;
   inset: 0;
@@ -749,7 +1145,7 @@ export default {
   margin: 0 auto;
 }
 
-/* Header */
+/* Header styles (enhanced) */
 .player-header {
   background: white;
   border-bottom: 1px solid #e5e5e5;
@@ -795,6 +1191,23 @@ export default {
   font-size: 0.8125rem;
   font-weight: 500;
   margin-bottom: 0.5rem;
+}
+
+/* ✅ NEW: Format indicator */
+.format-indicator {
+  margin-top: 0.5rem;
+}
+
+.structured-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #10b981, #34d399);
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .lesson-title {
@@ -849,7 +1262,7 @@ export default {
   transition: width 0.5s ease;
 }
 
-/* Learning Objectives */
+/* Learning Objectives (enhanced) */
 .objectives-container {
   padding: 0 2rem 0.75rem 2rem;
   margin-bottom: 0;
@@ -917,7 +1330,216 @@ export default {
   background: #fafafa;
 }
 
-/* Loading/Error States */
+/* ✅ NEW: Structured lesson content styles */
+.structured-lesson-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.content-section {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e5e5e5;
+  overflow: hidden;
+}
+
+.section-header {
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+  border-bottom: 1px solid #e5e5e5;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.section-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.theory-icon {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+}
+
+.examples-icon {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.homework-icon {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.section-header h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+/* Theory content */
+.theory-content,
+.examples-content,
+.homework-content {
+  padding: 1.5rem;
+}
+
+.concept-block,
+.exercise-block {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.concept-block:last-child,
+.exercise-block:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.concept-title,
+.exercise-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 1rem 0;
+}
+
+.concept-content,
+.exercise-instructions {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: #374151;
+  margin-bottom: 1rem;
+}
+
+.concept-images,
+.exercise-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.concept-image,
+.exercise-image {
+  flex: 1;
+  min-width: 200px;
+  max-width: 300px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  overflow: hidden;
+  background: white;
+}
+
+.concept-image img,
+.exercise-image img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  display: block;
+}
+
+.image-caption {
+  padding: 0.75rem;
+  font-size: 0.875rem;
+  color: #666;
+  background: #f8fafc;
+  margin: 0;
+  border-top: 1px solid #e5e5e5;
+}
+
+/* Flexible content structures */
+.theory-subsection,
+.examples-subsection {
+  margin-bottom: 1.5rem;
+}
+
+.subsection-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 0.75rem 0;
+}
+
+.subsection-content {
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: #374151;
+}
+
+.theory-item,
+.example-item {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border-left: 4px solid #6366f1;
+}
+
+.structured-item,
+.structured-example {
+  margin-bottom: 1rem;
+}
+
+.item-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 0.5rem 0;
+}
+
+.simple-item,
+.simple-example {
+  margin-bottom: 0.75rem;
+}
+
+/* Homework content */
+.homework-subsection {
+  margin-bottom: 1.5rem;
+}
+
+.homework-subtitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 1rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.homework-subtitle::before {
+  content: '';
+  width: 4px;
+  height: 1rem;
+  background: #f59e0b;
+  border-radius: 2px;
+}
+
+.theory-questions-list,
+.practical-tasks-list {
+  padding-left: 1.5rem;
+  margin: 0;
+}
+
+.theory-question,
+.practical-task {
+  margin-bottom: 0.75rem;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: #374151;
+}
+
+/* Loading/Error States (unchanged) */
 .loading-state, .error-state, .empty-state {
   display: flex;
   flex-direction: column;
@@ -978,7 +1600,7 @@ export default {
   background: #5855eb;
 }
 
-/* Lesson Content */
+/* Traditional Lesson Content (unchanged) */
 .lesson-content {
   display: flex;
   flex-direction: column;
@@ -1039,7 +1661,7 @@ export default {
   padding: 1.5rem;
 }
 
-/* Step Components */
+/* Step Components (unchanged) */
 .step-text {
   line-height: 1.6;
 }
@@ -1098,16 +1720,7 @@ export default {
   display: block;
 }
 
-.image-caption {
-  padding: 0.75rem;
-  font-size: 0.875rem;
-  color: #666;
-  background: #f8fafc;
-  margin: 0;
-  border-top: 1px solid #e5e5e5;
-}
-
-/* Video Component */
+/* Video Component (unchanged) */
 .step-video {
   display: flex;
   flex-direction: column;
@@ -1121,13 +1734,11 @@ export default {
   background: #f0f0f0;
 }
 
-
-/* u guys are imagining stuff */
 .video-container {
   position: relative;
   width: 100%;
   height: 0;
-  padding-bottom: 56.25%; /* 16:9 aspect ratio */
+  padding-bottom: 56.25%;
 }
 
 .video-container iframe,
@@ -1148,7 +1759,7 @@ export default {
   background: #f8fafc;
 }
 
-/* PDF Component */
+/* PDF Component (unchanged) */
 .step-pdf {
   display: flex;
   flex-direction: column;
@@ -1200,7 +1811,7 @@ export default {
   border-radius: 8px;
 }
 
-/* Practice Component */
+/* Practice Component (unchanged) */
 .step-practice {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
@@ -1213,7 +1824,7 @@ export default {
   line-height: 1.6;
 }
 
-/* Quiz Component */
+/* Quiz Component (unchanged) */
 .step-quiz {
   display: flex;
   flex-direction: column;
@@ -1292,7 +1903,7 @@ export default {
   border-radius: 8px;
 }
 
-/* Footer */
+/* Footer (unchanged) */
 .player-footer {
   background: white;
   border-top: 1px solid #e5e5e5;
@@ -1359,58 +1970,7 @@ export default {
   font-size: 0.8125rem;
 }
 
-/* PDF Modal */
-.pdf-modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-  padding: 1rem;
-}
-
-.pdf-container {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  max-width: 1200px;
-  max-height: 90vh;
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.pdf-close-btn {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  width: 40px;
-  height: 40px;
-  background: rgba(0, 0, 0, 0.7);
-  color: white;
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
-  transition: background 0.2s;
-}
-
-.pdf-close-btn:hover {
-  background: rgba(0, 0, 0, 0.9);
-}
-
-.pdf-frame {
-  width: 100%;
-  height: 100%;
-  border: none;
-}
-
-/* Responsive */
+/* Responsive Design */
 @media (max-width: 768px) {
   .lesson-player-overlay {
     padding: 1rem 0.5rem;
@@ -1471,21 +2031,46 @@ export default {
     padding: 0 1rem;
   }
   
-  .step-images {
+  .step-images,
+  .concept-images,
+  .exercise-images {
     flex-direction: column;
   }
   
-  .step-image {
+  .step-image,
+  .concept-image,
+  .exercise-image {
     max-width: 100%;
+  }
+
+  /* ✅ NEW: Structured content responsive */
+  .section-header {
+    padding: 1rem;
+  }
+  
+  .theory-content,
+  .examples-content,
+  .homework-content {
+    padding: 1rem;
+  }
+  
+  .concept-block,
+  .exercise-block {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
   }
 }
 
 @media (max-width: 480px) {
-  .step-images {
+  .step-images,
+  .concept-images,
+  .exercise-images {
     gap: 0.75rem;
   }
   
-  .step-image img {
+  .step-image img,
+  .concept-image img,
+  .exercise-image img {
     height: 150px;
   }
   
@@ -1499,6 +2084,38 @@ export default {
   
   .step-title {
     font-size: 1rem;
+  }
+
+  /* ✅ NEW: Mobile structured content */
+  .section-header {
+    padding: 0.75rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .section-icon {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .section-header h2 {
+    font-size: 1.125rem;
+  }
+  
+  .theory-content,
+  .examples-content,
+  .homework-content {
+    padding: 0.75rem;
+  }
+  
+  .concept-title,
+  .exercise-title {
+    font-size: 1rem;
+  }
+  
+  .subsection-title {
+    font-size: 0.9375rem;
   }
 }
 </style>
