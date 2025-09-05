@@ -2479,3 +2479,4 @@ export default {
     border: 2px solid;
   }
 }
+</style>
