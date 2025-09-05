@@ -327,10 +327,11 @@
 
 <script>
 import { 
-  getUpdatedCourses, 
+  getUpdatedCourses,
   getCourseById,
   getUpdatedCoursesWithFormat,
-  getCourseStructured
+  getCourseStructured,
+  getCourseStructuredEnhanced
 } from '@/api.js';
 import { mapGetters, mapState } from 'vuex';
 import LessonLoader from '../components/Updated/LessonPlayer.vue';
@@ -361,92 +362,16 @@ export default {
       error: null,
       showStudyInterface: false,
       
+      // Enhanced states
+      retryCount: 0,
+      maxRetries: 3,
+      cacheTimeout: 5 * 60 * 1000, // 5 minutes
+      lastFetchTime: 0,
+      
       // Reactivity tracking
       componentKey: 0,
       lastUpdateTime: Date.now(),
-      forceUpdateCounter: 0,
-
-      // Professional course images from Unsplash
-      courseImages: {
-        // Programming & Development
-        'javascript': 'https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=600&h=400&fit=crop&crop=center',
-        'python': 'https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=600&h=400&fit=crop&crop=center',
-        'react': 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=600&h=400&fit=crop&crop=center',
-        'vue': 'https://images.unsplash.com/photo-1661956602116-aa6865609028?w=600&h=400&fit=crop&crop=center',
-        'node': 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=600&h=400&fit=crop&crop=center',
-        'web development': 'https://images.unsplash.com/photo-1547658719-da2b51169166?w=600&h=400&fit=crop&crop=center',
-        'programming': 'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?w=600&h=400&fit=crop&crop=center',
-        'coding': 'https://images.unsplash.com/photo-1522252234503-e356532cafd5?w=600&h=400&fit=crop&crop=center',
-        'software development': 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=600&h=400&fit=crop&crop=center',
-        'mobile development': 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=600&h=400&fit=crop&crop=center',
-        
-        // AI & Machine Learning
-        'artificial intelligence': 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=600&h=400&fit=crop&crop=center',
-        'machine learning': 'https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=600&h=400&fit=crop&crop=center',
-        'ai': 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=600&h=400&fit=crop&crop=center',
-        'data science': 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&h=400&fit=crop&crop=center',
-        'neural networks': 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=600&h=400&fit=crop&crop=center',
-        'deep learning': 'https://images.unsplash.com/photo-1507146426996-ef05306b995a?w=600&h=400&fit=crop&crop=center',
-        
-        // Design
-        'design': 'https://images.unsplash.com/photo-1609921212029-bb5a28e60960?w=600&h=400&fit=crop&crop=center',
-        'ui design': 'https://images.unsplash.com/photo-1586717791821-3f44a563fa4c?w=600&h=400&fit=crop&crop=center',
-        'ux design': 'https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?w=600&h=400&fit=crop&crop=center',
-        'graphic design': 'https://images.unsplash.com/photo-1626785774573-4b799315345d?w=600&h=400&fit=crop&crop=center',
-        'web design': 'https://images.unsplash.com/photo-1467232004584-a241de8bcf5d?w=600&h=400&fit=crop&crop=center',
-        'product design': 'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=600&h=400&fit=crop&crop=center',
-        
-        // Business & Marketing
-        'marketing': 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&h=400&fit=crop&crop=center',
-        'digital marketing': 'https://images.unsplash.com/photo-1432888622747-4eb9a8efeb07?w=600&h=400&fit=crop&crop=center',
-        'business': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&h=400&fit=crop&crop=center',
-        'entrepreneurship': 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=600&h=400&fit=crop&crop=center',
-        'finance': 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=600&h=400&fit=crop&crop=center',
-        'management': 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=600&h=400&fit=crop&crop=center',
-        
-        // Languages
-        'english': 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=600&h=400&fit=crop&crop=center',
-        'language learning': 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=600&h=400&fit=crop&crop=center',
-        'languages': 'https://images.unsplash.com/photo-1455390582262-044cdead277a?w=600&h=400&fit=crop&crop=center',
-        'spanish': 'https://images.unsplash.com/photo-1590736969955-71cc94901144?w=600&h=400&fit=crop&crop=center',
-        'french': 'https://images.unsplash.com/photo-1502602898536-47ad22581b52?w=600&h=400&fit=crop&crop=center',
-        
-        // Blockchain & Crypto
-        'blockchain': 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=600&h=400&fit=crop&crop=center',
-        'cryptocurrency': 'https://images.unsplash.com/photo-1605792657660-596af9009e82?w=600&h=400&fit=crop&crop=center',
-        'bitcoin': 'https://images.unsplash.com/photo-1518546305927-5a555bb7020d?w=600&h=400&fit=crop&crop=center',
-        'crypto': 'https://images.unsplash.com/photo-1621761191319-c6fb62004040?w=600&h=400&fit=crop&crop=center',
-        'fintech': 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=600&h=400&fit=crop&crop=center',
-        
-        // Russian categories
-        'технологии': 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=600&h=400&fit=crop&crop=center',
-        'образование': 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=600&h=400&fit=crop&crop=center',
-        'наука': 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=600&h=400&fit=crop&crop=center',
-        'искусство': 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=600&h=400&fit=crop&crop=center',
-        'музыка': 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&h=400&fit=crop&crop=center',
-        'спорт': 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=600&h=400&fit=crop&crop=center',
-        'здоровье': 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=600&h=400&fit=crop&crop=center',
-        'кулинария': 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=600&h=400&fit=crop&crop=center',
-        
-        // Additional categories
-        'photography': 'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=600&h=400&fit=crop&crop=center',
-        'video editing': 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=600&h=400&fit=crop&crop=center',
-        'animation': 'https://images.unsplash.com/photo-1551732998-093b5d325b19?w=600&h=400&fit=crop&crop=center',
-        '3d modeling': 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&h=400&fit=crop&crop=center',
-        'cybersecurity': 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=600&h=400&fit=crop&crop=center',
-        'cloud computing': 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&h=400&fit=crop&crop=center',
-        
-        // Fallback images
-        'default': 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=600&h=400&fit=crop&crop=center',
-        'course': 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=600&h=400&fit=crop&crop=center',
-        'learning': 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=600&h=400&fit=crop&crop=center',
-        'education': 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=600&h=400&fit=crop&crop=center',
-        'study': 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=600&h=400&fit=crop&crop=center'
-      },
-
-      // Event handlers for cleanup
-      eventHandlers: null,
-      storeUnsubscribe: null
+      forceUpdateCounter: 0
     };
   },
 
@@ -476,6 +401,27 @@ export default {
     isPremiumUser() {
       const status = this.currentUserStatus;
       return status === 'pro' || status === 'start';
+    },
+
+    // ✅ Enhanced computed properties
+    filteredCoursesCount() {
+      return this.courses.length;
+    },
+
+    hasValidCourses() {
+      return Array.isArray(this.courses) && this.courses.length > 0;
+    },
+
+    shouldShowEmptyState() {
+      return !this.loading && !this.error && !this.hasValidCourses;
+    },
+
+    shouldShowErrorState() {
+      return !this.loading && this.error;
+    },
+
+    shouldRefreshCache() {
+      return Date.now() - this.lastFetchTime > this.cacheTimeout;
     }
   },
 
@@ -506,11 +452,9 @@ export default {
   },
 
   async mounted() {
-    
+    console.log('🚀 UpdatedCourses: Component mounted');
     try {
-      await this.loadCourses();
-      this.setupEventListeners();
-      
+      await this.initializeComponent();
     } catch (error) {
       console.error('❌ UpdatedCourses: Mount error:', error);
       this.error = 'Ошибка инициализации компонента';
@@ -523,144 +467,587 @@ export default {
 
   methods: {
     // =====================================
-    // COURSE LOADING METHODS
+    // ENHANCED INITIALIZATION
     // =====================================
     
-   // Replace existing loadCourses method
-async loadCourses() {
-  this.loading = true;
-  this.error = null;
-  
-  try {
-    const filters = this.buildFilters();
-    
-    // ✅ NEW: Try structured format first, fallback to standard
-    let response = await getUpdatedCoursesWithFormat(filters, 'structured');
-    
-    // If structured format fails or returns empty, try standard format
-    if (!response.success || !response.courses || response.courses.length === 0) {
-      console.warn('⚠️ Structured format failed or empty, trying standard format');
-      response = await getUpdatedCourses(filters);
-    }
-    
-    if (response && response.success) {
-      this.courses = this.processCourses(response.courses || []);
-      this.availableCategories = response.categories || [];
-      this.availableLevels = response.difficulties || [];
+    async initializeComponent() {
+      console.log('🔧 Initializing UpdatedCourses component');
       
-      // ✅ NEW: Track format type for analytics
-      console.log(`✅ Loaded ${this.courses.length} courses in ${response.format || 'standard'} format`);
-      
-    } else {
-      throw new Error(response?.error || 'Failed to fetch courses');
-    }
-  } catch (error) {
-    console.error('❌ Error loading courses:', error);
-    this.error = this.getErrorMessage(error);
-    this.courses = [];
-  } finally {
-    this.loading = false;
-  }
-},
-
-// ✅ NEW: Enhanced openModal method for structured format support
-async openModal(course) {
-  if (!course || (!course._id && !course.id)) {
-    console.error('❌ Invalid course data for modal:', course);
-    return;
-  }
-
-  this.selectedCourse = null;
-  this.isModalOpen = true;
-  this.modalLoading = true;
-  
-  try {
-    const courseId = course._id || course.id;
-    
-    // ✅ NEW: Try structured format first
-    let response = await getCourseStructured(courseId);
-    
-    // Fallback to standard format
-    if (!response.success) {
-      console.warn('⚠️ Structured course fetch failed, trying standard format');
-      response = await getCourseById(courseId);
-    }
-    
-    if (response && response.success && response.data) {
-      this.selectedCourse = {
-        ...course, // Keep original data as fallback
-        ...response.data, // Override with detailed data
-        id: response.data._id || response.data.id || course.id,
-        _id: response.data._id || course._id,
-        title: response.data.title || course.title,
-        isPremium: Boolean(response.data.isPremium || course.isPremium),
-        format: response.format || 'standard', // ✅ NEW: Track format
-        structuredData: response.format === 'structured' ? response.data : null // ✅ NEW
-      };
-      
-      console.log(`✅ Modal loaded course in ${response.format || 'standard'} format`);
-    } else {
-      console.warn('⚠️ Failed to fetch detailed course info, using basic data');
-      this.selectedCourse = course;
-    }
-  } catch (error) {
-    console.error('❌ Error fetching course details for modal:', error);
-    this.selectedCourse = course;
-  } finally {
-    this.modalLoading = false;
-  }
-},
-
-// ✅ NEW: Enhanced startCourse method
-async startCourse(course) {
-  if (!course) {
-    console.error('❌ No course data to start');
-    return;
-  }
-
-  // Check premium access
-  if (course.isPremium && !this.isPremiumUser) {
-    const message = `Этот курс доступен только по подписке Start/Pro. Ваш текущий статус: ${this.currentUserStatus}`;
-    this.showToast(message, 'error');
-    return;
-  }
-  
-  // ✅ NEW: Ensure we have structured course data for better learning experience
-  let completeCourse = course;
-  
-  // If we don't have structured data, try to fetch it
-  if (!course.structuredData && (!course.curriculum || !course.curriculum.length)) {
-    try {
-      // Try structured format first
-      let response = await getCourseStructured(course._id || course.id);
-      
-      // Fallback to standard format
-      if (!response.success) {
-        response = await getCourseById(course._id || course.id);
-      }
-      
-      if (response && response.success && response.data) {
-        completeCourse = {
-          ...course,
-          ...response.data,
-          _id: response.data._id || course._id,
-          id: response.data.id || course.id || response.data._id,
-          format: response.format,
-          structuredData: response.format === 'structured' ? response.data : null
-        };
+      try {
+        // Check if we need to refresh cache
+        if (this.shouldRefreshCache || this.courses.length === 0) {
+          await this.loadCoursesWithRetry();
+        } else {
+          console.log('📋 Using cached courses data');
+        }
         
-        console.log(`✅ Course data enhanced with ${response.format || 'standard'} format`);
+        this.setupEventListeners();
+        this.validateComponentState();
+        
+      } catch (error) {
+        console.error('❌ Component initialization failed:', error);
+        this.handleInitializationError(error);
       }
-    } catch (error) {
-      console.error('❌ Error fetching complete course data:', error);
-      // Continue with original course data
-    }
-  }
-  
-  this.selectedCourse = completeCourse;
-  this.isModalOpen = false;
-  this.showStudyInterface = true;
-},
+    },
+
+    async loadCoursesWithRetry() {
+      for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+        try {
+          console.log(`📚 Loading courses (attempt ${attempt}/${this.maxRetries})`);
+          await this.loadCourses();
+          this.retryCount = 0;
+          break;
+        } catch (error) {
+          console.warn(`⚠️ Load attempt ${attempt} failed:`, error.message);
+          
+          if (attempt === this.maxRetries) {
+            this.handleLoadError(error);
+          } else {
+            // Wait before retry with exponential backoff
+            await this.delay(1000 * Math.pow(2, attempt - 1));
+          }
+        }
+      }
+    },
+
+    validateComponentState() {
+      // Validate that we have the required data structure
+      if (!Array.isArray(this.courses)) {
+        console.warn('⚠️ Courses is not an array, fixing...');
+        this.courses = [];
+      }
+
+      if (!Array.isArray(this.availableCategories)) {
+        console.warn('⚠️ Categories is not an array, fixing...');
+        this.availableCategories = [];
+      }
+
+      if (!Array.isArray(this.availableLevels)) {
+        console.warn('⚠️ Levels is not an array, fixing...');
+        this.availableLevels = [];
+      }
+
+      console.log('✅ Component state validated');
+    },
+
+    handleInitializationError(error) {
+      this.error = this.getErrorMessage(error);
+      this.loading = false;
+      
+      // Try to provide some fallback data
+      this.provideFallbackData();
+    },
+
+    provideFallbackData() {
+      // Provide empty arrays to prevent template errors
+      this.courses = [];
+      this.availableCategories = ['ИИ и автоматизация', 'Web-разработка', 'Дизайн', 'Программирование'];
+      this.availableLevels = ['Начинающий', 'Средний', 'Продвинутый'];
+    },
+
+    // =====================================
+    // ENHANCED COURSE LOADING
+    // =====================================
+    
+    async loadCourses() {
+      this.loading = true;
+      this.error = null;
+      
+      try {
+        const filters = this.buildFilters();
+        console.log('🔍 Loading courses with filters:', filters);
+        
+        // ✅ ENHANCED: Try structured format first, fallback to standard
+        let response = await getUpdatedCoursesWithFormat(filters, 'structured');
+        
+        // Validate response structure
+        if (!this.validateResponse(response)) {
+          console.warn('⚠️ Invalid response structure, trying standard format');
+          response = await getUpdatedCourses(filters);
+        }
+        
+        if (response && response.success) {
+          this.processCoursesResponse(response);
+          this.lastFetchTime = Date.now();
+          
+          console.log(`✅ Loaded ${this.courses.length} courses successfully`);
+        } else {
+          throw new Error(response?.error || 'Failed to fetch courses');
+        }
+      } catch (error) {
+        console.error('❌ Error loading courses:', error);
+        this.handleLoadError(error);
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    validateResponse(response) {
+      return response && 
+             typeof response === 'object' && 
+             response.success !== false &&
+             Array.isArray(response.courses);
+    },
+
+    processCoursesResponse(response) {
+      // Enhanced course processing with validation
+      this.courses = this.processCourses(response.courses || []);
+      this.availableCategories = this.processCategories(response.categories || []);
+      this.availableLevels = this.processLevels(response.difficulties || []);
+      
+      // Store metadata
+      this.storeCourseMetadata(response);
+      
+      console.log(`📊 Processed: ${this.courses.length} courses, ${this.availableCategories.length} categories, ${this.availableLevels.length} levels`);
+    },
+
+    processCourses(courses) {
+      if (!Array.isArray(courses)) {
+        console.warn('⚠️ Courses data is not an array:', courses);
+        return [];
+      }
+      
+      return courses.map((course, index) => {
+        try {
+          return this.processSingleCourse(course, index);
+        } catch (error) {
+          console.warn(`⚠️ Error processing course ${index}:`, error);
+          return this.createFallbackCourse(course, index);
+        }
+      }).filter(course => course !== null);
+    },
+
+    processSingleCourse(course, index) {
+      // Enhanced course processing with validation
+      const processedCourse = {
+        ...course,
+        id: course._id || course.id || `course_${Date.now()}_${index}`,
+        _id: course._id || course.id || `course_${Date.now()}_${index}`,
+        title: this.validateString(course.title) || 'Без названия',
+        description: this.validateString(course.description) || 'Описание не указано',
+        category: this.validateString(course.category) || 'Общий',
+        level: this.validateString(course.level || course.difficulty) || 'Базовый',
+        duration: this.validateString(course.duration) || '30 мин',
+        isPremium: Boolean(course.isPremium || course.premium || course.type === 'premium'),
+        
+        // Enhanced metadata
+        thumbnail: this.validateThumbnail(course.thumbnail, course.category),
+        instructor: this.validateInstructor(course.instructor),
+        
+        // Enhanced course stats
+        studentsCount: this.validateNumber(course.studentsCount, 0),
+        rating: this.validateNumber(course.rating, 0, 5),
+        
+        // Enhanced curriculum data
+        curriculum: this.validateCurriculum(course.curriculum),
+        structuredData: course.structuredData || null,
+        format: course.format || 'standard',
+        
+        // Computed properties
+        isNew: this.isNewCourse(course.createdAt),
+        hasHomework: this.hasHomeworkContent(course.curriculum),
+        estimatedHours: this.extractHours(course.duration),
+        totalLessons: (course.curriculum || []).length,
+        
+        // Processing metadata
+        processedAt: Date.now(),
+        isValid: true
+      };
+
+      return processedCourse;
+    },
+
+    createFallbackCourse(course, index) {
+      // Create a minimal valid course object for corrupted data
+      return {
+        id: `fallback_${index}`,
+        _id: `fallback_${index}`,
+        title: 'Курс недоступен',
+        description: 'Этот курс временно недоступен',
+        category: 'Общий',
+        level: 'Базовый',
+        duration: '30 мин',
+        isPremium: false,
+        thumbnail: this.getDefaultThumbnail('default'),
+        instructor: { name: 'ACED', avatar: this.getDefaultAvatar() },
+        studentsCount: 0,
+        rating: 0,
+        curriculum: [],
+        isValid: false,
+        isFallback: true
+      };
+    },
+
+    processCategories(categories) {
+      const defaultCategories = [
+        'ИИ и автоматизация',
+        'Видеомонтаж',
+        'Графический дизайн',
+        'Web-разработка',
+        'Мобильная разработка',
+        'Машинное обучение',
+        'Дизайн',
+        'Программирование',
+        'Маркетинг'
+      ];
+
+      if (!Array.isArray(categories) || categories.length === 0) {
+        return defaultCategories;
+      }
+
+      // Merge with defaults and remove duplicates
+      const merged = [...new Set([...categories, ...defaultCategories])];
+      return merged.sort();
+    },
+
+    processLevels(levels) {
+      const defaultLevels = ['Начинающий', 'Средний', 'Продвинутый'];
+
+      if (!Array.isArray(levels) || levels.length === 0) {
+        return defaultLevels;
+      }
+
+      return [...new Set([...levels, ...defaultLevels])].sort();
+    },
+
+    storeCourseMetadata(response) {
+      try {
+        const metadata = {
+          totalCourses: this.courses.length,
+          format: response.format,
+          lastFetch: Date.now(),
+          categories: this.availableCategories.length,
+          levels: this.availableLevels.length,
+          pagination: response.pagination || {}
+        };
+
+        sessionStorage.setItem('coursesMetadata', JSON.stringify(metadata));
+      } catch (error) {
+        console.warn('⚠️ Failed to store metadata:', error);
+      }
+    },
+
+    // =====================================
+    // ENHANCED VALIDATION HELPERS
+    // =====================================
+
+    validateString(value, fallback = '') {
+      return (typeof value === 'string' && value.trim()) ? value.trim() : fallback;
+    },
+
+    validateNumber(value, min = 0, max = Infinity) {
+      const num = parseFloat(value);
+      if (isNaN(num)) return min;
+      return Math.max(min, Math.min(max, num));
+    },
+
+    validateThumbnail(thumbnail, category) {
+      if (thumbnail && typeof thumbnail === 'string' && thumbnail.trim()) {
+        return this.processImageUrl(thumbnail);
+      }
+      return this.getDefaultThumbnail(category);
+    },
+
+    validateInstructor(instructor) {
+      if (!instructor || typeof instructor !== 'object') {
+        return {
+          name: 'ACED Instructor',
+          avatar: this.getDefaultAvatar(),
+          bio: 'Experienced instructor'
+        };
+      }
+
+      return {
+        name: this.validateString(instructor.name, 'ACED Instructor'),
+        avatar: this.validateThumbnail(instructor.avatar, 'instructor'),
+        bio: this.validateString(instructor.bio, 'Experienced instructor')
+      };
+    },
+
+    validateCurriculum(curriculum) {
+      if (!Array.isArray(curriculum)) return [];
+      
+      return curriculum.filter(lesson => {
+        return lesson && 
+               typeof lesson === 'object' && 
+               lesson.title && 
+               typeof lesson.title === 'string';
+      });
+    },
+
+    // =====================================
+    // ENHANCED HELPER METHODS
+    // =====================================
+
+    isNewCourse(createdAt) {
+      if (!createdAt) return false;
+      try {
+        const courseDate = new Date(createdAt);
+        const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        return courseDate > weekAgo;
+      } catch (error) {
+        return false;
+      }
+    },
+
+    hasHomeworkContent(curriculum) {
+      if (!Array.isArray(curriculum)) return false;
+      return curriculum.some(lesson => 
+        lesson.steps?.some(step => 
+          step.type === 'quiz' || step.type === 'practice'
+        )
+      );
+    },
+
+    extractHours(duration) {
+      if (typeof duration === 'string') {
+        const match = duration.match(/(\d+)/);
+        return match ? parseInt(match[1]) : 10;
+      }
+      if (duration?.hours) return duration.hours;
+      return 10;
+    },
+
+    // =====================================
+    // ENHANCED MODAL METHODS
+    // =====================================
+
+    async openModal(course) {
+      if (!course || (!course._id && !course.id)) {
+        console.error('❌ Invalid course data for modal:', course);
+        return;
+      }
+
+      this.selectedCourse = null;
+      this.isModalOpen = true;
+      this.modalLoading = true;
+      
+      try {
+        console.log('🔍 Loading detailed course data for modal');
+        
+        const courseId = course._id || course.id;
+        
+        // ✅ ENHANCED: Try structured format first with better error handling
+        let response = await getCourseStructuredEnhanced(courseId);
+        
+        if (response && response.success && response.data) {
+          this.selectedCourse = this.enhanceCourseForModal(response.data, course);
+          console.log(`✅ Modal loaded course in ${response.format || 'standard'} format`);
+        } else {
+          console.warn('⚠️ Failed to fetch detailed course info, using basic data');
+          this.selectedCourse = this.enhanceCourseForModal(course, course);
+        }
+      } catch (error) {
+        console.error('❌ Error fetching course details for modal:', error);
+        this.selectedCourse = this.enhanceCourseForModal(course, course);
+      } finally {
+        this.modalLoading = false;
+      }
+    },
+
+    enhanceCourseForModal(detailedCourse, basicCourse) {
+      return {
+        ...basicCourse, // Keep original data as fallback
+        ...detailedCourse, // Override with detailed data
+        id: detailedCourse._id || detailedCourse.id || basicCourse.id,
+        _id: detailedCourse._id || basicCourse._id,
+        title: detailedCourse.title || basicCourse.title,
+        isPremium: Boolean(detailedCourse.isPremium || basicCourse.isPremium),
+        
+        // Enhanced modal-specific data
+        skills: this.getSkillsList(detailedCourse),
+        modules: this.getModulesList(detailedCourse),
+        
+        // Enhanced metadata
+        format: detailedCourse.format || 'standard',
+        structuredData: detailedCourse.structuredData || null,
+        hasValidData: this.validateCourseData(detailedCourse),
+        
+        // Modal display flags
+        isModalReady: true,
+        modalLoadedAt: Date.now()
+      };
+    },
+
+    validateCourseData(course) {
+      return !!(
+        course &&
+        course.title &&
+        course.description &&
+        course.category
+      );
+    },
+
+    // =====================================
+    // ENHANCED COURSE START METHODS
+    // =====================================
+
+    async startCourse(course) {
+      if (!course) {
+        console.error('❌ No course data to start');
+        return;
+      }
+
+      console.log('🚀 Starting course:', course.title);
+
+      // Enhanced premium access check
+      if (course.isPremium && !this.isPremiumUser) {
+        const message = this.getPremiumMessage(course);
+        this.showToast(message, 'error');
+        return;
+      }
+      
+      try {
+        // ✅ ENHANCED: Ensure we have complete course data for better learning experience
+        let completeCourse = await this.ensureCompleteCourseData(course);
+        
+        this.selectedCourse = completeCourse;
+        this.isModalOpen = false;
+        this.showStudyInterface = true;
+        
+        // Track course start
+        this.trackCourseStart(completeCourse);
+        
+      } catch (error) {
+        console.error('❌ Error starting course:', error);
+        this.showToast('Ошибка при запуске курса', 'error');
+      }
+    },
+
+    async ensureCompleteCourseData(course) {
+      // If we don't have structured data or curriculum, try to fetch it
+      if (!course.structuredData && (!course.curriculum || !course.curriculum.length)) {
+        try {
+          console.log('📚 Fetching complete course data for learning');
+          
+          // Try structured format first
+          let response = await getCourseStructuredEnhanced(course._id || course.id);
+          
+          if (response && response.success && response.data) {
+            return {
+              ...course,
+              ...response.data,
+              _id: response.data._id || course._id,
+              id: response.data.id || course.id || response.data._id,
+              format: response.format,
+              structuredData: response.format === 'structured' ? response.data : null,
+              isEnhanced: true
+            };
+          }
+        } catch (error) {
+          console.error('❌ Error fetching complete course data:', error);
+          // Continue with original course data
+        }
+      }
+      
+      return course;
+    },
+
+    getPremiumMessage(course) {
+      const currentPlan = this.currentUserStatus;
+      if (currentPlan === 'free') {
+        return `Этот курс доступен только по подписке Start/Pro. Ваш текущий статус: ${currentPlan}`;
+      }
+      return `Этот курс требует подписку Pro. Ваш текущий статус: ${currentPlan}`;
+    },
+
+    trackCourseStart(course) {
+      try {
+        // Track course start for analytics
+        const trackingData = {
+          courseId: course.id,
+          title: course.title,
+          category: course.category,
+          isPremium: course.isPremium,
+          startedAt: Date.now(),
+          userStatus: this.currentUserStatus
+        };
+
+        sessionStorage.setItem('lastStartedCourse', JSON.stringify(trackingData));
+        
+        // Emit event for potential analytics
+        this.$emit('courseStarted', trackingData);
+      } catch (error) {
+        console.warn('⚠️ Failed to track course start:', error);
+      }
+    },
+
+    // =====================================
+    // ENHANCED ERROR HANDLING
+    // =====================================
+
+    handleLoadError(error) {
+      this.error = this.getErrorMessage(error);
+      this.retryCount++;
+      
+      // Provide helpful error recovery
+      if (this.retryCount >= this.maxRetries) {
+        this.provideFallbackData();
+      }
+    },
+
+    getErrorMessage(error) {
+      if (!error) return 'Неизвестная ошибка';
+      
+      if (typeof error === 'string') return error;
+      
+      if (error.message) {
+        if (error.message.includes('Network')) {
+          return 'Проблемы с подключением к интернету. Проверьте соединение.';
+        }
+        if (error.message.includes('404')) {
+          return 'Сервер курсов временно недоступен. Попробуйте позже.';
+        }
+        if (error.message.includes('500')) {
+          return 'Ошибка сервера. Наша команда уже работает над решением.';
+        }
+        if (error.message.includes('timeout')) {
+          return 'Превышено время ожидания. Попробуйте еще раз.';
+        }
+        return error.message;
+      }
+      
+      return 'Произошла ошибка при загрузке курсов';
+    },
+
+    // =====================================
+    // ENHANCED UTILITY METHODS
+    // =====================================
+
+    async delay(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    },
+
+    showToast(message, type = 'info') {
+      if (this.$toast) {
+        this.$toast[type](message, { duration: 4000 });
+      } else if (this.$notify) {
+        this.$notify({ type, message, duration: 4000 });
+      } else {
+        // Fallback for environments without toast
+        if (type === 'error') {
+          console.error('Toast:', message);
+        } else {
+          console.log('Toast:', message);
+        }
+      }
+    },
+
+    goBackToCourses() {
+      this.showStudyInterface = false;
+      this.selectedCourse = null;
+      this.componentKey++; // Force re-render
+    },
+
+    closeModal() {
+      this.isModalOpen = false;
+      this.selectedCourse = null;
+      this.modalLoading = false;
+    },
+
+    // =====================================
+    // ENHANCED FILTER METHODS
+    // =====================================
 
     buildFilters() {
       const filters = {};
@@ -684,134 +1071,23 @@ async startCourse(course) {
       return filters;
     },
 
-    processCourses(courses) {
-      if (!Array.isArray(courses)) return [];
-      
-      return courses.map(course => ({
-        ...course,
-        id: course._id || course.id || `course_${Date.now()}_${Math.random()}`,
-        title: course.title || 'Без названия',
-        description: course.description || 'Описание не указано',
-        category: course.category || 'Общий',
-        level: course.level || 'Базовый',
-        duration: course.duration || '30 мин',
-        isPremium: Boolean(course.isPremium || course.premium || course.type === 'premium')
-      }));
-    },
-
-    getErrorMessage(error) {
-      if (error.message) {
-        if (error.message.includes('Network')) {
-          return 'Проблемы с подключением к интернету';
-        }
-        if (error.message.includes('404')) {
-          return 'Курсы временно недоступны';
-        }
-        if (error.message.includes('500')) {
-          return 'Ошибка сервера. Попробуйте позже';
-        }
-        return error.message;
-      }
-      return 'Неизвестная ошибка при загрузке курсов';
-    },
-
-    // =====================================
-    // IMAGE HANDLING METHODS
-    // =====================================
-    
-    getCourseImage(course) {
-      if (!course) return this.courseImages.default;
-
-      try {
-        const title = this.safeString(course.title);
-        const category = this.safeString(course.category);
-        const description = this.safeString(course.description);
-
-        // Check for exact keyword matches first
-        const keywords = [
-          'javascript', 'python', 'react', 'vue', 'node', 'ai', 'machine learning',
-          'design', 'marketing', 'blockchain', 'crypto', 'english', 'business',
-          'programming', 'coding', 'web development', 'mobile development'
-        ];
-
-        for (const keyword of keywords) {
-          if (title.includes(keyword) && this.courseImages[keyword]) {
-            return this.courseImages[keyword];
-          }
-        }
-
-        // Check category matches
-        if (category && this.courseImages[category]) {
-          return this.courseImages[category];
-        }
-
-        // Check for partial matches in category
-        const categoryKeywords = Object.keys(this.courseImages);
-        for (const keyword of categoryKeywords) {
-          if (category.includes(keyword) && this.courseImages[keyword]) {
-            return this.courseImages[keyword];
-          }
-        }
-
-        // Check content keywords
-        const contentKeywords = [
-          'programming', 'coding', 'development', 'design', 'marketing', 
-          'business', 'ai', 'blockchain', 'language', 'finance', 'data'
-        ];
-
-        for (const keyword of contentKeywords) {
-          if ((title.includes(keyword) || description.includes(keyword)) && this.courseImages[keyword]) {
-            return this.courseImages[keyword];
-          }
-        }
-
-        // Premium/free fallback
-        return course.isPremium ? this.courseImages.course : this.courseImages.default;
-        
-      } catch (error) {
-        console.warn('⚠️ Error getting course image:', error);
-        return this.courseImages.default;
-      }
-    },
-
-    safeString(value) {
-      if (value === null || value === undefined) return '';
-      return String(value).toLowerCase().trim();
-    },
-
-    handleImageError(event, course) {
-      if (!event.target) return;
-      
-      console.warn('⚠️ Image failed to load for course:', course?.title || 'Unknown');
-      
-      if (event.target.src !== this.courseImages.default) {
-        event.target.src = this.courseImages.default;
-      }
-      
-      event.target.onerror = null; // Prevent infinite error loops
-    },
-
-    // =====================================
-    // FILTER METHODS
-    // =====================================
-    
     debounceSearch() {
       if (this.debounceTimeout) {
         clearTimeout(this.debounceTimeout);
       }
       
       this.debounceTimeout = setTimeout(() => {
-        this.loadCourses();
+        this.loadCoursesWithRetry();
       }, 300);
     },
 
     applyFilters() {
-      this.loadCourses();
+      this.loadCoursesWithRetry();
     },
 
     setTypeFilter(type) {
       this.typeFilter = type;
-      this.loadCourses();
+      this.loadCoursesWithRetry();
     },
 
     clearFilters() {
@@ -819,156 +1095,71 @@ async startCourse(course) {
       this.categoryFilter = 'all';
       this.levelFilter = 'all';
       this.typeFilter = 'all';
-      this.loadCourses();
+      this.loadCoursesWithRetry();
     },
 
     // =====================================
-    // MODAL METHODS
+    // ENHANCED MODAL CONTENT METHODS
     // =====================================
-    
-    async openModal(course) {
-      if (!course || (!course._id && !course.id)) {
-        console.error('❌ Invalid course data for modal:', course);
-        return;
-      }
 
-      this.selectedCourse = null;
-      this.isModalOpen = true;
-      this.modalLoading = true;
-      
-      try {
-        
-        const courseId = course._id || course.id;
-        const response = await getCourseById(courseId);
-        
-        if (response && response.success && response.data) {
-          this.selectedCourse = {
-            ...course, // Keep original data as fallback
-            ...response.data, // Override with detailed data
-            id: response.data._id || response.data.id || course.id,
-            _id: response.data._id || course._id,
-            title: response.data.title || course.title,
-            isPremium: Boolean(response.data.isPremium || course.isPremium)
-          };
-        } else {
-          console.warn('⚠️ Failed to fetch detailed course info, using basic data');
-          this.selectedCourse = course;
-        }
-      } catch (error) {
-        console.error('❌ Error fetching course details for modal:', error);
-        this.selectedCourse = course;
-      } finally {
-        this.modalLoading = false;
-      }
-    },
-
-    closeModal() {
-      this.isModalOpen = false;
-      this.selectedCourse = null;
-      this.modalLoading = false;
-    },
-
-    // =====================================
-    // COURSE START METHODS
-    // =====================================
-    
-    async startCourse(course) {
-      if (!course) {
-        console.error('❌ No course data to start');
-        return;
-      }
-
-   
-      // Check premium access
-      if (course.isPremium && !this.isPremiumUser) {
-        
-        const message = `Этот курс доступен только по подписке Start/Pro. Ваш текущий статус: ${this.currentUserStatus}`;
-        
-        this.showToast(message, 'error');
-        return;
-      }
-      
-      
-      // Ensure we have complete course data
-      let completeCourse = course;
-      if (!course.curriculum || !course.curriculum.length) {
-        try {
-          const response = await getCourseById(course._id || course.id);
-          if (response && response.success && response.data) {
-            completeCourse = {
-              ...course,
-              ...response.data,
-              _id: response.data._id || course._id,
-              id: response.data.id || course.id || response.data._id
-            };
-          }
-        } catch (error) {
-          console.error('❌ Error fetching complete course data:', error);
-          // Continue with original course data
-        }
-      }
-      
-      this.selectedCourse = completeCourse;
-      this.isModalOpen = false;
-      this.showStudyInterface = true;
-      
-    },
-
-    goBackToCourses() {
-      this.showStudyInterface = false;
-      this.selectedCourse = null;
-      this.componentKey++; // Force re-render
-    },
-
-    // =====================================
-    // MODAL CONTENT METHODS
-    // =====================================
-    
     getSkillsList(course) {
       if (!course) return this.getDefaultSkills();
       
+      // Try to get skills from multiple sources
       if (course.skills && Array.isArray(course.skills) && course.skills.length > 0) {
         return course.skills;
       }
       
+      if (course.learningOutcomes && Array.isArray(course.learningOutcomes) && course.learningOutcomes.length > 0) {
+        return course.learningOutcomes;
+      }
+      
       // Generate skills based on course category/title
+      return this.generateSkillsFromCourse(course);
+    },
+
+    generateSkillsFromCourse(course) {
       const title = this.safeString(course.title);
       const category = this.safeString(course.category);
       
-      if (title.includes('javascript') || category.includes('javascript')) {
-        return [
+      const skillsMap = {
+        'javascript': [
           'Основы синтаксиса JavaScript',
           'Работа с DOM элементами',
           'Асинхронное программирование',
           'Современные возможности ES6+'
-        ];
-      }
-      
-      if (title.includes('python') || category.includes('python')) {
-        return [
+        ],
+        'python': [
           'Синтаксис и структуры данных Python',
           'Объектно-ориентированное программирование',
           'Работа с библиотеками',
           'Создание веб-приложений'
-        ];
-      }
-      
-      if (title.includes('design') || category.includes('design')) {
-        return [
+        ],
+        'design': [
           'Принципы дизайна и композиции',
           'Работа с цветом и типографикой',
           'Создание пользовательских интерфейсов',
           'Современные дизайн-тренды'
-        ];
-      }
-      
-      if (title.includes('marketing') || category.includes('marketing')) {
-        return [
+        ],
+        'маркетинг': [
           'Стратегия цифрового маркетинга',
           'Анализ целевой аудитории',
           'Создание рекламных кампаний',
           'Измерение эффективности'
-        ];
+        ],
+        'ии': [
+          'Основы искусственного интеллекта',
+          'Машинное обучение',
+          'Нейронные сети',
+          'Практическое применение ИИ'
+        ]
+      };
+      
+      // Check for keyword matches
+      for (const [keyword, skills] of Object.entries(skillsMap)) {
+        if (title.includes(keyword) || category.includes(keyword)) {
+          return skills;
+        }
       }
       
       return this.getDefaultSkills();
@@ -977,17 +1168,23 @@ async startCourse(course) {
     getModulesList(course) {
       if (!course) return this.getDefaultModules();
       
-      if (course.modules && Array.isArray(course.modules) && course.modules.length > 0) {
-        return course.modules;
-      }
-      
+      // Try curriculum first
       if (course.curriculum && Array.isArray(course.curriculum) && course.curriculum.length > 0) {
         return course.curriculum.map(lesson => 
           lesson.title || lesson.lessonName || 'Урок без названия'
         );
       }
       
-      // Generate modules based on course type
+      // Try modules field
+      if (course.modules && Array.isArray(course.modules) && course.modules.length > 0) {
+        return course.modules;
+      }
+      
+      // Generate based on course type
+      return this.generateModulesFromCourse(course);
+    },
+
+    generateModulesFromCourse(course) {
       const title = this.safeString(course.title);
       
       if (title.includes('javascript')) {
@@ -1000,23 +1197,13 @@ async startCourse(course) {
         ];
       }
       
-      if (title.includes('design')) {
+      if (title.includes('design') || title.includes('дизайн')) {
         return [
           'Основы дизайна',
           'Цвет и типографика',
           'Композиция и макеты',
           'UI/UX принципы',
           'Финальный проект'
-        ];
-      }
-      
-      if (title.includes('marketing')) {
-        return [
-          'Основы маркетинга',
-          'Анализ рынка',
-          'Стратегия продвижения',
-          'Цифровые каналы',
-          'Измерение результатов'
         ];
       }
       
@@ -1042,153 +1229,91 @@ async startCourse(course) {
       ];
     },
 
-    // =====================================
-    // USER STATUS METHODS
-    // =====================================
-    
-    handleUserStatusChange(newStatus, oldStatus) {
-      if (!newStatus || newStatus === oldStatus) return;
-
-
-      // Update localStorage safely
-      this.updateLocalStorage(newStatus);
-      this.triggerReactivityUpdate();
-
-      // Show success message for upgrades
-      if (newStatus && newStatus !== 'free' && oldStatus === 'free') {
-        const planLabel = newStatus === 'pro' ? 'Pro' : 'Start';
-        this.showToast(`🎉 ${planLabel} подписка активирована!`, 'success');
-      }
-
+    safeString(value) {
+      if (value === null || value === undefined) return '';
+      return String(value).toLowerCase().trim();
     },
 
-    updateLocalStorage(newStatus) {
+    // =====================================
+    // ENHANCED IMAGE HANDLING
+    // =====================================
+
+    getCourseImage(course) {
+      if (!course) return this.getDefaultThumbnail('default');
+
       try {
-        const keys = ['userStatus', 'plan', 'subscriptionPlan'];
-        keys.forEach(key => {
-          localStorage.setItem(key, newStatus);
-        });
-      } catch (error) {
-        console.warn('⚠️ Failed to update localStorage:', error);
-      }
-    },
-
-    triggerReactivityUpdate() {
-      this.componentKey++;
-      this.forceUpdateCounter++;
-      this.lastUpdateTime = Date.now();
-
-      this.$forceUpdate();
-
-      this.$nextTick(() => {
-        this.$forceUpdate();
-      });
-
-       
-    },
-
-    // =====================================
-    // EVENT HANDLING METHODS
-    // =====================================
-    
-    setupEventListeners() {
-
-      // Custom subscription events
-      if (typeof window !== 'undefined') {
-        this.handleSubscriptionChange = (event) => {
-          const { plan, oldPlan } = event.detail || {};
-          if (plan) {
-            this.handleUserStatusChange(plan, oldPlan);
-          }
-        };
-        
-        window.addEventListener('userSubscriptionChanged', this.handleSubscriptionChange);
-
-        // Storage events
-        this.handleStorageChange = (event) => {
-          if (event.key === 'userStatus' && event.newValue !== event.oldValue) {
-            this.handleUserStatusChange(event.newValue, event.oldValue);
-          }
-        };
-        
-        window.addEventListener('storage', this.handleStorageChange);
-      }
-
-      // Event bus listeners
-      if (typeof window !== 'undefined' && window.eventBus) {
-        const eventHandlers = {
-          'userStatusChanged': (data) => {
-            if (data && data.newStatus) {
-              this.handleUserStatusChange(data.newStatus, data.oldStatus);
-            }
-          },
-          'promocodeApplied': (data) => {
-            if (data && data.newStatus) {
-              this.handleUserStatusChange(data.newStatus, data.oldStatus);
-            }
-          },
-          'forceUpdate': () => this.triggerReactivityUpdate(),
-          'globalForceUpdate': () => this.triggerReactivityUpdate(),
-          'subscriptionUpdated': (data) => {
-            if (data && data.newStatus) {
-              this.handleUserStatusChange(data.newStatus, data.oldStatus);
-            }
-          },
-          'paymentCompleted': (data) => {
-            if (data && data.newStatus) {
-              this.handleUserStatusChange(data.newStatus, data.oldStatus);
-            }
-          }
-        };
-
-        Object.entries(eventHandlers).forEach(([event, handler]) => {
-          window.eventBus.on(event, handler);
-        });
-
-        this.eventHandlers = eventHandlers;
-      }
-
-      // Store subscription
-      if (this.$store) {
-        this.storeUnsubscribe = this.$store.subscribe((mutation) => {
-          if (this.isUserRelatedMutation(mutation)) {
-            this.triggerReactivityUpdate();
-          }
-        });
-      }
-
-    },
-
-    isUserRelatedMutation(mutation) {
-      if (!mutation || !mutation.type) return false;
-      
-      const userMutations = [
-        'setUser', 'SET_USER', 'updateUser', 'UPDATE_USER',
-        'user/SET_USER_STATUS', 'user/UPDATE_SUBSCRIPTION', 'user/FORCE_UPDATE'
-      ];
-      
-      return userMutations.some(type => mutation.type.includes(type)) ||
-             mutation.type.includes('user/') ||
-             mutation.type.toLowerCase().includes('status') ||
-             mutation.type.toLowerCase().includes('subscription');
-    },
-
-    // =====================================
-    // UTILITY METHODS
-    // =====================================
-    
-    showToast(message, type = 'info') {
-      if (this.$toast) {
-        this.$toast[type](message, { duration: 4000 });
-      } else {
-        // Fallback to console and alert
-        if (type === 'error') {
-          alert(message);
+        // Use validated thumbnail from processing
+        if (course.thumbnail) {
+          return course.thumbnail;
         }
+
+        // Fallback to category-based image
+        return this.getDefaultThumbnail(course.category);
+        
+      } catch (error) {
+        console.warn('⚠️ Error getting course image:', error);
+        return this.getDefaultThumbnail('default');
       }
     },
+
+    getDefaultThumbnail(category) {
+      const courseImages = {
+        'ИИ и автоматизация': 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=600&h=400&fit=crop&crop=center',
+        'Видеомонтаж': 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=600&h=400&fit=crop&crop=center',
+        'Графический дизайн': 'https://images.unsplash.com/photo-1626785774573-4b799315345d?w=600&h=400&fit=crop&crop=center',
+        'Web-разработка': 'https://images.unsplash.com/photo-1547658719-da2b51169166?w=600&h=400&fit=crop&crop=center',
+        'Мобильная разработка': 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=600&h=400&fit=crop&crop=center',
+        'Машинное обучение': 'https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=600&h=400&fit=crop&crop=center',
+        'Дизайн': 'https://images.unsplash.com/photo-1609921212029-bb5a28e60960?w=600&h=400&fit=crop&crop=center',
+        'Программирование': 'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?w=600&h=400&fit=crop&crop=center',
+        'Маркетинг': 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&h=400&fit=crop&crop=center',
+        'default': 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=600&h=400&fit=crop&crop=center'
+      };
+      
+      return courseImages[category] || courseImages.default;
+    },
+
+    getDefaultAvatar() {
+      return 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face';
+    },
+
+    processImageUrl(imageUrl) {
+      if (!imageUrl) return null;
+      
+      // Handle base64 images
+      if (imageUrl.startsWith('data:')) return imageUrl;
+      
+      // Handle relative URLs from backend
+      if (imageUrl.startsWith('/uploads/')) {
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live';
+        return `${baseUrl}${imageUrl}`;
+      }
+      
+      // Handle absolute URLs
+      if (imageUrl.startsWith('http')) return imageUrl;
+      
+      return imageUrl;
+    },
+
+    handleImageError(event, course) {
+      if (!event.target) return;
+      
+      console.warn('⚠️ Image failed to load for course:', course?.title || 'Unknown');
+      
+      const fallbackUrl = this.getDefaultThumbnail(course?.category);
+      if (event.target.src !== fallbackUrl) {
+        event.target.src = fallbackUrl;
+      }
+      
+      event.target.onerror = null; // Prevent infinite error loops
+    },
+
+    // =====================================
+    // ENHANCED CLEANUP AND EVENT HANDLING
+    // =====================================
 
     cleanup() {
+      console.log('🧹 Cleaning up UpdatedCourses component');
 
       // Clear timeouts
       if (this.debounceTimeout) {
@@ -1196,32 +1321,83 @@ async startCourse(course) {
         this.debounceTimeout = null;
       }
 
-      // Remove DOM event listeners
+      // Remove event listeners
+      this.removeEventListeners();
+
+      // Clear any intervals
+      if (this.refreshInterval) {
+        clearInterval(this.refreshInterval);
+        this.refreshInterval = null;
+      }
+
+      console.log('✅ Cleanup completed');
+    },
+
+    setupEventListeners() {
+      // Enhanced event listeners setup
       if (typeof window !== 'undefined') {
-        if (this.handleSubscriptionChange) {
-          window.removeEventListener('userSubscriptionChanged', this.handleSubscriptionChange);
-          this.handleSubscriptionChange = null;
+        // Handle online/offline events
+        this.handleOnline = () => {
+          if (this.shouldRefreshCache) {
+            this.loadCoursesWithRetry();
+          }
+        };
+        
+        this.handleOffline = () => {
+          console.warn('⚠️ Gone offline - using cached data');
+        };
+
+        window.addEventListener('online', this.handleOnline);
+        window.addEventListener('offline', this.handleOffline);
+
+        // Handle visibility change (tab focus)
+        this.handleVisibilityChange = () => {
+          if (!document.hidden && this.shouldRefreshCache) {
+            this.loadCoursesWithRetry();
+          }
+        };
+
+        document.addEventListener('visibilitychange', this.handleVisibilityChange);
+      }
+    },
+
+    removeEventListeners() {
+      if (typeof window !== 'undefined') {
+        if (this.handleOnline) {
+          window.removeEventListener('online', this.handleOnline);
+          this.handleOnline = null;
         }
-        if (this.handleStorageChange) {
-          window.removeEventListener('storage', this.handleStorageChange);
-          this.handleStorageChange = null;
+        
+        if (this.handleOffline) {
+          window.removeEventListener('offline', this.handleOffline);
+          this.handleOffline = null;
+        }
+
+        if (this.handleVisibilityChange) {
+          document.removeEventListener('visibilitychange', this.handleVisibilityChange);
+          this.handleVisibilityChange = null;
         }
       }
+    },
 
-      // Remove event bus listeners
-      if (typeof window !== 'undefined' && window.eventBus && this.eventHandlers) {
-        Object.entries(this.eventHandlers).forEach(([event, handler]) => {
-          window.eventBus.off(event, handler);
-        });
-        this.eventHandlers = null;
+    triggerReactivityUpdate() {
+      this.componentKey++;
+      this.forceUpdateCounter++;
+      this.lastUpdateTime = Date.now();
+      this.$forceUpdate();
+    },
+
+    handleUserStatusChange(newStatus, oldStatus) {
+      if (!newStatus || newStatus === oldStatus) return;
+
+      console.log('👤 User status changed:', oldStatus, '->', newStatus);
+      this.triggerReactivityUpdate();
+
+      // Show success message for upgrades
+      if (newStatus && newStatus !== 'free' && oldStatus === 'free') {
+        const planLabel = newStatus === 'pro' ? 'Pro' : 'Start';
+        this.showToast(`🎉 ${planLabel} подписка активирована!`, 'success');
       }
-
-      // Unsubscribe from store
-      if (this.storeUnsubscribe) {
-        this.storeUnsubscribe();
-        this.storeUnsubscribe = null;
-      }
-
     }
   }
 };
