@@ -2376,25 +2376,35 @@ export default {
   line-height: 1.3;
 }
 
-/* Mobile Responsive */
+/* Mobile Responsive - ✅ IMPROVED: Better mobile modal layout */
 @media (max-width: 767px) {
   .modal-container {
-    margin: 0.5rem;
-    max-height: 95vh;
+    margin: 1rem;
+    max-height: 90vh;
+    max-width: calc(100vw - 2rem);
   }
+  
   .modal-body {
-    padding: 16px;
+    padding: 24px;
   }
+  
   .modal-header-section {
-    height: 180px;
+    height: 200px;
   }
+  
   .modal-title {
-    font-size: 1.25rem;
+    font-size: 1.3rem;
   }
+  
   .modal-details-grid {
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: 20px;
   }
+  
+  .modal-actions {
+    padding: 20px 24px;
+  }
+  
   .filter-bar {
     padding: 1rem;
     gap: 1rem;
@@ -2403,37 +2413,52 @@ export default {
 
 @media (max-width: 480px) {
   .modal-overlay {
-    padding: 0.5rem;
+    padding: 0.75rem;
   }
 
   .modal-container {
-    max-width: calc(100vw - 1rem);
+    max-width: calc(100vw - 1.5rem);
+    border-radius: 16px;
   }
+  
   .modal-body {
-    padding: 12px;
+    padding: 20px;
   }
+  
   .modal-header-section {
-    height: 140px;
+    height: 160px;
   }
+  
   .modal-title {
-    font-size: 1.125rem;
+    font-size: 1.2rem;
   }
+  
+  .modal-actions {
+    padding: 16px 20px;
+  }
+  
   .header {
     padding: 2rem 0;
   }
+  
   .header-title {
     font-size: 1.75rem;
   }
+  
   .header-subtitle {
     font-size: 1.125rem;
   }
+  
   .filter-bar {
     flex-direction: column;
     gap: 0.75rem;
+    padding: 0.75rem;
   }
+  
   .filter-group-buttons {
     justify-content: center;
   }
+  
   .button-filter {
     min-width: 80px;
   }
