@@ -1235,7 +1235,7 @@ export default {
     },
 
     // =====================================
-    // ENHANCED IMAGE HANDLING
+    // ENHANCED IMAGE HANDLING - RESTORED HARDCODED IMAGES
     // =====================================
 
     getCourseImage(course) {
@@ -1257,6 +1257,7 @@ export default {
     },
 
     getDefaultThumbnail(category) {
+      // ✅ RESTORED: Hardcoded thumbnail URLs
       const courseImages = {
         'ИИ и автоматизация': 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=600&h=400&fit=crop&crop=center',
         'Видеомонтаж': 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=600&h=400&fit=crop&crop=center',
@@ -1274,6 +1275,7 @@ export default {
     },
 
     getDefaultAvatar() {
+      // ✅ RESTORED: Hardcoded avatar URL
       return 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face';
     },
 
@@ -1989,7 +1991,7 @@ export default {
   opacity: 0;
 }
 
-/* Modal - Fixed Width and Layout */
+/* Modal - ✅ FIXED: Full width container and content */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -2008,7 +2010,7 @@ export default {
 .modal-container {
   position: relative;
   width: 100%;
-  max-width: 500px; /* MODIFIED: Increased max-width for better layout */
+  max-width: 500px;
   max-height: 90vh;
   background-color: var(--color-background);
   border-radius: 16px;
@@ -2052,10 +2054,12 @@ export default {
   gap: 1rem;
 }
 
+/* ✅ FIXED: Modal content now takes full container width */
 .modal-content {
   display: flex;
   flex-direction: column;
-  max-height: 90vh;
+  height: 100%;
+  width: 100%;
   overflow: hidden;
 }
 
@@ -2064,6 +2068,7 @@ export default {
   height: 240px;
   overflow: hidden;
   flex-shrink: 0;
+  width: 100%;
 }
 
 .modal-image-container {
@@ -2162,24 +2167,18 @@ export default {
 .modal-body {
   flex: 1;
   overflow-y: auto;
-  padding: 24px 0;
+  padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 24px;
+  width: 100%;
 }
-
-.modal-course-info,
-.modal-details,
-.modal-actions {
-  padding-left: 24px;
-  padding-right: 24px;
-}
-
 
 .modal-course-info {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  width: 100%;
 }
 
 .modal-tags {
@@ -2228,18 +2227,21 @@ export default {
   background: var(--color-border);
   border: none;
   margin: 0;
+  width: 100%;
 }
 
 .modal-details {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  width: 100%;
 }
 
 .modal-details-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 20px;
+  width: 100%;
 }
 
 @media (min-width: 768px) {
@@ -2316,6 +2318,7 @@ export default {
   border-top: 1px solid var(--color-border);
   margin-top: auto;
   flex-shrink: 0;
+  width: 100%;
 }
 
 /* Modal Action Buttons - Reworked for clarity and style */
@@ -2380,8 +2383,7 @@ export default {
     max-height: 95vh;
   }
   .modal-body {
-    padding-left: 16px;
-    padding-right: 16px;
+    padding: 16px;
   }
   .modal-header-section {
     height: 180px;
@@ -2408,8 +2410,7 @@ export default {
     max-width: calc(100vw - 1rem);
   }
   .modal-body {
-    padding-left: 12px;
-    padding-right: 12px;
+    padding: 12px;
   }
   .modal-header-section {
     height: 140px;
@@ -2478,4 +2479,3 @@ export default {
     border: 2px solid;
   }
 }
-</style>
