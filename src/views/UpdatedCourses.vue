@@ -2008,7 +2008,7 @@ export default {
 .modal-container {
   position: relative;
   width: 100%;
-  max-width: 380px;
+  max-width: 500px; /* MODIFIED: Increased max-width for better layout */
   max-height: 90vh;
   background-color: var(--color-background);
   border-radius: 16px;
@@ -2378,7 +2378,6 @@ export default {
   .modal-container {
     margin: 0.5rem;
     max-height: 95vh;
-    max-width: none;
   }
   .modal-body {
     padding-left: 16px;
