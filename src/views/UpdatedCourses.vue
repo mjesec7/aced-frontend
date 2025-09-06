@@ -1996,7 +1996,7 @@ export default {
 .modal-container {
   position: relative;
   width: 100%;
-  max-width: 550px; /* Controls the width */
+  max-width: 800px; /* Increased for laptop screens */
   max-height: 90vh;
   background-color: var(--color-background);
   border-radius: 16px;
