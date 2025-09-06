@@ -2122,11 +2122,10 @@ export default {
 .modal-container {
   position: relative;
   width: 100%;
-  max-width: 600px; /* ✅ FIXED: Increased max-width for better content display */
+  max-width: 600px;
   max-height: 90vh;
   background-color: var(--color-background);
   border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -2137,24 +2136,23 @@ export default {
   top: 16px;
   right: 16px;
   z-index: 10;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.9);
-  color: #374151;
-  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background-color: var(--color-background);
+  color: var(--color-muted-foreground);
+  border: 1px solid var(--color-border);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .modal-close:hover {
-  background-color: white;
-  transform: scale(1.05);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  background-color: var(--color-muted);
+  color: var(--color-foreground);
+  border-color: var(--color-muted-foreground);
 }
 
 .modal-loading-state {
