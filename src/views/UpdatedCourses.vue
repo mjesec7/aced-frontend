@@ -122,13 +122,20 @@
             @click="openModal(course)"
           >
             <div class="course-card-image-wrapper">
-              <img 
-                :src="getCourseImage(course)" 
-                :alt="course.title || 'Course thumbnail'" 
+              <div 
                 class="course-card-image"
+                :style="getCourseImageStyle(course)"
                 @error="handleImageError($event, course)"
-                loading="lazy"
-              />
+              >
+                <!-- Loading placeholder -->
+                <div v-if="!course.imageLoaded" class="image-placeholder">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="placeholder-icon">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                    <circle cx="9" cy="9" r="2"/>
+                    <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+                  </svg>
+                </div>
+              </div>
               <div v-if="course.isPremium" class="badge badge-premium">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="badge-icon">
                   <path d="m14 6 4 10L2 10"></path>
@@ -199,12 +206,19 @@
           <div v-else-if="selectedCourse" class="modal-content">
             <div class="modal-header-section">
               <div class="modal-image-container">
-                <img 
-                  :src="getCourseImage(selectedCourse)" 
-                  :alt="selectedCourse.title || 'Course image'" 
+                <div 
                   class="modal-image"
-                  @error="handleImageError($event, selectedCourse)"
-                />
+                  :style="getCourseImageStyle(selectedCourse)"
+                >
+                  <!-- Modal image placeholder -->
+                  <div v-if="!selectedCourse.imageLoaded" class="modal-image-placeholder">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="placeholder-icon">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                      <circle cx="9" cy="9" r="2"/>
+                      <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+                    </svg>
+                  </div>
+                </div>
                 <div class="modal-image-overlay"></div>
 
                 <div class="modal-badge-container">
@@ -631,7 +645,7 @@ export default {
         isPremium: Boolean(course.isPremium || course.premium || course.type === 'premium'),
         
         // Enhanced metadata
-        thumbnail: this.validateThumbnail(course.thumbnail, course.category),
+        thumbnail: this.generateImageBackground(course.category),
         instructor: this.validateInstructor(course.instructor),
         
         // Enhanced course stats
@@ -648,6 +662,9 @@ export default {
         hasHomework: this.hasHomeworkContent(course.curriculum),
         estimatedHours: this.extractHours(course.duration),
         totalLessons: (course.curriculum || []).length,
+        
+        // Image loading state
+        imageLoaded: true, // We'll use CSS backgrounds, so always loaded
         
         // Processing metadata
         processedAt: Date.now(),
@@ -668,11 +685,12 @@ export default {
         level: 'Базовый',
         duration: '30 мин',
         isPremium: false,
-        thumbnail: this.getDefaultThumbnail('default'),
+        thumbnail: this.generateImageBackground('default'),
         instructor: { name: 'ACED', avatar: this.getDefaultAvatar() },
         studentsCount: 0,
         rating: 0,
         curriculum: [],
+        imageLoaded: true,
         isValid: false,
         isFallback: true
       };
@@ -741,13 +759,6 @@ export default {
       return Math.max(min, Math.min(max, num));
     },
 
-    validateThumbnail(thumbnail, category) {
-      if (thumbnail && typeof thumbnail === 'string' && thumbnail.trim()) {
-        return this.processImageUrl(thumbnail);
-      }
-      return this.getDefaultThumbnail(category);
-    },
-
     validateInstructor(instructor) {
       if (!instructor || typeof instructor !== 'object') {
         return {
@@ -759,7 +770,7 @@ export default {
 
       return {
         name: this.validateString(instructor.name, 'ACED Instructor'),
-        avatar: this.validateThumbnail(instructor.avatar, 'instructor'),
+        avatar: this.getDefaultAvatar(),
         bio: this.validateString(instructor.bio, 'Experienced instructor')
       };
     },
@@ -806,6 +817,160 @@ export default {
       }
       if (duration?.hours) return duration.hours;
       return 10;
+    },
+
+    // =====================================
+    // ✅ FAST LOADING CSS GRADIENT IMAGES
+    // =====================================
+
+    getCourseImageStyle(course) {
+      if (!course) return this.generateImageBackground('default');
+      
+      // Always use CSS gradients for instant loading
+      return this.generateImageBackground(course.category);
+    },
+
+    generateImageBackground(category) {
+      // ✅ FAST LOADING: CSS gradients based on category - no network requests!
+      const gradients = {
+        'ИИ и автоматизация': {
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'white',
+          fontSize: '14px',
+          fontWeight: '600',
+          textAlign: 'center'
+        },
+        'Видеомонтаж': {
+          background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'white',
+          fontSize: '14px',
+          fontWeight: '600',
+          textAlign: 'center'
+        },
+        'Графический дизайн': {
+          background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'white',
+          fontSize: '14px',
+          fontWeight: '600',
+          textAlign: 'center'
+        },
+        'Web-разработка': {
+          background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'white',
+          fontSize: '14px',
+          fontWeight: '600',
+          textAlign: 'center'
+        },
+        'Мобильная разработка': {
+          background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'white',
+          fontSize: '14px',
+          fontWeight: '600',
+          textAlign: 'center'
+        },
+        'Машинное обучение': {
+          background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#333',
+          fontSize: '14px',
+          fontWeight: '600',
+          textAlign: 'center'
+        },
+        'Дизайн': {
+          background: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'white',
+          fontSize: '14px',
+          fontWeight: '600',
+          textAlign: 'center'
+        },
+        'Программирование': {
+          background: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'white',
+          fontSize: '14px',
+          fontWeight: '600',
+          textAlign: 'center'
+        },
+        'Маркетинг': {
+          background: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#333',
+          fontSize: '14px',
+          fontWeight: '600',
+          textAlign: 'center'
+        },
+        'default': {
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'white',
+          fontSize: '14px',
+          fontWeight: '600',
+          textAlign: 'center'
+        }
+      };
+      
+      return gradients[category] || gradients.default;
+    },
+
+    getDefaultAvatar() {
+      // Simple CSS gradient for avatar too
+      return {
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        width: '40px',
+        height: '40px',
+        borderRadius: '50%'
+      };
+    },
+
+    handleImageError(event, course) {
+      // This method is kept for compatibility but won't be needed with CSS gradients
+      console.log('Image error handled for course:', course?.title);
     },
 
     // =====================================
@@ -857,6 +1022,10 @@ export default {
         // Enhanced modal-specific data
         skills: this.getSkillsList(detailedCourse),
         modules: this.getModulesList(detailedCourse),
+        
+        // Use same gradient background as card
+        thumbnail: this.generateImageBackground(detailedCourse.category || basicCourse.category),
+        imageLoaded: true,
         
         // Enhanced metadata
         format: detailedCourse.format || 'standard',
@@ -1232,82 +1401,6 @@ export default {
     safeString(value) {
       if (value === null || value === undefined) return '';
       return String(value).toLowerCase().trim();
-    },
-
-    // =====================================
-    // ENHANCED IMAGE HANDLING - RESTORED HARDCODED IMAGES
-    // =====================================
-
-    getCourseImage(course) {
-      if (!course) return this.getDefaultThumbnail('default');
-
-      try {
-        // Use validated thumbnail from processing
-        if (course.thumbnail) {
-          return course.thumbnail;
-        }
-
-        // Fallback to category-based image
-        return this.getDefaultThumbnail(course.category);
-        
-      } catch (error) {
-        console.warn('⚠️ Error getting course image:', error);
-        return this.getDefaultThumbnail('default');
-      }
-    },
-
-    getDefaultThumbnail(category) {
-      // ✅ RESTORED: Hardcoded thumbnail URLs
-      const courseImages = {
-        'ИИ и автоматизация': 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=600&h=400&fit=crop&crop=center',
-        'Видеомонтаж': 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=600&h=400&fit=crop&crop=center',
-        'Графический дизайн': 'https://images.unsplash.com/photo-1626785774573-4b799315345d?w=600&h=400&fit=crop&crop=center',
-        'Web-разработка': 'https://images.unsplash.com/photo-1547658719-da2b51169166?w=600&h=400&fit=crop&crop=center',
-        'Мобильная разработка': 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=600&h=400&fit=crop&crop=center',
-        'Машинное обучение': 'https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=600&h=400&fit=crop&crop=center',
-        'Дизайн': 'https://images.unsplash.com/photo-1609921212029-bb5a28e60960?w=600&h=400&fit=crop&crop=center',
-        'Программирование': 'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?w=600&h=400&fit=crop&crop=center',
-        'Маркетинг': 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&h=400&fit=crop&crop=center',
-        'default': 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=600&h=400&fit=crop&crop=center'
-      };
-      
-      return courseImages[category] || courseImages.default;
-    },
-
-    getDefaultAvatar() {
-      // ✅ RESTORED: Hardcoded avatar URL
-      return 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face';
-    },
-
-    processImageUrl(imageUrl) {
-      if (!imageUrl) return null;
-      
-      // Handle base64 images
-      if (imageUrl.startsWith('data:')) return imageUrl;
-      
-      // Handle relative URLs from backend
-      if (imageUrl.startsWith('/uploads/')) {
-        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live';
-        return `${baseUrl}${imageUrl}`;
-      }
-      
-      // Handle absolute URLs
-      if (imageUrl.startsWith('http')) return imageUrl;
-      
-      return imageUrl;
-    },
-
-    handleImageError(event, course) {
-      if (!event.target) return;
-      
-      console.warn('⚠️ Image failed to load for course:', course?.title || 'Unknown');
-      
-      const fallbackUrl = this.getDefaultThumbnail(course?.category);
-      if (event.target.src !== fallbackUrl) {
-        event.target.src = fallbackUrl;
-      }
-      
-      event.target.onerror = null; // Prevent infinite error loops
     },
 
     // =====================================
@@ -1774,11 +1867,30 @@ export default {
   padding: 16px 16px 0;
 }
 
+/* ✅ FIXED: Fast loading CSS gradient images */
 .course-card-image {
   width: 100%;
   height: 180px;
-  object-fit: cover;
   border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.image-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  color: #9ca3af;
+}
+
+.placeholder-icon {
+  opacity: 0.5;
 }
 
 .badge {
@@ -1991,7 +2103,7 @@ export default {
   opacity: 0;
 }
 
-/* Modal - ✅ FIXED: Full width container and content */
+/* ✅ FIXED: Modal - Consistent width throughout */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -2010,7 +2122,7 @@ export default {
 .modal-container {
   position: relative;
   width: 100%;
-  max-width: 500px;
+  max-width: 600px; /* ✅ FIXED: Increased max-width for better content display */
   max-height: 90vh;
   background-color: var(--color-background);
   border-radius: 16px;
@@ -2052,9 +2164,10 @@ export default {
   justify-content: center;
   padding: 4rem 2rem;
   gap: 1rem;
+  width: 100%;
 }
 
-/* ✅ FIXED: Modal content now takes full container width */
+/* ✅ FIXED: Modal content now maintains consistent width */
 .modal-content {
   display: flex;
   flex-direction: column;
@@ -2077,10 +2190,24 @@ export default {
   height: 100%;
 }
 
+/* ✅ FIXED: Modal image with gradient background */
 .modal-image {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  position: relative;
+  overflow: hidden;
+}
+
+.modal-image-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .modal-image-overlay {
@@ -2164,14 +2291,16 @@ export default {
   font-size: 15px;
 }
 
+/* ✅ FIXED: Modal body with consistent width and better padding */
 .modal-body {
   flex: 1;
   overflow-y: auto;
-  padding: 24px;
+  padding: 32px; /* ✅ FIXED: Increased padding for better content spacing */
   display: flex;
   flex-direction: column;
   gap: 24px;
   width: 100%;
+  box-sizing: border-box; /* ✅ FIXED: Ensure padding is included in width calculations */
 }
 
 .modal-course-info {
@@ -2240,14 +2369,14 @@ export default {
 .modal-details-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 20px;
+  gap: 24px; /* ✅ FIXED: Increased gap for better section separation */
   width: 100%;
 }
 
 @media (min-width: 768px) {
   .modal-details-grid {
     grid-template-columns: 1fr 1fr;
-    gap: 24px;
+    gap: 32px; /* ✅ FIXED: Even larger gap on desktop */
   }
 }
 
@@ -2255,6 +2384,7 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  width: 100%;
 }
 
 .modal-section-title {
@@ -2275,6 +2405,7 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  width: 100%;
 }
 
 .modal-skill-item {
@@ -2313,12 +2444,14 @@ export default {
   flex: 1;
 }
 
+/* ✅ FIXED: Modal actions with consistent width and better spacing */
 .modal-actions {
-  padding-top: 16px;
+  padding: 24px 32px 32px; /* ✅ FIXED: Consistent padding with modal body */
   border-top: 1px solid var(--color-border);
   margin-top: auto;
   flex-shrink: 0;
   width: 100%;
+  box-sizing: border-box; /* ✅ FIXED: Ensure padding is included in width calculations */
 }
 
 /* Modal Action Buttons - Reworked for clarity and style */
@@ -2337,6 +2470,7 @@ export default {
   transition: all 0.2s ease-in-out;
   margin-bottom: 0.5rem;
   border: none;
+  box-sizing: border-box; /* ✅ FIXED: Ensure button respects width calculations */
 }
 
 .modal-action-button.accessible {
@@ -2385,7 +2519,7 @@ export default {
   }
   
   .modal-body {
-    padding: 24px;
+    padding: 24px; /* ✅ FIXED: Consistent mobile padding */
   }
   
   .modal-header-section {
@@ -2402,7 +2536,7 @@ export default {
   }
   
   .modal-actions {
-    padding: 20px 24px;
+    padding: 20px 24px; /* ✅ FIXED: Consistent mobile padding */
   }
   
   .filter-bar {
@@ -2422,7 +2556,7 @@ export default {
   }
   
   .modal-body {
-    padding: 20px;
+    padding: 20px; /* ✅ FIXED: Smaller mobile padding */
   }
   
   .modal-header-section {
@@ -2434,7 +2568,7 @@ export default {
   }
   
   .modal-actions {
-    padding: 16px 20px;
+    padding: 16px 20px; /* ✅ FIXED: Smaller mobile padding */
   }
   
   .header {
