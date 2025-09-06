@@ -1965,7 +1965,8 @@ export default {
   100% { transform: rotate(360deg); }
 }
 
-/* Modal Styles */
+/* --- MODAL STYLES --- */
+
 .modal-enter-active,
 .modal-leave-active {
   transition: opacity 0.3s ease;
@@ -1991,10 +1992,11 @@ export default {
   padding: 1rem;
 }
 
+/* THIS IS THE SINGLE SOURCE OF TRUTH FOR MODAL WIDTH */
 .modal-container {
   position: relative;
   width: 100%;
-  max-width: 550px;
+  max-width: 550px; /* Controls the width */
   max-height: 90vh;
   background-color: var(--color-background);
   border-radius: 16px;
@@ -2050,11 +2052,14 @@ export default {
   gap: 1rem;
 }
 
+/* THIS FILLS THE CONTAINER AND HAS NO MAX-WIDTH */
 .modal-content {
   display: flex;
   flex-direction: column;
+  width: 100%; /* Fills the container */
   height: 100%;
   overflow: hidden;
+  /* NO max-width here. */
 }
 
 .modal-header-section {
