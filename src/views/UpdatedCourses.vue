@@ -127,7 +127,6 @@
                 :style="getCourseImageStyle(course)"
                 @error="handleImageError($event, course)"
               >
-                <!-- Loading placeholder -->
                 <div v-if="!course.imageLoaded" class="image-placeholder">
                   <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="placeholder-icon">
                     <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
@@ -192,7 +191,7 @@
       <div v-if="isModalOpen && selectedCourse" class="modal-overlay" @click="closeModal">
         <div class="modal-container" @click.stop>
           <button class="modal-close" @click="closeModal" aria-label="Закрыть">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M18 6 6 18"></path>
               <path d="m6 6 12 12"></path>
             </svg>
@@ -210,7 +209,6 @@
                   class="modal-image"
                   :style="getCourseImageStyle(selectedCourse)"
                 >
-                  <!-- Modal image placeholder -->
                   <div v-if="!selectedCourse.imageLoaded" class="modal-image-placeholder">
                     <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="placeholder-icon">
                       <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
@@ -2103,7 +2101,7 @@ export default {
   opacity: 0;
 }
 
-/* ✅ FIXED: Modal - Consistent width throughout */
+/* Modal - Consistent width throughout */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -2122,7 +2120,7 @@ export default {
 .modal-container {
   position: relative;
   width: 100%;
-  max-width: 600px;
+  max-width: 550px; /* MODIFIED */
   max-height: 90vh;
   background-color: var(--color-background);
   border-radius: 16px;
@@ -2133,15 +2131,16 @@ export default {
 
 .modal-close {
   position: absolute;
-  top: 16px;
-  right: 16px;
+  top: 1rem; /* MODIFIED */
+  right: 1rem; /* MODIFIED */
   z-index: 10;
   width: 32px;
   height: 32px;
-  border-radius: 8px;
-  background-color: var(--color-background);
-  color: var(--color-muted-foreground);
-  border: 1px solid var(--color-border);
+  border-radius: 9999px; /* MODIFIED */
+  background-color: rgba(0, 0, 0, 0.3); /* MODIFIED */
+  color: #ffffff; /* MODIFIED */
+  border: 1px solid rgba(255, 255, 255, 0.2); /* MODIFIED */
+  backdrop-filter: blur(4px); /* MODIFIED */
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -2149,10 +2148,10 @@ export default {
   transition: all 0.2s ease;
 }
 
+
 .modal-close:hover {
-  background-color: var(--color-muted);
-  color: var(--color-foreground);
-  border-color: var(--color-muted-foreground);
+  background-color: rgba(0, 0, 0, 0.5); /* MODIFIED */
+  transform: scale(1.1);
 }
 
 .modal-loading-state {
@@ -2165,7 +2164,6 @@ export default {
   width: 100%;
 }
 
-/* ✅ FIXED: Modal content now maintains consistent width */
 .modal-content {
   display: flex;
   flex-direction: column;
@@ -2188,7 +2186,6 @@ export default {
   height: 100%;
 }
 
-/* ✅ FIXED: Modal image with gradient background */
 .modal-image {
   width: 100%;
   height: 100%;
@@ -2289,16 +2286,15 @@ export default {
   font-size: 15px;
 }
 
-/* ✅ FIXED: Modal body with consistent width and better padding */
 .modal-body {
   flex: 1;
   overflow-y: auto;
-  padding: 32px; /* ✅ FIXED: Increased padding for better content spacing */
+  padding: 32px;
   display: flex;
   flex-direction: column;
   gap: 24px;
   width: 100%;
-  box-sizing: border-box; /* ✅ FIXED: Ensure padding is included in width calculations */
+  box-sizing: border-box;
 }
 
 .modal-course-info {
@@ -2367,14 +2363,14 @@ export default {
 .modal-details-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 24px; /* ✅ FIXED: Increased gap for better section separation */
+  gap: 24px;
   width: 100%;
 }
 
 @media (min-width: 768px) {
   .modal-details-grid {
     grid-template-columns: 1fr 1fr;
-    gap: 32px; /* ✅ FIXED: Even larger gap on desktop */
+    gap: 32px;
   }
 }
 
@@ -2442,14 +2438,13 @@ export default {
   flex: 1;
 }
 
-/* ✅ FIXED: Modal actions with consistent width and better spacing */
 .modal-actions {
-  padding: 24px 32px 32px; /* ✅ FIXED: Consistent padding with modal body */
+  padding: 24px 32px 32px;
   border-top: 1px solid var(--color-border);
   margin-top: auto;
   flex-shrink: 0;
   width: 100%;
-  box-sizing: border-box; /* ✅ FIXED: Ensure padding is included in width calculations */
+  box-sizing: border-box;
 }
 
 /* Modal Action Buttons - Reworked for clarity and style */
@@ -2468,7 +2463,7 @@ export default {
   transition: all 0.2s ease-in-out;
   margin-bottom: 0.5rem;
   border: none;
-  box-sizing: border-box; /* ✅ FIXED: Ensure button respects width calculations */
+  box-sizing: border-box;
 }
 
 .modal-action-button.accessible {
@@ -2749,4 +2744,3 @@ export default {
   }
 }
 </style>
-<!--  smth  -->
