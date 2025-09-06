@@ -2508,16 +2508,37 @@ export default {
   line-height: 1.3;
 }
 
-/* Mobile Responsive - ✅ IMPROVED: Better mobile modal layout */
-@media (max-width: 767px) {
+/* Mobile Responsive - ✅ IMPROVED: Better responsive design for all devices */
+
+/* Large tablets and small desktops (768px to 1024px) */
+@media (min-width: 768px) and (max-width: 1024px) {
   .modal-container {
-    margin: 1rem;
-    max-height: 90vh;
-    max-width: calc(100vw - 2rem);
+    max-width: 650px;
+    margin: 2rem auto;
   }
   
   .modal-body {
-    padding: 24px; /* ✅ FIXED: Consistent mobile padding */
+    padding: 28px;
+  }
+  
+  .modal-actions {
+    padding: 24px 28px;
+  }
+}
+
+/* Tablets (481px to 767px) */
+@media (min-width: 481px) and (max-width: 767px) {
+  .modal-overlay {
+    padding: 1.5rem;
+  }
+  
+  .modal-container {
+    max-width: calc(100vw - 3rem);
+    margin: auto;
+  }
+  
+  .modal-body {
+    padding: 24px;
   }
   
   .modal-header-section {
@@ -2534,27 +2555,38 @@ export default {
   }
   
   .modal-actions {
-    padding: 20px 24px; /* ✅ FIXED: Consistent mobile padding */
+    padding: 20px 24px;
   }
   
   .filter-bar {
-    padding: 1rem;
-    gap: 1rem;
+    padding: 1.25rem;
+    gap: 1.25rem;
   }
 }
 
+/* Mobile phones (320px to 480px) */
 @media (max-width: 480px) {
   .modal-overlay {
-    padding: 0.75rem;
+    padding: 1rem;
+    align-items: flex-start;
+    padding-top: 2rem;
   }
 
   .modal-container {
-    max-width: calc(100vw - 1.5rem);
-    border-radius: 16px;
+    max-width: calc(100vw - 2rem);
+    max-height: calc(100vh - 4rem);
+    margin: 0 auto;
+  }
+  
+  .modal-close {
+    top: 12px;
+    right: 12px;
+    width: 28px;
+    height: 28px;
   }
   
   .modal-body {
-    padding: 20px; /* ✅ FIXED: Smaller mobile padding */
+    padding: 20px;
   }
   
   .modal-header-section {
@@ -2566,7 +2598,7 @@ export default {
   }
   
   .modal-actions {
-    padding: 16px 20px; /* ✅ FIXED: Smaller mobile padding */
+    padding: 16px 20px;
   }
   
   .header {
@@ -2584,7 +2616,7 @@ export default {
   .filter-bar {
     flex-direction: column;
     gap: 0.75rem;
-    padding: 0.75rem;
+    padding: 1rem;
   }
   
   .filter-group-buttons {
@@ -2593,6 +2625,73 @@ export default {
   
   .button-filter {
     min-width: 80px;
+  }
+}
+
+/* Very small devices (max-width: 320px) */
+@media (max-width: 320px) {
+  .modal-overlay {
+    padding: 0.75rem;
+    padding-top: 1.5rem;
+  }
+  
+  .modal-container {
+    max-width: calc(100vw - 1.5rem);
+    border-radius: 12px;
+  }
+  
+  .modal-body {
+    padding: 16px;
+  }
+  
+  .modal-actions {
+    padding: 12px 16px;
+  }
+  
+  .modal-header-section {
+    height: 140px;
+  }
+  
+  .modal-close {
+    top: 8px;
+    right: 8px;
+    width: 24px;
+    height: 24px;
+  }
+}
+
+/* Large screens (1200px+) */
+@media (min-width: 1200px) {
+  .modal-container {
+    max-width: 750px;
+  }
+  
+  .modal-body {
+    padding: 36px;
+  }
+  
+  .modal-actions {
+    padding: 28px 36px;
+  }
+  
+  .modal-details-grid {
+    gap: 36px;
+  }
+}
+
+/* Landscape orientation on mobile */
+@media (max-width: 767px) and (orientation: landscape) {
+  .modal-overlay {
+    align-items: flex-start;
+    padding-top: 1rem;
+  }
+  
+  .modal-container {
+    max-height: calc(100vh - 2rem);
+  }
+  
+  .modal-header-section {
+    height: 120px;
   }
 }
 
