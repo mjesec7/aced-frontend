@@ -190,19 +190,20 @@
     <Transition name="modal" appear>
       <div v-if="isModalOpen && selectedCourse" class="modal-overlay" @click="closeModal">
         <div class="modal-container" @click.stop>
-          <button class="modal-close" @click="closeModal" aria-label="Закрыть">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M18 6 6 18"></path>
-              <path d="m6 6 12 12"></path>
-            </svg>
-          </button>
-
+         
           <div v-if="modalLoading" class="modal-loading-state">
             <div class="spinner"></div>
             <p>Загрузка информации о курсе...</p>
           </div>
 
           <div v-else-if="selectedCourse" class="modal-content">
+            <button class="modal-close" @click="closeModal" aria-label="Закрыть">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 6 6 18"></path>
+              <path d="m6 6 12 12"></path>
+            </svg>
+          </button>
+
             <div class="modal-header-section">
               <div class="modal-image-container">
                 <div 
