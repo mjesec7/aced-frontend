@@ -1224,13 +1224,17 @@ export function useExercises() {
     if (!exercise?.pairs) return []
     const pairs = exercise.pairs
     if (Array.isArray(pairs)) {
-      return pairs.map((pair) => {
-        if (Array.isArray(pair)) return String(pair[0] || '')
-        if (pair && typeof pair === 'object') {
-          return String(pair.left || pair[0] || pair.question || pair.term || '')
+      return pairs.map((pair, index) => {
+        let text = ''
+        if (Array.isArray(pair)) {
+          text = String(pair[0] || '')
+        } else if (pair && typeof pair === 'object') {
+          text = String(pair.left || pair[0] || pair.question || pair.term || '')
+        } else {
+          text = String(pair || '')
         }
-        return String(pair || '')
-      }).filter(item => item.trim() !== '')
+        return { text, originalIndex: index }
+      }).filter(item => item.text.trim() !== '')
     }
     return []
   }
@@ -1239,13 +1243,19 @@ export function useExercises() {
     if (!exercise?.pairs) return []
     const pairs = exercise.pairs
     if (Array.isArray(pairs)) {
-      return pairs.map((pair) => {
-        if (Array.isArray(pair)) return String(pair[1] || '')
-        if (pair && typeof pair === 'object') {
-          return String(pair.right || pair[1] || pair.answer || pair.definition || '')
+      const rightItemsWithMetadata = pairs.map((pair, index) => {
+        let text = ''
+        if (Array.isArray(pair)) {
+          text = String(pair[1] || '')
+        } else if (pair && typeof pair === 'object') {
+          text = String(pair.right || pair[1] || pair.answer || pair.definition || '')
+        } else {
+          text = String(pair || '')
         }
-        return String(pair || '')
-      }).filter(item => item.trim() !== '')
+        return { text, originalIndex: index }
+      }).filter(item => item.text.trim() !== '')
+      
+      return shuffleArray(rightItemsWithMetadata)
     }
     return []
   }
