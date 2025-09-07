@@ -1992,19 +1992,17 @@ export default {
   padding: 1rem;
 }
 
-/* THIS IS THE SINGLE SOURCE OF TRUTH FOR MODAL WIDTH */
+/* MODIFIED: Removed box-shadow and border */
 .modal-container {
   position: relative;
   width: 100%;
-  max-width: 550px; /* Controls the width */
+  max-width: 550px; /* Controls the modal's width */
   max-height: 90vh;
   background-color: var(--color-background);
   border-radius: 16px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--color-border);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   animation: slide-up 0.3s ease-out;
 }
 
@@ -2019,18 +2017,19 @@ export default {
   }
 }
 
+/* MODIFIED: Repositioned and restyled the close button */
 .modal-close {
   position: absolute;
-  top: 1rem;
-  right: 1rem;
+  /* Positioned to be visually inside the scrollable body content */
+  top: 256px; /* 240px header height + 16px offset */
+  right: 32px;
   z-index: 20;
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background-color: rgba(0, 0, 0, 0.3);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(4px);
+  background-color: var(--color-muted);
+  color: var(--color-muted-foreground);
+  border: none;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -2038,8 +2037,9 @@ export default {
   transition: all 0.2s ease;
 }
 
+/* MODIFIED: Updated hover state for the new style */
 .modal-close:hover {
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: var(--color-accent);
   transform: scale(1.1);
 }
 
@@ -2052,14 +2052,13 @@ export default {
   gap: 1rem;
 }
 
-/* THIS FILLS THE CONTAINER AND HAS NO MAX-WIDTH */
+/* MODIFIED: Ensured content fills the container fully */
 .modal-content {
   display: flex;
   flex-direction: column;
   width: 100%; /* Fills the container */
   height: 100%;
   overflow: hidden;
-  /* NO max-width here. */
 }
 
 .modal-header-section {
