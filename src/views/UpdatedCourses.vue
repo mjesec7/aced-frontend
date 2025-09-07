@@ -151,19 +151,21 @@
               </div>
               <h3 class="course-card-title">{{ course.title || 'Без названия' }}</h3>
               <p class="course-card-description">{{ course.description || 'Описание не указано' }}</p>
-              <div class="course-card-stats">
-                <div class="course-card-stat">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="course-card-stat-icon">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <polyline points="12 6 12 12 16 14"></polyline>
-                  </svg>
-                  <span>{{ course.duration || '30 мин' }}</span>
+              <div class="course-card-stats-and-provider">
+                <div class="course-card-stats">
+                  <div class="course-card-stat">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="course-card-stat-icon">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    <span>{{ course.duration || '30 мин' }}</span>
+                  </div>
+                  <div class="course-card-level">{{ course.level || 'Базовый' }}</div>
                 </div>
-                <div class="course-card-level">{{ course.level || 'Базовый' }}</div>
-              </div>
-              <div class="course-card-provider">
-                <p>от</p>
-                <p>Aced</p>
+                <div class="course-card-provider">
+                  <p>от</p>
+                  <p>Aced</p>
+                </div>
               </div>
             </div>
           </div>
@@ -205,11 +207,11 @@
           </button>
 
             <div class="modal-header-section">
-              <div class="modal-image-container">
                 <div 
                   class="modal-image"
                   :style="getCourseImageStyle(selectedCourse)"
                 >
+                  <div class="modal-image-background-icon" v-html="getCategoryIcon(selectedCourse.category)"></div>
                   <div v-if="!selectedCourse.imageLoaded" class="modal-image-placeholder">
                     <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="placeholder-icon">
                       <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
@@ -218,6 +220,7 @@
                     </svg>
                   </div>
                 </div>
+
                 <div class="modal-badge-container">
                   <div v-if="selectedCourse.isPremium" class="modal-badge modal-badge-premium">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -248,7 +251,6 @@
                     <span>Aced</span>
                   </div>
                 </div>
-              </div>
             </div>
 
             <div class="modal-body">
@@ -819,6 +821,28 @@ export default {
     // =====================================
     // ✅ FAST LOADING CSS GRADIENT IMAGES
     // =====================================
+    
+    getCategoryIcon(category) {
+        const cleanCategory = this.safeString(category);
+        const iconProps = 'width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"';
+
+        const icons = {
+            ai: `<svg ${iconProps}><path d="M12 8V4H8"/><rect x="4" y="4" width="8" height="8" rx="2"/><path d="M12 12v4h4"/><rect x="10" y="10" width="8" height="8" rx="2"/></svg>`,
+            web: `<svg ${iconProps}><path d="m16 18-6-12 6-6m-12 18 6-12-6-6"/></svg>`,
+            design: `<svg ${iconProps}><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/><line x1="12" y1="22" x2="12" y2="12"/><line x1="22" y1="8.5" x2="2" y2="8.5"/><line x1="2" y1="15.5" x2="22" y2="15.5"/><line x1="12" y1="2" x2="12" y2="12"/></svg>`,
+            mobile: `<svg ${iconProps}><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>`,
+            marketing: `<svg ${iconProps}><path d="M12 22V12M12 12L8 16M12 12l4 4M12 12L8 8M12 12l4-4M12 2v4M20 12h-4M4 12h4M17.66 17.66l-2.83-2.83M6.34 6.34l2.83 2.83M17.66 6.34l-2.83 2.83M6.34 17.66l2.83-2.83"/></svg>`,
+            default: `<svg ${iconProps}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
+        };
+
+        if (cleanCategory.includes('ии') || cleanCategory.includes('машин')) return icons.ai;
+        if (cleanCategory.includes('web') || cleanCategory.includes('программирование')) return icons.web;
+        if (cleanCategory.includes('мобильная')) return icons.mobile;
+        if (cleanCategory.includes('дизайн') || cleanCategory.includes('графический')) return icons.design;
+        if (cleanCategory.includes('маркетинг')) return icons.marketing;
+        
+        return icons.default;
+    },
 
     getCourseImageStyle(course) {
       if (!course) return this.generateImageBackground('default');
@@ -827,133 +851,35 @@ export default {
       return this.generateImageBackground(course.category);
     },
 
-    // MODIFIED: Added !important to background to prevent style overrides
     generateImageBackground(category) {
       // ✅ FAST LOADING: CSS gradients based on category - no network requests!
       const gradients = {
-        'ИИ и автоматизация': {
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'white',
-          fontSize: '14px',
-          fontWeight: '600',
-          textAlign: 'center'
-        },
-        'Видеомонтаж': {
-          background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'white',
-          fontSize: '14px',
-          fontWeight: '600',
-          textAlign: 'center'
-        },
-        'Графический дизайн': {
-          background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%) !important',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'white',
-          fontSize: '14px',
-          fontWeight: '600',
-          textAlign: 'center'
-        },
-        'Web-разработка': {
-          background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%) !important',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'white',
-          fontSize: '14px',
-          fontWeight: '600',
-          textAlign: 'center'
-        },
-        'Мобильная разработка': {
-          background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%) !important',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'white',
-          fontSize: '14px',
-          fontWeight: '600',
-          textAlign: 'center'
-        },
-        'Машинное обучение': {
-          background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%) !important',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: '#333',
-          fontSize: '14px',
-          fontWeight: '600',
-          textAlign: 'center'
-        },
-        'Дизайн': {
-          background: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%) !important',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'white',
-          fontSize: '14px',
-          fontWeight: '600',
-          textAlign: 'center'
-        },
-        'Программирование': {
-          background: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%) !important',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'white',
-          fontSize: '14px',
-          fontWeight: '600',
-          textAlign: 'center'
-        },
-        'Маркетинг': {
-          background: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%) !important',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: '#333',
-          fontSize: '14px',
-          fontWeight: '600',
-          textAlign: 'center'
-        },
-        'default': {
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'white',
-          fontSize: '14px',
-          fontWeight: '600',
-          textAlign: 'center'
-        }
+        'ИИ и автоматизация': { background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important' },
+        'Видеомонтаж': { background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important' },
+        'Графический дизайн': { background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%) !important' },
+        'Web-разработка': { background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%) !important' },
+        'Мобильная разработка': { background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%) !important' },
+        'Машинное обучение': { background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%) !important' },
+        'Дизайн': { background: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%) !important' },
+        'Программирование': { background: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%) !important' },
+        'Маркетинг': { background: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%) !important' },
+        'default': { background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important' }
       };
       
-      return gradients[category] || gradients.default;
+      const baseStyle = {
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: 'white',
+        fontSize: '14px',
+        fontWeight: '600',
+        textAlign: 'center'
+      };
+
+      const gradient = gradients[category] || gradients.default;
+      return { ...baseStyle, ...gradient };
     },
 
     getDefaultAvatar() {
@@ -1880,18 +1806,24 @@ export default {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
-  flex: 1;
+  flex-grow: 1;
+}
+
+.course-card-stats-and-provider {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
 }
 
 .course-card-stats {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 12px;
   font-size: 13px;
   color: var(--color-muted-foreground);
-  margin-top: auto;
-  padding-top: 12px;
-  border-top: 1px solid var(--color-border);
 }
 
 .course-card-stat {
@@ -1899,6 +1831,18 @@ export default {
   align-items: center;
   gap: 4px;
 }
+
+.course-card-provider {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 13px;
+  color: var(--color-muted-foreground);
+}
+.course-card-provider p {
+  margin: 0;
+}
+
 
 /* Empty State & Loading */
 .empty-state {
@@ -2016,7 +1960,6 @@ export default {
   }
 }
 
-/* MODIFIED: Reverted to original position and style for visibility on image */
 .modal-close {
   position: absolute;
   top: 1rem;
@@ -2053,7 +1996,7 @@ export default {
 .modal-content {
   display: flex;
   flex-direction: column;
-  width: 100%; /* Fills the container */
+  width: 100%;
   height: 100%;
   overflow: hidden;
 }
@@ -2067,23 +2010,32 @@ export default {
 .modal-image {
   width: 100%;
   height: 100%;
+  position: relative;
+  overflow: hidden;
 }
 
-/*
-.modal-image-overlay {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 60%;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+.modal-image-background-icon {
+    position: absolute;
+    width: 120px;
+    height: 120px;
+    z-index: 1;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: rgba(255, 255, 255, 0.15);
 }
-*/
+
+.modal-image-background-icon >>> svg {
+    width: 100%;
+    height: 100%;
+}
+
 
 .modal-badge-container {
   position: absolute;
   top: 16px;
   left: 16px;
+  z-index: 10;
 }
 
 .modal-badge {
@@ -2109,14 +2061,16 @@ export default {
 
 .modal-meta-overlay {
   position: absolute;
-  bottom: 16px;
-  left: 16px;
-  right: 16px;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px;
   display: flex;
   justify-content: space-between;
   align-items: end;
   color: white;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  z-index: 10;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.6), transparent);
 }
 
 .modal-duration {
@@ -2124,9 +2078,13 @@ export default {
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  padding: 6px 12px;
-  background: rgba(0, 0, 0, 0.6);
-  border-radius: 16px;
+}
+
+.modal-provider {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 13px;
 }
 
 .modal-body {
