@@ -1821,20 +1821,6 @@ export default {
   overflow: hidden;
 }
 
-.image-placeholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-}
-
-.placeholder-icon {
-  opacity: 0.6;
-}
-
 .badge {
   position: absolute;
   top: 24px;
@@ -1858,23 +1844,12 @@ export default {
   color: var(--color-green-800);
 }
 
-.badge-icon {
-  width: 12px;
-  height: 12px;
-}
-
 .course-card-content {
   padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 12px;
   flex: 1;
-}
-
-.course-card-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 .course-card-category {
@@ -1923,23 +1898,6 @@ export default {
   display: flex;
   align-items: center;
   gap: 4px;
-}
-
-.course-card-stat-icon {
-  width: 14px;
-  height: 14px;
-}
-
-.course-card-level {
-  font-weight: 500;
-}
-
-.course-card-provider {
-  display: flex;
-  gap: 4px;
-  font-size: 12px;
-  color: var(--color-muted-foreground);
-  font-style: italic;
 }
 
 /* Empty State & Loading */
@@ -2007,7 +1965,7 @@ export default {
   100% { transform: rotate(360deg); }
 }
 
-/* --- MODAL STYLES - FULL WIDTH RESPONSIVE --- */
+/* --- MODAL STYLES --- */
 
 .modal-enter-active,
 .modal-leave-active {
@@ -2034,12 +1992,11 @@ export default {
   padding: 1rem;
 }
 
-/* FIXED: Remove max-width constraint and make it truly responsive */
+/* THIS IS THE SINGLE SOURCE OF TRUTH FOR MODAL WIDTH */
 .modal-container {
   position: relative;
   width: 100%;
-  /* Responsive width instead of fixed max-width */
-  max-width: 95vw; /* Use viewport width for better responsiveness */
+  max-width: 550px; /* Controls the width */
   max-height: 90vh;
   background-color: var(--color-background);
   border-radius: 16px;
@@ -2049,41 +2006,6 @@ export default {
   border: 1px solid var(--color-border);
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   animation: slide-up 0.3s ease-out;
-}
-
-/* Responsive breakpoints for modal width */
-@media (min-width: 480px) {
-  .modal-container {
-    max-width: 90vw;
-  }
-}
-
-@media (min-width: 768px) {
-  .modal-container {
-    max-width: 85vw;
-    min-width: 600px; /* Ensure minimum width on larger screens */
-  }
-}
-
-@media (min-width: 1024px) {
-  .modal-container {
-    max-width: 80vw;
-    min-width: 700px;
-  }
-}
-
-@media (min-width: 1280px) {
-  .modal-container {
-    max-width: 70vw;
-    min-width: 800px;
-  }
-}
-
-@media (min-width: 1536px) {
-  .modal-container {
-    max-width: 60vw;
-    min-width: 900px;
-  }
 }
 
 @keyframes slide-up {
@@ -2130,56 +2052,25 @@ export default {
   gap: 1rem;
 }
 
-/* FIXED: Modal content now fills container completely */
+/* THIS FILLS THE CONTAINER AND HAS NO MAX-WIDTH */
 .modal-content {
   display: flex;
   flex-direction: column;
-  width: 100%;
+  width: 100%; /* Fills the container */
   height: 100%;
   overflow: hidden;
-  flex: 1; /* Ensure it takes full height */
+  /* NO max-width here. */
 }
 
 .modal-header-section {
   position: relative;
   height: 240px;
   flex-shrink: 0;
-  width: 100%;
-}
-
-/* Responsive header height */
-@media (min-width: 768px) {
-  .modal-header-section {
-    height: 280px;
-  }
-}
-
-@media (min-width: 1024px) {
-  .modal-header-section {
-    height: 320px;
-  }
-}
-
-.modal-image-container {
-  width: 100%;
-  height: 100%;
-  position: relative;
 }
 
 .modal-image {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-}
-
-.modal-image-placeholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
 }
 
 .modal-image-overlay {
@@ -2195,7 +2086,6 @@ export default {
   position: absolute;
   top: 16px;
   left: 16px;
-  z-index: 10;
 }
 
 .modal-badge {
@@ -2207,7 +2097,6 @@ export default {
   font-size: 13px;
   font-weight: 600;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(4px);
 }
 
 .modal-badge-premium {
@@ -2229,7 +2118,6 @@ export default {
   justify-content: space-between;
   align-items: end;
   color: white;
-  z-index: 10;
 }
 
 .modal-duration {
@@ -2240,15 +2128,6 @@ export default {
   padding: 6px 12px;
   background: rgba(0, 0, 0, 0.6);
   border-radius: 16px;
-  backdrop-filter: blur(4px);
-}
-
-.modal-provider {
-  display: flex;
-  flex-direction: column;
-  align-items: end;
-  font-size: 12px;
-  opacity: 0.9;
 }
 
 .modal-body {
@@ -2258,28 +2137,6 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  width: 100%;
-}
-
-/* Responsive modal body padding */
-@media (max-width: 768px) {
-  .modal-body {
-    padding: 20px 24px;
-    gap: 20px;
-  }
-}
-
-@media (max-width: 480px) {
-  .modal-body {
-    padding: 16px 20px;
-    gap: 16px;
-  }
-}
-
-.modal-course-info {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
 }
 
 .modal-tags {
@@ -2294,7 +2151,6 @@ export default {
   font-size: 11px;
   font-weight: 600;
   border: 1px solid;
-  white-space: nowrap;
 }
 
 .modal-tag-category {
@@ -2303,78 +2159,34 @@ export default {
   border-color: rgba(139, 127, 191, 0.3);
 }
 
-.modal-tag-level {
-  background: rgba(34, 197, 94, 0.1);
-  color: var(--color-success);
-  border-color: rgba(34, 197, 94, 0.3);
-}
-
 .modal-title {
   font-size: 1.5rem;
   font-weight: 700;
   margin: 0;
-  line-height: 1.3;
-}
-
-/* Responsive title sizing */
-@media (min-width: 768px) {
-  .modal-title {
-    font-size: 1.75rem;
-  }
-}
-
-@media (min-width: 1024px) {
-  .modal-title {
-    font-size: 2rem;
-  }
 }
 
 .modal-description {
   font-size: 0.9375rem;
   color: var(--color-muted-foreground);
   margin: 0;
-  line-height: 1.6;
-}
-
-@media (min-width: 768px) {
-  .modal-description {
-    font-size: 1rem;
-  }
 }
 
 .modal-divider {
   height: 1px;
   background: var(--color-border);
   border: none;
-  margin: 8px 0;
-}
-
-.modal-details {
-  width: 100%;
 }
 
 .modal-details-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 24px;
-  width: 100%;
 }
 
 @media (min-width: 768px) {
   .modal-details-grid {
     grid-template-columns: 1fr 1fr;
-    gap: 32px;
   }
-}
-
-@media (min-width: 1024px) {
-  .modal-details-grid {
-    gap: 40px;
-  }
-}
-
-.modal-section {
-  min-width: 0; /* Prevent flex item overflow */
 }
 
 .modal-section-title {
@@ -2384,13 +2196,6 @@ export default {
   font-size: 1rem;
   font-weight: 600;
   margin: 0 0 12px 0;
-  color: var(--color-foreground);
-}
-
-@media (min-width: 768px) {
-  .modal-section-title {
-    font-size: 1.125rem;
-  }
 }
 
 .modal-skills-list,
@@ -2408,13 +2213,6 @@ export default {
   align-items: flex-start;
   gap: 8px;
   font-size: 0.875rem;
-  line-height: 1.5;
-}
-
-@media (min-width: 768px) {
-  .modal-skill-item {
-    font-size: 0.9375rem;
-  }
 }
 
 .skill-check-icon {
@@ -2427,24 +2225,15 @@ export default {
   display: flex;
   gap: 8px;
   font-size: 0.875rem;
-  line-height: 1.5;
-}
-
-@media (min-width: 768px) {
-  .modal-module-item {
-    font-size: 0.9375rem;
-  }
 }
 
 .module-number {
   color: var(--color-brand);
   font-weight: 600;
-  flex-shrink: 0;
 }
 
 .module-text {
   color: var(--color-muted-foreground);
-  flex: 1;
 }
 
 .modal-actions {
@@ -2452,20 +2241,6 @@ export default {
   border-top: 1px solid var(--color-border);
   margin-top: auto;
   flex-shrink: 0;
-  width: 100%;
-}
-
-/* Responsive modal actions padding */
-@media (max-width: 768px) {
-  .modal-actions {
-    padding: 20px 24px;
-  }
-}
-
-@media (max-width: 480px) {
-  .modal-actions {
-    padding: 16px 20px;
-  }
 }
 
 .modal-action-button {
@@ -2481,14 +2256,6 @@ export default {
   cursor: pointer;
   transition: all 0.2s ease-in-out;
   border: none;
-  margin-bottom: 8px;
-}
-
-@media (min-width: 768px) {
-  .modal-action-button {
-    height: 52px;
-    font-size: 1rem;
-  }
 }
 
 .modal-action-button.accessible {
@@ -2499,17 +2266,11 @@ export default {
 .modal-action-button.accessible:hover:not(:disabled) {
   background-color: #1f2937;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .modal-action-button.premium {
   background-color: #fffbeb;
   color: #b45309;
-  border: 1px solid #fbbf24;
-}
-
-.modal-action-button.premium:hover:not(:disabled) {
-  background-color: #fef3c7;
 }
 
 .modal-action-button:disabled {
@@ -2522,295 +2283,16 @@ export default {
   text-align: center;
   font-size: 0.8125rem;
   color: var(--color-muted-foreground);
-  margin: 0;
-  line-height: 1.4;
+  margin-top: 0.5rem;
 }
 
-@media (min-width: 768px) {
-  .modal-action-description {
-    font-size: 0.875rem;
-  }
-}
-
-/* Additional responsive utilities */
+/* Responsive Overrides */
 @media (max-width: 480px) {
-  .modal-container {
-    margin: 0.5rem;
-    border-radius: 12px;
+  .modal-body, .modal-actions {
+    padding: 16px;
   }
-  
-  .modal-header-section {
-    height: 200px;
-  }
-  
   .modal-title {
     font-size: 1.25rem;
   }
-  
-  .modal-details-grid {
-    gap: 16px;
-  }
-  
-  .modal-section-title {
-    font-size: 0.9375rem;
-  }
 }
-
-/* Ensure proper scrolling on mobile */
-@media (max-height: 600px) {
-  .modal-container {
-    max-height: 95vh;
-  }
-  
-  .modal-header-section {
-    height: 180px;
-  }
-}
-
-/* High resolution displays */
-@media (min-width: 1920px) {
-  .modal-container {
-    max-width: 1200px;
-  }
-}
-
-/* Additional utility classes for better responsiveness */
-@media (max-width: 640px) {
-  .courses-grid {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-  
-  .course-card-image {
-    height: 160px;
-  }
-  
-  .filter-bar {
-    padding: 1rem;
-    gap: 1rem;
-  }
-  
-  .header {
-    padding: 3rem 0;
-  }
-  
-  .header-title {
-    font-size: 2rem;
-  }
-  
-  .header-subtitle {
-    font-size: 1.125rem;
-  }
-  
-  .results-info {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-}
-
-/* Enhanced focus styles for accessibility */
-.course-card:focus-visible,
-.button-filter:focus-visible,
-.modal-action-button:focus-visible,
-.input-search:focus-visible,
-.select-field:focus-visible {
-  outline: 2px solid var(--color-brand);
-  outline-offset: 2px;
-}
-
-/* Smooth scrolling for modal */
-.modal-body {
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-border) transparent;
-}
-
-.modal-body::-webkit-scrollbar {
-  width: 6px;
-}
-
-.modal-body::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.modal-body::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: 3px;
-}
-
-.modal-body::-webkit-scrollbar-thumb:hover {
-  background: var(--color-muted-foreground);
-}
-
-/* Loading state improvements */
-.modal-loading-state .spinner {
-  border-color: var(--color-muted);
-  border-top-color: var(--color-brand);
-}
-
-/* Print styles */
-@media print {
-  .modal-overlay,
-  .filter-bar,
-  .header {
-    display: none;
-  }
-  
-  .courses-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-  }
-  
-  .course-card {
-    break-inside: avoid;
-    box-shadow: none;
-    border: 1px solid #ccc;
-  }
-}
-
-/* Dark mode support (optional - can be activated by adding data-theme="dark" to body) */
-[data-theme="dark"] {
-  --color-background: #0f0f23;
-  --color-foreground: #e2e8f0;
-  --color-card: #1e1e3f;
-  --color-card-foreground: #e2e8f0;
-  --color-muted: #2a2a4a;
-  --color-muted-foreground: #94a3b8;
-  --color-accent: #383856;
-  --color-accent-foreground: #e2e8f0;
-  --color-border: rgba(255, 255, 255, 0.1);
-  --color-input-background: #2a2a4a;
-}
-
-[data-theme="dark"] .header {
-  background-image: linear-gradient(to right, #0f0f23, #1e1e3f, #0f0f23);
-}
-
-[data-theme="dark"] .modal-overlay {
-  background-color: rgba(0, 0, 0, 0.9);
-}
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-  :root {
-    --color-border: rgba(0, 0, 0, 0.3);
-    --color-brand: #6b5b9a;
-  }
-  
-  .course-card {
-    border-width: 2px;
-  }
-  
-  .modal-container {
-    border-width: 2px;
-  }
-}
-
-/* Reduced motion support */
-@media (prefers-reduced-motion: reduce) {
-  .course-card,
-  .modal-action-button,
-  .button-filter,
-  .modal-container {
-    transition: none;
-  }
-  
-  .modal-container {
-    animation: none;
-  }
-  
-  .spinner {
-    animation: none;
-  }
-  
-  .course-card:hover {
-    transform: none;
-  }
-}
-
-/* Enhanced hover states for non-touch devices */
-@media (hover: hover) and (pointer: fine) {
-  .course-card:hover .course-card-image {
-    transform: scale(1.02);
-    transition: transform 0.3s ease;
-  }
-  
-  .modal-close:hover {
-    background-color: rgba(255, 255, 255, 0.2);
-  }
-  
-  .button-filter:hover {
-    transform: translateY(-1px);
-  }
-}
-
-/* Touch device optimizations */
-@media (hover: none) and (pointer: coarse) {
-  .course-card {
-    padding-bottom: 4px;
-  }
-  
-  .button-filter,
-  .modal-action-button {
-    min-height: 44px; /* Minimum touch target size */
-  }
-  
-  .modal-close {
-    width: 44px;
-    height: 44px;
-  }
-}
-
-/* Ultra-wide screen optimizations */
-@media (min-width: 2560px) {
-  .container {
-    max-width: 1600px;
-  }
-  
-  .courses-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-  
-  .modal-container {
-    max-width: 1400px;
-  }
-}
-
-/* Landscape mobile optimizations */
-@media (max-height: 500px) and (orientation: landscape) {
-  .header {
-    padding: 2rem 0;
-  }
-  
-  .modal-header-section {
-    height: 150px;
-  }
-  
-  .modal-body {
-    padding: 16px 24px;
-  }
-}
-
-/* Loading animation improvements */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.course-card {
-  animation: fadeIn 0.3s ease-out;
-}
-
-.course-card:nth-child(1) { animation-delay: 0.1s; }
-.course-card:nth-child(2) { animation-delay: 0.2s; }
-.course-card:nth-child(3) { animation-delay: 0.3s; }
-.course-card:nth-child(4) { animation-delay: 0.4s; }
-.course-card:nth-child(5) { animation-delay: 0.5s; }
-.course-card:nth-child(6) { animation-delay: 0.6s; }
 </style>
