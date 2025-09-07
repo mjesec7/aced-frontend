@@ -828,11 +828,12 @@ export default {
       return this.generateImageBackground(course.category);
     },
 
+    // MODIFIED: Added !important to background to prevent style overrides
     generateImageBackground(category) {
       // ✅ FAST LOADING: CSS gradients based on category - no network requests!
       const gradients = {
         'ИИ и автоматизация': {
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           display: 'flex',
@@ -844,7 +845,7 @@ export default {
           textAlign: 'center'
         },
         'Видеомонтаж': {
-          background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+          background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           display: 'flex',
@@ -856,7 +857,7 @@ export default {
           textAlign: 'center'
         },
         'Графический дизайн': {
-          background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+          background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%) !important',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           display: 'flex',
@@ -868,7 +869,7 @@ export default {
           textAlign: 'center'
         },
         'Web-разработка': {
-          background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+          background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%) !important',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           display: 'flex',
@@ -880,7 +881,7 @@ export default {
           textAlign: 'center'
         },
         'Мобильная разработка': {
-          background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+          background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%) !important',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           display: 'flex',
@@ -892,7 +893,7 @@ export default {
           textAlign: 'center'
         },
         'Машинное обучение': {
-          background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+          background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%) !important',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           display: 'flex',
@@ -904,7 +905,7 @@ export default {
           textAlign: 'center'
         },
         'Дизайн': {
-          background: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+          background: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%) !important',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           display: 'flex',
@@ -916,7 +917,7 @@ export default {
           textAlign: 'center'
         },
         'Программирование': {
-          background: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
+          background: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%) !important',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           display: 'flex',
@@ -928,7 +929,7 @@ export default {
           textAlign: 'center'
         },
         'Маркетинг': {
-          background: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+          background: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%) !important',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           display: 'flex',
@@ -940,7 +941,7 @@ export default {
           textAlign: 'center'
         },
         'default': {
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           display: 'flex',
@@ -1992,7 +1993,6 @@ export default {
   padding: 1rem;
 }
 
-/* MODIFIED: Removed box-shadow and border */
 .modal-container {
   position: relative;
   width: 100%;
@@ -2017,19 +2017,19 @@ export default {
   }
 }
 
-/* MODIFIED: Repositioned and restyled the close button */
+/* MODIFIED: Reverted to original position and style for visibility on image */
 .modal-close {
   position: absolute;
-  /* Positioned to be visually inside the scrollable body content */
-  top: 256px; /* 240px header height + 16px offset */
-  right: 32px;
+  top: 1rem;
+  right: 1rem;
   z-index: 20;
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background-color: var(--color-muted);
-  color: var(--color-muted-foreground);
-  border: none;
+  background-color: rgba(0, 0, 0, 0.3);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(4px);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -2037,9 +2037,8 @@ export default {
   transition: all 0.2s ease;
 }
 
-/* MODIFIED: Updated hover state for the new style */
 .modal-close:hover {
-  background-color: var(--color-accent);
+  background-color: rgba(0, 0, 0, 0.5);
   transform: scale(1.1);
 }
 
@@ -2052,7 +2051,6 @@ export default {
   gap: 1rem;
 }
 
-/* MODIFIED: Ensured content fills the container fully */
 .modal-content {
   display: flex;
   flex-direction: column;
