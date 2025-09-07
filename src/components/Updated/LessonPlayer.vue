@@ -2,7 +2,6 @@
 <template>
   <div class="lesson-player-overlay" @click="handleOverlayClick">
     <div class="lesson-player" @click.stop>
-      <!-- Header with progress bar -->
       <header class="player-header">
         <button 
           class="close-btn" 
@@ -19,7 +18,6 @@
           <div class="course-info">
             <div class="course-badge">{{ courseTitle }}</div>
             <h1 class="lesson-title">{{ currentLessonTitle }}</h1>
-            <!-- ✅ FIXED: Moved v-if to template wrapper -->
             <template v-if="isStructuredFormat">
               <div class="format-indicator">
                 <span class="structured-badge">Structured Format</span>
@@ -42,15 +40,13 @@
         </div>
       </header>
 
-      <!-- ✅ FIXED: Enhanced Learning Objectives with template wrapper -->
       <template v-if="learningObjectives.length > 0">
         <div class="objectives-container">
           <div class="objectives-card">
             <div class="objectives-header">
               <div class="objectives-icon">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <polyline points="16,12 12,8 8,12"></polyline>
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-8.08"></path><polyline points="22 4 12 14.01l-3-3"></polyline>
                 </svg>
               </div>
               <h2>{{ isStructuredFormat ? 'Цели урока' : 'Цели обучения' }}</h2>
@@ -67,9 +63,7 @@
         </div>
       </template>
 
-      <!-- Main content area -->
       <main class="player-content">
-        <!-- Loading State -->
         <template v-if="loading">
           <div class="loading-state">
             <div class="loading-spinner">
@@ -80,7 +74,6 @@
           </div>
         </template>
 
-        <!-- Error State -->
         <template v-else-if="error">
           <div class="error-state">
             <div class="error-icon">⚠️</div>
@@ -92,18 +85,17 @@
           </div>
         </template>
 
-        <!-- ✅ FIXED: Structured Format Content with template wrapper -->
         <template v-else-if="isStructuredFormat && currentStructuredLesson">
           <div class="structured-lesson-content">
-            <!-- Theory Section -->
             <template v-if="currentStructuredLesson.content.theory">
               <div class="content-section theory-section">
                 <div class="section-header">
-                  <div class="section-icon theory-icon">📚</div>
+                  <div class="section-icon theory-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                  </div>
                   <h2>Теория</h2>
                 </div>
                 <div class="theory-content">
-                  <!-- Theory Concepts -->
                   <template v-if="currentStructuredLesson.content.theory.concepts">
                     <div v-for="(concept, index) in currentStructuredLesson.content.theory.concepts" 
                          :key="`concept-${index}`"
@@ -121,7 +113,6 @@
                     </div>
                   </template>
                   
-                  <!-- Flexible theory content -->
                   <template v-else-if="typeof currentStructuredLesson.content.theory === 'object'">
                     <div v-for="(section, key) in currentStructuredLesson.content.theory" :key="key" class="theory-subsection">
                       <h3 class="subsection-title">{{ formatSectionTitle(key) }}</h3>
@@ -149,15 +140,15 @@
               </div>
             </template>
 
-            <!-- Practical Examples Section -->
             <template v-if="currentStructuredLesson.content.practical_examples">
               <div class="content-section examples-section">
                 <div class="section-header">
-                  <div class="section-icon examples-icon">🛠️</div>
+                  <div class="section-icon examples-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+                  </div>
                   <h2>Практические примеры</h2>
                 </div>
                 <div class="examples-content">
-                  <!-- Exercises -->
                   <template v-if="currentStructuredLesson.content.practical_examples.exercises">
                     <div v-for="(exercise, index) in currentStructuredLesson.content.practical_examples.exercises"
                          :key="`exercise-${index}`"
@@ -175,7 +166,6 @@
                     </div>
                   </template>
                   
-                  <!-- Flexible practical examples content -->
                   <template v-else-if="typeof currentStructuredLesson.content.practical_examples === 'object'">
                     <div v-for="(section, key) in currentStructuredLesson.content.practical_examples" :key="key" class="examples-subsection">
                       <h3 class="subsection-title">{{ formatSectionTitle(key) }}</h3>
@@ -203,15 +193,15 @@
               </div>
             </template>
 
-            <!-- Homework Section -->
             <template v-if="currentStructuredLesson.content.homework">
               <div class="content-section homework-section">
                 <div class="section-header">
-                  <div class="section-icon homework-icon">📝</div>
+                  <div class="section-icon homework-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="14 2 18 6 7 17 3 17 3 13 14 2"></polygon><line x1="3" y1="22" x2="21" y2="22"></line></svg>
+                  </div>
                   <h2>Домашнее задание</h2>
                 </div>
                 <div class="homework-content">
-                  <!-- Theory Questions -->
                   <template v-if="currentStructuredLesson.content.homework.theory_questions && currentStructuredLesson.content.homework.theory_questions.length > 0">
                     <div class="homework-subsection">
                       <h3 class="homework-subtitle">Теоретические вопросы</h3>
@@ -225,7 +215,6 @@
                     </div>
                   </template>
 
-                  <!-- Practical Tasks -->
                   <template v-if="currentStructuredLesson.content.homework.practical_tasks && currentStructuredLesson.content.homework.practical_tasks.length > 0">
                     <div class="homework-subsection">
                       <h3 class="homework-subtitle">Практические задания</h3>
@@ -244,7 +233,6 @@
           </div>
         </template>
 
-        <!-- Traditional Format Content (backward compatibility) -->
         <template v-else-if="!isStructuredFormat && currentLesson && hasSteps">
           <div class="lesson-content">
             <div 
@@ -273,7 +261,6 @@
           </div>
         </template>
 
-        <!-- Empty States -->
         <template v-else>
           <div class="empty-state">
             <div class="empty-icon">📚</div>
@@ -283,7 +270,6 @@
         </template>
       </main>
 
-      <!-- Navigation Footer -->
       <template v-if="!loading && !error && lessons.length > 0">
         <footer class="player-footer">
           <button 
@@ -1057,7 +1043,14 @@ export default {
                     :class="getOptionClass(quizIndex, index)"
                     class="quiz-option"
                   >
-                    {{ getOptionText(option) }}
+                    <span class="option-letter">{{ String.fromCharCode(65 + index) }}</span>
+                    <span class="option-text">{{ getOptionText(option) }}</span>
+                    <span class="option-icon correct-icon">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    </span>
+                    <span class="option-icon incorrect-icon">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </span>
                   </button>
                 </div>
               </template>
@@ -1090,6 +1083,7 @@ export default {
       },
       methods: {
         selectAnswer(quizIndex, optionIndex) {
+          if(this.isAnswered(quizIndex)) return; // Prevent re-answering
           this.selectedAnswers.set(quizIndex, optionIndex);
           const quiz = this.quizData[quizIndex];
           const isCorrect = quiz.correctAnswer === optionIndex;
@@ -1122,13 +1116,13 @@ export default {
 .lesson-player-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
+  background: rgba(249, 250, 251, 0.95);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: flex-start;
   justify-content: center;
   z-index: 1000;
-  padding: 2rem 1rem;
+  padding: 2rem;
   overflow-y: auto;
 }
 
@@ -1138,18 +1132,18 @@ export default {
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
   width: 100%;
   max-width: 1200px;
-  min-height: 100vh;
+  min-height: calc(100vh - 4rem);
   display: flex;
   flex-direction: column;
-  border: 1px solid #e5e5e5;
+  border: 1px solid #e5e7eb;
   margin: 0 auto;
 }
 
 /* Header styles (enhanced) */
 .player-header {
   background: white;
-  border-bottom: 1px solid #e5e5e5;
-  padding: 1rem 2rem;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 1.25rem 2rem;
   position: relative;
   flex-shrink: 0;
 }
@@ -1158,23 +1152,24 @@ export default {
   position: absolute;
   top: 1.5rem;
   right: 1.5rem;
-  width: 32px;
-  height: 32px;
-  background: #f5f5f5;
+  width: 36px;
+  height: 36px;
+  background: #f3f4f6;
   border: none;
-  border-radius: 8px;
+  border-radius: 50%;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #666;
+  color: #4b5563;
   transition: all 0.2s;
   z-index: 10;
 }
 
 .close-btn:hover {
-  background: #e5e5e5;
-  color: #333;
+  background: #e5e7eb;
+  color: #1f2937;
+  transform: rotate(90deg);
 }
 
 .header-content {
@@ -1184,25 +1179,25 @@ export default {
 
 .course-badge {
   display: inline-block;
-  background: #6366f1;
+  background: #4f46e5;
   color: white;
-  padding: 0.375rem 0.75rem;
+  padding: 0.375rem 0.875rem;
   border-radius: 16px;
   font-size: 0.8125rem;
   font-weight: 500;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
 /* ✅ NEW: Format indicator */
 .format-indicator {
-  margin-top: 0.5rem;
+  margin-top: 0.75rem;
 }
 
 .structured-badge {
   display: inline-block;
   background: linear-gradient(135deg, #10b981, #34d399);
   color: white;
-  padding: 0.25rem 0.5rem;
+  padding: 0.25rem 0.625rem;
   border-radius: 12px;
   font-size: 0.75rem;
   font-weight: 600;
@@ -1211,10 +1206,10 @@ export default {
 }
 
 .lesson-title {
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   font-weight: 700;
-  color: #1a1a1a;
-  margin: 0 0 0.75rem 0;
+  color: #111827;
+  margin: 0 0 1rem 0;
   line-height: 1.2;
   word-wrap: break-word;
 }
@@ -1222,7 +1217,7 @@ export default {
 .progress-section {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 .progress-info {
@@ -1230,18 +1225,17 @@ export default {
   justify-content: space-between;
   align-items: center;
   font-size: 0.875rem;
-  margin-bottom: 0.75rem;
   gap: 1rem;
 }
 
 .lesson-counter {
   font-weight: 500;
-  color: #666;
+  color: #4b5563;
   flex-shrink: 0;
 }
 
 .progress-text {
-  color: #6366f1;
+  color: #4f46e5;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -1249,55 +1243,55 @@ export default {
 .progress-bar {
   width: 100%;
   height: 8px;
-  background: #f0f0f0;
+  background: #e5e7eb;
   border-radius: 4px;
   overflow: hidden;
-  margin-top: 0.25rem;
 }
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  background: linear-gradient(90deg, #4f46e5, #7c3aed);
   border-radius: 4px;
   transition: width 0.5s ease;
 }
 
 /* Learning Objectives (enhanced) */
 .objectives-container {
-  padding: 0 2rem 0.75rem 2rem;
-  margin-bottom: 0;
+  padding: 1.5rem 2rem;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
   flex-shrink: 0;
 }
 
 .objectives-card {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 1rem;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.25rem;
 }
 
 .objectives-header {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
 }
 
 .objectives-icon {
-  width: 28px;
-  height: 28px;
-  background: #6366f1;
-  color: white;
-  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  background: #eef2ff;
+  color: #4f46e5;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .objectives-header h2 {
-  font-size: 1rem;
+  font-size: 1.125rem;
   font-weight: 600;
-  color: #1a1a1a;
+  color: #111827;
   margin: 0;
 }
 
@@ -1307,27 +1301,29 @@ export default {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.625rem;
 }
 
 .objectives-list li {
   display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  color: #4b5563;
-  font-size: 0.8125rem;
+  align-items: flex-start;
+  gap: 0.5rem;
+  color: #374151;
+  font-size: 0.9375rem;
+  line-height: 1.5;
 }
 
 .objectives-list li svg {
   color: #10b981;
   flex-shrink: 0;
+  margin-top: 4px;
 }
 
 /* Main Content */
 .player-content {
   flex: 1;
-  padding: 1rem 2rem 2rem 2rem;
-  background: #fafafa;
+  padding: 2rem;
+  background: #f9fafb;
 }
 
 /* ✅ NEW: Structured lesson content styles */
@@ -1340,15 +1336,14 @@ export default {
 .content-section {
   background: white;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  border: 1px solid #e5e5e5;
+  border: 1px solid #e5e7eb;
   overflow: hidden;
 }
 
 .section-header {
-  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-  border-bottom: 1px solid #e5e5e5;
-  padding: 1.5rem;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 1.25rem 1.5rem;
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -1361,26 +1356,19 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.25rem;
   flex-shrink: 0;
+  color: white;
 }
 
-.theory-icon {
-  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-}
+.theory-icon { background: #3b82f6; }
+.examples-icon { background: #10b981; }
+.homework-icon { background: #f59e0b; }
 
-.examples-icon {
-  background: linear-gradient(135deg, #10b981, #059669);
-}
-
-.homework-icon {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-}
 
 .section-header h2 {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #1a1a1a;
+  color: #111827;
   margin: 0;
 }
 
@@ -1407,9 +1395,9 @@ export default {
 
 .concept-title,
 .exercise-title {
-  font-size: 1.125rem;
+  font-size: 1.25rem;
   font-weight: 600;
-  color: #1a1a1a;
+  color: #111827;
   margin: 0 0 1rem 0;
 }
 
@@ -1434,7 +1422,7 @@ export default {
   flex: 1;
   min-width: 200px;
   max-width: 300px;
-  border: 1px solid #e5e5e5;
+  border: 1px solid #e5e7eb;
   border-radius: 8px;
   overflow: hidden;
   background: white;
@@ -1451,10 +1439,10 @@ export default {
 .image-caption {
   padding: 0.75rem;
   font-size: 0.875rem;
-  color: #666;
-  background: #f8fafc;
+  color: #4b5563;
+  background: #f9fafb;
   margin: 0;
-  border-top: 1px solid #e5e5e5;
+  border-top: 1px solid #e5e7eb;
 }
 
 /* Flexible content structures */
@@ -1464,15 +1452,15 @@ export default {
 }
 
 .subsection-title {
-  font-size: 1rem;
+  font-size: 1.125rem;
   font-weight: 600;
-  color: #1a1a1a;
+  color: #111827;
   margin: 0 0 0.75rem 0;
 }
 
 .subsection-content {
-  font-size: 0.9375rem;
-  line-height: 1.6;
+  font-size: 1rem;
+  line-height: 1.7;
   color: #374151;
 }
 
@@ -1480,9 +1468,9 @@ export default {
 .example-item {
   margin-bottom: 1rem;
   padding: 1rem;
-  background: #f8fafc;
+  background: #f9fafb;
   border-radius: 8px;
-  border-left: 4px solid #6366f1;
+  border-left: 4px solid #4f46e5;
 }
 
 .structured-item,
@@ -1491,9 +1479,9 @@ export default {
 }
 
 .item-title {
-  font-size: 0.875rem;
+  font-size: 1rem;
   font-weight: 600;
-  color: #1a1a1a;
+  color: #111827;
   margin: 0 0 0.5rem 0;
 }
 
@@ -1508,9 +1496,9 @@ export default {
 }
 
 .homework-subtitle {
-  font-size: 1rem;
+  font-size: 1.125rem;
   font-weight: 600;
-  color: #1a1a1a;
+  color: #111827;
   margin: 0 0 1rem 0;
   display: flex;
   align-items: center;
@@ -1520,7 +1508,7 @@ export default {
 .homework-subtitle::before {
   content: '';
   width: 4px;
-  height: 1rem;
+  height: 1.25rem;
   background: #f59e0b;
   border-radius: 2px;
 }
@@ -1533,9 +1521,9 @@ export default {
 
 .theory-question,
 .practical-task {
-  margin-bottom: 0.75rem;
-  font-size: 0.9375rem;
-  line-height: 1.5;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  line-height: 1.6;
   color: #374151;
 }
 
@@ -1557,8 +1545,8 @@ export default {
 .spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #6366f1;
+  border: 4px solid #e5e7eb;
+  border-top: 4px solid #4f46e5;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -1576,17 +1564,17 @@ export default {
 .loading-state h3, .error-state h3, .empty-state h3 {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #1a1a1a;
+  color: #111827;
   margin: 0 0 0.5rem 0;
 }
 
 .loading-state p, .error-state p, .empty-state p {
-  color: #666;
+  color: #4b5563;
   margin: 0 0 1.5rem 0;
 }
 
 .retry-btn {
-  background: #6366f1;
+  background: #4f46e5;
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
@@ -1597,44 +1585,43 @@ export default {
 }
 
 .retry-btn:hover {
-  background: #5855eb;
+  background: #4338ca;
 }
 
 /* Traditional Lesson Content (unchanged) */
 .lesson-content {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 2rem;
 }
 
 .step-container {
   background: white;
-  border: 1px solid #e5e5e5;
+  border: 1px solid #e5e7eb;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .step-header {
-  background: #f8fafc;
-  padding: 1.5rem;
-  border-bottom: 1px solid #e5e5e5;
+  background: #f9fafb;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
   display: flex;
   align-items: center;
   gap: 1rem;
 }
 
 .step-number {
-  width: 32px;
-  height: 32px;
-  background: #6366f1;
+  width: 36px;
+  height: 36px;
+  background: #4f46e5;
   color: white;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 1rem;
   flex-shrink: 0;
 }
 
@@ -1643,15 +1630,15 @@ export default {
 }
 
 .step-title {
-  font-size: 1.125rem;
+  font-size: 1.25rem;
   font-weight: 600;
-  color: #1a1a1a;
+  color: #111827;
   margin: 0 0 0.25rem 0;
 }
 
 .step-type {
-  font-size: 0.75rem;
-  color: #6366f1;
+  font-size: 0.8125rem;
+  color: #4f46e5;
   text-transform: uppercase;
   font-weight: 500;
   letter-spacing: 0.5px;
@@ -1663,7 +1650,7 @@ export default {
 
 /* Step Components (unchanged) */
 .step-text {
-  line-height: 1.6;
+  line-height: 1.7;
 }
 
 .text-content {
@@ -1673,29 +1660,18 @@ export default {
   margin-bottom: 1.5rem;
 }
 
-.text-content p {
-  margin: 0 0 1rem 0;
-}
-
-.text-content p:last-child {
-  margin-bottom: 0;
-}
-
+.text-content p { margin: 0 0 1.25rem 0; }
+.text-content p:last-child { margin-bottom: 0; }
 .text-content h1, .text-content h2, .text-content h3 {
-  color: #1a1a1a;
+  color: #111827;
   margin: 1.5rem 0 1rem 0;
 }
-
 .text-content ul, .text-content ol {
   margin: 1rem 0;
   padding-left: 1.5rem;
 }
+.text-content li { margin-bottom: 0.5rem; }
 
-.text-content li {
-  margin-bottom: 0.5rem;
-}
-
-/* Images in horizontal row layout */
 .step-images {
   display: flex;
   flex-wrap: wrap;
@@ -1707,7 +1683,7 @@ export default {
   flex: 1;
   min-width: 200px;
   max-width: 300px;
-  border: 1px solid #e5e5e5;
+  border: 1px solid #e5e7eb;
   border-radius: 8px;
   overflow: hidden;
   background: white;
@@ -1720,7 +1696,6 @@ export default {
   display: block;
 }
 
-/* Video Component (unchanged) */
 .step-video {
   display: flex;
   flex-direction: column;
@@ -1731,16 +1706,14 @@ export default {
   position: relative;
   border-radius: 8px;
   overflow: hidden;
-  background: #f0f0f0;
+  background: #f3f4f6;
 }
-
 .video-container {
   position: relative;
   width: 100%;
   height: 0;
   padding-bottom: 56.25%;
 }
-
 .video-container iframe,
 .video-container video {
   position: absolute;
@@ -1749,44 +1722,30 @@ export default {
   width: 100%;
   height: 100%;
 }
-
 .video-placeholder {
   display: flex;
   align-items: center;
   justify-content: center;
   height: 200px;
-  color: #666;
-  background: #f8fafc;
+  color: #4b5563;
+  background: #f9fafb;
 }
 
-/* PDF Component (unchanged) */
 .step-pdf {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
-
 .pdf-container {
   position: relative;
-  border: 1px solid #e5e5e5;
+  border: 1px solid #e5e7eb;
   border-radius: 8px;
   overflow: hidden;
 }
-
-.pdf-iframe {
-  width: 100%;
-  height: 500px;
-  border: none;
-}
-
-.pdf-actions {
-  padding: 1rem;
-  background: #f8fafc;
-  text-align: center;
-}
-
+.pdf-iframe { width: 100%; height: 500px; border: none; }
+.pdf-actions { padding: 1rem; background: #f9fafb; text-align: center; }
 .pdf-fullscreen-btn {
-  background: #6366f1;
+  background: #4f46e5;
   color: white;
   border: none;
   padding: 0.5rem 1rem;
@@ -1795,119 +1754,185 @@ export default {
   cursor: pointer;
   transition: background 0.2s;
 }
-
-.pdf-fullscreen-btn:hover {
-  background: #5855eb;
-}
-
+.pdf-fullscreen-btn:hover { background: #4338ca; }
 .pdf-placeholder {
   display: flex;
   align-items: center;
   justify-content: center;
   height: 200px;
-  color: #666;
-  background: #f8fafc;
-  border: 1px solid #e5e5e5;
+  color: #4b5563;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
   border-radius: 8px;
 }
 
-/* Practice Component (unchanged) */
 .step-practice {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
   border-radius: 8px;
   padding: 1.5rem;
 }
+.practice-content { color: #374151; line-height: 1.7; }
 
-.practice-content {
-  color: #374151;
-  line-height: 1.6;
-}
-
-/* Quiz Component (unchanged) */
+/* === REVAMPED QUIZ STYLES === */
 .step-quiz {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 2rem;
 }
 
 .quiz-item {
-  border: 1px solid #e5e5e5;
-  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
   padding: 1.5rem;
   background: white;
 }
 
 .quiz-question {
-  font-size: 1.125rem;
+  font-size: 1.25rem;
   font-weight: 600;
-  color: #1a1a1a;
-  margin: 0 0 1rem 0;
+  color: #111827;
+  margin: 0 0 1.5rem 0;
+  line-height: 1.4;
 }
 
 .quiz-options {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
 .quiz-option {
-  padding: 0.75rem 1rem;
-  border: 2px solid #e5e5e5;
-  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
   background: white;
   text-align: left;
   cursor: pointer;
-  transition: all 0.2s;
-  font-size: 0.9375rem;
+  transition: all 0.2s ease-in-out;
+  position: relative;
 }
 
 .quiz-option:hover {
-  border-color: #6366f1;
-  background: #f8fafc;
+  border-color: #4f46e5;
+  background: #f9fafb;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.option-letter {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #eef2ff;
+  color: #4338ca;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.option-text {
+  flex-grow: 1;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.option-icon {
+  width: 24px;
+  height: 24px;
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%) scale(0);
+  transition: transform 0.2s ease-in-out;
+  opacity: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .quiz-option.correct {
   border-color: #10b981;
-  background: #ecfdf5;
-  color: #065f46;
+  background: #f0fdf4;
+}
+.quiz-option.correct .option-letter {
+  background: #10b981;
+  color: white;
+}
+.quiz-option.correct .option-text {
+  color: #064e3b;
+}
+.quiz-option.correct .correct-icon {
+  transform: translateY(-50%) scale(1);
+  opacity: 1;
+  color: #10b981;
 }
 
 .quiz-option.incorrect {
   border-color: #ef4444;
   background: #fef2f2;
+}
+.quiz-option.incorrect .option-letter {
+  background: #ef4444;
+  color: white;
+}
+.quiz-option.incorrect .option-text {
   color: #991b1b;
+}
+.quiz-option.incorrect .incorrect-icon {
+  transform: translateY(-50%) scale(1);
+  opacity: 1;
+  color: #ef4444;
 }
 
 .quiz-option.disabled {
   cursor: not-allowed;
-  opacity: 0.6;
+  opacity: 0.7;
+}
+.quiz-option.disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+.quiz-option.correct.disabled, .quiz-option.incorrect.disabled {
+  opacity: 1;
 }
 
+
 .quiz-explanation {
-  margin-top: 1rem;
+  margin-top: 1.5rem;
   padding: 1rem;
-  background: #f0f9ff;
-  border: 1px solid #bae6fd;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  color: #0c4a6e;
+  background: #f8fafb;
+  border-left: 4px solid #9ca3af;
+  border-radius: 0 6px 6px 0;
+  font-size: 0.9375rem;
+  color: #374151;
+  line-height: 1.6;
+}
+.quiz-explanation strong {
+  color: #111827;
 }
 
 .no-quiz {
   text-align: center;
-  color: #666;
+  color: #4b5563;
   padding: 2rem;
-  background: #f8fafc;
-  border: 1px dashed #cbd5e1;
-  border-radius: 8px;
+  background: #f9fafb;
+  border: 2px dashed #e5e7eb;
+  border-radius: 12px;
 }
 
-/* Footer (unchanged) */
+/* Footer (enhanced) */
 .player-footer {
   background: white;
-  border-top: 1px solid #e5e5e5;
-  padding: 0.75rem 2rem;
+  border-top: 1px solid #e5e7eb;
+  padding: 1rem 2rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1919,15 +1944,15 @@ export default {
 .nav-btn {
   display: flex;
   align-items: center;
-  gap: 0.375rem;
-  padding: 0.625rem 1.25rem;
-  border-radius: 6px;
-  font-weight: 500;
-  font-size: 0.8125rem;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9375rem;
   cursor: pointer;
   transition: all 0.2s;
   border: none;
-  min-width: 100px;
+  min-width: 120px;
   justify-content: center;
 }
 
@@ -1937,22 +1962,22 @@ export default {
 }
 
 .nav-btn--primary {
-  background: #6366f1;
+  background: #4f46e5;
   color: white;
 }
 
 .nav-btn--primary:hover:not(:disabled) {
-  background: #5855eb;
+  background: #4338ca;
 }
 
 .nav-btn--secondary {
-  background: #f3f4f6;
+  background: white;
   color: #374151;
   border: 1px solid #d1d5db;
 }
 
 .nav-btn--secondary:hover:not(:disabled) {
-  background: #e5e7eb;
+  background: #f9fafb;
 }
 
 .nav-btn--success {
@@ -1966,156 +1991,28 @@ export default {
 
 .lesson-nav-info {
   font-weight: 500;
-  color: #6b7280;
-  font-size: 0.8125rem;
+  color: #4b5563;
+  font-size: 0.9375rem;
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .lesson-player-overlay {
-    padding: 1rem 0.5rem;
-    align-items: flex-start;
-  }
-  
-  .lesson-player {
-    width: 100%;
-    min-height: 100vh;
-    border-radius: 12px;
-  }
-  
-  .player-header {
-    padding: 1rem;
-    flex-shrink: 0;
-  }
-  
-  .header-content {
-    max-width: calc(100% - 80px);
-    padding-right: 0.5rem;
-  }
-  
-  .lesson-title {
-    font-size: 1.25rem;
-    margin-bottom: 0.5rem;
-  }
-  
-  .progress-info {
-    font-size: 0.75rem;
-    gap: 0.75rem;
-  }
-  
-  .close-btn {
-    top: 1rem;
-    right: 1rem;
-  }
-  
-  .player-content {
-    padding: 1rem;
-    min-height: 0;
-  }
-  
-  .step-content {
-    padding: 1rem;
-  }
-  
-  .player-footer {
-    padding: 0.75rem 1rem;
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-  
-  .nav-btn {
-    width: 100%;
-  }
-  
-  .objectives-container {
-    padding: 0 1rem;
-  }
-  
-  .step-images,
-  .concept-images,
-  .exercise-images {
-    flex-direction: column;
-  }
-  
-  .step-image,
-  .concept-image,
-  .exercise-image {
-    max-width: 100%;
-  }
-
-  /* ✅ NEW: Structured content responsive */
-  .section-header {
-    padding: 1rem;
-  }
-  
-  .theory-content,
-  .examples-content,
-  .homework-content {
-    padding: 1rem;
-  }
-  
-  .concept-block,
-  .exercise-block {
-    margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
-  }
+  .lesson-player-overlay { padding: 1rem; }
+  .lesson-player { min-height: calc(100vh - 2rem); }
+  .player-header, .player-content, .player-footer { padding-left: 1.5rem; padding-right: 1.5rem; }
+  .lesson-title { font-size: 1.5rem; }
+  .close-btn { top: 1.25rem; right: 1.25rem; }
+  .objectives-container { padding: 1rem 1.5rem; }
 }
 
 @media (max-width: 480px) {
-  .step-images,
-  .concept-images,
-  .exercise-images {
-    gap: 0.75rem;
-  }
-  
-  .step-image img,
-  .concept-image img,
-  .exercise-image img {
-    height: 150px;
-  }
-  
-  .text-content {
-    font-size: 0.9375rem;
-  }
-  
-  .step-header {
-    padding: 1rem;
-  }
-  
-  .step-title {
-    font-size: 1rem;
-  }
-
-  /* ✅ NEW: Mobile structured content */
-  .section-header {
-    padding: 0.75rem;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
-  
-  .section-icon {
-    width: 32px;
-    height: 32px;
-  }
-  
-  .section-header h2 {
-    font-size: 1.125rem;
-  }
-  
-  .theory-content,
-  .examples-content,
-  .homework-content {
-    padding: 0.75rem;
-  }
-  
-  .concept-title,
-  .exercise-title {
-    font-size: 1rem;
-  }
-  
-  .subsection-title {
-    font-size: 0.9375rem;
-  }
+  .lesson-player-overlay { padding: 0.5rem; }
+  .lesson-player { min-height: calc(100vh - 1rem); }
+  .player-header, .player-content, .player-footer { padding-left: 1rem; padding-right: 1rem; }
+  .lesson-title { font-size: 1.25rem; }
+  .step-images, .concept-images, .exercise-images { flex-direction: column; }
+  .step-image, .concept-image, .exercise-image { max-width: 100%; }
+  .section-header { padding: 1rem; }
+  .section-header h2 { font-size: 1.125rem; }
 }
 </style>
