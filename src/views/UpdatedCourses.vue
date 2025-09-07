@@ -218,8 +218,6 @@
                     </svg>
                   </div>
                 </div>
-                <div class="modal-image-overlay"></div>
-
                 <div class="modal-badge-container">
                   <div v-if="selectedCourse.isPremium" class="modal-badge modal-badge-premium">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -2071,6 +2069,7 @@ export default {
   height: 100%;
 }
 
+/*
 .modal-image-overlay {
   position: absolute;
   bottom: 0;
@@ -2079,6 +2078,7 @@ export default {
   height: 60%;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
 }
+*/
 
 .modal-badge-container {
   position: absolute;
@@ -2116,6 +2116,7 @@ export default {
   justify-content: space-between;
   align-items: end;
   color: white;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 .modal-duration {
