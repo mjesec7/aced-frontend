@@ -559,12 +559,15 @@ export default {
   },
 
   async mounted() {
+
     try {
       // Initialize component
       await this.initializeComponent();
 
       // ✅ FIXED: Setup comprehensive event listeners
       this.setupEventListeners();
+
+
     } catch (error) {
       console.error('❌ Catalogue: Mount error:', error);
     }
@@ -576,13 +579,10 @@ export default {
 
   methods: {
     // ===== INITIALIZATION =====
-    // ✅ ENHANCED: INITIALIZATION WITH BETTER TOPIC PROCESSING
     async initializeComponent() {
       try {
         this.loading = true;
         this.lang = localStorage.getItem('lang') || 'en';
-
-        console.log('🚀 Initializing CataloguePage with enhanced topic processing...');
 
         // Get user ID from multiple sources
         const storedId = this.$store?.state?.firebaseUserId || 
@@ -591,9 +591,9 @@ export default {
         
         if (!storedId) {
           console.warn('⚠️ Catalogue: No user ID found, continuing without user data');
+          // Don't return here - still load public data
         } else {
           this.userId = storedId;
-          console.log('👤 User ID found:', storedId);
         }
 
         // Load all data in parallel with proper error handling
@@ -615,17 +615,8 @@ export default {
         await Promise.allSettled(dataPromises);
 
         // Process subjects after all data is loaded
-        console.log('🔄 Starting enhanced topic processing...');
-        
-        // Debug topic grouping if in development mode
-        if (process.env.NODE_ENV === 'development') {
-          this.debugTopicGrouping();
-        }
-        
         this.processSubjects();
         
-        console.log('✅ CataloguePage initialization complete');
-        console.log(`📊 Final counts: ${this.subjects.length} subjects processed`);
         
       } catch (error) {
         console.error('❌ Catalogue: Critical initialization error:', error);
@@ -636,31 +627,14 @@ export default {
     },
 
     // ===== DATA LOADING =====
-    // ✅ ENHANCED: Better error handling for lessons loading
     async loadLessons() {
       try {
-        console.log('📚 Loading lessons for topic processing...');
         
-        // Use the same API method as MainPage
+        // ✅ FIXED: Use the same API method as MainPage
         const lessonsResult = await getAllLessons();
         
         if (lessonsResult?.success && Array.isArray(lessonsResult.data)) {
           this.lessons = lessonsResult.data;
-          console.log(`✅ Loaded ${this.lessons.length} lessons successfully`);
-          
-          // Log lesson structure for debugging
-          if (this.lessons.length > 0 && process.env.NODE_ENV === 'development') {
-            const sampleLesson = this.lessons[0];
-            console.log('📋 Sample lesson structure:', {
-              id: sampleLesson._id,
-              title: sampleLesson.lessonName || sampleLesson.title,
-              topicId: sampleLesson.topicId,
-              topic: sampleLesson.topic,
-              subject: sampleLesson.subject,
-              level: sampleLesson.level
-            });
-          }
-          
         } else {
           console.warn('⚠️ Catalogue: Invalid lessons response:', lessonsResult);
           this.lessons = [];
@@ -669,32 +643,26 @@ export default {
         console.error('❌ Catalogue: Error loading lessons:', error);
         this.lessons = [];
         
-        // Try fallback approach using topics
+        // Try fallback approach
         try {
-          console.log('🔄 Attempting fallback lessons loading via topics...');
           const topicsResult = await getTopics({ includeStats: true });
           
           if (topicsResult?.success && Array.isArray(topicsResult.data)) {
+            // Extract lessons from topics if available
             const allLessons = [];
-            let topicsProcessed = 0;
-            
             for (const topic of topicsResult.data) {
               try {
                 const topicLessons = await getLessonsByTopic(topic._id);
                 if (topicLessons?.success && Array.isArray(topicLessons.data)) {
                   allLessons.push(...topicLessons.data);
-                  topicsProcessed++;
                 }
               } catch (topicError) {
-                console.warn(`⚠️ Failed to get lessons for topic: ${topic._id}`);
+                console.warn('⚠️ Failed to get lessons for topic:', topic._id);
               }
             }
             
             if (allLessons.length > 0) {
               this.lessons = allLessons;
-              console.log(`✅ Fallback successful: loaded ${allLessons.length} lessons from ${topicsProcessed} topics`);
-            } else {
-              console.warn('⚠️ No lessons found via fallback method');
             }
           }
         } catch (fallbackError) {
@@ -711,11 +679,15 @@ export default {
       }
 
       try {
+        
+        // ✅ FIXED: Use the same API method as MainPage
         const progressResult = await getUserProgress(this.userId);
         
         if (progressResult?.success && Array.isArray(progressResult.data)) {
+          // Calculate topic progress from lesson progress data
           await this.calculateTopicProgressFromLessons(progressResult.data);
         } else if (progressResult?.success && typeof progressResult.data === 'object') {
+          // Direct topic progress format
           this.userProgress = progressResult.data || {};
         } else {
           console.warn('⚠️ Catalogue: Invalid progress response:', progressResult);
@@ -735,6 +707,8 @@ export default {
       }
 
       try {
+        
+        // ✅ FIXED: Use the same API method as MainPage
         const studyListResult = await getUserStudyList(this.userId);
         
         if (studyListResult?.success && Array.isArray(studyListResult.data)) {
@@ -745,6 +719,7 @@ export default {
               return topicId ? String(topicId) : '';
             })
             .filter(id => id);
+          
         } else {
           console.warn('⚠️ Catalogue: Invalid study list response:', studyListResult);
           this.studyPlanTopics = [];
@@ -754,8 +729,8 @@ export default {
         this.studyPlanTopics = [];
       }
     },
-    
-    // ✅ ENHANCED: Calculate topic progress from lessons with better grouping
+
+    // ✅ ENHANCED: Calculate topic progress from lessons (same as MainPage logic)
     async calculateTopicProgressFromLessons(progressData) {
       if (!Array.isArray(progressData)) {
         console.warn('⚠️ Catalogue: Progress data is not an array for calculation');
@@ -763,71 +738,58 @@ export default {
         return;
       }
 
-      console.log('🔄 Calculating topic progress from lessons...');
-
       const topicProgressMap = {};
       const topicLessonsCount = {};
 
-      // Step 1: Count lessons per topic using the same grouping logic
+      // First, count lessons per topic
       if (Array.isArray(this.lessons)) {
         this.lessons.forEach(lesson => {
-          if (!lesson) return;
+          if (!lesson || !lesson.topicId) return;
 
-          const topicKey = this.getTopicGroupingKey(lesson);
-          if (!topicKey) return;
+          const topicId = this.extractTopicId(lesson.topicId);
+          if (!topicId) return;
 
-          if (!topicLessonsCount[topicKey]) {
-            topicLessonsCount[topicKey] = { 
-              total: 0, 
-              completed: 0,
-              name: this.getTopicName(lesson),
-              lessons: []
-            };
+          if (!topicLessonsCount[topicId]) {
+            topicLessonsCount[topicId] = { total: 0, completed: 0 };
           }
-          topicLessonsCount[topicKey].total++;
-          topicLessonsCount[topicKey].lessons.push(lesson);
+          topicLessonsCount[topicId].total++;
         });
       }
 
-      // Step 2: Count completed lessons per topic
+      // Then, count completed lessons per topic
       progressData.forEach(progress => {
         if (!progress || !progress.completed || !progress.lessonId) return;
 
         const lessonId = progress.lessonId._id || progress.lessonId;
         if (!lessonId) return;
 
-        // Find the lesson this progress belongs to
         const lesson = this.lessons.find(l =>
           l && (String(l._id) === String(lessonId))
         );
 
-        if (lesson) {
-          const topicKey = this.getTopicGroupingKey(lesson);
-          if (topicKey && topicLessonsCount[topicKey]) {
-            topicLessonsCount[topicKey].completed++;
+        if (lesson && lesson.topicId) {
+          const topicId = this.extractTopicId(lesson.topicId);
+          if (topicId && topicLessonsCount[topicId]) {
+            topicLessonsCount[topicId].completed++;
           }
         }
       });
 
-      // Step 3: Calculate progress percentages
-      Object.keys(topicLessonsCount).forEach(topicKey => {
-        const topic = topicLessonsCount[topicKey];
+      // Calculate progress percentages
+      Object.keys(topicLessonsCount).forEach(topicId => {
+        const topic = topicLessonsCount[topicId];
         if (topic.total > 0) {
-          topicProgressMap[topicKey] = Math.round((topic.completed / topic.total) * 100);
+          topicProgressMap[topicId] = Math.round((topic.completed / topic.total) * 100);
         } else {
-          topicProgressMap[topicKey] = 0;
+          topicProgressMap[topicId] = 0;
         }
       });
-
-      console.log('✅ Topic progress calculated:', Object.keys(topicProgressMap).length, 'topics');
-      console.log('📊 Progress summary:', topicProgressMap);
 
       this.userProgress = topicProgressMap;
     },
 
     // ===== DATA PROCESSING =====
     processSubjects() {
-      console.log('🔄 Processing subjects from lessons...');
 
       if (!Array.isArray(this.lessons) || this.lessons.length === 0) {
         console.warn('⚠️ Catalogue: No lessons available for processing');
@@ -861,10 +823,12 @@ export default {
           subject.levels.add(String(lesson.level));
         }
 
-        // ✅ ENHANCED: Add topic with proper ID/name grouping logic
-        const topicKey = this.getTopicGroupingKey(lesson);
-        if (topicKey) {
-          subject.topics.add(topicKey);
+        // Add topic
+        if (lesson.topicId || lesson.topic) {
+          const topicKey = this.extractTopicId(lesson.topicId) || this.getTopicName(lesson);
+          if (topicKey) {
+            subject.topics.add(String(topicKey));
+          }
         }
 
         subject.lessonCount++;
@@ -890,11 +854,9 @@ export default {
         topicCount: subject.topics.size
       }));
 
-      console.log('✅ Processed subjects:', this.subjects.length);
     },
 
     processLevels() {
-      console.log('🔄 Processing levels...');
 
       if (!Array.isArray(this.lessons) || !this.selectedSubject) {
         this.levels = [];
@@ -907,7 +869,6 @@ export default {
         lesson && lesson.subject === this.selectedSubject
       );
 
-      console.log(`📚 Found ${subjectLessons.length} lessons for subject: ${this.selectedSubject}`);
 
       subjectLessons.forEach(lesson => {
         if (!lesson || (lesson.level === null || lesson.level === undefined)) return;
@@ -928,10 +889,12 @@ export default {
 
         const level = levelsMap.get(levelName);
 
-        // ✅ ENHANCED: Add topic with proper ID/name grouping
-        const topicKey = this.getTopicGroupingKey(lesson);
-        if (topicKey) {
-          level.topics.add(topicKey);
+        // Add topic
+        if (lesson.topicId || lesson.topic) {
+          const topicKey = this.extractTopicId(lesson.topicId) || this.getTopicName(lesson);
+          if (topicKey) {
+            level.topics.add(String(topicKey));
+          }
         }
 
         level.lessonCount++;
@@ -958,36 +921,63 @@ export default {
         return String(a.name).localeCompare(String(b.name));
       });
 
-      console.log('✅ Processed levels:', this.levels.length);
     },
 
     processTopics() {
-      console.log('🔄 Processing topics...');
 
       if (!Array.isArray(this.lessons) || !this.selectedSubject || !this.selectedLevel) {
         this.topics = [];
         return;
       }
 
-      // ✅ ENHANCED: Group lessons by topic using proper logic
-      const topicGroups = this.groupLessonsByTopic();
-      
-      // Convert groups to topic objects
-      this.topics = Array.from(topicGroups.values()).map(group => ({
-        topicId: group.id,
-        name: group.name,
-        subject: String(this.selectedSubject),
-        level: String(this.selectedLevel),
-        type: group.type,
-        lessonCount: group.lessons.length,
-        totalTime: group.totalTime,
-        lessons: group.lessons,
-        progress: Number(this.userProgress[group.id]) || 0,
+      const topicsMap = new Map();
+
+      const levelLessons = this.lessons.filter(lesson =>
+        lesson &&
+        lesson.subject === this.selectedSubject &&
+        String(lesson.level) === String(this.selectedLevel)
+      );
+
+
+      levelLessons.forEach(lesson => {
+        if (!lesson) return;
+
+        const topicId = this.extractTopicId(lesson.topicId);
+        const name = this.getTopicName(lesson);
+        
+        if (!topicId || !name) return;
+
+        if (!topicsMap.has(topicId)) {
+          topicsMap.set(topicId, {
+            topicId,
+            name,
+            subject: String(lesson.subject || ''),
+            level: String(lesson.level || ''),
+            type: lesson.type || 'free',
+            lessonCount: 1,
+            totalTime: this.estimateLessonTime(lesson),
+            lessons: [lesson]
+          });
+        } else {
+          const entry = topicsMap.get(topicId);
+          entry.lessonCount += 1;
+          entry.totalTime += this.estimateLessonTime(lesson);
+          entry.lessons.push(lesson);
+          
+          // Update type to premium if any lesson is premium
+          if (lesson.type === 'premium' || lesson.type === 'start' || lesson.type === 'pro') {
+            entry.type = 'premium';
+          }
+        }
+      });
+
+      this.topics = Array.from(topicsMap.values()).map(topic => ({
+        ...topic,
+        progress: Number(this.userProgress[topic.topicId]) || 0,
         inStudyPlan: Array.isArray(this.studyPlanTopics) && 
-                     this.studyPlanTopics.includes(group.id)
+                     this.studyPlanTopics.includes(topic.topicId)
       }));
 
-      console.log('✅ Processed topics:', this.topics.length);
     },
 
     calculateLevelProgress(levelName) {
@@ -995,37 +985,23 @@ export default {
         return 0;
       }
 
-      // Get all lessons for this level
-      const levelLessons = this.lessons.filter(l =>
+      const levelTopics = this.lessons.filter(l =>
         l && l.subject === this.selectedSubject && String(l.level) === String(levelName)
       );
 
-      if (levelLessons.length === 0) return 0;
+      if (levelTopics.length === 0) return 0;
 
-      // Group lessons by topic using the same logic
-      const topicGroups = new Map();
-      
-      levelLessons.forEach(lesson => {
-        const topicKey = this.getTopicGroupingKey(lesson);
-        if (topicKey) {
-          if (!topicGroups.has(topicKey)) {
-            topicGroups.set(topicKey, {
-              lessons: [],
-              progress: 0
-            });
-          }
-          topicGroups.get(topicKey).lessons.push(lesson);
-        }
-      });
-
-      // Calculate average progress across topics
       let totalProgress = 0;
       let topicCount = 0;
+      const seenTopics = new Set();
 
-      topicGroups.forEach((group, topicKey) => {
-        const progress = Number(this.userProgress[topicKey]) || 0;
-        totalProgress += progress;
-        topicCount++;
+      levelTopics.forEach(lesson => {
+        if (lesson && lesson.topicId && !seenTopics.has(lesson.topicId)) {
+          seenTopics.add(lesson.topicId);
+          const progress = Number(this.userProgress[lesson.topicId]) || 0;
+          totalProgress += progress;
+          topicCount++;
+        }
       });
 
       return topicCount > 0 ? Math.round(totalProgress / topicCount) : 0;
@@ -1078,154 +1054,7 @@ export default {
       this.showCompleted = false;
     },
 
-    // ===== UTILITY & HELPER METHODS =====
-    
-    // ✅ NEW: Enhanced topic grouping logic
-    getTopicGroupingKey(lesson) {
-      if (!lesson) return null;
-
-      // Priority 1: Use topicId if available and valid
-      const topicId = this.extractTopicId(lesson.topicId);
-      if (topicId && topicId.trim()) {
-        return topicId.trim();
-      }
-
-      // Priority 2: Use topic name if available
-      const topicName = this.getTopicName(lesson);
-      if (topicName && topicName.trim() && topicName !== 'Без темы') {
-        return `name:${topicName.trim()}`;
-      }
-
-      // Priority 3: Use lesson name as fallback
-      const lessonName = lesson.lessonName || lesson.title;
-      if (lessonName && lessonName.trim()) {
-        return `lesson:${lessonName.trim()}`;
-      }
-
-      return null;
-    },
-
-    // ✅ NEW: Group lessons by topic with enhanced logic
-    groupLessonsByTopic() {
-      const levelLessons = this.lessons.filter(lesson =>
-        lesson &&
-        lesson.subject === this.selectedSubject &&
-        String(lesson.level) === String(this.selectedLevel)
-      );
-
-      console.log(`📚 Found ${levelLessons.length} lessons for ${this.selectedSubject} level ${this.selectedLevel}`);
-
-      // Step 1: Group by topicId first
-      const idGroups = new Map();
-      const nameGroups = new Map();
-      const ungroupedLessons = [];
-
-      levelLessons.forEach(lesson => {
-        const topicId = this.extractTopicId(lesson.topicId);
-        const topicName = this.getTopicName(lesson);
-
-        if (topicId && topicId.trim()) {
-          // Group by ID
-          const cleanId = topicId.trim();
-          if (!idGroups.has(cleanId)) {
-            idGroups.set(cleanId, {
-              id: cleanId,
-              name: topicName || `Topic ${cleanId}`,
-              lessons: [],
-              type: 'free',
-              totalTime: 0,
-              groupBy: 'id'
-            });
-          }
-          
-          const group = idGroups.get(cleanId);
-          group.lessons.push(lesson);
-          group.totalTime += this.estimateLessonTime(lesson);
-          
-          // Update type to premium if any lesson is premium
-          if (lesson.type === 'premium' || lesson.type === 'start' || lesson.type === 'pro') {
-            group.type = 'premium';
-          }
-          
-          // Use the most descriptive name found
-          if (topicName && topicName !== 'Без темы' && topicName.length > group.name.length) {
-            group.name = topicName;
-          }
-        } else if (topicName && topicName.trim() && topicName !== 'Без темы') {
-          // Group by name if no ID available
-          const cleanName = topicName.trim();
-          if (!nameGroups.has(cleanName)) {
-            nameGroups.set(cleanName, {
-              id: `name:${cleanName}`,
-              name: cleanName,
-              lessons: [],
-              type: 'free',
-              totalTime: 0,
-              groupBy: 'name'
-            });
-          }
-          
-          const group = nameGroups.get(cleanName);
-          group.lessons.push(lesson);
-          group.totalTime += this.estimateLessonTime(lesson);
-          
-          if (lesson.type === 'premium' || lesson.type === 'start' || lesson.type === 'pro') {
-            group.type = 'premium';
-          }
-        } else {
-          // Individual lessons without clear topic grouping
-          ungroupedLessons.push(lesson);
-        }
-      });
-
-      // Step 2: Merge name groups into ID groups if they match
-      const mergedGroups = new Map(idGroups);
-
-      nameGroups.forEach((nameGroup, nameKey) => {
-        let merged = false;
-        
-        // Check if any ID group has the same name
-        for (const [idKey, idGroup] of idGroups.entries()) {
-          if (idGroup.name.toLowerCase().trim() === nameGroup.name.toLowerCase().trim()) {
-            // Merge name group into ID group
-            console.log(`🔗 Merging name group "${nameKey}" into ID group "${idKey}"`);
-            idGroup.lessons.push(...nameGroup.lessons);
-            idGroup.totalTime += nameGroup.totalTime;
-            if (nameGroup.type === 'premium') {
-              idGroup.type = 'premium';
-            }
-            merged = true;
-            break;
-          }
-        }
-        
-        if (!merged) {
-          // Add as separate group
-          mergedGroups.set(nameKey, nameGroup);
-        }
-      });
-
-      // Step 3: Handle ungrouped lessons
-      ungroupedLessons.forEach((lesson, index) => {
-        const lessonName = lesson.lessonName || lesson.title || `Lesson ${index + 1}`;
-        const lessonId = `lesson:${lessonName}`;
-        
-        mergedGroups.set(lessonId, {
-          id: lessonId,
-          name: lessonName,
-          lessons: [lesson],
-          type: lesson.type || 'free',
-          totalTime: this.estimateLessonTime(lesson),
-          groupBy: 'individual'
-        });
-      });
-
-      console.log(`✅ Topic grouping complete: ${idGroups.size} ID groups, ${nameGroups.size} name groups, ${ungroupedLessons.length} individual lessons`);
-      console.log(`📊 Final groups: ${mergedGroups.size} total topics`);
-
-      return mergedGroups;
-    },
-
+    // ===== UTILITY METHODS =====
     getSubjectIcon(subject) {
       const subjectStr = String(subject || '');
       const icons = {
@@ -1247,89 +1076,60 @@ export default {
       return icons[subjectStr] || '📖';
     },
 
-    // ✅ ENHANCED: Better topic ID extraction with logging
+    // ✅ HELPER: Extract topic ID safely (same as MainPage)
     extractTopicId(topicId) {
       if (!topicId) return null;
       
-      try {
-        if (typeof topicId === 'string') {
-          return topicId.trim();
-        }
-        
-        if (typeof topicId === 'object' && topicId !== null) {
-          const id = topicId._id || topicId.id;
-          return id ? String(id).trim() : null;
-        }
-        
-        return String(topicId).trim();
-      } catch (error) {
-        console.warn('⚠️ Error extracting topic ID:', error);
-        return null;
+      if (typeof topicId === 'string') {
+        return topicId;
       }
+      
+      if (typeof topicId === 'object' && topicId !== null) {
+        return topicId._id || topicId.id || String(topicId);
+      }
+      
+      return String(topicId);
     },
 
-    // ✅ ENHANCED: Better topic name extraction with fallbacks
+    // ✅ ENHANCED: Get topic name with fallbacks (same as MainPage)
     getTopicName(lesson) {
       if (!lesson) return 'Без темы';
       
       try {
-        // Priority 1: Direct topic string
+        // Try direct topic string
         if (typeof lesson.topic === 'string' && lesson.topic.trim()) {
-          const topicName = lesson.topic.trim();
-          if (topicName !== 'undefined' && topicName !== 'null') {
-            return topicName;
-          }
+          return lesson.topic.trim();
         }
         
-        // Priority 2: Topic object with localization
+        // Try topic object with localization
         if (lesson.topic && typeof lesson.topic === 'object' && lesson.topic !== null) {
-          // Try current language
           if (lesson.topic[this.lang] && typeof lesson.topic[this.lang] === 'string') {
-            const localized = String(lesson.topic[this.lang]).trim();
-            if (localized && localized !== 'undefined' && localized !== 'null') {
-              return localized;
-            }
+            return String(lesson.topic[this.lang]).trim();
           }
-          
-          // Try English fallback
           if (lesson.topic.en && typeof lesson.topic.en === 'string') {
-            const english = String(lesson.topic.en).trim();
-            if (english && english !== 'undefined' && english !== 'null') {
-              return english;
-            }
+            return String(lesson.topic.en).trim();
           }
-          
           // Try any string value in topic object
           const anyLangTopic = Object.values(lesson.topic).find(val => 
-            typeof val === 'string' && val.trim() && val !== 'undefined' && val !== 'null'
+            typeof val === 'string' && val.trim()
           );
           if (anyLangTopic) return anyLangTopic.trim();
         }
         
-        // Priority 3: Translations
+        // Try translations
         if (lesson.translations && 
             lesson.translations[this.lang] && 
             lesson.translations[this.lang].topic &&
             typeof lesson.translations[this.lang].topic === 'string') {
-          const translated = String(lesson.translations[this.lang].topic).trim();
-          if (translated && translated !== 'undefined' && translated !== 'null') {
-            return translated;
-          }
+          return String(lesson.translations[this.lang].topic).trim();
         }
         
-        // Priority 4: Generate from lesson name
+        // Fallback to lesson name
         if (lesson.lessonName && typeof lesson.lessonName === 'string' && lesson.lessonName.trim()) {
-          const lessonName = lesson.lessonName.trim();
-          if (lessonName !== 'undefined' && lessonName !== 'null') {
-            return `Тема: ${lessonName}`;
-          }
+          return `Тема: ${lesson.lessonName.trim()}`;
         }
-        
         if (lesson.title && typeof lesson.title === 'string' && lesson.title.trim()) {
-          const title = lesson.title.trim();
-          if (title !== 'undefined' && title !== 'null') {
-            return `Тема: ${title}`;
-          }
+          return `Тема: ${lesson.title.trim()}`;
         }
         
         return 'Без темы';
@@ -1447,11 +1247,13 @@ export default {
       return '🚀 Начать';
     },
 
+    // ✅ HELPER: Estimate lesson time
     estimateLessonTime(lesson) {
       if (lesson.estimatedTime) return parseInt(lesson.estimatedTime);
       if (lesson.duration) return parseInt(lesson.duration);
       if (lesson.timeToComplete) return parseInt(lesson.timeToComplete);
       
+      // Default estimate based on lesson content
       if (lesson.steps && Array.isArray(lesson.steps)) {
         return Math.max(5, lesson.steps.length * 2); // 2 min per step minimum
       }
@@ -1459,43 +1261,39 @@ export default {
       return 10; // Default 10 minutes
     },
 
+    // ✅ HELPER: Show error message to user
     showErrorMessage(message) {
       console.error('💬 Catalogue: Showing error:', message);
       
+      // Try multiple notification methods
       if (this.$toast) {
         this.$toast.error(message, { duration: 5000 });
       } else if (this.$message) {
         this.$message.error(message);
       } else {
+        // Fallback to alert
         alert(message);
       }
     },
 
     // ===== ACTION METHODS =====
-    // ✅ ENHANCED: Topic access handling with better error messages
+    // ✅ ENHANCED: Better error handling for topic access
     handleTopicAccess(topicId, type) {
       if (!topicId) {
         console.error('❌ Catalogue: No topic ID provided');
-        this.showErrorMessage('Ошибка: не указан ID темы');
         return;
       }
 
-      console.log(`🎯 Handling topic access: ${topicId} (type: ${type})`);
 
       // Check if premium access is required and user doesn't have it
       if ((type === 'premium' || type === 'pro') && !this.isPremiumUser) {
-        console.log('🔒 Premium content requires subscription');
         this.requestedTopicId = topicId;
         this.showPaywall = true;
       } else {
-        console.log('✅ Access granted, navigating to topic...');
         this.$router.push({ 
           name: 'TopicOverview', 
           params: { id: topicId },
-          query: { 
-            source: 'catalogue-page',
-            enhanced: 'true' // Flag to indicate enhanced processing
-          }
+          query: { source: 'catalogue-page' }
         });
       }
     },
@@ -1519,6 +1317,7 @@ export default {
       }
 
       try {
+        
         let topicId = this.selectedTopic.topicId;
         if (typeof topicId === 'object' && topicId !== null) {
           topicId = topicId._id || topicId.id || String(topicId);
@@ -1529,6 +1328,7 @@ export default {
           throw new Error('No valid topicId provided');
         }
 
+        // ✅ FIXED: Use API function instead of direct axios
         const studyListData = {
           topicId: topicId,
           topic: String(this.selectedTopic.name || ''),
@@ -1598,38 +1398,54 @@ export default {
       }
     },
 
+    // ✅ FIXED: Handle plan updates the same way UserSection does
     handlePlanUpdate(newPlan) {
+      
+      // ✅ FIXED: Update store the same way UserSection does
       const updatedUser = {
         ...this.$store.state.user,
         subscriptionPlan: newPlan
       };
       
+      // Use the same mutation UserSection uses
       this.$store.commit('setUser', updatedUser);
       
+      // ✅ FIXED: Also update localStorage for consistency
       localStorage.setItem('userStatus', newPlan);
       localStorage.setItem('plan', newPlan);
       
+      // Trigger reactivity update
       this.triggerReactivityUpdate();
     },
 
+    // ✅ FIXED: Handle user status changes consistently
     handleUserStatusChange(newStatus, oldStatus) {
       if (!newStatus || newStatus === oldStatus) return;
 
+
+      // Update localStorage immediately
       localStorage.setItem('userStatus', newStatus);
       localStorage.setItem('plan', newStatus);
 
+      // Trigger immediate reactivity update
       this.triggerReactivityUpdate();
 
+      // Show celebration for upgrades
       if (newStatus && newStatus !== 'free' && oldStatus === 'free') {
         const planLabel = newStatus === 'pro' ? 'Pro' : 'Start';
         if (this.$toast) {
           this.$toast.success(`🎉 ${planLabel} подписка активирована!`, { duration: 5000 });
         }
       }
+
     },
 
+    // ✅ FIXED: Setup comprehensive event listeners
     setupEventListeners() {
+
+      // ===== DOM EVENT LISTENERS =====
       if (typeof window !== 'undefined') {
+        // Listen for user subscription changes
         this.handleSubscriptionChange = (event) => {
           const { plan, oldPlan } = event.detail;
           this.handleUserStatusChange(plan, oldPlan);
@@ -1640,6 +1456,7 @@ export default {
           window.removeEventListener('userSubscriptionChanged', this.handleSubscriptionChange);
         });
 
+        // Listen for localStorage changes (cross-tab sync)
         this.handleStorageChange = (event) => {
           if (event.key === 'userStatus' && event.newValue !== event.oldValue) {
             this.handleUserStatusChange(event.newValue, event.oldValue);
@@ -1652,19 +1469,24 @@ export default {
         });
       }
 
+      // ===== EVENT BUS LISTENERS =====
       if (typeof window !== 'undefined' && window.eventBus) {
+        // User status change events
         this.handleUserStatusEvent = (data) => {
           this.handleUserStatusChange(data.newStatus, data.oldStatus);
         };
 
+        // Promocode applied events
         this.handlePromocodeEvent = (data) => {
           this.handleUserStatusChange(data.newStatus, data.oldStatus);
         };
 
+        // Force update events
         this.handleForceUpdateEvent = () => {
           this.triggerReactivityUpdate();
         };
 
+        // Register event bus listeners
         const eventTypes = [
           'userStatusChanged',
           'promocodeApplied',
@@ -1684,8 +1506,10 @@ export default {
             window.eventBus.off(eventType, handler);
           });
         });
+
       }
 
+      // ===== STORE MUTATION LISTENER =====
       if (this.$store) {
         this.storeUnsubscribe = this.$store.subscribe((mutation) => {
           if (this.isUserRelatedMutation(mutation)) {
@@ -1693,18 +1517,27 @@ export default {
           }
         });
       }
+
     },
 
+    // ✅ FIXED: Trigger comprehensive reactivity update
     triggerReactivityUpdate() {
       this.componentKey++;
       this.forceUpdateCounter++;
       this.lastUpdateTime = Date.now();
+
+      // Force Vue reactivity with multiple strategies
       this.$forceUpdate();
+
+      // Additional delayed updates for maximum compatibility
       this.$nextTick(() => {
         this.$forceUpdate();
       });
+
+     
     },
 
+    // ✅ FIXED: Check if mutation is user-related
     isUserRelatedMutation(mutation) {
       const userMutations = [
         'setUser',
@@ -1722,7 +1555,10 @@ export default {
              mutation.type.toLowerCase().includes('subscription');
     },
 
+    // ✅ FIXED: Enhanced cleanup method
     cleanup() {
+
+      // Clean up all event listeners
       this.eventCleanupFunctions.forEach(cleanup => {
         try {
           cleanup();
@@ -1732,6 +1568,7 @@ export default {
       });
       this.eventCleanupFunctions = [];
 
+      // Clean up store subscription
       if (this.storeUnsubscribe) {
         try {
           this.storeUnsubscribe();
@@ -1740,92 +1577,13 @@ export default {
         }
         this.storeUnsubscribe = null;
       }
-    },
 
-    // ===== DEBUGGING METHODS =====
-
-    // ✅ NEW: Method to refresh topic grouping (useful for debugging)
-    refreshTopicGrouping() {
-      console.log('🔄 Refreshing topic grouping...');
-      
-      // Clear current state
-      this.subjects = [];
-      this.levels = [];
-      this.topics = [];
-      
-      // Reprocess with debug info
-      if (process.env.NODE_ENV === 'development') {
-        this.debugTopicGrouping();
-      }
-      
-      this.processSubjects();
-      
-      console.log('✅ Topic grouping refreshed');
-    },
-
-    // ✅ NEW: Debug method to inspect topic grouping
-    debugTopicGrouping() {
-      if (!Array.isArray(this.lessons)) return;
-
-      console.log('\n🔍 DEBUG: Topic Grouping Analysis');
-      console.log('=====================================');
-
-      const analysis = {
-        withTopicId: [],
-        withTopicName: [],
-        withBoth: [],
-        withNeither: []
-      };
-
-      this.lessons.forEach((lesson, index) => {
-        if (!lesson) return;
-
-        const hasTopicId = Boolean(this.extractTopicId(lesson.topicId));
-        const hasTopicName = Boolean(this.getTopicName(lesson) && this.getTopicName(lesson) !== 'Без темы');
-
-        const lessonInfo = {
-          index,
-          lessonName: lesson.lessonName || lesson.title || 'Unnamed',
-          topicId: this.extractTopicId(lesson.topicId),
-          topicName: this.getTopicName(lesson),
-          groupingKey: this.getTopicGroupingKey(lesson)
-        };
-
-        if (hasTopicId && hasTopicName) {
-          analysis.withBoth.push(lessonInfo);
-        } else if (hasTopicId) {
-          analysis.withTopicId.push(lessonInfo);
-        } else if (hasTopicName) {
-          analysis.withTopicName.push(lessonInfo);
-        } else {
-          analysis.withNeither.push(lessonInfo);
-        }
-      });
-
-      console.log(`📊 Lessons with both ID and name: ${analysis.withBoth.length}`);
-      console.log(`🆔 Lessons with only ID: ${analysis.withTopicId.length}`);
-      console.log(`📝 Lessons with only name: ${analysis.withTopicName.length}`);
-      console.log(`❓ Lessons with neither: ${analysis.withNeither.length}`);
-
-      if (analysis.withBoth.length > 0) {
-        console.log('\n📋 Sample lessons with both ID and name:');
-        analysis.withBoth.slice(0, 3).forEach(lesson => {
-          console.log(`  • ${lesson.lessonName}: ID="${lesson.topicId}", Name="${lesson.topicName}"`);
-        });
-      }
-
-      if (analysis.withNeither.length > 0) {
-        console.log('\n⚠️ Lessons without clear topic grouping:');
-        analysis.withNeither.slice(0, 3).forEach(lesson => {
-          console.log(`  • ${lesson.lessonName}: Will be grouped individually`);
-        });
-      }
-
-      return analysis;
-    },
+    }
   }
 };
 </script>
 <style>
 @import "@/assets/css/CataloguePage.css";
+
 </style>
+
