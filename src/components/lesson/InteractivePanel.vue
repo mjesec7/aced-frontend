@@ -13,31 +13,17 @@
           <div class="scroll-content-wrapper">
             
             <div v-if="exerciseType === 'short-answer'" class="exercise-type">
-              <div v-if="!currentExercise?.questions || currentExercise.questions.length <= 1" class="single-question">
-                <div class="question-text">{{ currentExercise?.question }}</div>
-                <div class="answer-input">
-                  <textarea
-                    v-model="localUserAnswer"
-                    @input="updateAnswer"
-                    placeholder="Введите ваш ответ здесь..."
-                    rows="4"
-                    class="answer-textarea"
-                    :disabled="showCorrectAnswer"
-                  />
-                </div>
+              <div v-if="currentExercise?.question" class="main-question-text">
+                {{ currentExercise.question }}
               </div>
               
-              <div v-else class="multiple-questions">
-                <div class="main-text" v-if="currentExercise?.question">
-                  {{ currentExercise.question }}
-                </div>
+              <div v-if="currentExercise?.questions && currentExercise.questions.length > 1" class="multiple-questions">
                 <div 
-                  v-for="(question, qIndex) in currentExercise.questions" 
-                  :key="`question-${qIndex}`"
+                  v-for="(subQuestion, qIndex) in currentExercise.questions" 
+                  :key="`question-${qIndex}-${exerciseIndex}`"
                   class="sub-question"
                 >
-                  <div class="question-label">Вопрос {{ qIndex + 1 }}:</div>
-                  <div class="question-text">{{ question }}</div>
+                  <div class="question-label">{{ qIndex + 1 }}. {{ subQuestion }}</div>
                   <div class="answer-input">
                     <textarea
                       :value="getMultipleAnswerValue(qIndex)"
@@ -48,6 +34,19 @@
                       :disabled="showCorrectAnswer"
                     />
                   </div>
+                </div>
+              </div>
+              
+              <div v-else class="single-question">
+                <div class="answer-input">
+                  <textarea
+                    v-model="localUserAnswer"
+                    @input="updateAnswer"
+                    placeholder="Введите ваш ответ здесь..."
+                    rows="4"
+                    class="answer-textarea"
+                    :disabled="showCorrectAnswer"
+                  />
                 </div>
               </div>
               <div class="spacer"></div>
@@ -86,11 +85,11 @@
               <div class="spacer"></div>
             </div>
 
-            <div v-else-if="exerciseType === 'multiple-choice' || exerciseType === 'abc' || exerciseType === 'dialogue-completion'" class="exercise-type">
+            <div v-else-if="exerciseType === 'multiple-choice' || exerciseType === 'abc'" class="exercise-type">
               <div class="question-text">{{ currentExercise?.question }}</div>
               
               <div v-if="allowsMultipleSelections" class="multiple-selection-hint">
-                💡 Можно выбрать несколько вариантов
+                💡 Можно выбрать несколько вариантов ({{ currentExercise?.correctAnswer?.length || 'несколько' }} правильных)
               </div>
               
               <div class="options-list">
@@ -106,7 +105,7 @@
                 >
                   <input 
                     :type="allowsMultipleSelections ? 'checkbox' : 'radio'"
-                    :name="'exercise-' + exerciseIndex"
+                    :name="allowsMultipleSelections ? `exercise-checkbox-${exerciseIndex}` : `exercise-radio-${exerciseIndex}`"
                     :value="option"
                     :checked="isOptionSelected(option, index)"
                     @change="handleOptionChange(option, index, $event)"
@@ -695,9 +694,21 @@ export default {
       props.currentStep?.type === 'quiz'
     )
     
-    const exerciseType = computed(() => 
-      props.currentExercise?.type || 'short-answer'
-    )
+    const exerciseType = computed(() => {
+      console.log('🔍 DEBUG exerciseType - Exercise:', props.currentExercise)
+      
+      if (!props.currentExercise) return 'short-answer'
+      
+      let type = props.currentExercise.type || 'short-answer'
+      
+      // Log multiple questions detection
+      if (type === 'short-answer' && props.currentExercise.questions && Array.isArray(props.currentExercise.questions)) {
+        console.log('🔍 Multiple questions detected:', props.currentExercise.questions.length)
+      }
+      
+      console.log('🔍 Final exercise type:', type)
+      return type
+    })
     
     const exerciseOptions = computed(() => {
       if (!props.currentExercise?.options) return []
@@ -718,9 +729,10 @@ export default {
     })
 
     const allowsMultipleSelections = computed(() => {
-      const correctAnswer = props.currentExercise?.correctAnswer;
-      return Array.isArray(correctAnswer) && correctAnswer.length > 1;
-    });
+      const correctAnswer = props.currentExercise?.correctAnswer
+      // Check if correctAnswer is an array with multiple values OR if explicitly set
+      return Array.isArray(correctAnswer) && correctAnswer.length > 1
+    })
     
     // Left items computation
     const leftItems = computed(() => {
@@ -856,13 +868,14 @@ export default {
         case 'dialogue-completion':
         case 'true-false':
           if (Array.isArray(localUserAnswer.value)) {
-            return localUserAnswer.value.length > 0;
+            return localUserAnswer.value.length > 0
           }
-          return localUserAnswer.value && String(localUserAnswer.value).trim()
+          return localUserAnswer.value !== null && localUserAnswer.value !== undefined && String(localUserAnswer.value).trim() !== ''
           
         case 'short-answer':
-           if (Array.isArray(localUserAnswer.value)) {
-            return localUserAnswer.value.some(answer => String(answer || '').trim().length >= 1);
+          if (props.currentExercise?.questions && props.currentExercise.questions.length > 1) {
+            // For multiple questions, check if at least one answer is given
+            return localMultipleAnswers.value.some(answer => String(answer || '').trim().length >= 1)
           }
           return String(localUserAnswer.value || '').trim().length >= 1
           
@@ -911,58 +924,61 @@ export default {
     
     const getMultipleAnswerValue = (index) => {
       if (Array.isArray(localUserAnswer.value)) {
-        return localUserAnswer.value[index] || '';
+        return localUserAnswer.value[index] || ''
       }
-      return localMultipleAnswers.value[index] || '';
-    };
+      return localMultipleAnswers.value[index] || ''
+    }
 
     const updateMultipleAnswer = (index, event) => {
-      const value = event.target.value;
-
+      const value = event.target.value
+      
+      // Ensure we have an array
       if (!Array.isArray(localMultipleAnswers.value)) {
-        localMultipleAnswers.value = [];
+        localMultipleAnswers.value = []
       }
       
+      // Extend array if needed
       while (localMultipleAnswers.value.length <= index) {
-        localMultipleAnswers.value.push('');
+        localMultipleAnswers.value.push('')
       }
       
-      localMultipleAnswers.value[index] = value;
-      localUserAnswer.value = [...localMultipleAnswers.value];
-      emit('answer-changed', localUserAnswer.value);
-    };
+      localMultipleAnswers.value[index] = value
+      localUserAnswer.value = [...localMultipleAnswers.value]
+      emit('answer-changed', localUserAnswer.value)
+    }
 
     const isOptionSelected = (option, index) => {
       if (allowsMultipleSelections.value) {
-        return Array.isArray(localUserAnswer.value) && localUserAnswer.value.includes(option);
+        return Array.isArray(localUserAnswer.value) && localUserAnswer.value.includes(option)
       }
-      return localUserAnswer.value === option;
-    };
+      return localUserAnswer.value === option
+    }
 
     const toggleOption = (option, index) => {
       if (allowsMultipleSelections.value) {
-        let currentAnswers = Array.isArray(localUserAnswer.value) ? [...localUserAnswer.value] : [];
+        let currentAnswers = Array.isArray(localUserAnswer.value) ? [...localUserAnswer.value] : []
         
         if (currentAnswers.includes(option)) {
-          currentAnswers = currentAnswers.filter(ans => ans !== option);
+          currentAnswers = currentAnswers.filter(ans => ans !== option)
         } else {
-          currentAnswers.push(option);
+          currentAnswers.push(option)
         }
         
-        localUserAnswer.value = currentAnswers;
+        localUserAnswer.value = currentAnswers
+        console.log('🔍 Multiple selection updated:', currentAnswers)
       } else {
-        localUserAnswer.value = option;
+        localUserAnswer.value = option
       }
-      emit('answer-changed', localUserAnswer.value);
-    };
+      emit('answer-changed', localUserAnswer.value)
+    }
 
     const handleOptionChange = (option, index, event) => {
       if (allowsMultipleSelections.value) {
-        toggleOption(option, index);
+        toggleOption(option, index)
       } else {
-        selectOption(option);
+        selectOption(option)
       }
-    };
+    }
 
 
     // ========================
@@ -1439,41 +1455,40 @@ export default {
       }
     }, { immediate: true, deep: true })
 
-    // Enhanced exercise watcher with matching reset
     watch(() => props.currentExercise, (newExercise, oldExercise) => {
-      if (newExercise && newExercise !== oldExercise) {
+      // Ensure this only runs for actual changes
+      if (newExercise && JSON.stringify(newExercise) !== JSON.stringify(oldExercise)) {
+        console.log('🔄 Watcher triggered for new exercise:', newExercise?.title || 'No Title')
+        
+        // Reset local answer states
         localUserAnswer.value = props.userAnswer || ''
+        localMultipleAnswers.value = []
         
-        if (newExercise.type === 'fill-blank') {
-          nextTick(() => {
-            initializeFillBlankAnswers()
-          })
-        }
-        
-        if (newExercise.type === 'ordering') {
-          nextTick(() => {
-            initializeOrderingItems()
-          })
-        }
-        
-        if (newExercise.type === 'matching') {
-          // Force clear and regenerate matching state
-          rightItemsMapping.value = [];
-          emit('matching-item-selected', null);
-          emit('answer-changed', []);
-          refreshKey.value++;
-          
-          // Force recomputation with delay
-          nextTick(() => {
-            setTimeout(() => {
-              const leftCount = leftItems.value.length;
-              const rightCount = rightItems.value.length;
-              console.log('🔄 Matching reinitialized:', { leftCount, rightCount });
-            }, 100);
-          });
+        // Handle initialization for specific types
+        switch (newExercise.type) {
+          case 'fill-blank':
+            nextTick(() => initializeFillBlankAnswers())
+            break
+          case 'ordering':
+            nextTick(() => initializeOrderingItems())
+            break
+          case 'matching':
+            rightItemsMapping.value = []
+            emit('matching-item-selected', null)
+            emit('answer-changed', [])
+            refreshKey.value++
+            break
+          case 'short-answer':
+            // If it's a multi-question short answer, initialize the array
+            if (newExercise.questions && newExercise.questions.length > 1) {
+              localMultipleAnswers.value = new Array(newExercise.questions.length).fill('')
+              localUserAnswer.value = [...localMultipleAnswers.value]
+              emit('answer-changed', localUserAnswer.value)
+            }
+            break
         }
       }
-    }, { immediate: true })
+    }, { immediate: true, deep: true })
 
     // Watch matching pairs changes
     watch(() => props.matchingPairs, (newPairs, oldPairs) => {

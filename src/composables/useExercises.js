@@ -135,118 +135,108 @@ export function useExercises() {
   // ===================================
   
   const validateShortAnswer = (userAnswer, exercise) => {
-    // Handle multiple questions/answers
-    if (exercise.questions && Array.isArray(exercise.questions)) {
-      if (!Array.isArray(userAnswer)) return false;
-  
-      const correctAnswers = getCorrectAnswersArray(exercise);
-      if (userAnswer.length !== correctAnswers.length) return false;
-  
+    console.log('🔍 Validating short answer:', { userAnswer, exercise })
+    
+    // Handle multiple questions
+    if (exercise.questions && Array.isArray(exercise.questions) && exercise.questions.length > 1) {
+      if (!Array.isArray(userAnswer)) return false
+      
+      const correctAnswers = getCorrectAnswersArray(exercise)
+      console.log('🔍 Multiple questions validation:', { userAnswer, correctAnswers })
+      
       // Check each answer
       return userAnswer.every((answer, index) => {
-        if (answer === undefined || answer === null || typeof answer !== 'string') return false;
-  
-        const correctAnswer = correctAnswers[index];
-        if (correctAnswer === undefined || correctAnswer === null) return false;
-  
-        const userTrimmed = answer.trim().toLowerCase();
-        const correctTrimmed = String(correctAnswer).trim().toLowerCase();
-  
-        if (userTrimmed === correctTrimmed) return true;
-  
+        if (!answer || typeof answer !== 'string') return false
+        
+        const correctAnswer = correctAnswers[index]
+        if (!correctAnswer) return false
+        
+        const userTrimmed = answer.trim().toLowerCase()
+        const correctTrimmed = String(correctAnswer).trim().toLowerCase()
+        
+        if (userTrimmed === correctTrimmed) return true
+        
         // Fuzzy matching for longer answers
         if (correctTrimmed.length > 3) {
-          const similarity = calculateSimilarity(userTrimmed, correctTrimmed);
-          return similarity > 0.8;
+          const similarity = calculateSimilarity(userTrimmed, correctTrimmed)
+          return similarity > 0.8
         }
-  
-        return false;
-      });
+        
+        return false
+      })
     }
-  
-    // Handle single answer (existing logic)
+    
+    // Single question validation (existing logic)
     if (!userAnswer || typeof userAnswer !== 'string') {
-      return false;
+      return false
     }
   
-    const correctAnswers = getCorrectAnswersArray(exercise);
-    const userAnswerTrimmed = userAnswer.trim().toLowerCase();
+    const correctAnswers = getCorrectAnswersArray(exercise)
+    const userAnswerTrimmed = userAnswer.trim().toLowerCase()
   
     return correctAnswers.some(answer => {
-      const correctAnswerTrimmed = String(answer).trim().toLowerCase();
-  
+      const correctAnswerTrimmed = String(answer).trim().toLowerCase()
+      
       if (userAnswerTrimmed === correctAnswerTrimmed) {
-        return true;
+        return true
       }
-  
-      // Fuzzy matching for longer answers
+      
       if (correctAnswerTrimmed.length > 3) {
-        const similarity = calculateSimilarity(userAnswerTrimmed, correctAnswerTrimmed);
-        return similarity > 0.8;
+        const similarity = calculateSimilarity(userAnswerTrimmed, correctAnswerTrimmed)
+        return similarity > 0.8
       }
-  
-      return false;
-    });
-  };
+      
+      return false
+    })
+  }
 
   const validateMultipleChoice = (userAnswer, exercise) => {
-    const correctAnswer = exercise.correctAnswer;
-  
+    console.log('🔍 Validating multiple choice:', { userAnswer, correctAnswer: exercise.correctAnswer })
+    
+    const correctAnswer = exercise.correctAnswer
+    
     // Handle multiple correct answers
-    if (Array.isArray(correctAnswer)) {
-      if (!Array.isArray(userAnswer) || userAnswer.length !== correctAnswer.length) {
-        return false;
+    if (Array.isArray(correctAnswer) && correctAnswer.length > 1) {
+      if (!Array.isArray(userAnswer)) return false
+      
+      // Check if user selected correct number of answers
+      if (userAnswer.length !== correctAnswer.length) {
+        console.log('🔍 Wrong number of selections:', userAnswer.length, 'vs', correctAnswer.length)
+        return false
       }
-  
-      // Normalize both arrays to strings for fair comparison, then sort to compare contents
-      const normalizedCorrect = correctAnswer.map(c => {
-        if (typeof c === 'number' && exercise.options) {
-          const option = exercise.options[c];
-          return typeof option === 'string' ? option : (option?.text || String(option));
+      
+      // Check if all selected answers are correct
+      return correctAnswer.every(correct => {
+        if (typeof correct === 'number' && exercise.options) {
+          const correctText = exercise.options[correct]?.text || exercise.options[correct]
+          return userAnswer.includes(correctText)
         }
-        return String(c);
-      }).sort();
-  
-      const normalizedUser = userAnswer.map(u => {
-        if (typeof u === 'number' && exercise.options) {
-          const option = exercise.options[u];
-          return typeof option === 'string' ? option : (option?.text || String(option));
-        }
-        return String(u);
-      }).sort();
-  
-      return JSON.stringify(normalizedUser) === JSON.stringify(normalizedCorrect);
+        return userAnswer.includes(correct)
+      })
     }
-  
+    
     // Handle single correct answer (existing logic)
     if (typeof correctAnswer === 'number') {
       if (typeof userAnswer === 'number') {
-        return userAnswer === correctAnswer;
+        return userAnswer === correctAnswer
       }
-  
+      
       if (exercise.options && Array.isArray(exercise.options)) {
         const userIndex = exercise.options.findIndex(option => {
-          const optionText = typeof option === 'string' ? option : (option?.text || String(option));
-          return optionText === userAnswer;
-        });
-        return userIndex === correctAnswer;
+          const optionText = typeof option === 'string' ? option : (option?.text || String(option))
+          return optionText === userAnswer
+        })
+        return userIndex === correctAnswer
       }
     }
-  
+    
+    // Handle string answers
     if (typeof correctAnswer === 'string') {
-      if (typeof userAnswer === 'string') {
-        return userAnswer.trim().toLowerCase() === correctAnswer.trim().toLowerCase();
-      }
-  
-      if (typeof userAnswer === 'number' && exercise.options) {
-        const selectedOption = exercise.options[userAnswer];
-        const selectedText = typeof selectedOption === 'string' ? selectedOption : (selectedOption?.text || String(selectedOption));
-        return selectedText.trim().toLowerCase() === correctAnswer.trim().toLowerCase();
-      }
+      return userAnswer === correctAnswer
     }
-  
-    return false;
-  };
+    
+    return false
+  }
 
   const validateTrueFalse = (userAnswer, exercise) => {
     
@@ -785,6 +775,8 @@ export function useExercises() {
   // ===================================
   
   const getCurrentExercise = (currentStep) => {
+    console.log('🔍 DEBUG getCurrentExercise - Step:', currentStep)
+    
     if (!currentStep || !['exercise', 'practice'].includes(currentStep.type)) {
       return null
     }
@@ -792,13 +784,28 @@ export function useExercises() {
     let exercises = []
     
     try {
+      // ✅ NEW: Handle the specific structure from your lesson
       if (Array.isArray(currentStep.data)) {
         exercises = currentStep.data
-      } else if (currentStep.data && Array.isArray(currentStep.data.exercises)) {
+        console.log('🔍 Found exercises in data array:', exercises.length)
+      } 
+      // ✅ NEW: Handle nested exercise structure
+      else if (currentStep.data && Array.isArray(currentStep.data.exercises)) {
         exercises = currentStep.data.exercises
-      } else if (currentStep.data && currentStep.data.question) {
-        exercises = [currentStep.data]
+        console.log('🔍 Found exercises in data.exercises:', exercises.length)
       }
+      // ✅ NEW: Handle when data contains mixed exercise types
+      else if (currentStep.data && currentStep.data.question) {
+        exercises = [currentStep.data]
+        console.log('🔍 Found single exercise in data')
+      }
+      // ✅ FALLBACK: Direct exercises array on step
+      else if (currentStep.exercises && Array.isArray(currentStep.exercises)) {
+        exercises = currentStep.exercises
+        console.log('🔍 Found exercises directly on step:', exercises.length)
+      }
+      
+      console.log('🔍 All exercises found:', exercises)
       
       if (exercises.length === 0) return null
       
@@ -806,7 +813,14 @@ export function useExercises() {
         currentExerciseIndex.value = 0
       }
       
-      return exercises[currentExerciseIndex.value] || null
+      const exercise = exercises[currentExerciseIndex.value]
+      console.log('🔍 Selected exercise:', exercise)
+      console.log('🔍 Exercise type:', exercise?.type)
+      console.log('🔍 Exercise questions:', exercise?.questions)
+      console.log('🔍 Exercise options:', exercise?.options)
+      console.log('🔍 Exercise correctAnswer:', exercise?.correctAnswer)
+      
+      return exercise || null
       
     } catch (error) {
       console.error('❌ Error in getCurrentExercise:', error)
