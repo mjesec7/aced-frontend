@@ -135,67 +135,118 @@ export function useExercises() {
   // ===================================
   
   const validateShortAnswer = (userAnswer, exercise) => {
-    
-    if (!userAnswer || typeof userAnswer !== 'string') {
-      return false
+    // Handle multiple questions/answers
+    if (exercise.questions && Array.isArray(exercise.questions)) {
+      if (!Array.isArray(userAnswer)) return false;
+  
+      const correctAnswers = getCorrectAnswersArray(exercise);
+      if (userAnswer.length !== correctAnswers.length) return false;
+  
+      // Check each answer
+      return userAnswer.every((answer, index) => {
+        if (answer === undefined || answer === null || typeof answer !== 'string') return false;
+  
+        const correctAnswer = correctAnswers[index];
+        if (correctAnswer === undefined || correctAnswer === null) return false;
+  
+        const userTrimmed = answer.trim().toLowerCase();
+        const correctTrimmed = String(correctAnswer).trim().toLowerCase();
+  
+        if (userTrimmed === correctTrimmed) return true;
+  
+        // Fuzzy matching for longer answers
+        if (correctTrimmed.length > 3) {
+          const similarity = calculateSimilarity(userTrimmed, correctTrimmed);
+          return similarity > 0.8;
+        }
+  
+        return false;
+      });
     }
-
-    const correctAnswers = getCorrectAnswersArray(exercise)
-    const userAnswerTrimmed = userAnswer.trim().toLowerCase()
-
+  
+    // Handle single answer (existing logic)
+    if (!userAnswer || typeof userAnswer !== 'string') {
+      return false;
+    }
+  
+    const correctAnswers = getCorrectAnswersArray(exercise);
+    const userAnswerTrimmed = userAnswer.trim().toLowerCase();
+  
     return correctAnswers.some(answer => {
-      const correctAnswerTrimmed = String(answer).trim().toLowerCase()
-      
+      const correctAnswerTrimmed = String(answer).trim().toLowerCase();
+  
       if (userAnswerTrimmed === correctAnswerTrimmed) {
-        return true
+        return true;
       }
-      
+  
       // Fuzzy matching for longer answers
       if (correctAnswerTrimmed.length > 3) {
-        const similarity = calculateSimilarity(userAnswerTrimmed, correctAnswerTrimmed)
-        return similarity > 0.8
+        const similarity = calculateSimilarity(userAnswerTrimmed, correctAnswerTrimmed);
+        return similarity > 0.8;
       }
-      
-      return false
-    })
-  }
+  
+      return false;
+    });
+  };
 
   const validateMultipleChoice = (userAnswer, exercise) => {
-    
-    const correctAnswer = exercise.correctAnswer
-
-    // Handle numeric answer indices
+    const correctAnswer = exercise.correctAnswer;
+  
+    // Handle multiple correct answers
+    if (Array.isArray(correctAnswer)) {
+      if (!Array.isArray(userAnswer) || userAnswer.length !== correctAnswer.length) {
+        return false;
+      }
+  
+      // Normalize both arrays to strings for fair comparison, then sort to compare contents
+      const normalizedCorrect = correctAnswer.map(c => {
+        if (typeof c === 'number' && exercise.options) {
+          const option = exercise.options[c];
+          return typeof option === 'string' ? option : (option?.text || String(option));
+        }
+        return String(c);
+      }).sort();
+  
+      const normalizedUser = userAnswer.map(u => {
+        if (typeof u === 'number' && exercise.options) {
+          const option = exercise.options[u];
+          return typeof option === 'string' ? option : (option?.text || String(option));
+        }
+        return String(u);
+      }).sort();
+  
+      return JSON.stringify(normalizedUser) === JSON.stringify(normalizedCorrect);
+    }
+  
+    // Handle single correct answer (existing logic)
     if (typeof correctAnswer === 'number') {
       if (typeof userAnswer === 'number') {
-        return userAnswer === correctAnswer
+        return userAnswer === correctAnswer;
       }
-      
-      // Convert text answer to index
+  
       if (exercise.options && Array.isArray(exercise.options)) {
         const userIndex = exercise.options.findIndex(option => {
-          const optionText = typeof option === 'string' ? option : (option?.text || String(option))
-          return optionText === userAnswer
-        })
-        return userIndex === correctAnswer
+          const optionText = typeof option === 'string' ? option : (option?.text || String(option));
+          return optionText === userAnswer;
+        });
+        return userIndex === correctAnswer;
       }
     }
-
-    // Handle string answers
+  
     if (typeof correctAnswer === 'string') {
       if (typeof userAnswer === 'string') {
-        return userAnswer.trim().toLowerCase() === correctAnswer.trim().toLowerCase()
+        return userAnswer.trim().toLowerCase() === correctAnswer.trim().toLowerCase();
       }
-      
-      // Convert index to text
+  
       if (typeof userAnswer === 'number' && exercise.options) {
-        const selectedOption = exercise.options[userAnswer]
-        const selectedText = typeof selectedOption === 'string' ? selectedOption : (selectedOption?.text || String(selectedOption))
-        return selectedText.trim().toLowerCase() === correctAnswer.trim().toLowerCase()
+        const selectedOption = exercise.options[userAnswer];
+        const selectedText = typeof selectedOption === 'string' ? selectedOption : (selectedOption?.text || String(selectedOption));
+        return selectedText.trim().toLowerCase() === correctAnswer.trim().toLowerCase();
       }
     }
-
-    return false
-  }
+  
+    return false;
+  };
 
   const validateTrueFalse = (userAnswer, exercise) => {
     
@@ -1001,9 +1052,15 @@ export function useExercises() {
   }
   
   const initializeMatchingItems = () => {
-    matchingPairs.value = []
-    selectedMatchingItem.value = null
-  }
+    matchingPairs.value = [];
+    selectedMatchingItem.value = null;
+  
+    // Force refresh of right items shuffling
+    if (typeof window !== 'undefined') {
+      // Clear any cached shuffling state
+      window.matchingShuffleCache = null;
+    }
+  };
 
   // ===================================
   // UPDATE FUNCTIONS
@@ -1241,6 +1298,11 @@ export function useExercises() {
     }
     return []
   }
+  
+  const forceReshuffleRightItems = () => {
+    // This will be called when starting a new matching exercise
+    return true
+  }
 
   // ===================================
   // RETURN API
@@ -1345,6 +1407,7 @@ export function useExercises() {
     levenshteinDistance,
     getCorrectAnswersArray,
     shuffleArray,
-    isArrayInOriginalOrder
+    isArrayInOriginalOrder,
+    forceReshuffleRightItems
   }
 }
