@@ -423,31 +423,30 @@ export function useExercises() {
   // ===================================
   
   const validateCurrentAnswer = (exercise) => {
-    if (!exercise) {
-      return false
-    }
-
-    const exerciseType = exercise.type || 'short-answer'
-    
+    if (!exercise) return false;
+    const exerciseType = exercise.type || 'short-answer';
 
     switch (exerciseType) {
       case 'short-answer':
-        return validateShortAnswer(userAnswer.value, exercise)
+      case 'sentence-transformation': // Added
+      case 'error-correction':      // Added
+        return validateShortAnswer(userAnswer.value, exercise);
       case 'multiple-choice':
       case 'abc':
-        return validateMultipleChoice(userAnswer.value, exercise)
+      case 'dialogue-completion': // Added
+        return validateMultipleChoice(userAnswer.value, exercise);
       case 'true-false':
-        return validateTrueFalse(userAnswer.value, exercise)
+        return validateTrueFalse(userAnswer.value, exercise);
       case 'fill-blank':
-        return validateFillBlank(fillBlankAnswers.value, exercise)
+        return validateFillBlank(fillBlankAnswers.value, exercise);
       case 'matching':
-        return validateMatching(matchingPairs.value, exercise)
+        return validateMatching(matchingPairs.value, exercise);
       case 'ordering':
-        return validateOrdering(orderingItems.value, exercise)
+        return validateOrdering(orderingItems.value, exercise);
       case 'drag-drop':
-        return validateDragDrop(dragDropPlacements, exercise)
+        return validateDragDrop(dragDropPlacements, exercise);
       default:
-        return validateShortAnswer(userAnswer.value, exercise)
+        return validateShortAnswer(userAnswer.value, exercise);
     }
   }
 
@@ -927,45 +926,28 @@ export function useExercises() {
     fillBlankAnswers.value = new Array(Math.max(1, blankCount)).fill('')
   }
   
-  // Fixed ordering items initialization with better shuffling
   const initializeOrderingItems = (exercise) => {
-    if (!exercise || exercise.type !== 'ordering' || !exercise.items) {
-      orderingItems.value = []
-      return
+    if (!exercise || exercise.type !== 'ordering' || !Array.isArray(exercise.items)) {
+      orderingItems.value = [];
+      return;
     }
-    
-    const items = Array.isArray(exercise.items) ? exercise.items : []
-    
-    // Create items with unique IDs and original index tracking
-    const itemsWithMetadata = items.map((item, index) => ({
-      id: `item_${index}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // More unique ID
+
+    const itemsWithMetadata = exercise.items.map((item, index) => ({
+      id: `item_${index}_${Math.random()}`,
       text: typeof item === 'string' ? item : (item?.text || String(item)),
       originalIndex: index
-    }))
+    }));
+
+    let shuffledItems = [...itemsWithMetadata];
+    let attempts = 0;
     
-    console.log('🔧 Created items with metadata:', itemsWithMetadata)
-    
-    // Fisher-Yates shuffle algorithm (more reliable)
-    const shuffledItems = [...itemsWithMetadata]
-    for (let i = shuffledItems.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1))
-      ;[shuffledItems[i], shuffledItems[j]] = [shuffledItems[j], shuffledItems[i]]
+    // Shuffle the array until it's in a different order or after 10 attempts
+    while (attempts < 10 && JSON.stringify(shuffledItems.map(i => i.originalIndex)) === JSON.stringify(itemsWithMetadata.map(i => i.originalIndex))) {
+        shuffledItems.sort(() => Math.random() - 0.5);
+        attempts++;
     }
     
-    // Ensure the order is actually different from original (up to 10 attempts)
-    let attempts = 0
-    while (attempts < 10 && isArrayInOriginalOrder(shuffledItems)) {
-      console.log(`🔄 Attempt ${attempts + 1}: Items still in original order, reshuffling...`)
-      for (let i = shuffledItems.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1))
-        ;[shuffledItems[i], shuffledItems[j]] = [shuffledItems[j], shuffledItems[i]]
-      }
-      attempts++
-    }
-    
-    console.log('🔀 Final shuffled items:', shuffledItems.map(item => `${item.text} (orig: ${item.originalIndex})`))
-    
-    orderingItems.value = shuffledItems
+    orderingItems.value = shuffledItems;
   }
   
   const initializeDragDropItems = (exercise) => {

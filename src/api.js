@@ -421,44 +421,41 @@ function processSteps(steps, lessonIndex) {
 }
 
 /**
- * ✅ Process curriculum array with images - NOW WITH FALLBACK FOR OLD FORMAT
- */
+ * ✅ ENHANCED: Process curriculum array with a fallback for empty steps
+ */
 function processCurriculum(curriculum) {
-  if (!Array.isArray(curriculum)) return [];
+  if (!Array.isArray(curriculum)) return [];
 
-  return curriculum.map((lesson, lessonIndex) => {
-    
-    // ✅ FIX: Handle lessons where content is in the description and steps are empty
-    let stepsToProcess = lesson.steps || [];
-    if ((!stepsToProcess || stepsToProcess.length === 0) && lesson.description) {
-      console.warn(`⚠️ Lesson "${lesson.title}" has no steps. Creating a fallback step from its description.`);
-      // Create a "virtual" step using the lesson's main description
-      stepsToProcess = [
-        {
-          type: 'explanation',
-          title: 'Основная информация',
-          content: lesson.description.replace(/\n/g, '<br />'), // Format for HTML
-          description: lesson.description,
-          data: {
-            content: lesson.description.replace(/\n/g, '<br />')
-          }
-        }
-      ];
-    }
-    
-    return {
-      ...lesson,
-      id: lesson._id || lesson.id || `lesson_${lessonIndex}`,
-      _id: lesson._id || lesson.id || `lesson_${lessonIndex}`,
-      title: lesson.title || `Урок ${lessonIndex + 1}`,
-      // Use a shorter description for the lesson card, or keep the original if needed
-      description: lesson.description || '', 
-      duration: lesson.duration || '30 мин',
-      order: lesson.order || lessonIndex,
-      // Process steps with images (either original or the new fallback one)
-      steps: processSteps(stepsToProcess, lessonIndex)
-    };
-  });
+  return curriculum.map((lesson, lessonIndex) => {
+    
+    let stepsToProcess = lesson.steps || [];
+
+    // ✅ FALLBACK LOGIC: If steps are empty but a description exists, create a virtual step.
+    if ((!stepsToProcess || stepsToProcess.length === 0) && lesson.description) {
+      console.warn(`⚠️ Lesson "${lesson.title}" has no steps. Creating a fallback step from its description.`);
+      stepsToProcess = [
+        {
+          type: 'explanation',
+          title: 'Основная информация',
+          content: lesson.description.replace(/\n/g, '<br />'), // Format for HTML display
+          data: {
+            content: lesson.description.replace(/\n/g, '<br />')
+          }
+        }
+      ];
+    }
+    
+    return {
+      ...lesson,
+      id: lesson._id || lesson.id || `lesson_${lessonIndex}`,
+      title: lesson.title || `Урок ${lessonIndex + 1}`,
+      description: lesson.description || '',
+      duration: lesson.duration || '30 мин',
+      order: lesson.order || lessonIndex,
+      // Process the original or the new fallback steps
+      steps: processSteps(stepsToProcess, lessonIndex)
+    };
+  });
 }
 
 // =============================================

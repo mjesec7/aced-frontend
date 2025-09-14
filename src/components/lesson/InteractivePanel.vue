@@ -1,8 +1,6 @@
 <template>
   <div class="interactive-panel">
-    <!-- Exercise Content -->
     <div v-if="isExerciseStep" class="exercise-content">
-      <!-- Header -->
       <div class="exercise-header">
         <h3>{{ currentExercise?.title || 'Упражнение' }}</h3>
         <div class="exercise-counter">
@@ -10,12 +8,10 @@
         </div>
       </div>
 
-      <!-- Scrollable Body -->
       <div class="exercise-body">
         <div class="exercise-content-scroll">
           <div class="scroll-content-wrapper">
             
-            <!-- Short Answer -->
             <div v-if="exerciseType === 'short-answer'" class="exercise-type">
               <div class="question-text">{{ currentExercise?.question }}</div>
               <div class="answer-input">
@@ -31,8 +27,40 @@
               <div class="spacer"></div>
             </div>
 
-            <!-- Multiple Choice -->
-            <div v-else-if="exerciseType === 'multiple-choice' || exerciseType === 'abc'" class="exercise-type">
+            <div v-else-if="exerciseType === 'sentence-transformation'" class="exercise-type">
+              <div class="question-text">{{ currentExercise?.question }}</div>
+              <div class="answer-input">
+                <textarea
+                  v-model="localUserAnswer"
+                  @input="updateAnswer"
+                  placeholder="Напишите преобразованное предложение..."
+                  rows="4"
+                  class="answer-textarea"
+                  :disabled="showCorrectAnswer"
+                />
+              </div>
+              <div class="spacer"></div>
+            </div>
+
+            <div v-else-if="exerciseType === 'error-correction'" class="exercise-type">
+              <div class="question-text">Найдите и исправьте ошибку:</div>
+              <div class="statement-text" style="background: #fffbe6; border-left: 3px solid #f59e0b; padding: 10px; margin-bottom: 15px;">
+                "{{ currentExercise?.question }}"
+              </div>
+              <div class="answer-input">
+                <textarea
+                  v-model="localUserAnswer"
+                  @input="updateAnswer"
+                  placeholder="Напишите правильное предложение..."
+                  rows="4"
+                  class="answer-textarea"
+                  :disabled="showCorrectAnswer"
+                />
+              </div>
+              <div class="spacer"></div>
+            </div>
+
+            <div v-else-if="exerciseType === 'multiple-choice' || exerciseType === 'abc' || exerciseType === 'dialogue-completion'" class="exercise-type">
               <div class="question-text">{{ currentExercise?.question }}</div>
               <div class="options-list">
                 <div 
@@ -60,7 +88,6 @@
               <div class="spacer"></div>
             </div>
 
-            <!-- Fill in Blanks -->
             <div v-else-if="exerciseType === 'fill-blank'" class="exercise-type">
               <div class="question-text">{{ currentExercise?.question }}</div>
               <div v-if="currentExercise?.template" class="fill-blank-template">
@@ -93,7 +120,6 @@
               <div class="spacer"></div>
             </div>
 
-            <!-- True/False -->
             <div v-else-if="exerciseType === 'true-false'" class="exercise-type">
               <div class="question-text">{{ currentExercise?.question }}</div>
               <div v-if="currentExercise?.statement" class="statement-text">
@@ -140,12 +166,10 @@
               <div class="spacer"></div>
             </div>
 
-            <!-- Matching Exercise -->
             <div v-else-if="exerciseType === 'matching'" class="exercise-type">
               <div class="question-text">{{ currentExercise?.question }}</div>
               
               <div class="matching-container">
-                <!-- Left Side -->
                 <div class="matching-side left-side">
                   <h4>Соедините:</h4>
                   <div 
@@ -169,7 +193,6 @@
                   </div>
                 </div>
                 
-                <!-- Right Side -->
                 <div class="matching-side right-side">
                   <h4>С:</h4>
                   <div 
@@ -194,7 +217,6 @@
                 </div>
               </div>
               
-              <!-- Current Pairs Display -->
               <div v-if="matchingPairs && matchingPairs.length > 0" class="matching-pairs">
                 <h4>Соединения ({{ matchingPairs.length }}):</h4>
                 <div class="pairs-list">
@@ -221,7 +243,6 @@
                 </div>
               </div>
               
-              <!-- Instructions -->
               <div class="matching-instructions">
                 <div class="instruction-main">
                   <span class="instruction-icon">💡</span>
@@ -258,7 +279,6 @@
               <div class="spacer"></div>
             </div>
 
-            <!-- Ordering -->
             <div v-else-if="exerciseType === 'ordering'" class="exercise-type">
               <div class="question-text">{{ currentExercise?.question }}</div>
               <div class="ordering-instructions">
@@ -309,7 +329,6 @@
               <div class="spacer"></div>
             </div>
 
-            <!-- Drag and Drop -->
             <div v-else-if="exerciseType === 'drag-drop'" class="exercise-type">
               <div class="question-text">{{ currentExercise?.question }}</div>
               <div v-if="availableDragItems.length > 0 && dropZones.length > 0" class="drag-drop-container">
@@ -368,7 +387,6 @@
               <div class="spacer"></div>
             </div>
 
-            <!-- Confirmation Section -->
             <div v-if="confirmation" class="confirmation-section">
               <div v-if="isOnSecondChance && !showCorrectAnswer" class="second-chance-indicator">
                 <div class="attempt-counter">
@@ -405,7 +423,6 @@
               </div>
             </div>
 
-            <!-- Hints Section -->
             <div v-if="(currentHint || smartHint) && !showCorrectAnswer" class="hints-section">
               <div v-if="currentHint" class="hint basic-hint">
                 <div class="hint-icon">💡</div>
@@ -427,9 +444,7 @@
       </div>
     </div>
 
-    <!-- Quiz Content -->
     <div v-else-if="isQuizStep" class="quiz-content">
-      <!-- Header -->
       <div class="quiz-header">
         <h3>{{ currentQuiz?.title || 'Вопрос' }}</h3>
         <div class="quiz-counter">
@@ -437,7 +452,6 @@
         </div>
       </div>
 
-      <!-- Scrollable Body -->
       <div class="quiz-body">
         <div class="quiz-content-scroll">
           <div class="scroll-content-wrapper">
@@ -468,7 +482,6 @@
               </div>
             </div>
 
-            <!-- Quiz Confirmation -->
             <div v-if="confirmation" class="confirmation-section">
               <div v-if="isOnSecondChance && !showCorrectAnswer" class="second-chance-indicator">
                 <div class="attempt-counter">
@@ -512,16 +525,13 @@
       </div>
     </div>
 
-    <!-- No Content State -->
     <div v-else class="no-content">
       <div class="no-content-icon">📝</div>
       <h4>Нет интерактивного содержимого</h4>
       <p>Для этого шага нет упражнений или вопросов</p>
     </div>
 
-    <!-- Action Buttons -->
     <div v-if="isExerciseStep || isQuizStep" class="interactive-actions">
-      <!-- Exercise Buttons -->
       <template v-if="isExerciseStep">
         <button 
           v-if="!confirmation && attemptCount === 0"
@@ -555,7 +565,6 @@
         </button>
       </template>
 
-      <!-- Quiz Buttons -->
       <template v-else-if="isQuizStep">
         <button 
           v-if="!confirmation || (isOnSecondChance && !showCorrectAnswer)"
