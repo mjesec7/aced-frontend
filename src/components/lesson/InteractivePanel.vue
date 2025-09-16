@@ -25,7 +25,7 @@
           <div v-if="['reading', 'short-answer', 'sentence-transformation', 'error-correction'].includes(exerciseType)" class="exercise-type-container">
             
             <article v-if="currentExercise.content" class="exercise-card reading-text-card">
-              <h3 class="card-subtitle">Reading Text</h3>
+              <h3 class="card-subtitle">Текст для чтения</h3>
               <div class="reading-text-content"><p>{{ currentExercise.content }}</p></div>
             </article>
 
@@ -35,7 +35,7 @@
                 <textarea 
                   :value="userAnswer[qIndex] || ''" 
                   @input="updateMultiAnswer(qIndex, $event.target.value)" 
-                  :placeholder="question.placeholder || 'Enter your answer...'" 
+                  :placeholder="question.placeholder || 'Введите ваш ответ...'" 
                   :disabled="showCorrectAnswer" 
                   class="answer-textarea"
                 ></textarea>
@@ -48,7 +48,7 @@
                 <p v-if="currentExercise.instruction" class="instruction-text">{{ currentExercise.instruction }}</p>
                 <textarea 
                   v-model="userAnswer" 
-                  :placeholder="currentExercise.placeholder || 'Enter your transformed sentence...'" 
+                  placeholder="Введите ваш ответ..." 
                   :disabled="showCorrectAnswer" 
                   class="answer-textarea"
                 ></textarea>
@@ -105,7 +105,7 @@
                   class="matching-select"
                   :class="getMatchingSelectClasses(pair.id, pair.correctMatch)"
                 >
-                  <option value="" disabled>Select ending...</option>
+                  <option value="" disabled>Выберите окончание...</option>
                   <option 
                     v-for="option in shuffledRightOptions" 
                     :key="option" 
@@ -159,10 +159,10 @@
 
       <footer class="panel-actions">
         <button v-if="!showCorrectAnswer" @click="submit" class="action-button submit-button" :style="{backgroundColor: exerciseMeta.color}">
-          Check Answers
+          Проверить ответы
         </button>
         <button v-else @click="resetAndNext" class="action-button next-button" :style="{borderColor: exerciseMeta.color, color: exerciseMeta.color}">
-          {{ isLastExercise ? 'Finish' : 'Next Exercise' }}
+          {{ isLastExercise ? 'Завершить' : 'Следующее упражнение' }}
         </button>
       </footer>
     </div>
@@ -311,9 +311,9 @@ const onDrop = (questionId, event) => {
 const renderFeedback = (user, correct) => {
     const isCorrect = (user || '').toString().trim().toLowerCase() === correct.toString().trim().toLowerCase();
     const resultClass = isCorrect ? 'is-correct' : 'is-incorrect';
-    let content = `<p class="feedback-line">Your answer: <strong>${user || '(No answer)'}</strong></p>`;
+    let content = `<p class="feedback-line">Ваш ответ: <strong>${user || '(Нет ответа)'}</strong></p>`;
     if (!isCorrect) {
-        content += `<p class="feedback-line">Correct answer: <strong>${correct}</strong></p>`;
+        content += `<p class="feedback-line">Правильный ответ: <strong>${correct}</strong></p>`;
     }
     return `<div class="feedback-box ${resultClass}">${content}</div>`;
 };

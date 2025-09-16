@@ -5,55 +5,55 @@ export function useExercises() {
   // ===================================
   // STATE MANAGEMENT
   // ===================================
-
+  
   // Navigation state
   const currentExerciseIndex = ref(0)
   const currentQuizIndex = ref(0)
-
+  
   // Answer state
   const userAnswer = ref('')
   const fillBlankAnswers = ref([])
   const matchingPairs = ref([])
   const orderingItems = ref([])
   const dragDropPlacements = reactive({})
-
+  
   // UI state
   const confirmation = ref('')
   const answerWasCorrect = ref(false)
   const currentHint = ref('')
   const smartHint = ref('')
   const selectedMatchingItem = ref(null)
-
+  
   // Drag and drop state
   const availableDragItems = ref([])
   const dropZones = ref([])
   const draggedDragItem = ref(null)
   const dropOverZone = ref(null)
-
+  
   // Attempt tracking
   const attemptCount = ref(0)
   const maxAttempts = ref(2)
   const showCorrectAnswer = ref(false)
-
+  
   // ===================================
   // COMPUTED PROPERTIES
   // ===================================
-
+  
   const isOnSecondChance = computed(() => {
     return attemptCount.value === 1 && attemptCount.value < maxAttempts.value
   })
-
+  
   // ===================================
   // NEW: ENHANCED QUESTION DETECTION
   // ===================================
-
+  
   const detectQuestionsFromExercise = (exercise) => {
     if (!exercise) return []
-
+    
     console.log('🔍 Detecting questions from exercise:', exercise)
-
+    
     let questions = []
-
+    
     // Strategy 1: Check for explicit questions array
     if (exercise.questions && Array.isArray(exercise.questions)) {
       questions = exercise.questions.map((q, index) => ({
@@ -64,7 +64,7 @@ export function useExercises() {
       console.log('🔍 Found explicit questions array:', questions)
       return questions
     }
-
+    
     // Strategy 2: Parse main question field for multiple questions
     const mainQuestion = exercise.question || exercise.content || ''
     if (mainQuestion) {
@@ -91,7 +91,7 @@ export function useExercises() {
           extract: (match) => match.trim()
         }
       ]
-
+      
       for (const pattern of questionPatterns) {
         const matches = [...mainQuestion.matchAll(pattern.regex)]
         if (matches.length > 1) {
@@ -104,12 +104,12 @@ export function useExercises() {
           break
         }
       }
-
+      
       // Strategy 3: Split by line breaks if multiple lines with question marks
       if (questions.length === 0) {
         const lines = mainQuestion.split(/\n+/).filter(line => line.trim().length > 0)
         const questionLines = lines.filter(line => line.includes('?'))
-
+        
         if (questionLines.length > 1) {
           questions = questionLines.map((line, index) => ({
             question: line.trim().replace(/^\d+[\.)]\s*/, ''), // Remove numbering
@@ -120,7 +120,7 @@ export function useExercises() {
         }
       }
     }
-
+    
     // Strategy 4: Check data field for questions
     if (questions.length === 0 && exercise.data) {
       if (Array.isArray(exercise.data)) {
@@ -128,7 +128,7 @@ export function useExercises() {
           if (typeof item === 'string') return item.includes('?')
           return item && (item.question || item.text) && String(item.question || item.text).includes('?')
         })
-
+        
         if (dataQuestions.length > 0) {
           questions = dataQuestions.map((item, index) => ({
             question: typeof item === 'string' ? item : (item.question || item.text || `Вопрос ${index + 1}`),
@@ -144,38 +144,38 @@ export function useExercises() {
         }))
       }
     }
-
+    
     console.log('🔍 Final detected questions:', questions)
     return questions
   }
-
+  
   // ===================================
   // UTILITY FUNCTIONS
   // ===================================
-
+  
   const calculateSimilarity = (str1, str2) => {
     if (str1 === str2) return 1
-
+    
     const longer = str1.length > str2.length ? str1 : str2
     const shorter = str1.length > str2.length ? str2 : str1
-
+    
     if (longer.length === 0) return 1
-
+    
     const distance = levenshteinDistance(longer, shorter)
     return (longer.length - distance) / longer.length
   }
 
   const levenshteinDistance = (str1, str2) => {
     const matrix = []
-
+    
     for (let i = 0; i <= str2.length; i++) {
       matrix[i] = [i]
     }
-
+    
     for (let j = 0; j <= str1.length; j++) {
       matrix[0][j] = j
     }
-
+    
     for (let i = 1; i <= str2.length; i++) {
       for (let j = 1; j <= str1.length; j++) {
         if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
@@ -189,19 +189,19 @@ export function useExercises() {
         }
       }
     }
-
+    
     return matrix[str2.length][str1.length]
   }
 
   // Improved Fisher-Yates shuffle algorithm
   const shuffleArray = (array) => {
     const shuffled = [...array] // Create a copy to avoid mutating original
-
+    
     for (let i = shuffled.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1))
       ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
     }
-
+    
     // For arrays with more than 1 element, ensure it's actually shuffled
     if (shuffled.length > 1) {
       let attempts = 0
@@ -213,7 +213,7 @@ export function useExercises() {
         attempts++
       }
     }
-
+    
     return shuffled
   }
 
@@ -224,79 +224,155 @@ export function useExercises() {
 
   const getCorrectAnswersArray = (exercise) => {
     const correctAnswer = exercise.correctAnswer || exercise.answer
-
+    
     if (Array.isArray(correctAnswer)) {
       return correctAnswer
     }
-
+    
     if (typeof correctAnswer === 'string' && correctAnswer.includes(',')) {
       return correctAnswer.split(',').map(answer => answer.trim())
     }
-
+    
     return [correctAnswer].filter(Boolean)
   }
 
   // ===================================
-  // VALIDATION & DISPLAY FUNCTIONS (REPLACE THESE)
+  // ENHANCED VALIDATION FUNCTIONS
   // ===================================
-
+  
   const validateShortAnswer = (userAnswer, exercise) => {
-    if (exercise.questions && Array.isArray(exercise.questions) && exercise.questions.length > 1) {
-      if (!Array.isArray(userAnswer)) return false;
-      const correctAnswers = getCorrectAnswersArray(exercise);
-      if (userAnswer.length !== correctAnswers.length) return false;
-      return userAnswer.every((answer, index) => {
-        if (answer === undefined || answer === null || typeof answer !== 'string') return false;
-        const correctAnswer = correctAnswers[index];
-        if (correctAnswer === undefined || correctAnswer === null) return false;
-        const userTrimmed = answer.trim().toLowerCase();
-        const correctTrimmed = String(correctAnswer).trim().toLowerCase();
-        if (userTrimmed === correctTrimmed) return true;
-        if (correctTrimmed.length > 3) {
-          return calculateSimilarity(userTrimmed, correctTrimmed) > 0.8;
-        }
-        return false;
-      });
-    }
-    if (!userAnswer || typeof userAnswer !== 'string') return false;
-    const correctAnswers = getCorrectAnswersArray(exercise);
-    const userAnswerTrimmed = userAnswer.trim().toLowerCase();
-    return correctAnswers.some(answer => {
-      const correctAnswerTrimmed = String(answer).trim().toLowerCase();
-      if (userAnswerTrimmed === correctAnswerTrimmed) return true;
-      if (correctTrimmed.length > 3) {
-        return calculateSimilarity(userAnswerTrimmed, correctAnswerTrimmed) > 0.8;
+    console.log('🔍 Validating short answer:', { userAnswer, exercise })
+    
+    // Detect questions from exercise
+    const detectedQuestions = detectQuestionsFromExercise(exercise)
+    
+    // Handle multiple questions (enhanced detection)
+    if (detectedQuestions.length > 1) {
+      if (!Array.isArray(userAnswer)) {
+        console.log('🔍 Multiple questions detected but userAnswer is not array:', userAnswer)
+        return false
       }
-      return false;
-    });
-  };
+      
+      const correctAnswers = getCorrectAnswersArray(exercise)
+      console.log('🔍 Multiple questions validation:', { userAnswer, correctAnswers, detectedQuestions })
+      
+      // Validate each detected question
+      let validAnswers = 0
+      const totalQuestions = detectedQuestions.length
+      
+      for (let i = 0; i < totalQuestions; i++) {
+        const userAnswerItem = userAnswer[i]
+        if (!userAnswerItem || typeof userAnswerItem !== 'string') continue
+        
+        const userTrimmed = userAnswerItem.trim().toLowerCase()
+        if (userTrimmed.length < 1) continue
+        
+        // Get corresponding correct answer
+        let correctAnswer = null
+        if (correctAnswers[i]) {
+          correctAnswer = correctAnswers[i]
+        } else if (correctAnswers.length === 1) {
+          // If only one correct answer provided, use pattern matching
+          correctAnswer = correctAnswers[0]
+        }
+        
+        if (correctAnswer) {
+          const correctTrimmed = String(correctAnswer).trim().toLowerCase()
+          
+          if (userTrimmed === correctTrimmed) {
+            validAnswers++
+          } else if (correctTrimmed.length > 3) {
+            // Fuzzy matching for longer answers
+            const similarity = calculateSimilarity(userTrimmed, correctTrimmed)
+            if (similarity > 0.8) {
+              validAnswers++
+            }
+          }
+        } else {
+          // If no specific correct answer, accept any non-empty response
+          if (userTrimmed.length >= 2) {
+            validAnswers++
+          }
+        }
+      }
+      
+      // Require at least 70% of questions to be answered correctly
+      const successRate = validAnswers / totalQuestions
+      console.log('🔍 Multiple questions success rate:', successRate, `(${validAnswers}/${totalQuestions})`)
+      return successRate >= 0.7
+    }
+    
+    // Single question validation (existing logic)
+    if (!userAnswer || typeof userAnswer !== 'string') {
+      return false
+    }
+  
+    const correctAnswers = getCorrectAnswersArray(exercise)
+    const userAnswerTrimmed = userAnswer.trim().toLowerCase()
+  
+    return correctAnswers.some(answer => {
+      const correctAnswerTrimmed = String(answer).trim().toLowerCase()
+      
+      if (userAnswerTrimmed === correctAnswerTrimmed) {
+        return true
+      }
+      
+      if (correctAnswerTrimmed.length > 3) {
+        const similarity = calculateSimilarity(userAnswerTrimmed, correctAnswerTrimmed)
+        return similarity > 0.8
+      }
+      
+      return false
+    })
+  }
 
   const validateMultipleChoice = (userAnswer, exercise) => {
-    const correctAnswer = exercise.correctAnswer;
-    const normalize = (ans) => {
-      if (Array.isArray(ans)) return ans.map(String).sort();
-      if (ans === null || ans === undefined) return [];
-      return [String(ans)];
-    };
-    const normalizedUserAnswer = normalize(userAnswer);
-    const normalizedCorrectAnswer = (() => {
-      if (Array.isArray(correctAnswer)) {
-        return correctAnswer.map(c => {
-          if (typeof c === 'number' && exercise.options) {
-            const option = exercise.options[c];
-            return String(typeof option === 'string' ? option : (option?.text || option));
-          }
-          return String(c);
-        }).sort();
+    console.log('🔍 Validating multiple choice:', { userAnswer, correctAnswer: exercise.correctAnswer })
+    
+    const correctAnswer = exercise.correctAnswer
+    
+    // Handle multiple correct answers
+    if (Array.isArray(correctAnswer) && correctAnswer.length > 1) {
+      if (!Array.isArray(userAnswer)) return false
+      
+      // Check if user selected correct number of answers
+      if (userAnswer.length !== correctAnswer.length) {
+        console.log('🔍 Wrong number of selections:', userAnswer.length, 'vs', correctAnswer.length)
+        return false
       }
-      if (typeof correctAnswer === 'number' && exercise.options) {
-        const option = exercise.options[correctAnswer];
-        return [String(typeof option === 'string' ? option : (option?.text || option))];
+      
+      // Check if all selected answers are correct
+      return correctAnswer.every(correct => {
+        if (typeof correct === 'number' && exercise.options) {
+          const correctText = exercise.options[correct]?.text || exercise.options[correct]
+          return userAnswer.includes(correctText)
+        }
+        return userAnswer.includes(correct)
+      })
+    }
+    
+    // Handle single correct answer (existing logic)
+    if (typeof correctAnswer === 'number') {
+      if (typeof userAnswer === 'number') {
+        return userAnswer === correctAnswer
       }
-      return normalize(correctAnswer);
-    })();
-    return JSON.stringify(normalizedUserAnswer) === JSON.stringify(normalizedCorrectAnswer);
-  };
+      
+      if (exercise.options && Array.isArray(exercise.options)) {
+        const userIndex = exercise.options.findIndex(option => {
+          const optionText = typeof option === 'string' ? option : (option?.text || String(option))
+          return optionText === userAnswer
+        })
+        return userIndex === correctAnswer
+      }
+    }
+    
+    // Handle string answers
+    if (typeof correctAnswer === 'string') {
+      return userAnswer === correctAnswer
+    }
+    
+    return false
+  }
 
   const validateTrueFalse = (userAnswer, exercise) => {
     const correctAnswer = exercise.correctAnswer
@@ -337,138 +413,37 @@ export function useExercises() {
   }
 
   const validateFillBlank = (userAnswers, exercise) => {
-    if (!Array.isArray(userAnswers)) {
-      userAnswers = fillBlankAnswers.value || []
-    }
-
-    if (!Array.isArray(userAnswers) || userAnswers.length === 0) {
-      return false
-    }
-
-    // Get correct answers from various possible sources
-    let correctAnswers = []
-
-    if (exercise.blanks && Array.isArray(exercise.blanks)) {
-      correctAnswers = exercise.blanks.map(blank => {
-        if (typeof blank === 'string') return blank
-        return blank?.answer || blank?.text || String(blank)
-      })
-    } else if (exercise.correctAnswers && Array.isArray(exercise.correctAnswers)) {
-      correctAnswers = exercise.correctAnswers
-    } else if (exercise.answers && Array.isArray(exercise.answers)) {
-      correctAnswers = exercise.answers
-    } else if (exercise.hint) {
-      correctAnswers = exercise.hint.split(',').map(h => h.trim())
-    }
-
-    // Clean and filter answers
-    const finalCorrectAnswers = correctAnswers
-      .map(answer => String(answer || '').trim())
-      .filter(answer => answer.length > 0)
-
-    if (finalCorrectAnswers.length === 0) {
-      return false
-    }
-
-    // Check each answer
-    let correctCount = 0
-    for (let i = 0; i < finalCorrectAnswers.length; i++) {
-      const userAnswerItem = String(userAnswers[i] || '').trim().toLowerCase()
-      const correctAnswer = finalCorrectAnswers[i].toLowerCase()
-
-      if (!userAnswerItem || !correctAnswer) continue
-
-      let isCorrect = userAnswerItem === correctAnswer
-
-      // Fuzzy matching for longer answers
-      if (!isCorrect && correctAnswer.length > 3) {
-        const similarity = calculateSimilarity(userAnswerItem, correctAnswer)
-        isCorrect = similarity > 0.85
-      }
-
-      if (isCorrect) {
-        correctCount++
-      }
-    }
-
-    return correctCount === finalCorrectAnswers.length
-  }
-
+    if (!userAnswers || typeof userAnswers !== 'object') return false;
+    const allBlanks = exercise.questions.flatMap(q => q.blanks);
+    if (Object.keys(userAnswers).length !== allBlanks.length) return false;
+    return allBlanks.every(blank => 
+      (userAnswers[blank.id] || '').trim().toLowerCase() === blank.correctAnswer.trim().toLowerCase()
+    );
+  };
+  
   const validateMatching = (userPairs, exercise) => {
-    if (!Array.isArray(userPairs)) {
-      userPairs = matchingPairs.value || []
-    }
-
-    if (!Array.isArray(userPairs) || userPairs.length === 0) {
-      return false
-    }
-
-    const exercisePairs = exercise.pairs || []
-    if (!Array.isArray(exercisePairs) || exercisePairs.length === 0) {
-      return false
-    }
-
-    if (userPairs.length !== exercisePairs.length) {
-      return false
-    }
-
-    // Check if leftIndex === rightIndex for each pair (correct matching)
-    let correctCount = 0
-
-    userPairs.forEach((userPair) => {
-      if (!userPair || typeof userPair !== 'object') return
-
-      const { leftIndex, rightIndex } = userPair
-
-      if (leftIndex !== undefined && rightIndex !== undefined && leftIndex === rightIndex) {
-        correctCount++
-      }
-    })
-
-    return correctCount === exercisePairs.length
-  }
-
+    if (!userPairs || typeof userPairs !== 'object') return false;
+    if (Object.keys(userPairs).length !== exercise.pairs.length) return false;
+    return exercise.pairs.every(pair => 
+      userPairs[pair.id] === pair.correctMatch
+    );
+  };
+  
   const validateOrdering = (userItems, exercise) => {
-    if (!Array.isArray(userItems)) {
-      userItems = orderingItems.value || []
-    }
-
-    if (!Array.isArray(userItems) || userItems.length === 0) {
-      return false
-    }
-
-    const correctItems = exercise.items || []
-    if (!Array.isArray(correctItems) || correctItems.length === 0) {
-      return false
-    }
-
-    if (userItems.length !== correctItems.length) {
-      return false
-    }
-
-    // Check if each item is in the correct position
-    for (let i = 0; i < correctItems.length; i++) {
-      const userItem = userItems[i]
-      const correctItem = correctItems[i]
-
-      const userText = typeof userItem === 'string' ? userItem : (userItem?.text || userItem?.id || String(userItem))
-      const correctText = typeof correctItem === 'string' ? correctItem : (correctItem?.text || correctItem?.id || String(correctItem))
-
-      if (userText.trim().toLowerCase() !== correctText.trim().toLowerCase()) {
-        return false
-      }
-    }
-
-    return true
-  }
+    if (!userItems || typeof userItems !== 'object') return false;
+    if (Object.keys(userItems).length !== exercise.questions.length) return false;
+    return exercise.questions.every(q => 
+      JSON.stringify(userItems[q.id]) === JSON.stringify(q.correctOrder)
+    );
+  };
 
   const validateDragDrop = (userPlacements, exercise) => {
     if (!userPlacements || typeof userPlacements !== 'object') {
       userPlacements = dragDropPlacements
     }
 
-    const dropZonesArray = Array.isArray(exercise.dropZones)
-      ? exercise.dropZones
+    const dropZonesArray = Array.isArray(exercise.dropZones) 
+      ? exercise.dropZones 
       : Object.values(exercise.dropZones || {}).filter(zone => zone && (zone.label || zone.id))
 
     if (dropZonesArray.length === 0) {
@@ -481,10 +456,10 @@ export function useExercises() {
     for (const zone of dropZonesArray) {
       const zoneId = zone.id || zone.label || String(zone)
       const userItems = userPlacements[zoneId] || []
-
+      
       // Get correct items for this zone
       let correctItems = zone.correctItems || zone.items || []
-
+      
       if (zone.correctItem !== undefined) {
         if (typeof zone.correctItem === 'number' && exercise.dragItems) {
           const dragItems = Array.isArray(exercise.dragItems) ? exercise.dragItems : Object.values(exercise.dragItems)
@@ -499,7 +474,7 @@ export function useExercises() {
       // Check if all correct items are present in user's placement
       for (const correctItem of correctItems) {
         const correctText = typeof correctItem === 'string' ? correctItem : (correctItem?.text || correctItem?.label || String(correctItem))
-
+        
         const isItemPresent = userItems.some(userItem => {
           const userText = typeof userItem === 'string' ? userItem : (userItem?.text || userItem?.label || String(userItem))
           return userText.trim().toLowerCase() === correctText.trim().toLowerCase()
@@ -515,15 +490,15 @@ export function useExercises() {
   }
 
   // ===================================
-  // MAIN VALIDATION FUNCTION (UPDATE THIS)
+  // MAIN VALIDATION FUNCTION
   // ===================================
+  
   const validateCurrentAnswer = (exercise) => {
     if (!exercise) return false;
-
-    // **ADD THIS LINE:** If exercise.type is missing, it safely defaults to 'short-answer'.
+    
+    // **THE FIX:** If exercise.type is missing, it safely defaults to 'short-answer'.
     const exerciseType = exercise.type || 'short-answer';
 
-    // The switch statement now uses the safe exerciseType variable
     switch (exerciseType) {
       case 'short-answer':
       case 'reading':
@@ -546,11 +521,10 @@ export function useExercises() {
       case 'drag-drop':
         return validateDragDrop(dragDropPlacements, exercise);
       default:
-        // **ADD THIS** as a final fallback for safety.
+        // Add this default case as a final fallback
         return validateShortAnswer(userAnswer.value, exercise);
     }
   };
-
 
   const validateQuizAnswer = (quiz) => {
     if (!quiz) return false
@@ -570,132 +544,361 @@ export function useExercises() {
   }
 
   // ===================================
-  // ENHANCED ANSWER DISPLAY FUNCTIONS
+  // ANSWER CHECKING FUNCTIONS
   // ===================================
-
-  const getCorrectAnswerDisplay = (exercise) => {
-    if (!exercise) return '';
-    const exerciseType = exercise.type || 'short-answer';
-    const correctAnswer = exercise.correctAnswer || exercise.answer;
-    switch (exerciseType) {
-      case 'matching':
-        return exercise.pairs?.map(p => `${p.left} ↔ ${p.correctMatch || p.right || p[1]}`).join('; ') || 'Correct pairs are shown above';
-      case 'multiple-choice': case 'abc': case 'dialogue-completion':
-        if (Array.isArray(correctAnswer)) return correctAnswer.map(ans => (typeof ans === 'number' && exercise.options) ? (exercise.options[ans]?.text || exercise.options[ans]) : String(ans)).join(', ');
-        if (typeof correctAnswer === 'number' && exercise.options) {
-          const option = exercise.options[correctAnswer];
-          return typeof option === 'string' ? option : (option?.text || String(option));
-        }
-        return String(correctAnswer || '');
-      case 'true-false':
-        return String(correctAnswer) === 'true' || String(correctAnswer) === '0' ? 'Правда' : 'Ложь';
-      case 'structure': case 'ordering':
-        if (exercise.correctOrder?.length) return exercise.correctOrder.join(' ');
-        if (exercise.items?.length) return exercise.items.map((item, index) => `${index + 1}. ${item?.text || item}`).join('; ');
-        return 'The correct order is shown above';
-      case 'fill-blanks':
-        return getCorrectAnswersArray(exercise).join(', ');
-      case 'reading': case 'short-answer': case 'sentence-transformation': case 'error-correction':
-        if (Array.isArray(correctAnswer)) return correctAnswer.join('; ');
-        return String(correctAnswer || '');
-      default:
-        return String(correctAnswer || '');
-    }
-  };
-
-
-  // ===================================
-  // SUBMISSION, NAVIGATION & OTHER HELPERS (ADD/REPLACE THIS BLOCK)
-  // ===================================
-
-  const getRandomSuccessMessage = () => '✅ Отлично! Правильный ответ!';
-  const getSecondChanceMessage = () => '🤔 Не совсем правильно. У вас есть ещё одна попытка!';
-  const getFinalFailureMessage = (exercise, correctAnswer) => `📚 Не беспокойтесь! Правильный ответ: ${correctAnswer}`;
-
+  
   const canSubmitAnswer = (exercise) => {
-    if (!exercise) return userAnswer.value && userAnswer.value.trim().length > 0;
-    const exerciseType = exercise.type || 'short-answer';
+    if (!exercise) {
+      return userAnswer.value && userAnswer.value.trim().length > 0
+    }
+    
+    const exerciseType = exercise.type || 'short-answer'
+    
     switch (exerciseType) {
       case 'short-answer':
-        const detectedQuestions = detectQuestionsFromExercise(exercise);
+        const detectedQuestions = detectQuestionsFromExercise(exercise)
         if (detectedQuestions.length > 1) {
-          if (!Array.isArray(userAnswer.value)) return false;
-          const answeredCount = userAnswer.value.filter(answer => answer && typeof answer === 'string' && answer.trim().length > 0).length;
-          return answeredCount >= Math.ceil(detectedQuestions.length * 0.7);
+          // For multiple questions, check if at least 70% are answered
+          if (!Array.isArray(userAnswer.value)) return false
+          const answeredCount = userAnswer.value.filter(answer => 
+            answer && typeof answer === 'string' && answer.trim().length > 0
+          ).length
+          return answeredCount >= Math.ceil(detectedQuestions.length * 0.7)
         }
-        return userAnswer.value && userAnswer.value.trim().length > 0;
-      case 'multiple-choice': case 'abc': case 'true-false':
-        return userAnswer.value !== null && userAnswer.value !== undefined && userAnswer.value !== '';
+        return userAnswer.value && userAnswer.value.trim().length > 0
+        
+      case 'multiple-choice':
+      case 'abc':
+      case 'true-false':
+        return userAnswer.value !== null && userAnswer.value !== undefined && userAnswer.value !== ''
+        
       case 'fill-blank':
-        return Array.isArray(fillBlankAnswers.value) && fillBlankAnswers.value.some(answer => answer && answer.trim().length > 0);
+        return Array.isArray(fillBlankAnswers.value) && 
+               fillBlankAnswers.value.some(answer => answer && answer.trim().length > 0)
+        
       case 'matching':
-        return Array.isArray(matchingPairs.value) && matchingPairs.value.length > 0;
+        return Array.isArray(matchingPairs.value) && matchingPairs.value.length > 0
+        
       case 'ordering':
-        return Array.isArray(orderingItems.value) && orderingItems.value.length > 0;
+        return Array.isArray(orderingItems.value) && orderingItems.value.length > 0
+        
       case 'drag-drop':
-        return Object.values(dragDropPlacements).some(items => Array.isArray(items) && items.length > 0);
+        return Object.values(dragDropPlacements).some(items => 
+          Array.isArray(items) && items.length > 0
+        )
+        
       default:
-        return userAnswer.value && userAnswer.value.trim().length > 0;
+        return userAnswer.value && userAnswer.value.trim().length > 0
     }
-  };
+  }
 
-  const submitAnswer = (exercise) => {
-    if (!canSubmitAnswer(exercise)) return false;
-    attemptCount.value++;
-    const isCorrect = validateCurrentAnswer(exercise);
-    answerWasCorrect.value = isCorrect;
+  // ===================================
+  // FEEDBACK MESSAGES
+  // ===================================
+  
+  const getRandomSuccessMessage = () => {
+    const messages = [
+      '✅ Отлично! Правильный ответ!',
+      '🎉 Верно! Так держать!',
+      '⭐ Великолепно! Продолжайте!',
+      '🚀 Правильно! Вы молодец!',
+      '💯 Точно в цель! Отличная работа!',
+      '🏆 Превосходно! Идём дальше!'
+    ]
+    return messages[Math.floor(Math.random() * messages.length)]
+  }
+
+  const getSecondChanceMessage = (exercise) => {
+    const messages = [
+      '🤔 Не совсем правильно. У вас есть ещё одна попытка!',
+      '💭 Подумайте ещё немного. Попробуйте снова!',
+      '🎯 Почти попали! Ещё одна попытка!',
+      '🔍 Внимательнее! У вас есть вторая попытка!',
+      '📚 Перечитайте материал и попробуйте ещё раз!',
+      '⚡ Не сдавайтесь! Попробуйте другой вариант!'
+    ]
+    
+    return messages[Math.floor(Math.random() * messages.length)]
+  }
+
+  const getFinalFailureMessage = (exercise, correctAnswer) => {
+    const messages = [
+      '📚 Не беспокойтесь! Правильный ответ:',
+      '💡 Вот правильный ответ:',
+      '🎯 Правильный ответ:',
+      '✅ Запомните правильный ответ:'
+    ]
+    
+    const message = messages[Math.floor(Math.random() * messages.length)]
+    return `${message} ${correctAnswer}`
+  }
+
+  const getMatchingFeedback = (userPairs, exercise, isCorrect) => {
     if (isCorrect) {
-      confirmation.value = getRandomSuccessMessage();
-      showCorrectAnswer.value = true;
-    } else if (isOnSecondChance.value) {
-      confirmation.value = getSecondChanceMessage(exercise);
-      showCorrectAnswer.value = false;
-    } else {
-      const correctAnswer = getCorrectAnswerDisplay(exercise);
-      confirmation.value = getFinalFailureMessage(exercise, correctAnswer);
-      showCorrectAnswer.value = true;
+      return getRandomSuccessMessage()
     }
-    return isCorrect;
-  };
+    
+    if (!Array.isArray(userPairs) || userPairs.length === 0) {
+      return '🔗 Создайте хотя бы одну пару для проверки!'
+    }
+    
+    const exercisePairs = exercise.pairs || []
+    const requiredPairs = exercisePairs.length
+    const userPairCount = userPairs.length
+    
+    if (userPairCount < requiredPairs) {
+      return `🔗 Создайте все ${requiredPairs} пар (у вас ${userPairCount})`
+    }
+    
+    // Count correct pairs
+    let correctCount = 0
+    userPairs.forEach((userPair) => {
+      const { leftIndex, rightIndex } = userPair
+      if (leftIndex !== undefined && rightIndex !== undefined && leftIndex === rightIndex) {
+        correctCount++
+      }
+    })
+    
+    if (correctCount === 0) {
+      return '🤔 Ни одна пара не совпадает. Подумайте о логических связях!'
+    } else if (correctCount === 1) {
+      return `🎯 ${correctCount} пара правильная из ${requiredPairs}. Проверьте остальные!`
+    } else {
+      return `🎯 ${correctCount} пар правильных из ${requiredPairs}. Почти получилось!`
+    }
+  }
+
+  // ===================================
+  // ENHANCED ANSWER DISPLAY FUNCTIONS
+  // ===================================
+  
+  const getCorrectAnswerDisplay = (exercise) => {
+    if (!exercise) return ''
+
+    const exerciseType = exercise.type || 'short-answer'
+    
+    switch (exerciseType) {
+      case 'short-answer':
+        const detectedQuestions = detectQuestionsFromExercise(exercise)
+        if (detectedQuestions.length > 1) {
+          const correctAnswers = getCorrectAnswersArray(exercise)
+          if (correctAnswers.length > 1) {
+            return correctAnswers.map((answer, index) => 
+              `${index + 1}. ${answer}`
+            ).join('; ')
+          } else if (correctAnswers.length === 1) {
+            return `Образец ответа: ${correctAnswers[0]}`
+          } else {
+            return 'Ответьте на каждый вопрос подробно'
+          }
+        }
+        return String(exercise.correctAnswer || exercise.answer || '')
+
+      case 'matching':
+        if (exercise.pairs && Array.isArray(exercise.pairs)) {
+          return exercise.pairs.map((pair) => {
+            let left, right
+            
+            if (Array.isArray(pair)) {
+              left = String(pair[0] || '')
+              right = String(pair[1] || '')
+            } else if (pair && typeof pair === 'object') {
+              left = String(pair.left || pair[0] || pair.question || pair.term || '')
+              right = String(pair.right || pair[1] || pair.answer || pair.definition || '')
+            } else {
+              left = String(pair || '')
+              right = 'Unknown'
+            }
+            
+            return `${left} ↔ ${right}`
+          }).join('; ')
+        }
+        return 'Правильные пары показаны выше'
+
+      case 'multiple-choice':
+      case 'abc':
+        if (typeof exercise.correctAnswer === 'number' && exercise.options) {
+          const correctOption = exercise.options[exercise.correctAnswer]
+          return typeof correctOption === 'string' ? correctOption : (correctOption?.text || String(correctOption))
+        }
+        return String(exercise.correctAnswer || '')
+
+      case 'true-false':
+        if (typeof exercise.correctAnswer === 'boolean') {
+          return exercise.correctAnswer ? 'Правда' : 'Ложь'
+        }
+        if (typeof exercise.correctAnswer === 'number') {
+          return exercise.correctAnswer === 0 ? 'Правда' : 'Ложь'
+        }
+        return String(exercise.correctAnswer || '')
+
+      case 'ordering':
+        if (exercise.items && Array.isArray(exercise.items)) {
+          return exercise.items.map((item, index) => 
+            `${index + 1}. ${typeof item === 'string' ? item : (item?.text || String(item))}`
+          ).join('; ')
+        }
+        return 'Правильный порядок показан выше'
+
+      case 'fill-blank':
+        let correctAnswers = []
+        
+        if (exercise.blanks && Array.isArray(exercise.blanks)) {
+          correctAnswers = exercise.blanks.map(blank => {
+            if (typeof blank === 'string') return blank
+            return blank?.answer || blank?.text || String(blank)
+          })
+        } else if (exercise.correctAnswers && Array.isArray(exercise.correctAnswers)) {
+          correctAnswers = exercise.correctAnswers
+        } else if (exercise.answers && Array.isArray(exercise.answers)) {
+          correctAnswers = exercise.answers
+        } else if (exercise.hint) {
+          correctAnswers = exercise.hint.split(',').map(h => h.trim())
+        }
+        
+        const displayAnswers = correctAnswers
+          .map(answer => String(answer || '').trim())
+          .filter(answer => answer.length > 0)
+        
+        return displayAnswers.join(', ')
+
+      case 'drag-drop':
+        return 'Правильное размещение показано выше'
+
+      default:
+        return String(exercise.correctAnswer || exercise.answer || '')
+    }
+  }
+
+  // ===================================
+  // SUBMISSION FUNCTIONS
+  // ===================================
+  
+  const submitAnswer = (exercise) => {
+    if (!canSubmitAnswer(exercise)) {
+      return false
+    }
+
+    attemptCount.value++
+    
+    const isCorrect = validateCurrentAnswer(exercise)
+    answerWasCorrect.value = isCorrect
+    
+    if (isCorrect) {
+      confirmation.value = getRandomSuccessMessage()
+      showCorrectAnswer.value = false
+    } else if (isOnSecondChance.value) {
+      if (exercise?.type === 'matching') {
+        confirmation.value = getMatchingFeedback(matchingPairs.value, exercise, false)
+      } else {
+        confirmation.value = getSecondChanceMessage(exercise)
+      }
+      showCorrectAnswer.value = false
+    } else {
+      const correctAnswer = getCorrectAnswerDisplay(exercise)
+      confirmation.value = getFinalFailureMessage(exercise, correctAnswer)
+      showCorrectAnswer.value = true
+    }
+    
+    return isCorrect
+  }
 
   const submitQuizAnswer = (quiz) => {
-    if (!canSubmitAnswer(quiz)) return false;
-    attemptCount.value++;
-    const isCorrect = validateQuizAnswer(quiz);
-    answerWasCorrect.value = isCorrect;
-    if (isCorrect) {
-      confirmation.value = getRandomSuccessMessage();
-      showCorrectAnswer.value = false;
-    } else if (isOnSecondChance.value) {
-      confirmation.value = getSecondChanceMessage(quiz);
-      showCorrectAnswer.value = false;
-    } else {
-      const correctAnswer = getCorrectAnswerDisplay(quiz);
-      confirmation.value = getFinalFailureMessage(quiz, correctAnswer);
-      showCorrectAnswer.value = true;
+    if (!canSubmitAnswer(quiz)) {
+      return false
     }
-    return isCorrect;
-  };
 
+    attemptCount.value++
+    
+    const isCorrect = validateQuizAnswer(quiz)
+    answerWasCorrect.value = isCorrect
+    
+    if (isCorrect) {
+      confirmation.value = getRandomSuccessMessage()
+      showCorrectAnswer.value = false
+    } else if (isOnSecondChance.value) {
+      confirmation.value = getSecondChanceMessage(quiz)
+      showCorrectAnswer.value = false
+    } else {
+      const correctAnswer = getCorrectAnswerDisplay(quiz)
+      confirmation.value = getFinalFailureMessage(quiz, correctAnswer)
+      showCorrectAnswer.value = true
+    }
+    
+    return isCorrect
+  }
+
+  // ===================================
+  // EXERCISE NAVIGATION
+  // ===================================
+  
   const getCurrentExercise = (currentStep) => {
-    if (!currentStep || !['exercise', 'practice'].includes(currentStep.type)) return null;
-    let exercises = [];
-    if (Array.isArray(currentStep.data)) exercises = currentStep.data;
-    else if (currentStep.data?.exercises) exercises = currentStep.data.exercises;
-    else if (currentStep.data?.question) exercises = [currentStep.data];
-    else if (currentStep.exercises) exercises = currentStep.exercises;
-    if (exercises.length === 0) return null;
-    if (currentExerciseIndex.value >= exercises.length) currentExerciseIndex.value = 0;
-    return exercises[currentExerciseIndex.value] || null;
-  };
-
+    console.log('🔍 DEBUG getCurrentExercise - Step:', currentStep)
+    
+    if (!currentStep || !['exercise', 'practice'].includes(currentStep.type)) {
+      return null
+    }
+    
+    let exercises = []
+    
+    try {
+      // ✅ Handle the specific structure from your lesson
+      if (Array.isArray(currentStep.data)) {
+        exercises = currentStep.data
+        console.log('🔍 Found exercises in data array:', exercises.length)
+      } 
+      // ✅ Handle nested exercise structure
+      else if (currentStep.data && Array.isArray(currentStep.data.exercises)) {
+        exercises = currentStep.data.exercises
+        console.log('🔍 Found exercises in data.exercises:', exercises.length)
+      }
+      // ✅ Handle when data contains mixed exercise types
+      else if (currentStep.data && currentStep.data.question) {
+        exercises = [currentStep.data]
+        console.log('🔍 Found single exercise in data')
+      }
+      // ✅ FALLBACK: Direct exercises array on step
+      else if (currentStep.exercises && Array.isArray(currentStep.exercises)) {
+        exercises = currentStep.exercises
+        console.log('🔍 Found exercises directly on step:', exercises.length)
+      }
+      
+      console.log('🔍 All exercises found:', exercises)
+      
+      if (exercises.length === 0) return null
+      
+      if (currentExerciseIndex.value >= exercises.length) {
+        currentExerciseIndex.value = 0
+      }
+      
+      const exercise = exercises[currentExerciseIndex.value]
+      console.log('🔍 Selected exercise:', exercise)
+      console.log('🔍 Exercise type:', exercise?.type)
+      console.log('🔍 Exercise questions:', exercise?.questions)
+      console.log('🔍 Exercise options:', exercise?.options)
+      console.log('🔍 Exercise correctAnswer:', exercise?.correctAnswer)
+      
+      // Enhanced: Detect questions for better processing
+      if (exercise) {
+        const detectedQuestions = detectQuestionsFromExercise(exercise)
+        console.log('🔍 Detected questions from exercise:', detectedQuestions)
+      }
+      
+      return exercise || null
+      
+    } catch (error) {
+      console.error('❌ Error in getCurrentExercise:', error)
+      return null
+    }
+  }
+  
   const getCurrentQuiz = (currentStep) => {
     if (!currentStep || currentStep.type !== 'quiz') {
       return null
     }
-
+    
     let quizzes = []
-
+    
     try {
       if (Array.isArray(currentStep.data)) {
         quizzes = currentStep.data
@@ -704,39 +907,52 @@ export function useExercises() {
       } else if (currentStep.data && currentStep.data.question) {
         quizzes = [currentStep.data]
       }
-
+      
       if (quizzes.length === 0) return null
-
+      
       if (currentQuizIndex.value >= quizzes.length) {
         currentQuizIndex.value = 0
       }
-
+      
       return quizzes[currentQuizIndex.value] || null
-
+      
     } catch (error) {
       console.error('❌ Error in getCurrentQuiz:', error)
       return null
     }
   }
-
+  
   const getTotalExercises = (currentStep) => {
-    if (!currentStep || !['exercise', 'practice'].includes(currentStep.type)) return 0;
-    let exercises = [];
-    if (Array.isArray(currentStep.data)) exercises = currentStep.data;
-    else if (currentStep.data?.exercises) exercises = currentStep.data.exercises;
-    else if (currentStep.data?.question) exercises = [currentStep.data];
-    return exercises.length;
-  };
-
-
+    if (!currentStep || !['exercise', 'practice'].includes(currentStep.type)) {
+      return 0
+    }
+    
+    try {
+      let exercises = []
+      
+      if (Array.isArray(currentStep.data)) {
+        exercises = currentStep.data
+      } else if (currentStep.data && Array.isArray(currentStep.data.exercises)) {
+        exercises = currentStep.data.exercises
+      } else if (currentStep.data && currentStep.data.question) {
+        exercises = [currentStep.data]
+      }
+      
+      return exercises.length
+    } catch (error) {
+      console.error('❌ Error in getTotalExercises:', error)
+      return 0
+    }
+  }
+  
   const getTotalQuizzes = (currentStep) => {
     if (!currentStep || currentStep.type !== 'quiz') {
       return 0
     }
-
+    
     try {
       let quizzes = []
-
+      
       if (Array.isArray(currentStep.data)) {
         quizzes = currentStep.data
       } else if (currentStep.data && Array.isArray(currentStep.data.quizzes)) {
@@ -744,34 +960,35 @@ export function useExercises() {
       } else if (currentStep.data && currentStep.data.question) {
         quizzes = [currentStep.data]
       }
-
+      
       return quizzes.length
     } catch (error) {
       console.error('❌ Error in getTotalQuizzes:', error)
       return 0
     }
   }
-
-  const isLastExercise = (currentStep) => getTotalExercises(currentStep) > 0 && currentExerciseIndex.value >= getTotalExercises(currentStep) - 1;
-
-
+  
+  const isLastExercise = (currentStep) => {
+    const totalExercises = getTotalExercises(currentStep)
+    return currentExerciseIndex.value >= totalExercises - 1
+  }
+  
   const isLastQuiz = (currentStep) => {
     const totalQuizzes = getTotalQuizzes(currentStep)
     return currentQuizIndex.value >= totalQuizzes - 1
   }
-
+  
   const goToNextExercise = (currentStep, onNextStep) => {
     if (isLastExercise(currentStep)) {
-      resetExerciseState();
-      onNextStep();
+      resetExerciseState()
+      onNextStep()
     } else {
-      currentExerciseIndex.value++;
-      resetExerciseAnswers();
-      initializeCurrentExerciseData(getCurrentExercise(currentStep));
+      currentExerciseIndex.value++
+      resetExerciseAnswers()
+      initializeCurrentExerciseData(getCurrentExercise(currentStep))
     }
-  };
-
-
+  }
+  
   const goToNextQuiz = (currentStep, onNextStep) => {
     if (isLastQuiz(currentStep)) {
       resetExerciseState()
@@ -785,12 +1002,12 @@ export function useExercises() {
   // ===================================
   // INITIALIZATION FUNCTIONS
   // ===================================
-
+  
   const initializeCurrentExerciseData = (exercise) => {
     if (!exercise) return
-
+    
     console.log('🔧 Initializing exercise data for type:', exercise.type)
-
+    
     switch (exercise.type) {
       case 'fill-blank':
         initializeFillBlankAnswers(exercise)
@@ -816,34 +1033,34 @@ export function useExercises() {
         break
     }
   }
-
+  
   const initializeFillBlankAnswers = (exercise) => {
     if (!exercise) {
       fillBlankAnswers.value = []
       return
     }
-
+    
     let blankCount = 0
-
+    
     if (exercise.blanks && Array.isArray(exercise.blanks)) {
       blankCount = exercise.blanks.length
     } else {
       const template = exercise.template || exercise.question || ''
-
+      
       const underscoreMatches = template.match(/_+/g) || []
       const blankMatches = template.match(/\[blank\]/gi) || []
       const curlyBraceMatches = template.match(/\{[^}]*\}/g) || []
-
+      
       blankCount = Math.max(
-        underscoreMatches.length,
-        blankMatches.length,
+        underscoreMatches.length, 
+        blankMatches.length, 
         curlyBraceMatches.length
       )
     }
-
+    
     fillBlankAnswers.value = new Array(Math.max(1, blankCount)).fill('')
   }
-
+  
   const initializeOrderingItems = (exercise) => {
     if (!exercise || exercise.type !== 'ordering' || !Array.isArray(exercise.items)) {
       orderingItems.value = [];
@@ -858,29 +1075,29 @@ export function useExercises() {
 
     let shuffledItems = [...itemsWithMetadata];
     let attempts = 0;
-
+    
     // Shuffle the array until it's in a different order or after 10 attempts
     while (attempts < 10 && JSON.stringify(shuffledItems.map(i => i.originalIndex)) === JSON.stringify(itemsWithMetadata.map(i => i.originalIndex))) {
-      shuffledItems.sort(() => Math.random() - 0.5);
-      attempts++;
+        shuffledItems.sort(() => Math.random() - 0.5);
+        attempts++;
     }
-
+    
     orderingItems.value = shuffledItems;
   }
-
+  
   const initializeDragDropItems = (exercise) => {
     // Clear existing placements
     Object.keys(dragDropPlacements).forEach(key => {
       delete dragDropPlacements[key]
     })
-
+    
     availableDragItems.value = []
     dropZones.value = []
-
+    
     if (!exercise || exercise.type !== 'drag-drop') {
       return
     }
-
+    
     // Initialize drag items
     if (exercise.dragItems && Array.isArray(exercise.dragItems)) {
       availableDragItems.value = exercise.dragItems.map(item => {
@@ -893,7 +1110,7 @@ export function useExercises() {
         }
       })
     }
-
+    
     // Initialize drop zones
     if (exercise.dropZones && Array.isArray(exercise.dropZones)) {
       dropZones.value = exercise.dropZones.map(zone => {
@@ -909,18 +1126,18 @@ export function useExercises() {
           return { label: String(zone), id: String(zone), correctItems: [] }
         }
       })
-
+      
       // Initialize empty arrays for each zone
       dropZones.value.forEach(zone => {
         dragDropPlacements[zone.id] = []
       })
     }
   }
-
+  
   const initializeMatchingItems = () => {
     matchingPairs.value = [];
     selectedMatchingItem.value = null;
-
+  
     // Force refresh of right items shuffling
     if (typeof window !== 'undefined') {
       // Clear any cached shuffling state
@@ -931,7 +1148,7 @@ export function useExercises() {
   // ===================================
   // UPDATE FUNCTIONS
   // ===================================
-
+  
   const updateUserAnswer = (newAnswer, exercise) => {
     if (!exercise) {
       userAnswer.value = newAnswer
@@ -968,11 +1185,11 @@ export function useExercises() {
     if (!Array.isArray(fillBlankAnswers.value)) {
       fillBlankAnswers.value = []
     }
-
+    
     while (fillBlankAnswers.value.length <= index) {
       fillBlankAnswers.value.push('')
     }
-
+    
     const newValue = typeof value === 'object' && value?.target ? value.target.value : value
     fillBlankAnswers.value[index] = newValue || ''
     fillBlankAnswers.value = [...fillBlankAnswers.value]
@@ -985,7 +1202,7 @@ export function useExercises() {
   // ===================================
   // INTERACTION HANDLERS
   // ===================================
-
+  
   const handleMatchingSelection = (selection) => {
     selectedMatchingItem.value = selection
   }
@@ -1001,7 +1218,7 @@ export function useExercises() {
   // ===================================
   // DRAG AND DROP HANDLERS
   // ===================================
-
+  
   const handleDragItemStart = ({ item, event }) => {
     draggedDragItem.value = item
   }
@@ -1018,9 +1235,9 @@ export function useExercises() {
     if (!dragDropPlacements[zoneId]) {
       dragDropPlacements[zoneId] = []
     }
-
+    
     const itemText = typeof item === 'string' ? item : (item?.text || item?.label || String(item))
-
+    
     // Remove item from other zones first
     Object.keys(dragDropPlacements).forEach(otherZoneId => {
       if (otherZoneId !== zoneId && Array.isArray(dragDropPlacements[otherZoneId])) {
@@ -1030,17 +1247,17 @@ export function useExercises() {
         })
       }
     })
-
+    
     // Check if item already in target zone
     const isAlreadyInZone = dragDropPlacements[zoneId].some(placedItem => {
       const placedText = typeof placedItem === 'string' ? placedItem : (placedItem?.text || placedItem?.label || String(placedItem))
       return placedText === itemText
     })
-
+    
     if (!isAlreadyInZone) {
       dragDropPlacements[zoneId].push(item)
     }
-
+    
     // Clean up drag state
     draggedDragItem.value = null
     dropOverZone.value = null
@@ -1055,7 +1272,7 @@ export function useExercises() {
   // ===================================
   // HINT SYSTEM
   // ===================================
-
+  
   const showHint = () => {
     currentHint.value = "Внимательно прочитайте вопрос и подумайте о правильном ответе."
   }
@@ -1071,55 +1288,58 @@ export function useExercises() {
   // ===================================
   // RESET FUNCTIONS
   // ===================================
-
+  
   const resetExerciseState = () => {
-    currentExerciseIndex.value = 0;
-    currentQuizIndex.value = 0;
-    resetExerciseAnswers();
-    resetExerciseData();
-  };
-
-
+    currentExerciseIndex.value = 0
+    currentQuizIndex.value = 0
+    resetExerciseAnswers()
+    resetExerciseData()
+    resetAttemptState()
+  }
+  
   const resetExerciseAnswers = () => {
-    userAnswer.value = '';
-    confirmation.value = '';
-    answerWasCorrect.value = false;
-    currentHint.value = '';
-    smartHint.value = '';
-    resetAttemptState();
-  };
+    userAnswer.value = ''
+    confirmation.value = ''
+    answerWasCorrect.value = false
+    currentHint.value = ''
+    smartHint.value = ''
+    resetAttemptState()
+  }
 
   const resetAttemptState = () => {
-    attemptCount.value = 0;
-    showCorrectAnswer.value = false;
-  };
-
+    attemptCount.value = 0
+    showCorrectAnswer.value = false
+  }
+  
   const resetExerciseData = () => {
-    fillBlankAnswers.value = [];
-    matchingPairs.value = [];
-    selectedMatchingItem.value = null;
-    orderingItems.value = [];
-    availableDragItems.value = [];
-    dropZones.value = [];
-    Object.keys(dragDropPlacements).forEach(key => delete dragDropPlacements[key]);
-  };
+    fillBlankAnswers.value = []
+    matchingPairs.value = []
+    selectedMatchingItem.value = null
+    orderingItems.value = []
+    availableDragItems.value = []
+    dropZones.value = []
+    
+    Object.keys(dragDropPlacements).forEach(key => {
+      delete dragDropPlacements[key]
+    })
+  }
 
   // ===================================
   // HELPER FUNCTIONS
   // ===================================
-
+  
   const getCurrentExerciseType = (exercise) => {
     return exercise?.type || 'short-answer'
   }
-
+  
   const getFormattedFillBlankTemplate = (exercise) => {
     if (!exercise || exercise.type !== 'fill-blank') {
       return ''
     }
-
+    
     const template = exercise.template || exercise.question || ''
     let blankIndex = 0
-
+    
     return template
       .replace(/\[blank\]/gi, () => `<input data-blank-index="${blankIndex++}">`)
       .replace(/_+/g, () => `<input data-blank-index="${blankIndex++}">`)
@@ -1144,7 +1364,7 @@ export function useExercises() {
     }
     return []
   }
-
+  
   const getRightItemsArray = (exercise) => {
     if (!exercise?.pairs) return []
     const pairs = exercise.pairs
@@ -1160,12 +1380,12 @@ export function useExercises() {
         }
         return { text, originalIndex: index }
       }).filter(item => item.text.trim() !== '')
-
+      
       return shuffleArray(rightItemsWithMetadata)
     }
     return []
   }
-
+  
   const forceReshuffleRightItems = () => {
     // This will be called when starting a new matching exercise
     return true
@@ -1196,10 +1416,10 @@ export function useExercises() {
     attemptCount,
     maxAttempts,
     showCorrectAnswer,
-
+    
     // Computed
     isOnSecondChance,
-
+    
     // Core Exercise Methods
     getCurrentExercise,
     getCurrentQuiz,
@@ -1209,10 +1429,10 @@ export function useExercises() {
     isLastQuiz,
     goToNextExercise,
     goToNextQuiz,
-
+    
     // Enhanced: Question Detection Methods
     detectQuestionsFromExercise,
-
+    
     // Validation Methods
     validateCurrentAnswer,
     validateQuizAnswer,
@@ -1223,24 +1443,24 @@ export function useExercises() {
     validateMatching,
     validateOrdering,
     validateDragDrop,
-
+    
     // Submission Methods
     canSubmitAnswer,
     submitAnswer,
     submitQuizAnswer,
-
+    
     // Initialization Methods
     initializeCurrentExerciseData,
     initializeFillBlankAnswers,
     initializeOrderingItems,
     initializeDragDropItems,
     initializeMatchingItems,
-
+    
     // Update Methods
     updateUserAnswer,
     updateFillBlankAnswer,
     getCurrentUserAnswer,
-
+    
     // Interaction Handlers
     handleMatchingSelection,
     removeMatchingPair,
@@ -1249,24 +1469,25 @@ export function useExercises() {
     handleDragLeaveZone,
     handleDropInZone,
     handleRemoveDroppedItem,
-
+    
     // Display Methods
     getCorrectAnswerDisplay,
+    getMatchingFeedback,
     getRandomSuccessMessage,
     getSecondChanceMessage,
     getFinalFailureMessage,
-
+    
     // Hint System
     showHint,
     clearSmartHint,
     setSmartHint,
-
+    
     // Reset Methods
     resetExerciseState,
     resetExerciseAnswers,
     resetExerciseData,
     resetAttemptState,
-
+    
     // Helper Methods
     getCurrentExerciseType,
     getFormattedFillBlankTemplate,
