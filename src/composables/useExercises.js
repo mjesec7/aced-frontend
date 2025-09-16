@@ -243,73 +243,52 @@ export function useExercises() {
   const validateShortAnswer = (userAnswer, exercise) => {
     console.log('🔍 Validating short answer:', { userAnswer, exercise })
     
-    // Detect questions from exercise
-    const detectedQuestions = detectQuestionsFromExercise(exercise)
-    
-    // Handle multiple questions (enhanced detection)
-    if (detectedQuestions.length > 1) {
+    // Handle multiple questions
+    if (exercise.questions && Array.isArray(exercise.questions) && exercise.questions.length > 1) {
       if (!Array.isArray(userAnswer)) {
-        console.log('🔍 Multiple questions detected but userAnswer is not array:', userAnswer)
+        console.log('❌ Short answer validation failed: userAnswer is not an array for multiple questions')
         return false
       }
       
       const correctAnswers = getCorrectAnswersArray(exercise)
-      console.log('🔍 Multiple questions validation:', { userAnswer, correctAnswers, detectedQuestions })
+      console.log('🔍 Multiple questions validation:', { userAnswer, correctAnswers })
       
-      // Validate each detected question
-      let validAnswers = 0
-      const totalQuestions = detectedQuestions.length
-      
-      for (let i = 0; i < totalQuestions; i++) {
-        const userAnswerItem = userAnswer[i]
-        if (!userAnswerItem || typeof userAnswerItem !== 'string') continue
-        
-        const userTrimmed = userAnswerItem.trim().toLowerCase()
-        if (userTrimmed.length < 1) continue
-        
-        // Get corresponding correct answer
-        let correctAnswer = null
-        if (correctAnswers[i]) {
-          correctAnswer = correctAnswers[i]
-        } else if (correctAnswers.length === 1) {
-          // If only one correct answer provided, use pattern matching
-          correctAnswer = correctAnswers[0]
-        }
-        
-        if (correctAnswer) {
-          const correctTrimmed = String(correctAnswer).trim().toLowerCase()
-          
-          if (userTrimmed === correctTrimmed) {
-            validAnswers++
-          } else if (correctTrimmed.length > 3) {
-            // Fuzzy matching for longer answers
-            const similarity = calculateSimilarity(userTrimmed, correctTrimmed)
-            if (similarity > 0.8) {
-              validAnswers++
-            }
-          }
-        } else {
-          // If no specific correct answer, accept any non-empty response
-          if (userTrimmed.length >= 2) {
-            validAnswers++
-          }
-        }
+      // Check if number of answers matches number of questions
+      if (userAnswer.length !== correctAnswers.length) {
+        console.log('❌ Short answer validation failed: answer count mismatch')
+        return false
       }
       
-      // Require at least 70% of questions to be answered correctly
-      const successRate = validAnswers / totalQuestions
-      console.log('🔍 Multiple questions success rate:', successRate, `(${validAnswers}/${totalQuestions})`)
-      return successRate >= 0.7
+      // Check each answer
+      return userAnswer.every((answer, index) => {
+        if (answer === undefined || answer === null || typeof answer !== 'string') return false
+        
+        const correctAnswer = correctAnswers[index]
+        if (correctAnswer === undefined || correctAnswer === null) return false
+        
+        const userTrimmed = answer.trim().toLowerCase()
+        const correctTrimmed = String(correctAnswer).trim().toLowerCase()
+        
+        if (userTrimmed === correctTrimmed) return true
+        
+        // Fuzzy matching for longer answers
+        if (correctTrimmed.length > 3) {
+          const similarity = calculateSimilarity(userTrimmed, correctTrimmed)
+          return similarity > 0.8
+        }
+        
+        return false
+      })
     }
     
     // Single question validation (existing logic)
     if (!userAnswer || typeof userAnswer !== 'string') {
       return false
     }
-  
+
     const correctAnswers = getCorrectAnswersArray(exercise)
     const userAnswerTrimmed = userAnswer.trim().toLowerCase()
-  
+
     return correctAnswers.some(answer => {
       const correctAnswerTrimmed = String(answer).trim().toLowerCase()
       
@@ -331,47 +310,39 @@ export function useExercises() {
     
     const correctAnswer = exercise.correctAnswer
     
-    // Handle multiple correct answers
-    if (Array.isArray(correctAnswer) && correctAnswer.length > 1) {
-      if (!Array.isArray(userAnswer)) return false
-      
-      // Check if user selected correct number of answers
-      if (userAnswer.length !== correctAnswer.length) {
-        console.log('🔍 Wrong number of selections:', userAnswer.length, 'vs', correctAnswer.length)
-        return false
-      }
-      
-      // Check if all selected answers are correct
-      return correctAnswer.every(correct => {
-        if (typeof correct === 'number' && exercise.options) {
-          const correctText = exercise.options[correct]?.text || exercise.options[correct]
-          return userAnswer.includes(correctText)
-        }
-        return userAnswer.includes(correct)
-      })
+    // Normalize answers to an array of strings for consistent comparison
+    const normalize = (ans) => {
+      if (Array.isArray(ans)) return ans.map(String).sort()
+      if (ans === null || ans === undefined) return []
+      return [String(ans)]
     }
+
+    const normalizedUserAnswer = normalize(userAnswer)
     
-    // Handle single correct answer (existing logic)
-    if (typeof correctAnswer === 'number') {
-      if (typeof userAnswer === 'number') {
-        return userAnswer === correctAnswer
+    // Normalize correct answer, converting indices to text if needed
+    const normalizedCorrectAnswer = (() => {
+      if (Array.isArray(correctAnswer)) {
+        return correctAnswer.map(c => {
+          if (typeof c === 'number' && exercise.options) {
+            const option = exercise.options[c]
+            return String(typeof option === 'string' ? option : (option?.text || option))
+          }
+          return String(c)
+        }).sort()
       }
-      
-      if (exercise.options && Array.isArray(exercise.options)) {
-        const userIndex = exercise.options.findIndex(option => {
-          const optionText = typeof option === 'string' ? option : (option?.text || String(option))
-          return optionText === userAnswer
-        })
-        return userIndex === correctAnswer
+      if (typeof correctAnswer === 'number' && exercise.options) {
+        const option = exercise.options[correctAnswer]
+        return [String(typeof option === 'string' ? option : (option?.text || option))]
       }
-    }
-    
-    // Handle string answers
-    if (typeof correctAnswer === 'string') {
-      return userAnswer === correctAnswer
-    }
-    
-    return false
+      return normalize(correctAnswer)
+    })()
+
+    console.log('🔍 Normalized answers:', { normalizedUserAnswer, normalizedCorrectAnswer })
+
+    // Compare the JSON strings of the sorted, normalized arrays
+    const isCorrect = JSON.stringify(normalizedUserAnswer) === JSON.stringify(normalizedCorrectAnswer)
+    console.log('✅ Multiple choice correct:', isCorrect)
+    return isCorrect
   }
 
   const validateTrueFalse = (userAnswer, exercise) => {
@@ -772,40 +743,14 @@ export function useExercises() {
     if (!exercise) return ''
 
     const exerciseType = exercise.type || 'short-answer'
+    const correctAnswer = exercise.correctAnswer || exercise.answer
     
     switch (exerciseType) {
-      case 'short-answer':
-        const detectedQuestions = detectQuestionsFromExercise(exercise)
-        if (detectedQuestions.length > 1) {
-          const correctAnswers = getCorrectAnswersArray(exercise)
-          if (correctAnswers.length > 1) {
-            return correctAnswers.map((answer, index) => 
-              `${index + 1}. ${answer}`
-            ).join('; ')
-          } else if (correctAnswers.length === 1) {
-            return `Образец ответа: ${correctAnswers[0]}`
-          } else {
-            return 'Ответьте на каждый вопрос подробно'
-          }
-        }
-        return String(exercise.correctAnswer || exercise.answer || '')
-
       case 'matching':
         if (exercise.pairs && Array.isArray(exercise.pairs)) {
-          return exercise.pairs.map((pair) => {
-            let left, right
-            
-            if (Array.isArray(pair)) {
-              left = String(pair[0] || '')
-              right = String(pair[1] || '')
-            } else if (pair && typeof pair === 'object') {
-              left = String(pair.left || pair[0] || pair.question || pair.term || '')
-              right = String(pair.right || pair[1] || pair.answer || pair.definition || '')
-            } else {
-              left = String(pair || '')
-              right = 'Unknown'
-            }
-            
+          return exercise.pairs.map(pair => {
+            let left = String(pair.left || pair[0] || '')
+            let right = String(pair.right || pair[1] || '')
             return `${left} ↔ ${right}`
           }).join('; ')
         }
@@ -813,56 +758,47 @@ export function useExercises() {
 
       case 'multiple-choice':
       case 'abc':
-        if (typeof exercise.correctAnswer === 'number' && exercise.options) {
-          const correctOption = exercise.options[exercise.correctAnswer]
-          return typeof correctOption === 'string' ? correctOption : (correctOption?.text || String(correctOption))
+      case 'dialogue-completion':
+        if (Array.isArray(correctAnswer)) {
+          return correctAnswer.map(ans => {
+            if (typeof ans === 'number' && exercise.options) {
+              const option = exercise.options[ans]
+              return typeof option === 'string' ? option : (option?.text || String(option))
+            }
+            return String(ans)
+          }).join(', ')
         }
-        return String(exercise.correctAnswer || '')
+        if (typeof correctAnswer === 'number' && exercise.options) {
+          const option = exercise.options[correctAnswer]
+          return typeof option === 'string' ? option : (option?.text || String(option))
+        }
+        return String(correctAnswer || '')
 
       case 'true-false':
-        if (typeof exercise.correctAnswer === 'boolean') {
-          return exercise.correctAnswer ? 'Правда' : 'Ложь'
-        }
-        if (typeof exercise.correctAnswer === 'number') {
-          return exercise.correctAnswer === 0 ? 'Правда' : 'Ложь'
-        }
-        return String(exercise.correctAnswer || '')
+        return String(correctAnswer) === 'true' || String(correctAnswer) === '0' ? 'Правда' : 'Ложь'
 
       case 'ordering':
         if (exercise.items && Array.isArray(exercise.items)) {
-          return exercise.items.map((item, index) => 
+          return exercise.items.map((item, index) =>
             `${index + 1}. ${typeof item === 'string' ? item : (item?.text || String(item))}`
           ).join('; ')
         }
         return 'Правильный порядок показан выше'
 
       case 'fill-blank':
-        let correctAnswers = []
+        const answers = getCorrectAnswersArray(exercise)
+        return answers.join(', ')
         
-        if (exercise.blanks && Array.isArray(exercise.blanks)) {
-          correctAnswers = exercise.blanks.map(blank => {
-            if (typeof blank === 'string') return blank
-            return blank?.answer || blank?.text || String(blank)
-          })
-        } else if (exercise.correctAnswers && Array.isArray(exercise.correctAnswers)) {
-          correctAnswers = exercise.correctAnswers
-        } else if (exercise.answers && Array.isArray(exercise.answers)) {
-          correctAnswers = exercise.answers
-        } else if (exercise.hint) {
-          correctAnswers = exercise.hint.split(',').map(h => h.trim())
+      case 'short-answer':
+      case 'sentence-transformation':
+      case 'error-correction':
+        if (Array.isArray(correctAnswer)) {
+          return correctAnswer.join('; ')
         }
-        
-        const displayAnswers = correctAnswers
-          .map(answer => String(answer || '').trim())
-          .filter(answer => answer.length > 0)
-        
-        return displayAnswers.join(', ')
-
-      case 'drag-drop':
-        return 'Правильное размещение показано выше'
+        return String(correctAnswer || '')
 
       default:
-        return String(exercise.correctAnswer || exercise.answer || '')
+        return String(correctAnswer || '')
     }
   }
 
