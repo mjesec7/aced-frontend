@@ -22,23 +22,37 @@
       <div class="panel-content-scroll">
         <div class="exercise-wrapper">
           
-          <div v-if="['reading', 'short-answer'].includes(exerciseType)" class="exercise-type-container">
+          <div v-if="['reading', 'short-answer', 'sentence-transformation', 'error-correction'].includes(exerciseType)" class="exercise-type-container">
+            
             <article v-if="currentExercise.content" class="exercise-card reading-text-card">
               <h3 class="card-subtitle">Reading Text</h3>
-              <div class="reading-text-content">
-                <p>{{ currentExercise.content }}</p>
-              </div>
+              <div class="reading-text-content"><p>{{ currentExercise.content }}</p></div>
             </article>
-            <article v-for="(question, qIndex) in currentExercise.questions" :key="question.id" class="exercise-card">
-              <p class="question-text">{{ question.question }}</p>
-              <textarea 
-                :value="userAnswer[qIndex] || ''" 
-                @input="updateMultiAnswer(qIndex, $event.target.value)" 
-                :placeholder="question.placeholder || 'Enter your answer...'" 
-                :disabled="showCorrectAnswer" 
-                class="answer-textarea"
-              ></textarea>
-              <div v-if="showCorrectAnswer" v-html="renderFeedback(userAnswer[qIndex], question.correctAnswer)" class="feedback-container"></div>
+
+            <template v-if="currentExercise.questions && currentExercise.questions.length > 0">
+              <article v-for="(question, qIndex) in currentExercise.questions" :key="question.id || qIndex" class="exercise-card">
+                <p class="question-text">{{ question.question }}</p>
+                <textarea 
+                  :value="userAnswer[qIndex] || ''" 
+                  @input="updateMultiAnswer(qIndex, $event.target.value)" 
+                  :placeholder="question.placeholder || 'Enter your answer...'" 
+                  :disabled="showCorrectAnswer" 
+                  class="answer-textarea"
+                ></textarea>
+                <div v-if="showCorrectAnswer" v-html="renderFeedback(userAnswer[qIndex], question.correctAnswer)" class="feedback-container"></div>
+              </article>
+            </template>
+
+            <article v-else class="exercise-card">
+                <p class="question-text" v-html="currentExercise.question"></p>
+                <p v-if="currentExercise.instruction" class="instruction-text">{{ currentExercise.instruction }}</p>
+                <textarea 
+                  v-model="userAnswer" 
+                  :placeholder="currentExercise.placeholder || 'Enter your transformed sentence...'" 
+                  :disabled="showCorrectAnswer" 
+                  class="answer-textarea"
+                ></textarea>
+                <div v-if="showCorrectAnswer" v-html="renderFeedback(userAnswer, currentExercise.correctAnswer)" class="feedback-container"></div>
             </article>
           </div>
 
@@ -479,6 +493,15 @@ const isOptionUsed = (currentPairId, option) => {
   padding: 1rem;
   border-radius: 0.5rem;
   color: var(--foreground);
+}
+.instruction-text {
+  font-size: 0.9rem;
+  color: var(--muted-foreground);
+  font-style: italic;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  background-color: var(--secondary);
+  border-radius: 0.375rem;
 }
 
 /* ================================ */
