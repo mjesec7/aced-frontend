@@ -775,33 +775,27 @@ export function useExercises() {
   // ===================================
   
   const submitAnswer = (exercise) => {
-    if (!canSubmitAnswer(exercise)) {
-      return false
-    }
+    if (!canSubmitAnswer(exercise)) return false;
+    
+    attemptCount.value++;
+    const isCorrect = validateCurrentAnswer(exercise);
+    answerWasCorrect.value = isCorrect;
 
-    attemptCount.value++
-    
-    const isCorrect = validateCurrentAnswer(exercise)
-    answerWasCorrect.value = isCorrect
-    
     if (isCorrect) {
-      confirmation.value = getRandomSuccessMessage()
-      showCorrectAnswer.value = false
-    } else if (isOnSecondChance.value) {
-      if (exercise?.type === 'matching') {
-        confirmation.value = getMatchingFeedback(matchingPairs.value, exercise, false)
-      } else {
-        confirmation.value = getSecondChanceMessage(exercise)
-      }
-      showCorrectAnswer.value = false
+      // For correct answers, we don't need a text confirmation,
+      // as the individual feedback boxes will show the "Correct" state.
+      confirmation.value = 'Correct'; // This won't be displayed, but sets the state
+      showCorrectAnswer.value = true;
     } else {
-      const correctAnswer = getCorrectAnswerDisplay(exercise)
-      confirmation.value = getFinalFailureMessage(exercise, correctAnswer)
-      showCorrectAnswer.value = true
+      // For incorrect answers, provide the correct answer directly.
+      const correctAnswerText = getCorrectAnswerDisplay(exercise);
+      // This is the message you circled in the screenshot.
+      confirmation.value = `Вот правильный ответ: ${correctAnswerText}`;
+      showCorrectAnswer.value = true;
     }
     
-    return isCorrect
-  }
+    return isCorrect;
+  };
 
   const submitQuizAnswer = (quiz) => {
     if (!canSubmitAnswer(quiz)) {
