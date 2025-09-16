@@ -22,7 +22,7 @@
       <div class="panel-content-scroll">
         <div class="exercise-wrapper">
           
-          <div v-if="['reading', 'short-answer'].includes(currentExercise.type)" class="exercise-type-container">
+          <div v-if="['reading', 'short-answer'].includes(exerciseType)" class="exercise-type-container">
             <article v-if="currentExercise.content" class="exercise-card reading-text-card">
               <h3 class="card-subtitle">Reading Text</h3>
               <div class="reading-text-content">
@@ -42,7 +42,7 @@
             </article>
           </div>
 
-          <div v-else-if="currentExercise.type === 'multiple-choice'" class="exercise-type-container">
+          <div v-else-if="exerciseType === 'multiple-choice'" class="exercise-type-container">
             <article class="exercise-card">
               <p class="question-text">{{ currentExercise.question }}</p>
               <div class="options-list">
@@ -60,7 +60,7 @@
             </article>
           </div>
 
-          <div v-else-if="currentExercise.type === 'fill-blanks'" class="exercise-type-container">
+          <div v-else-if="exerciseType === 'fill-blanks'" class="exercise-type-container">
             <article v-for="question in currentExercise.questions" :key="question.id" class="exercise-card">
               <div class="question-text fill-blank-sentence">
                 <template v-for="(part, pIndex) in question.sentenceParts" :key="pIndex">
@@ -80,7 +80,7 @@
             </article>
           </div>
           
-          <div v-else-if="currentExercise.type === 'matching'" class="exercise-type-container">
+          <div v-else-if="exerciseType === 'matching'" class="exercise-type-container">
             <article v-for="pair in currentExercise.pairs" :key="pair.id" class="exercise-card matching-pair-card">
               <p class="matching-text-left">{{ pair.left }}</p>
               <div class="matching-select-wrapper">
@@ -105,7 +105,7 @@
             </article>
           </div>
 
-          <div v-else-if="currentExercise.type === 'structure'" class="exercise-type-container">
+          <div v-else-if="exerciseType === 'structure'" class="exercise-type-container">
              <article v-for="question in currentExercise.questions" :key="question.id" class="exercise-card">
                <p class="question-text">{{ question.instruction }}</p>
                <div 
@@ -239,6 +239,11 @@ const exerciseMeta = computed(() => {
 });
 
 const isLastExercise = computed(() => props.exerciseIndex >= props.totalExercises - 1);
+
+const exerciseType = computed(() => {
+  // If the exercise has a type, use it. Otherwise, default to 'short-answer'.
+  return props.currentExercise?.type || 'short-answer';
+});
 
 const submit = () => {
     submitLogic(props.currentExercise);
