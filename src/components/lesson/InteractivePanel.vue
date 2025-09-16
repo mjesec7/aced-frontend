@@ -1,2630 +1,1665 @@
 <template>
-  <div class="interactive-panel">
-    <div v-if="isExerciseStep" class="exercise-content">
-      <div class="exercise-header">
-        <h3>{{ currentExercise?.title || 'Упражнение' }}</h3>
-        <div class="exercise-counter">
-          {{ exerciseIndex + 1 }} из {{ totalExercises }}
+  <div class="lesson-container">
+    <!-- Left Side - Lesson Content -->
+    <div class="lesson-content">
+      <div class="content-wrapper">
+        <div class="lesson-header">
+          <h1 class="lesson-title">{{ lessonData.title || 'Урок загружается...' }}</h1>
+          <p class="lesson-description">{{ lessonData.description || 'Изучаем английскую грамматику' }}</p>
         </div>
-      </div>
 
-      <div class="exercise-body">
-        <div class="exercise-content-scroll">
-          <div class="scroll-content-wrapper">
-            
-            <div v-if="exerciseType === 'short-answer'" class="exercise-type">
-              <!-- Main question text (if exists) -->
-              <div v-if="currentExercise?.question && !hasMultipleQuestions" class="main-question-text">
-                {{ currentExercise.question }}
-              </div>
-              
-              <!-- Content/Instructions (separate from questions) -->
-              <div v-if="exerciseContentText" class="exercise-content-text" v-html="exerciseContentText"></div>
-              
-              <!-- Multiple Questions Section -->
-              <div v-if="hasMultipleQuestions" class="multiple-questions-container">
-                <div class="questions-header">
-                  <h4>{{ questionsHeaderText }}</h4>
-                  <div class="questions-count">{{ detectedQuestions.length }} вопросов</div>
-                </div>
-                
-                <div class="questions-list">
-                  <div 
-                    v-for="(questionItem, qIndex) in detectedQuestions" 
-                    :key="`question-${qIndex}-${exerciseIndex}`"
-                    class="question-answer-pair"
-                  >
-                    <div class="question-part">
-                      <div class="question-number">{{ qIndex + 1 }}.</div>
-                      <div class="question-text">{{ questionItem.question }}</div>
-                    </div>
-                    
-                    <div class="answer-part">
-                      <label :for="`answer-${qIndex}`" class="answer-label">Ответ:</label>
-                      <div class="answer-input-container">
-                        <textarea
-                          :id="`answer-${qIndex}`"
-                          :value="getMultipleAnswerValue(qIndex)"
-                          @input="updateMultipleAnswer(qIndex, $event)"
-                          :placeholder="`Введите ответ на вопрос ${qIndex + 1}...`"
-                          rows="2"
-                          class="answer-textarea compact"
-                          :disabled="showCorrectAnswer"
-                        />
-                        <div v-if="getMultipleAnswerValue(qIndex)" class="char-count">
-                          {{ getMultipleAnswerValue(qIndex).length }} символов
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Single Question (fallback) -->
-              <div v-else class="single-question">
-                <div class="answer-input">
-                  <label for="single-answer" class="answer-label">Ваш ответ:</label>
-                  <textarea
-                    id="single-answer"
-                    v-model="localUserAnswer"
-                    @input="updateAnswer"
-                    placeholder="Введите ваш ответ здесь..."
-                    rows="4"
-                    class="answer-textarea"
-                    :disabled="showCorrectAnswer"
-                  />
-                </div>
-              </div>
-              <div class="spacer"></div>
+        <!-- Dynamic Content Cards -->
+        <div 
+          v-for="(section, index) in lessonSections" 
+          :key="`section-${index}`"
+          class="content-card"
+        >
+          <h2 class="card-title">{{ section.title }}</h2>
+          <div v-if="section.type === 'text'" class="card-text" v-html="section.content"></div>
+          <div v-else-if="section.type === 'formula'" class="formula-box">
+            <p class="formula-text" v-html="section.content"></p>
+          </div>
+          <div v-else-if="section.type === 'examples'" class="examples-list">
+            <div 
+              v-for="(example, exIndex) in section.examples" 
+              :key="`example-${exIndex}`"
+              class="example-item"
+            >
+              <p class="example-text" v-html="example.text"></p>
+              <p class="example-note">{{ example.note }}</p>
             </div>
-
-            <div v-else-if="exerciseType === 'sentence-transformation'" class="exercise-type">
-              <div class="question-text">{{ currentExercise?.question }}</div>
-              <div class="answer-input">
-                <textarea
-                  v-model="localUserAnswer"
-                  @input="updateAnswer"
-                  placeholder="Напишите преобразованное предложение..."
-                  rows="4"
-                  class="answer-textarea"
-                  :disabled="showCorrectAnswer"
-                />
-              </div>
-              <div class="spacer"></div>
+          </div>
+          <div v-else-if="section.type === 'uses'" class="uses-list">
+            <div 
+              v-for="(use, useIndex) in section.uses" 
+              :key="`use-${useIndex}`"
+              class="use-item"
+            >
+              <span class="use-number">{{ useIndex + 1 }}</span>
+              <span class="use-text">{{ use }}</span>
             </div>
-
-            <div v-else-if="exerciseType === 'error-correction'" class="exercise-type">
-              <div class="question-text">Найдите и исправьте ошибку:</div>
-              <div class="statement-text" style="background: #fffbe6; border-left: 3px solid #f59e0b; padding: 10px; margin-bottom: 15px;">
-                "{{ currentExercise?.question }}"
-              </div>
-              <div class="answer-input">
-                <textarea
-                  v-model="localUserAnswer"
-                  @input="updateAnswer"
-                  placeholder="Напишите правильное предложение..."
-                  rows="4"
-                  class="answer-textarea"
-                  :disabled="showCorrectAnswer"
-                />
-              </div>
-              <div class="spacer"></div>
+          </div>
+          <div v-else-if="section.type === 'expressions'" class="expressions-grid">
+            <div class="expressions-column">
+              <h3 class="expressions-title">{{ section.column1?.title || 'Общие слова:' }}</h3>
+              <ul class="expressions-list">
+                <li v-for="(expr, exprIndex) in section.column1?.items" :key="`expr1-${exprIndex}`">
+                  • {{ expr }}
+                </li>
+              </ul>
             </div>
-
-            <div v-else-if="exerciseType === 'multiple-choice' || exerciseType === 'abc'" class="exercise-type">
-              <div class="question-text">{{ currentExercise?.question }}</div>
-              
-              <div v-if="allowsMultipleSelections" class="multiple-selection-hint">
-                💡 Можно выбрать несколько вариантов ({{ currentExercise?.correctAnswer?.length || 'несколько' }} правильных)
-              </div>
-              
-              <div class="options-list">
-                <div 
-                  v-for="(option, index) in exerciseOptions" 
-                  :key="`option-${index}-${exerciseIndex}`"
-                  class="option-item"
-                  :class="{ 
-                    selected: isOptionSelected(option, index), 
-                    disabled: showCorrectAnswer 
-                  }"
-                  @click="!showCorrectAnswer && toggleOption(option, index)"
-                >
-                  <input 
-                    :type="allowsMultipleSelections ? 'checkbox' : 'radio'"
-                    :name="allowsMultipleSelections ? `exercise-checkbox-${exerciseIndex}` : `exercise-radio-${exerciseIndex}`"
-                    :value="option"
-                    :checked="isOptionSelected(option, index)"
-                    @change="handleOptionChange(option, index, $event)"
-                    :disabled="showCorrectAnswer"
-                    class="option-input"
-                  />
-                  <div class="option-text">{{ option }}</div>
-                </div>
-              </div>
-              <div class="spacer"></div>
+            <div class="expressions-column">
+              <h3 class="expressions-title">{{ section.column2?.title || 'Периоды времени:' }}</h3>
+              <ul class="expressions-list">
+                <li v-for="(expr, exprIndex) in section.column2?.items" :key="`expr2-${exprIndex}`">
+                  • {{ expr }}
+                </li>
+              </ul>
             </div>
-
-            <div v-else-if="exerciseType === 'fill-blank'" class="exercise-type">
-              <div class="question-text">{{ currentExercise?.question }}</div>
-              <div v-if="currentExercise?.template" class="fill-blank-template">
-                <div v-html="renderFillBlankTemplate()" />
-              </div>
-              <div class="fill-blank-inputs">
-                <div 
-                  v-for="(blank, index) in blankCount" 
-                  :key="`blank-${index}-${exerciseIndex}`"
-                  class="blank-input-group"
-                >
-                  <label :for="`blank-input-${index}`" class="blank-label">
-                    Пропуск {{ index + 1 }}:
-                  </label>
-                  <input
-                    :id="`blank-input-${index}`"
-                    type="text"
-                    class="blank-input"
-                    :value="getFillBlankValue(index)"
-                    @input="handleFillBlankInput(index, $event)"
-                    :placeholder="`Введите ответ ${index + 1}`"
-                    autocomplete="off"
-                    :disabled="showCorrectAnswer"
-                  />
-                  <div v-if="getFillBlankValue(index)" class="input-preview">
-                    Введено: "{{ getFillBlankValue(index) }}"
-                  </div>
-                </div>
-              </div>
-              <div class="spacer"></div>
-            </div>
-
-            <div v-else-if="exerciseType === 'true-false'" class="exercise-type">
-              <div class="question-text">{{ currentExercise?.question }}</div>
-              <div v-if="currentExercise?.statement" class="statement-text">
-                {{ currentExercise.statement }}
-              </div>
-              <div class="true-false-options">
-                <div 
-                  class="tf-option"
-                  :class="{ selected: localUserAnswer === 'true', disabled: showCorrectAnswer }"
-                  @click="!showCorrectAnswer && selectTrueFalse('true')"
-                  tabindex="0"
-                  @keypress.enter="!showCorrectAnswer && selectTrueFalse('true')"
-                  @keypress.space.prevent="!showCorrectAnswer && selectTrueFalse('true')"
-                >
-                  <input 
-                    type="radio" 
-                    name="true-false"
-                    value="true"
-                    v-model="localUserAnswer"
-                    @change="updateAnswer"
-                    :disabled="showCorrectAnswer"
-                  />
-                  <span>Правда</span>
-                </div>
-                <div 
-                  class="tf-option"
-                  :class="{ selected: localUserAnswer === 'false', disabled: showCorrectAnswer }"
-                  @click="!showCorrectAnswer && selectTrueFalse('false')"
-                  tabindex="0"
-                  @keypress.enter="!showCorrectAnswer && selectTrueFalse('false')"
-                  @keypress.space.prevent="!showCorrectAnswer && selectTrueFalse('false')"
-                >
-                  <input 
-                    type="radio" 
-                    name="true-false"
-                    value="false"
-                    v-model="localUserAnswer"
-                    @change="updateAnswer"
-                    :disabled="showCorrectAnswer"
-                  />
-                  <span>Ложь</span>
-                </div>
-              </div>
-              <div class="spacer"></div>
-            </div>
-
-            <div v-else-if="exerciseType === 'matching'" class="exercise-type">
-              <div class="question-text">{{ currentExercise?.question }}</div>
-              
-              <div class="matching-container">
-                <div class="matching-side left-side">
-                  <h4>Соедините:</h4>
-                  <div 
-                    v-for="(item, index) in leftItems" 
-                    :key="`left-${index}-${exerciseIndex}-${refreshKey}`"
-                    class="matching-item"
-                    :class="{ 
-                      selected: isItemSelected('left', index),
-                      matched: isItemMatched('left', index),
-                      disabled: showCorrectAnswer
-                    }"
-                    @click="!showCorrectAnswer && handleMatchingClick('left', index)"
-                    tabindex="0"
-                    @keypress.enter="!showCorrectAnswer && handleMatchingClick('left', index)"
-                    @keypress.space.prevent="!showCorrectAnswer && handleMatchingClick('left', index)"
-                    :aria-label="`Left item ${index + 1}: ${item}`"
-                  >
-                    <span class="item-content">{{ item }}</span>
-                    <span v-if="isItemSelected('left', index)" class="selection-indicator">👆</span>
-                    <span v-if="isItemMatched('left', index)" class="match-indicator">✓</span>
-                  </div>
-                </div>
-                
-                <div class="matching-side right-side">
-                  <h4>С:</h4>
-                  <div 
-                    v-for="(item, index) in rightItems" 
-                    :key="`right-${index}-${exerciseIndex}-${refreshKey}`"
-                    class="matching-item"
-                    :class="{ 
-                      selected: isItemSelected('right', index),
-                      matched: isItemMatched('right', index),
-                      disabled: showCorrectAnswer
-                    }"
-                    @click="!showCorrectAnswer && handleMatchingClick('right', index)"
-                    tabindex="0"
-                    @keypress.enter="!showCorrectAnswer && handleMatchingClick('right', index)"
-                    @keypress.space.prevent="!showCorrectAnswer && handleMatchingClick('right', index)"
-                    :aria-label="`Right item ${index + 1}: ${item}`"
-                  >
-                    <span class="item-content">{{ item }}</span>
-                    <span v-if="isItemSelected('right', index)" class="selection-indicator">👆</span>
-                    <span v-if="isItemMatched('right', index)" class="match-indicator">✓</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div v-if="matchingPairs && matchingPairs.length > 0" class="matching-pairs">
-                <h4>Соединения ({{ matchingPairs.length }}):</h4>
-                <div class="pairs-list">
-                  <div 
-                    v-for="(pair, index) in matchingPairs" 
-                    :key="`pair-${index}-${exerciseIndex}-${refreshKey}`"
-                    class="pair-item"
-                    :class="{ 'pair-correct': isPairCorrect(pair) }"
-                  >
-                    <span class="pair-text">
-                      <strong>{{ getLeftItemText(pair.leftIndex) }}</strong> 
-                      <span class="pair-arrow">↔</span> 
-                      <strong>{{ getRightItemText(pair.rightIndex, pair.rightDisplayIndex) }}</strong>
-                    </span>
-                    <button 
-                      v-if="!showCorrectAnswer"
-                      @click="removePair(index)" 
-                      class="remove-pair"
-                      type="button"
-                      :aria-label="`Удалить связь ${index + 1}`"
-                      title="Удалить связь"
-                    >×</button>
-                  </div>
-                </div>
-              </div>
-              
-              <div class="matching-instructions">
-                <div class="instruction-main">
-                  <span class="instruction-icon">💡</span>
-                  <strong>Инструкция:</strong> Нажмите на элемент слева, затем на соответствующий элемент справа для создания связи.
-                </div>
-                
-                <div v-if="selectedMatchingItem" class="current-selection">
-                  <span class="selection-icon">🎯</span>
-                  <span>Выбран элемент: <strong>{{ selectedMatchingItem.side === 'left' ? 'слева' : 'справа' }}</strong></span>
-                  <span class="selected-text">"{{ getSelectedItemText() }}"</span>
-                  <button 
-                    @click="clearSelection" 
-                    class="clear-selection"
-                    title="Очистить выбор"
-                  >×</button>
-                </div>
-                
-                <div v-if="matchingPairs.length === 0" class="no-pairs-message">
-                  <span class="warning-icon">⚠️</span>
-                  Создайте хотя бы одну связь для продолжения
-                </div>
-                
-                <div v-if="matchingPairs.length > 0 && matchingPairs.length < leftItems.length" class="progress-message">
-                  <span class="progress-icon">📊</span>
-                  Создано {{ matchingPairs.length }} из {{ leftItems.length }} связей
-                </div>
-                
-                <div v-if="matchingPairs.length === leftItems.length" class="complete-message">
-                  <span class="complete-icon">✅</span>
-                  Все связи созданы! Можете проверить ответ.
-                </div>
-              </div>
-              
-              <div class="spacer"></div>
-            </div>
-
-            <div v-else-if="exerciseType === 'ordering'" class="exercise-type">
-              <div class="question-text">{{ currentExercise?.question }}</div>
-              <div class="ordering-instructions">
-                💡 <strong>Инструкция:</strong> Перетащите элементы в правильном порядке или используйте кнопки ↑↓ для перемещения
-              </div>
-              <div class="ordering-container">
-                <div 
-                  v-for="(item, index) in localOrderingItems" 
-                  :key="`ordering-${item.id || item.text || index}-${exerciseIndex}`"
-                  class="ordering-item"
-                  :class="{ 
-                    dragging: draggedOrderingItem === index,
-                    disabled: showCorrectAnswer,
-                    'drop-target': dropTargetIndex === index && draggedOrderingItem !== index
-                  }"
-                  :draggable="!showCorrectAnswer"
-                  @dragstart="startOrderingDrag($event, index)"
-                  @dragend="endOrderingDrag"
-                  @dragover.prevent="handleOrderingDragOver($event, index)"
-                  @dragenter.prevent="handleOrderingDragEnter(index)"
-                  @dragleave="handleOrderingDragLeave"
-                  @drop.prevent="handleOrderingDrop($event, index)"
-                  tabindex="0"
-                >
-                  <div class="ordering-item-content">
-                    <div class="drag-handle" :class="{ disabled: showCorrectAnswer }">≡</div>
-                    <div class="item-text">{{ getOrderingItemText(item) }}</div>
-                    <div class="item-number">{{ index + 1 }}</div>
-                    <div v-if="!showCorrectAnswer" class="ordering-controls">
-                      <button 
-                        v-if="index > 0"
-                        @click="moveOrderingItem(index, index - 1)"
-                        class="move-btn move-up"
-                        :aria-label="`Переместить ${getOrderingItemText(item)} вверх`"
-                        title="Переместить вверх"
-                      >↑</button>
-                      <button 
-                        v-if="index < localOrderingItems.length - 1"
-                        @click="moveOrderingItem(index, index + 1)"
-                        class="move-btn move-down"
-                        :aria-label="`Переместить ${getOrderingItemText(item)} вниз`"
-                        title="Переместить вниз"
-                      >↓</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="spacer"></div>
-            </div>
-
-            <div v-else-if="exerciseType === 'drag-drop'" class="exercise-type">
-              <div class="question-text">{{ currentExercise?.question }}</div>
-              <div v-if="availableDragItems.length > 0 && dropZones.length > 0" class="drag-drop-container">
-                <div class="drag-items">
-                  <h4>Перетащите элементы:</h4>
-                  <div 
-                    v-for="(item, index) in availableDragItems" 
-                    :key="`drag-${index}-${exerciseIndex}`"
-                    class="drag-item"
-                    :class="{ dragging: draggedDragItem === item, disabled: showCorrectAnswer }"
-                    :draggable="!showCorrectAnswer"
-                    @dragstart="startDragItem(item, $event)"
-                    @dragend="endDragItem"
-                    @touchstart="handleTouchStart($event, item)"
-                    @touchmove.prevent="handleTouchMove"
-                    @touchend="handleTouchEnd"
-                    tabindex="0"
-                    :aria-label="`Перетащить ${getDragItemText(item)}`"
-                  >
-                    {{ getDragItemText(item) }}
-                  </div>
-                </div>
-                <div class="drop-zones">
-                  <div 
-                    v-for="(zone, index) in dropZones" 
-                    :key="`zone-${index}-${exerciseIndex}`"
-                    class="drop-zone"
-                    :class="{ 'drag-over': dropOverZone === getZoneId(zone), disabled: showCorrectAnswer }"
-                    @dragover.prevent="dragOverZone(getZoneId(zone), $event)"
-                    @dragleave="dragLeaveZone($event)"
-                    @drop="dropInZone(getZoneId(zone), $event)"
-                    :aria-label="`Зона ${zone.label}`"
-                  >
-                    <div class="zone-label">{{ zone.label }}</div>
-                    <div class="zone-items">
-                      <div 
-                        v-for="(item, itemIndex) in getDropZoneItems(getZoneId(zone))" 
-                        :key="`dropped-${itemIndex}-${exerciseIndex}`"
-                        class="dropped-item"
-                        @click="!showCorrectAnswer && removeDroppedItem(getZoneId(zone), itemIndex)"
-                        tabindex="0"
-                        @keypress.enter="!showCorrectAnswer && removeDroppedItem(getZoneId(zone), itemIndex)"
-                        @keypress.space.prevent="!showCorrectAnswer && removeDroppedItem(getZoneId(zone), itemIndex)"
-                        :aria-label="`Удалить ${getDragItemText(item)} из ${zone.label}`"
-                      >
-                        {{ getDragItemText(item) }}
-                        <span v-if="!showCorrectAnswer" class="remove-dropped">×</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div v-else class="no-dragdrop-data">
-                <p>⚠️ Данные для перетаскивания не загружены</p>
-              </div>
-              <div class="spacer"></div>
-            </div>
-
-            <div v-if="confirmation" class="confirmation-section">
-              <div v-if="isOnSecondChance && !showCorrectAnswer" class="second-chance-indicator">
-                <div class="attempt-counter">
-                  <span class="attempt-text">Попытка {{ attemptCount }} из {{ maxAttempts }}</span>
-                  <div class="attempt-dots">
-                    <div 
-                      v-for="n in maxAttempts" 
-                      :key="n"
-                      class="attempt-dot"
-                      :class="{ 
-                        filled: n <= attemptCount,
-                        current: n === attemptCount + 1 && !showCorrectAnswer
-                      }"
-                      :aria-label="`Попытка ${n}`"
-                    />
-                  </div>
-                </div>
-              </div>
-              <div 
-                class="confirmation-message" 
-                :class="{ 
-                  correct: answerWasCorrect, 
-                  incorrect: !answerWasCorrect && !showCorrectAnswer,
-                  'show-answer': showCorrectAnswer
-                }"
-                role="alert"
-                :aria-live="answerWasCorrect ? 'polite' : 'assertive'"
-              >
-                {{ confirmation }}
-              </div>
-              <div v-if="showCorrectAnswer && correctAnswerText" class="correct-answer-display">
-                <div class="correct-answer-label">💡 Правильный ответ:</div>
-                <div class="correct-answer-text">{{ correctAnswerText }}</div>
-              </div>
-            </div>
-
-            <div v-if="(currentHint || smartHint) && !showCorrectAnswer" class="hints-section">
-              <div v-if="currentHint" class="hint basic-hint">
-                <div class="hint-icon">💡</div>
-                <div class="hint-text">{{ currentHint }}</div>
-              </div>
-              <div v-if="smartHint" class="hint smart-hint">
-                <div class="hint-icon">🤖</div>
-                <div class="hint-text">{{ smartHint }}</div>
-                <button 
-                  @click="$emit('clear-hint')" 
-                  class="clear-hint-btn"
-                  aria-label="Очистить подсказку"
-                >×</button>
-              </div>
-            </div>
-
           </div>
         </div>
       </div>
     </div>
-
-    <div v-else-if="isQuizStep" class="quiz-content">
-      <div class="quiz-header">
-        <h3>{{ currentQuiz?.title || 'Вопрос' }}</h3>
-        <div class="quiz-counter">
-          {{ quizIndex + 1 }} из {{ totalQuizzes }}
-        </div>
-      </div>
-
-      <div class="quiz-body">
-        <div class="quiz-content-scroll">
-          <div class="scroll-content-wrapper">
+    
+    <!-- Right Side - Interactive Panel -->
+    <div class="interactive-panel">
+      <div class="interactive-wrapper">
+        <!-- Exercise Header with Navigation -->
+        <div class="exercise-header">
+          <div class="exercise-info">
+            <div class="exercise-badges">
+              <span class="exercise-number" :style="{ backgroundColor: currentExercise?.color || 'var(--lesson-purple)' }">
+                {{ currentExerciseIndex + 1 }}
+              </span>
+              <span class="exercise-type" :style="{ backgroundColor: currentExercise?.lightColor || 'var(--lesson-purple-light)' }">
+                Упражнение {{ currentExerciseIndex + 1 }} из {{ exercises.length }}
+              </span>
+            </div>
+            <h2 class="exercise-title">{{ currentExercise?.title || 'Упражнение' }}</h2>
+            <p class="exercise-description">{{ currentExercise?.description || 'Выполните задание' }}</p>
+          </div>
+          
+          <!-- Navigation Buttons -->
+          <div class="exercise-navigation">
+            <button
+              @click="handlePrevious"
+              :disabled="currentExerciseIndex === 0"
+              class="nav-button nav-prev"
+            >
+              <ChevronLeftIcon class="nav-icon" />
+              Назад
+            </button>
             
-            <div class="quiz-question">{{ currentQuiz?.question }}</div>
+            <div class="progress-dots">
+              <button
+                v-for="(_, index) in exercises"
+                :key="`dot-${index}`"
+                @click="setCurrentExerciseIndex(index)"
+                class="progress-dot"
+                :class="{ active: index === currentExerciseIndex }"
+                :style="{
+                  backgroundColor: index === currentExerciseIndex 
+                    ? (currentExercise?.color || 'var(--lesson-purple)') 
+                    : 'var(--muted-foreground)'
+                }"
+              />
+            </div>
+            
+            <button
+              @click="handleNext"
+              :disabled="currentExerciseIndex === exercises.length - 1"
+              class="nav-button nav-next"
+              :style="currentExerciseIndex === exercises.length - 1 ? {} : {
+                borderColor: currentExercise?.color || 'var(--lesson-purple)',
+                color: currentExercise?.color || 'var(--lesson-purple)'
+              }"
+            >
+              Далее
+              <ChevronRightIcon class="nav-icon" />
+            </button>
+          </div>
+        </div>
 
-            <div class="quiz-options">
-              <div 
-                v-for="(option, index) in quizOptions" 
-                :key="`quiz-option-${index}-${quizIndex}`"
-                class="quiz-option"
-                :class="{ selected: localUserAnswer === option, disabled: showCorrectAnswer }"
-                @click="!showCorrectAnswer && selectQuizOption(option)"
-                tabindex="0"
-                @keypress.enter="!showCorrectAnswer && selectQuizOption(option)"
-                @keypress.space.prevent="!showCorrectAnswer && selectQuizOption(option)"
-              >
-                <input 
-                  type="radio" 
-                  :name="'quiz-' + quizIndex"
-                  :value="option"
-                  v-model="localUserAnswer"
-                  @change="updateAnswer"
-                  :disabled="showCorrectAnswer"
-                  class="option-radio"
-                />
-                <div class="option-text">{{ option }}</div>
+        <!-- Current Exercise Content -->
+        <div class="exercise-content">
+          <!-- Reading Comprehension -->
+          <div v-if="currentExercise?.id === 'reading'" class="exercise-type-content">
+            <!-- Instructions -->
+            <div class="instructions-card">
+              <div class="instructions-header">
+                <h3 class="instructions-title">Понимание прочитанного</h3>
+                <p class="instructions-text">
+                  Прочитайте текст ниже и ответьте на вопросы, которые следуют.
+                </p>
+              </div>
+              <div class="instructions-box">
+                <h4 class="instructions-subtitle">Инструкции:</h4>
+                <ul class="instructions-list">
+                  <li>• Внимательно прочитайте каждый вопрос</li>
+                  <li>• Проверьте требуемый тип ответа (слово, предложение или число)</li>
+                  <li>• Дайте подходящий ответ</li>
+                  <li>• Нажмите "Проверить ответы" когда закончите</li>
+                </ul>
               </div>
             </div>
 
-            <div v-if="confirmation" class="confirmation-section">
-              <div v-if="isOnSecondChance && !showCorrectAnswer" class="second-chance-indicator">
-                <div class="attempt-counter">
-                  <span class="attempt-text">Попытка {{ attemptCount }} из {{ maxAttempts }}</span>
-                  <div class="attempt-dots">
-                    <div 
-                      v-for="n in maxAttempts" 
-                      :key="n"
-                      class="attempt-dot"
-                      :class="{ 
-                        filled: n <= attemptCount,
-                        current: n === attemptCount + 1 && !showCorrectAnswer
-                      }"
-                      :aria-label="`Попытка ${n}`"
-                    />
-                  </div>
+            <!-- Reading Text -->
+            <div class="reading-text-card">
+              <h3 class="reading-title">Текст для чтения</h3>
+              <div class="reading-content">
+                <p class="reading-paragraph">{{ currentExerciseData?.readingText || 'Текст загружается...' }}</p>
+              </div>
+            </div>
+
+            <!-- Questions -->
+            <div class="questions-section">
+              <h3 class="questions-title">Вопросы</h3>
+              <div 
+                v-for="(question, qIndex) in currentQuestions" 
+                :key="`question-${qIndex}`"
+                class="question-item"
+              >
+                <div class="question-header">
+                  <span class="question-number" :style="{ backgroundColor: getTypeColor(question.type) }">
+                    {{ qIndex + 1 }}
+                  </span>
+                  <span class="question-type" :style="{ backgroundColor: getTypeBgColor(question.type) }">
+                    {{ getTypeLabel(question.type) }}
+                  </span>
+                </div>
+                <p class="question-text">{{ question.question }}</p>
+                
+                <textarea
+                  v-if="question.type === 'sentence'"
+                  v-model="readingAnswers[question.id]"
+                  :placeholder="question.placeholder"
+                  class="answer-textarea"
+                  :style="{ '--tw-ring-color': getTypeColor(question.type) }"
+                  rows="3"
+                  :disabled="readingSubmitted"
+                />
+                <input
+                  v-else
+                  v-model="readingAnswers[question.id]"
+                  :placeholder="question.placeholder"
+                  :type="question.type === 'number' ? 'number' : 'text'"
+                  class="answer-input"
+                  :style="{ '--tw-ring-color': getTypeColor(question.type) }"
+                  :disabled="readingSubmitted"
+                />
+              </div>
+            </div>
+
+            <!-- Submit/Reset Buttons -->
+            <div class="exercise-actions">
+              <button 
+                v-if="!readingSubmitted"
+                @click="checkReadingAnswers"
+                class="action-button submit-button"
+                :disabled="!hasReadingAnswers"
+                :style="{ backgroundColor: 'var(--lesson-purple)', borderColor: 'var(--lesson-purple)' }"
+              >
+                <CheckCircleIcon class="action-icon" />
+                Проверить ответы
+              </button>
+              <button 
+                v-else
+                @click="resetReadingAnswers"
+                class="action-button reset-button"
+                :style="{ borderColor: 'var(--lesson-purple)', color: 'var(--lesson-purple)' }"
+              >
+                <RotateCcwIcon class="action-icon" />
+                Попробовать снова
+              </button>
+            </div>
+
+            <!-- Results -->
+            <div v-if="readingSubmitted" class="results-card">
+              <div class="results-header">
+                <h3 class="results-title">Результаты</h3>
+                <div class="results-score">
+                  {{ readingScore.correct }}/{{ readingScore.total }}
+                </div>
+                <p class="results-message">
+                  {{ readingScore.correct === readingScore.total 
+                    ? "Отлично! Все правильно!" 
+                    : `Хорошая попытка! Вы ответили правильно на ${readingScore.correct} из ${readingScore.total} вопросов.` }}
+                </p>
+              </div>
+              
+              <div class="results-details">
+                <div 
+                  v-for="question in currentQuestions" 
+                  :key="`result-${question.id}`"
+                  class="result-item"
+                  :class="{ 
+                    correct: isReadingAnswerCorrect(question), 
+                    incorrect: !isReadingAnswerCorrect(question) 
+                  }"
+                >
+                  <p class="result-question">Вопрос {{ question.id }}</p>
+                  <p class="result-answer" :class="{ correct: isReadingAnswerCorrect(question), incorrect: !isReadingAnswerCorrect(question) }">
+                    Ваш ответ: {{ readingAnswers[question.id] || '(Нет ответа)' }}
+                  </p>
+                  <p v-if="!isReadingAnswerCorrect(question)" class="result-correct">
+                    Правильный ответ: {{ question.correctAnswer }}
+                  </p>
                 </div>
               </div>
-              <div 
-                class="confirmation-message" 
-                :class="{ 
-                  correct: answerWasCorrect, 
-                  incorrect: !answerWasCorrect && !showCorrectAnswer,
-                  'show-answer': showCorrectAnswer
-                }"
-                role="alert"
-                :aria-live="answerWasCorrect ? 'polite' : 'assertive'"
-              >
-                {{ confirmation }}
+            </div>
+          </div>
+
+          <!-- Multiple Choice -->
+          <div v-else-if="currentExercise?.id === 'multiple-choice'" class="exercise-type-content">
+            <!-- Instructions -->
+            <div class="instructions-card">
+              <div class="instructions-header">
+                <h3 class="instructions-title">Множественный выбор</h3>
+                <p class="instructions-text">
+                  Выберите лучший ответ для каждого вопроса.
+                </p>
               </div>
-              <div v-if="showCorrectAnswer && correctAnswerText" class="correct-answer-display">
-                <div class="correct-answer-label">💡 Правильный ответ:</div>
-                <div class="correct-answer-text">{{ correctAnswerText }}</div>
+              <div class="instructions-box">
+                <h4 class="instructions-subtitle">Инструкции:</h4>
+                <ul class="instructions-list">
+                  <li>• Внимательно прочитайте каждый вопрос</li>
+                  <li>• Выберите лучший ответ из предложенных вариантов</li>
+                  <li>• Только один ответ правильный для каждого вопроса</li>
+                  <li>• Нажмите "Проверить ответы" когда закончите</li>
+                </ul>
               </div>
             </div>
-            
-            <div class="spacer"></div>
 
+            <!-- Questions -->
+            <div class="questions-section">
+              <h3 class="questions-title">Вопросы</h3>
+              <div 
+                v-for="(question, qIndex) in currentMCQuestions" 
+                :key="`mc-question-${qIndex}`"
+                class="question-card"
+              >
+                <div class="question-header">
+                  <span class="question-number" :style="{ backgroundColor: 'var(--lesson-green)' }">
+                    {{ qIndex + 1 }}
+                  </span>
+                  <span class="question-type" :style="{ backgroundColor: 'var(--lesson-green-light)' }">
+                    Множественный выбор
+                  </span>
+                </div>
+                
+                <p class="question-text">{{ question.question }}</p>
+                
+                <div class="options-list">
+                  <button
+                    v-for="(option, optIndex) in question.options"
+                    :key="`option-${optIndex}`"
+                    @click="!mcSubmitted && selectMCAnswer(question.id, getOptionLetter(optIndex))"
+                    :disabled="mcSubmitted"
+                    class="option-button"
+                    :class="{ 
+                      selected: mcAnswers[question.id] === getOptionLetter(optIndex),
+                      correct: mcSubmitted && getOptionLetter(optIndex) === question.correctAnswer,
+                      incorrect: mcSubmitted && mcAnswers[question.id] === getOptionLetter(optIndex) && getOptionLetter(optIndex) !== question.correctAnswer
+                    }"
+                  >
+                    <span class="option-text">{{ option }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Submit/Reset Buttons -->
+            <div class="exercise-actions">
+              <button 
+                v-if="!mcSubmitted"
+                @click="checkMCAnswers"
+                class="action-button submit-button"
+                :disabled="!hasMCAnswers"
+                :style="{ backgroundColor: 'var(--lesson-green)', borderColor: 'var(--lesson-green)' }"
+              >
+                <CheckCircleIcon class="action-icon" />
+                Проверить ответы
+              </button>
+              <button 
+                v-else
+                @click="resetMCAnswers"
+                class="action-button reset-button"
+                :style="{ borderColor: 'var(--lesson-green)', color: 'var(--lesson-green)' }"
+              >
+                <RotateCcwIcon class="action-icon" />
+                Попробовать снова
+              </button>
+            </div>
+
+            <!-- Results -->
+            <div v-if="mcSubmitted" class="results-card">
+              <div class="results-header">
+                <h3 class="results-title">Результаты</h3>
+                <div class="results-score">
+                  {{ mcScore.correct }}/{{ mcScore.total }}
+                </div>
+                <p class="results-message">
+                  {{ mcScore.correct === mcScore.total 
+                    ? "Отлично! Все правильно!" 
+                    : `Хорошая попытка! Вы ответили правильно на ${mcScore.correct} из ${mcScore.total} вопросов.` }}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Short Answer -->
+          <div v-else-if="currentExercise?.id === 'short-answer'" class="exercise-type-content">
+            <!-- Instructions -->
+            <div class="instructions-card">
+              <div class="instructions-header">
+                <h3 class="instructions-title">Краткий ответ</h3>
+                <p class="instructions-text">
+                  Дайте краткие, точные ответы на каждый вопрос.
+                </p>
+              </div>
+              <div class="instructions-box">
+                <h4 class="instructions-subtitle">Инструкции:</h4>
+                <ul class="instructions-list">
+                  <li>• Пишите короткие, точные ответы</li>
+                  <li>• Внимательно проверяйте правописание</li>
+                  <li>• Некоторые вопросы могут требовать несколько слов</li>
+                  <li>• Используйте строчные буквы, если не требуются заглавные</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Questions -->
+            <div class="questions-section">
+              <h3 class="questions-title">Вопросы</h3>
+              <div 
+                v-for="(question, qIndex) in currentSAQuestions" 
+                :key="`sa-question-${qIndex}`"
+                class="question-card"
+              >
+                <div class="question-header">
+                  <span class="question-number" :style="{ backgroundColor: 'var(--lesson-blue)' }">
+                    {{ qIndex + 1 }}
+                  </span>
+                  <span class="question-type" :style="{ backgroundColor: 'var(--lesson-blue-light)' }">
+                    Краткий ответ
+                  </span>
+                </div>
+                
+                <p class="question-text">{{ question.question }}</p>
+                
+                <input
+                  v-model="saAnswers[question.id]"
+                  :placeholder="question.placeholder"
+                  class="answer-input"
+                  :style="{ '--tw-ring-color': 'var(--lesson-blue)' }"
+                  :disabled="saSubmitted"
+                />
+                
+                <div v-if="saSubmitted" class="answer-feedback" :class="{ 
+                  correct: isSAAnswerCorrect(question), 
+                  incorrect: !isSAAnswerCorrect(question) 
+                }">
+                  <p class="feedback-answer">Ваш ответ: {{ saAnswers[question.id] || '(Нет ответа)' }}</p>
+                  <p v-if="!isSAAnswerCorrect(question)" class="feedback-correct">
+                    Правильный ответ: {{ question.correctAnswer }}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Submit/Reset Buttons -->
+            <div class="exercise-actions">
+              <button 
+                v-if="!saSubmitted"
+                @click="checkSAAnswers"
+                class="action-button submit-button"
+                :disabled="!hasSAAnswers"
+                :style="{ backgroundColor: 'var(--lesson-blue)', borderColor: 'var(--lesson-blue)' }"
+              >
+                <CheckCircleIcon class="action-icon" />
+                Проверить ответы
+              </button>
+              <button 
+                v-else
+                @click="resetSAAnswers"
+                class="action-button reset-button"
+                :style="{ borderColor: 'var(--lesson-blue)', color: 'var(--lesson-blue)' }"
+              >
+                <RotateCcwIcon class="action-icon" />
+                Попробовать снова
+              </button>
+            </div>
+
+            <!-- Results -->
+            <div v-if="saSubmitted" class="results-card">
+              <div class="results-header">
+                <h3 class="results-title">Результаты</h3>
+                <div class="results-score">
+                  {{ saScore.correct }}/{{ saScore.total }}
+                </div>
+                <p class="results-message">
+                  {{ saScore.correct === saScore.total 
+                    ? "Отлично! Все правильно!" 
+                    : `Хорошая попытка! Вы ответили правильно на ${saScore.correct} из ${saScore.total} вопросов.` }}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Other Exercise Types (Matching, Fill Blanks, Structure) can be added here -->
+          <div v-else class="exercise-placeholder">
+            <div class="placeholder-content">
+              <h3>{{ currentExercise?.title || 'Упражнение' }}</h3>
+              <p>{{ currentExercise?.description || 'Этот тип упражнения скоро будет доступен.' }}</p>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-
-    <div v-else class="no-content">
-      <div class="no-content-icon">📝</div>
-      <h4>Нет интерактивного содержимого</h4>
-      <p>Для этого шага нет упражнений или вопросов</p>
-    </div>
-
-    <div v-if="isExerciseStep || isQuizStep" class="interactive-actions">
-      <template v-if="isExerciseStep">
-        <button 
-          v-if="!confirmation && attemptCount === 0"
-          @click="$emit('show-hint')" 
-          class="interactive-nav-btn hint-btn"
-          aria-label="Показать подсказку"
-        >
-          💡 Подсказка
-        </button>
-        
-        <button 
-          v-if="!confirmation || (isOnSecondChance && !showCorrectAnswer)"
-          @click="$emit('submit')"
-          :disabled="!canSubmitAnswer"
-          class="interactive-nav-btn submit-btn"
-          :class="{ disabled: !canSubmitAnswer, 'second-chance': isOnSecondChance }"
-          :aria-label="isOnSecondChance ? 'Попробовать ещё раз' : 'Проверить ответ'"
-        >
-          {{ isOnSecondChance ? 'Попробовать ещё раз' : 'Проверить' }}
-          <span v-if="isOnSecondChance" class="second-chance-icon">🔄</span>
-        </button>
-        
-        <button 
-          v-if="confirmation && (answerWasCorrect || showCorrectAnswer)"
-          @click="$emit('next-exercise')"
-          class="interactive-nav-btn next-btn"
-          :aria-label="isLastExercise ? 'Завершить упражнения' : 'Следующее упражнение'"
-        >
-          {{ isLastExercise ? 'Завершить' : 'Далее' }}
-          <span class="next-icon">→</span>
-        </button>
-      </template>
-
-      <template v-else-if="isQuizStep">
-        <button 
-          v-if="!confirmation || (isOnSecondChance && !showCorrectAnswer)"
-          @click="$emit('submit')"
-          :disabled="!canSubmitAnswer"
-          class="interactive-nav-btn submit-btn"
-          :class="{ disabled: !canSubmitAnswer, 'second-chance': isOnSecondChance }"
-          :aria-label="isOnSecondChance ? 'Попробовать ещё раз' : 'Ответить на вопрос'"
-        >
-          {{ isOnSecondChance ? 'Попробовать ещё раз' : 'Ответить' }}
-          <span v-if="isOnSecondChance" class="second-chance-icon">🔄</span>
-        </button>
-        
-        <button 
-          v-if="confirmation && (answerWasCorrect || showCorrectAnswer)"
-          @click="$emit('next-quiz')"
-          class="interactive-nav-btn next-btn"
-          :aria-label="isLastQuiz ? 'Завершить викторину' : 'Следующий вопрос'"
-        ></button>
-        <button 
-          v-if="confirmation && (answerWasCorrect || showCorrectAnswer)"
-          @click="$emit('next-quiz')"
-          class="interactive-nav-btn next-btn"
-          :aria-label="isLastQuiz ? 'Завершить викторину' : 'Следующий вопрос'"
-        >
-          {{ isLastQuiz ? 'Завершить' : 'Следующий вопрос' }}
-          <span class="next-icon">→</span>
-        </button>
-      </template>
     </div>
   </div>
 </template>
+
 <script>
-import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
+
+// Mock icons - replace with your actual icon imports
+const ChevronLeftIcon = { template: '<span>←</span>' }
+const ChevronRightIcon = { template: '<span>→</span>' }
+const CheckCircleIcon = { template: '<span>✓</span>' }
+const RotateCcwIcon = { template: '<span>↻</span>' }
 
 export default {
-  name: 'InteractivePanel',
-  
-  props: {
-    currentStep: Object,
-    currentExercise: Object,
-    currentQuiz: Object,
-    exerciseIndex: { type: Number, default: 0 },
-    quizIndex: { type: Number, default: 0 },
-    totalExercises: { type: Number, default: 0 },
-    totalQuizzes: { type: Number, default: 0 },
-    userAnswer: [String, Array, Object],
-    confirmation: String,
-    answerWasCorrect: Boolean,
-    currentHint: String,
-    smartHint: String,
-    fillBlankAnswers: { type: Array, default: () => [] },
-    matchingPairs: { type: Array, default: () => [] },
-    selectedMatchingItem: Object,
-    orderingItems: { type: Array, default: () => [] },
-    dragDropPlacements: { type: Object, default: () => ({}) },
-    draggedItem: Number,
-    dropTarget: Number,
-    availableDragItems: { type: Array, default: () => [] },
-    dropZones: { type: Array, default: () => [] },
-    attemptCount: { type: Number, default: 0 },
-    maxAttempts: { type: Number, default: 2 },
-    isOnSecondChance: { type: Boolean, default: false },
-    showCorrectAnswer: { type: Boolean, default: false },
-    correctAnswerText: { type: String, default: '' }
+  name: 'PresentPerfectLesson',
+  components: {
+    ChevronLeftIcon,
+    ChevronRightIcon,
+    CheckCircleIcon,
+    RotateCcwIcon
   },
-  
-  emits: [
-    'answer-changed', 'fill-blank-updated', 'submit', 'next-exercise', 'next-quiz',
-    'show-hint', 'clear-hint', 'matching-item-selected', 'remove-matching-pair',
-    'drag-start', 'drag-drop', 'drag-item-start', 'drag-over-zone',
-    'drag-leave-zone', 'drop-in-zone', 'remove-dropped-item'
-  ],
-  
-  setup(props, { emit }) {
+  props: {
+    lessonId: {
+      type: [String, Number],
+      default: null
+    },
+    stepData: {
+      type: Object,
+      default: null
+    }
+  },
+  setup(props) {
     // ========================
     // REACTIVE STATE
     // ========================
-    const localUserAnswer = ref('')
-    const localFillBlankAnswers = ref([])
-    const localMultipleAnswers = ref([])
-    const draggedDragItem = ref(null)
-    const dropOverZone = ref(null)
-    const localOrderingItems = ref([])
-    const draggedOrderingItem = ref(null)
-    const dropTargetIndex = ref(null)
-    const touchStartPos = ref({ x: 0, y: 0 })
-    const draggedTouchItem = ref(null)
+    const lessonData = ref({})
+    const lessonSections = ref([])
+    const exercises = ref([])
+    const currentExerciseIndex = ref(0)
     
-    // Matching specific state
-    const rightItemsMapping = ref([])
-    const refreshKey = ref(0)
+    // Exercise states
+    const readingAnswers = reactive({})
+    const readingSubmitted = ref(false)
+    const mcAnswers = reactive({})
+    const mcSubmitted = ref(false)
+    const saAnswers = reactive({})
+    const saSubmitted = ref(false)
 
     // ========================
     // COMPUTED PROPERTIES
     // ========================
-    const isExerciseStep = computed(() => 
-      ['exercise', 'practice'].includes(props.currentStep?.type)
-    )
-    
-    const isQuizStep = computed(() => 
-      props.currentStep?.type === 'quiz'
-    )
-
-    const hasMultipleQuestions = computed(() => {
-      const questions = props.currentExercise?.questions
-      return Array.isArray(questions) && questions.length > 1
+    const currentExercise = computed(() => {
+      return exercises.value[currentExerciseIndex.value] || null
     })
 
-    const getQuestionsList = computed(() => {
-      if (!props.currentExercise) return []
-      
-      // Check for questions array
-      if (Array.isArray(props.currentExercise.questions)) {
-        return props.currentExercise.questions
+    const currentExerciseData = computed(() => {
+      return currentExercise.value?.data || {}
+    })
+
+    const currentQuestions = computed(() => {
+      if (currentExercise.value?.id === 'reading') {
+        return currentExerciseData.value.questions || []
       }
-      
-      // Fallback to single question
-      if (props.currentExercise.question) {
-        return [props.currentExercise.question]
-      }
-      
       return []
     })
-    
-    const exerciseType = computed(() => {
-      console.log('🔍 DEBUG exerciseType - Exercise:', props.currentExercise)
-      
-      if (!props.currentExercise) return 'short-answer'
-      
-      let type = props.currentExercise.type || 'short-answer'
-      
-      // Log detection
-      if (type === 'dialogue-completion') {
-        console.log('🔍 Dialogue completion detected')
+
+    const currentMCQuestions = computed(() => {
+      if (currentExercise.value?.id === 'multiple-choice') {
+        return currentExerciseData.value.questions || []
       }
-      
-      if (hasMultipleQuestions.value) {
-        console.log('🔍 Multiple questions detected:', getQuestionsList.value.length)
-      }
-      
-      console.log('🔍 Final exercise type:', type)
-      return type
-    })
-    
-    const exerciseOptions = computed(() => {
-      if (!props.currentExercise?.options) return []
-      return props.currentExercise.options.map(option => {
-        if (typeof option === 'string') return option
-        if (option && option.text) return option.text
-        return String(option)
-      })
-    })
-    
-    const quizOptions = computed(() => {
-      if (!props.currentQuiz?.options) return []
-      return props.currentQuiz.options.map(option => {
-        if (typeof option === 'string') return option
-        if (option && option.text) return option.text
-        return String(option)
-      })
+      return []
     })
 
-    const allowsMultipleSelections = computed(() => {
-      const correctAnswer = props.currentExercise?.correctAnswer
-      
-      // For dialogue-completion, check if multiple answers expected
-      if (exerciseType.value === 'dialogue-completion') {
-        return Array.isArray(correctAnswer) && correctAnswer.length > 1
+    const currentSAQuestions = computed(() => {
+      if (currentExercise.value?.id === 'short-answer') {
+        return currentExerciseData.value.questions || []
       }
-      
-      // For other multiple choice types
-      if (['multiple-choice', 'abc'].includes(exerciseType.value)) {
-        return Array.isArray(correctAnswer) && correctAnswer.length > 1
-      }
-      
-      return false
+      return []
     })
-    
-    // Left items computation
-    const leftItems = computed(() => {
-      try {
-        if (!props.currentExercise?.pairs) return []
-        
-        const pairs = props.currentExercise.pairs
-        if (!Array.isArray(pairs)) return []
-        
-        const items = pairs.map((pair, index) => {
-          let leftItem = ''
-          
-          try {
-            if (Array.isArray(pair)) {
-              leftItem = String(pair[0] || `Left ${index + 1}`)
-            } else if (pair && typeof pair === 'object') {
-              leftItem = String(
-                pair.left || pair.question || pair.term || 
-                pair[0] || `Left ${index + 1}`
-              )
-            } else {
-              leftItem = String(pair || `Left ${index + 1}`)
-            }
-            
-            return leftItem.trim()
-          } catch (itemError) {
-            return `Left ${index + 1}`
-          }
-        }).filter(item => item !== '')
-        
-        return items
-      } catch (error) {
-        return []
-      }
-    })
-    
-    // Right items computation with shuffling
-    const rightItems = computed(() => {
-      try {
-        if (!props.currentExercise?.pairs) return []
-        
-        const pairs = props.currentExercise.pairs
-        if (!Array.isArray(pairs)) return []
-        
-        // Extract right items with original indices
-        const itemsWithIndices = pairs.map((pair, originalIndex) => {
-          let rightItem = ''
-          
-          try {
-            if (Array.isArray(pair)) {
-              rightItem = String(pair[1] || `Right ${originalIndex + 1}`)
-            } else if (pair && typeof pair === 'object') {
-              rightItem = String(
-                pair.right || pair.answer || pair.definition || 
-                pair[1] || `Right ${originalIndex + 1}`
-              )
-            } else {
-              rightItem = String(pair || `Right ${originalIndex + 1}`)
-            }
-            
-            return {
-              text: rightItem.trim(),
-              originalIndex: originalIndex
-            }
-          } catch (itemError) {
-            return {
-              text: `Right ${originalIndex + 1}`,
-              originalIndex: originalIndex
-            }
-          }
-        }).filter(item => item.text !== '')
-        
-        // Shuffle items but keep track of original indices
-        const shuffled = [...itemsWithIndices]
-        
-        // Only shuffle if we have more than 1 item and it's a new exercise
-        if (shuffled.length > 1 && rightItemsMapping.value.length === 0) {
-          shuffled.sort(() => Math.random() - 0.5)
-        }
-        
-        // Store the mapping
-        rightItemsMapping.value = shuffled
-        
-        // Return display items
-        return shuffled.map(item => item.text)
-      } catch (error) {
-        return []
-      }
-    })
-    
-    const isLastExercise = computed(() => 
-      props.exerciseIndex >= props.totalExercises - 1
-    )
-    
-    const isLastQuiz = computed(() => 
-      props.quizIndex >= props.totalQuizzes - 1
-    )
 
-    const blankCount = computed(() => {
-      if (!props.currentExercise) return 0
-      
-      if (props.currentExercise.blanks && Array.isArray(props.currentExercise.blanks)) {
-        return props.currentExercise.blanks.length
-      }
-      
-      if (props.currentExercise.correctAnswers && Array.isArray(props.currentExercise.correctAnswers)) {
-        return props.currentExercise.correctAnswers.length
-      }
-      
-      if (props.currentExercise.answers && Array.isArray(props.currentExercise.answers)) {
-        return props.currentExercise.answers.length
-      }
-      
-      const template = props.currentExercise.template || props.currentExercise.question || ''
-      const asteriskMatches = template.match(/\*/g) || []
-      const underscoreMatches = template.match(/_+/g) || []
-      const blankMatches = template.match(/\[blank\]/gi) || []
-      const curlyBraceMatches = template.match(/\{[^}]*\}/g) || []
-      
-      return Math.max(
-        asteriskMatches.length,
-        underscoreMatches.length, 
-        blankMatches.length, 
-        curlyBraceMatches.length,
-        1
-      )
+    const hasReadingAnswers = computed(() => {
+      return Object.keys(readingAnswers).length > 0
     })
-    
-    const canSubmitAnswer = computed(() => {
-      switch (exerciseType.value) {
-        case 'multiple-choice':
-        case 'abc':
-        case 'dialogue-completion':
-        case 'true-false':
-          if (Array.isArray(localUserAnswer.value)) {
-            return localUserAnswer.value.length > 0
-          }
-          return localUserAnswer.value !== null && localUserAnswer.value !== undefined && String(localUserAnswer.value).trim() !== ''
-          
-        case 'short-answer':
-        case 'sentence-transformation':
-        case 'error-correction':
-          if (props.currentExercise?.questions && props.currentExercise.questions.length > 1) {
-            // For multiple questions, check if at least one answer is given
-            return localMultipleAnswers.value.some(answer => String(answer || '').trim().length >= 1)
-          }
-          return String(localUserAnswer.value || '').trim().length >= 1
-          
-        case 'fill-blank':
-          const answersToCheck = localFillBlankAnswers.value.length > 0 
-            ? localFillBlankAnswers.value 
-            : props.fillBlankAnswers
-          return answersToCheck.some(answer => String(answer || '').trim().length >= 1)
-          
-        case 'matching':
-          return props.matchingPairs.length > 0
-          
-        case 'ordering':
-          return localOrderingItems.value.length > 0
-          
-        case 'drag-drop':
-          const placements = Object.values(props.dragDropPlacements || {})
-          return placements.some(items => Array.isArray(items) && items.length > 0)
-          
-        default:
-          return false
-      }
+
+    const hasMCAnswers = computed(() => {
+      return Object.keys(mcAnswers).length > 0
+    })
+
+    const hasSAAnswers = computed(() => {
+      return Object.keys(saAnswers).length > 0
+    })
+
+    const readingScore = computed(() => {
+      if (!readingSubmitted.value) return { correct: 0, total: 0 }
+      
+      const correct = currentQuestions.value.filter(q => 
+        readingAnswers[q.id]?.toLowerCase().trim() === q.correctAnswer.toLowerCase()
+      ).length
+      return { correct, total: currentQuestions.value.length }
+    })
+
+    const mcScore = computed(() => {
+      if (!mcSubmitted.value) return { correct: 0, total: 0 }
+      
+      const correct = currentMCQuestions.value.filter(q => 
+        mcAnswers[q.id] === q.correctAnswer
+      ).length
+      return { correct, total: currentMCQuestions.value.length }
+    })
+
+    const saScore = computed(() => {
+      if (!saSubmitted.value) return { correct: 0, total: 0 }
+      
+      const correct = currentSAQuestions.value.filter(q => 
+        saAnswers[q.id]?.toLowerCase().trim() === q.correctAnswer.toLowerCase()
+      ).length
+      return { correct, total: currentSAQuestions.value.length }
     })
 
     // ========================
-    // ANSWER METHODS
+    // METHODS
     // ========================
-    const updateAnswer = () => {
-      emit('answer-changed', localUserAnswer.value)
-    }
-
-    const selectOption = (option) => {
-      localUserAnswer.value = option
-      emit('answer-changed', option)
-    }
-
-    const selectQuizOption = (option) => {
-      localUserAnswer.value = option
-      emit('answer-changed', option)
-    }
-
-    const selectTrueFalse = (value) => {
-      localUserAnswer.value = value
-      emit('answer-changed', value)
+    
+    // Navigation methods
+    const handleNext = () => {
+      if (currentExerciseIndex.value < exercises.value.length - 1) {
+        currentExerciseIndex.value++
+      }
     }
     
-    const getMultipleAnswerValue = (index) => {
-      if (Array.isArray(localUserAnswer.value)) {
-        return localUserAnswer.value[index] || ''
+    const handlePrevious = () => {
+      if (currentExerciseIndex.value > 0) {
+        currentExerciseIndex.value--
       }
-      return localMultipleAnswers.value[index] || ''
     }
 
-    const updateMultipleAnswer = (index, event) => {
-      const value = event.target.value
-      
-      // Ensure we have an array
-      if (!Array.isArray(localMultipleAnswers.value)) {
-        localMultipleAnswers.value = []
+    const setCurrentExerciseIndex = (index) => {
+      if (index >= 0 && index < exercises.value.length) {
+        currentExerciseIndex.value = index
       }
-      
-      // Extend array if needed
-      while (localMultipleAnswers.value.length <= index) {
-        localMultipleAnswers.value.push('')
-      }
-      
-      localMultipleAnswers.value[index] = value
-      localUserAnswer.value = [...localMultipleAnswers.value]
-      emit('answer-changed', localUserAnswer.value)
     }
 
-    const isOptionSelected = (option, index) => {
-      if (allowsMultipleSelections.value) {
-        return Array.isArray(localUserAnswer.value) && localUserAnswer.value.includes(option)
+    // Helper methods
+    const getTypeLabel = (type) => {
+      switch (type) {
+        case 'word': return 'Одно слово'
+        case 'sentence': return 'Полное предложение'
+        case 'number': return 'Число'
+        default: return 'Ответ'
       }
-      return localUserAnswer.value === option
     }
 
-    const toggleOption = (option, index) => {
-      if (allowsMultipleSelections.value) {
-        let currentAnswers = Array.isArray(localUserAnswer.value) ? [...localUserAnswer.value] : []
+    const getTypeColor = (type) => {
+      switch (type) {
+        case 'word': return 'var(--lesson-green)'
+        case 'sentence': return 'var(--lesson-blue)'
+        case 'number': return 'var(--lesson-yellow)'
+        default: return 'var(--lesson-purple)'
+      }
+    }
+
+    const getTypeBgColor = (type) => {
+      switch (type) {
+        case 'word': return 'var(--lesson-green-light)'
+        case 'sentence': return 'var(--lesson-blue-light)'
+        case 'number': return 'var(--lesson-yellow-light)'
+        default: return 'var(--lesson-purple-light)'
+      }
+    }
+
+    const getOptionLetter = (index) => {
+      return String.fromCharCode(65 + index) // A, B, C, D...
+    }
+
+    // Answer checking methods
+    const isReadingAnswerCorrect = (question) => {
+      return readingAnswers[question.id]?.toLowerCase().trim() === question.correctAnswer.toLowerCase()
+    }
+
+    const isSAAnswerCorrect = (question) => {
+      return saAnswers[question.id]?.toLowerCase().trim() === question.correctAnswer.toLowerCase()
+    }
+
+    // Exercise action methods
+    const selectMCAnswer = (questionId, answer) => {
+      mcAnswers[questionId] = answer
+    }
+
+    const checkReadingAnswers = () => {
+      readingSubmitted.value = true
+    }
+
+    const resetReadingAnswers = () => {
+      Object.keys(readingAnswers).forEach(key => {
+        delete readingAnswers[key]
+      })
+      readingSubmitted.value = false
+    }
+
+    const checkMCAnswers = () => {
+      mcSubmitted.value = true
+    }
+
+    const resetMCAnswers = () => {
+      Object.keys(mcAnswers).forEach(key => {
+        delete mcAnswers[key]
+      })
+      mcSubmitted.value = false
+    }
+
+    const checkSAAnswers = () => {
+      saSubmitted.value = true
+    }
+
+    const resetSAAnswers = () => {
+      Object.keys(saAnswers).forEach(key => {
+        delete saAnswers[key]
+      })
+      saSubmitted.value = false
+    }
+
+    // Data loading methods
+    const loadLessonData = async () => {
+      try {
+        // This should connect to your backend composables
+        // Replace with actual API calls or composable usage
         
-        if (currentAnswers.includes(option)) {
-          currentAnswers = currentAnswers.filter(ans => ans !== option)
+        if (props.stepData) {
+          // Use provided step data
+          lessonData.value = props.stepData
+          parseLessonContent(props.stepData)
+        } else if (props.lessonId) {
+          // Load from API using lessonId
+          // const data = await loadLessonById(props.lessonId)
+          // lessonData.value = data
+          // parseLessonContent(data)
+          
+          // For now, show loading state
+          console.log('Loading lesson with ID:', props.lessonId)
         } else {
-          currentAnswers.push(option)
+          console.warn('No lesson data or ID provided')
         }
-        
-        localUserAnswer.value = currentAnswers
-        console.log('🔍 Multiple selection updated:', currentAnswers)
-      } else {
-        localUserAnswer.value = option
-      }
-      emit('answer-changed', localUserAnswer.value)
-    }
-
-    const handleOptionChange = (option, index, event) => {
-      if (allowsMultipleSelections.value) {
-        toggleOption(option, index)
-      } else {
-        selectOption(option)
+      } catch (error) {
+        console.error('Error loading lesson data:', error)
       }
     }
 
-
-    // ========================
-    // FILL BLANK METHODS
-    // ========================
-    const getFillBlankValue = (index) => {
-      if (localFillBlankAnswers.value[index] !== undefined) {
-        return localFillBlankAnswers.value[index]
-      }
-      return props.fillBlankAnswers[index] || ''
-    }
-
-    const handleFillBlankInput = (index, event) => {
-      const value = event.target.value
-      
-      while (localFillBlankAnswers.value.length <= index) {
-        localFillBlankAnswers.value.push('')
-      }
-      localFillBlankAnswers.value[index] = value
-      localFillBlankAnswers.value = [...localFillBlankAnswers.value]
-      
-      emit('fill-blank-updated', { index, value })
-    }
-
-    const renderFillBlankTemplate = () => {
-      if (!props.currentExercise?.template) return ''
-      
-      let template = props.currentExercise.template
-      let blankIndex = 0
-      
-      template = template.replace(/\*/g, () => {
-        return `<span class="blank-indicator">[Пропуск ${++blankIndex}]</span>`
-      })
-      
-      template = template.replace(/_+/g, () => {
-        return `<span class="blank-indicator">[Пропуск ${++blankIndex}]</span>`
-      })
-      
-      template = template.replace(/\[blank\]/gi, () => {
-        return `<span class="blank-indicator">[Пропуск ${++blankIndex}]</span>`
-      })
-      
-      return template
-    }
-
-    const initializeFillBlankAnswers = () => {
-      if (exerciseType.value === 'fill-blank') {
-        const count = blankCount.value
-        localFillBlankAnswers.value = new Array(count).fill('')
-        
-        if (props.fillBlankAnswers && Array.isArray(props.fillBlankAnswers)) {
-          for (let i = 0; i < Math.min(count, props.fillBlankAnswers.length); i++) {
-            localFillBlankAnswers.value[i] = props.fillBlankAnswers[i] || ''
-          }
-        }
-      }
-    }
-
-    // ========================
-    // MATCHING METHODS
-    // ========================
-    
-    const handleMatchingClick = (side, index) => {
-      if (props.showCorrectAnswer) return
-      
-      const currentSelection = props.selectedMatchingItem
-      
-      // If nothing is selected, select this item
-      if (!currentSelection) {
-        emit('matching-item-selected', { side, index })
-        return
+    const parseLessonContent = (data) => {
+      // Parse lesson sections from backend data
+      if (data.sections) {
+        lessonSections.value = data.sections
       }
       
-      // If clicking the same item, deselect it
-      if (currentSelection.side === side && currentSelection.index === index) {
-        emit('matching-item-selected', null)
-        return
-      }
-      
-      // If clicking another item on the same side, change selection
-      if (currentSelection.side === side) {
-        emit('matching-item-selected', { side, index })
-        return
-      }
-      
-      // If clicking an item on the opposite side, create a pair
-      createMatchingPair(currentSelection, { side, index })
-    }
-
-    const createMatchingPair = (firstItem, secondItem) => {
-      let leftIndex, rightDisplayIndex
-      
-      // Determine which is left and which is right
-      if (firstItem.side === 'left') {
-        leftIndex = firstItem.index
-        rightDisplayIndex = secondItem.index
-      } else {
-        leftIndex = secondItem.index
-        rightDisplayIndex = firstItem.index
-      }
-      
-      // Get original index from mapping
-      if (!rightItemsMapping.value || rightItemsMapping.value.length === 0) {
-        // Force rebuild mapping
-        const temp = rightItems.value // This will trigger the computed
-      }
-      
-      const rightMapping = rightItemsMapping.value[rightDisplayIndex]
-      const originalRightIndex = rightMapping ? rightMapping.originalIndex : rightDisplayIndex
-      
-      const newPair = {
-        leftIndex,
-        rightIndex: originalRightIndex,
-        rightDisplayIndex
-      }
-      
-      const currentPairs = props.matchingPairs || []
-      
-      // Check if this exact pair already exists
-      const pairExists = currentPairs.some(pair => 
-        pair.leftIndex === newPair.leftIndex && pair.rightIndex === newPair.rightIndex
-      )
-      
-      if (pairExists) {
-        emit('matching-item-selected', null)
-        return
-      }
-      
-      // Remove any existing pairs that use these items
-      const filteredPairs = currentPairs.filter(pair => {
-        const leftConflict = pair.leftIndex === newPair.leftIndex
-        const rightConflict = pair.rightDisplayIndex === newPair.rightDisplayIndex
-        return !leftConflict && !rightConflict
-      })
-      
-      // Add the new pair
-      const updatedPairs = [...filteredPairs, newPair]
-      
-      // Emit the updated pairs
-      emit('answer-changed', updatedPairs)
-      
-      // Clear selection
-      emit('matching-item-selected', null)
-      
-      // Force refresh
-      refreshKey.value++
-    }
-
-    const isItemSelected = (side, index) => {
-      const selection = props.selectedMatchingItem
-      return selection && selection.side === side && selection.index === index
-    }
-
-    const isItemMatched = (side, index) => {
-      const currentPairs = props.matchingPairs || []
-      
-      if (side === 'left') {
-        return currentPairs.some(pair => pair.leftIndex === index)
-      } else {
-        // For right side, check using display index
-        return currentPairs.some(pair => pair.rightDisplayIndex === index)
-      }
-    }
-
-    const isPairCorrect = (pair) => {
-      // Visual feedback only - actual validation in useExercises
-      return pair.leftIndex === pair.rightIndex
-    }
-
-    const getSelectedItemText = () => {
-      const selection = props.selectedMatchingItem
-      if (!selection) return ''
-      
-      if (selection.side === 'left') {
-        return leftItems.value[selection.index] || ''
-      } else {
-        return rightItems.value[selection.index] || ''
-      }
-    }
-
-    const clearSelection = () => {
-      emit('matching-item-selected', null)
-    }
-
-    const removePair = (pairIndex) => {
-      if (props.showCorrectAnswer) return
-      
-      const currentPairs = props.matchingPairs || []
-      
-      if (pairIndex >= 0 && pairIndex < currentPairs.length) {
-        const updatedPairs = currentPairs.filter((_, index) => index !== pairIndex)
-        emit('answer-changed', updatedPairs)
-        emit('remove-matching-pair', pairIndex)
-        refreshKey.value++
-      }
-    }
-
-    const getLeftItemText = (index) => {
-      return leftItems.value[index] || `Left Item ${index + 1}`
-    }
-
-    const getRightItemText = (originalIndex, displayIndex) => {
-      // If displayIndex is provided and valid, use it for current display
-      if (displayIndex !== undefined && displayIndex >= 0 && displayIndex < rightItems.value.length) {
-        return rightItems.value[displayIndex]
-      }
-      
-      // Otherwise get from original pairs using original index
-      if (!props.currentExercise?.pairs || originalIndex < 0 || originalIndex >= props.currentExercise.pairs.length) {
-        return `Right Item ${originalIndex + 1}`
-      }
-      
-      const pair = props.currentExercise.pairs[originalIndex]
-      
-      if (Array.isArray(pair)) {
-        return String(pair[1] || `Right Item ${originalIndex + 1}`)
-      } else if (pair && typeof pair === 'object') {
-        return String(
-          pair.right || pair.answer || pair.definition || 
-          pair[1] || `Right Item ${originalIndex + 1}`
-        )
-      }
-      
-      return `Right Item ${originalIndex + 1}`
-    }
-
-    // ========================
-    // ORDERING METHODS
-    // ========================
-    const initializeOrderingItems = () => {
-      if (props.currentExercise?.items && Array.isArray(props.currentExercise.items)) {
-        const items = props.currentExercise.items.map((item, index) => ({
-          id: item.id || `item_${index}`,
-          text: typeof item === 'string' ? item : (item.text || String(item)),
-          originalIndex: index
+      // Parse exercises from backend data
+      if (data.exercises) {
+        exercises.value = data.exercises.map((exercise, index) => ({
+          ...exercise,
+          color: getExerciseColor(exercise.type, index),
+          lightColor: getExerciseLightColor(exercise.type, index)
         }))
-        
-        const shuffledItems = [...items].sort(() => Math.random() - 0.5)
-        localOrderingItems.value = shuffledItems
-        emit('answer-changed', localOrderingItems.value)
       }
     }
 
-    const getOrderingItemText = (item) => {
-      if (typeof item === 'string') return item
-      if (item && item.text) return item.text
-      return String(item || '')
+    const getExerciseColor = (type, index) => {
+      const colors = [
+        'var(--lesson-purple)',
+        'var(--lesson-green)', 
+        'var(--lesson-blue)',
+        'var(--lesson-yellow)',
+        'var(--lesson-purple)',
+        'var(--lesson-green)'
+      ]
+      return colors[index % colors.length]
     }
 
-    const moveOrderingItem = (fromIndex, toIndex) => {
-      if (fromIndex === toIndex || 
-          fromIndex < 0 || fromIndex >= localOrderingItems.value.length ||
-          toIndex < 0 || toIndex >= localOrderingItems.value.length) {
-        return
-      }
-      
-      const newItems = [...localOrderingItems.value]
-      const [movedItem] = newItems.splice(fromIndex, 1)
-      newItems.splice(toIndex, 0, movedItem)
-      
-      localOrderingItems.value = newItems
-      emit('answer-changed', localOrderingItems.value)
-    }
-
-    const startOrderingDrag = (event, index) => {
-      draggedOrderingItem.value = index
-      
-      if (event.dataTransfer) {
-        event.dataTransfer.effectAllowed = 'move'
-        event.dataTransfer.setData('text/plain', index.toString())
-      }
-    }
-
-    const endOrderingDrag = () => {
-      draggedOrderingItem.value = null
-      dropTargetIndex.value = null
-    }
-
-    const handleOrderingDragOver = (event, index) => {
-      if (draggedOrderingItem.value !== null && draggedOrderingItem.value !== index) {
-        event.preventDefault()
-        dropTargetIndex.value = index
-      }
-    }
-
-    const handleOrderingDragEnter = (index) => {
-      if (draggedOrderingItem.value !== null && draggedOrderingItem.value !== index) {
-        dropTargetIndex.value = index
-      }
-    }
-
-    const handleOrderingDragLeave = () => {
-      // Only clear if we're leaving the container
-    }
-
-    const handleOrderingDrop = (event, dropIndex) => {
-      event.preventDefault()
-      
-      const dragIndex = draggedOrderingItem.value
-      
-      if (dragIndex !== null && dragIndex !== dropIndex) {
-        moveOrderingItem(dragIndex, dropIndex)
-      }
-      
-      endOrderingDrag()
-    }
-
-    // ========================
-    // DRAG AND DROP METHODS
-    // ========================
-    const startDragItem = (item, event) => {
-      if (!item || props.showCorrectAnswer) return
-      
-      draggedDragItem.value = item
-      
-      if (event && event.dataTransfer) {
-        event.dataTransfer.effectAllowed = 'move'
-        event.dataTransfer.setData('text/plain', JSON.stringify(item))
-      }
-      
-      emit('drag-item-start', { item, event })
-    }
-
-    const endDragItem = () => {
-      draggedDragItem.value = null
-      dropOverZone.value = null
-    }
-
-    const dragOverZone = (zoneId, event) => {
-      if (!draggedDragItem.value || props.showCorrectAnswer) return
-      
-      if (event) {
-        event.preventDefault()
-        event.dataTransfer.dropEffect = 'move'
-      }
-      
-      dropOverZone.value = zoneId
-      emit('drag-over-zone', zoneId)
-    }
-
-    const dragLeaveZone = (event) => {
-      if (!event || !event.currentTarget.contains(event.relatedTarget)) {
-        dropOverZone.value = null
-        emit('drag-leave-zone')
-      }
-    }
-
-    const dropInZone = (zoneId, event) => {
-      if (event) {
-        event.preventDefault()
-      }
-      
-      let droppedItem = draggedDragItem.value
-      
-      if (!droppedItem && event && event.dataTransfer) {
-        try {
-          const transferData = event.dataTransfer.getData('text/plain')
-          if (transferData) {
-            droppedItem = JSON.parse(transferData)
-          }
-        } catch (e) {
-          // Failed to parse transfer data
-        }
-      }
-      
-      if (!droppedItem) return
-      
-      emit('drop-in-zone', { zoneId, item: droppedItem })
-      
-      draggedDragItem.value = null
-      dropOverZone.value = null
-    }
-
-    const getDragItemText = (item) => {
-      if (!item) return ''
-      if (typeof item === 'string') return item
-      if (item.text) return item.text
-      if (item.label) return item.label
-      if (item.name) return item.name
-      if (item.title) return item.title
-      if (item.content) return item.content
-      return String(item)
-    }
-
-    const getZoneId = (zone) => {
-      if (!zone) return 'default'
-      if (typeof zone === 'string') return zone
-      if (zone.id) return zone.id
-      if (zone.label) return zone.label
-      if (zone.name) return zone.name
-      if (zone.title) return zone.title
-      return String(zone)
-    }
-
-    const getDropZoneItems = (zoneId) => {
-      const placements = props.dragDropPlacements || {}
-      return placements[zoneId] || []
-    }
-
-    const removeDroppedItem = (zoneId, itemIndex) => {
-      emit('remove-dropped-item', { zoneId, itemIndex })
-    }
-
-    // ========================
-    // TOUCH SUPPORT
-    // ========================
-    const handleTouchStart = (event, item) => {
-      if (props.showCorrectAnswer) return
-      
-      const touch = event.touches[0]
-      touchStartPos.value = { x: touch.clientX, y: touch.clientY }
-      draggedTouchItem.value = item
-      event.preventDefault()
-    }
-
-    const handleTouchMove = (event) => {
-      if (!draggedTouchItem.value) return
-      
-      event.preventDefault()
-      
-      const touch = event.touches[0]
-      const element = document.elementFromPoint(touch.clientX, touch.clientY)
-      
-      const dropZone = element?.closest('.drop-zone')
-      if (dropZone) {
-        const zoneLabel = dropZone.querySelector('.zone-label')?.textContent
-        if (zoneLabel) {
-          dropOverZone.value = zoneLabel
-        }
-      } else {
-        dropOverZone.value = null
-      }
-    }
-
-    const handleTouchEnd = (event) => {
-      if (!draggedTouchItem.value) return
-      
-      const touch = event.changedTouches[0]
-      const element = document.elementFromPoint(touch.clientX, touch.clientY)
-      
-      const dropZone = element?.closest('.drop-zone')
-      if (dropZone) {
-        const zoneLabel = dropZone.querySelector('.zone-label')?.textContent
-        if (zoneLabel) {
-          dropInZone(zoneLabel, null)
-        }
-      }
-      
-      draggedTouchItem.value = null
-      dropOverZone.value = null
+    const getExerciseLightColor = (type, index) => {
+      const colors = [
+        'var(--lesson-purple-light)',
+        'var(--lesson-green-light)', 
+        'var(--lesson-blue-light)',
+        'var(--lesson-yellow-light)',
+        'var(--lesson-purple-light)',
+        'var(--lesson-green-light)'
+      ]
+      return colors[index % colors.length]
     }
 
     // ========================
     // WATCHERS
     // ========================
-    watch(() => props.userAnswer, (newValue) => {
-      if (exerciseType.value !== 'fill-blank' && exerciseType.value !== 'ordering') {
-        localUserAnswer.value = newValue || ''
-      }
-    }, { immediate: true })
+    watch(() => currentExerciseIndex.value, () => {
+      // Reset all answer states when changing exercises
+      Object.keys(readingAnswers).forEach(key => delete readingAnswers[key])
+      Object.keys(mcAnswers).forEach(key => delete mcAnswers[key])
+      Object.keys(saAnswers).forEach(key => delete saAnswers[key])
+      
+      readingSubmitted.value = false
+      mcSubmitted.value = false
+      saSubmitted.value = false
+    })
 
-    watch(() => props.fillBlankAnswers, (newValue) => {
-      if (Array.isArray(newValue)) {
-        if (localFillBlankAnswers.value.length === 0 || 
-            localFillBlankAnswers.value.every(answer => !answer || answer.trim() === '')) {
-          localFillBlankAnswers.value = [...newValue]
-        }
+    watch(() => props.stepData, (newData) => {
+      if (newData) {
+        lessonData.value = newData
+        parseLessonContent(newData)
       }
-    }, { immediate: true, deep: true })
-
-    watch(() => props.orderingItems, (newValue) => {
-      if (Array.isArray(newValue) && newValue.length > 0) {
-        localOrderingItems.value = [...newValue]
-      }
-    }, { immediate: true, deep: true })
-
-    watch(() => props.currentExercise, (newExercise, oldExercise) => {
-      // Ensure this only runs for actual changes
-      if (newExercise && JSON.stringify(newExercise) !== JSON.stringify(oldExercise)) {
-        console.log('🔄 Watcher triggered for new exercise:', newExercise?.title || 'No Title')
-        
-        // Reset local answer states
-        localUserAnswer.value = props.userAnswer || ''
-        localMultipleAnswers.value = []
-        
-        // Handle initialization for specific types
-        switch (newExercise.type) {
-          case 'fill-blank':
-            nextTick(() => initializeFillBlankAnswers())
-            break
-          case 'ordering':
-            nextTick(() => initializeOrderingItems())
-            break
-          case 'matching':
-            rightItemsMapping.value = []
-            emit('matching-item-selected', null)
-            emit('answer-changed', [])
-            refreshKey.value++
-            break
-          case 'short-answer':
-          case 'sentence-transformation':
-          case 'error-correction':
-            // If it's a multi-question short answer, initialize the array
-            if (newExercise.questions && newExercise.questions.length > 1) {
-              localMultipleAnswers.value = new Array(newExercise.questions.length).fill('')
-              localUserAnswer.value = [...localMultipleAnswers.value]
-              emit('answer-changed', localUserAnswer.value)
-            }
-            break
-        }
-      }
-    }, { immediate: true, deep: true })
-
-    // Watch matching pairs changes
-    watch(() => props.matchingPairs, (newPairs, oldPairs) => {
-      if (newPairs !== oldPairs) {
-        refreshKey.value++
-      }
-    }, { immediate: true, deep: true })
-
-    // Watch selected matching item changes
-    watch(() => props.selectedMatchingItem, (newSelection, oldSelection) => {
-      if (newSelection !== oldSelection) {
-        refreshKey.value++
-      }
-    }, { immediate: true })
+    }, { deep: true })
 
     // ========================
     // LIFECYCLE
     // ========================
     onMounted(() => {
-      localUserAnswer.value = props.userAnswer || ''
-      initializeFillBlankAnswers()
-      
-      if (props.currentExercise?.type === 'ordering') {
-        initializeOrderingItems()
-      }
-      
-      if (props.currentExercise?.type === 'matching') {
-        // Ensure items are computed
-        nextTick(() => {
-          // Items ready
-        })
-      }
+      loadLessonData()
     })
 
     // ========================
-    // RETURN ALL METHODS AND STATE
+    // RETURN
     // ========================
     return {
       // State
-      localUserAnswer,
-      localFillBlankAnswers,
-      draggedDragItem,
-      dropOverZone,
-      localOrderingItems,
-      draggedOrderingItem,
-      dropTargetIndex,
-      touchStartPos,
-      draggedTouchItem,
-      rightItemsMapping,
-      refreshKey,
-      localMultipleAnswers,
+      lessonData,
+      lessonSections,
+      exercises,
+      currentExerciseIndex,
+      readingAnswers,
+      readingSubmitted,
+      mcAnswers,
+      mcSubmitted,
+      saAnswers,
+      saSubmitted,
       
       // Computed
-      isExerciseStep,
-      isQuizStep,
-      exerciseType,
-      exerciseOptions,
-      quizOptions,
-      leftItems,
-      rightItems,
-      isLastExercise,
-      isLastQuiz,
-      blankCount,
-      canSubmitAnswer,
-      allowsMultipleSelections,
-      hasMultipleQuestions,
-      getQuestionsList,
+      currentExercise,
+      currentExerciseData,
+      currentQuestions,
+      currentMCQuestions,
+      currentSAQuestions,
+      hasReadingAnswers,
+      hasMCAnswers,
+      hasSAAnswers,
+      readingScore,
+      mcScore,
+      saScore,
       
-      // Basic answer methods
-      updateAnswer,
-      selectOption,
-      selectQuizOption,
-      selectTrueFalse,
-      getMultipleAnswerValue,
-      updateMultipleAnswer,
-      isOptionSelected,
-      toggleOption,
-      handleOptionChange,
-      
-      // Fill blank methods
-      getFillBlankValue,
-      handleFillBlankInput,
-      renderFillBlankTemplate,
-      initializeFillBlankAnswers,
-      
-      // Matching methods
-      handleMatchingClick,
-      createMatchingPair,
-      isItemSelected,
-      isItemMatched,
-      isPairCorrect,
-      getSelectedItemText,
-      clearSelection,
-      removePair,
-      getLeftItemText,
-      getRightItemText,
-      
-      // Ordering methods
-      initializeOrderingItems,
-      getOrderingItemText,
-      moveOrderingItem,
-      startOrderingDrag,
-      endOrderingDrag,
-      handleOrderingDragOver,
-      handleOrderingDragEnter,
-      handleOrderingDragLeave,
-      handleOrderingDrop,
-      
-      // Drag and drop methods
-      startDragItem,
-      endDragItem,
-      dragOverZone,
-      dragLeaveZone,
-      dropInZone,
-      getDragItemText,
-      getZoneId,
-      getDropZoneItems,
-      removeDroppedItem,
-      
-      // Touch support methods
-      handleTouchStart,
-      handleTouchMove,
-      handleTouchEnd
+      // Methods
+      handleNext,
+      handlePrevious,
+      setCurrentExerciseIndex,
+      getTypeLabel,
+      getTypeColor,
+      getTypeBgColor,
+      getOptionLetter,
+      isReadingAnswerCorrect,
+      isSAAnswerCorrect,
+      selectMCAnswer,
+      checkReadingAnswers,
+      resetReadingAnswers,
+      checkMCAnswers,
+      resetMCAnswers,
+      checkSAAnswers,
+      resetSAAnswers
     }
   }
 }
 </script>
+
 <style scoped>
-@import "@/assets/css/InteractivePanel.css";
-
-/* Enhanced scroll styling - FIXED HEIGHT CALCULATION */
-.exercise-content-scroll,
-.quiz-content-scroll {
-  height: calc(100vh - 300px) !important;
-  overflow-y: scroll !important;
-  overflow-x: hidden !important;
-  min-height: 200px !important;
-  max-height: calc(100vh - 300px) !important;
-  -webkit-overflow-scrolling: touch !important;
-  scrollbar-width: auto !important;
-  flex: 1;
-  padding: 16px 20px 20px 20px;
+/* CSS Variables for theming */
+:root {
+  --lesson-purple: #8b5cf6;
+  --lesson-purple-light: #ede9fe;
+  --lesson-green: #10b981;
+  --lesson-green-light: #d1fae5;
+  --lesson-blue: #3b82f6;
+  --lesson-blue-light: #dbeafe;
+  --lesson-yellow: #f59e0b;
+  --lesson-yellow-light: #fef3c7;
+  --background: #ffffff;
+  --card: #ffffff;
+  --border: #e2e8f0;
+  --foreground: #1e293b;
+  --card-foreground: #374151;
+  --muted-foreground: #64748b;
+  --input-background: #f8fafc;
 }
 
-.scroll-content-wrapper {
-  min-height: 400px;
-  padding-bottom: 40px;
+/* Main Layout */
+.lesson-container {
+  height: 100vh;
+  display: flex;
+  background: var(--background);
 }
 
-.spacer {
-  height: 100px;
-  background: transparent;
+/* Left Side - Lesson Content */
+.lesson-content {
+  width: 50%;
+  border-right: 1px solid var(--border);
 }
 
-/* CRITICAL: Match Content Panel Navigation Exactly */
-.interactive-actions {
-  display: flex !important;
-  gap: 12px;
-  padding: 16px 28px;
-  border-top: 1px solid #e2e8f0;
-  flex-shrink: 0 !important;
-  background: white;
-  flex-wrap: wrap;
-  box-sizing: border-box;
-  width: 100%;
-  margin-top: auto;
-  
-  /* Force visibility - CRITICAL FIX */
-  visibility: visible !important;
-  opacity: 1 !important;
-  pointer-events: all !important;
-  z-index: 1000 !important;
-  position: relative !important;
-  
-  /* Ensure it's always above the fold */
-  min-height: 60px !important;
-  max-height: 80px !important;
+.content-wrapper {
+  height: 100%;
+  padding: 24px;
+  background: var(--background);
+  overflow-y: auto;
 }
 
-.interactive-nav-btn {
-  display: block !important;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 6px;
+.lesson-header {
+  margin-bottom: 24px;
+}
+
+.lesson-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin: 0 0 8px 0;
+}
+
+.lesson-description {
+  color: var(--muted-foreground);
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.content-card {
+  padding: 20px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.card-title {
+  font-size: 1.5rem;
   font-weight: 600;
+  color: var(--card-foreground);
+  margin: 0 0 16px 0;
+}
+
+.card-text {
+  color: var(--muted-foreground);
+  line-height: 1.7;
+  margin: 0 0 16px 0;
+  font-size: 1rem;
+}
+
+.formula-box {
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: var(--lesson-purple-light);
+  border-left: 4px solid var(--lesson-purple);
+}
+
+.formula-text {
+  color: var(--foreground);
+  margin: 0;
+  font-size: 1rem;
+}
+
+.examples-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.example-item {
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: var(--lesson-green-light);
+  border-left: 4px solid var(--lesson-green);
+}
+
+.example-text {
+  color: var(--foreground);
+  margin: 0 0 8px 0;
+  font-size: 1rem;
+}
+
+.example-note {
+  color: var(--muted-foreground);
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.uses-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.use-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.use-number {
+  background: var(--lesson-blue);
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.use-text {
+  color: var(--foreground);
+  line-height: 1.6;
+}
+
+.expressions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.expressions-column {
+  padding: 16px;
+  border-radius: 8px;
+  background: var(--lesson-yellow-light);
+}
+
+.expressions-title {
+  color: var(--foreground);
+  margin: 0 0 12px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.expressions-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.expressions-list li {
+  color: var(--muted-foreground);
+  margin: 4px 0;
+  font-size: 0.9rem;
+}
+
+/* Right Side - Interactive Panel */
+.interactive-panel {
+  width: 50%;
+}
+
+.interactive-wrapper {
+  height: 100%;
+  padding: 24px;
+  background: var(--background);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Exercise Header */
+.exercise-header {
+  padding: 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.exercise-info {
+  margin-bottom: 16px;
+}
+
+.exercise-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.exercise-number {
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.exercise-type {
+  color: var(--foreground);
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+.exercise-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--card-foreground);
+  margin: 0 0 4px 0;
+}
+
+.exercise-description {
+  color: var(--muted-foreground);
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.exercise-navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.nav-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--muted-foreground);
+  font-size: 0.9rem;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  flex: 1;
-  min-width: 100px;
-  min-height: 40px;
-  font-size: 0.95rem !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  
-  /* Ensure text fits */
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.interactive-nav-btn.hint-btn {
-  background: #f59e0b !important;
-  color: white !important;
-}
-
-.interactive-nav-btn.hint-btn:hover {
-  background: #d97706 !important;
+.nav-button:hover:not(:disabled) {
+  background: var(--input-background);
   transform: translateY(-1px);
 }
 
-.interactive-nav-btn.submit-btn {
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%) !important;
-  color: white !important;
+.nav-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-.interactive-nav-btn.submit-btn:hover:not(.disabled) {
+.nav-next {
+  color: var(--lesson-purple);
+  border-color: var(--lesson-purple);
+}
+
+.nav-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.progress-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.progress-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  opacity: 0.3;
+}
+
+.progress-dot.active {
+  opacity: 1;
+  transform: scale(1.2);
+}
+
+/* Exercise Content */
+.exercise-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.exercise-type-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Instructions Card */
+.instructions-card {
+  padding: 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.instructions-header {
+  margin-bottom: 16px;
+}
+
+.instructions-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--card-foreground);
+  margin: 0 0 8px 0;
+}
+
+.instructions-text {
+  color: var(--muted-foreground);
+  margin: 0;
+  font-size: 1rem;
+}
+
+.instructions-box {
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: var(--lesson-purple-light);
+}
+
+.instructions-subtitle {
+  color: var(--foreground);
+  margin: 0 0 8px 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.instructions-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.instructions-list li {
+  color: var(--muted-foreground);
+  margin: 4px 0;
+  font-size: 0.9rem;
+}
+
+/* Reading Text Card */
+.reading-text-card {
+  padding: 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.reading-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--card-foreground);
+  margin: 0 0 12px 0;
+}
+
+.reading-content {
+  padding: 16px;
+  border-radius: 8px;
+  background: var(--lesson-blue-light);
+}
+
+.reading-paragraph {
+  color: var(--foreground);
+  line-height: 1.7;
+  margin: 0;
+}
+
+/* Questions Section */
+.questions-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.questions-title {
+  color: var(--foreground);
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.question-item,
+.question-card {
+  padding: 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.question-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.question-number {
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.question-type {
+  color: var(--foreground);
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.question-text {
+  color: var(--card-foreground);
+  margin: 0;
+  line-height: 1.6;
+  font-size: 1rem;
+}
+
+/* Answer Inputs */
+.answer-textarea,
+.answer-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  font-size: 1rem;
+  background: var(--input-background);
+  transition: border-color 0.2s ease;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.answer-textarea {
+  min-height: 80px;
+}
+
+.answer-textarea:focus,
+.answer-input:focus {
+  outline: none;
+  border-color: var(--lesson-purple);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.answer-textarea::placeholder,
+.answer-input::placeholder {
+  color: var(--muted-foreground);
+  font-style: italic;
+}
+
+/* Options List */
+.options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.option-button {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.option-button:hover:not(:disabled) {
+  border-color: var(--lesson-green);
+  background: var(--lesson-green-light);
+}
+
+.option-button.selected {
+  border-color: var(--lesson-green);
+  background: var(--lesson-green-light);
+}
+
+.option-button.correct {
+  border-color: var(--lesson-green);
+  background: var(--lesson-green-light);
+}
+
+.option-button.incorrect {
+  border-color: var(--lesson-yellow);
+  background: var(--lesson-yellow-light);
+}
+
+.option-button:disabled {
+  cursor: not-allowed;
+}
+
+.option-text {
+  color: var(--foreground);
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+/* Exercise Actions */
+.exercise-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  padding: 16px 0;
+}
+
+.action-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 140px;
+  justify-content: center;
+}
+
+.submit-button {
+  color: white;
+}
+
+.submit-button:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 8px 16px rgba(139, 92, 246, 0.3);
 }
 
-.interactive-nav-btn.submit-btn.disabled {
+.submit-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
 }
 
-.interactive-nav-btn.submit-btn.second-chance {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+.reset-button {
+  background: transparent;
+  border: 2px solid var(--lesson-purple);
+  color: var(--lesson-purple);
 }
 
-.interactive-nav-btn.next-btn {
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
-  color: white !important;
-}
-
-.interactive-nav-btn.next-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
-}
-
-/* ================================
-   ENHANCED MATCHING EXERCISE STYLES
-   ================================ */
-
-.matching-container {
-  display: flex;
-  gap: 20px;
-  margin: 20px 0;
-  min-height: 200px;
-}
-
-@media (max-width: 768px) {
-  .matching-container {
-    flex-direction: column;
-    gap: 15px;
-  }
-}
-
-.matching-side {
-  flex: 1;
-  padding: 16px;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  background: #f8fafc;
-  min-height: 180px;
-}
-
-.left-side {
-  border-color: #3b82f6;
-  background: linear-gradient(135deg, #dbeafe 0%, #f8fafc 100%);
-}
-
-.right-side {
-  border-color: #10b981;
-  background: linear-gradient(135deg, #d1fae5 0%, #f8fafc 100%);
-}
-
-.matching-side h4 {
-  margin: 0 0 12px 0;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #374151;
-  text-align: center;
-}
-
-.matching-item {
-  padding: 12px 16px;
-  margin: 8px 0;
-  border: 2px solid #e2e8f0;
-  border-radius: 8px;
-  background: white;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  position: relative;
-  font-weight: 500;
-  line-height: 1.4;
-  min-height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  word-wrap: break-word;
-}
-
-.matching-item:hover:not(.disabled) {
-  border-color: #3b82f6;
-  background: #f0f9ff;
+.reset-button:hover {
+  background: var(--lesson-purple-light);
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
 }
 
-.matching-item:active:not(.disabled) {
-  transform: translateY(0);
+.action-icon {
+  width: 16px;
+  height: 16px;
 }
 
-.matching-item.selected {
-  border-color: #8b5cf6;
-  background: linear-gradient(135deg, #ede9fe 0%, #f3f4f6 100%);
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
-  animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { 
-    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1); 
-  }
-  50% { 
-    box-shadow: 0 0 0 6px rgba(139, 92, 246, 0.2); 
-  }
-}
-
-.matching-item.matched {
-  border-color: #10b981;
-  background: linear-gradient(135deg, #d1fae5 0%, #f0fdf4 100%);
-  opacity: 0.8;
-}
-
-.matching-item.matched:hover {
-  border-color: #059669;
-  background: linear-gradient(135deg, #a7f3d0 0%, #d1fae5 100%);
-}
-
-.matching-item.disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  background: #f3f4f6;
-}
-
-.matching-item.disabled:hover {
-  transform: none;
-  box-shadow: none;
-  border-color: #e2e8f0;
-  background: #f3f4f6;
-}
-
-.selection-indicator {
-  font-size: 1.2rem;
-  animation: bounce 1s infinite;
-  margin-left: 8px;
-}
-
-@keyframes bounce {
-  0%, 20%, 50%, 80%, 100% { 
-    transform: translateY(0); 
-  }
-  40% { 
-    transform: translateY(-3px); 
-  }
-  60% { 
-    transform: translateY(-2px); 
-  }
-}
-
-.match-indicator {
-  color: #10b981;
-  font-weight: bold;
-  font-size: 1.1rem;
-  margin-left: 8px;
-  animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.8); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-/* ================================
-   MATCHING PAIRS DISPLAY
-   ================================ */
-
-.matching-pairs {
-  margin: 20px 0;
+/* Results Card */
+.results-card {
   padding: 16px;
-  border: 2px solid #e2e8f0;
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 12px;
-  background: #f8fafc;
 }
 
-.matching-pairs h4 {
-  margin: 0 0 12px 0;
+.results-header {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.results-title {
   font-size: 1.1rem;
   font-weight: 600;
-  color: #374151;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  color: var(--card-foreground);
+  margin: 0 0 12px 0;
 }
 
-.pairs-list {
+.results-score {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--lesson-green);
+  margin-bottom: 8px;
+}
+
+.results-message {
+  color: var(--muted-foreground);
+  margin: 0;
+  font-size: 1rem;
+}
+
+.results-details {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
 
-.pair-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 14px;
-  border: 1px solid #d1d5db;
+.result-item {
+  padding: 12px;
   border-radius: 8px;
-  background: white;
-  transition: all 0.2s ease;
-  min-height: 44px;
+  border: 1px solid var(--border);
 }
 
-.pair-item:hover {
-  border-color: #3b82f6;
-  background: #f0f9ff;
+.result-item.correct {
+  background: var(--lesson-green-light);
+  border-color: var(--lesson-green);
 }
 
-.pair-item.pair-correct {
-  border-color: #10b981;
-  background: linear-gradient(135deg, #d1fae5 0%, #ecfdf5 100%);
+.result-item.incorrect {
+  background: var(--lesson-yellow-light);
+  border-color: var(--lesson-yellow);
 }
 
-.pair-text {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 500;
-  line-height: 1.3;
-  word-wrap: break-word;
-}
-
-.pair-arrow {
-  color: #6b7280;
-  font-weight: bold;
-  font-size: 1.1rem;
-  flex-shrink: 0;
-}
-
-.remove-pair {
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  color: #ef4444;
-  padding: 4px 8px;
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: bold;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-  line-height: 1;
-}
-
-.remove-pair:hover {
-  background: rgba(239, 68, 68, 0.2);
-  border-color: rgba(239, 68, 68, 0.3);
-  transform: scale(1.1);
-}
-
-.remove-pair:active {
-  transform: scale(0.95);
-}
-
-/* ================================
-   INSTRUCTIONS AND FEEDBACK
-   ================================ */
-
-.matching-instructions {
-  margin: 16px 0;
-  padding: 16px;
-  border-radius: 8px;
-  background: #f0f9ff;
-  border: 1px solid #bfdbfe;
-}
-
-.instruction-main {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin-bottom: 12px;
-  font-size: 0.95rem;
-  line-height: 1.4;
-}
-
-.instruction-icon {
-  font-size: 1.1rem;
-  flex-shrink: 0;
-  margin-top: 1px;
-}
-
-.current-selection {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: linear-gradient(135deg, #ede9fe 0%, #f3f4f6 100%);
-  border: 1px solid #c4b5fd;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  margin-bottom: 8px;
-  flex-wrap: wrap;
-}
-
-.selection-icon {
-  font-size: 1rem;
-  flex-shrink: 0;
-}
-
-.selected-text {
-  font-style: italic;
-  color: #6b7280;
-  font-weight: 500;
-}
-
-.clear-selection {
-  background: rgba(139, 92, 246, 0.1);
-  border: 1px solid rgba(139, 92, 246, 0.2);
-  color: #8b5cf6;
-  padding: 2px 6px;
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 0.8rem;
-  font-weight: bold;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-  margin-left: auto;
-}
-
-.clear-selection:hover {
-  background: rgba(139, 92, 246, 0.2);
-  transform: scale(1.1);
-}
-
-.no-pairs-message,
-.progress-message,
-.complete-message {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 0;
+.result-question {
   font-size: 0.85rem;
-  font-weight: 500;
+  color: var(--muted-foreground);
+  margin: 0 0 4px 0;
 }
 
-.no-pairs-message {
+.result-answer {
+  font-size: 0.9rem;
+  margin: 0 0 4px 0;
+}
+
+.result-answer.correct {
+  color: var(--foreground);
+}
+
+.result-answer.incorrect {
   color: #dc2626;
 }
 
-.progress-message {
-  color: #f59e0b;
+.result-correct {
+  font-size: 0.9rem;
+  color: var(--foreground);
+  margin: 0;
 }
 
-.complete-message {
-  color: #10b981;
+/* Answer Feedback */
+.answer-feedback {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  margin-top: 12px;
 }
 
-.warning-icon,
-.progress-icon,
-.complete-icon {
+.answer-feedback.correct {
+  background: var(--lesson-green-light);
+  border-color: var(--lesson-green);
+}
+
+.answer-feedback.incorrect {
+  background: var(--lesson-yellow-light);
+  border-color: var(--lesson-yellow);
+}
+
+.feedback-answer {
+  font-size: 0.9rem;
+  margin: 0 0 4px 0;
+}
+
+.feedback-answer.correct {
+  color: var(--foreground);
+}
+
+.feedback-answer.incorrect {
+  color: #dc2626;
+}
+
+.feedback-correct {
+  font-size: 0.9rem;
+  color: var(--foreground);
+  margin: 0;
+}
+
+/* Exercise Placeholder */
+.exercise-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  text-align: center;
+}
+
+.placeholder-content h3 {
+  color: var(--card-foreground);
+  margin: 0 0 8px 0;
+  font-size: 1.3rem;
+}
+
+.placeholder-content p {
+  color: var(--muted-foreground);
+  margin: 0;
   font-size: 1rem;
-  flex-shrink: 0;
 }
 
-/* ================================
-   DEBUG INFO (DEVELOPMENT ONLY)
-   ================================ */
-
-.debug-info {
-  padding: 8px;
-  background: #fef3c7;
-  border: 1px solid #f59e0b;
-  border-radius: 6px;
-  margin: 8px 0;
-  font-family: monospace;
-  font-size: 0.8rem;
-  color: #92400e;
-}
-
-/* ================================
-   RESPONSIVE FIXES
-   ================================ */
-
-@media (max-height: 700px) {
-  .exercise-content-scroll,
-  .quiz-content-scroll {
-    height: calc(100vh - 250px) !important;
-    max-height: calc(100vh - 250px) !important;
-    min-height: 150px !important;
-  }
-  
-  .interactive-actions {
-    padding: 12px 28px !important;
-    min-height: 50px !important;
-  }
-  
-  .interactive-nav-btn {
-    padding: 8px 16px !important;
-    min-height: 36px !important;
-    font-size: 0.9rem !important;
-  }
-}
-
-@media (max-height: 600px) {
-  .exercise-content-scroll,
-  .quiz-content-scroll {
-    height: calc(100vh - 200px) !important;
-    max-height: calc(100vh - 200px) !important;
-    min-height: 100px !important;
-  }
-  
-  .interactive-actions {
-    padding: 10px 28px !important;
-    min-height: 45px !important;
-  }
-  
-  .interactive-nav-btn {
-    padding: 6px 14px !important;
-    min-height: 32px !important;
-    font-size: 0.85rem !important;
-  }
-}
-
+/* Responsive Design */
 @media (max-width: 768px) {
-  .matching-side {
-    padding: 12px;
-    min-height: 150px;
-  }
-  
-  .matching-item {
-    padding: 10px 12px;
-    min-height: 44px;
-    font-size: 0.9rem;
-  }
-  
-  .pair-text {
-    font-size: 0.9rem;
+  .lesson-container {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
+    height: auto;
   }
   
-  .pair-arrow {
-    font-size: 1rem;
+  .lesson-content,
+  .interactive-panel {
+    width: 100%;
   }
   
-  .current-selection {
+  .lesson-content {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+  
+  .content-wrapper,
+  .interactive-wrapper {
+    padding: 16px;
+  }
+  
+  .exercise-navigation {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
+    gap: 12px;
   }
   
-  .clear-selection {
-    align-self: flex-end;
-    margin-top: -24px;
+  .expressions-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .exercise-actions {
+    flex-direction: column;
+  }
+  
+  .action-button {
+    min-width: auto;
   }
 }
 
 @media (max-width: 480px) {
-  .matching-container {
-    gap: 12px;
+  .lesson-title {
+    font-size: 1.5rem;
   }
   
-  .matching-side {
-    padding: 10px;
+  .card-title {
+    font-size: 1.3rem;
   }
   
-  .matching-item {
-    padding: 8px 10px;
-    margin: 6px 0;
-    font-size: 0.85rem;
+  .exercise-title {
+    font-size: 1.1rem;
   }
   
-  .matching-pairs {
+  .content-wrapper,
+  .interactive-wrapper {
     padding: 12px;
   }
   
-  .instruction-main {
-    font-size: 0.85rem;
+  .content-card,
+  .exercise-header,
+  .instructions-card,
+  .reading-text-card,
+  .question-item,
+  .question-card,
+  .results-card {
+    padding: 12px;
   }
 }
 
-/* ================================
-   ACCESSIBILITY IMPROVEMENTS
-   ================================ */
-
-.matching-item:focus {
-  outline: 2px solid #3b82f6;
+/* Focus states for accessibility */
+.nav-button:focus,
+.progress-dot:focus,
+.option-button:focus,
+.action-button:focus,
+.answer-textarea:focus,
+.answer-input:focus {
+  outline: 2px solid var(--lesson-blue);
   outline-offset: 2px;
 }
 
-.matching-item[aria-selected="true"] {
-  background: linear-gradient(135deg, #ede9fe 0%, #f3f4f6 100%);
-  border-color: #8b5cf6;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .matching-item,
-  .pair-item,
-  .remove-pair,
-  .clear-selection {
-    transition: none;
-  }
-  
-  .selection-indicator,
-  .match-indicator {
-    animation: none;
-  }
-  
-  .matching-item.selected {
-    animation: none;
-  }
-}
-
-/* ================================
-   HIGH CONTRAST MODE
-   ================================ */
-
+/* High contrast mode */
 @media (prefers-contrast: high) {
-  .matching-item {
+  .question-item,
+  .question-card,
+  .content-card,
+  .exercise-header {
     border-width: 3px;
   }
   
-  .matching-item.selected {
-    border-color: #000;
-    background: #ffff00;
-    color: #000;
+  .question-number,
+  .exercise-number {
+    border: 2px solid white;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .nav-button,
+  .option-button,
+  .action-button,
+  .progress-dot {
+    transition: none;
   }
   
-  .matching-item.matched {
-    border-color: #008000;
-    background: #90EE90;
-    color: #000;
-  }
-}
-
-.main-instruction {
-  background: #f8fafc;
-  border-left: 4px solid #3b82f6;
-  padding: 16px 20px;
-  margin-bottom: 24px;
-  border-radius: 8px;
-  font-size: 1rem;
-  line-height: 1.6;
-  color: #374151;
-  white-space: pre-wrap;
-}
-
-.multiple-questions-container {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.question-block {
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.question-number-label {
-  font-weight: 600;
-  color: #4f46e5;
-  font-size: 0.9rem;
-  margin-bottom: 8px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.question-text-clear {
-  font-size: 1rem;
-  color: #374151;
-  margin-bottom: 16px;
-  line-height: 1.5;
-  padding: 12px 0;
-  border-bottom: 1px solid #f3f4f6;
-}
-
-.answer-input-container {
-  margin-top: 12px;
-}
-
-.single-question-container {
-  margin-top: 16px;
-}
-
-.answer-textarea {
-  width: 100%;
-  padding: 12px 16px;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 1rem;
-  resize: vertical;
-  transition: border-color 0.2s ease;
-  font-family: inherit;
-}
-
-.answer-textarea:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.answer-textarea::placeholder {
-  color: #9ca3af;
-  font-style: italic;
-}
-
-.multiple-selection-hint {
-  background: #fef3c7;
-  border: 1px solid #f59e0b;
-  color: #92400e;
-  padding: 12px 16px;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  font-size: 0.9rem;
-  font-weight: 500;
-}
-
-.option-item {
-  display: flex;
-  align-items: center;
-  padding: 12px 16px;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  margin-bottom: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  background: white;
-}
-
-.option-item:hover:not(.disabled) {
-  border-color: #3b82f6;
-  background: #f0f9ff;
-}
-
-.option-item.selected {
-  border-color: #3b82f6;
-  background: #dbeafe;
-}
-
-.option-item.disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.option-input {
-  margin-right: 12px;
-  width: 18px;
-  height: 18px;
-}
-
-.option-text {
-  flex: 1;
-  font-size: 1rem;
-  line-height: 1.4;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .main-instruction {
-    padding: 12px 16px;
-    margin-bottom: 20px;
-  }
-  
-  .question-block {
-    padding: 16px;
-  }
-  
-  .multiple-questions-container {
-    gap: 16px;
+  .nav-button:hover,
+  .action-button:hover {
+    transform: none;
   }
 }
 </style>
-}
-// In useExercises.js, update `validateShortAnswer`
-const validateShortAnswer = (userAnswer, exercise) => {
-  console.log('🔍 Validating short answer:', { userAnswer, exercise })
-  
-  // Handle multiple questions
-  if (exercise.questions && Array.isArray(exercise.questions) && exercise.questions.length > 1) {
-    if (!Array.isArray(userAnswer)) {
-      console.log('❌ Short answer validation failed: userAnswer is not an array for multiple questions')
-      return false
-    }
-    
-    const correctAnswers = getCorrectAnswersArray(exercise)
-    console.log('🔍 Multiple questions validation:', { userAnswer, correctAnswers })
-    
-    // Check if number of answers matches number of questions
-    if (userAnswer.length !== correctAnswers.length) {
-      console.log('❌ Short answer validation failed: answer count mismatch')
-      return false
-    }
-    
-    // Check each answer
-    return userAnswer.every((answer, index) => {
-      if (answer === undefined || answer === null || typeof answer !== 'string') return false
-      
-      const correctAnswer = correctAnswers[index]
-      if (correctAnswer === undefined || correctAnswer === null) return false
-      
-      const userTrimmed = answer.trim().toLowerCase()
-      const correctTrimmed = String(correctAnswer).trim().toLowerCase()
-      
-      if (userTrimmed === correctTrimmed) return true
-      
-      // Fuzzy matching for longer answers
-      if (correctTrimmed.length > 3) {
-        const similarity = calculateSimilarity(userTrimmed, correctTrimmed)
-        return similarity > 0.8
-      }
-      
-      return false
-    })
-  }
-  
-  // Single question validation (existing logic)
-  if (!userAnswer || typeof userAnswer !== 'string') {
-    return false
-  }
-
-  const correctAnswers = getCorrectAnswersArray(exercise)
-  const userAnswerTrimmed = userAnswer.trim().toLowerCase()
-
-  return correctAnswers.some(answer => {
-    const correctAnswerTrimmed = String(answer).trim().toLowerCase()
-    
-    if (userAnswerTrimmed === correctAnswerTrimmed) {
-      return true
-    }
-    
-    if (correctAnswerTrimmed.length > 3) {
-      const similarity = calculateSimilarity(userAnswerTrimmed, correctAnswerTrimmed)
-      return similarity > 0.8
-    }
-    
-    return false
-  })
-}
-
-// In useExercises.js, update `getCorrectAnswerDisplay`
-const getCorrectAnswerDisplay = (exercise) => {
-  if (!exercise) return ''
-
-  const exerciseType = exercise.type || 'short-answer'
-  const correctAnswer = exercise.correctAnswer || exercise.answer
-  
-  switch (exerciseType) {
-    case 'matching':
-      if (exercise.pairs && Array.isArray(exercise.pairs)) {
-        return exercise.pairs.map(pair => {
-          let left = String(pair.left || pair[0] || '')
-          let right = String(pair.right || pair[1] || '')
-          return `${left} ↔ ${right}`
-        }).join('; ')
-      }
-      return 'Правильные пары показаны выше'
-
-    case 'multiple-choice':
-    case 'abc':
-    case 'dialogue-completion':
-      if (Array.isArray(correctAnswer)) {
-        return correctAnswer.map(ans => {
-          if (typeof ans === 'number' && exercise.options) {
-            const option = exercise.options[ans]
-            return typeof option === 'string' ? option : (option?.text || String(option))
-          }
-          return String(ans)
-        }).join(', ')
-      }
-      if (typeof correctAnswer === 'number' && exercise.options) {
-        const option = exercise.options[correctAnswer]
-        return typeof option === 'string' ? option : (option?.text || String(option))
-      }
-      return String(correctAnswer || '')
-
-    case 'true-false':
-      return String(correctAnswer) === 'true' || String(correctAnswer) === '0' ? 'Правда' : 'Ложь'
-
-    case 'ordering':
-      if (exercise.items && Array.isArray(exercise.items)) {
-        return exercise.items.map((item, index) =>
-          `${index + 1}. ${typeof item === 'string' ? item : (item?.text || String(item))}`
-        ).join('; ')
-      }
-      return 'Правильный порядок показан выше'
-
-    case 'fill-blank':
-      const answers = getCorrectAnswersArray(exercise)
-      return answers.join(', ')
-      
-    case 'short-answer':
-    case 'sentence-transformation':
-    case 'error-correction':
-      if (Array.isArray(correctAnswer)) {
-        return correctAnswer.join('; ')
-      }
-      return String(correctAnswer || '')
-
-    default:
-      return String(correctAnswer || '')
-  }
-}
-// In useExercises.js, update `validateMultipleChoice`
-const validateMultipleChoice = (userAnswer, exercise) => {
-  console.log('🔍 Validating multiple choice:', { userAnswer, correctAnswer: exercise.correctAnswer })
-  
-  const correctAnswer = exercise.correctAnswer
-  
-  // Normalize answers to an array of strings for consistent comparison
-  const normalize = (ans) => {
-    if (Array.isArray(ans)) return ans.map(String).sort()
-    if (ans === null || ans === undefined) return []
-    return [String(ans)]
-  }
-
-  const normalizedUserAnswer = normalize(userAnswer)
-  
-  // Normalize correct answer, converting indices to text if needed
-  const normalizedCorrectAnswer = (() => {
-    if (Array.isArray(correctAnswer)) {
-      return correctAnswer.map(c => {
-        if (typeof c === 'number' && exercise.options) {
-          const option = exercise.options[c]
-          return String(typeof option === 'string' ? option : (option?.text || option))
-        }
-        return String(c)
-      }).sort()
-    }
-    if (typeof correctAnswer === 'number' && exercise.options) {
-      const option = exercise.options[correctAnswer]
-      return [String(typeof option === 'string' ? option : (option?.text || option))]
-    }
-    return normalize(correctAnswer)
-  })()
-
-  console.log('🔍 Normalized answers:', { normalizedUserAnswer, normalizedCorrectAnswer })
-
-  // Compare the JSON strings of the sorted, normalized arrays
-  const isCorrect = JSON.stringify(normalizedUserAnswer) === JSON.stringify(normalizedCorrectAnswer)
-  console.log('✅ Multiple choice correct:', isCorrect)
-  return isCorrect
-}
- add these updates to useexercises js file and send me fully updated code
