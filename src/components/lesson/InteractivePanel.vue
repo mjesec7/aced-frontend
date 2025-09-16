@@ -161,7 +161,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue';
-import { useExercises } from '../composables/useExercises.js';
+import { useExercises } from '../../composables/useExercises.js';
 
 const props = defineProps({
   currentExercise: Object,
