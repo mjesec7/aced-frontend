@@ -144,16 +144,6 @@
              </article>
           </div>
 
-          <div v-if="showCorrectAnswer" class="feedback-summary-card">
-            <h3 class="feedback-title">Result</h3>
-            <div 
-              class="feedback-message"
-              :class="answerWasCorrect ? 'is-correct' : 'is-incorrect'"
-            >
-              {{ confirmation }}
-            </div>
-            <p v-if="!answerWasCorrect" class="feedback-subtitle">Check your answers above for details.</p>
-          </div>
         </div>
       </div>
 
@@ -309,21 +299,44 @@ const onDrop = (questionId, event) => {
 
 // --- UI Helpers ---
 const renderFeedback = (user, correct) => {
+    if (!correct) {
+      const isCorrect = answerWasCorrect.value;
+      const resultClass = isCorrect ? 'is-correct' : 'is-incorrect';
+      return `<div class="feedback-box ${resultClass}"><p class="feedback-line">${confirmation.value}</p></div>`;
+    }
     const isCorrect = (user || '').toString().trim().toLowerCase() === correct.toString().trim().toLowerCase();
     const resultClass = isCorrect ? 'is-correct' : 'is-incorrect';
     let content = `<p class="feedback-line">Ваш ответ: <strong>${user || '(Нет ответа)'}</strong></p>`;
     if (!isCorrect) {
         content += `<p class="feedback-line">Правильный ответ: <strong>${correct}</strong></p>`;
+    } else {
+        content = `<p class="feedback-line">${confirmation.value}</p>`;
     }
     return `<div class="feedback-box ${resultClass}">${content}</div>`;
 };
 const getOptionClasses = (option) => {
-    const optionId = option.substring(0, 1);
+    const optionText = typeof option === 'string' ? option : option.text;
     if (showCorrectAnswer.value) {
-        if (props.currentExercise.correctAnswer === optionId) return 'is-correct';
-        if (userAnswer.value === optionId) return 'is-incorrect';
+        if (Array.isArray(props.currentExercise.correctAnswer)) {
+            const correctOptions = props.currentExercise.correctAnswer.map(c => typeof c === 'number' ? props.currentExercise.options[c].text : c);
+            if (correctOptions.includes(optionText)) return 'is-correct';
+        } else {
+            const correctOptionText = typeof props.currentExercise.correctAnswer === 'number' ? props.currentExercise.options[props.currentExercise.correctAnswer].text : props.currentExercise.correctAnswer;
+            if (correctOptionText === optionText) return 'is-correct';
+        }
+
+        if (Array.isArray(userAnswer.value)) {
+            if (userAnswer.value.includes(optionText)) return 'is-incorrect';
+        } else {
+            if (userAnswer.value === optionText) return 'is-incorrect';
+        }
     }
-    if (userAnswer.value === optionId) return 'is-selected';
+
+    if (Array.isArray(userAnswer.value)) {
+        if (userAnswer.value.includes(optionText)) return 'is-selected';
+    } else {
+        if (userAnswer.value === optionText) return 'is-selected';
+    }
     return '';
 };
 const getMatchingSelectClasses = (pairId, correctAnswer) => {
