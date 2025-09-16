@@ -1,4 +1,4 @@
-// src/composables/useExercises.js - Clean and organized exercise logic with fixed ordering shuffle
+// src/composables/useExercises.js - Enhanced with question-answer detection
 import { ref, reactive, computed } from 'vue'
 
 export function useExercises() {
@@ -42,6 +42,112 @@ export function useExercises() {
   const isOnSecondChance = computed(() => {
     return attemptCount.value === 1 && attemptCount.value < maxAttempts.value
   })
+  
+  // ===================================
+  // NEW: ENHANCED QUESTION DETECTION
+  // ===================================
+  
+  const detectQuestionsFromExercise = (exercise) => {
+    if (!exercise) return []
+    
+    console.log('🔍 Detecting questions from exercise:', exercise)
+    
+    let questions = []
+    
+    // Strategy 1: Check for explicit questions array
+    if (exercise.questions && Array.isArray(exercise.questions)) {
+      questions = exercise.questions.map((q, index) => ({
+        question: typeof q === 'string' ? q : (q.text || q.question || `Вопрос ${index + 1}`),
+        index: index,
+        source: 'explicit-array'
+      }))
+      console.log('🔍 Found explicit questions array:', questions)
+      return questions
+    }
+    
+    // Strategy 2: Parse main question field for multiple questions
+    const mainQuestion = exercise.question || exercise.content || ''
+    if (mainQuestion) {
+      // Split by common question patterns
+      const questionPatterns = [
+        {
+          name: 'numbered-dot',
+          regex: /(\d+\.\s*[^?]*\?)/g,
+          extract: (match) => match.replace(/^\d+\.\s*/, '').trim()
+        },
+        {
+          name: 'numbered-paren',
+          regex: /(\d+\)\s*[^?]*\?)/g,
+          extract: (match) => match.replace(/^\d+\)\s*/, '').trim()
+        },
+        {
+          name: 'question-prefix',
+          regex: /((?:Вопрос|Question)\s*\d+[:.]\s*[^?]*\?)/gi,
+          extract: (match) => match.replace(/(?:Вопрос|Question)\s*\d+[:.]\s*/i, '').trim()
+        },
+        {
+          name: 'simple-questions',
+          regex: /([А-ЯA-Z][^?]*\?)/g,
+          extract: (match) => match.trim()
+        }
+      ]
+      
+      for (const pattern of questionPatterns) {
+        const matches = [...mainQuestion.matchAll(pattern.regex)]
+        if (matches.length > 1) {
+          questions = matches.map((match, index) => ({
+            question: pattern.extract(match[1] || match[0]),
+            index: index,
+            source: `pattern-${pattern.name}`
+          }))
+          console.log(`🔍 Parsed questions using ${pattern.name}:`, questions)
+          break
+        }
+      }
+      
+      // Strategy 3: Split by line breaks if multiple lines with question marks
+      if (questions.length === 0) {
+        const lines = mainQuestion.split(/\n+/).filter(line => line.trim().length > 0)
+        const questionLines = lines.filter(line => line.includes('?'))
+        
+        if (questionLines.length > 1) {
+          questions = questionLines.map((line, index) => ({
+            question: line.trim().replace(/^\d+[\.)]\s*/, ''), // Remove numbering
+            index: index,
+            source: 'line-split'
+          }))
+          console.log('🔍 Split questions by lines:', questions)
+        }
+      }
+    }
+    
+    // Strategy 4: Check data field for questions
+    if (questions.length === 0 && exercise.data) {
+      if (Array.isArray(exercise.data)) {
+        const dataQuestions = exercise.data.filter(item => {
+          if (typeof item === 'string') return item.includes('?')
+          return item && (item.question || item.text) && String(item.question || item.text).includes('?')
+        })
+        
+        if (dataQuestions.length > 0) {
+          questions = dataQuestions.map((item, index) => ({
+            question: typeof item === 'string' ? item : (item.question || item.text || `Вопрос ${index + 1}`),
+            index: index,
+            source: 'data-array'
+          }))
+        }
+      } else if (exercise.data.questions && Array.isArray(exercise.data.questions)) {
+        questions = exercise.data.questions.map((q, index) => ({
+          question: typeof q === 'string' ? q : (q.text || q.question || `Вопрос ${index + 1}`),
+          index: index,
+          source: 'data-questions'
+        }))
+      }
+    }
+    
+    console.log('🔍 Final detected questions:', questions)
+    return questions
+  }
   
   // ===================================
   // UTILITY FUNCTIONS
@@ -131,39 +237,69 @@ export function useExercises() {
   }
 
   // ===================================
-  // VALIDATION FUNCTIONS
+  // ENHANCED VALIDATION FUNCTIONS
   // ===================================
   
   const validateShortAnswer = (userAnswer, exercise) => {
     console.log('🔍 Validating short answer:', { userAnswer, exercise })
     
-    // Handle multiple questions
-    if (exercise.questions && Array.isArray(exercise.questions) && exercise.questions.length > 1) {
-      if (!Array.isArray(userAnswer)) return false
+    // Detect questions from exercise
+    const detectedQuestions = detectQuestionsFromExercise(exercise)
+    
+    // Handle multiple questions (enhanced detection)
+    if (detectedQuestions.length > 1) {
+      if (!Array.isArray(userAnswer)) {
+        console.log('🔍 Multiple questions detected but userAnswer is not array:', userAnswer)
+        return false
+      }
       
       const correctAnswers = getCorrectAnswersArray(exercise)
-      console.log('🔍 Multiple questions validation:', { userAnswer, correctAnswers })
+      console.log('🔍 Multiple questions validation:', { userAnswer, correctAnswers, detectedQuestions })
       
-      // Check each answer
-      return userAnswer.every((answer, index) => {
-        if (!answer || typeof answer !== 'string') return false
+      // Validate each detected question
+      let validAnswers = 0
+      const totalQuestions = detectedQuestions.length
+      
+      for (let i = 0; i < totalQuestions; i++) {
+        const userAnswerItem = userAnswer[i]
+        if (!userAnswerItem || typeof userAnswerItem !== 'string') continue
         
-        const correctAnswer = correctAnswers[index]
-        if (!correctAnswer) return false
+        const userTrimmed = userAnswerItem.trim().toLowerCase()
+        if (userTrimmed.length < 1) continue
         
-        const userTrimmed = answer.trim().toLowerCase()
-        const correctTrimmed = String(correctAnswer).trim().toLowerCase()
-        
-        if (userTrimmed === correctTrimmed) return true
-        
-        // Fuzzy matching for longer answers
-        if (correctTrimmed.length > 3) {
-          const similarity = calculateSimilarity(userTrimmed, correctTrimmed)
-          return similarity > 0.8
+        // Get corresponding correct answer
+        let correctAnswer = null
+        if (correctAnswers[i]) {
+          correctAnswer = correctAnswers[i]
+        } else if (correctAnswers.length === 1) {
+          // If only one correct answer provided, use pattern matching
+          correctAnswer = correctAnswers[0]
         }
         
-        return false
-      })
+        if (correctAnswer) {
+          const correctTrimmed = String(correctAnswer).trim().toLowerCase()
+          
+          if (userTrimmed === correctTrimmed) {
+            validAnswers++
+          } else if (correctTrimmed.length > 3) {
+            // Fuzzy matching for longer answers
+            const similarity = calculateSimilarity(userTrimmed, correctTrimmed)
+            if (similarity > 0.8) {
+              validAnswers++
+            }
+          }
+        } else {
+          // If no specific correct answer, accept any non-empty response
+          if (userTrimmed.length >= 2) {
+            validAnswers++
+          }
+        }
+      }
+      
+      // Require at least 70% of questions to be answered correctly
+      const successRate = validAnswers / totalQuestions
+      console.log('🔍 Multiple questions success rate:', successRate, `(${validAnswers}/${totalQuestions})`)
+      return successRate >= 0.7
     }
     
     // Single question validation (existing logic)
@@ -239,7 +375,6 @@ export function useExercises() {
   }
 
   const validateTrueFalse = (userAnswer, exercise) => {
-    
     const correctAnswer = exercise.correctAnswer
 
     // Boolean correct answer
@@ -278,7 +413,6 @@ export function useExercises() {
   }
 
   const validateFillBlank = (userAnswers, exercise) => {
-    
     if (!Array.isArray(userAnswers)) {
       userAnswers = fillBlankAnswers.value || []
     }
@@ -337,7 +471,6 @@ export function useExercises() {
   }
 
   const validateMatching = (userPairs, exercise) => {
-    
     if (!Array.isArray(userPairs)) {
       userPairs = matchingPairs.value || []
     }
@@ -372,7 +505,6 @@ export function useExercises() {
   }
 
   const validateOrdering = (userItems, exercise) => {
-    
     if (!Array.isArray(userItems)) {
       userItems = orderingItems.value || []
     }
@@ -407,7 +539,6 @@ export function useExercises() {
   }
 
   const validateDragDrop = (userPlacements, exercise) => {
-    
     if (!userPlacements || typeof userPlacements !== 'object') {
       userPlacements = dragDropPlacements
     }
@@ -469,12 +600,12 @@ export function useExercises() {
 
     switch (exerciseType) {
       case 'short-answer':
-      case 'sentence-transformation': // Added
-      case 'error-correction':      // Added
+      case 'sentence-transformation':
+      case 'error-correction':
         return validateShortAnswer(userAnswer.value, exercise);
       case 'multiple-choice':
       case 'abc':
-      case 'dialogue-completion': // Added
+      case 'dialogue-completion':
         return validateMultipleChoice(userAnswer.value, exercise);
       case 'true-false':
         return validateTrueFalse(userAnswer.value, exercise);
@@ -521,6 +652,15 @@ export function useExercises() {
     
     switch (exerciseType) {
       case 'short-answer':
+        const detectedQuestions = detectQuestionsFromExercise(exercise)
+        if (detectedQuestions.length > 1) {
+          // For multiple questions, check if at least 70% are answered
+          if (!Array.isArray(userAnswer.value)) return false
+          const answeredCount = userAnswer.value.filter(answer => 
+            answer && typeof answer === 'string' && answer.trim().length > 0
+          ).length
+          return answeredCount >= Math.ceil(detectedQuestions.length * 0.7)
+        }
         return userAnswer.value && userAnswer.value.trim().length > 0
         
       case 'multiple-choice':
@@ -625,7 +765,7 @@ export function useExercises() {
   }
 
   // ===================================
-  // ANSWER DISPLAY FUNCTIONS
+  // ENHANCED ANSWER DISPLAY FUNCTIONS
   // ===================================
   
   const getCorrectAnswerDisplay = (exercise) => {
@@ -634,6 +774,22 @@ export function useExercises() {
     const exerciseType = exercise.type || 'short-answer'
     
     switch (exerciseType) {
+      case 'short-answer':
+        const detectedQuestions = detectQuestionsFromExercise(exercise)
+        if (detectedQuestions.length > 1) {
+          const correctAnswers = getCorrectAnswersArray(exercise)
+          if (correctAnswers.length > 1) {
+            return correctAnswers.map((answer, index) => 
+              `${index + 1}. ${answer}`
+            ).join('; ')
+          } else if (correctAnswers.length === 1) {
+            return `Образец ответа: ${correctAnswers[0]}`
+          } else {
+            return 'Ответьте на каждый вопрос подробно'
+          }
+        }
+        return String(exercise.correctAnswer || exercise.answer || '')
+
       case 'matching':
         if (exercise.pairs && Array.isArray(exercise.pairs)) {
           return exercise.pairs.map((pair) => {
@@ -715,7 +871,6 @@ export function useExercises() {
   // ===================================
   
   const submitAnswer = (exercise) => {
-    
     if (!canSubmitAnswer(exercise)) {
       return false
     }
@@ -745,7 +900,6 @@ export function useExercises() {
   }
 
   const submitQuizAnswer = (quiz) => {
-    
     if (!canSubmitAnswer(quiz)) {
       return false
     }
@@ -784,17 +938,17 @@ export function useExercises() {
     let exercises = []
     
     try {
-      // ✅ NEW: Handle the specific structure from your lesson
+      // ✅ Handle the specific structure from your lesson
       if (Array.isArray(currentStep.data)) {
         exercises = currentStep.data
         console.log('🔍 Found exercises in data array:', exercises.length)
       } 
-      // ✅ NEW: Handle nested exercise structure
+      // ✅ Handle nested exercise structure
       else if (currentStep.data && Array.isArray(currentStep.data.exercises)) {
         exercises = currentStep.data.exercises
         console.log('🔍 Found exercises in data.exercises:', exercises.length)
       }
-      // ✅ NEW: Handle when data contains mixed exercise types
+      // ✅ Handle when data contains mixed exercise types
       else if (currentStep.data && currentStep.data.question) {
         exercises = [currentStep.data]
         console.log('🔍 Found single exercise in data')
@@ -819,6 +973,12 @@ export function useExercises() {
       console.log('🔍 Exercise questions:', exercise?.questions)
       console.log('🔍 Exercise options:', exercise?.options)
       console.log('🔍 Exercise correctAnswer:', exercise?.correctAnswer)
+      
+      // Enhanced: Detect questions for better processing
+      if (exercise) {
+        const detectedQuestions = detectQuestionsFromExercise(exercise)
+        console.log('🔍 Detected questions from exercise:', detectedQuestions)
+      }
       
       return exercise || null
       
@@ -915,7 +1075,6 @@ export function useExercises() {
   }
   
   const goToNextExercise = (currentStep, onNextStep) => {
-    
     if (isLastExercise(currentStep)) {
       resetExerciseState()
       onNextStep()
@@ -927,7 +1086,6 @@ export function useExercises() {
   }
   
   const goToNextQuiz = (currentStep, onNextStep) => {
-    
     if (isLastQuiz(currentStep)) {
       resetExerciseState()
       onNextStep()
@@ -960,6 +1118,14 @@ export function useExercises() {
         break
       case 'matching':
         initializeMatchingItems()
+        break
+      case 'short-answer':
+        // Enhanced: Initialize for multiple questions
+        const detectedQuestions = detectQuestionsFromExercise(exercise)
+        if (detectedQuestions.length > 1) {
+          console.log('🔧 Initializing multiple answer array for', detectedQuestions.length, 'questions')
+          userAnswer.value = new Array(detectedQuestions.length).fill('')
+        }
         break
     }
   }
@@ -1062,7 +1228,6 @@ export function useExercises() {
         dragDropPlacements[zone.id] = []
       })
     }
-    
   }
   
   const initializeMatchingItems = () => {
@@ -1081,7 +1246,6 @@ export function useExercises() {
   // ===================================
   
   const updateUserAnswer = (newAnswer, exercise) => {
-    
     if (!exercise) {
       userAnswer.value = newAnswer
       return
@@ -1098,6 +1262,15 @@ export function useExercises() {
         break
       case 'fill-blank':
         // Fill blank is updated separately via updateFillBlankAnswer
+        break
+      case 'short-answer':
+        // Enhanced: Handle multiple questions
+        const detectedQuestions = detectQuestionsFromExercise(exercise)
+        if (detectedQuestions.length > 1 && Array.isArray(newAnswer)) {
+          userAnswer.value = newAnswer
+        } else {
+          userAnswer.value = newAnswer
+        }
         break
       default:
         userAnswer.value = newAnswer
@@ -1116,7 +1289,6 @@ export function useExercises() {
     const newValue = typeof value === 'object' && value?.target ? value.target.value : value
     fillBlankAnswers.value[index] = newValue || ''
     fillBlankAnswers.value = [...fillBlankAnswers.value]
-    
   }
 
   const getCurrentUserAnswer = () => {
@@ -1132,7 +1304,6 @@ export function useExercises() {
   }
 
   const removeMatchingPair = (pairIndex) => {
-    
     if (pairIndex >= 0 && pairIndex < matchingPairs.value.length) {
       const updatedPairs = matchingPairs.value.filter((_, index) => index !== pairIndex)
       matchingPairs.value = updatedPairs
@@ -1157,7 +1328,6 @@ export function useExercises() {
   }
 
   const handleDropInZone = ({ zoneId, item }) => {
-    
     if (!dragDropPlacements[zoneId]) {
       dragDropPlacements[zoneId] = []
     }
@@ -1190,7 +1360,6 @@ export function useExercises() {
   }
 
   const handleRemoveDroppedItem = ({ zoneId, itemIndex, item }) => {
-    
     if (dragDropPlacements[zoneId] && dragDropPlacements[zoneId][itemIndex]) {
       dragDropPlacements[zoneId].splice(itemIndex, 1)
     }
@@ -1356,6 +1525,9 @@ export function useExercises() {
     isLastQuiz,
     goToNextExercise,
     goToNextQuiz,
+    
+    // Enhanced: Question Detection Methods
+    detectQuestionsFromExercise,
     
     // Validation Methods
     validateCurrentAnswer,

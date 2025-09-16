@@ -13,33 +13,59 @@
           <div class="scroll-content-wrapper">
             
             <div v-if="exerciseType === 'short-answer'" class="exercise-type">
-              <div v-if="currentExercise?.question" class="main-question-text">
+              <!-- Main question text (if exists) -->
+              <div v-if="currentExercise?.question && !hasMultipleQuestions" class="main-question-text">
                 {{ currentExercise.question }}
               </div>
               
-              <div v-if="currentExercise?.questions && currentExercise.questions.length > 1" class="multiple-questions">
-                <div 
-                  v-for="(subQuestion, qIndex) in currentExercise.questions" 
-                  :key="`question-${qIndex}-${exerciseIndex}`"
-                  class="sub-question"
-                >
-                  <div class="question-label">{{ qIndex + 1 }}. {{ subQuestion }}</div>
-                  <div class="answer-input">
-                    <textarea
-                      :value="getMultipleAnswerValue(qIndex)"
-                      @input="updateMultipleAnswer(qIndex, $event)"
-                      :placeholder="`Ответ на вопрос ${qIndex + 1}...`"
-                      rows="3"
-                      class="answer-textarea"
-                      :disabled="showCorrectAnswer"
-                    />
+              <!-- Content/Instructions (separate from questions) -->
+              <div v-if="exerciseContentText" class="exercise-content-text" v-html="exerciseContentText"></div>
+              
+              <!-- Multiple Questions Section -->
+              <div v-if="hasMultipleQuestions" class="multiple-questions-container">
+                <div class="questions-header">
+                  <h4>{{ questionsHeaderText }}</h4>
+                  <div class="questions-count">{{ detectedQuestions.length }} вопросов</div>
+                </div>
+                
+                <div class="questions-list">
+                  <div 
+                    v-for="(questionItem, qIndex) in detectedQuestions" 
+                    :key="`question-${qIndex}-${exerciseIndex}`"
+                    class="question-answer-pair"
+                  >
+                    <div class="question-part">
+                      <div class="question-number">{{ qIndex + 1 }}.</div>
+                      <div class="question-text">{{ questionItem.question }}</div>
+                    </div>
+                    
+                    <div class="answer-part">
+                      <label :for="`answer-${qIndex}`" class="answer-label">Ответ:</label>
+                      <div class="answer-input-container">
+                        <textarea
+                          :id="`answer-${qIndex}`"
+                          :value="getMultipleAnswerValue(qIndex)"
+                          @input="updateMultipleAnswer(qIndex, $event)"
+                          :placeholder="`Введите ответ на вопрос ${qIndex + 1}...`"
+                          rows="2"
+                          class="answer-textarea compact"
+                          :disabled="showCorrectAnswer"
+                        />
+                        <div v-if="getMultipleAnswerValue(qIndex)" class="char-count">
+                          {{ getMultipleAnswerValue(qIndex).length }} символов
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
               
+              <!-- Single Question (fallback) -->
               <div v-else class="single-question">
                 <div class="answer-input">
+                  <label for="single-answer" class="answer-label">Ваш ответ:</label>
                   <textarea
+                    id="single-answer"
                     v-model="localUserAnswer"
                     @input="updateAnswer"
                     placeholder="Введите ваш ответ здесь..."
@@ -613,6 +639,12 @@
           @click="$emit('next-quiz')"
           class="interactive-nav-btn next-btn"
           :aria-label="isLastQuiz ? 'Завершить викторину' : 'Следующий вопрос'"
+        ></button>
+        <button 
+          v-if="confirmation && (answerWasCorrect || showCorrectAnswer)"
+          @click="$emit('next-quiz')"
+          class="interactive-nav-btn next-btn"
+          :aria-label="isLastQuiz ? 'Завершить викторину' : 'Следующий вопрос'"
         >
           {{ isLastQuiz ? 'Завершить' : 'Следующий вопрос' }}
           <span class="next-icon">→</span>
@@ -621,7 +653,6 @@
     </div>
   </div>
 </template>
-
 <script>
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
 
@@ -693,6 +724,27 @@ export default {
     const isQuizStep = computed(() => 
       props.currentStep?.type === 'quiz'
     )
+
+    const hasMultipleQuestions = computed(() => {
+      const questions = props.currentExercise?.questions
+      return Array.isArray(questions) && questions.length > 1
+    })
+
+    const getQuestionsList = computed(() => {
+      if (!props.currentExercise) return []
+      
+      // Check for questions array
+      if (Array.isArray(props.currentExercise.questions)) {
+        return props.currentExercise.questions
+      }
+      
+      // Fallback to single question
+      if (props.currentExercise.question) {
+        return [props.currentExercise.question]
+      }
+      
+      return []
+    })
     
     const exerciseType = computed(() => {
       console.log('🔍 DEBUG exerciseType - Exercise:', props.currentExercise)
@@ -701,9 +753,13 @@ export default {
       
       let type = props.currentExercise.type || 'short-answer'
       
-      // Log multiple questions detection
-      if (type === 'short-answer' && props.currentExercise.questions && Array.isArray(props.currentExercise.questions)) {
-        console.log('🔍 Multiple questions detected:', props.currentExercise.questions.length)
+      // Log detection
+      if (type === 'dialogue-completion') {
+        console.log('🔍 Dialogue completion detected')
+      }
+      
+      if (hasMultipleQuestions.value) {
+        console.log('🔍 Multiple questions detected:', getQuestionsList.value.length)
       }
       
       console.log('🔍 Final exercise type:', type)
@@ -730,8 +786,18 @@ export default {
 
     const allowsMultipleSelections = computed(() => {
       const correctAnswer = props.currentExercise?.correctAnswer
-      // Check if correctAnswer is an array with multiple values OR if explicitly set
-      return Array.isArray(correctAnswer) && correctAnswer.length > 1
+      
+      // For dialogue-completion, check if multiple answers expected
+      if (exerciseType.value === 'dialogue-completion') {
+        return Array.isArray(correctAnswer) && correctAnswer.length > 1
+      }
+      
+      // For other multiple choice types
+      if (['multiple-choice', 'abc'].includes(exerciseType.value)) {
+        return Array.isArray(correctAnswer) && correctAnswer.length > 1
+      }
+      
+      return false
     })
     
     // Left items computation
@@ -873,6 +939,8 @@ export default {
           return localUserAnswer.value !== null && localUserAnswer.value !== undefined && String(localUserAnswer.value).trim() !== ''
           
         case 'short-answer':
+        case 'sentence-transformation':
+        case 'error-correction':
           if (props.currentExercise?.questions && props.currentExercise.questions.length > 1) {
             // For multiple questions, check if at least one answer is given
             return localMultipleAnswers.value.some(answer => String(answer || '').trim().length >= 1)
@@ -1479,6 +1547,8 @@ export default {
             refreshKey.value++
             break
           case 'short-answer':
+          case 'sentence-transformation':
+          case 'error-correction':
             // If it's a multi-question short answer, initialize the array
             if (newExercise.questions && newExercise.questions.length > 1) {
               localMultipleAnswers.value = new Array(newExercise.questions.length).fill('')
@@ -1554,6 +1624,8 @@ export default {
       blankCount,
       canSubmitAnswer,
       allowsMultipleSelections,
+      hasMultipleQuestions,
+      getQuestionsList,
       
       // Basic answer methods
       updateAnswer,
@@ -2244,4 +2316,315 @@ export default {
     color: #000;
   }
 }
+
+.main-instruction {
+  background: #f8fafc;
+  border-left: 4px solid #3b82f6;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  border-radius: 8px;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #374151;
+  white-space: pre-wrap;
+}
+
+.multiple-questions-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.question-block {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.question-number-label {
+  font-weight: 600;
+  color: #4f46e5;
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.question-text-clear {
+  font-size: 1rem;
+  color: #374151;
+  margin-bottom: 16px;
+  line-height: 1.5;
+  padding: 12px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.answer-input-container {
+  margin-top: 12px;
+}
+
+.single-question-container {
+  margin-top: 16px;
+}
+
+.answer-textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 1rem;
+  resize: vertical;
+  transition: border-color 0.2s ease;
+  font-family: inherit;
+}
+
+.answer-textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.answer-textarea::placeholder {
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.multiple-selection-hint {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  color: #92400e;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.option-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.option-item:hover:not(.disabled) {
+  border-color: #3b82f6;
+  background: #f0f9ff;
+}
+
+.option-item.selected {
+  border-color: #3b82f6;
+  background: #dbeafe;
+}
+
+.option-item.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.option-input {
+  margin-right: 12px;
+  width: 18px;
+  height: 18px;
+}
+
+.option-text {
+  flex: 1;
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .main-instruction {
+    padding: 12px 16px;
+    margin-bottom: 20px;
+  }
+  
+  .question-block {
+    padding: 16px;
+  }
+  
+  .multiple-questions-container {
+    gap: 16px;
+  }
+}
 </style>
+}
+// In useExercises.js, update `validateShortAnswer`
+const validateShortAnswer = (userAnswer, exercise) => {
+  console.log('🔍 Validating short answer:', { userAnswer, exercise })
+  
+  // Handle multiple questions
+  if (exercise.questions && Array.isArray(exercise.questions) && exercise.questions.length > 1) {
+    if (!Array.isArray(userAnswer)) {
+      console.log('❌ Short answer validation failed: userAnswer is not an array for multiple questions')
+      return false
+    }
+    
+    const correctAnswers = getCorrectAnswersArray(exercise)
+    console.log('🔍 Multiple questions validation:', { userAnswer, correctAnswers })
+    
+    // Check if number of answers matches number of questions
+    if (userAnswer.length !== correctAnswers.length) {
+      console.log('❌ Short answer validation failed: answer count mismatch')
+      return false
+    }
+    
+    // Check each answer
+    return userAnswer.every((answer, index) => {
+      if (answer === undefined || answer === null || typeof answer !== 'string') return false
+      
+      const correctAnswer = correctAnswers[index]
+      if (correctAnswer === undefined || correctAnswer === null) return false
+      
+      const userTrimmed = answer.trim().toLowerCase()
+      const correctTrimmed = String(correctAnswer).trim().toLowerCase()
+      
+      if (userTrimmed === correctTrimmed) return true
+      
+      // Fuzzy matching for longer answers
+      if (correctTrimmed.length > 3) {
+        const similarity = calculateSimilarity(userTrimmed, correctTrimmed)
+        return similarity > 0.8
+      }
+      
+      return false
+    })
+  }
+  
+  // Single question validation (existing logic)
+  if (!userAnswer || typeof userAnswer !== 'string') {
+    return false
+  }
+
+  const correctAnswers = getCorrectAnswersArray(exercise)
+  const userAnswerTrimmed = userAnswer.trim().toLowerCase()
+
+  return correctAnswers.some(answer => {
+    const correctAnswerTrimmed = String(answer).trim().toLowerCase()
+    
+    if (userAnswerTrimmed === correctAnswerTrimmed) {
+      return true
+    }
+    
+    if (correctAnswerTrimmed.length > 3) {
+      const similarity = calculateSimilarity(userAnswerTrimmed, correctAnswerTrimmed)
+      return similarity > 0.8
+    }
+    
+    return false
+  })
+}
+
+// In useExercises.js, update `getCorrectAnswerDisplay`
+const getCorrectAnswerDisplay = (exercise) => {
+  if (!exercise) return ''
+
+  const exerciseType = exercise.type || 'short-answer'
+  const correctAnswer = exercise.correctAnswer || exercise.answer
+  
+  switch (exerciseType) {
+    case 'matching':
+      if (exercise.pairs && Array.isArray(exercise.pairs)) {
+        return exercise.pairs.map(pair => {
+          let left = String(pair.left || pair[0] || '')
+          let right = String(pair.right || pair[1] || '')
+          return `${left} ↔ ${right}`
+        }).join('; ')
+      }
+      return 'Правильные пары показаны выше'
+
+    case 'multiple-choice':
+    case 'abc':
+    case 'dialogue-completion':
+      if (Array.isArray(correctAnswer)) {
+        return correctAnswer.map(ans => {
+          if (typeof ans === 'number' && exercise.options) {
+            const option = exercise.options[ans]
+            return typeof option === 'string' ? option : (option?.text || String(option))
+          }
+          return String(ans)
+        }).join(', ')
+      }
+      if (typeof correctAnswer === 'number' && exercise.options) {
+        const option = exercise.options[correctAnswer]
+        return typeof option === 'string' ? option : (option?.text || String(option))
+      }
+      return String(correctAnswer || '')
+
+    case 'true-false':
+      return String(correctAnswer) === 'true' || String(correctAnswer) === '0' ? 'Правда' : 'Ложь'
+
+    case 'ordering':
+      if (exercise.items && Array.isArray(exercise.items)) {
+        return exercise.items.map((item, index) =>
+          `${index + 1}. ${typeof item === 'string' ? item : (item?.text || String(item))}`
+        ).join('; ')
+      }
+      return 'Правильный порядок показан выше'
+
+    case 'fill-blank':
+      const answers = getCorrectAnswersArray(exercise)
+      return answers.join(', ')
+      
+    case 'short-answer':
+    case 'sentence-transformation':
+    case 'error-correction':
+      if (Array.isArray(correctAnswer)) {
+        return correctAnswer.join('; ')
+      }
+      return String(correctAnswer || '')
+
+    default:
+      return String(correctAnswer || '')
+  }
+}
+// In useExercises.js, update `validateMultipleChoice`
+const validateMultipleChoice = (userAnswer, exercise) => {
+  console.log('🔍 Validating multiple choice:', { userAnswer, correctAnswer: exercise.correctAnswer })
+  
+  const correctAnswer = exercise.correctAnswer
+  
+  // Normalize answers to an array of strings for consistent comparison
+  const normalize = (ans) => {
+    if (Array.isArray(ans)) return ans.map(String).sort()
+    if (ans === null || ans === undefined) return []
+    return [String(ans)]
+  }
+
+  const normalizedUserAnswer = normalize(userAnswer)
+  
+  // Normalize correct answer, converting indices to text if needed
+  const normalizedCorrectAnswer = (() => {
+    if (Array.isArray(correctAnswer)) {
+      return correctAnswer.map(c => {
+        if (typeof c === 'number' && exercise.options) {
+          const option = exercise.options[c]
+          return String(typeof option === 'string' ? option : (option?.text || option))
+        }
+        return String(c)
+      }).sort()
+    }
+    if (typeof correctAnswer === 'number' && exercise.options) {
+      const option = exercise.options[correctAnswer]
+      return [String(typeof option === 'string' ? option : (option?.text || option))]
+    }
+    return normalize(correctAnswer)
+  })()
+
+  console.log('🔍 Normalized answers:', { normalizedUserAnswer, normalizedCorrectAnswer })
+
+  // Compare the JSON strings of the sorted, normalized arrays
+  const isCorrect = JSON.stringify(normalizedUserAnswer) === JSON.stringify(normalizedCorrectAnswer)
+  console.log('✅ Multiple choice correct:', isCorrect)
+  return isCorrect
+}
+ add these updates to useexercises js file and send me fully updated code
