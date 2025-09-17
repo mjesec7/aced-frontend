@@ -99,8 +99,8 @@
               <p class="matching-text-left">{{ pair.left }}</p>
               <div class="matching-select-wrapper">
                 <select 
-                  :value="userAnswer[pair.id] || ''"
-                  @change="updateMatchingAnswer(pair.id, $event.target.value)"
+                  :value="localMatchingAnswers[pair.id] || ''"
+                  @change="localMatchingAnswers[pair.id] = $event.target.value"
                   :disabled="showCorrectAnswer"
                   class="matching-select"
                   :class="getMatchingSelectClasses(pair.id, pair.correctMatch)"
@@ -184,19 +184,24 @@ const {
     resetExerciseState 
 } = useExercises();
 
+const localMatchingAnswers = ref({});
 const draggedItem = ref({ questionId: null, wordIndex: null });
+const shuffledRightOptions = ref([]);
 
 const canSubmit = computed(() => {
+  // For matching exercises, check the local state
+  if (props.currentExercise?.type === 'matching') {
+    return Object.values(localMatchingAnswers.value).some(val => val);
+  }
+
+  // For all other exercise types, check the global userAnswer state
   const answer = userAnswer.value;
   if (Array.isArray(answer)) {
-    // For multi-part answers (like short-answer with multiple questions or multi-select)
     return answer.some(val => val && val.trim() !== '');
   }
   if (typeof answer === 'object' && answer !== null) {
-    // For object-based answers (like matching or fill-blanks)
     return Object.values(answer).some(val => val);
   }
-  // For single answers (text, selections, etc.)
   return answer !== null && answer !== undefined && answer !== '';
 });
 
@@ -214,7 +219,14 @@ watch(() => props.currentExercise, (newEx) => {
             }
             break;
         case 'matching':
-            userAnswer.value = {}; // ✅ Ensure it's an empty object
+            localMatchingAnswers.value = {};
+            userAnswer.value = {};
+            if (newEx.pairs) {
+                const rightOptions = newEx.pairs.map(p => p.correctMatch || p.right);
+                shuffledRightOptions.value = [...rightOptions].sort(() => Math.random() - 0.5);
+            } else {
+                shuffledRightOptions.value = [];
+            }
             break;
         case 'structure':
              userAnswer.value = newEx.questions.reduce((acc, q) => {
@@ -224,7 +236,6 @@ watch(() => props.currentExercise, (newEx) => {
             break;
         case 'fill-blanks':
              userAnswer.value = {};
-             // Pre-process sentence for easier rendering
              newEx.questions.forEach(q => {
                 q.sentenceParts = [];
                 let remainingSentence = q.sentence;
@@ -238,7 +249,7 @@ watch(() => props.currentExercise, (newEx) => {
             });
             break;
         default:
-            userAnswer.value = null; // Default to null for selection-based exercises
+            userAnswer.value = null;
             break;
     }
   }
@@ -247,8 +258,13 @@ watch(() => props.currentExercise, (newEx) => {
 const exerciseType = computed(() => props.currentExercise?.type || 'short-answer');
 
 const submit = () => {
-    submitLogic(props.currentExercise);
-    emit('submit');
+  // Copy local matching answers to the global state right before submitting
+  if (exerciseType.value === 'matching') {
+    userAnswer.value = localMatchingAnswers.value;
+  }
+  
+  submitLogic(props.currentExercise);
+  emit('submit');
 };
 
 const resetAndNext = () => {
@@ -258,9 +274,8 @@ const resetAndNext = () => {
 const selectOption = (option, index) => {
   const correctAnswerType = typeof props.currentExercise.correctAnswer;
   if (correctAnswerType === 'number') {
-    userAnswer.value = index; // For index-based answers like dialogue-completion
+    userAnswer.value = index;
   } else {
-    // For text or letter-based answers like 'abc'
     const optionText = typeof option === 'string' ? option : option.text;
     const optionId = optionText.substring(0, 1).toUpperCase();
     userAnswer.value = optionId;
@@ -272,14 +287,6 @@ const updateMultiAnswer = (index, value) => {
     const newAnswers = [...userAnswer.value];
     newAnswers[index] = value;
     userAnswer.value = newAnswers;
-};
-const updateMatchingAnswer = (pairId, value) => {
-  // This correctly updates just one property in the answer object,
-  // leaving the others untouched.
-  userAnswer.value = { 
-    ...userAnswer.value, 
-    [pairId]: value 
-  };
 };
 const updateFillBlankAnswer = (blankId, value) => {
     userAnswer.value = { ...userAnswer.value, [blankId]: value };
@@ -319,7 +326,7 @@ const renderFeedback = (user, correct) => {
     if (isCorrect) {
         content = `<p class="feedback-line">${confirmation.value}</p>`;
     } else if (showCorrectAnswer.value) {
-        content += `<p class="feedback-line">${confirmation.value}</p>`; // Use confirmation message for correct answer
+        content += `<p class="feedback-line">${confirmation.value}</p>`;
     }
     return `<div class="feedback-box ${resultClass}">${content}</div>`;
 };
@@ -351,17 +358,11 @@ const getOptionClasses = (option, index) => {
     return '';
 };
 
-const shuffledRightOptions = computed(() => {
-  if (props.currentExercise?.type !== 'matching') {
-    return [];
-  }
-  const rightOptions = props.currentExercise.pairs.map(p => p.correctMatch || p.right);
-  return [...rightOptions].sort(() => Math.random() - 0.5);
-});
-
 const getMatchingSelectClasses = (pairId, correctAnswer) => {
     if (!showCorrectAnswer.value) return '';
-    return userAnswer.value[pairId] === correctAnswer ? 'is-correct' : 'is-incorrect';
+    // For matching, we check the local state for immediate feedback if needed, but validation relies on userAnswer
+    const answer = (exerciseType.value === 'matching' ? localMatchingAnswers.value : userAnswer.value);
+    return answer[pairId] === correctAnswer ? 'is-correct' : 'is-incorrect';
 };
 
 const getFillBlankInputClasses = (blankId, correctAnswer) => {
@@ -377,7 +378,7 @@ const getStructureWordClasses = (questionId, wordIndex) => {
 };
 
 const isOptionUsed = (currentPairId, option) => {
-    return Object.entries(userAnswer.value).some(([pairId, selectedOption]) => {
+    return Object.entries(localMatchingAnswers.value).some(([pairId, selectedOption]) => {
         return pairId != currentPairId && selectedOption === option;
     });
 };
