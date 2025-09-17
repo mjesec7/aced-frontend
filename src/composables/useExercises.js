@@ -326,53 +326,45 @@ export function useExercises() {
     })
   }
 
+  // ✅ UPDATED validateMultipleChoice function
   const validateMultipleChoice = (userAnswer, exercise) => {
-    console.log('🔍 Validating multiple choice:', { userAnswer, correctAnswer: exercise.correctAnswer })
-    
-    const correctAnswer = exercise.correctAnswer
-    
-    // Handle multiple correct answers
-    if (Array.isArray(correctAnswer) && correctAnswer.length > 1) {
-      if (!Array.isArray(userAnswer)) return false
-      
-      // Check if user selected correct number of answers
-      if (userAnswer.length !== correctAnswer.length) {
-        console.log('🔍 Wrong number of selections:', userAnswer.length, 'vs', correctAnswer.length)
-        return false
-      }
-      
-      // Check if all selected answers are correct
-      return correctAnswer.every(correct => {
-        if (typeof correct === 'number' && exercise.options) {
-          const correctText = exercise.options[correct]?.text || exercise.options[correct]
-          return userAnswer.includes(correctText)
-        }
-        return userAnswer.includes(correct)
-      })
-    }
-    
-    // Handle single correct answer (existing logic)
+    const correctAnswer = exercise.correctAnswer;
+
+    // ✅ FIX: First, check for the simple case where the answer is an index number.
     if (typeof correctAnswer === 'number') {
-      if (typeof userAnswer === 'number') {
-        return userAnswer === correctAnswer
-      }
-      
-      if (exercise.options && Array.isArray(exercise.options)) {
-        const userIndex = exercise.options.findIndex(option => {
-          const optionText = typeof option === 'string' ? option : (option?.text || String(option))
-          return optionText === userAnswer
-        })
-        return userIndex === correctAnswer
-      }
+      // The user's answer is also a number (the index), so we do a direct comparison.
+      return userAnswer === correctAnswer;
     }
+
+    // --- The rest of the logic handles more complex cases ---
+    const normalize = (ans) => {
+      if (Array.isArray(ans)) return ans.map(String).sort();
+      if (ans === null || ans === undefined) return [];
+      // This handles cases where the answer might be 'A' or 'B'
+      if (typeof ans === 'string' && ans.length === 1) {
+          const option = exercise.options.find(opt => (opt.text || opt).startsWith(ans + ')'));
+          if (option) return [String(option.text || option)];
+      }
+      return [String(ans)];
+    };
+
+    const normalizedUserAnswer = normalize(userAnswer);
+
+    const normalizedCorrectAnswer = (() => {
+      if (Array.isArray(correctAnswer)) {
+        return correctAnswer.map(c => {
+          if (typeof c === 'number' && exercise.options) {
+            const option = exercise.options[c];
+            return String(typeof option === 'string' ? option : (option?.text || option));
+          }
+          return String(c);
+        }).sort();
+      }
+      return normalize(correctAnswer);
+    })();
     
-    // Handle string answers
-    if (typeof correctAnswer === 'string') {
-      return userAnswer === correctAnswer
-    }
-    
-    return false
-  }
+    return JSON.stringify(normalizedUserAnswer) === JSON.stringify(normalizedCorrectAnswer);
+  };
 
   const validateTrueFalse = (userAnswer, exercise) => {
     const correctAnswer = exercise.correctAnswer
