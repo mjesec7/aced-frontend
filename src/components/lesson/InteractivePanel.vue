@@ -68,7 +68,7 @@
                   class="option-button"
                   :class="getOptionClasses(option, oIndex)"
                 >
-                  {{ option }}
+                  {{ typeof option === 'string' ? option : option.text }}
                 </button>
               </div>
             </article>
@@ -259,7 +259,6 @@ const resetAndNext = () => {
     emit('next-exercise');
 };
 
-// ✅ ADDED new selectOption function
 const selectOption = (option, index) => {
   // Check if the correct answer is a number (like in dialogue-completion)
   if (typeof props.currentExercise.correctAnswer === 'number') {
