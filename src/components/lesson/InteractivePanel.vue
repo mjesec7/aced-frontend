@@ -56,17 +56,17 @@
             </article>
           </div>
 
-          <div v-else-if="exerciseType === 'multiple-choice'" class="exercise-type-container">
+          <div v-else-if="['multiple-choice', 'dialogue-completion'].includes(exerciseType)" class="exercise-type-container">
             <article class="exercise-card">
               <p class="question-text">{{ currentExercise.question }}</p>
               <div class="options-list">
                 <button 
                   v-for="(option, oIndex) in currentExercise.options" 
                   :key="oIndex" 
-                  @click="!showCorrectAnswer && (userAnswer = option.substring(0, 1))" 
+                  @click="!showCorrectAnswer && selectOption(option, oIndex)" 
                   :disabled="showCorrectAnswer"
                   class="option-button"
-                  :class="getOptionClasses(option)"
+                  :class="getOptionClasses(option, oIndex)"
                 >
                   {{ option }}
                 </button>
@@ -234,6 +234,7 @@ const exerciseMeta = computed(() => {
         reading: { color: 'var(--lesson-purple)', lightColor: 'var(--lesson-purple-light)' },
         'short-answer': { color: 'var(--lesson-blue)', lightColor: 'var(--lesson-blue-light)' },
         'multiple-choice': { color: 'var(--lesson-green)', lightColor: 'var(--lesson-green-light)' },
+        'dialogue-completion': { color: 'var(--lesson-green)', lightColor: 'var(--lesson-green-light)' },
         matching: { color: 'var(--lesson-yellow)', lightColor: 'var(--lesson-yellow-light)' },
         'fill-blanks': { color: 'var(--lesson-purple)', lightColor: 'var(--lesson-purple-light)' },
         structure: { color: 'var(--lesson-green)', lightColor: 'var(--lesson-green-light)' },
@@ -256,6 +257,24 @@ const submit = () => {
 
 const resetAndNext = () => {
     emit('next-exercise');
+};
+
+// ✅ ADDED new selectOption function
+const selectOption = (option, index) => {
+  // Check if the correct answer is a number (like in dialogue-completion)
+  if (typeof props.currentExercise.correctAnswer === 'number') {
+    userAnswer.value = index;
+  } else {
+    // Fallback for other multiple-choice types that might use text/IDs
+    if (Array.isArray(userAnswer.value)) {
+        const id = typeof option === 'string' ? option.substring(0, 1) : option.value;
+        const existingIndex = userAnswer.value.indexOf(id);
+        if (existingIndex > -1) userAnswer.value.splice(existingIndex, 1);
+        else userAnswer.value.push(id);
+    } else {
+        userAnswer.value = typeof option === 'string' ? option.substring(0, 1) : option.value;
+    }
+  }
 };
 
 // --- Input Handlers ---
@@ -314,25 +333,25 @@ const renderFeedback = (user, correct) => {
     }
     return `<div class="feedback-box ${resultClass}">${content}</div>`;
 };
-const getOptionClasses = (option) => {
+const getOptionClasses = (option, index) => {
     const optionText = typeof option === 'string' ? option : option.text;
     if (showCorrectAnswer.value) {
-        if (Array.isArray(props.currentExercise.correctAnswer)) {
+        if (typeof props.currentExercise.correctAnswer === 'number') {
+            if (props.currentExercise.correctAnswer === index) return 'is-correct';
+            if (userAnswer.value === index) return 'is-incorrect';
+        } else if (Array.isArray(props.currentExercise.correctAnswer)) {
             const correctOptions = props.currentExercise.correctAnswer.map(c => typeof c === 'number' ? props.currentExercise.options[c].text : c);
             if (correctOptions.includes(optionText)) return 'is-correct';
+            if (userAnswer.value.includes(optionText)) return 'is-incorrect';
         } else {
             const correctOptionText = typeof props.currentExercise.correctAnswer === 'number' ? props.currentExercise.options[props.currentExercise.correctAnswer].text : props.currentExercise.correctAnswer;
             if (correctOptionText === optionText) return 'is-correct';
-        }
-
-        if (Array.isArray(userAnswer.value)) {
-            if (userAnswer.value.includes(optionText)) return 'is-incorrect';
-        } else {
             if (userAnswer.value === optionText) return 'is-incorrect';
         }
     }
-
-    if (Array.isArray(userAnswer.value)) {
+    if (typeof userAnswer.value === 'number') {
+        if (userAnswer.value === index) return 'is-selected';
+    } else if (Array.isArray(userAnswer.value)) {
         if (userAnswer.value.includes(optionText)) return 'is-selected';
     } else {
         if (userAnswer.value === optionText) return 'is-selected';
