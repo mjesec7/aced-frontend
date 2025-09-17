@@ -95,22 +95,22 @@
           </div>
           
           <div v-else-if="exerciseType === 'matching'" class="exercise-type-container">
-            <article v-for="pair in currentExercise.pairs" :key="pair.id" class="exercise-card matching-pair-card">
+            <article v-for="(pair, index) in currentExercise.pairs" :key="pair.id || index" class="exercise-card matching-pair-card">
               <p class="matching-text-left">{{ pair.left }}</p>
               <div class="matching-select-wrapper">
                 <select 
-                  :value="localMatchingAnswers[pair.id] || ''"
-                  @change="localMatchingAnswers[pair.id] = $event.target.value"
+                  :value="localMatchingAnswers[(pair.id || index)] || ''"
+                  @change="localMatchingAnswers[(pair.id || index)] = $event.target.value"
                   :disabled="showCorrectAnswer"
                   class="matching-select"
-                  :class="getMatchingSelectClasses(pair.id, pair.correctMatch)"
+                  :class="getMatchingSelectClasses((pair.id || index), pair.correctMatch)"
                 >
                   <option value="" disabled>Выберите окончание...</option>
                   <option 
                     v-for="option in shuffledRightOptions" 
                     :key="option" 
                     :value="option" 
-                    :disabled="isOptionUsed(pair.id, option)"
+                    :disabled="isOptionUsed((pair.id || index), option)"
                   >
                     {{ option }}
                   </option>
@@ -360,7 +360,6 @@ const getOptionClasses = (option, index) => {
 
 const getMatchingSelectClasses = (pairId, correctAnswer) => {
     if (!showCorrectAnswer.value) return '';
-    // For matching, we check the local state for immediate feedback if needed, but validation relies on userAnswer
     const answer = (exerciseType.value === 'matching' ? localMatchingAnswers.value : userAnswer.value);
     return answer[pairId] === correctAnswer ? 'is-correct' : 'is-incorrect';
 };
@@ -379,6 +378,7 @@ const getStructureWordClasses = (questionId, wordIndex) => {
 
 const isOptionUsed = (currentPairId, option) => {
     return Object.entries(localMatchingAnswers.value).some(([pairId, selectedOption]) => {
+        // Using != instead of !== because the keys might be numbers or strings
         return pairId != currentPairId && selectedOption === option;
     });
 };
