@@ -148,7 +148,7 @@
       </div>
 
       <footer class="panel-actions">
-        <button v-if="!showCorrectAnswer" @click="submit" class="action-button submit-button" :style="{backgroundColor: exerciseMeta.color}">
+        <button v-if="!showCorrectAnswer" @click="submit" class="action-button submit-button" :disabled="!canSubmitAnswer" :style="{backgroundColor: exerciseMeta.color}">
           Проверить ответы
         </button>
         <button v-else @click="resetAndNext" class="action-button next-button" :style="{borderColor: exerciseMeta.color, color: exerciseMeta.color}">
@@ -180,11 +180,11 @@ const {
   confirmation,
   answerWasCorrect,
   showCorrectAnswer,
+  canSubmitAnswer, // <-- Make sure this is here
   submitAnswer: submitLogic,
   resetExerciseState,
 } = useExercises();
 
-const shuffledRightOptions = ref([]);
 const draggedItem = ref({ questionId: null, wordIndex: null });
 
 // Watch for exercise changes to reset state and prepare data
@@ -198,8 +198,6 @@ watch(() => props.currentExercise, (newEx) => {
             break;
         case 'matching':
             userAnswer.value = {};
-            const rightOptions = newEx.pairs.map(p => p.correctMatch);
-            shuffledRightOptions.value = [...rightOptions].sort(() => Math.random() - 0.5);
             break;
         case 'structure':
              userAnswer.value = newEx.questions.reduce((acc, q) => {
@@ -228,6 +226,15 @@ watch(() => props.currentExercise, (newEx) => {
     }
   }
 }, { immediate: true, deep: true });
+
+const shuffledRightOptions = computed(() => {
+  if (props.currentExercise?.type !== 'matching') {
+    return [];
+  }
+  const rightOptions = props.currentExercise.pairs.map(p => p.correctMatch);
+  // We add a random key to the v-for to force re-shuffling on exercise change
+  return [...rightOptions].sort(() => Math.random() - 0.5);
+});
 
 const exerciseMeta = computed(() => {
     const colors = {
@@ -553,6 +560,12 @@ const isOptionUsed = (currentPairId, option) => {
 }
 .submit-button {
   color: white;
+}
+.submit-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 .next-button {
   background-color: transparent;
