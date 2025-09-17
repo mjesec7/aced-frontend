@@ -14,7 +14,7 @@
             </div>
           </div>
           <div class="exercise-counter">
-            Exercise {{ exerciseIndex + 1 }} of {{ totalExercises }}
+            Упражнение {{ exerciseIndex + 1 }} из {{ totalExercises }}
           </div>
         </div>
       </header>
@@ -56,7 +56,7 @@
             </article>
           </div>
 
-          <div v-else-if="['multiple-choice', 'dialogue-completion'].includes(exerciseType)" class="exercise-type-container">
+          <div v-else-if="['multiple-choice', 'abc', 'dialogue-completion'].includes(exerciseType)" class="exercise-type-container">
             <article class="exercise-card">
               <p class="question-text">{{ currentExercise.question }}</p>
               <div class="options-list">
@@ -148,7 +148,7 @@
       </div>
 
       <footer class="panel-actions">
-        <button v-if="!showCorrectAnswer" @click="submit" class="action-button submit-button" :disabled="!canSubmitAnswer" :style="{backgroundColor: exerciseMeta.color}">
+        <button v-if="!showCorrectAnswer" @click="submit" class="action-button submit-button" :disabled="!canSubmit" :style="{backgroundColor: exerciseMeta.color}">
           Проверить ответы
         </button>
         <button v-else @click="resetAndNext" class="action-button next-button" :style="{borderColor: exerciseMeta.color, color: exerciseMeta.color}">
@@ -158,7 +158,7 @@
     </div>
     
     <div v-else class="panel-loading">
-      <p>Loading interactive exercise...</p>
+      <p>Загрузка...</p>
     </div>
   </div>
 </template>
@@ -175,16 +175,26 @@ const props = defineProps({
 
 const emit = defineEmits(['submit', 'next-exercise']);
 
-const {
-  userAnswer,
-  confirmation,
-  answerWasCorrect,
-  showCorrectAnswer,
-  submitAnswer: submitLogic,
-  resetExerciseState,
+const { 
+    userAnswer, 
+    confirmation, 
+    answerWasCorrect, 
+    showCorrectAnswer, 
+    submitAnswer: submitLogic, 
+    resetExerciseState 
 } = useExercises();
 
 const draggedItem = ref({ questionId: null, wordIndex: null });
+
+const canSubmit = computed(() => {
+  const answer = userAnswer.value;
+  if (Array.isArray(answer)) {
+    // For multi-part answers (like short-answer with multiple questions or multi-select)
+    return answer.some(val => val && val.trim() !== '');
+  }
+  // For single answers (text, selections, etc.)
+  return answer !== null && answer !== undefined && answer !== '';
+});
 
 // Watch for exercise changes to reset state and prepare data
 watch(() => props.currentExercise, (newEx) => {
@@ -193,7 +203,11 @@ watch(() => props.currentExercise, (newEx) => {
     switch(newEx.type) {
         case 'reading':
         case 'short-answer':
-            userAnswer.value = Array(newEx.questions.length).fill('');
+            if (newEx.questions && newEx.questions.length > 0) {
+                userAnswer.value = Array(newEx.questions.length).fill('');
+            } else {
+                userAnswer.value = '';
+            }
             break;
         case 'matching':
             userAnswer.value = {};
@@ -220,77 +234,13 @@ watch(() => props.currentExercise, (newEx) => {
             });
             break;
         default:
-            userAnswer.value = '';
+            userAnswer.value = null; // Default to null for selection-based exercises
             break;
     }
   }
 }, { immediate: true, deep: true });
 
-// Add this inside the <script setup> of InteractivePanel.vue
-const canSubmitAnswer = computed(() => {
-  const exercise = props.currentExercise;
-  if (!exercise) return false;
-
-  const type = exercise.type || 'short-answer';
-  const answer = userAnswer.value; // userAnswer is from useExercises()
-
-  switch (type) {
-    case 'multiple-choice':
-    case 'dialogue-completion':
-    case 'true-false':
-      return answer !== null && answer !== undefined && answer !== '';
-
-    case 'fill-blanks':
-    case 'matching':
-      if (typeof answer !== 'object' || answer === null) return false;
-      return Object.values(answer).some(val => val);
-
-    case 'structure':
-    case 'ordering':
-      if (typeof answer !== 'object' || answer === null) return false;
-      return Object.values(answer).some(val => Array.isArray(val) && val.length > 0);
-
-    case 'reading':
-    case 'short-answer':
-      if (Array.isArray(answer)) {
-        return answer.some(val => val && val.trim() !== '');
-      }
-      return typeof answer === 'string' && answer.trim() !== '';
-
-    default:
-      return false;
-  }
-});
-
-const shuffledRightOptions = computed(() => {
-  if (props.currentExercise?.type !== 'matching') {
-    return [];
-  }
-  const rightOptions = props.currentExercise.pairs.map(p => p.correctMatch);
-  // We add a random key to the v-for to force re-shuffling on exercise change
-  return [...rightOptions].sort(() => Math.random() - 0.5);
-});
-
-const exerciseMeta = computed(() => {
-    const colors = {
-        reading: { color: 'var(--lesson-purple)', lightColor: 'var(--lesson-purple-light)' },
-        'short-answer': { color: 'var(--lesson-blue)', lightColor: 'var(--lesson-blue-light)' },
-        'multiple-choice': { color: 'var(--lesson-green)', lightColor: 'var(--lesson-green-light)' },
-        'dialogue-completion': { color: 'var(--lesson-green)', lightColor: 'var(--lesson-green-light)' },
-        matching: { color: 'var(--lesson-yellow)', lightColor: 'var(--lesson-yellow-light)' },
-        'fill-blanks': { color: 'var(--lesson-purple)', lightColor: 'var(--lesson-purple-light)' },
-        structure: { color: 'var(--lesson-green)', lightColor: 'var(--lesson-green-light)' },
-        default: { color: 'var(--primary)', lightColor: 'var(--secondary)'}
-    };
-    return colors[props.currentExercise?.type] || colors.default;
-});
-
-const isLastExercise = computed(() => props.exerciseIndex >= props.totalExercises - 1);
-
-const exerciseType = computed(() => {
-  // If the exercise has a type, use it. Otherwise, default to 'short-answer'.
-  return props.currentExercise?.type || 'short-answer';
-});
+const exerciseType = computed(() => props.currentExercise?.type || 'short-answer');
 
 const submit = () => {
     submitLogic(props.currentExercise);
@@ -302,19 +252,14 @@ const resetAndNext = () => {
 };
 
 const selectOption = (option, index) => {
-  // Check if the correct answer is a number (like in dialogue-completion)
-  if (typeof props.currentExercise.correctAnswer === 'number') {
-    userAnswer.value = index;
+  const correctAnswerType = typeof props.currentExercise.correctAnswer;
+  if (correctAnswerType === 'number') {
+    userAnswer.value = index; // For index-based answers like dialogue-completion
   } else {
-    // Fallback for other multiple-choice types that might use text/IDs
-    if (Array.isArray(userAnswer.value)) {
-        const id = typeof option === 'string' ? option.substring(0, 1) : option.value;
-        const existingIndex = userAnswer.value.indexOf(id);
-        if (existingIndex > -1) userAnswer.value.splice(existingIndex, 1);
-        else userAnswer.value.push(id);
-    } else {
-        userAnswer.value = typeof option === 'string' ? option.substring(0, 1) : option.value;
-    }
+    // For text or letter-based answers like 'abc'
+    const optionText = typeof option === 'string' ? option : option.text;
+    const optionId = optionText.substring(0, 1).toUpperCase();
+    userAnswer.value = optionId;
   }
 };
 
@@ -359,65 +304,90 @@ const onDrop = (questionId, event) => {
 
 // --- UI Helpers ---
 const renderFeedback = (user, correct) => {
-    if (!correct) {
-      const isCorrect = answerWasCorrect.value;
-      const resultClass = isCorrect ? 'is-correct' : 'is-incorrect';
-      return `<div class="feedback-box ${resultClass}"><p class="feedback-line">${confirmation.value}</p></div>`;
-    }
-    const isCorrect = (user || '').toString().trim().toLowerCase() === correct.toString().trim().toLowerCase();
+    const isCorrect = answerWasCorrect.value;
     const resultClass = isCorrect ? 'is-correct' : 'is-incorrect';
     let content = `<p class="feedback-line">Ваш ответ: <strong>${user || '(Нет ответа)'}</strong></p>`;
-    if (!isCorrect) {
-        content += `<p class="feedback-line">Правильный ответ: <strong>${correct}</strong></p>`;
-    } else {
+    if (isCorrect) {
         content = `<p class="feedback-line">${confirmation.value}</p>`;
+    } else if (showCorrectAnswer.value) {
+        content += `<p class="feedback-line">${confirmation.value}</p>`; // Use confirmation message for correct answer
     }
     return `<div class="feedback-box ${resultClass}">${content}</div>`;
 };
+
 const getOptionClasses = (option, index) => {
-    const optionText = typeof option === 'string' ? option : option.text;
-    if (showCorrectAnswer.value) {
-        if (typeof props.currentExercise.correctAnswer === 'number') {
-            if (props.currentExercise.correctAnswer === index) return 'is-correct';
-            if (userAnswer.value === index) return 'is-incorrect';
-        } else if (Array.isArray(props.currentExercise.correctAnswer)) {
-            const correctOptions = props.currentExercise.correctAnswer.map(c => typeof c === 'number' ? props.currentExercise.options[c].text : c);
-            if (correctOptions.includes(optionText)) return 'is-correct';
-            if (userAnswer.value.includes(optionText)) return 'is-incorrect';
-        } else {
-            const correctOptionText = typeof props.currentExercise.correctAnswer === 'number' ? props.currentExercise.options[props.currentExercise.correctAnswer].text : props.currentExercise.correctAnswer;
-            if (correctOptionText === optionText) return 'is-correct';
-            if (userAnswer.value === optionText) return 'is-incorrect';
-        }
-    }
-    if (typeof userAnswer.value === 'number') {
-        if (userAnswer.value === index) return 'is-selected';
-    } else if (Array.isArray(userAnswer.value)) {
-        if (userAnswer.value.includes(optionText)) return 'is-selected';
+    const correctAnswerType = typeof props.currentExercise.correctAnswer;
+    const optionId = (typeof option === 'string' ? option : option.text).substring(0, 1).toUpperCase();
+    
+    let isSelected;
+    if (correctAnswerType === 'number') {
+        isSelected = userAnswer.value === index;
     } else {
-        if (userAnswer.value === optionText) return 'is-selected';
+        isSelected = userAnswer.value === optionId;
     }
+
+    if (showCorrectAnswer.value) {
+        let isCorrect;
+        if (correctAnswerType === 'number') {
+            isCorrect = index === props.currentExercise.correctAnswer;
+        } else {
+            isCorrect = optionId === props.currentExercise.correctAnswer;
+        }
+        
+        if (isCorrect) return 'is-correct';
+        if (isSelected) return 'is-incorrect';
+    }
+
+    if (isSelected) return 'is-selected';
     return '';
 };
+
+const shuffledRightOptions = computed(() => {
+  if (props.currentExercise?.type !== 'matching') {
+    return [];
+  }
+  const rightOptions = props.currentExercise.pairs.map(p => p.correctMatch);
+  return [...rightOptions].sort(() => Math.random() - 0.5);
+});
+
 const getMatchingSelectClasses = (pairId, correctAnswer) => {
     if (!showCorrectAnswer.value) return '';
     return userAnswer.value[pairId] === correctAnswer ? 'is-correct' : 'is-incorrect';
 };
+
 const getFillBlankInputClasses = (blankId, correctAnswer) => {
     if (!showCorrectAnswer.value) return '';
     return (userAnswer.value[blankId] || '').trim().toLowerCase() === correctAnswer.toLowerCase() ? 'is-correct' : 'is-incorrect';
 };
+
 const getStructureWordClasses = (questionId, wordIndex) => {
     if (!showCorrectAnswer.value) return '';
     const questionData = props.currentExercise.questions.find(q=>q.id === questionId);
     const isCorrect = (userAnswer.value[questionId] || [])[wordIndex] === questionData.correctOrder[wordIndex];
     return isCorrect ? 'is-correct' : 'is-incorrect';
 };
+
 const isOptionUsed = (currentPairId, option) => {
     return Object.entries(userAnswer.value).some(([pairId, selectedOption]) => {
         return pairId != currentPairId && selectedOption === option;
     });
 };
+
+const isLastExercise = computed(() => props.exerciseIndex >= props.totalExercises - 1);
+const exerciseMeta = computed(() => {
+    const colors = {
+        reading: { color: 'var(--lesson-purple)', lightColor: 'var(--lesson-purple-light)' },
+        'short-answer': { color: 'var(--lesson-blue)', lightColor: 'var(--lesson-blue-light)' },
+        'multiple-choice': { color: 'var(--lesson-green)', lightColor: 'var(--lesson-green-light)' },
+        'abc': { color: 'var(--lesson-green)', lightColor: 'var(--lesson-green-light)' },
+        'dialogue-completion': { color: 'var(--lesson-green)', lightColor: 'var(--lesson-green-light)' },
+        matching: { color: 'var(--lesson-yellow)', lightColor: 'var(--lesson-yellow-light)' },
+        'fill-blanks': { color: 'var(--lesson-purple)', lightColor: 'var(--lesson-purple-light)' },
+        structure: { color: 'var(--lesson-green)', lightColor: 'var(--lesson-green-light)' },
+        default: { color: 'var(--primary)', lightColor: 'var(--secondary)'}
+    };
+    return colors[exerciseType.value] || colors.default;
+});
 </script>
 
 <style scoped>
@@ -589,18 +559,18 @@ const isOptionUsed = (currentPairId, option) => {
   transition: opacity 0.2s, transform 0.2s, box-shadow 0.2s;
   font-size: 1rem;
 }
-.action-button:hover {
+.action-button:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
-.submit-button {
-  color: white;
-}
-.submit-button:disabled {
+.action-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+.submit-button {
+  color: white;
 }
 .next-button {
   background-color: transparent;

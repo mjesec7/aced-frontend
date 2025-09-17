@@ -1,5 +1,5 @@
-// src/composables/useExercises.js - Enhanced with question-answer detection
-import { ref, reactive, computed } from 'vue'
+// src/composables/useExercises.js
+import { ref, reactive, computed } from 'vue';
 
 export function useExercises() {
   // ===================================
@@ -12,7 +12,7 @@ export function useExercises() {
   const _currentExercise = ref(null); // Internal reactive reference to the current exercise
   
   // Answer state
-  const userAnswer = ref('')
+  const userAnswer = ref(null)
   const fillBlankAnswers = ref([])
   const matchingPairs = ref([])
   const orderingItems = ref([])
@@ -155,44 +155,32 @@ export function useExercises() {
   // ===================================
   
   const calculateSimilarity = (str1, str2) => {
-    if (str1 === str2) return 1
-    
-    const longer = str1.length > str2.length ? str1 : str2
-    const shorter = str1.length > str2.length ? str2 : str1
-    
-    if (longer.length === 0) return 1
-    
-    const distance = levenshteinDistance(longer, shorter)
-    return (longer.length - distance) / longer.length
-  }
+    if (!str1 || !str2) return 0;
+    const longer = str1.length > str2.length ? str1 : str2;
+    const shorter = str1.length > str2.length ? str2 : str1;
+    if (longer.length === 0) return 1.0;
+    const distance = levenshteinDistance(longer, shorter);
+    return (longer.length - distance) / longer.length;
+  };
 
-  const levenshteinDistance = (str1, str2) => {
-    const matrix = []
-    
-    for (let i = 0; i <= str2.length; i++) {
-      matrix[i] = [i]
-    }
-    
-    for (let j = 0; j <= str1.length; j++) {
-      matrix[0][j] = j
-    }
-    
-    for (let i = 1; i <= str2.length; i++) {
-      for (let j = 1; j <= str1.length; j++) {
-        if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
-          matrix[i][j] = matrix[i - 1][j - 1]
-        } else {
-          matrix[i][j] = Math.min(
-            matrix[i - 1][j - 1] + 1,
-            matrix[i][j - 1] + 1,
-            matrix[i - 1][j] + 1
-          )
+  const levenshteinDistance = (s1, s2) => {
+    s1 = s1.toLowerCase(); s2 = s2.toLowerCase();
+    const costs = [];
+    for (let i = 0; i <= s1.length; i++) {
+      let lastValue = i;
+      for (let j = 0; j <= s2.length; j++) {
+        if (i === 0) costs[j] = j;
+        else if (j > 0) {
+          let newValue = costs[j - 1];
+          if (s1.charAt(i - 1) !== s2.charAt(j - 1)) newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
+          costs[j - 1] = lastValue;
+          lastValue = newValue;
         }
       }
+      if (i > 0) costs[s2.length] = lastValue;
     }
-    
-    return matrix[str2.length][str1.length]
-  }
+    return costs[s2.length];
+  };
 
   // Improved Fisher-Yates shuffle algorithm
   const shuffleArray = (array) => {
@@ -224,18 +212,9 @@ export function useExercises() {
   }
 
   const getCorrectAnswersArray = (exercise) => {
-    const correctAnswer = exercise.correctAnswer || exercise.answer
-    
-    if (Array.isArray(correctAnswer)) {
-      return correctAnswer
-    }
-    
-    if (typeof correctAnswer === 'string' && correctAnswer.includes(',')) {
-      return correctAnswer.split(',').map(answer => answer.trim())
-    }
-    
-    return [correctAnswer].filter(Boolean)
-  }
+    const correctAnswer = exercise.correctAnswer || exercise.answer;
+    return Array.isArray(correctAnswer) ? correctAnswer : [correctAnswer].filter(Boolean);
+  };
 
   // ===================================
   // ENHANCED VALIDATION FUNCTIONS
@@ -330,36 +309,29 @@ export function useExercises() {
   const validateMultipleChoice = (userAnswer, exercise) => {
     const correctAnswer = exercise.correctAnswer;
 
+    // Case 1: Correct answer is a number (index)
     if (typeof correctAnswer === 'number') {
       return userAnswer === correctAnswer;
     }
 
-    const normalize = (ans) => {
-      if (Array.isArray(ans)) return ans.map(String).sort();
-      if (ans === null || ans === undefined) return [];
-      if (typeof ans === 'string' && ans.length === 1) {
-          const option = exercise.options.find(opt => (opt.text || opt).startsWith(ans + ')'));
-          if (option) return [String(option.text || option)];
-      }
-      return [String(ans)];
-    };
-
-    const normalizedUserAnswer = normalize(userAnswer);
-
-    const normalizedCorrectAnswer = (() => {
-      if (Array.isArray(correctAnswer)) {
-        return correctAnswer.map(c => {
-          if (typeof c === 'number' && exercise.options) {
-            const option = exercise.options[c];
-            return String(typeof option === 'string' ? option : (option?.text || option));
-          }
-          return String(c);
-        }).sort();
-      }
-      return normalize(correctAnswer);
-    })();
+    // Case 2: Correct answer is a letter ID (e.g., "B")
+    if (typeof correctAnswer === 'string' && correctAnswer.length === 1) {
+      return userAnswer === correctAnswer.toUpperCase();
+    }
     
-    return JSON.stringify(normalizedUserAnswer) === JSON.stringify(normalizedCorrectAnswer);
+    // Case 3: Correct answer is the full text of the option
+    if (typeof correctAnswer === 'string') {
+        return userAnswer === correctAnswer;
+    }
+
+    // Fallback for array-based correct answers (for multi-select)
+    if (Array.isArray(correctAnswer)) {
+        const normalizedUser = Array.isArray(userAnswer) ? [...userAnswer].sort() : [userAnswer];
+        const normalizedCorrect = [...correctAnswer].sort();
+        return JSON.stringify(normalizedUser) === JSON.stringify(normalizedCorrect);
+    }
+
+    return false;
   };
 
   const validateTrueFalse = (userAnswer, exercise) => {
@@ -604,123 +576,52 @@ export function useExercises() {
   // ===================================
   
   const getCorrectAnswerDisplay = (exercise) => {
-    if (!exercise) return ''
+    if (!exercise) return '';
+    const { correctAnswer, type = 'short-answer' } = exercise;
 
-    const exerciseType = exercise.type || 'short-answer'
-    
-    switch (exerciseType) {
-      case 'short-answer':
-        const detectedQuestions = detectQuestionsFromExercise(exercise)
-        if (detectedQuestions.length > 1) {
-          const correctAnswers = getCorrectAnswersArray(exercise)
-          if (correctAnswers.length > 1) {
-            return correctAnswers.map((answer, index) => 
-              `${index + 1}. ${answer}`
-            ).join('; ')
-          } else if (correctAnswers.length === 1) {
-            return `Образец ответа: ${correctAnswers[0]}`
-          } else {
-            return 'Ответьте на каждый вопрос подробно'
-          }
-        }
-        return String(exercise.correctAnswer || exercise.answer || '')
-
-      case 'matching':
-        if (exercise.pairs && Array.isArray(exercise.pairs)) {
-          return exercise.pairs.map((pair) => {
-            let left, right
-            
-            if (Array.isArray(pair)) {
-              left = String(pair[0] || '')
-              right = String(pair[1] || '')
-            } else if (pair && typeof pair === 'object') {
-              left = String(pair.left || pair[0] || pair.question || pair.term || '')
-              right = String(pair.right || pair[1] || pair.answer || pair.definition || '')
-            } else {
-              left = String(pair || '')
-              right = 'Unknown'
-            }
-            
-            return `${left} ↔ ${right}`
-          }).join('; ')
-        }
-        return 'Правильные пары показаны выше'
-
-      case 'multiple-choice':
-      case 'abc':
-        if (typeof exercise.correctAnswer === 'number' && exercise.options) {
-          const correctOption = exercise.options[exercise.correctAnswer]
-          return typeof correctOption === 'string' ? correctOption : (correctOption?.text || String(correctOption))
-        }
-        return String(exercise.correctAnswer || '')
-
-      case 'true-false':
-        if (typeof exercise.correctAnswer === 'boolean') {
-          return exercise.correctAnswer ? 'Правда' : 'Ложь'
-        }
-        if (typeof exercise.correctAnswer === 'number') {
-          return exercise.correctAnswer === 0 ? 'Правда' : 'Ложь'
-        }
-        return String(exercise.correctAnswer || '')
-
-      case 'ordering':
-        if (exercise.items && Array.isArray(exercise.items)) {
-          return exercise.items.map((item, index) => 
-            `${index + 1}. ${typeof item === 'string' ? item : (item?.text || String(item))}`
-          ).join('; ')
-        }
-        return 'Правильный порядок показан выше'
-
-      case 'fill-blank':
-        let correctAnswers = []
-        
-        if (exercise.blanks && Array.isArray(exercise.blanks)) {
-          correctAnswers = exercise.blanks.map(blank => {
-            if (typeof blank === 'string') return blank
-            return blank?.answer || blank?.text || String(blank)
-          })
-        } else if (exercise.correctAnswers && Array.isArray(exercise.correctAnswers)) {
-          correctAnswers = exercise.correctAnswers
-        } else if (exercise.answers && Array.isArray(exercise.answers)) {
-          correctAnswers = exercise.answers
-        } else if (exercise.hint) {
-          correctAnswers = exercise.hint.split(',').map(h => h.trim())
-        }
-        
-        const displayAnswers = correctAnswers
-          .map(answer => String(answer || '').trim())
-          .filter(answer => answer.length > 0)
-        
-        return displayAnswers.join(', ')
-
-      case 'drag-drop':
-        return 'Правильное размещение показано выше'
-
-      default:
-        return String(exercise.correctAnswer || exercise.answer || '')
+    if (type === 'multiple-choice' || type === 'abc' || type === 'dialogue-completion') {
+      if (typeof correctAnswer === 'number') {
+        return exercise.options[correctAnswer]?.text || exercise.options[correctAnswer] || '';
+      }
+      if (typeof correctAnswer === 'string' && correctAnswer.length === 1) {
+          const foundOption = exercise.options.find(opt => (opt.text || opt).startsWith(correctAnswer));
+          return foundOption?.text || foundOption || '';
+      }
     }
-  }
+
+    if (type === 'matching') {
+        if (exercise.pairs && Array.isArray(exercise.pairs)) {
+          return exercise.pairs.map(pair => `${pair.left} ↔ ${pair.correctMatch}`).join('; ');
+        }
+        return 'Правильные пары показаны выше';
+    }
+
+    if (type === 'ordering' || type === 'structure') {
+        if (exercise.questions && Array.isArray(exercise.questions)) {
+            return exercise.questions.map(q => q.correctOrder.join(' ')).join('; ');
+        }
+        return 'Правильный порядок показан выше';
+    }
+    
+    return Array.isArray(correctAnswer) ? correctAnswer.join('; ') : String(correctAnswer || '');
+  };
 
   // ===================================
   // SUBMISSION FUNCTIONS
   // ===================================
   
   const submitAnswer = (exercise) => {
-    // Note: The old canSubmitAnswer function is no longer needed here,
-    // as the button in the component will be disabled by the computed property.
     attemptCount.value++;
     const isCorrect = validateCurrentAnswer(exercise);
     answerWasCorrect.value = isCorrect;
 
     if (isCorrect) {
-      confirmation.value = 'Correct';
-      showCorrectAnswer.value = true;
+      confirmation.value = '✅ Отлично! Правильный ответ!';
     } else {
       const correctAnswerText = getCorrectAnswerDisplay(exercise);
-      confirmation.value = `Вот правильный ответ: ${correctAnswerText}`;
-      showCorrectAnswer.value = true;
+      confirmation.value = `Правильный ответ: ${correctAnswerText}`;
     }
-    
+    showCorrectAnswer.value = true;
     return isCorrect;
   };
 
@@ -1182,26 +1083,18 @@ export function useExercises() {
   // RESET FUNCTIONS
   // ===================================
   
-  const resetExerciseState = () => {
-    currentExerciseIndex.value = 0
-    currentQuizIndex.value = 0
-    resetExerciseAnswers()
-    resetExerciseData()
-    resetAttemptState()
+  const resetAttemptState = () => {
+    attemptCount.value = 0
+    showCorrectAnswer.value = false
   }
-  
+
   const resetExerciseAnswers = () => {
-    userAnswer.value = ''
+    userAnswer.value = null; // Reset to null to clear selection
     confirmation.value = ''
     answerWasCorrect.value = false
     currentHint.value = ''
     smartHint.value = ''
     resetAttemptState()
-  }
-
-  const resetAttemptState = () => {
-    attemptCount.value = 0
-    showCorrectAnswer.value = false
   }
   
   const resetExerciseData = () => {
@@ -1215,6 +1108,14 @@ export function useExercises() {
     Object.keys(dragDropPlacements).forEach(key => {
       delete dragDropPlacements[key]
     })
+  }
+  
+  const resetExerciseState = () => {
+    currentExerciseIndex.value = 0
+    currentQuizIndex.value = 0
+    resetExerciseAnswers()
+    resetExerciseData()
+    resetAttemptState()
   }
 
   // ===================================
