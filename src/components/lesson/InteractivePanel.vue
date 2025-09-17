@@ -180,7 +180,6 @@ const {
   confirmation,
   answerWasCorrect,
   showCorrectAnswer,
-  canSubmitAnswer, // <-- Make sure this is here
   submitAnswer: submitLogic,
   resetExerciseState,
 } = useExercises();
@@ -226,6 +225,42 @@ watch(() => props.currentExercise, (newEx) => {
     }
   }
 }, { immediate: true, deep: true });
+
+// Add this inside the <script setup> of InteractivePanel.vue
+const canSubmitAnswer = computed(() => {
+  const exercise = props.currentExercise;
+  if (!exercise) return false;
+
+  const type = exercise.type || 'short-answer';
+  const answer = userAnswer.value; // userAnswer is from useExercises()
+
+  switch (type) {
+    case 'multiple-choice':
+    case 'dialogue-completion':
+    case 'true-false':
+      return answer !== null && answer !== undefined && answer !== '';
+
+    case 'fill-blanks':
+    case 'matching':
+      if (typeof answer !== 'object' || answer === null) return false;
+      return Object.values(answer).some(val => val);
+
+    case 'structure':
+    case 'ordering':
+      if (typeof answer !== 'object' || answer === null) return false;
+      return Object.values(answer).some(val => Array.isArray(val) && val.length > 0);
+
+    case 'reading':
+    case 'short-answer':
+      if (Array.isArray(answer)) {
+        return answer.some(val => val && val.trim() !== '');
+      }
+      return typeof answer === 'string' && answer.trim() !== '';
+
+    default:
+      return false;
+  }
+});
 
 const shuffledRightOptions = computed(() => {
   if (props.currentExercise?.type !== 'matching') {

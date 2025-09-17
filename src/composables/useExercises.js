@@ -44,36 +44,6 @@ export function useExercises() {
     return attemptCount.value === 1 && attemptCount.value < maxAttempts.value
   })
 
-  // ✅ ACTION 2: Reactive computed property for button state
-  const canSubmitAnswer = computed(() => {
-    const exercise = _currentExercise.value;
-    if (!exercise) return false;
-
-    const type = exercise.type || 'short-answer';
-    const answer = userAnswer.value;
-
-    switch (type) {
-      case 'multiple-choice':
-      case 'dialogue-completion':
-      case 'true-false':
-        return answer !== null && answer !== undefined && answer !== '';
-      case 'fill-blanks':
-      case 'matching':
-        return typeof answer === 'object' && Object.keys(answer).length > 0 && Object.values(answer).some(val => val);
-      case 'structure':
-      case 'ordering':
-         return typeof answer === 'object' && Object.values(answer).some(val => Array.isArray(val) && val.length > 0);
-      case 'reading':
-      case 'short-answer':
-        if (Array.isArray(answer)) {
-            return answer.some(val => val && val.trim() !== '');
-        }
-        return typeof answer === 'string' && answer.trim() !== '';
-      default:
-        return false;
-    }
-  });
-  
   // ===================================
   // NEW: ENHANCED QUESTION DETECTION
   // ===================================
@@ -427,7 +397,6 @@ export function useExercises() {
     return false
   }
 
-  // ✅ ACTION 1: Replaced validation functions
   const validateFillBlank = (userAnswers, exercise) => {
     if (!userAnswers || typeof userAnswers !== 'object') return false;
     const allBlanks = exercise.questions.flatMap(q => q.blanks);
@@ -1342,7 +1311,6 @@ export function useExercises() {
     
     // Computed
     isOnSecondChance,
-    canSubmitAnswer, // ✅ ACTION 3: Export the new computed property
     
     // Core Exercise Methods
     getCurrentExercise,
