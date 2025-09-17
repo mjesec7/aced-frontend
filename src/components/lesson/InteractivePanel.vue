@@ -346,7 +346,7 @@ const shuffledRightOptions = computed(() => {
   if (props.currentExercise?.type !== 'matching') {
     return [];
   }
-  const rightOptions = props.currentExercise.pairs.map(p => p.correctMatch);
+  const rightOptions = props.currentExercise.pairs.map(p => p.correctMatch || p.right);
   return [...rightOptions].sort(() => Math.random() - 0.5);
 });
 
