@@ -192,6 +192,10 @@ const canSubmit = computed(() => {
     // For multi-part answers (like short-answer with multiple questions or multi-select)
     return answer.some(val => val && val.trim() !== '');
   }
+  if (typeof answer === 'object' && answer !== null) {
+    // For object-based answers (like matching or fill-blanks)
+    return Object.values(answer).some(val => val);
+  }
   // For single answers (text, selections, etc.)
   return answer !== null && answer !== undefined && answer !== '';
 });
@@ -210,7 +214,7 @@ watch(() => props.currentExercise, (newEx) => {
             }
             break;
         case 'matching':
-            userAnswer.value = {};
+            userAnswer.value = {}; // ✅ Ensure it's an empty object
             break;
         case 'structure':
              userAnswer.value = newEx.questions.reduce((acc, q) => {
@@ -270,7 +274,12 @@ const updateMultiAnswer = (index, value) => {
     userAnswer.value = newAnswers;
 };
 const updateMatchingAnswer = (pairId, value) => {
-    userAnswer.value = { ...userAnswer.value, [pairId]: value };
+  // This correctly updates just one property in the answer object,
+  // leaving the others untouched.
+  userAnswer.value = { 
+    ...userAnswer.value, 
+    [pairId]: value 
+  };
 };
 const updateFillBlankAnswer = (blankId, value) => {
     userAnswer.value = { ...userAnswer.value, [blankId]: value };
