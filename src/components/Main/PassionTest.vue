@@ -1,47 +1,44 @@
 <template>
-  <section class="passion-test" ref="vantaRef">
-    <h1 class="test-title">Тест на определение твоего направления</h1>
+  <section class="passion-test" id="passion-test" ref="vantaRef">
+    <div class="test-content">
+      <h1 class="test-title">Найди своё направление</h1>
+      <p class="test-subtitle">Ответь на несколько вопросов, чтобы определить свою страсть</p>
 
-    <!-- Progress Bar -->
-    <div class="progress-container">
-      <div class="progress-bar">
-        <div 
-          class="progress-fill" 
-          :style="{ width: `${(currentQuestion / questions.length) * 100}%` }"
-        ></div>
+      <div class="progress-container">
+        <div class="progress-bar">
+          <div 
+            class="progress-fill" 
+            :style="{ width: `${(currentQuestion / questions.length) * 100}%` }"
+          ></div>
+        </div>
+        <span class="progress-text">{{ currentQuestion }} / {{ questions.length }}</span>
       </div>
-      <span class="progress-text">{{ currentQuestion }} / {{ questions.length }}</span>
-    </div>
 
-    <!-- Question Mode -->
-    <div
-      v-if="currentQuestion < questions.length"
-      class="question-box animate-slide"
-    >
-      <h2 class="question-text">{{ questions[currentQuestion].text }}</h2>
-      <div class="options">
-        <button
-          v-for="(option, index) in questions[currentQuestion].options"
-          :key="index"
-          @click="selectOption(option.tag)"
-          class="option-btn"
-        >
-          {{ option.label }}
-        </button>
+      <div v-if="currentQuestion < questions.length" class="question-box">
+        <h2 class="question-text">{{ questions[currentQuestion].text }}</h2>
+        <div class="options">
+          <button
+            v-for="(option, index) in questions[currentQuestion].options"
+            :key="index"
+            @click="selectOption(option.tag)"
+            class="option-btn"
+          >
+            {{ option.label }}
+          </button>
+        </div>
       </div>
-    </div>
 
-    <!-- Result Mode -->
-    <div v-else class="result-box animate-slide">
-      <h2 class="result-title">🚀 Ты — {{ resultMap[result] }}</h2>
-      <p class="result-desc">{{ resultDescriptions[result] }}</p>
-      <div class="result-details">
-        <h3>Подходящие профессии:</h3>
-        <p class="careers">{{ careerSuggestions[result] }}</p>
-        <h3>Развивай эти навыки:</h3>
-        <p class="skills">{{ skillSuggestions[result] }}</p>
+      <div v-else class="result-box">
+        <h2 class="result-title">🚀 Ты — {{ resultMap[result] }}</h2>
+        <p class="result-desc">{{ resultDescriptions[result] }}</p>
+        <div class="result-details">
+          <h3>Подходящие профессии:</h3>
+          <p class="careers">{{ careerSuggestions[result] }}</p>
+          <h3>Рекомендуем развивать:</h3>
+          <p class="skills">{{ skillSuggestions[result] }}</p>
+        </div>
+        <button class="restart-btn" @click="restartTest">Пройти тест заново</button>
       </div>
-      <button class="restart-btn" @click="restartTest">Начать заново</button>
     </div>
   </section>
 </template>
@@ -326,84 +323,62 @@ function selectOption(tag) {
 function calculateResult() {
   const answerPattern = answers.value
   
-  // Analyze answer patterns to determine true passion
   const passionProfile = analyzePassionProfile(answerPattern)
   result.value = passionProfile
 }
 
 function analyzePassionProfile(answers) {
-  // Count preferences
   const preferences = {}
   answers.forEach(tag => {
     preferences[tag] = (preferences[tag] || 0) + 1
   })
   
-  // Define passion profiles based on answer combinations
   const passionMaps = {
-    // Creative passion indicators
     creative: () => {
       return (preferences.creative >= 3) && 
              (preferences.analytical <= 2) &&
              (answers.includes('creative') && answers.includes('creative'))
     },
-    
-    // Analytical/Scientific passion
     analytical: () => {
       return (preferences.analytical >= 3) &&
              (preferences.investigative >= 1) &&
              (preferences.creative <= 2)
     },
-    
-    // Social leadership passion
     social: () => {
       return (preferences.social >= 2) &&
              (preferences.communicative >= 1) &&
              (preferences.technical <= 2)
     },
-    
-    // Technical/Engineering passion
     technical: () => {
       return (preferences.technical >= 3) &&
              (preferences.practical >= 1) &&
              (preferences.social <= 2)
     },
-    
-    // Entrepreneurial passion
     entrepreneurial: () => {
       return (preferences.entrepreneurial >= 2) &&
              (preferences.strategic >= 1) &&
              (preferences.caring <= 1)
     },
-    
-    // Caring/Helping passion
     caring: () => {
       return (preferences.caring >= 1) &&
              (preferences.communicative >= 2) &&
              (preferences.entrepreneurial <= 1)
     },
-    
-    // Research/Investigation passion
     investigative: () => {
       return (preferences.investigative >= 2) &&
              (preferences.analytical >= 2) &&
              (preferences.social <= 2)
     },
-    
-    // Practical/Building passion
     practical: () => {
       return (preferences.practical >= 2) &&
              (preferences.technical >= 1) &&
              (preferences.creative <= 2)
     },
-    
-    // Communication/Teaching passion
     communicative: () => {
       return (preferences.communicative >= 3) &&
              (preferences.caring >= 1) &&
              (preferences.technical <= 2)
     },
-    
-    // Strategic thinking passion
     strategic: () => {
       return (preferences.strategic >= 2) &&
              (preferences.entrepreneurial >= 1) &&
@@ -411,14 +386,12 @@ function analyzePassionProfile(answers) {
     }
   }
   
-  // Check each passion profile
   for (const [passion, checkFunction] of Object.entries(passionMaps)) {
     if (checkFunction()) {
       return passion
     }
   }
   
-  // Fallback: return the most frequent preference
   const sortedPreferences = Object.entries(preferences)
     .sort((a, b) => b[1] - a[1])
   
@@ -433,14 +406,14 @@ function restartTest() {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700&display=swap');
 
 .passion-test {
   font-family: 'Unbounded', sans-serif;
   position: relative;
   min-height: 100vh;
-  padding: clamp(20px, 5vw, 60px);
-  background: radial-gradient(ellipse at bottom, #1b0032, #000);
+  padding: 40px 20px;
+  background-color: #0a0018;
   color: white;
   display: flex;
   flex-direction: column;
@@ -448,332 +421,141 @@ function restartTest() {
   justify-content: center;
   overflow: hidden;
 }
-
-.test-title {
-  font-size: clamp(1.8rem, 5vw, 3.6rem);
-  text-align: center;
-  font-family: 'Unbounded', sans-serif;
-  font-weight: 800;
-  margin-top: clamp(-30px, -5vw, -60px);
-  margin-bottom: clamp(20px, 4vw, 30px);
-  color: white;
-  -webkit-text-stroke: 1.5px #9333ea;
-  text-stroke: 1.5px #9333ea;
-  background: none;
-  letter-spacing: 1px;
-  line-height: 1.2;
-  max-width: 90vw;
+.test-content {
+  z-index: 2;
+  width: 100%;
+  max-width: 700px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
-
+.test-title {
+  font-size: 2.8rem;
+  font-weight: 700;
+  text-align: center;
+  color: #fff;
+  margin-bottom: 0.5rem;
+}
+.test-subtitle {
+  font-size: 1.1rem;
+  color: #a3a3c2;
+  text-align: center;
+  margin-bottom: 2rem;
+}
 .progress-container {
   display: flex;
   align-items: center;
-  gap: clamp(10px, 2vw, 15px);
-  margin-bottom: clamp(25px, 5vw, 40px);
-  z-index: 2;
-  flex-wrap: wrap;
-  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  width: 100%;
+  max-width: 400px;
 }
-
 .progress-bar {
-  width: clamp(200px, 50vw, 300px);
-  height: clamp(6px, 1vw, 8px);
+  flex-grow: 1;
+  height: 8px;
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
+  border-radius: 99px;
   overflow: hidden;
 }
-
 .progress-fill {
   height: 100%;
   background: linear-gradient(90deg, #9333ea, #7f5af0);
+  border-radius: 99px;
   transition: width 0.3s ease;
-  border-radius: 10px;
 }
-
-.progress-text {
-  font-size: clamp(0.8rem, 2vw, 0.9rem);
-  color: #bbb;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.question-box,
-.result-box {
-  z-index: 2;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-  backdrop-filter: blur(18px);
-  border-radius: clamp(15px, 3vw, 20px);
-  padding: clamp(20px, 5vw, 40px);
-  max-width: min(650px, 90vw);
+.question-box, .result-box {
+  background: rgba(25, 22, 69, 0.7);
+  border: 1px solid #2c2c54;
+  backdrop-filter: blur(10px);
+  border-radius: 1rem;
+  padding: 2.5rem;
   width: 100%;
   text-align: center;
-  box-shadow: 0 12px 30px rgba(0,0,0,0.5);
-  transition: opacity 0.3s ease;
-  margin: 0 auto;
 }
-
-.fade {
-  opacity: 0.3;
-}
-
 .question-text {
-  font-size: clamp(1.1rem, 3vw, 1.5rem);
-  margin-bottom: clamp(20px, 4vw, 30px);
+  font-size: 1.5rem;
+  margin-bottom: 2rem;
   line-height: 1.4;
 }
-
 .options {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(10px, 2vw, 15px);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
 }
-
 .option-btn {
-  background: linear-gradient(145deg, #4b007c, #e400f9);
-  border: none;
-  border-radius: clamp(25px, 5vw, 50px);
-  padding: clamp(12px, 2.5vw, 14px) clamp(20px, 4vw, 25px);
-  font-size: clamp(0.9rem, 2.2vw, 1rem);
-  font-weight: 600;
-  color: white;
+  background: #191645;
+  border: 1px solid #2c2c54;
+  color: #e0e7ff;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  font-size: 0.9rem;
+  font-family: 'Unbounded', sans-serif;
   cursor: pointer;
-  transition: all 0.3s ease;
-  text-align: center;
-  line-height: 1.3;
-  min-height: clamp(45px, 8vw, 55px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  transition: all 0.2s ease;
+  line-height: 1.4;
+  text-align: left;
 }
-
 .option-btn:hover {
-  transform: scale(1.02);
-  box-shadow: 0 8px 25px rgba(87, 145, 255, 0.4);
+  background: #7c3aed;
+  border-color: #7c3aed;
+  color: #fff;
+  transform: translateY(-2px);
 }
-
-.option-btn:active {
-  transform: scale(0.98);
-}
-
 .result-title {
-  font-size: clamp(1.4rem, 4vw, 2rem);
-  color: #45b5ff;
-  margin-bottom: clamp(15px, 3vw, 20px);
-  line-height: 1.2;
+  font-size: 2rem;
+  color: #c084fc;
+  margin-bottom: 1rem;
 }
-
 .result-desc {
-  font-size: clamp(0.95rem, 2.5vw, 1.1rem);
-  color: #ddd;
-  margin-bottom: clamp(20px, 4vw, 30px);
+  font-size: 1.1rem;
+  color: #d1d5db;
+  margin-bottom: 2rem;
   line-height: 1.6;
 }
-
 .result-details {
   text-align: left;
-  margin-bottom: clamp(20px, 4vw, 30px);
+  background: rgba(0,0,0,0.2);
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  margin-bottom: 2rem;
 }
-
 .result-details h3 {
-  color: #9333ea;
-  font-size: clamp(1rem, 2.8vw, 1.2rem);
-  margin: clamp(15px, 3vw, 20px) 0 clamp(8px, 2vw, 10px) 0;
-  line-height: 1.3;
+  color: #c084fc;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
-
 .careers, .skills {
-  font-size: clamp(0.85rem, 2.2vw, 0.95rem);
-  color: #ccc;
+  font-size: 0.9rem;
+  color: #d1d5db;
   line-height: 1.5;
-  margin-bottom: clamp(12px, 2.5vw, 15px);
 }
-
 .restart-btn {
   background: transparent;
-  border: 2px solid #45b5ff;
-  color: #45b5ff;
-  padding: clamp(10px, 2.5vw, 12px) clamp(20px, 4vw, 25px);
-  border-radius: clamp(20px, 4vw, 30px);
-  font-weight: bold;
-  transition: all 0.3s ease;
+  border: 1px solid #7c3aed;
+  color: #c084fc;
+  padding: 0.75rem 1.5rem;
+  border-radius: 99px;
+  font-weight: 600;
   cursor: pointer;
-  font-size: clamp(0.9rem, 2.2vw, 1rem);
-  min-height: clamp(40px, 7vw, 50px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  transition: all 0.3s ease;
+  font-family: 'Unbounded', sans-serif;
 }
-
 .restart-btn:hover {
-  background: #45b5ff;
-  color: #0a0018;
-  transform: scale(1.02);
+  background: #7c3aed;
+  color: #fff;
 }
 
-.restart-btn:active {
-  transform: scale(0.98);
-}
-
-/* Mobile specific optimizations */
 @media (max-width: 768px) {
-  .passion-test {
-    padding: 15px;
-    justify-content: flex-start;
-    padding-top: 40px;
-  }
-  
-  .test-title {
-    margin-top: 0;
-    font-size: 2rem;
-    -webkit-text-stroke: 1px #9333ea;
-    text-stroke: 1px #9333ea;
-  }
-  
-  .question-box,
-  .result-box {
-    padding: 25px 20px;
-    margin: 10px;
-  }
-  
-  .option-btn {
-    padding: 15px 20px;
-    font-size: 0.95rem;
-    border-radius: 30px;
-  }
-  
-  .progress-container {
-    margin-bottom: 25px;
-  }
-  
-  .progress-bar {
-    width: 250px;
-  }
+  .test-title { font-size: 2.2rem; }
+  .question-box, .result-box { padding: 1.5rem; }
 }
 
-/* Tablet specific optimizations */
-@media (min-width: 769px) and (max-width: 1024px) {
-  .test-title {
-    font-size: 2.8rem;
-  }
-  
-  .question-box,
-  .result-box {
-    max-width: 85vw;
-    padding: 35px;
-  }
-  
-  .option-btn {
-    font-size: 1rem;
-    padding: 16px 30px;
-  }
+@media (max-width: 640px) {
+  .options { grid-template-columns: 1fr; }
+  .test-title { font-size: 1.8rem; }
+  .test-subtitle { font-size: 1rem; }
+  .question-text { font-size: 1.2rem; }
 }
-
-/* Large screen optimizations */
-@media (min-width: 1400px) {
-  .question-box,
-  .result-box {
-    max-width: 700px;
-    padding: 50px;
-  }
-  
-  .test-title {
-    font-size: 4rem;
-  }
-  
-  .option-btn {
-    font-size: 1.1rem;
-    padding: 16px 30px;
-  }
-}
-
-/* TV/Large display optimizations */
-@media (min-width: 1920px) {
-  .passion-test {
-    padding: 80px;
-  }
-  
-  .test-title {
-    font-size: 4.5rem;
-    margin-bottom: 50px;
-  }
-  
-  .question-box,
-  .result-box {
-    max-width: 800px;
-    padding: 60px;
-  }
-  
-  .question-text {
-    font-size: 1.8rem;
-  }
-  
-  .option-btn {
-    font-size: 1.2rem;
-    padding: 18px 35px;
-    margin-bottom: 5px;
-  }
-  
-  .progress-bar {
-    width: 400px;
-    height: 10px;
-  }
-}
-
-/* Touch device optimizations */
-@media (hover: none) and (pointer: coarse) {
-  .option-btn:hover {
-    transform: none;
-    box-shadow: none;
-  }
-  
-  .option-btn:active {
-    transform: scale(0.95);
-    box-shadow: 0 5px 15px rgba(87, 145, 255, 0.6);
-  }
-  
-  .restart-btn:hover {
-    transform: none;
-  }
-  
-  .restart-btn:active {
-    transform: scale(0.95);
-  }
-}
-
-/* Accessibility improvements */
-@media (prefers-reduced-motion: reduce) {
-  .option-btn,
-  .restart-btn,
-  .progress-fill {
-    transition: none;
-  }
-  
-  .option-btn:hover,
-  .option-btn:active {
-    transform: none;
-  }
-  
-  .restart-btn:hover,
-  .restart-btn:active {
-    transform: none;
-  }
-}
-
-/* High contrast mode */
-@media (prefers-contrast: high) {
-  .question-box,
-  .result-box {
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    background: rgba(0, 0, 0, 0.8);
-  }
-  
-  .option-btn {
-    border: 1px solid #fff;
-  }
-  
-  .test-title {
-    -webkit-text-stroke: 2px #9333ea;
-    text-stroke: 2px #9333ea;
-  }
-}</style>
+</style>

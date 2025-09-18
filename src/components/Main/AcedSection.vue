@@ -1,51 +1,52 @@
 <template>
   <section class="aced-section" id="aced">
-    <div class="left-content">
-      <h1 class="headline">Начни своё обучение <br />уже сегодня</h1>
-      <p class="context-text">Чтобы пройти курсы — войдите в систему</p>
-      <button class="start-Login-btn" @click="triggerLogin">Начать обучение</button>
+    <div class="content-wrapper">
+      <div class="left-content">
+        <h1 class="headline">Начни своё обучение<br />уже сегодня</h1>
+        <p class="context-text">Чтобы получить доступ к курсам — войдите в систему или зарегистрируйтесь.</p>
+        <button class="start-login-btn" @click="triggerLogin">Начать обучение</button>
+      </div>
+
+      <div class="subjects-abstract-layout">
+        <div class="subject-card floating" @click="showInfo('history')" style="--glow-color: #f59e0b;">
+          <img src="@/assets/icons/history1.svg" class="subject-icon" />
+          <h3>История</h3>
+        </div>
+        <div class="subject-card floating" @click="showInfo('biology')" style="--glow-color: #10b981;">
+          <img src="@/assets/icons/biology1.svg" class="subject-icon" />
+          <h3>Биология</h3>
+        </div>
+        <div class="subject-card floating" @click="showInfo('coding')" style="--glow-color: #d1d5db;">
+          <img src="@/assets/icons/coding1.svg" class="subject-icon" />
+          <h3>Кодинг</h3>
+        </div>
+        <div class="subject-card floating" @click="showInfo('math')" style="--glow-color: #3b82f6;">
+          <img src="@/assets/icons/math1.svg" class="subject-icon" />
+          <h3>Математика</h3>
+        </div>
+        <div class="subject-card floating" @click="showInfo('physics')" style="--glow-color: #ec4899;">
+          <img src="@/assets/icons/physics1.png" class="subject-icon" />
+          <h3>Физика</h3>
+        </div>
+      </div>
     </div>
 
-    <div class="subjects-abstract-layout">
-      <div class="subject-card subject-history floating" @click="showInfo('history')">
-        <img src="@/assets/icons/history1.svg" class="subject-icon" />
-        <h3>История</h3>
-      </div>
-      <div class="subject-card subject-biology floating" @click="showInfo('biology')">
-        <img src="@/assets/icons/biology1.svg" class="subject-icon" />
-        <h3>Биология</h3>
-      </div>
-      <div class="subject-card subject-coding floating" @click="showInfo('coding')">
-        <img src="@/assets/icons/coding1.svg" class="subject-icon" />
-        <h3>Кодинг</h3>
-      </div>
-      <div class="subject-card subject-math floating" @click="showInfo('math')">
-        <img src="@/assets/icons/math1.svg" class="subject-icon" />
-        <h3>Математика</h3>
-      </div>
-      <div class="subject-card subject-physics floating" @click="showInfo('physics')">
-        <img src="@/assets/icons/physics1.png" class="subject-icon" />
-        <h3>Физика</h3>
-      </div>
-    </div>
-
-    <!-- Modal -->
     <div v-if="selectedSubject" class="modal-overlay" @click="selectedSubject = null">
       <div class="modal-content" @click.stop>
         <span class="close-btn" @click="selectedSubject = null">×</span>
         <img :src="modalInfo[selectedSubject].image" class="modal-icon" />
         <h2>{{ modalInfo[selectedSubject].label }}</h2>
         <p>{{ modalInfo[selectedSubject].description }}</p>
-        <p class="fun-fact"><strong>Факт:</strong> {{ modalInfo[selectedSubject].funFact }}</p>
-        <p><strong>Кому подойдёт:</strong> {{ modalInfo[selectedSubject].audience }}</p>
+        <p class="fun-fact"><strong>Интересный факт:</strong> {{ modalInfo[selectedSubject].funFact }}</p>
+        <p class="audience"><strong>Кому подойдёт:</strong> {{ modalInfo[selectedSubject].audience }}</p>
       </div>
     </div>
   </section>
 </template>
 
 <script>
-import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { useRouter } from "vue-router";
+import { getAuth } from "firebase/auth";
+import { useRouter } from "vue-router"; // Keep this if you use this.$router
 
 export default {
   name: "AcedSection",
@@ -53,503 +54,250 @@ export default {
     return {
       selectedSubject: null,
       modalInfo: {
-        history: {
-          label: "История",
-          image: new URL('@/assets/icons/history2.svg', import.meta.url).href,
-          description: "Изучи развитие человечества, цивилизаций и ключевых событий.",
-          funFact: "История помогает предсказывать будущее, изучая прошлое.",
-          audience: "Тем, кто интересуется обществом, культурой и прошлым."
-        },
-        biology: {
-          label: "Биология",
-          image: new URL('@/assets/icons/biology2.svg', import.meta.url).href,
-          description: "Пойми, как устроена жизнь: от клетки до экосистемы.",
-          funFact: "В твоем теле больше бактерий, чем собственных клеток.",
-          audience: "Любителям природы, здоровья и науки о жизни."
-        },
-        coding: {
-          label: "Кодинг",
-          image: new URL('@/assets/icons/coding2.svg', import.meta.url).href,
-          description: "Создавай сайты, игры и приложения с помощью программирования.",
-          funFact: "Первая программистка была женщина — Ада Лавлейс.",
-          audience: "Тем, кто хочет строить цифровое будущее."
-        },
-        math: {
-          label: "Математика",
-          image: new URL('@/assets/icons/math2.svg', import.meta.url).href,
-          description: "Развивай логическое мышление и понимание мира через числа и формулы.",
-          funFact: "Математика — универсальный язык Вселенной.",
-          audience: "Тем, кто любит точность, закономерности и логику."
-        },
-        physics: {
-          label: "Физика",
-          image: new URL('@/assets/icons/physics2.png', import.meta.url).href,
-          description: "Познай законы природы: от микрочастиц до звёзд и галактик.",
-          funFact: "Одна чайная ложка нейтронной звезды весит как Эверест.",
-          audience: "Тем, кто хочет понять, как работает Вселенная."
-        }
+        history: { label: "История", image: new URL('@/assets/icons/history2.svg', import.meta.url).href, description: "Изучи развитие человечества, цивилизаций и ключевых событий.", funFact: "История помогает предсказывать будущее, изучая прошлое.", audience: "Тем, кто интересуется обществом, культурой и прошлым." },
+        biology: { label: "Биология", image: new URL('@/assets/icons/biology2.svg', import.meta.url).href, description: "Пойми, как устроена жизнь: от клетки до экосистемы.", funFact: "В твоем теле больше бактерий, чем собственных клеток.", audience: "Любителям природы, здоровья и науки о жизни." },
+        coding: { label: "Кодинг", image: new URL('@/assets/icons/coding2.svg', import.meta.url).href, description: "Создавай сайты, игры и приложения с помощью программирования.", funFact: "Первая программистка была женщина — Ада Лавлейс.", audience: "Тем, кто хочет строить цифровое будущее." },
+        math: { label: "Математика", image: new URL('@/assets/icons/math2.svg', import.meta.url).href, description: "Развивай логическое мышление и понимание мира через числа и формулы.", funFact: "Математика — универсальный язык Вселенной.", audience: "Тем, кто любит точность, закономерности и логику." },
+        physics: { label: "Физика", image: new URL('@/assets/icons/physics2.png', import.meta.url).href, description: "Познай законы природы: от микрочастиц до звёзд и галактик.", funFact: "Одна чайная ложка нейтронной звезды весит как Эверест.", audience: "Тем, кто хочет понять, как работает Вселенная." }
       }
     };
   },
   methods: {
     triggerLogin() {
       const auth = getAuth();
-      const user = auth.currentUser;
-
-      if (user) {
+      if (auth.currentUser) {
         this.$router.push("/profile/main");
       } else {
-        const hero = document.getElementById("hero");
-        if (hero) {
-          hero.scrollIntoView({ behavior: "smooth" });
-          setTimeout(() => {
-            window.dispatchEvent(new Event("open-Login-modal"));
-          }, 600);
-        } else {
-          window.dispatchEvent(new Event("open-Login-modal"));
-        }
+        window.dispatchEvent(new Event("open-Login-modal"));
       }
     },
     showInfo(subjectKey) {
-      if (this.modalInfo[subjectKey]) {
-        this.selectedSubject = subjectKey;
-      }
+      this.selectedSubject = subjectKey;
     }
   }
 };
 </script>
 
 <style scoped>
-@import url("https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700&display=swap");
 
 .aced-section {
   position: relative;
+  padding: 80px 40px;
+  background-color: #110d2e;
+  font-family: 'Unbounded', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  overflow: hidden;
+}
+
+.content-wrapper {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  gap: clamp(40px, 8vw, 60px);
-  padding: clamp(40px, 8vw, 80px) clamp(20px, 5vw, 80px);
-  background: radial-gradient(ellipse at center, #0a001a, #1a002f);
+  align-items: center;
+  gap: 60px;
   flex-wrap: wrap;
-  color: white;
-  z-index: 1;
-  min-height: 100vh;
+  max-width: 1400px;
+  width: 100%;
 }
 
 .left-content {
   flex: 1;
-  max-width: clamp(300px, 45vw, 460px);
+  max-width: 450px;
   min-width: 280px;
+  z-index: 2;
 }
 
 .headline {
-  font-size: clamp(2rem, 5vw, 2.7rem);
-  font-family: 'Unbounded', sans-serif;
-  background: linear-gradient(to right, #9333ea, #38bdf8);
+  font-size: clamp(2.2rem, 5vw, 2.8rem);
+  font-weight: 700;
+  background: linear-gradient(to right, #a855f7, #38bdf8);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  margin-bottom: clamp(15px, 3vw, 20px);
-  line-height: 1.2;
+  margin-bottom: 1.5rem;
+  line-height: 1.3;
 }
 
 .context-text {
-  font-size: clamp(0.9rem, 2.5vw, 1rem);
-  font-family: 'Unbounded';
-  color: #bfbfe5;
-  margin-bottom: clamp(15px, 3vw, 20px);
+  font-size: clamp(1rem, 2.5vw, 1.1rem);
+  color: #a3a3c2;
+  margin-bottom: 2rem;
+  line-height: 1.6;
 }
 
-.start-Login-btn {
-  padding: clamp(10px, 2.5vw, 12px) clamp(20px, 5vw, 28px);
+.start-login-btn {
+  padding: 1rem 2.5rem;
+  font-size: 1rem;
   font-family: 'Unbounded', sans-serif;
-  font-size: clamp(0.9rem, 2.2vw, 1rem);
-  border-radius: 30px;
+  border-radius: 99px;
   background: linear-gradient(90deg, #9333ea, #7f5af0);
   color: white;
-  border: 2px solid transparent;
+  border: none;
   cursor: pointer;
-  transition: all 0.4s ease;
+  transition: all 0.3s ease;
+  font-weight: bold;
 }
 
-.start-Login-btn:hover {
-  background: black;
-  color: #c084fc;
-  box-shadow: 0 0 20px rgba(192, 132, 252, 0.6);
-  transform: scale(1.03);
+.start-login-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 20px rgba(147, 51, 234, 0.5);
 }
 
 .subjects-abstract-layout {
   position: relative;
-  flex: 1;
-  min-height: clamp(400px, 50vh, 480px);
+  flex: 1.2;
+  min-height: 450px;
   min-width: 300px;
 }
 
 .subject-card {
   position: absolute;
-  width: clamp(200px, 25vw, 280px);
-  height: clamp(140px, 18vw, 180px);
-  padding: clamp(15px, 3vw, 25px);
-  border-radius: clamp(15px, 3vw, 25px);
+  width: clamp(200px, 20vw, 250px);
+  height: clamp(140px, 14vw, 160px);
+  padding: 20px;
+  border-radius: 1rem;
   text-align: center;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(25, 22, 69, 0.8);
+  border: 1px solid #2c2c54;
   backdrop-filter: blur(10px);
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: all 0.3s ease;
   cursor: pointer;
-  pointer-events: auto;
-  z-index: 2;
+  box-shadow: 0 0 30px rgba(0,0,0,0.3);
+  color: #fff;
 }
 
-.subject-card h3 {
-  font-size: clamp(1rem, 2.5vw, 1.3rem);
-  margin-top: clamp(8px, 2vw, 10px);
-  font-family: 'Unbounded', sans-serif;
+.subject-card:hover {
+  transform: translateY(-10px) scale(1.03);
+  box-shadow: 0 0 40px var(--glow-color);
+  border-color: var(--glow-color);
 }
 
 .subject-icon {
-  width: clamp(40px, 8vw, 55px);
-  height: clamp(40px, 8vw, 55px);
-  margin-bottom: clamp(5px, 1.5vw, 8px);
+  width: clamp(40px, 5vw, 50px);
+  height: clamp(40px, 5vw, 50px);
+  margin-bottom: 10px;
 }
 
-/* Floating animation */
-.floating {
-  animation: float 6s ease-in-out infinite;
+.subject-card h3 {
+  font-size: clamp(1rem, 2vw, 1.25rem);
 }
 
+.floating { animation: float 6s ease-in-out infinite; }
 @keyframes float {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+  50% { transform: translateY(-15px); }
 }
 
-/* Placement & glow - optimized for 5 subjects */
-.subject-history {
-  top: 0;
-  right: 0;
-  box-shadow: 0 0 30px rgba(255, 255, 0, 0.5);
-}
-.subject-biology {
-  bottom: 30px;
-  left: 30px;
-  box-shadow: 0 0 30px rgba(0, 255, 120, 0.5);
-}
-.subject-coding {
-  bottom: 0;
-  right: clamp(50px, 15vw, 70px);
-  box-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
-}
-.subject-math {
-  top: 10px;
-  left: clamp(60px, 15vw, 100px);
-  box-shadow: 0 0 30px rgba(59, 130, 246, 0.6);
-}
-.subject-physics {
-  top: clamp(100px, 25vh, 120px);
-  right: clamp(150px, 35vw, 200px);
-  box-shadow: 0 0 30px rgba(255, 100, 255, 0.6);
-}
+/* Card Positions */
+.subject-history { top: 0; left: 20%; animation-delay: -1s; }
+.subject-biology { top: 50%; left: 0; animation-delay: -3s; }
+.subject-coding { top: 25%; left: 60%; animation-delay: -2s; }
+.subject-math { top: 70%; left: 40%; animation-delay: -5s; }
+.subject-physics { top: 0; right: 0; animation-delay: -4s; }
 
-.subject-history:hover {
-  box-shadow: 0 0 45px rgba(255, 255, 0, 0.8);
-}
-.subject-biology:hover {
-  box-shadow: 0 0 45px rgba(0, 255, 120, 0.8);
-}
-.subject-coding:hover {
-  box-shadow: 0 0 45px rgba(255, 255, 255, 0.9);
-}
-.subject-math:hover {
-  box-shadow: 0 0 45px rgba(147, 197, 253, 1);
-}
-.subject-physics:hover {
-  box-shadow: 0 0 45px rgba(255, 100, 255, 0.9);
-}
-
-/* Modal */
+/* Modal Styles */
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 99999 !important;
-  background: rgba(10, 0, 40, 0.85);
+  inset: 0;
+  background: rgba(10, 0, 24, 0.8);
+  backdrop-filter: blur(5px);
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 100vw;
-  height: 100vh;
-  pointer-events: auto;
-  opacity: 1;
-  visibility: visible;
+  z-index: 1000;
 }
 
 .modal-content {
-  background: #0f0025;
-  padding: clamp(25px, 5vw, 40px);
-  width: clamp(300px, 85vw, 600px);
-  max-width: 90%;
-  border-radius: clamp(15px, 3vw, 20px);
-  color: white;
+  background: #191645;
+  border-radius: 1rem;
+  padding: 2.5rem;
+  width: 90%;
+  max-width: 500px;
   text-align: center;
-  z-index: 100000;
-  box-shadow: 0 0 50px rgba(173, 100, 255, 0.6);
+  border: 1px solid #7c3aed;
+  box-shadow: 0 0 40px rgba(124, 58, 237, 0.5);
   position: relative;
+  animation: modal-fade-in 0.3s ease-out;
+}
+
+@keyframes modal-fade-in {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 .modal-icon {
-  width: clamp(45px, 10vw, 60px);
-  height: clamp(45px, 10vw, 60px);
+  width: 60px;
+  height: 60px;
   position: absolute;
-  top: clamp(-20px, -5vw, -30px);
-  left: clamp(15px, 4vw, 20px);
-  transform: rotate(-15deg);
-  animation: floatIcon 4s ease-in-out infinite;
-  opacity: 0.9;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
   filter: drop-shadow(0 0 10px #c084fc);
 }
 
-@keyframes floatIcon {
-  0%, 100% {
-    transform: rotate(-15deg) translateY(0);
-  }
-  50% {
-    transform: rotate(-15deg) translateY(-8px);
-  }
-}
-
-.modal-content {
-  position: relative;
-  padding-top: clamp(45px, 10vw, 60px);
-}
-
 .modal-content h2 {
-  font-size: clamp(1.3rem, 4vw, 1.8rem);
-  margin-bottom: clamp(15px, 3vw, 20px);
+  font-size: 1.8rem;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
 }
 
 .modal-content p {
-  font-size: clamp(0.9rem, 2.5vw, 1rem);
   line-height: 1.6;
-  margin-bottom: clamp(10px, 2vw, 15px);
+  margin-bottom: 1rem;
+  color: #d1d5db;
 }
 
-.fun-fact {
-  margin-top: clamp(10px, 2.5vw, 12px);
-  color: #c084fc;
+.fun-fact, .audience {
   font-style: italic;
+}
+.fun-fact strong, .audience strong {
+  color: #c084fc;
 }
 
 .close-btn {
   position: absolute;
-  top: clamp(10px, 2.5vw, 15px);
-  right: clamp(15px, 4vw, 20px);
-  font-size: clamp(1.3rem, 3vw, 1.5rem);
+  top: 15px;
+  right: 20px;
+  font-size: 1.5rem;
   cursor: pointer;
-  color: #fff;
 }
 
-/* Mobile specific styles */
-@media (max-width: 768px) {
-  .aced-section {
+/* Responsive adjustments */
+@media (max-width: 992px) {
+  .content-wrapper {
     flex-direction: column;
-    align-items: center;
     text-align: center;
-    padding: 40px 20px;
-    gap: 30px;
   }
-  
-  .left-content {
-    max-width: 100%;
-    margin-bottom: 20px;
-  }
-  
   .subjects-abstract-layout {
+    margin-top: 40px;
     width: 100%;
-    min-height: 350px;
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    grid-template-rows: repeat(3, 1fr);
-    gap: 15px;
-    position: relative;
-  }
-  
-  .subject-card {
-    position: relative !important;
-    top: auto !important;
-    left: auto !important;
-    right: auto !important;
-    bottom: auto !important;
-    width: 100%;
-    height: 120px;
-    margin: 0;
-  }
-  
-  .subject-history {
-    grid-column: 1;
-    grid-row: 1;
-  }
-  
-  .subject-biology {
-    grid-column: 2;
-    grid-row: 1;
-  }
-  
-  .subject-coding {
-    grid-column: 1;
-    grid-row: 2;
-  }
-  
-  .subject-math {
-    grid-column: 2;
-    grid-row: 2;
-  }
-  
-  .subject-physics {
-    grid-column: 1 / span 2;
-    grid-row: 3;
+    max-width: 500px;
   }
 }
 
-/* Small mobile styles */
 @media (max-width: 480px) {
   .aced-section {
-    padding: 30px 15px;
+    padding: 60px 20px;
   }
-  
   .subjects-abstract-layout {
-    grid-template-columns: 1fr;
-    grid-template-rows: repeat(5, 1fr);
-    gap: 12px;
-    min-height: 420px;
+    min-height: 350px;
   }
-  
   .subject-card {
-    height: 100px;
+    width: 180px;
+    height: 120px;
   }
-  
-  .subject-history {
-    grid-column: 1;
-    grid-row: 1;
-  }
-  
-  .subject-biology {
-    grid-column: 1;
-    grid-row: 2;
-  }
-  
-  .subject-coding {
-    grid-column: 1;
-    grid-row: 3;
-  }
-  
-  .subject-math {
-    grid-column: 1;
-    grid-row: 4;
-  }
-  
-  .subject-physics {
-    grid-column: 1;
-    grid-row: 5;
-  }
+  .subject-history { top: 0; left: 10%; }
+  .subject-biology { top: 45%; left: -10%; }
+  .subject-coding { top: 20%; left: 50%; }
+  .subject-math { top: 65%; left: 30%; }
+  .subject-physics { top: 0; right: -10%; }
 }
 
-/* Tablet styles */
-@media (min-width: 769px) and (max-width: 1024px) {
-  .aced-section {
-    padding: 60px 40px;
-  }
-  
-  .subjects-abstract-layout {
-    min-height: 450px;
-  }
-  
-  .subject-card {
-    width: 240px;
-    height: 160px;
-  }
-}
-
-/* Large screen styles */
-@media (min-width: 1400px) {
-  .aced-section {
-    padding: 100px 80px;
-    gap: 80px;
-  }
-  
-  .headline {
-    font-size: 3rem;
-  }
-  
-  .subjects-abstract-layout {
-    min-height: 520px;
-  }
-  
-  .subject-card {
-    width: 300px;
-    height: 200px;
-  }
-}
-
-/* Touch device optimizations */
-@media (hover: none) and (pointer: coarse) {
-  .subject-card:hover {
-    transform: none;
-    box-shadow: 0 0 30px rgba(147, 51, 234, 0.5);
-  }
-  
-  .subject-card:active {
-    transform: scale(0.95);
-  }
-  
-  .start-Login-btn:hover {
-    transform: none;
-  }
-  
-  .start-Login-btn:active {
-    transform: scale(0.95);
-  }
-}
-
-/* Accessibility improvements */
-@media (prefers-reduced-motion: reduce) {
-  .floating {
-    animation: none;
-  }
-  
-  .subject-card,
-  .start-Login-btn {
-    transition: none;
-  }
-  
-  .subject-card:hover,
-  .subject-card:active {
-    transform: none;
-  }
-  
-  .start-Login-btn:hover,
-  .start-Login-btn:active {
-    transform: none;
-  }
-}
-
-/* High contrast mode */
-@media (prefers-contrast: high) {
-  .aced-section {
-    background: #000;
-  }
-  
-  .subject-card {
-    border: 2px solid rgba(255, 255, 255, 0.5);
-    background: rgba(0, 0, 0, 0.8);
-  }
-  
-  .headline {
-    -webkit-text-fill-color: #9333ea;
-  }
-}
 </style>
