@@ -1,41 +1,64 @@
 <template>
   <section class="pricing-section">
     <div class="container">
-      <h2 class="title">Выбери подходящий тариф</h2>
-      <p class="subtitle">
-        Платформа, которая растёт вместе с тобой. Доступ к искусственному интеллекту,
-        персонализации и результатам.
-      </p>
+      <div class="text-center">
+        <div class="sale-badge">🔥 СКИДКА 50% ТОЛЬКО СЕГОДНЯ!</div>
+        <h2 class="section-title">Инвестируйте в своё будущее <span class="gradient-text">прямо сейчас!</span></h2>
+        <p class="section-subtitle">
+          Выберите план, который изменит вашу карьеру навсегда. Каждый сум вернётся увеличением зарплаты!
+        </p>
+      </div>
 
       <div class="pricing-cards">
-        <!-- Starter Plan -->
         <div class="card">
-          <h3 class="plan-name">Starter</h3>
-          <p class="price">$20<span class="period"> / месяц</span></p>
+          <h3 class="plan-name">Базовый</h3>
+          <p class="plan-desc">Для начинающих</p>
+          <div class="price-wrapper">
+            <p class="old-price">520,000 сум</p>
+            <p class="price">260,000 <span class="currency">сум</span></p>
+            <p class="period">единовременно</p>
+          </div>
           <ul class="features">
-            <li>🔹 Доступ ко всем предметам</li>
-            <li>🔹 Помощь ИИ с домашкой</li>
-            <li>🔹 Прогресс и статистика</li>
-            <li>🔹 Безлимитный доступ к урокам</li>
-            <li>🔹 Интеллектуальные подсказки в обучении</li>
+            <li><span class="check">✔</span> Доступ ко всем предметам</li>
+            <li><span class="check">✔</span> Помощь ИИ с домашкой</li>
+            <li><span class="check">✔</span> Прогресс и статистика</li>
           </ul>
-          <button class="btn" @click="handleClick('start')">Начать</button>
+           <button class="btn outline" @click="handleClick('start')">Выбрать план</button>
         </div>
 
-        <!-- Pro Plan -->
-        <div class="card pro">
-          <div class="popular-badge">Популярный</div>
-          <h3 class="plan-name">Pro</h3>
-          <p class="price">$35<span class="period"> / месяц</span></p>
-          <ul class="features">
-            <li>✨ Всё из STARTER +</li>
-            <li>🔓 Персональный ИИ-наставник</li>
-            <li>📊 Продвинутая аналитика</li>
-            <li>📚 Индивидуальная карта обучения</li>
-            <li>🧠 Расширенный режим чата</li>
-            <li>🎯 Целевые рекомендации и план обучения</li>
-          </ul>
-          <button class="btn" @click="handleClick('pro')">Начать</button>
+        <div class="card popular">
+           <div class="popular-badge">⭐ САМЫЙ ПОПУЛЯРНЫЙ</div>
+           <h3 class="plan-name">Профессионал</h3>
+           <p class="plan-desc">Для карьерного роста</p>
+           <div class="price-wrapper">
+             <p class="old-price">900,000 сум</p>
+             <p class="price">450,000 <span class="currency">сум</span></p>
+             <p class="period">единовременно</p>
+           </div>
+           <div class="economy-badge">ЭКОНОМИЯ 450,000 сум</div>
+           <ul class="features">
+             <li><span class="check">✔</span> Всё из STARTER +</li>
+             <li><span class="check">✔</span> Персональный ИИ-наставник</li>
+             <li><span class="check">✔</span> Продвинутая аналитика</li>
+             <li><span class="check">✔</span> Индивидуальная карта обучения</li>
+           </ul>
+            <button class="btn gradient" @click="handleClick('pro')">Начать сейчас!</button>
+        </div>
+
+        <div class="card">
+          <h3 class="plan-name">Премиум</h3>
+          <p class="plan-desc">VIP сопровождение</p>
+           <div class="price-wrapper">
+             <p class="old-price">1,300,000 сум</p>
+             <p class="price">650,000 <span class="currency">сум</span></p>
+             <p class="period">единовременно</p>
+           </div>
+           <ul class="features">
+              <li><span class="check">✔</span> Всё из PRO +</li>
+              <li><span class="check">✔</span> 1-на-1 сессии с экспертами</li>
+              <li><span class="check">✔</span> Приоритетная поддержка</li>
+           </ul>
+            <button class="btn outline" @click="handleClick('premium')">Выбрать VIP</button>
         </div>
       </div>
     </div>
@@ -53,7 +76,7 @@ export default {
       const user = auth.currentUser;
 
       if (!user) {
-        window.dispatchEvent(new Event("open-Login-modal"));
+        window.dispatchEvent(new CustomEvent("open-Login-modal"));
       } else {
         this.$router.push(`/pay/${plan}`);
       }
@@ -64,251 +87,162 @@ export default {
 
 <style scoped>
 .pricing-section {
-  background: linear-gradient(135deg, #1e1b4b 0%, #111827 100%);
-  padding: 60px 20px;
-  color: #e0e7ff;
-  text-align: center;
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
+  padding: 80px 20px;
+  background-color: #110d2e;
+  font-family: 'Unbounded', sans-serif;
 }
-
 .container {
   max-width: 1200px;
   margin: 0 auto;
-  width: 100%;
 }
-
-.title {
-  font-size: clamp(2rem, 4vw, 2.5rem);
-  font-weight: bold;
-  text-shadow: 0 0 20px rgba(147, 51, 234, 0.6);
-  font-family: 'Unbounded', sans-serif;
+.text-center {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+.sale-badge {
+  display: inline-block;
+  background-color: #ef4444;
+  color: white;
+  padding: 0.5rem 1.5rem;
+  border-radius: 99px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 2rem;
+}
+.section-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #fff;
   margin-bottom: 1rem;
-  background: linear-gradient(135deg, #a78bfa, #c084fc);
+}
+.gradient-text {
+  background: linear-gradient(90deg, #a78bfa, #c084fc);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  background-clip: text;
 }
-
-.subtitle {
-  margin: 0 auto 60px;
-  font-size: clamp(1rem, 2vw, 1.1rem);
-  color: #cbd5e1;
+.section-subtitle {
+  font-size: 1.1rem;
+  color: #a3a3c2;
   max-width: 700px;
+  margin: 0 auto;
   line-height: 1.6;
 }
-
 .pricing-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 30px;
-  justify-items: center;
-  max-width: 800px;
-  margin: 0 auto;
+  gap: 2rem;
+  align-items: center;
 }
-
 .card {
-  background: rgba(15, 23, 42, 0.8);
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
-  padding: 40px 30px;
-  width: 100%;
-  max-width: 350px;
-  box-shadow: 0 10px 40px rgba(147, 51, 234, 0.2);
-  transition: all 0.3s ease;
+  background-color: #191645;
+  border-radius: 1.5rem;
+  padding: 2.5rem;
+  text-align: center;
+  border: 2px solid transparent;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  border: 1px solid rgba(147, 51, 234, 0.2);
+  height: 100%;
+}
+.card.popular {
+  background: linear-gradient(145deg, #2c1a4d, #191645);
+  border: 2px solid #7c3aed;
   position: relative;
-  overflow: hidden;
+  transform: translateY(-20px);
 }
-
-.card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(147, 51, 234, 0.6), transparent);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.card:hover {
-  transform: translateY(-10px);
-  box-shadow: 0 20px 60px rgba(147, 51, 234, 0.4);
-}
-
-.card:hover::before {
-  opacity: 1;
-}
-
-.card.pro {
-  border: 2px solid rgba(167, 139, 250, 0.5);
-  background: linear-gradient(135deg, rgba(30, 27, 75, 0.9), rgba(15, 23, 42, 0.9));
-  transform: scale(1.05);
-}
-
-.card.pro:hover {
-  transform: translateY(-10px) scale(1.05);
-}
-
 .popular-badge {
   position: absolute;
-  top: -1px;
+  top: -18px;
   left: 50%;
   transform: translateX(-50%);
-  background: linear-gradient(135deg, #9333ea, #c084fc);
+  background: linear-gradient(90deg, #9333ea, #c084fc);
   color: white;
-  padding: 8px 20px;
-  border-radius: 0 0 12px 12px;
+  padding: 0.5rem 1.5rem;
+  border-radius: 99px;
   font-size: 0.8rem;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
-
 .plan-name {
-  font-size: clamp(1.3rem, 3vw, 1.5rem);
-  margin-bottom: 15px;
-  color: #a78bfa;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #fff;
+}
+.plan-desc {
+  font-size: 0.9rem;
+  color: #a3a3c2;
+  margin-bottom: 2rem;
+}
+.price-wrapper {
+  margin-bottom: 1rem;
+}
+.old-price {
+  font-size: 1.25rem;
+  color: #6b7280;
+  text-decoration: line-through;
+}
+.price {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.1;
+}
+.currency {
+  font-size: 2rem;
+}
+.period {
+  color: #a3a3c2;
+}
+.economy-badge {
+  display: inline-block;
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #fca5a5;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  margin-top: 1rem;
+  font-size: 0.8rem;
   font-weight: 600;
 }
-
-.price {
-  font-size: clamp(1.8rem, 4vw, 2.2rem);
-  margin-bottom: 30px;
-  font-weight: bold;
-  color: #e0e7ff;
-}
-
-.period {
-  font-size: clamp(1rem, 2vw, 1.2rem);
-  color: #94a3b8;
-  font-weight: normal;
-}
-
 .features {
-  text-align: left;
-  padding: 0;
-  margin: 0 0 40px;
   list-style: none;
-  font-size: clamp(0.9rem, 1.5vw, 0.95rem);
-  color: #d1d5db;
-  line-height: 1.8;
+  padding: 0;
+  margin: 2rem 0;
+  text-align: left;
   flex-grow: 1;
 }
-
 .features li {
-  padding: 8px 0;
-  position: relative;
-  padding-left: 25px;
+  color: #d1d5db;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
-
-.features li::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 6px;
-  height: 6px;
-  background: linear-gradient(135deg, #9333ea, #c084fc);
-  border-radius: 50%;
-  box-shadow: 0 0 10px rgba(147, 51, 234, 0.5);
+.check {
+  color: #34d399;
 }
-
 .btn {
-  background: linear-gradient(135deg, #9333ea, #7c3aed);
-  color: white;
-  border: none;
-  padding: 15px 30px;
-  border-radius: 12px;
-  font-size: clamp(0.9rem, 2vw, 1rem);
+  width: 100%;
+  padding: 1rem;
+  border-radius: 0.75rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  box-shadow: 0 4px 20px rgba(147, 51, 234, 0.3);
+  font-size: 1rem;
 }
-
-.btn:hover {
-  background: linear-gradient(135deg, #7c3aed, #6d28d9);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(147, 51, 234, 0.5);
+.btn.outline {
+  background: transparent;
+  border: 2px solid #4f46e5;
+  color: #a3a3c2;
 }
-
-.btn:active {
-  transform: translateY(0);
+.btn.outline:hover {
+  background: #4f46e5;
+  color: #fff;
 }
-
-/* Mobile Responsive */
-@media (max-width: 768px) {
-  .pricing-section {
-    padding: 40px 15px;
-  }
-  
-  .subtitle {
-    margin-bottom: 40px;
-  }
-  
-  .pricing-cards {
-    grid-template-columns: 1fr;
-    gap: 20px;
-    max-width: 400px;
-  }
-  
-  .card {
-    padding: 30px 25px;
-  }
-  
-  .card.pro {
-    transform: none;
-    margin-top: 20px;
-  }
-  
-  .card.pro:hover {
-    transform: translateY(-5px);
-  }
-  
-  .popular-badge {
-    font-size: 0.75rem;
-    padding: 6px 15px;
-  }
+.btn.gradient {
+  background: linear-gradient(90deg, #9333ea, #7f5af0);
+  border: none;
+  color: white;
+  border: 2px solid transparent;
 }
-
-@media (max-width: 480px) {
-  .pricing-section {
-    padding: 30px 10px;
-  }
-  
-  .card {
-    padding: 25px 20px;
-  }
-  
-  .features li {
-    padding: 6px 0;
-    font-size: 0.85rem;
-  }
-  
-  .btn {
-    padding: 12px 25px;
-    font-size: 0.9rem;
-  }
-}
-
-/* Large screens */
-@media (min-width: 1200px) {
-  .pricing-cards {
-    gap: 40px;
-  }
-  
-  .card {
-    padding: 50px 40px;
-  }
+.btn.gradient:hover {
+  filter: brightness(1.2);
 }
 </style>

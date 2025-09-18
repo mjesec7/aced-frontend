@@ -1,33 +1,21 @@
 <template>
-  <section class="promo-container">
-    <div class="text-section">
-      <h2>Образование будущего — с ACED</h2>
-      <p>
-        Получи доступ к более чем <strong>200+ курсам</strong>, разработанным с помощью AI.
-        Учись в собственном ритме, отслеживай прогресс и добивайся настоящих результатов.
-      </p>
-      <p class="highlight">
-        Начни бесплатно и перейди на Pro в любой момент!
-      </p>
-    </div>
-
-    <div class="floating-cards">
-      <div class="promo-card card-1">
-        <span class="icon">🤖</span>
-        <h3>Искусственный интеллект</h3>
-        <p>Персонализированные рекомендации и обучение</p>
+  <section class="features-section" id="aced">
+    <div class="container">
+      <div class="text-center">
+        <h2 class="section-title">Почему выбирают ACED?</h2>
+        <p class="section-subtitle">
+          Мы не просто учим — мы трансформируем карьеры. Каждый элемент нашей
+          платформы создан для вашего успеха.
+        </p>
       </div>
 
-      <div class="promo-card card-2">
-        <span class="icon">📈</span>
-        <h3>Твоя аналитика</h3>
-        <p>Следи за прогрессом и улучшай результаты</p>
-      </div>
-
-      <div class="promo-card card-3">
-        <span class="icon">🎓</span>
-        <h3>150+ курсов</h3>
-        <p>История, биология, кодинг и многое другое</p>
+      <div class="features-grid">
+        <div v-for="feature in features" :key="feature.title" class="feature-card">
+          <div class="icon-wrapper" v-html="feature.icon"></div>
+          <div class="highlight-badge">{{ feature.highlight }}</div>
+          <h3 class="card-title">{{ feature.title }}</h3>
+          <p class="card-description">{{ feature.description }}</p>
+        </div>
       </div>
     </div>
   </section>
@@ -35,154 +23,82 @@
 
 <script>
 export default {
-  name: 'AnalyticsSection'
-}
+  name: 'AnalyticsSection',
+  data() {
+    return {
+      features: [
+        { icon: '🧠', title: 'ИИ-Наставник 24/7', description: 'Персональный AI помощник отвечает на вопросы мгновенно и подстраивается под ваш стиль обучения.', highlight: 'Революционная технология' },
+        { icon: '🚀', title: 'Практические проекты', description: 'Создавайте реальные проекты для портфолио. Работайте с настоящими задачами от ведущих компаний.', highlight: '100% практики' },
+        { icon: '🏆', title: 'Гарантия трудоустройства', description: '95% наших выпускников находят работу в течение 3 месяцев или мы возвращаем деньги.', highlight: 'Железная гарантия' }
+        // You can add the other 3 features here if needed
+      ]
+    };
+  }
+};
 </script>
 
 <style scoped>
-.promo-container {
-  min-height: 100vh;
+.features-section {
   padding: 80px 20px;
-  background: linear-gradient(135deg, #0d102d, #191645);
-  color: white;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.text-section {
-  max-width: 800px;
-  text-align: center;
-  margin-bottom: 60px;
-}
-
-.text-section h2 {
-  font-size: 2.8rem;
+  background-color: #110d2e;
   font-family: 'Unbounded', sans-serif;
-  background: linear-gradient(to right, #a855f7, #38bdf8);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  margin-bottom: 20px;
 }
-
-.text-section p {
+.container, .text-center, .features-grid {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.text-center {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+.section-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 1rem;
+}
+.section-subtitle {
   font-size: 1.1rem;
+  color: #a3a3c2;
+  max-width: 700px;
+  margin: 0 auto;
   line-height: 1.6;
-  color: #d1d5db;
 }
-
-.highlight {
-  margin-top: 10px;
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+.feature-card {
+  background-color: #191645;
+  border: 1px solid #2c2c54;
+  border-radius: 1rem;
+  padding: 2.5rem 2rem;
+}
+.icon-wrapper {
+  font-size: 1.75rem;
+  margin-bottom: 2rem;
+}
+.highlight-badge {
+  display: inline-block;
+  background: linear-gradient(90deg, #9333ea, #7f5af0);
+  color: white;
+  padding: 0.3rem 1rem;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+.card-title {
+  font-size: 1.5rem;
   font-weight: 600;
   color: #fff;
+  margin-bottom: 0.75rem;
 }
-
-.floating-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 28px;
-  max-width: 1000px;
-  width: 100%;
-}
-
-.promo-card {
-  background: rgba(255, 255, 255, 0.07);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 30px 20px;
-  border-radius: 18px;
-  text-align: center;
-  transition: transform 0.3s ease;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-  position: relative;
-}
-
-.promo-card:hover {
-  transform: translateY(-8px) scale(1.03);
-  box-shadow: 0 20px 40px rgba(168, 85, 247, 0.3);
-}
-
-.promo-card h3 {
-  margin-top: 12px;
-  font-size: 1.3rem;
-  font-family: 'Unbounded', sans-serif;
-  background: linear-gradient(to right, #7c3aed, #38bdf8);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.promo-card p {
-  margin-top: 10px;
-  font-size: 0.95rem;
+.card-description {
+  font-size: 1rem;
   color: #d1d5db;
-}
-
-.icon {
-  font-size: 2rem;
-  display: block;
-}
-
-/* Tablet styles */
-@media (max-width: 768px) {
-  .promo-container {
-    padding: 60px 15px;
-  }
-  
-  .text-section h2 {
-    font-size: 2.2rem;
-  }
-  
-  .text-section p {
-    font-size: 1rem;
-  }
-  
-  .floating-cards {
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
-  }
-  
-  .promo-card {
-    padding: 25px 15px;
-  }
-  
-  .promo-card h3 {
-    font-size: 1.2rem;
-  }
-}
-
-/* Mobile styles */
-@media (max-width: 480px) {
-  .promo-container {
-    padding: 40px 10px;
-  }
-  
-  .text-section h2 {
-    font-size: 1.8rem;
-  }
-  
-  .text-section p {
-    font-size: 0.9rem;
-  }
-  
-  .floating-cards {
-    grid-template-columns: 1fr;
-    gap: 15px;
-  }
-  
-  .promo-card {
-    padding: 20px 15px;
-  }
-  
-  .promo-card h3 {
-    font-size: 1.1rem;
-  }
-  
-  .promo-card p {
-    font-size: 0.85rem;
-  }
-  
-  .icon {
-    font-size: 1.8rem;
-  }
+  line-height: 1.7;
+  font-weight: 400;
 }
 </style>
