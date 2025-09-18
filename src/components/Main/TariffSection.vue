@@ -45,21 +45,6 @@
             <button class="btn gradient" @click="handleClick('pro')">Начать сейчас!</button>
         </div>
 
-        <div class="card">
-          <h3 class="plan-name">Премиум</h3>
-          <p class="plan-desc">VIP сопровождение</p>
-           <div class="price-wrapper">
-             <p class="old-price">1,300,000 сум</p>
-             <p class="price">650,000 <span class="currency">сум</span></p>
-             <p class="period">единовременно</p>
-           </div>
-           <ul class="features">
-              <li><span class="check">✔</span> Всё из PRO +</li>
-              <li><span class="check">✔</span> 1-на-1 сессии с экспертами</li>
-              <li><span class="check">✔</span> Приоритетная поддержка</li>
-           </ul>
-            <button class="btn outline" @click="handleClick('premium')">Выбрать VIP</button>
-        </div>
       </div>
     </div>
   </section>
@@ -132,6 +117,8 @@ export default {
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 2rem;
   align-items: center;
+  max-width: 800px; /* Constrain width for 2 cards */
+  margin: 0 auto; /* Center the two cards */
 }
 .card {
   background-color: #191645;
@@ -244,5 +231,14 @@ export default {
 }
 .btn.gradient:hover {
   filter: brightness(1.2);
+}
+
+@media (max-width: 680px) {
+  .pricing-cards {
+    max-width: 100%; /* Allow cards to stack on mobile */
+  }
+  .card.popular {
+    transform: translateY(0); /* Remove vertical shift on mobile stack */
+  }
 }
 </style>

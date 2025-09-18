@@ -8,25 +8,38 @@
       </div>
 
       <div class="subjects-abstract-layout">
-        <div class="subject-card floating" @click="showInfo('history')" style="--glow-color: #f59e0b;">
+        <div class="subject-card floating subject-history" @click="showInfo('history')" style="--glow-color: #f59e0b;">
           <img src="@/assets/icons/history1.svg" class="subject-icon" />
           <h3>История</h3>
         </div>
-        <div class="subject-card floating" @click="showInfo('biology')" style="--glow-color: #10b981;">
+        <div class="subject-card floating subject-biology" @click="showInfo('biology')" style="--glow-color: #10b981;">
           <img src="@/assets/icons/biology1.svg" class="subject-icon" />
           <h3>Биология</h3>
         </div>
-        <div class="subject-card floating" @click="showInfo('coding')" style="--glow-color: #d1d5db;">
+        <div class="subject-card floating subject-coding" @click="showInfo('coding')" style="--glow-color: #d1d5db;">
           <img src="@/assets/icons/coding1.svg" class="subject-icon" />
           <h3>Кодинг</h3>
         </div>
-        <div class="subject-card floating" @click="showInfo('math')" style="--glow-color: #3b82f6;">
+        <div class="subject-card floating subject-math" @click="showInfo('math')" style="--glow-color: #3b82f6;">
           <img src="@/assets/icons/math1.svg" class="subject-icon" />
           <h3>Математика</h3>
         </div>
-        <div class="subject-card floating" @click="showInfo('physics')" style="--glow-color: #ec4899;">
+        <div class="subject-card floating subject-physics" @click="showInfo('physics')" style="--glow-color: #ec4899;">
           <img src="@/assets/icons/physics1.png" class="subject-icon" />
           <h3>Физика</h3>
+        </div>
+
+        <div class="subject-card floating subject-chemistry" @click="showInfo('chemistry')" style="--glow-color: #8b5cf6;">
+          <img src="@/assets/icons/chemistry1.svg" class="subject-icon" />
+          <h3>Химия</h3>
+        </div>
+        <div class="subject-card floating subject-english" @click="showInfo('english')" style="--glow-color: #ef4444;">
+          <img src="@/assets/icons/english1.svg" class="subject-icon" />
+          <h3>Английский</h3>
+        </div>
+        <div class="subject-card floating subject-russian" @click="showInfo('russian')" style="--glow-color: #f97316;">
+          <img src="@/assets/icons/russian1.svg" class="subject-icon" />
+          <h3>Русский язык</h3>
         </div>
       </div>
     </div>
@@ -46,7 +59,6 @@
 
 <script>
 import { getAuth } from "firebase/auth";
-import { useRouter } from "vue-router"; // Keep this if you use this.$router
 
 export default {
   name: "AcedSection",
@@ -58,7 +70,10 @@ export default {
         biology: { label: "Биология", image: new URL('@/assets/icons/biology2.svg', import.meta.url).href, description: "Пойми, как устроена жизнь: от клетки до экосистемы.", funFact: "В твоем теле больше бактерий, чем собственных клеток.", audience: "Любителям природы, здоровья и науки о жизни." },
         coding: { label: "Кодинг", image: new URL('@/assets/icons/coding2.svg', import.meta.url).href, description: "Создавай сайты, игры и приложения с помощью программирования.", funFact: "Первая программистка была женщина — Ада Лавлейс.", audience: "Тем, кто хочет строить цифровое будущее." },
         math: { label: "Математика", image: new URL('@/assets/icons/math2.svg', import.meta.url).href, description: "Развивай логическое мышление и понимание мира через числа и формулы.", funFact: "Математика — универсальный язык Вселенной.", audience: "Тем, кто любит точность, закономерности и логику." },
-        physics: { label: "Физика", image: new URL('@/assets/icons/physics2.png', import.meta.url).href, description: "Познай законы природы: от микрочастиц до звёзд и галактик.", funFact: "Одна чайная ложка нейтронной звезды весит как Эверест.", audience: "Тем, кто хочет понять, как работает Вселенная." }
+        physics: { label: "Физика", image: new URL('@/assets/icons/physics2.png', import.meta.url).href, description: "Познай законы природы: от микрочастиц до звёзд и галактик.", funFact: "Одна чайная ложка нейтронной звезды весит как Эверест.", audience: "Тем, кто хочет понять, как работает Вселенная." },
+        chemistry: { label: "Химия", image: new URL('@/assets/icons/chemistry2.svg', import.meta.url).href, description: "Открой мир элементов, реакций и молекул, которые создают всё вокруг.", funFact: "Стекло — это жидкость, которая течёт очень-очень медленно.", audience: "Будущим учёным, врачам и всем, кто хочет понять состав мира." },
+        english: { label: "Английский", image: new URL('@/assets/icons/english2.svg', import.meta.url).href, description: "Изучай язык международного общения, который открывает двери по всему миру.", funFact: "В английском языке больше всего слов — свыше 1 миллиона.", audience: "Путешественникам, будущим международным специалистам и любителям кино." },
+        russian: { label: "Русский язык", image: new URL('@/assets/icons/russian2.svg', import.meta.url).href, description: "Освой один из самых богатых и выразительных языков мира.", funFact: "Все слова в русском языке, начинающиеся на 'А', — заимствованные.", audience: "Тем, кто хочет грамотно говорить, писать и понимать великую литературу." }
       }
     };
   },
@@ -149,14 +164,14 @@ export default {
 .subjects-abstract-layout {
   position: relative;
   flex: 1.2;
-  min-height: 450px;
-  min-width: 300px;
+  min-height: 500px; /* Increased height for more cards */
+  min-width: 400px; /* Increased width for more cards */
 }
 
 .subject-card {
   position: absolute;
-  width: clamp(200px, 20vw, 250px);
-  height: clamp(140px, 14vw, 160px);
+  width: clamp(180px, 18vw, 220px); /* Slightly smaller cards */
+  height: clamp(120px, 12vw, 140px);
   padding: 20px;
   border-radius: 1rem;
   text-align: center;
@@ -175,8 +190,7 @@ export default {
 
 .subject-card:hover {
   transform: translateY(-10px) scale(1.03);
-  box-shadow: 0 0 40px var(--glow-color);
-  border-color: var(--glow-color);
+  /* Glow effect removed as requested */
 }
 
 .subject-icon {
@@ -195,12 +209,16 @@ export default {
   50% { transform: translateY(-15px); }
 }
 
-/* Card Positions */
-.subject-history { top: 0; left: 20%; animation-delay: -1s; }
-.subject-biology { top: 50%; left: 0; animation-delay: -3s; }
-.subject-coding { top: 25%; left: 60%; animation-delay: -2s; }
-.subject-math { top: 70%; left: 40%; animation-delay: -5s; }
-.subject-physics { top: 0; right: 0; animation-delay: -4s; }
+/* Updated Card Positions for 8 cards */
+.subject-history { top: 0; left: 10%; animation-delay: -1s; }
+.subject-biology { top: 30%; left: 0; animation-delay: -3s; }
+.subject-coding { top: 10%; left: 70%; animation-delay: -2s; }
+.subject-math { top: 65%; left: 15%; animation-delay: -5s; }
+.subject-physics { top: 40%; right: 0; animation-delay: -4s; }
+.subject-chemistry { top: 80%; left: 50%; animation-delay: -2.5s; }
+.subject-english { top: 0; left: 40%; animation-delay: -3.5s; }
+.subject-russian { top: 60%; left: 75%; animation-delay: -1.5s; }
+
 
 /* Modal Styles */
 .modal-overlay {
@@ -287,17 +305,20 @@ export default {
     padding: 60px 20px;
   }
   .subjects-abstract-layout {
-    min-height: 350px;
+    min-height: 400px; /* Adjusted for smaller screens */
   }
   .subject-card {
-    width: 180px;
-    height: 120px;
+    width: 150px; /* Further adjusted for small screens */
+    height: 100px;
   }
-  .subject-history { top: 0; left: 10%; }
-  .subject-biology { top: 45%; left: -10%; }
-  .subject-coding { top: 20%; left: 50%; }
-  .subject-math { top: 65%; left: 30%; }
-  .subject-physics { top: 0; right: -10%; }
+  /* Simplified positions for mobile */
+  .subject-history { top: 0; left: 5%; }
+  .subject-biology { top: 25%; left: 60%; }
+  .subject-coding { top: 75%; left: 5%; }
+  .subject-math { top: 50%; left: 0%; }
+  .subject-physics { top: 0; right: 5%; }
+  .subject-chemistry { bottom: 0; right: 10%; }
+  .subject-english { top: 50%; right: 0; }
+  .subject-russian { top: 75%; left: 60%; }
 }
-
 </style>

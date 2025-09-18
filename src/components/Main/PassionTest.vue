@@ -433,14 +433,20 @@ function restartTest() {
   font-size: 2.8rem;
   font-weight: 700;
   text-align: center;
-  color: #fff;
   margin-bottom: 0.5rem;
+  /* Updated Style */
+  background: linear-gradient(to right, #a855f7, #38bdf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
 }
 .test-subtitle {
   font-size: 1.1rem;
   color: #a3a3c2;
   text-align: center;
   margin-bottom: 2rem;
+  /* Updated Style */
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
 }
 .progress-container {
   display: flex;
@@ -559,3 +565,4 @@ function restartTest() {
   .question-text { font-size: 1.2rem; }
 }
 </style>
+}
