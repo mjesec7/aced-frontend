@@ -9,7 +9,6 @@
       <button class="auth-btn outline profile" @click="$router.push('/profile/main')">
         Профиль
       </button>
-      
       <div class="user-menu">
         <button class="user-button" @click="toggleDropdown">
           Привет, {{ currentUser.name }}
@@ -27,30 +26,34 @@
     <div v-if="isModalOpen" class="global-auth-modal" @click="closeModal">
       <div class="modal-content" @click.stop>
         <span class="close-btn" @click="closeModal">&times;</span>
-
+        
         <div v-if="isLoading" class="loading-state">{{ loadingMessage }}</div>
         
         <div v-else-if="authMode === 'register'">
           <h2 class="modal-title">Регистрация</h2>
           <input v-model="user.name" placeholder="Имя"/>
-          <input v-model="user.surname" placeholder="Фамилия"/>
           <input v-model="user.email" type="email" placeholder="Email"/>
           <input v-model="user.password" type="password" placeholder="Пароль"/>
-          <input v-model="user.confirmPassword" type="password" placeholder="Повторите пароль"/>
-          <button class="auth-submit gradient" @click="register">Зарегистрироваться</button>
-          <button class="auth-submit outline" @click="LoginWithGoogle">Регистрация через Google</button>
-          <p class="switch-text">Уже есть аккаунт? <span @click="switchAuth('Login')">Войти</span></p>
+          <button class="modal-btn solid" @click="register">Зарегистрироваться</button>
+          <button class="modal-btn outline" @click="LoginWithGoogle">Регистрация через Google</button>
+          <div class="switch-auth-wrapper">
+              <span>Уже есть аккаунт?</span>
+              <button @click="switchAuth('Login')">Войти</button>
+          </div>
         </div>
         
         <div v-else>
           <h2 class="modal-title">Вход</h2>
           <input v-model="Login.email" type="email" placeholder="Email"/>
           <input v-model="Login.password" type="password" placeholder="Пароль"/>
-          <button class="auth-submit gradient" @click="handleEmailLogin">Войти</button>
-          <button class="auth-submit outline" @click="LoginWithGoogle">Войти через Google</button>
-          <p class="switch-text">Нет аккаунта? <span @click="switchAuth('register')">Зарегистрироваться</span></p>
+          <button class="modal-btn solid" @click="handleEmailLogin">Войти</button>
+          <button class="modal-btn outline" @click="LoginWithGoogle">Войти через Google</button>
+          <div class="switch-auth-wrapper">
+              <span>Нет аккаунта?</span>
+              <button @click="switchAuth('register')">Зарегистрироваться</button>
+          </div>
         </div>
-        
+
         <div v-if="errorMessage" class="error-message">{{ errorMessage }}</div>
         <div v-if="successMessage" class="success-message">{{ successMessage }}</div>
       </div>
@@ -80,7 +83,7 @@ export default {
       errorMessage: '',
       successMessage: '',
       loadingMessage: 'Загрузка...',
-      user: { name: "", surname: "", email: "", password: "", confirmPassword: "" },
+      user: { name: "", email: "", password: "" }, // Simplified user object
       Login: { email: "", password: "" },
     };
   },
@@ -286,10 +289,6 @@ export default {
         this.showError("Заполните все обязательные поля");
         return;
       }
-      if (this.user.password !== this.user.confirmPassword) {
-        this.showError("Пароли не совпадают");
-        return;
-      }
       if (this.user.password.length < 6) {
         this.showError("Пароль должен содержать минимум 6 символов");
         return;
@@ -300,7 +299,7 @@ export default {
       try {
         const result = await createUserWithEmailAndPassword(auth, this.user.email, this.user.password);
         this.loadingMessage = 'Настройка профиля...';
-        const registrationData = { name: this.user.name, surname: this.user.surname, subscriptionPlan: 'free' };
+        const registrationData = { name: this.user.name, subscriptionPlan: 'free' };
         const token = await result.user.getIdToken(true);
         const saveResult = await this.saveUserToBackend(result.user, token, registrationData);
         const userData = {
@@ -394,7 +393,7 @@ export default {
     },
 
     resetForms() {
-      this.user = { name: "", surname: "", email: "", password: "", confirmPassword: "" };
+      this.user = { name: "", email: "", password: "" }; // Simplified reset
       this.Login = { email: "", password: "" };
     },
   },
@@ -411,7 +410,7 @@ export default {
   gap: 1rem;
 }
 
-/* Buttons */
+/* Buttons outside modal */
 .auth-btn {
   padding: 0.6rem 1.25rem;
   border-radius: 0.5rem;
@@ -423,7 +422,7 @@ export default {
   border: 1px solid transparent;
 }
 .auth-btn.profile {
-  padding: 0.6rem 1rem; /* Smaller padding for profile */
+  padding: 0.6rem 1rem;
 }
 .auth-btn.outline {
   background: transparent;
@@ -492,78 +491,75 @@ export default {
   background-color: rgba(124, 58, 237, 0.2);
 }
 
-/* Modal Styles */
+/* ----- FIXED MODAL STYLES ----- */
 .global-auth-modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(10, 0, 24, 0.8);
-  backdrop-filter: blur(5px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
+  position: fixed; inset: 0; background: rgba(10, 0, 24, 0.8);
+  backdrop-filter: blur(5px); display: flex; justify-content: center;
+  align-items: center; z-index: 1000;
 }
 .modal-content {
-  background: #110d2e;
-  border-radius: 1rem;
+  background: #191645;
+  border-radius: 1.5rem; /* Smoother corners */
   padding: 2.5rem;
   width: 90%;
-  max-width: 450px;
+  max-width: 400px; /* Slightly narrower */
   border: 1px solid #2c2c54;
-  box-shadow: 0 0 40px rgba(0,0,0,0.5);
   position: relative;
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  color: #fff;
 }
 .loading-state {
   padding: 2rem;
   text-align: center;
-  color: #fff;
   font-size: 1.1rem;
 }
 .modal-title {
-  text-align: center;
-  font-size: 1.8rem;
-  color: #fff;
-  font-weight: 600;
-  margin-bottom: 1rem;
+  text-align: center; font-size: 1.8rem; color: #fff;
+  font-weight: 600; margin-bottom: 1rem;
 }
 .close-btn {
   position: absolute; top: 1rem; right: 1rem; font-size: 1.5rem;
   background: none; border: none; color: #a3a3c2; cursor: pointer;
 }
 .modal-content input {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border-radius: 0.5rem;
-  border: 1px solid #2c2c54;
-  background: #191645;
-  color: #fff;
-  font-family: 'Unbounded', sans-serif;
+  width: 100%; padding: 0.8rem 1rem; border-radius: 0.75rem;
+  border: 1px solid #2c2c54; background: #110d2e;
+  color: #fff; font-family: 'Unbounded', sans-serif;
+  font-size: 0.9rem;
 }
 .modal-content input:focus {
   outline: none;
   border-color: #7c3aed;
 }
-.auth-submit {
-  width: 100%;
-  padding: 0.8rem;
-  margin-top: 0.5rem;
-  border-radius: 0.5rem;
+.modal-btn {
+  width: 100%; padding: 0.8rem; font-family: 'Unbounded', sans-serif;
+  font-weight: 600; border-radius: 0.75rem; cursor: pointer;
+  transition: opacity 0.2s;
+  font-size: 0.9rem;
+}
+.modal-btn.solid {
+  background: #fff; color: #110d2e; border: none;
+}
+.modal-btn.outline {
+  background: transparent; color: #fff; border: 1px solid #fff;
+}
+.modal-btn:hover {
+  opacity: 0.9;
+}
+.switch-auth-wrapper {
+  margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #2c2c54;
+  text-align: center; font-size: 0.9rem; color: #a3a3c2;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.switch-auth-wrapper button {
+  background: none; border: none; color: #c084fc; font-weight: 600;
+  cursor: pointer; text-decoration: underline; font-size: 0.9rem;
   font-family: 'Unbounded', sans-serif;
-  font-weight: 600;
-  cursor: pointer;
-  border: 1px solid transparent;
-}
-.switch-text {
-  text-align: center; color: #a3a3c2; font-size: 0.9rem;
-}
-.switch-text span {
-  color: #c084fc; cursor: pointer; text-decoration: underline;
 }
 .error-message, .success-message {
-  padding: 0.75rem; border-radius: 0.5rem; text-align: center;
+  padding: 0.75rem; border-radius: 0.5rem; text-align: center; font-size: 0.9rem;
 }
 .error-message { background: rgba(239, 68, 68, 0.1); color: #fca5a5; }
 .success-message { background: rgba(34, 197, 94, 0.1); color: #86efac; }

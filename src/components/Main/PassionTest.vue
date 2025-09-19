@@ -1,8 +1,10 @@
 <template>
   <section class="passion-test" id="passion-test" ref="vantaRef">
     <div class="test-content">
-      <h1 class="test-title">Найди своё направление</h1>
-      <p class="test-subtitle">Ответь на несколько вопросов, чтобы определить свою страсть</p>
+      <div class="header-container">
+        <h1 class="test-title">Найди своё направление</h1>
+        <p class="test-subtitle">Ответь на несколько вопросов, чтобы определить свою страсть</p>
+      </div>
 
       <div class="progress-container">
         <div class="progress-bar">
@@ -429,24 +431,24 @@ function restartTest() {
   flex-direction: column;
   align-items: center;
 }
+
+/* ----- FIXED VISIBILITY ----- */
+.header-container {
+  /* This creates the "black glow" effect */
+  text-shadow: 0 0 20px rgba(0, 0, 0, 0.8), 0 0 10px rgba(0, 0, 0, 0.8);
+}
 .test-title {
   font-size: 2.8rem;
   font-weight: 700;
   text-align: center;
+  color: #fff; /* Changed to solid white */
   margin-bottom: 0.5rem;
-  /* Updated Style */
-  background: linear-gradient(to right, #a855f7, #38bdf8);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
 }
 .test-subtitle {
   font-size: 1.1rem;
-  color: #a3a3c2;
+  color: #fff; /* Changed to solid white */
   text-align: center;
   margin-bottom: 2rem;
-  /* Updated Style */
-  text-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
 }
 .progress-container {
   display: flex;
@@ -455,20 +457,31 @@ function restartTest() {
   margin-bottom: 2rem;
   width: 100%;
   max-width: 400px;
+  /* Black glow for progress bar */
+  filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.7));
 }
 .progress-bar {
   flex-grow: 1;
   height: 8px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.3);
   border-radius: 99px;
-  overflow: hidden;
+  /* White glow effect for the bar */
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
 }
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #9333ea, #7f5af0);
+  background: #fff; /* Changed to solid white */
   border-radius: 99px;
   transition: width 0.3s ease;
+  box-shadow: 0 0 15px #fff; /* Glowing effect for the fill */
 }
+.progress-text {
+  color: #fff; /* Changed to solid white */
+  font-weight: 600;
+  text-shadow: 0 0 10px rgba(0,0,0,0.8);
+}
+
+/* Other styles for question/result boxes */
 .question-box, .result-box {
   background: rgba(25, 22, 69, 0.7);
   border: 1px solid #2c2c54;
@@ -476,6 +489,7 @@ function restartTest() {
   border-radius: 1rem;
   padding: 2.5rem;
   width: 100%;
+  max-width: 700px;
   text-align: center;
 }
 .question-text {
@@ -565,4 +579,3 @@ function restartTest() {
   .question-text { font-size: 1.2rem; }
 }
 </style>
-}
