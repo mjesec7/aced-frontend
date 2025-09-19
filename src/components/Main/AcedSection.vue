@@ -8,27 +8,27 @@
       </div>
 
       <div class="subjects-abstract-layout">
-        <div class="subject-card floating" @click="showInfo('english')" style="top: 0%; left: 15%; animation-delay: -1s;">
+        <div class="subject-card floating card-english" @click="showInfo('english')">
           <img src="@/assets/icons/english1.svg" class="subject-icon" />
           <h3>Английский</h3>
         </div>
-        <div class="subject-card floating" @click="showInfo('history')" style="top: 20%; right: 0%; animation-delay: -3s;">
+        <div class="subject-card floating card-history" @click="showInfo('history')">
           <img src="@/assets/icons/history1.svg" class="subject-icon" />
           <h3>История</h3>
         </div>
-        <div class="subject-card floating" @click="showInfo('physics')" style="top: 55%; right: 10%; animation-delay: -5s;">
+        <div class="subject-card floating card-physics" @click="showInfo('physics')">
           <img src="@/assets/icons/physics1.png" class="subject-icon" />
           <h3>Физика</h3>
         </div>
-        <div class="subject-card floating" @click="showInfo('biology')" style="bottom: 0%; left: 5%; animation-delay: -2s;">
+        <div class="subject-card floating card-biology" @click="showInfo('biology')">
           <img src="@/assets/icons/biology1.svg" class="subject-icon" />
           <h3>Биология</h3>
         </div>
-        <div class="subject-card floating" @click="showInfo('coding')" style="top: 60%; left: 35%; animation-delay: -4s;">
+        <div class="subject-card floating card-coding" @click="showInfo('coding')">
           <img src="@/assets/icons/coding1.svg" class="subject-icon" />
           <h3>Кодинг</h3>
         </div>
-        <div class="subject-card floating" @click="showInfo('math')" style="top: 35%; left: 0%; animation-delay: 0s;">
+        <div class="subject-card floating card-math" @click="showInfo('math')">
           <img src="@/assets/icons/math1.svg" class="subject-icon" />
           <h3>Математика</h3>
         </div>
@@ -108,7 +108,7 @@ export default {
   flex: 1;
   max-width: 400px;
   min-width: 300px;
-  z-index: 2; /* Ensure text is above cards */
+  z-index: 10; 
 }
 .headline {
   font-size: 2.8rem;
@@ -145,19 +145,19 @@ export default {
   box-shadow: 0 0 20px rgba(147, 51, 234, 0.5);
 }
 
-/* New "Messy yet Harmonical" Layout */
+/* New Layout Container */
 .subjects-abstract-layout {
   flex: 1.5;
   position: relative;
-  min-height: 500px;
+  min-height: 450px;
   min-width: 300px;
 }
 .subject-card {
   position: absolute;
   width: 220px;
-  height: 180px;
+  height: 200px; /* Slightly taller for a better feel */
   padding: 20px;
-  border-radius: 1.5rem;
+  border-radius: 1.5rem; /* More rounded corners */
   text-align: center;
   background: #191645;
   border: 1px solid #2c2c54;
@@ -169,9 +169,9 @@ export default {
   cursor: pointer;
 }
 .subject-card:hover {
-  background: #191645 !important; /* FORCE background to stay dark */
-  border-color: #7c3aed !important; /* Add a subtle border glow */
-  transform: translateY(-8px); /* Lift up */
+  background: #191645 !important;
+  border-color: #7c3aed !important;
+  transform: translateY(-8px) !important; /* Ensure transform works */
 }
 .subject-icon {
   width: 50px;
@@ -188,8 +188,16 @@ export default {
 }
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-20px); }
+  50% { transform: translateY(-15px); }
 }
+
+/* New Card Positions */
+.card-english   { top: 5%; left: 35%; z-index: 3; animation-delay: -1s; }
+.card-history   { top: 25%; right: 5%; z-index: 2; animation-delay: -3s; }
+.card-physics   { bottom: 15%; right: 20%; z-index: 2; animation-delay: -5s; }
+.card-biology   { top: 50%; left: 0%; z-index: 1; animation-delay: -4s; }
+.card-coding    { bottom: 0%; left: 40%; z-index: 3; animation-delay: 0s; }
+.card-math      { top: 20%; left: 5%; z-index: 2; animation-delay: -2s; }
 
 /* Modal Styles */
 .modal-overlay {
@@ -265,6 +273,11 @@ export default {
     width: 100%;
     max-width: 600px;
     margin-top: 2rem;
+    min-height: 350px;
+  }
+  .subject-card {
+      width: 180px;
+      height: 160px;
   }
 }
 
@@ -273,8 +286,8 @@ export default {
         min-height: 450px;
     }
     .subject-card {
-        width: 180px;
-        height: 150px;
+        width: 150px;
+        height: 130px;
     }
 }
 </style>
