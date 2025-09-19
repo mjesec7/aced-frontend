@@ -160,14 +160,14 @@ export default {
 .subjects-abstract-layout {
   position: relative;
   flex: 1.2;
-  min-height: 500px; /* Increased height for more cards */
-  min-width: 400px; /* Increased width for more cards */
+  min-height: 450px;
+  min-width: 300px;
 }
 
 .subject-card {
   position: absolute;
-  width: clamp(180px, 18vw, 220px); /* Slightly smaller cards */
-  height: clamp(120px, 12vw, 140px);
+  width: clamp(200px, 20vw, 250px);
+  height: clamp(140px, 14vw, 160px);
   padding: 20px;
   border-radius: 1rem;
   text-align: center;
@@ -178,15 +178,14 @@ export default {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease; /* Keep transition for smooth scaling */
   cursor: pointer;
   box-shadow: 0 0 30px rgba(0,0,0,0.3);
   color: #fff;
 }
 
 .subject-card:hover {
-  transform: translateY(-10px) scale(1.03);
-  /* Glow effect removed as requested */
+  transform: translateY(-10px) scale(1.05); /* Only lift and scale */
 }
 
 .subject-icon {
@@ -205,16 +204,12 @@ export default {
   50% { transform: translateY(-15px); }
 }
 
-/* Updated Card Positions for 8 cards */
-.subject-history { top: 0; left: 10%; animation-delay: -1s; }
-.subject-biology { top: 30%; left: 0; animation-delay: -3s; }
-.subject-coding { top: 10%; left: 70%; animation-delay: -2s; }
-.subject-math { top: 65%; left: 15%; animation-delay: -5s; }
-.subject-physics { top: 40%; right: 0; animation-delay: -4s; }
-.subject-chemistry { top: 80%; left: 50%; animation-delay: -2.5s; }
-.subject-english { top: 0; left: 40%; animation-delay: -3.5s; }
-.subject-russian { top: 60%; left: 75%; animation-delay: -1.5s; }
-
+/* Card Positions */
+.subject-history { top: 0; left: 20%; animation-delay: -1s; }
+.subject-biology { top: 50%; left: 0; animation-delay: -3s; }
+.subject-coding { top: 25%; left: 60%; animation-delay: -2s; }
+.subject-math { top: 70%; left: 40%; animation-delay: -5s; }
+.subject-physics { top: 0; right: 0; animation-delay: -4s; }
 
 /* Modal Styles */
 .modal-overlay {
@@ -301,20 +296,16 @@ export default {
     padding: 60px 20px;
   }
   .subjects-abstract-layout {
-    min-height: 400px; /* Adjusted for smaller screens */
+    min-height: 350px;
   }
   .subject-card {
-    width: 150px; /* Further adjusted for small screens */
-    height: 100px;
+    width: 180px;
+    height: 120px;
   }
-  /* Simplified positions for mobile */
-  .subject-history { top: 0; left: 5%; }
-  .subject-biology { top: 25%; left: 60%; }
-  .subject-coding { top: 75%; left: 5%; }
-  .subject-math { top: 50%; left: 0%; }
-  .subject-physics { top: 0; right: 5%; }
-  .subject-chemistry { bottom: 0; right: 10%; }
-  .subject-english { top: 50%; right: 0; }
-  .subject-russian { top: 75%; left: 60%; }
+  .subject-history { top: 0; left: 10%; }
+  .subject-biology { top: 45%; left: -10%; }
+  .subject-coding { top: 20%; left: 50%; }
+  .subject-math { top: 65%; left: 30%; }
+  .subject-physics { top: 0; right: -10%; }
 }
 </style>

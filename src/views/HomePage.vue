@@ -7,9 +7,7 @@
     <section id="hero">
       <HeroSection />
     </section>
-    <svg viewBox="0 0 1440 100" preserveAspectRatio="none" style="display: block;">
-  <path fill="#0a0018" d="M0,0 C720,100 720,100 1440,0 L1440,100 L0,100 Z"></path>
-</svg>
+ 
 
 
     <!-- About Us Section -->
