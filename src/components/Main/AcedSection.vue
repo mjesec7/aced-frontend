@@ -7,28 +7,28 @@
         <button class="start-login-btn" @click="triggerLogin">Начать обучение</button>
       </div>
 
-      <div class="subjects-grid">
-        <div class="subject-card" @click="showInfo('english')">
+      <div class="subjects-abstract-layout">
+        <div class="subject-card floating" @click="showInfo('english')" style="top: 0%; left: 15%; animation-delay: -1s;">
           <img src="@/assets/icons/english1.svg" class="subject-icon" />
           <h3>Английский</h3>
         </div>
-        <div class="subject-card" @click="showInfo('history')">
+        <div class="subject-card floating" @click="showInfo('history')" style="top: 20%; right: 0%; animation-delay: -3s;">
           <img src="@/assets/icons/history1.svg" class="subject-icon" />
           <h3>История</h3>
         </div>
-        <div class="subject-card" @click="showInfo('physics')">
+        <div class="subject-card floating" @click="showInfo('physics')" style="top: 55%; right: 10%; animation-delay: -5s;">
           <img src="@/assets/icons/physics1.png" class="subject-icon" />
           <h3>Физика</h3>
         </div>
-        <div class="subject-card" @click="showInfo('biology')">
+        <div class="subject-card floating" @click="showInfo('biology')" style="bottom: 0%; left: 5%; animation-delay: -2s;">
           <img src="@/assets/icons/biology1.svg" class="subject-icon" />
           <h3>Биология</h3>
         </div>
-        <div class="subject-card" @click="showInfo('coding')">
+        <div class="subject-card floating" @click="showInfo('coding')" style="top: 60%; left: 35%; animation-delay: -4s;">
           <img src="@/assets/icons/coding1.svg" class="subject-icon" />
           <h3>Кодинг</h3>
         </div>
-        <div class="subject-card" @click="showInfo('math')">
+        <div class="subject-card floating" @click="showInfo('math')" style="top: 35%; left: 0%; animation-delay: 0s;">
           <img src="@/assets/icons/math1.svg" class="subject-icon" />
           <h3>Математика</h3>
         </div>
@@ -108,6 +108,7 @@ export default {
   flex: 1;
   max-width: 400px;
   min-width: 300px;
+  z-index: 2; /* Ensure text is above cards */
 }
 .headline {
   font-size: 2.8rem;
@@ -144,17 +145,19 @@ export default {
   box-shadow: 0 0 20px rgba(147, 51, 234, 0.5);
 }
 
-/* New Grid Layout for Subjects */
-.subjects-grid {
+/* New "Messy yet Harmonical" Layout */
+.subjects-abstract-layout {
   flex: 1.5;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 1.5rem;
+  position: relative;
+  min-height: 500px;
+  min-width: 300px;
 }
 .subject-card {
+  position: absolute;
+  width: 220px;
   height: 180px;
   padding: 20px;
-  border-radius: 1.5rem; /* Smoother corners */
+  border-radius: 1.5rem;
   text-align: center;
   background: #191645;
   border: 1px solid #2c2c54;
@@ -162,14 +165,14 @@ export default {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  transition: transform 0.3s ease;
+  transition: transform 0.3s ease, border-color 0.3s ease;
   cursor: pointer;
 }
 .subject-card:hover {
-  transform: translateY(-8px); /* Only lift up */
-  border-color: #7c3aed;
+  background: #191645 !important; /* FORCE background to stay dark */
+  border-color: #7c3aed !important; /* Add a subtle border glow */
+  transform: translateY(-8px); /* Lift up */
 }
-
 .subject-icon {
   width: 50px;
   height: 50px;
@@ -179,6 +182,13 @@ export default {
   font-size: 1.25rem;
   color: #fff;
   font-weight: 600;
+}
+.floating { 
+  animation: float 8s ease-in-out infinite; 
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
 }
 
 /* Modal Styles */
@@ -251,10 +261,20 @@ export default {
   .left-content {
     max-width: 100%;
   }
-  .subjects-grid {
+  .subjects-abstract-layout {
     width: 100%;
     max-width: 600px;
     margin-top: 2rem;
   }
+}
+
+@media (max-width: 480px) {
+    .subjects-abstract-layout {
+        min-height: 450px;
+    }
+    .subject-card {
+        width: 180px;
+        height: 150px;
+    }
 }
 </style>
