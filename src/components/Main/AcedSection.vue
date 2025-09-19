@@ -73,7 +73,6 @@ export default {
         physics: { label: "Физика", image: new URL('@/assets/icons/physics2.png', import.meta.url).href, description: "Познай законы природы: от микрочастиц до звёзд и галактик.", funFact: "Одна чайная ложка нейтронной звезды весит как Эверест.", audience: "Тем, кто хочет понять, как работает Вселенная." },
         chemistry: { label: "Химия", image: new URL('@/assets/icons/chemistry2.svg', import.meta.url).href, description: "Открой мир элементов, реакций и молекул, которые создают всё вокруг.", funFact: "Стекло — это жидкость, которая течёт очень-очень медленно.", audience: "Будущим учёным, врачам и всем, кто хочет понять состав мира." },
         english: { label: "Английский", image: new URL('@/assets/icons/english2.svg', import.meta.url).href, description: "Изучай язык международного общения, который открывает двери по всему миру.", funFact: "В английском языке больше всего слов — свыше 1 миллиона.", audience: "Путешественникам, будущим международным специалистам и любителям кино." },
-        russian: { label: "Русский язык", image: new URL('@/assets/icons/russian2.svg', import.meta.url).href, description: "Освой один из самых богатых и выразительных языков мира.", funFact: "Все слова в русском языке, начинающиеся на 'А', — заимствованные.", audience: "Тем, кто хочет грамотно говорить, писать и понимать великую литературу." }
       }
     };
   },
