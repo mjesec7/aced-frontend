@@ -37,10 +37,7 @@
           <img src="@/assets/icons/english1.svg" class="subject-icon" />
           <h3>Английский</h3>
         </div>
-        <div class="subject-card floating subject-russian" @click="showInfo('russian')" style="--glow-color: #f97316;">
-          <img src="@/assets/icons/russian1.svg" class="subject-icon" />
-          <h3>Русский язык</h3>
-        </div>
+        
       </div>
     </div>
 
