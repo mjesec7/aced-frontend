@@ -240,7 +240,7 @@ export default {
 .subject-coding {
   bottom: 0;
   right: clamp(50px, 15vw, 70px);
-  box-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 30px rgba(59, 130, 246, 0.6);
 }
 .subject-math {
   top: 10px;
@@ -260,7 +260,7 @@ export default {
   box-shadow: 0 0 45px rgba(0, 255, 120, 0.8);
 }
 .subject-coding:hover {
-  box-shadow: 0 0 45px rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 45px rgba(59, 130, 246, 0.9);
 }
 .subject-math:hover {
   box-shadow: 0 0 45px rgba(147, 197, 253, 1);
@@ -552,4 +552,4 @@ export default {
     -webkit-text-fill-color: #9333ea;
   }
 }
-</style>
+</style> 
