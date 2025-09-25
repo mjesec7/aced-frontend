@@ -95,6 +95,7 @@ export default {
   justify-content: center;
   overflow: hidden;
 }
+
 .content-wrapper {
   display: flex;
   justify-content: space-between;
@@ -104,12 +105,14 @@ export default {
   max-width: 1400px;
   width: 100%;
 }
+
 .left-content {
   flex: 1;
-  max-width: 450px; /* Increased max-width for better text flow */
+  max-width: 450px;
   min-width: 300px;
   z-index: 10;
 }
+
 .headline {
   font-size: 2.8rem;
   font-weight: 700;
@@ -117,17 +120,20 @@ export default {
   margin-bottom: 1.5rem;
   line-height: 1.3;
 }
+
 .headline span {
   background: linear-gradient(to right, #a855f7, #38bdf8);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+
 .context-text {
   font-size: 1.1rem;
   color: #a3a3c2;
   margin-bottom: 2rem;
   line-height: 1.6;
 }
+
 .start-login-btn {
   padding: 1rem 2.5rem;
   font-size: 1rem;
@@ -140,6 +146,7 @@ export default {
   font-family: 'Unbounded', sans-serif;
   font-weight: 600;
 }
+
 .start-login-btn:hover {
   transform: scale(1.05);
   box-shadow: 0 0 20px rgba(147, 51, 234, 0.5);
@@ -149,17 +156,17 @@ export default {
 .subjects-abstract-layout {
   flex: 1.5;
   position: relative;
-  min-height: 600px; /* Adjusted height to fit all cards */
-  min-width: 450px;
+  min-height: 600px;
+  min-width: 500px;
 }
 
 /* Updated Card Styles */
 .subject-card {
   position: absolute;
-  width: 160px;  /* Uniform size */
-  height: 160px; /* Uniform size */
+  width: 160px;
+  height: 160px;
   padding: 20px;
-  border-radius: 24px; /* Consistent rounded corners */
+  border-radius: 24px;
   text-align: center;
   border: 1px solid #2c2c54;
   display: flex;
@@ -170,56 +177,97 @@ export default {
   cursor: pointer;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
 }
+
 .subject-card:hover {
   border-color: #a78bfa;
   transform: translateY(-8px);
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
 }
+
 .subject-icon {
   width: 50px;
   height: 50px;
   margin-bottom: 1rem;
 }
+
 .subject-card h3 {
   font-size: 1.25rem;
   color: #fff;
   font-weight: 600;
 }
 
-/* New Card Positions & Colors */
+/* Card Positions matching the image layout */
 .card-math {
   top: 20px;
-  left: 20px;
+  right: 150px;
   background: linear-gradient(145deg, #4f46e5, #2563eb);
 }
+
 .card-biology {
-  top: 40px;
-  left: 220px;
+  top: 20px;
+  right: 20px;
   background: linear-gradient(145deg, #16a34a, #15803d);
 }
+
 .card-coding {
-  top: 220px;
-  left: 30px;
+  top: 200px;
+  right: 200px;
   background: linear-gradient(145deg, #7e22ce, #6d28d9);
 }
+
 .card-physics {
-  top: 250px;
-  left: 230px;
+  top: 200px;
+  right: 20px;
   background: linear-gradient(145deg, #ca8a04, #b45309);
 }
+
 .card-history {
-  top: 420px;
-  left: 40px;
+  top: 380px;
+  right: 150px;
   background: linear-gradient(145deg, #dc2626, #b91c1c);
 }
-.card-english { /* Positioned this card as it was not in the example image */
-  top: 440px;
-  left: 220px;
+
+.card-english {
+  top: 100px;
+  right: 350px;
   background: linear-gradient(145deg, #0d9488, #0891b2);
 }
 
+/* Add floating animation */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
 
-/* Modal Styles (Unchanged) */
+.floating {
+  animation: float 6s ease-in-out infinite;
+}
+
+.floating:nth-child(2) {
+  animation-delay: -1s;
+}
+
+.floating:nth-child(3) {
+  animation-delay: -2s;
+}
+
+.floating:nth-child(4) {
+  animation-delay: -3s;
+}
+
+.floating:nth-child(5) {
+  animation-delay: -4s;
+}
+
+.floating:nth-child(6) {
+  animation-delay: -5s;
+}
+
+/* Modal Styles */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -230,6 +278,7 @@ export default {
   align-items: center;
   z-index: 1000;
 }
+
 .modal-content {
   background: #191645;
   border-radius: 1rem;
@@ -243,10 +292,18 @@ export default {
   animation: modal-fade-in 0.3s ease-out;
   color: #fff;
 }
+
 @keyframes modal-fade-in {
-  from { opacity: 0; transform: scale(0.9); }
-  to { opacity: 1; transform: scale(1); }
+  from { 
+    opacity: 0; 
+    transform: scale(0.9); 
+  }
+  to { 
+    opacity: 1; 
+    transform: scale(1); 
+  }
 }
+
 .modal-icon {
   width: 60px;
   height: 60px;
@@ -256,53 +313,149 @@ export default {
   transform: translateX(-50%);
   filter: drop-shadow(0 0 10px #c084fc);
 }
+
 .modal-content h2 {
   font-size: 1.8rem;
   margin-top: 1rem;
   margin-bottom: 1rem;
 }
+
 .modal-content p {
   line-height: 1.6;
   margin-bottom: 1rem;
   color: #d1d5db;
 }
+
 .fun-fact, .audience {
   font-style: italic;
 }
+
 .fun-fact strong, .audience strong {
   color: #c084fc;
 }
+
 .close-btn {
   position: absolute;
   top: 15px;
   right: 20px;
   font-size: 1.5rem;
   cursor: pointer;
+  color: #fff;
+  transition: color 0.3s ease;
 }
 
-/* Responsive adjustments (Unchanged) */
+.close-btn:hover {
+  color: #c084fc;
+}
+
+/* Responsive adjustments */
 @media (max-width: 992px) {
   .content-wrapper {
     flex-direction: column;
     text-align: center;
   }
+  
   .left-content {
     max-width: 100%;
   }
+  
   .subjects-abstract-layout {
     width: 100%;
-    max-width: 450px;
+    max-width: 500px;
     margin-top: 4rem;
-    min-height: 620px;
+    min-height: 600px;
+  }
+  
+  /* Adjust card positions for tablet */
+  .card-math {
+    top: 20px;
+    right: 120px;
+  }
+  
+  .card-biology {
+    top: 20px;
+    right: 20px;
+  }
+  
+  .card-coding {
+    top: 180px;
+    right: 160px;
+  }
+  
+  .card-physics {
+    top: 180px;
+    right: 20px;
+  }
+  
+  .card-history {
+    top: 340px;
+    right: 120px;
+  }
+  
+  .card-english {
+    top: 100px;
+    right: 280px;
+  }
+}
+
+@media (max-width: 768px) {
+  .subjects-abstract-layout {
+    min-width: 400px;
+    transform: scale(0.9);
+  }
+  
+  /* Further adjust positions for smaller tablets */
+  .card-english {
+    top: 100px;
+    right: 240px;
   }
 }
 
 @media (max-width: 480px) {
-    .subjects-abstract-layout {
-        min-height: 620px;
-        min-width: 100%;
-        transform: scale(0.8); /* Scale down to fit on small screens */
-        margin-top: 2rem;
-    }
+  .subjects-abstract-layout {
+    min-height: 500px;
+    min-width: 100%;
+    transform: scale(0.75);
+    margin-top: 2rem;
+  }
+  
+  .headline {
+    font-size: 2.2rem;
+  }
+  
+  .context-text {
+    font-size: 1rem;
+  }
+  
+  /* Mobile card positions */
+  .card-math {
+    top: 20px;
+    right: 100px;
+  }
+  
+  .card-biology {
+    top: 20px;
+    right: 10px;
+  }
+  
+  .card-coding {
+    top: 160px;
+    right: 130px;
+  }
+  
+  .card-physics {
+    top: 160px;
+    right: 10px;
+  }
+  
+  .card-history {
+    top: 300px;
+    right: 100px;
+  }
+  
+  .card-english {
+    top: 90px;
+    right: 220px;
+  }
 }
 </style>
