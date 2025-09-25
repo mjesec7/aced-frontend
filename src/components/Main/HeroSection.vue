@@ -23,9 +23,7 @@
     </header>
 
     <main class="hero-text">
-      <div class="badge">
-        <span class="sparkle">✨</span> #1 ПЛАТФОРМА ДЛЯ ОБРАЗОВАНИЯ В СНГ
-      </div>
+    
       <h1 class="hero-title">
         Разблокируйте
         <span class="line">будущее образования</span>
