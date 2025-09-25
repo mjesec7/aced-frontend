@@ -1,7 +1,6 @@
 <template>
   <div class="home-page">
     <!-- Sticky Navigation -->
-    <StickyNavbar />
 
     <!-- Hero Section -->
     <section id="hero">
@@ -59,7 +58,6 @@ import AnalyticsSection from '@/components/Main/AnalyticsSection.vue';
 import TariffSection from '@/components/Main/TariffSection.vue'
 
 import FooterBar from '@/components/Main/FooterBar.vue';
-import StickyNavbar from '@/components/Main/StickyNavbar.vue';
 import ChatBot from '@/components/Main/ChatBot.vue';
 </script>
 
