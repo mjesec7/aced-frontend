@@ -106,9 +106,9 @@ export default {
 }
 .left-content {
   flex: 1;
-  max-width: 400px;
+  max-width: 450px; /* Increased max-width for better text flow */
   min-width: 300px;
-  z-index: 10; 
+  z-index: 10;
 }
 .headline {
   font-size: 2.8rem;
@@ -145,33 +145,35 @@ export default {
   box-shadow: 0 0 20px rgba(147, 51, 234, 0.5);
 }
 
-/* New Layout Container */
+/* Updated Layout Container */
 .subjects-abstract-layout {
   flex: 1.5;
   position: relative;
-  min-height: 450px;
-  min-width: 300px;
+  min-height: 600px; /* Adjusted height to fit all cards */
+  min-width: 450px;
 }
+
+/* Updated Card Styles */
 .subject-card {
   position: absolute;
-  width: 220px;
-  height: 200px; /* Slightly taller for a better feel */
+  width: 160px;  /* Uniform size */
+  height: 160px; /* Uniform size */
   padding: 20px;
-  border-radius: 1.5rem; /* More rounded corners */
+  border-radius: 24px; /* Consistent rounded corners */
   text-align: center;
-  background: #191645;
   border: 1px solid #2c2c54;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  transition: transform 0.3s ease, border-color 0.3s ease;
+  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
   cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
 }
 .subject-card:hover {
-  background: #191645 !important;
-  border-color: #7c3aed !important;
-  transform: translateY(-8px) !important; /* Ensure transform works */
+  border-color: #a78bfa;
+  transform: translateY(-8px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
 }
 .subject-icon {
   width: 50px;
@@ -183,23 +185,41 @@ export default {
   color: #fff;
   font-weight: 600;
 }
-.floating { 
-  animation: float 8s ease-in-out infinite; 
+
+/* New Card Positions & Colors */
+.card-math {
+  top: 20px;
+  left: 20px;
+  background: linear-gradient(145deg, #4f46e5, #2563eb);
 }
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-15px); }
+.card-biology {
+  top: 40px;
+  left: 220px;
+  background: linear-gradient(145deg, #16a34a, #15803d);
+}
+.card-coding {
+  top: 220px;
+  left: 30px;
+  background: linear-gradient(145deg, #7e22ce, #6d28d9);
+}
+.card-physics {
+  top: 250px;
+  left: 230px;
+  background: linear-gradient(145deg, #ca8a04, #b45309);
+}
+.card-history {
+  top: 420px;
+  left: 40px;
+  background: linear-gradient(145deg, #dc2626, #b91c1c);
+}
+.card-english { /* Positioned this card as it was not in the example image */
+  top: 440px;
+  left: 220px;
+  background: linear-gradient(145deg, #0d9488, #0891b2);
 }
 
-/* New Card Positions */
-.card-english   { top: 5%; left: 35%; z-index: 3; animation-delay: -1s; }
-.card-history   { top: 25%; right: 5%; z-index: 2; animation-delay: -3s; }
-.card-physics   { bottom: 15%; right: 20%; z-index: 2; animation-delay: -5s; }
-.card-biology   { top: 50%; left: 0%; z-index: 1; animation-delay: -4s; }
-.card-coding    { bottom: 0%; left: 40%; z-index: 3; animation-delay: 0s; }
-.card-math      { top: 20%; left: 5%; z-index: 2; animation-delay: -2s; }
 
-/* Modal Styles */
+/* Modal Styles (Unchanged) */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -260,7 +280,7 @@ export default {
   cursor: pointer;
 }
 
-/* Responsive adjustments */
+/* Responsive adjustments (Unchanged) */
 @media (max-width: 992px) {
   .content-wrapper {
     flex-direction: column;
@@ -271,23 +291,18 @@ export default {
   }
   .subjects-abstract-layout {
     width: 100%;
-    max-width: 600px;
-    margin-top: 2rem;
-    min-height: 350px;
-  }
-  .subject-card {
-      width: 180px;
-      height: 160px;
+    max-width: 450px;
+    margin-top: 4rem;
+    min-height: 620px;
   }
 }
 
 @media (max-width: 480px) {
     .subjects-abstract-layout {
-        min-height: 450px;
-    }
-    .subject-card {
-        width: 150px;
-        height: 130px;
+        min-height: 620px;
+        min-width: 100%;
+        transform: scale(0.8); /* Scale down to fit on small screens */
+        margin-top: 2rem;
     }
 }
 </style>
