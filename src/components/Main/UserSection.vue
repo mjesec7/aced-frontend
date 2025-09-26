@@ -400,167 +400,49 @@ export default {
 };
 </script>
 
+</script>
+
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600&display=swap');
+@import "@/assets/css/UserSection.css";
 
-/* Main Containers */
-.auth-buttons, .user-section {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-/* Buttons outside modal */
-.auth-btn {
-  padding: 0.6rem 1.25rem;
-  border-radius: 0.5rem;
-  font-family: 'Unbounded', sans-serif;
-  font-weight: 600;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border: 1px solid transparent;
-}
-.auth-btn.profile {
-  padding: 0.6rem 1rem;
-}
-.auth-btn.outline {
-  background: transparent;
-  border-color: #7c3aed;
-  color: #c084fc;
-}
-.auth-btn.outline:hover {
-  background: rgba(124, 58, 237, 0.1);
-  color: #fff;
-}
-.auth-btn.gradient {
-  background: linear-gradient(90deg, #9333ea, #7f5af0);
-  color: white;
-  border: none;
-}
-.auth-btn.gradient:hover {
-  filter: brightness(1.2);
-}
-
-/* User Menu */
-.user-menu {
-  position: relative;
-}
-.user-button {
-  background: rgba(25, 22, 69, 0.8);
-  border: 1px solid #2c2c54;
-  color: #fff;
-  border-radius: 99px;
-  padding: 0.6rem 0.6rem 0.6rem 1.2rem;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  cursor: pointer;
-  font-family: 'Unbounded', sans-serif;
-}
-.badge {
-  background: #7c3aed;
-  color: white;
-  padding: 0.2rem 0.6rem;
-  border-radius: 99px;
-  font-size: 0.7rem;
-  font-weight: bold;
-}
-.dropdown-menu {
-  position: absolute;
-  top: 120%;
-  right: 0;
-  background: #191645;
-  border-radius: 0.75rem;
-  border: 1px solid #2c2c54;
-  width: 180px;
-  overflow: hidden;
-  z-index: 20;
-  padding: 0.5rem;
-  color: #fff;
-}
-.dropdown-menu ul { list-style: none; padding: 0; margin: 0; }
-.dropdown-menu li {
-  padding: 0.75rem 1rem;
-  cursor: pointer;
-  border-radius: 0.5rem;
-  transition: background-color 0.2s;
-  color: #e0e7ff;
-}
-.dropdown-menu li:hover {
-  background-color: rgba(124, 58, 237, 0.2);
-}
-
-/* ----- FIXED MODAL STYLES ----- */
-.global-auth-modal {
-  position: fixed; inset: 0; background: rgba(10, 0, 24, 0.8);
-  backdrop-filter: blur(5px); display: flex; justify-content: center;
-  align-items: center; z-index: 1000;
-}
-.modal-content {
-  background: #191645;
-  border-radius: 1.5rem; /* Smoother corners */
-  padding: 2.5rem;
-  width: 90%;
-  max-width: 400px; /* Slightly narrower */
-  border: 1px solid #2c2c54;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  color: #fff;
-}
 .loading-state {
-  padding: 2rem;
   text-align: center;
-  font-size: 1.1rem;
+  padding: 2rem;
 }
-.modal-title {
-  text-align: center; font-size: 1.8rem; color: #fff;
-  font-weight: 600; margin-bottom: 1rem;
-}
-.close-btn {
-  position: absolute; top: 1rem; right: 1rem; font-size: 1.5rem;
-  background: none; border: none; color: #a3a3c2; cursor: pointer;
-}
-.modal-content input {
-  width: 100%; padding: 0.8rem 1rem; border-radius: 0.75rem;
-  border: 1px solid #2c2c54; background: #110d2e;
-  color: #fff; font-family: 'Unbounded', sans-serif;
+
+.error-message {
+  background-color: #fee;
+  border: 1px solid #fcc;
+  color: #c33;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-top: 1rem;
   font-size: 0.9rem;
 }
-.modal-content input:focus {
-  outline: none;
-  border-color: #7c3aed;
-}
-.modal-btn {
-  width: 100%; padding: 0.8rem; font-family: 'Unbounded', sans-serif;
-  font-weight: 600; border-radius: 0.75rem; cursor: pointer;
-  transition: opacity 0.2s;
+
+.success-message {
+  background-color: #efe;
+  border: 1px solid #cfc;
+  color: #3c3;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-top: 1rem;
   font-size: 0.9rem;
 }
-.modal-btn.solid {
-  background: #fff; color: #110d2e; border: none;
+
+.auth-submit:disabled,
+.google-auth:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
-.modal-btn.outline {
-  background: transparent; color: #fff; border: 1px solid #fff;
+
+.switch-text span {
+  cursor: pointer;
+  color: #007bff;
+  text-decoration: underline;
 }
-.modal-btn:hover {
-  opacity: 0.9;
+
+.switch-text span:hover {
+  color: #0056b3;
 }
-.switch-auth-wrapper {
-  margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #2c2c54;
-  text-align: center; font-size: 0.9rem; color: #a3a3c2;
-  display: flex; justify-content: space-between; align-items: center;
-}
-.switch-auth-wrapper button {
-  background: none; border: none; color: #c084fc; font-weight: 600;
-  cursor: pointer; text-decoration: underline; font-size: 0.9rem;
-  font-family: 'Unbounded', sans-serif;
-}
-.error-message, .success-message {
-  padding: 0.75rem; border-radius: 0.5rem; text-align: center; font-size: 0.9rem;
-}
-.error-message { background: rgba(239, 68, 68, 0.1); color: #fca5a5; }
-.success-message { background: rgba(34, 197, 94, 0.1); color: #86efac; }
 </style>
