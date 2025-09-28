@@ -221,25 +221,27 @@ export default {
   font-size: 24px;
   font-weight: 600;
   color: #111827;
-  margin-bottom: 40px;
+  margin-bottom: 32px;
   letter-spacing: -0.01em;
 }
 
 .features-list {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  height: fit-content;
 }
 
 .feature-item {
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(20px);
-  border: 1px solid #f3f4f6;
+  border: 1px solid #e5e7eb;
   border-radius: 12px;
-  padding: 24px;
+  padding: 20px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
+  height: fit-content;
 }
 
 .feature-item::before {
@@ -249,58 +251,61 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.8), rgba(236, 72, 153, 0.8));
+  background: linear-gradient(135deg, #8b5cf6, #a855f7, #c084fc);
   opacity: 0;
   transition: opacity 0.3s ease;
   border-radius: 12px;
 }
 
 .feature-item:hover::before {
-  opacity: 0.03;
+  opacity: 0.05;
 }
 
 .feature-item:hover {
-  transform: translateX(8px);
-  box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.2);
-  border-color: rgba(139, 92, 246, 0.2);
+  transform: translateY(-4px);
+  box-shadow: 
+    0 0 0 2px rgba(139, 92, 246, 0.4),
+    0 8px 25px rgba(139, 92, 246, 0.15);
+  border-color: rgba(139, 92, 246, 0.5);
 }
 
 .feature-header {
   display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 12px;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
   position: relative;
   z-index: 1;
 }
 
 .feature-number {
-  width: 32px;
-  height: 32px;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
-  color: #6b7280;
+  color: #ffffff;
   flex-shrink: 0;
+  margin-top: 2px;
 }
 
 .feature-title {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   color: #111827;
   margin: 0;
   letter-spacing: -0.01em;
+  line-height: 1.3;
 }
 
 .feature-description {
-  font-size: 14px;
-  line-height: 1.6;
-  color: #4b5563;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #6b7280;
   margin: 0;
   position: relative;
   z-index: 1;
@@ -323,6 +328,10 @@ export default {
   
   .stats-grid {
     margin-bottom: 0;
+  }
+  
+  .features-list {
+    grid-template-columns: 1fr 1fr;
   }
 }
 
@@ -350,6 +359,7 @@ export default {
   }
   
   .features-list {
+    grid-template-columns: 1fr;
     gap: 16px;
   }
   
