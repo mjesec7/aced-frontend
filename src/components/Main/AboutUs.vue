@@ -7,66 +7,94 @@
         <p class="description">
           ACED — это платформа нового поколения для обучения, которая делает процесс интерактивным, персонализированным и измеримым. Наш главный фокус — современное и общее образование, где студенты получают не только знания по языкам, но и по другим важным дисциплинам.
         </p>
-        <div class="achievement-stats">
-          <div class="stat-item">
-            <span class="stat-number">2024</span>
-            <span class="stat-label">Год основания</span>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-number">2024</div>
+            <div class="stat-label">Год основания</div>
           </div>
-          <div class="stat-item">
-            <span class="stat-number">5+</span>
-            <span class="stat-label">Предметов</span>
+          <div class="stat-card">
+            <div class="stat-number">5+</div>
+            <div class="stat-label">Предметов</div>
           </div>
-          <div class="stat-item">
-            <span class="stat-number">∞</span>
-            <span class="stat-label">Возможностей</span>
+          <div class="stat-card">
+            <div class="stat-number">∞</div>
+            <div class="stat-label">Возможностей</div>
           </div>
         </div>
       </div>
 
-      <!-- Right side - Feature cards -->
-      <div class="features-wrapper">
-        <h3 class="features-title">Возможности платформы</h3>
-        <div class="features-grid">
-          <div class="feature-card">
-            <div class="feature-icon">📚</div>
-            <h4>Структурированные уроки</h4>
-            <p>Каждый урок состоит из шагов: объяснения, примеры, практические задания, упражнения и тесты.</p>
+      <!-- Right side - Features -->
+      <div class="features-section">
+        <h3 class="section-subtitle">Возможности платформы</h3>
+        <div class="features-list">
+          <div class="feature-item">
+            <div class="feature-header">
+              <div class="feature-number">01</div>
+              <h4 class="feature-title">Структурированное обучение</h4>
+            </div>
+            <p class="feature-description">
+              Каждый урок состоит из шагов: объяснения, примеры, практические задания, упражнения и тесты.
+            </p>
           </div>
-          
-          <div class="feature-card">
-            <div class="feature-icon">💾</div>
-            <h4>Автосохранение</h4>
-            <p>Прогресс учащихся сохраняется автоматически в реальном времени.</p>
+
+          <div class="feature-item">
+            <div class="feature-header">
+              <div class="feature-number">02</div>
+              <h4 class="feature-title">Автоматическое сохранение</h4>
+            </div>
+            <p class="feature-description">
+              Прогресс учащихся сохраняется автоматически в реальном времени.
+            </p>
           </div>
-          
-          <div class="feature-card">
-            <div class="feature-icon">🔄</div>
-            <h4>Домашние задания</h4>
-            <p>Домашние задания встроены в систему и могут пересдаваться.</p>
+
+          <div class="feature-item">
+            <div class="feature-header">
+              <div class="feature-number">03</div>
+              <h4 class="feature-title">Гибкие домашние задания</h4>
+            </div>
+            <p class="feature-description">
+              Домашние задания встроены в систему и могут пересдаваться.
+            </p>
           </div>
-          
-          <div class="feature-card">
-            <div class="feature-icon">📊</div>
-            <h4>Тестирование</h4>
-            <p>Существует отдельная страница для тестов, где можно проходить и пересматривать результаты.</p>
+
+          <div class="feature-item">
+            <div class="feature-header">
+              <div class="feature-number">04</div>
+              <h4 class="feature-title">Система тестирования</h4>
+            </div>
+            <p class="feature-description">
+              Отдельная страница для тестов с возможностью просмотра результатов.
+            </p>
           </div>
-          
-          <div class="feature-card">
-            <div class="feature-icon">📈</div>
-            <h4>Аналитика</h4>
-            <p>Учащиеся получают аналитику по своим результатам: сильные стороны, ошибки и рекомендации.</p>
+
+          <div class="feature-item">
+            <div class="feature-header">
+              <div class="feature-number">05</div>
+              <h4 class="feature-title">Детальная аналитика</h4>
+            </div>
+            <p class="feature-description">
+              Анализ результатов: сильные стороны, ошибки и персональные рекомендации.
+            </p>
           </div>
-          
-          <div class="feature-card">
-            <div class="feature-icon">🤖</div>
-            <h4>AI-помощник</h4>
-            <p>Встроенный AI-помощник помогает разбирать материал и подсказывает при затруднениях.</p>
+
+          <div class="feature-item">
+            <div class="feature-header">
+              <div class="feature-number">06</div>
+              <h4 class="feature-title">AI-помощник</h4>
+            </div>
+            <p class="feature-description">
+              Встроенный искусственный интеллект для разбора материала и поддержки.
+            </p>
           </div>
-          
-          <div class="feature-card">
-            <div class="feature-icon">📱</div>
-            <h4>Кроссплатформенность</h4>
-            <p>Платформа доступна на компьютере и мобильных устройствах, все данные синхронизируются.</p>
+
+          <div class="feature-item">
+            <div class="feature-header">
+              <div class="feature-number">07</div>
+              <h4 class="feature-title">Мультиплатформенность</h4>
+            </div>
+            <p class="feature-description">
+              Доступ с любого устройства с синхронизацией данных в реальном времени.
+            </p>
           </div>
         </div>
       </div>
@@ -81,257 +109,270 @@ export default {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 .about-container {
-  padding: 80px 40px;
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  font-family: 'Unbounded', sans-serif;
-  color: #1a1a1a;
-  position: relative;
-  overflow: hidden;
-}
-
-.about-container::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: radial-gradient(circle at 20% 80%, rgba(139, 92, 246, 0.03) 0%, transparent 50%),
-              radial-gradient(circle at 80% 20%, rgba(236, 72, 153, 0.03) 0%, transparent 50%);
-  pointer-events: none;
+  padding: 120px 0;
+  background-color: #ffffff;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #111827;
 }
 
 .content-wrapper {
-  max-width: 1400px;
+  max-width: 1200px;
   margin: 0 auto;
+  padding: 0 32px;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 5rem;
+  gap: 80px;
   align-items: start;
-  position: relative;
-  z-index: 1;
 }
 
+/* Left Content */
 .about-content {
-  padding-right: 2rem;
+  position: sticky;
+  top: 120px;
 }
 
 .title {
-  font-size: clamp(2.2rem, 5vw, 3rem);
+  font-size: 48px;
   font-weight: 700;
-  background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 50%, #6366f1 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin-bottom: 1.5rem;
-  line-height: 1.2;
+  line-height: 1.1;
+  color: #111827;
+  margin-bottom: 24px;
+  letter-spacing: -0.02em;
 }
 
 .description {
-  font-size: clamp(1rem, 2.5vw, 1.1rem);
-  line-height: 1.8;
-  color: #4a4a4a;
-  margin-bottom: 2.5rem;
+  font-size: 18px;
+  line-height: 1.7;
+  color: #4b5563;
+  margin-bottom: 48px;
   font-weight: 400;
 }
 
-.achievement-stats {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.stat-item {
-  text-align: center;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  padding: 1.5rem 1rem;
-  border-radius: 1rem;
-  flex: 1;
-  min-width: 120px;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
-}
-
-.stat-item::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.8), rgba(236, 72, 153, 0.8));
-  opacity: 0;
-  transition: all 0.4s ease;
-  border-radius: 1rem;
-  z-index: 1;
-}
-
-.stat-item:hover::before {
-  opacity: 0.1;
-}
-
-.stat-item:hover {
-  transform: translateY(-5px);
-  box-shadow: 
-    0 0 30px rgba(139, 92, 246, 0.4),
-    0 10px 30px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(139, 92, 246, 0.5);
-}
-
-.stat-number,
-.stat-label {
-  position: relative;
-  z-index: 2;
-}
-
-.stat-number {
-  display: block;
-  font-size: clamp(1.8rem, 4vw, 2.2rem);
-  font-weight: 700;
-  color: #2a2a2a;
-}
-
-.stat-label {
-  font-size: 0.8rem;
-  color: #666;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  font-weight: 500;
-}
-
-.features-wrapper {
-  padding-left: 2rem;
-}
-
-.features-title {
-  font-size: 1.8rem;
-  font-weight: 600;
-  color: #2a2a2a;
-  margin-bottom: 2rem;
-  text-align: center;
-}
-
-.features-grid {
+.stats-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.5rem;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
 }
 
-.feature-card {
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(15px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 1rem;
-  padding: 1.5rem;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+.stat-card {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 24px 16px;
+  text-align: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
 }
 
-.feature-card::before {
+.stat-card::before {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.8), rgba(236, 72, 153, 0.8));
+  background: linear-gradient(135deg, #8b5cf6, #ec4899);
   opacity: 0;
-  transition: all 0.4s ease;
-  border-radius: 1rem;
-  z-index: 1;
+  transition: opacity 0.3s ease;
+  border-radius: 16px;
 }
 
-.feature-card:hover::before {
+.stat-card:hover::before {
   opacity: 0.05;
 }
 
-.feature-card:hover {
-  transform: translateX(10px);
-  box-shadow: 
-    0 0 40px rgba(139, 92, 246, 0.3),
-    0 10px 30px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(139, 92, 246, 0.4);
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.3);
+  border-color: rgba(139, 92, 246, 0.3);
 }
 
-.feature-icon,
-.feature-card h4,
-.feature-card p {
+.stat-number {
+  font-size: 32px;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1;
   position: relative;
-  z-index: 2;
+  z-index: 1;
 }
 
-.feature-icon {
-  font-size: 2rem;
-  margin-bottom: 1rem;
-  display: block;
+.stat-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 8px;
+  position: relative;
+  z-index: 1;
 }
 
-.feature-card h4 {
-  font-size: 1.1rem;
+/* Right Content */
+.features-section {
+  padding-left: 24px;
+}
+
+.section-subtitle {
+  font-size: 24px;
   font-weight: 600;
-  color: #2a2a2a;
-  margin-bottom: 0.8rem;
+  color: #111827;
+  margin-bottom: 40px;
+  letter-spacing: -0.01em;
 }
 
-.feature-card p {
-  font-size: 0.9rem;
-  line-height: 1.6;
-  color: #555;
+.features-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.feature-item {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  border: 1px solid #f3f4f6;
+  border-radius: 12px;
+  padding: 24px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.feature-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.8), rgba(236, 72, 153, 0.8));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  border-radius: 12px;
+}
+
+.feature-item:hover::before {
+  opacity: 0.03;
+}
+
+.feature-item:hover {
+  transform: translateX(8px);
+  box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.2);
+  border-color: rgba(139, 92, 246, 0.2);
+}
+
+.feature-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+.feature-number {
+  width: 32px;
+  height: 32px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+.feature-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
   margin: 0;
+  letter-spacing: -0.01em;
 }
 
-@media (max-width: 1200px) {
+.feature-description {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #4b5563;
+  margin: 0;
+  position: relative;
+  z-index: 1;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
   .content-wrapper {
     grid-template-columns: 1fr;
-    gap: 4rem;
+    gap: 60px;
   }
   
-  .about-content,
-  .features-wrapper {
+  .about-content {
+    position: static;
+  }
+  
+  .features-section {
     padding-left: 0;
-    padding-right: 0;
   }
   
-  .features-grid {
-    grid-template-columns: repeat(2, 1fr);
+  .stats-grid {
+    margin-bottom: 0;
   }
 }
 
 @media (max-width: 768px) {
   .about-container {
-    padding: 60px 20px;
+    padding: 80px 0;
   }
   
   .content-wrapper {
-    gap: 3rem;
+    padding: 0 24px;
+    gap: 48px;
   }
   
-  .features-grid {
+  .title {
+    font-size: 36px;
+  }
+  
+  .description {
+    font-size: 16px;
+  }
+  
+  .stats-grid {
     grid-template-columns: 1fr;
+    gap: 12px;
   }
   
-  .achievement-stats {
-    justify-content: center;
-    gap: 0.8rem;
+  .features-list {
+    gap: 16px;
   }
   
-  .stat-item {
-    flex-basis: 30%;
-    min-width: 100px;
+  .feature-item {
+    padding: 20px;
   }
 }
 
 @media (max-width: 480px) {
-  .stat-item {
-    flex-basis: 45%;
-    padding: 1rem 0.5rem;
+  .content-wrapper {
+    padding: 0 16px;
+  }
+  
+  .title {
+    font-size: 28px;
+  }
+  
+  .stat-card {
+    padding: 20px 12px;
+  }
+  
+  .feature-header {
+    gap: 12px;
   }
 }
 </style>
