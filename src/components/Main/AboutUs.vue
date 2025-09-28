@@ -1,33 +1,65 @@
 <template>
   <section class="about-container" id="about-us">
     <div class="content-wrapper">
-      <!-- Left side - Text content -->
       <div class="about-content">
-        <h2 class="title">О платформе ACED</h2>
-        <p class="description">
-          ACED — это платформа нового поколения для обучения, которая делает процесс интерактивным, персонализированным и измеримым. Наш главный фокус — современное и общее образование, где студенты получают не только знания по языкам, но и по другим важным дисциплинам.
-        </p>
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-number">2024</div>
-            <div class="stat-label">Год основания</div>
+        <div class="title-section">
+          <h2 class="title">О платформе ACED</h2>
+          <div class="title-accent"></div>
+        </div>
+        
+        <div class="description-wrapper">
+          <p class="description">
+            ACED — это платформа нового поколения для обучения, которая делает процесс 
+            <span class="highlight-text" data-highlight="interactive">интерактивным</span>, 
+            <span class="highlight-text" data-highlight="personalized">персонализированным</span> и 
+            <span class="highlight-text" data-highlight="measurable">измеримым</span>. 
+            Наш главный фокус — современное и общее образование, где студенты получают не только знания по языкам, но и по другим важным дисциплинам.
+          </p>
+        </div>
+
+        <div class="stats-section">
+          <h3 class="stats-title">Наши достижения</h3>
+          <div class="stats-grid">
+            <div class="stat-card animated" data-stat="year">
+              <div class="stat-icon">🚀</div>
+              <div class="stat-number" data-target="2024">0</div>
+              <div class="stat-label">Год основания</div>
+              <div class="stat-detail">Революция в образовании</div>
+            </div>
+            <div class="stat-card animated" data-stat="subjects">
+              <div class="stat-icon">📖</div>
+              <div class="stat-number" data-target="5">0</div>
+              <div class="stat-label">Предметов</div>
+              <div class="stat-detail">И постоянно растем</div>
+            </div>
+            <div class="stat-card animated" data-stat="possibilities">
+              <div class="stat-icon">✨</div>
+              <div class="stat-number">∞</div>
+              <div class="stat-label">Возможностей</div>
+              <div class="stat-detail">Безграничный потенциал</div>
+            </div>
           </div>
-          <div class="stat-card">
-            <div class="stat-number">5+</div>
-            <div class="stat-label">Предметов</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-number">∞</div>
-            <div class="stat-label">Возможностей</div>
+        </div>
+
+        <div class="mission-section">
+          <div class="mission-card">
+            <div class="mission-header">
+              <div class="mission-icon">🎯</div>
+              <h4 class="mission-title">Наша миссия</h4>
+            </div>
+            <p class="mission-text">
+              Трансформировать образование через технологии, делая качественное обучение доступным каждому студенту в Узбекистане и за его пределами.
+            </p>
+            <div class="mission-progress">
+              <div class="mission-fill"></div>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Right side - Interactive Feature Showcase -->
       <div class="features-section">
         <h3 class="section-subtitle">Возможности платформы</h3>
         
-        <!-- Main Feature Display -->
         <div class="main-feature-display">
           <div class="feature-preview">
             <div class="preview-header">
@@ -35,7 +67,6 @@
               <span class="preview-title" id="previewTitle">Структурированное обучение</span>
             </div>
             <div class="preview-content" id="previewContent">
-              <!-- Lessons Content -->
               <div class="content-section active" data-content="lessons">
                 <div class="lesson-steps">
                   <div class="step active" data-step="explanation">Объяснение</div>
@@ -48,7 +79,6 @@
                 </div>
               </div>
               
-              <!-- Analytics Content -->
               <div class="content-section" data-content="analytics">
                 <div class="analytics-display">
                   <div class="metric-row">
@@ -69,7 +99,6 @@
                 </div>
               </div>
               
-              <!-- AI Content -->
               <div class="content-section" data-content="ai">
                 <div class="ai-chat">
                   <div class="chat-message user">Не понимаю эту тему...</div>
@@ -80,7 +109,6 @@
                 </div>
               </div>
               
-              <!-- Sync Content -->
               <div class="content-section" data-content="sync">
                 <div class="sync-devices">
                   <div class="device phone">📱</div>
@@ -97,7 +125,6 @@
           </div>
         </div>
 
-        <!-- Feature Navigation -->
         <div class="features-nav">
           <div class="feature-nav-item active" data-feature="lessons">
             <div class="nav-icon">📚</div>
@@ -117,7 +144,6 @@
           </div>
         </div>
 
-        <!-- Key Benefits Grid -->
         <div class="benefits-grid">
           <div class="benefit-card">
             <div class="benefit-number">95%</div>
@@ -153,6 +179,11 @@ export default {
       const lessonSteps = document.querySelectorAll('.step');
       const progressFill = document.getElementById('progressFill');
       
+      // Left side animations
+      const highlightTexts = document.querySelectorAll('.highlight-text');
+      const statCards = document.querySelectorAll('.stat-card');
+      const statNumbers = document.querySelectorAll('.stat-number[data-target]');
+      
       const featureTitles = {
         lessons: 'Структурированное обучение',
         analytics: 'Детальная аналитика успеваемости',
@@ -166,6 +197,59 @@ export default {
         practice: 75,
         test: 100
       };
+      
+      // Animate numbers on page load
+      const animateNumbers = () => {
+        statNumbers.forEach(number => {
+          const target = parseInt(number.dataset.target);
+          const duration = 2000;
+          const start = 0;
+          const increment = target / (duration / 50);
+          let current = start;
+          
+          const timer = setInterval(() => {
+            current += increment;
+            if (current >= target) {
+              number.textContent = target;
+              clearInterval(timer);
+            } else {
+              number.textContent = Math.floor(current);
+            }
+          }, 50);
+        });
+      };
+      
+      // Highlight text hover effects
+      highlightTexts.forEach(text => {
+        text.addEventListener('mouseenter', () => {
+          const highlight = text.dataset.highlight;
+          text.style.transform = 'scale(1.05)';
+          
+          // Add corresponding animation based on highlight type
+          if (highlight === 'interactive') {
+            text.style.animation = 'bounce 0.6s ease';
+          } else if (highlight === 'personalized') {
+            text.style.animation = 'pulse 0.6s ease';
+          } else if (highlight === 'measurable') {
+            text.style.animation = 'shake 0.6s ease';
+          }
+        });
+        
+        text.addEventListener('mouseleave', () => {
+          text.style.transform = 'scale(1)';
+          text.style.animation = 'none';
+        });
+      });
+      
+      // Stat card click effects
+      statCards.forEach(card => {
+        card.addEventListener('click', () => {
+          card.style.transform = 'scale(0.95)';
+          setTimeout(() => {
+            card.style.transform = '';
+          }, 150);
+        });
+      });
       
       // Navigation click handlers
       navItems.forEach(item => {
@@ -215,6 +299,26 @@ export default {
           }
         });
       });
+      
+      // Initialize animations
+      setTimeout(animateNumbers, 500);
+      
+      // Add CSS animations
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes bounce {
+          0%, 20%, 50%, 80%, 100% { transform: translateY(0) scale(1.05); }
+          40% { transform: translateY(-5px) scale(1.05); }
+          60% { transform: translateY(-3px) scale(1.05); }
+        }
+        
+        @keyframes shake {
+          0%, 100% { transform: translateX(0) scale(1.05); }
+          25% { transform: translateX(-2px) scale(1.05); }
+          75% { transform: translateX(2px) scale(1.05); }
+        }
+      `;
+      document.head.appendChild(style);
     });
   }
 };
@@ -244,6 +348,13 @@ export default {
 .about-content {
   position: sticky;
   top: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.title-section {
+  position: relative;
 }
 
 .title {
@@ -251,34 +362,118 @@ export default {
   font-weight: 700;
   line-height: 1.1;
   color: #111827;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
   letter-spacing: -0.02em;
+  position: relative;
+}
+
+.title-accent {
+  width: 60px;
+  height: 4px;
+  background: linear-gradient(90deg, #4c1d95, #6366f1, #3b82f6);
+  border-radius: 2px;
+  animation: accent-grow 2s ease-in-out infinite alternate;
+}
+
+@keyframes accent-grow {
+  0% { width: 60px; opacity: 0.8; }
+  100% { width: 120px; opacity: 1; }
+}
+
+.description-wrapper {
+  position: relative;
 }
 
 .description {
   font-size: 18px;
   line-height: 1.7;
   color: #4b5563;
-  margin-bottom: 48px;
   font-weight: 400;
+  margin: 0;
+}
+
+.highlight-text {
+  background: linear-gradient(135deg, #4c1d95, #6366f1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.highlight-text:hover {
+  transform: scale(1.05);
+  text-shadow: 0 0 10px rgba(76, 29, 149, 0.3);
+}
+
+.highlight-text::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #4c1d95, #6366f1);
+  transition: width 0.3s ease;
+}
+
+.highlight-text:hover::after {
+  width: 100%;
+}
+
+/* Stats Section */
+.stats-section {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.stats-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(76, 29, 149, 0.05), rgba(99, 102, 241, 0.03));
+  border-radius: 16px;
+}
+
+.stats-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 20px;
+  position: relative;
+  z-index: 1;
 }
 
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
+  position: relative;
+  z-index: 1;
 }
 
 .stat-card {
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(20px);
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
-  padding: 24px 16px;
+  border: 1px solid #f3f4f6;
+  border-radius: 12px;
+  padding: 20px 16px;
   text-align: center;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
+  cursor: pointer;
 }
 
 .stat-card::before {
@@ -288,40 +483,162 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, #8b5cf6, #ec4899);
+  background: linear-gradient(135deg, #4c1d95, #6366f1);
   opacity: 0;
   transition: opacity 0.3s ease;
-  border-radius: 16px;
+  border-radius: 12px;
 }
 
 .stat-card:hover::before {
-  opacity: 0.05;
+  opacity: 0.08;
 }
 
 .stat-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.3);
-  border-color: rgba(139, 92, 246, 0.3);
+  transform: translateY(-8px) scale(1.03);
+  box-shadow: 
+    0 0 0 2px rgba(76, 29, 149, 0.3),
+    0 15px 35px rgba(76, 29, 149, 0.2);
+  border-color: rgba(76, 29, 149, 0.4);
+}
+
+.stat-icon {
+  font-size: 24px;
+  margin-bottom: 8px;
+  display: block;
+  position: relative;
+  z-index: 1;
+  animation: float 3s ease-in-out infinite;
+}
+
+.stat-card:nth-child(1) .stat-icon { animation-delay: 0s; }
+.stat-card:nth-child(2) .stat-icon { animation-delay: 1s; }
+.stat-card:nth-child(3) .stat-icon { animation-delay: 2s; }
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
 }
 
 .stat-number {
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 700;
   color: #111827;
   line-height: 1;
+  margin-bottom: 4px;
   position: relative;
   z-index: 1;
 }
 
 .stat-label {
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 11px;
+  font-weight: 600;
   color: #6b7280;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-top: 8px;
+  margin-bottom: 4px;
   position: relative;
   z-index: 1;
+}
+
+.stat-detail {
+  font-size: 10px;
+  color: #9ca3af;
+  font-style: italic;
+  position: relative;
+  z-index: 1;
+}
+
+/* Mission Section */
+.mission-section {
+  position: relative;
+}
+
+.mission-card {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(20px);
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.mission-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(76, 29, 149, 0.08), rgba(99, 102, 241, 0.05));
+  border-radius: 16px;
+}
+
+.mission-card:hover {
+  transform: translateX(8px);
+  box-shadow: 
+    0 0 0 1px rgba(76, 29, 149, 0.2),
+    0 10px 25px rgba(76, 29, 149, 0.1);
+}
+
+.mission-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  position: relative;
+  z-index: 1;
+}
+
+.mission-icon {
+  font-size: 20px;
+  animation: spin 4s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.mission-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.mission-text {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #4b5563;
+  margin: 0 0 16px 0;
+  position: relative;
+  z-index: 1;
+}
+
+.mission-progress {
+  width: 100%;
+  height: 4px;
+  background: #f3f4f6;
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+
+.mission-fill {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, #4c1d95, #6366f1, #3b82f6);
+  border-radius: 2px;
+  animation: mission-progress 4s ease-in-out infinite;
+}
+
+@keyframes mission-progress {
+  0% { width: 0%; }
+  50% { width: 100%; }
+  100% { width: 0%; }
 }
 
 /* Right Content - Interactive Showcase */
@@ -340,7 +657,6 @@ export default {
   margin: 0;
 }
 
-/* Main Feature Display */
 .main-feature-display {
   background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(20px);
@@ -412,7 +728,6 @@ export default {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Lessons Content */
 .lesson-steps {
   display: flex;
   gap: 8px;
@@ -442,7 +757,6 @@ export default {
   color: white;
 }
 
-/* Analytics Content */
 .analytics-display {
   margin-bottom: 16px;
 }
@@ -471,7 +785,6 @@ export default {
   font-weight: 600;
 }
 
-/* AI Chat Content */
 .ai-chat {
   margin-bottom: 16px;
 }
@@ -495,7 +808,6 @@ export default {
   color: white;
 }
 
-/* Sync Content */
 .sync-devices {
   display: flex;
   align-items: center;
@@ -525,7 +837,6 @@ export default {
   60% { transform: translateY(-3px); }
 }
 
-/* Progress Bars */
 .progress-bar {
   width: 100%;
   height: 6px;
@@ -605,9 +916,8 @@ export default {
   padding: 16px 12px;
   text-align: center;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
-  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .feature-nav-item::before {
@@ -735,17 +1045,9 @@ export default {
     padding-left: 0;
   }
   
-  .stats-grid {
-    margin-bottom: 0;
-  }
-  
   .features-nav {
     grid-template-columns: repeat(2, 1fr);
     gap: 16px;
-  }
-  
-  .benefits-grid {
-    grid-template-columns: repeat(3, 1fr);
   }
 }
 
@@ -772,20 +1074,12 @@ export default {
     gap: 12px;
   }
   
-  .features-nav {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
   .benefits-grid {
     grid-template-columns: 1fr;
   }
   
   .main-feature-display {
     padding: 20px;
-  }
-  
-  .lesson-steps {
-    flex-wrap: wrap;
   }
 }
 
