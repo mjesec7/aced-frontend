@@ -32,17 +32,66 @@
           <div class="feature-preview">
             <div class="preview-header">
               <div class="preview-indicator"></div>
-              <span class="preview-title">Структурированное обучение</span>
+              <span class="preview-title" id="previewTitle">Структурированное обучение</span>
             </div>
-            <div class="preview-content">
-              <div class="lesson-steps">
-                <div class="step active">Объяснение</div>
-                <div class="step">Примеры</div>
-                <div class="step">Практика</div>
-                <div class="step">Тест</div>
+            <div class="preview-content" id="previewContent">
+              <!-- Lessons Content -->
+              <div class="content-section active" data-content="lessons">
+                <div class="lesson-steps">
+                  <div class="step active" data-step="explanation">Объяснение</div>
+                  <div class="step" data-step="examples">Примеры</div>
+                  <div class="step" data-step="practice">Практика</div>
+                  <div class="step" data-step="test">Тест</div>
+                </div>
+                <div class="progress-bar">
+                  <div class="progress-fill" id="progressFill"></div>
+                </div>
               </div>
-              <div class="progress-bar">
-                <div class="progress-fill"></div>
+              
+              <!-- Analytics Content -->
+              <div class="content-section" data-content="analytics">
+                <div class="analytics-display">
+                  <div class="metric-row">
+                    <span class="metric-label">Успеваемость:</span>
+                    <span class="metric-value">87%</span>
+                  </div>
+                  <div class="metric-row">
+                    <span class="metric-label">Сильные стороны:</span>
+                    <span class="metric-value">Грамматика, Чтение</span>
+                  </div>
+                  <div class="metric-row">
+                    <span class="metric-label">Требует внимания:</span>
+                    <span class="metric-value">Аудирование</span>
+                  </div>
+                </div>
+                <div class="progress-bar">
+                  <div class="progress-fill analytics-progress"></div>
+                </div>
+              </div>
+              
+              <!-- AI Content -->
+              <div class="content-section" data-content="ai">
+                <div class="ai-chat">
+                  <div class="chat-message user">Не понимаю эту тему...</div>
+                  <div class="chat-message ai">Давайте разберем пошагово! Начнем с основ...</div>
+                </div>
+                <div class="progress-bar">
+                  <div class="progress-fill ai-progress"></div>
+                </div>
+              </div>
+              
+              <!-- Sync Content -->
+              <div class="content-section" data-content="sync">
+                <div class="sync-devices">
+                  <div class="device phone">📱</div>
+                  <div class="sync-arrow">⟷</div>
+                  <div class="device laptop">💻</div>
+                  <div class="sync-arrow">⟷</div>
+                  <div class="device tablet">📱</div>
+                </div>
+                <div class="progress-bar">
+                  <div class="progress-fill sync-progress"></div>
+                </div>
               </div>
             </div>
           </div>
@@ -89,8 +138,85 @@
 </template>
 
 <script>
+import { onMounted } from 'vue';
+
 export default {
-  name: 'AboutUs'
+  name: 'AboutUs',
+  setup() {
+    onMounted(() => {
+      // Feature navigation functionality
+      const navItems = document.querySelectorAll('.feature-nav-item');
+      const contentSections = document.querySelectorAll('.content-section');
+      const previewTitle = document.getElementById('previewTitle');
+      
+      // Lesson step functionality
+      const lessonSteps = document.querySelectorAll('.step');
+      const progressFill = document.getElementById('progressFill');
+      
+      const featureTitles = {
+        lessons: 'Структурированное обучение',
+        analytics: 'Детальная аналитика успеваемости',
+        ai: 'Персональный AI-помощник',
+        sync: 'Синхронизация между устройствами'
+      };
+      
+      const stepProgress = {
+        explanation: 25,
+        examples: 50,
+        practice: 75,
+        test: 100
+      };
+      
+      // Navigation click handlers
+      navItems.forEach(item => {
+        item.addEventListener('click', () => {
+          const feature = item.dataset.feature;
+          
+          // Remove active from all nav items
+          navItems.forEach(nav => nav.classList.remove('active'));
+          item.classList.add('active');
+          
+          // Hide all content sections
+          contentSections.forEach(section => section.classList.remove('active'));
+          
+          // Show selected content
+          const targetContent = document.querySelector(`[data-content="${feature}"]`);
+          if (targetContent) {
+            targetContent.classList.add('active');
+          }
+          
+          // Update title
+          if (previewTitle && featureTitles[feature]) {
+            previewTitle.textContent = featureTitles[feature];
+          }
+        });
+      });
+      
+      // Lesson step click handlers
+      lessonSteps.forEach(step => {
+        step.addEventListener('click', () => {
+          const stepType = step.dataset.step;
+          
+          // Remove active from all steps
+          lessonSteps.forEach(s => s.classList.remove('active'));
+          step.classList.add('active');
+          
+          // Update progress bar
+          if (progressFill && stepProgress[stepType]) {
+            progressFill.style.width = stepProgress[stepType] + '%';
+            
+            // Temporarily pause animation
+            progressFill.style.animation = 'none';
+            
+            // Resume animation after a brief pause
+            setTimeout(() => {
+              progressFill.style.animation = 'progress-animate 3s infinite';
+            }, 1000);
+          }
+        });
+      });
+    });
+  }
 };
 </script>
 
@@ -251,7 +377,7 @@ export default {
 .preview-indicator {
   width: 12px;
   height: 12px;
-  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  background: linear-gradient(135deg, #6366f1, #3b82f6);
   border-radius: 50%;
   animation: pulse 2s infinite;
 }
@@ -267,10 +393,31 @@ export default {
   color: #111827;
 }
 
+.preview-content {
+  position: relative;
+  min-height: 120px;
+}
+
+.content-section {
+  display: none;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.content-section.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Lessons Content */
 .lesson-steps {
   display: flex;
   gap: 8px;
   margin-bottom: 16px;
+  flex-wrap: wrap;
 }
 
 .step {
@@ -281,14 +428,104 @@ export default {
   font-size: 12px;
   font-weight: 500;
   transition: all 0.3s ease;
+  cursor: pointer;
 }
 
 .step.active {
-  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  background: linear-gradient(135deg, #4c1d95, #5b21b6);
   color: white;
   transform: scale(1.05);
 }
 
+.step:hover {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+}
+
+/* Analytics Content */
+.analytics-display {
+  margin-bottom: 16px;
+}
+
+.metric-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.metric-row:last-child {
+  border-bottom: none;
+}
+
+.metric-label {
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.metric-value {
+  font-size: 13px;
+  color: #111827;
+  font-weight: 600;
+}
+
+/* AI Chat Content */
+.ai-chat {
+  margin-bottom: 16px;
+}
+
+.chat-message {
+  padding: 8px 12px;
+  border-radius: 12px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  max-width: 80%;
+}
+
+.chat-message.user {
+  background: #f3f4f6;
+  color: #4b5563;
+  margin-left: auto;
+}
+
+.chat-message.ai {
+  background: linear-gradient(135deg, #4c1d95, #5b21b6);
+  color: white;
+}
+
+/* Sync Content */
+.sync-devices {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.device {
+  font-size: 24px;
+  animation: bounce 2s infinite;
+}
+
+.device:nth-child(1) { animation-delay: 0s; }
+.device:nth-child(3) { animation-delay: 0.5s; }
+.device:nth-child(5) { animation-delay: 1s; }
+
+.sync-arrow {
+  color: #8b5cf6;
+  font-size: 16px;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-5px); }
+  60% { transform: translateY(-3px); }
+}
+
+/* Progress Bars */
 .progress-bar {
   width: 100%;
   height: 6px;
@@ -298,17 +535,59 @@ export default {
 }
 
 .progress-fill {
-  width: 35%;
   height: 100%;
-  background: linear-gradient(90deg, #8b5cf6, #a855f7);
   border-radius: 3px;
+  transition: all 0.3s ease;
+}
+
+#progressFill {
+  width: 35%;
+  background: linear-gradient(90deg, #6366f1, #3b82f6);
   animation: progress-animate 3s infinite;
+}
+
+.analytics-progress {
+  width: 87%;
+  background: linear-gradient(90deg, #4c1d95, #5b21b6);
+  animation: analytics-animate 4s infinite;
+}
+
+.ai-progress {
+  width: 60%;
+  background: linear-gradient(90deg, #312e81, #4c1d95);
+  animation: ai-animate 2s infinite;
+}
+
+.sync-progress {
+  width: 100%;
+  background: linear-gradient(90deg, #1e40af, #3b82f6);
+  animation: sync-animate 2.5s infinite;
 }
 
 @keyframes progress-animate {
   0% { width: 35%; }
   50% { width: 70%; }
   100% { width: 35%; }
+}
+
+@keyframes analytics-animate {
+  0% { width: 87%; }
+  25% { width: 75%; }
+  50% { width: 92%; }
+  75% { width: 83%; }
+  100% { width: 87%; }
+}
+
+@keyframes ai-animate {
+  0% { width: 60%; }
+  50% { width: 85%; }
+  100% { width: 60%; }
+}
+
+@keyframes sync-animate {
+  0% { width: 100%; opacity: 1; }
+  50% { width: 0%; opacity: 0.5; }
+  100% { width: 100%; opacity: 1; }
 }
 
 /* Feature Navigation */
@@ -338,24 +617,22 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  background: linear-gradient(135deg, #4c1d95, #5b21b6, #6366f1);
   opacity: 0;
   transition: opacity 0.3s ease;
   border-radius: 12px;
 }
 
-.feature-nav-item.active::before,
 .feature-nav-item:hover::before {
   opacity: 0.1;
 }
 
-.feature-nav-item.active,
 .feature-nav-item:hover {
   transform: translateY(-4px);
   box-shadow: 
-    0 0 0 2px rgba(139, 92, 246, 0.3),
-    0 8px 25px rgba(139, 92, 246, 0.15);
-  border-color: rgba(139, 92, 246, 0.4);
+    0 0 0 2px rgba(76, 29, 149, 0.4),
+    0 8px 25px rgba(76, 29, 149, 0.2);
+  border-color: rgba(76, 29, 149, 0.5);
 }
 
 .nav-icon {
@@ -374,7 +651,7 @@ export default {
   z-index: 1;
 }
 
-.feature-nav-item.active span {
+.feature-nav-item:hover span {
   color: #111827;
   font-weight: 600;
 }
