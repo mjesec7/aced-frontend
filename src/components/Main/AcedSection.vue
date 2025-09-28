@@ -60,9 +60,7 @@
           
           <!-- Course Content -->
           <div class="course-content">
-            <div class="course-subject">{{ course.subject || 'Общий' }}</div>
             <h3 class="course-title">{{ getTopicName(course) }}</h3>
-            <p class="course-description">{{ getTopicDescription(course) }}</p>
             
             <!-- Course Stats -->
             <div class="course-stats">
@@ -105,12 +103,7 @@
       <div v-else class="empty-courses">
         <div class="empty-icon">🔍</div>
         <h3>Курсы не найдены</h3>
-        <p v-if="selectedSubject || selectedType">
-          Попробуйте изменить фильтры поиска
-        </p>
-        <p v-else>
-          Загружаем актуальные курсы...
-        </p>
+        <p>Загружаем актуальные курсы...</p>
         <button v-if="!loadingCourses" @click="refreshCourses" class="retry-btn">
           🔄 Попробовать снова
         </button>
@@ -337,19 +330,8 @@ export default {
     },
     
     filterCourses() {
-      let filtered = [...this.allCourses];
-      
-      // Filter by subject
-      if (this.selectedSubject) {
-        filtered = filtered.filter(course => course.subject === this.selectedSubject);
-      }
-      
-      // Filter by type
-      if (this.selectedType) {
-        filtered = filtered.filter(course => this.getTopicType(course) === this.selectedType);
-      }
-      
-      this.filteredCourses = filtered;
+      // Simplified - no filtering, just show all courses
+      this.filteredCourses = [...this.allCourses];
       this.updateDisplayedCourses();
     },
     
@@ -576,7 +558,7 @@ export default {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: clamp(40px, 6vw, 60px);
+  gap: clamp(30px, 5vw, 50px);
   padding: clamp(40px, 8vw, 80px) clamp(20px, 5vw, 80px);
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
   min-height: 100vh;
@@ -584,105 +566,28 @@ export default {
   font-family: 'Inter', sans-serif;
 }
 
-.left-content {
-  text-align: center;
-  max-width: 800px;
-  margin: 0 auto;
+.header-section {
+  text-align: left;
+  margin-bottom: 20px;
 }
 
-.headline {
-  font-size: clamp(2.5rem, 6vw, 4rem);
+.main-title {
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
   font-weight: 800;
   color: #1a1a1a;
-  margin-bottom: clamp(15px, 3vw, 25px);
-  line-height: 1.1;
-  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
 }
 
-.context-text {
-  font-size: clamp(1rem, 2.5vw, 1.2rem);
+.subtitle {
+  font-size: clamp(0.9rem, 2vw, 1.1rem);
   color: #666666;
-  margin-bottom: clamp(25px, 4vw, 40px);
   font-weight: 500;
+  margin: 0;
 }
 
-.filter-controls {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 20px;
-  flex-wrap: wrap;
-  margin-bottom: 40px;
-  padding: 20px;
-  background: rgba(250, 250, 250, 0.8);
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
-  border: 1px solid rgba(200, 200, 200, 0.3);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-}
-
-.subject-filter, .type-filter {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.filter-controls label {
-  font-weight: 600;
-  color: #333333;
-  font-size: 0.9rem;
-}
-
-.filter-controls select {
-  padding: 8px 12px;
-  border: 1px solid #cccccc;
-  border-radius: 8px;
-  background: white;
-  color: #1a1a1a;
-  font-size: 0.9rem;
-  transition: all 0.2s ease;
-  min-width: 140px;
-}
-
-.filter-controls select:focus {
-  outline: none;
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-}
-
-.refresh-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.refresh-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
-}
-
-.refresh-btn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.refresh-icon.spinning {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
+/* Remove all filter-related styles */
 
 .courses-grid {
   width: 100%;
@@ -723,7 +628,7 @@ export default {
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
-  height: 280px;
+  height: 200px;
   display: flex;
   flex-direction: column;
 }
@@ -806,14 +711,6 @@ export default {
   gap: 12px;
 }
 
-.course-subject {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #6366f1;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
 .course-title {
   font-size: 1.1rem;
   font-weight: 700;
@@ -823,18 +720,7 @@ export default {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.course-description {
-  font-size: 0.85rem;
-  color: #666666;
-  line-height: 1.4;
-  margin: 0;
-  flex: 1;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  margin-bottom: 12px;
 }
 
 .course-stats {
@@ -890,36 +776,87 @@ export default {
 }
 
 .btn-free {
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-free::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s;
 }
 
 .btn-free:hover:not(:disabled) {
-  background: linear-gradient(135deg, #4f46e5, #4338ca);
-  transform: translateY(-1px);
-  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
+  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(102, 126, 234, 0.4);
+}
+
+.btn-free:hover:not(:disabled)::before {
+  left: 100%;
 }
 
 .btn-premium {
-  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
   color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-premium::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s;
 }
 
 .btn-premium:hover:not(:disabled) {
-  background: linear-gradient(135deg, #7c3aed, #6d28d9);
-  transform: translateY(-1px);
-  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.3);
+  background: linear-gradient(135deg, #7c3aed 0%, #9333ea 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(139, 92, 246, 0.4);
+}
+
+.btn-premium:hover:not(:disabled)::before {
+  left: 100%;
 }
 
 .btn-pro {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
   color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-pro::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s;
 }
 
 .btn-pro:hover:not(:disabled) {
-  background: linear-gradient(135deg, #d97706, #b45309);
-  transform: translateY(-1px);
-  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(59, 130, 246, 0.4);
+}
+
+.btn-pro:hover:not(:disabled)::before {
+  left: 100%;
 }
 
 .course-hover-overlay {
@@ -1323,6 +1260,7 @@ export default {
     animation: none;
   }
   
+
   @keyframes fadeIn {
   from, to { 
     opacity: 1;
