@@ -17,30 +17,6 @@
           </p>
         </div>
 
-        <div class="stats-section">
-          <h3 class="stats-title">Наши достижения</h3>
-          <div class="stats-grid">
-            <div class="stat-card animated" data-stat="year">
-              <div class="stat-icon">🚀</div>
-              <div class="stat-number" data-target="2024">0</div>
-              <div class="stat-label">Год основания</div>
-              <div class="stat-detail">Революция в образовании</div>
-            </div>
-            <div class="stat-card animated" data-stat="subjects">
-              <div class="stat-icon">📖</div>
-              <div class="stat-number" data-target="5">0</div>
-              <div class="stat-label">Предметов</div>
-              <div class="stat-detail">И постоянно растем</div>
-            </div>
-            <div class="stat-card animated" data-stat="possibilities">
-              <div class="stat-icon">✨</div>
-              <div class="stat-number">∞</div>
-              <div class="stat-label">Возможностей</div>
-              <div class="stat-detail">Безграничный потенциал</div>
-            </div>
-          </div>
-        </div>
-
         <div class="mission-section">
           <div class="mission-card">
             <div class="mission-header">
@@ -52,6 +28,48 @@
             </p>
             <div class="mission-progress">
               <div class="mission-fill"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="vision-section">
+          <div class="vision-card">
+            <div class="vision-header">
+              <div class="vision-icon">🌟</div>
+              <h4 class="vision-title">Наше видение</h4>
+            </div>
+            <p class="vision-text">
+              Создание экосистемы персонализированного обучения, где каждый студент может раскрыть свой потенциал с помощью современных AI-технологий.
+            </p>
+            <div class="vision-progress">
+              <div class="vision-fill"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="values-section">
+          <h3 class="values-title">Наши ценности</h3>
+          <div class="values-list">
+            <div class="value-item">
+              <div class="value-icon">💡</div>
+              <div class="value-content">
+                <span class="value-name">Инновации</span>
+                <span class="value-desc">Постоянное развитие и внедрение новых технологий</span>
+              </div>
+            </div>
+            <div class="value-item">
+              <div class="value-icon">🤝</div>
+              <div class="value-content">
+                <span class="value-name">Доступность</span>
+                <span class="value-desc">Качественное образование для всех</span>
+              </div>
+            </div>
+            <div class="value-item">
+              <div class="value-icon">🚀</div>
+              <div class="value-content">
+                <span class="value-name">Результат</span>
+                <span class="value-desc">Измеримые улучшения в обучении</span>
+              </div>
             </div>
           </div>
         </div>
@@ -158,6 +176,28 @@
             <div class="benefit-label">Попыток сдачи</div>
           </div>
         </div>
+
+        <div class="technology-showcase">
+          <h4 class="tech-title">Технологии будущего</h4>
+          <div class="tech-grid">
+            <div class="tech-item">
+              <div class="tech-icon">🧠</div>
+              <span>AI Learning</span>
+            </div>
+            <div class="tech-item">
+              <div class="tech-icon">📱</div>
+              <span>Mobile First</span>
+            </div>
+            <div class="tech-item">
+              <div class="tech-icon">☁️</div>
+              <span>Cloud Sync</span>
+            </div>
+            <div class="tech-item">
+              <div class="tech-icon">🔒</div>
+              <span>Secure</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -181,8 +221,8 @@ export default {
       
       // Left side animations
       const highlightTexts = document.querySelectorAll('.highlight-text');
-      const statCards = document.querySelectorAll('.stat-card');
-      const statNumbers = document.querySelectorAll('.stat-number[data-target]');
+      const valueItems = document.querySelectorAll('.value-item');
+      const techItems = document.querySelectorAll('.tech-item');
       
       const featureTitles = {
         lessons: 'Структурированное обучение',
@@ -196,27 +236,6 @@ export default {
         examples: 50,
         practice: 75,
         test: 100
-      };
-      
-      // Animate numbers on page load
-      const animateNumbers = () => {
-        statNumbers.forEach(number => {
-          const target = parseInt(number.dataset.target);
-          const duration = 2000;
-          const start = 0;
-          const increment = target / (duration / 50);
-          let current = start;
-          
-          const timer = setInterval(() => {
-            current += increment;
-            if (current >= target) {
-              number.textContent = target;
-              clearInterval(timer);
-            } else {
-              number.textContent = Math.floor(current);
-            }
-          }, 50);
-        });
       };
       
       // Highlight text hover effects
@@ -241,13 +260,25 @@ export default {
         });
       });
       
-      // Stat card click effects
-      statCards.forEach(card => {
-        card.addEventListener('click', () => {
-          card.style.transform = 'scale(0.95)';
-          setTimeout(() => {
-            card.style.transform = '';
-          }, 150);
+      // Value item hover effects
+      valueItems.forEach(item => {
+        item.addEventListener('mouseenter', () => {
+          item.style.transform = 'translateX(8px)';
+        });
+        
+        item.addEventListener('mouseleave', () => {
+          item.style.transform = 'translateX(0)';
+        });
+      });
+      
+      // Tech item hover effects
+      techItems.forEach(item => {
+        item.addEventListener('mouseenter', () => {
+          item.style.transform = 'scale(1.1) rotate(5deg)';
+        });
+        
+        item.addEventListener('mouseleave', () => {
+          item.style.transform = 'scale(1) rotate(0deg)';
         });
       });
       
@@ -299,9 +330,6 @@ export default {
           }
         });
       });
-      
-      // Initialize animations
-      setTimeout(animateNumbers, 500);
       
       // Add CSS animations
       const style = document.createElement('style');
@@ -424,130 +452,6 @@ export default {
   width: 100%;
 }
 
-/* Stats Section */
-.stats-section {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(20px);
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
-  padding: 24px;
-  position: relative;
-  overflow: hidden;
-}
-
-.stats-section::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(76, 29, 149, 0.05), rgba(99, 102, 241, 0.03));
-  border-radius: 16px;
-}
-
-.stats-title {
-  font-size: 20px;
-  font-weight: 600;
-  color: #111827;
-  margin-bottom: 20px;
-  position: relative;
-  z-index: 1;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  position: relative;
-  z-index: 1;
-}
-
-.stat-card {
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(20px);
-  border: 1px solid #f3f4f6;
-  border-radius: 12px;
-  padding: 20px 16px;
-  text-align: center;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
-  cursor: pointer;
-}
-
-.stat-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, #4c1d95, #6366f1);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  border-radius: 12px;
-}
-
-.stat-card:hover::before {
-  opacity: 0.08;
-}
-
-.stat-card:hover {
-  transform: translateY(-8px) scale(1.03);
-  box-shadow: 
-    0 0 0 2px rgba(76, 29, 149, 0.3),
-    0 15px 35px rgba(76, 29, 149, 0.2);
-  border-color: rgba(76, 29, 149, 0.4);
-}
-
-.stat-icon {
-  font-size: 24px;
-  margin-bottom: 8px;
-  display: block;
-  position: relative;
-  z-index: 1;
-  animation: float 3s ease-in-out infinite;
-}
-
-.stat-card:nth-child(1) .stat-icon { animation-delay: 0s; }
-.stat-card:nth-child(2) .stat-icon { animation-delay: 1s; }
-.stat-card:nth-child(3) .stat-icon { animation-delay: 2s; }
-
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
-}
-
-.stat-number {
-  font-size: 28px;
-  font-weight: 700;
-  color: #111827;
-  line-height: 1;
-  margin-bottom: 4px;
-  position: relative;
-  z-index: 1;
-}
-
-.stat-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 4px;
-  position: relative;
-  z-index: 1;
-}
-
-.stat-detail {
-  font-size: 10px;
-  color: #9ca3af;
-  font-style: italic;
-  position: relative;
-  z-index: 1;
-}
-
 /* Mission Section */
 .mission-section {
   position: relative;
@@ -639,6 +543,185 @@ export default {
   0% { width: 0%; }
   50% { width: 100%; }
   100% { width: 0%; }
+}
+
+/* Vision Section */
+.vision-section {
+  position: relative;
+}
+
+.vision-card {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(20px);
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.vision-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(168, 85, 247, 0.05));
+  border-radius: 16px;
+}
+
+.vision-card:hover {
+  transform: translateX(8px);
+  box-shadow: 
+    0 0 0 1px rgba(139, 92, 246, 0.2),
+    0 10px 25px rgba(139, 92, 246, 0.1);
+}
+
+.vision-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  position: relative;
+  z-index: 1;
+}
+
+.vision-icon {
+  font-size: 20px;
+  animation: twinkle 2s ease-in-out infinite;
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.1); }
+}
+
+.vision-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.vision-text {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #4b5563;
+  margin: 0 0 16px 0;
+  position: relative;
+  z-index: 1;
+}
+
+.vision-progress {
+  width: 100%;
+  height: 4px;
+  background: #f3f4f6;
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+
+.vision-fill {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, #8b5cf6, #a855f7, #c084fc);
+  border-radius: 2px;
+  animation: vision-progress 3s ease-in-out infinite;
+}
+
+@keyframes vision-progress {
+  0% { width: 0%; }
+  60% { width: 100%; }
+  100% { width: 0%; }
+}
+
+/* Values Section */
+.values-section {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.values-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(37, 99, 235, 0.03));
+  border-radius: 16px;
+}
+
+.values-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.values-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+  z-index: 1;
+}
+
+.value-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.value-item:hover {
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+}
+
+.value-icon {
+  font-size: 18px;
+  animation: float 3s ease-in-out infinite;
+}
+
+.value-item:nth-child(1) .value-icon { animation-delay: 0s; }
+.value-item:nth-child(2) .value-icon { animation-delay: 1s; }
+.value-item:nth-child(3) .value-icon { animation-delay: 2s; }
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+.value-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.value-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.value-desc {
+  font-size: 12px;
+  color: #6b7280;
 }
 
 /* Right Content - Interactive Showcase */
@@ -945,6 +1028,21 @@ export default {
   border-color: rgba(76, 29, 149, 0.5);
 }
 
+.feature-nav-item.active {
+  background: linear-gradient(135deg, #4c1d95, #5b21b6);
+  color: white;
+  border-color: #4c1d95;
+}
+
+.feature-nav-item.active .nav-icon {
+  filter: brightness(2);
+}
+
+.feature-nav-item.active span {
+  color: white !important;
+  font-weight: 600;
+}
+
 .nav-icon {
   font-size: 20px;
   margin-bottom: 8px;
@@ -1030,6 +1128,79 @@ export default {
   z-index: 1;
 }
 
+/* Technology Showcase */
+.technology-showcase {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.technology-showcase::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.05), rgba(16, 185, 129, 0.03));
+  border-radius: 16px;
+}
+
+.tech-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 16px;
+  position: relative;
+  z-index: 1;
+}
+
+.tech-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+.tech-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 12px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.tech-item:hover {
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.1);
+}
+
+.tech-icon {
+  font-size: 20px;
+  animation: float 3s ease-in-out infinite;
+}
+
+.tech-item:nth-child(1) .tech-icon { animation-delay: 0s; }
+.tech-item:nth-child(2) .tech-icon { animation-delay: 0.5s; }
+.tech-item:nth-child(3) .tech-icon { animation-delay: 1s; }
+.tech-item:nth-child(4) .tech-icon { animation-delay: 1.5s; }
+
+.tech-item span {
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+  text-align: center;
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
   .content-wrapper {
@@ -1048,6 +1219,10 @@ export default {
   .features-nav {
     grid-template-columns: repeat(2, 1fr);
     gap: 16px;
+  }
+  
+  .tech-grid {
+    grid-template-columns: repeat(4, 1fr);
   }
 }
 
@@ -1069,17 +1244,16 @@ export default {
     font-size: 16px;
   }
   
-  .stats-grid {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-  
   .benefits-grid {
     grid-template-columns: 1fr;
   }
   
   .main-feature-display {
     padding: 20px;
+  }
+  
+  .tech-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
@@ -1092,10 +1266,6 @@ export default {
     font-size: 28px;
   }
   
-  .stat-card {
-    padding: 20px 12px;
-  }
-  
   .features-nav {
     grid-template-columns: 1fr;
   }
@@ -1103,5 +1273,8 @@ export default {
   .feature-nav-item {
     padding: 12px;
   }
+  
+  .tech-grid {
+    grid-template-columns: 1fr;
+  }
 }
-</style>
