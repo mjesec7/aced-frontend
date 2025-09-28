@@ -26,9 +26,6 @@
             <p class="mission-text">
               Трансформировать образование через технологии, делая качественное обучение доступным каждому студенту в Узбекистане и за его пределами.
             </p>
-            <div class="mission-progress">
-              <div class="mission-fill"></div>
-            </div>
           </div>
         </div>
 
@@ -41,36 +38,6 @@
             <p class="vision-text">
               Создание экосистемы персонализированного обучения, где каждый студент может раскрыть свой потенциал с помощью современных AI-технологий.
             </p>
-            <div class="vision-progress">
-              <div class="vision-fill"></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="values-section">
-          <h3 class="values-title">Наши ценности</h3>
-          <div class="values-list">
-            <div class="value-item">
-              <div class="value-icon">💡</div>
-              <div class="value-content">
-                <span class="value-name">Инновации</span>
-                <span class="value-desc">Постоянное развитие и внедрение новых технологий</span>
-              </div>
-            </div>
-            <div class="value-item">
-              <div class="value-icon">🤝</div>
-              <div class="value-content">
-                <span class="value-name">Доступность</span>
-                <span class="value-desc">Качественное образование для всех</span>
-              </div>
-            </div>
-            <div class="value-item">
-              <div class="value-icon">🚀</div>
-              <div class="value-content">
-                <span class="value-name">Результат</span>
-                <span class="value-desc">Измеримые улучшения в обучении</span>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -176,28 +143,6 @@
             <div class="benefit-label">Попыток сдачи</div>
           </div>
         </div>
-
-        <div class="technology-showcase">
-          <h4 class="tech-title">Технологии будущего</h4>
-          <div class="tech-grid">
-            <div class="tech-item">
-              <div class="tech-icon">🧠</div>
-              <span>AI Learning</span>
-            </div>
-            <div class="tech-item">
-              <div class="tech-icon">📱</div>
-              <span>Mobile First</span>
-            </div>
-            <div class="tech-item">
-              <div class="tech-icon">☁️</div>
-              <span>Cloud Sync</span>
-            </div>
-            <div class="tech-item">
-              <div class="tech-icon">🔒</div>
-              <span>Secure</span>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   </section>
@@ -221,8 +166,6 @@ export default {
       
       // Left side animations
       const highlightTexts = document.querySelectorAll('.highlight-text');
-      const valueItems = document.querySelectorAll('.value-item');
-      const techItems = document.querySelectorAll('.tech-item');
       
       const featureTitles = {
         lessons: 'Структурированное обучение',
@@ -257,28 +200,6 @@ export default {
         text.addEventListener('mouseleave', () => {
           text.style.transform = 'scale(1)';
           text.style.animation = 'none';
-        });
-      });
-      
-      // Value item hover effects
-      valueItems.forEach(item => {
-        item.addEventListener('mouseenter', () => {
-          item.style.transform = 'translateX(8px)';
-        });
-        
-        item.addEventListener('mouseleave', () => {
-          item.style.transform = 'translateX(0)';
-        });
-      });
-      
-      // Tech item hover effects
-      techItems.forEach(item => {
-        item.addEventListener('mouseenter', () => {
-          item.style.transform = 'scale(1.1) rotate(5deg)';
-        });
-        
-        item.addEventListener('mouseleave', () => {
-          item.style.transform = 'scale(1) rotate(0deg)';
         });
       });
       
@@ -369,13 +290,11 @@ export default {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 80px;
-  align-items: start;
+  align-items: center;
 }
 
 /* Left Content */
 .about-content {
-  position: sticky;
-  top: 120px;
   display: flex;
   flex-direction: column;
   gap: 32px;
@@ -516,33 +435,9 @@ export default {
   font-size: 14px;
   line-height: 1.6;
   color: #4b5563;
-  margin: 0 0 16px 0;
+  margin: 0;
   position: relative;
   z-index: 1;
-}
-
-.mission-progress {
-  width: 100%;
-  height: 4px;
-  background: #f3f4f6;
-  border-radius: 2px;
-  overflow: hidden;
-  position: relative;
-  z-index: 1;
-}
-
-.mission-fill {
-  width: 0%;
-  height: 100%;
-  background: linear-gradient(90deg, #4c1d95, #6366f1, #3b82f6);
-  border-radius: 2px;
-  animation: mission-progress 4s ease-in-out infinite;
-}
-
-@keyframes mission-progress {
-  0% { width: 0%; }
-  50% { width: 100%; }
-  100% { width: 0%; }
 }
 
 /* Vision Section */
@@ -609,119 +504,9 @@ export default {
   font-size: 14px;
   line-height: 1.6;
   color: #4b5563;
-  margin: 0 0 16px 0;
+  margin: 0;
   position: relative;
   z-index: 1;
-}
-
-.vision-progress {
-  width: 100%;
-  height: 4px;
-  background: #f3f4f6;
-  border-radius: 2px;
-  overflow: hidden;
-  position: relative;
-  z-index: 1;
-}
-
-.vision-fill {
-  width: 0%;
-  height: 100%;
-  background: linear-gradient(90deg, #8b5cf6, #a855f7, #c084fc);
-  border-radius: 2px;
-  animation: vision-progress 3s ease-in-out infinite;
-}
-
-@keyframes vision-progress {
-  0% { width: 0%; }
-  60% { width: 100%; }
-  100% { width: 0%; }
-}
-
-/* Values Section */
-.values-section {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(20px);
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
-  padding: 24px;
-  position: relative;
-  overflow: hidden;
-}
-
-.values-section::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(37, 99, 235, 0.03));
-  border-radius: 16px;
-}
-
-.values-title {
-  font-size: 20px;
-  font-weight: 600;
-  color: #111827;
-  margin-bottom: 20px;
-  position: relative;
-  z-index: 1;
-}
-
-.values-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  position: relative;
-  z-index: 1;
-}
-
-.value-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.6);
-  border-radius: 12px;
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.value-item:hover {
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
-}
-
-.value-icon {
-  font-size: 18px;
-  animation: float 3s ease-in-out infinite;
-}
-
-.value-item:nth-child(1) .value-icon { animation-delay: 0s; }
-.value-item:nth-child(2) .value-icon { animation-delay: 1s; }
-.value-item:nth-child(3) .value-icon { animation-delay: 2s; }
-
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-3px); }
-}
-
-.value-content {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.value-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: #111827;
-}
-
-.value-desc {
-  font-size: 12px;
-  color: #6b7280;
 }
 
 /* Right Content - Interactive Showcase */
@@ -914,6 +699,7 @@ export default {
   animation: pulse 1.5s infinite;
 }
 
+/* Duplicated bounce animation for device - can be removed if not needed */
 @keyframes bounce {
   0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
   40% { transform: translateY(-5px); }
@@ -1128,79 +914,6 @@ export default {
   z-index: 1;
 }
 
-/* Technology Showcase */
-.technology-showcase {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(20px);
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
-  padding: 24px;
-  position: relative;
-  overflow: hidden;
-}
-
-.technology-showcase::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.05), rgba(16, 185, 129, 0.03));
-  border-radius: 16px;
-}
-
-.tech-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #111827;
-  margin-bottom: 16px;
-  position: relative;
-  z-index: 1;
-}
-
-.tech-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  position: relative;
-  z-index: 1;
-}
-
-.tech-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 16px 12px;
-  background: rgba(255, 255, 255, 0.6);
-  border-radius: 12px;
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.tech-item:hover {
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.1);
-}
-
-.tech-icon {
-  font-size: 20px;
-  animation: float 3s ease-in-out infinite;
-}
-
-.tech-item:nth-child(1) .tech-icon { animation-delay: 0s; }
-.tech-item:nth-child(2) .tech-icon { animation-delay: 0.5s; }
-.tech-item:nth-child(3) .tech-icon { animation-delay: 1s; }
-.tech-item:nth-child(4) .tech-icon { animation-delay: 1.5s; }
-
-.tech-item span {
-  font-size: 12px;
-  font-weight: 500;
-  color: #374151;
-  text-align: center;
-}
-
 /* Responsive Design */
 @media (max-width: 1024px) {
   .content-wrapper {
@@ -1219,10 +932,6 @@ export default {
   .features-nav {
     grid-template-columns: repeat(2, 1fr);
     gap: 16px;
-  }
-  
-  .tech-grid {
-    grid-template-columns: repeat(4, 1fr);
   }
 }
 
@@ -1251,31 +960,11 @@ export default {
   .main-feature-display {
     padding: 20px;
   }
-  
-  .tech-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
 }
 
 @media (max-width: 480px) {
   .content-wrapper {
     padding: 0 16px;
-  }
-  
-  .title {
-    font-size: 28px;
-  }
-  
-  .features-nav {
-    grid-template-columns: 1fr;
-  }
-  
-  .feature-nav-item {
-    padding: 12px;
-  }
-  
-  .tech-grid {
-    grid-template-columns: 1fr;
   }
 }
 </style>
