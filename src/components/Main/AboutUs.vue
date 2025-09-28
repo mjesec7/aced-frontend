@@ -23,78 +23,64 @@
         </div>
       </div>
 
-      <!-- Right side - Features -->
+      <!-- Right side - Interactive Feature Showcase -->
       <div class="features-section">
         <h3 class="section-subtitle">Возможности платформы</h3>
-        <div class="features-list">
-          <div class="feature-item">
-            <div class="feature-header">
-              <div class="feature-number">01</div>
-              <h4 class="feature-title">Структурированное обучение</h4>
+        
+        <!-- Main Feature Display -->
+        <div class="main-feature-display">
+          <div class="feature-preview">
+            <div class="preview-header">
+              <div class="preview-indicator"></div>
+              <span class="preview-title">Структурированное обучение</span>
             </div>
-            <p class="feature-description">
-              Каждый урок состоит из шагов: объяснения, примеры, практические задания, упражнения и тесты.
-            </p>
+            <div class="preview-content">
+              <div class="lesson-steps">
+                <div class="step active">Объяснение</div>
+                <div class="step">Примеры</div>
+                <div class="step">Практика</div>
+                <div class="step">Тест</div>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill"></div>
+              </div>
+            </div>
           </div>
+        </div>
 
-          <div class="feature-item">
-            <div class="feature-header">
-              <div class="feature-number">02</div>
-              <h4 class="feature-title">Автоматическое сохранение</h4>
-            </div>
-            <p class="feature-description">
-              Прогресс учащихся сохраняется автоматически в реальном времени.
-            </p>
+        <!-- Feature Navigation -->
+        <div class="features-nav">
+          <div class="feature-nav-item active" data-feature="lessons">
+            <div class="nav-icon">📚</div>
+            <span>Уроки</span>
           </div>
-
-          <div class="feature-item">
-            <div class="feature-header">
-              <div class="feature-number">03</div>
-              <h4 class="feature-title">Гибкие домашние задания</h4>
-            </div>
-            <p class="feature-description">
-              Домашние задания встроены в систему и могут пересдаваться.
-            </p>
+          <div class="feature-nav-item" data-feature="analytics">
+            <div class="nav-icon">📊</div>
+            <span>Аналитика</span>
           </div>
-
-          <div class="feature-item">
-            <div class="feature-header">
-              <div class="feature-number">04</div>
-              <h4 class="feature-title">Система тестирования</h4>
-            </div>
-            <p class="feature-description">
-              Отдельная страница для тестов с возможностью просмотра результатов.
-            </p>
+          <div class="feature-nav-item" data-feature="ai">
+            <div class="nav-icon">🤖</div>
+            <span>AI-помощник</span>
           </div>
-
-          <div class="feature-item">
-            <div class="feature-header">
-              <div class="feature-number">05</div>
-              <h4 class="feature-title">Детальная аналитика</h4>
-            </div>
-            <p class="feature-description">
-              Анализ результатов: сильные стороны, ошибки и персональные рекомендации.
-            </p>
+          <div class="feature-nav-item" data-feature="sync">
+            <div class="nav-icon">🔄</div>
+            <span>Синхронизация</span>
           </div>
+        </div>
 
-          <div class="feature-item">
-            <div class="feature-header">
-              <div class="feature-number">06</div>
-              <h4 class="feature-title">AI-помощник</h4>
-            </div>
-            <p class="feature-description">
-              Встроенный искусственный интеллект для разбора материала и поддержки.
-            </p>
+        <!-- Key Benefits Grid -->
+        <div class="benefits-grid">
+          <div class="benefit-card">
+            <div class="benefit-number">95%</div>
+            <div class="benefit-label">Улучшение результатов</div>
           </div>
-
-          <div class="feature-item">
-            <div class="feature-header">
-              <div class="feature-number">07</div>
-              <h4 class="feature-title">Мультиплатформенность</h4>
-            </div>
-            <p class="feature-description">
-              Доступ с любого устройства с синхронизацией данных в реальном времени.
-            </p>
+          <div class="benefit-card">
+            <div class="benefit-number">24/7</div>
+            <div class="benefit-label">Доступность</div>
+          </div>
+          <div class="benefit-card">
+            <div class="benefit-number">∞</div>
+            <div class="benefit-label">Попыток сдачи</div>
           </div>
         </div>
       </div>
@@ -212,101 +198,247 @@ export default {
   z-index: 1;
 }
 
-/* Right Content */
+/* Right Content - Interactive Showcase */
 .features-section {
   padding-left: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
 }
 
 .section-subtitle {
   font-size: 24px;
   font-weight: 600;
   color: #111827;
-  margin-bottom: 32px;
   letter-spacing: -0.01em;
+  margin: 0;
 }
 
-.features-list {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  height: fit-content;
-}
-
-.feature-item {
-  background: rgba(255, 255, 255, 0.8);
+/* Main Feature Display */
+.main-feature-display {
+  background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(20px);
   border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 20px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 16px;
+  padding: 24px;
   position: relative;
   overflow: hidden;
-  height: fit-content;
 }
 
-.feature-item::before {
+.main-feature-display::before {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, #8b5cf6, #a855f7, #c084fc);
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(168, 85, 247, 0.05));
+  border-radius: 16px;
+}
+
+.feature-preview {
+  position: relative;
+  z-index: 1;
+}
+
+.preview-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.preview-indicator {
+  width: 12px;
+  height: 12px;
+  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.1); }
+}
+
+.preview-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.lesson-steps {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.step {
+  background: #f3f4f6;
+  color: #6b7280;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.step.active {
+  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  color: white;
+  transform: scale(1.05);
+}
+
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background: #f3f4f6;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  width: 35%;
+  height: 100%;
+  background: linear-gradient(90deg, #8b5cf6, #a855f7);
+  border-radius: 3px;
+  animation: progress-animate 3s infinite;
+}
+
+@keyframes progress-animate {
+  0% { width: 35%; }
+  50% { width: 70%; }
+  100% { width: 35%; }
+}
+
+/* Feature Navigation */
+.features-nav {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.feature-nav-item {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.feature-nav-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #8b5cf6, #a855f7);
   opacity: 0;
   transition: opacity 0.3s ease;
   border-radius: 12px;
 }
 
-.feature-item:hover::before {
-  opacity: 0.05;
+.feature-nav-item.active::before,
+.feature-nav-item:hover::before {
+  opacity: 0.1;
 }
 
-.feature-item:hover {
+.feature-nav-item.active,
+.feature-nav-item:hover {
   transform: translateY(-4px);
   box-shadow: 
-    0 0 0 2px rgba(139, 92, 246, 0.4),
+    0 0 0 2px rgba(139, 92, 246, 0.3),
     0 8px 25px rgba(139, 92, 246, 0.15);
+  border-color: rgba(139, 92, 246, 0.4);
+}
+
+.nav-icon {
+  font-size: 20px;
+  margin-bottom: 8px;
+  display: block;
+  position: relative;
+  z-index: 1;
+}
+
+.feature-nav-item span {
+  font-size: 12px;
+  font-weight: 500;
+  color: #4b5563;
+  position: relative;
+  z-index: 1;
+}
+
+.feature-nav-item.active span {
+  color: #111827;
+  font-weight: 600;
+}
+
+/* Benefits Grid */
+.benefits-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.benefit-card {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px 16px;
+  text-align: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.benefit-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  border-radius: 12px;
+}
+
+.benefit-card:hover::before {
+  opacity: 0.08;
+}
+
+.benefit-card:hover {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 
+    0 0 0 2px rgba(139, 92, 246, 0.4),
+    0 12px 30px rgba(139, 92, 246, 0.2);
   border-color: rgba(139, 92, 246, 0.5);
 }
 
-.feature-header {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
+.benefit-number {
+  font-size: 28px;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1;
   margin-bottom: 8px;
   position: relative;
   z-index: 1;
 }
 
-.feature-number {
-  width: 24px;
-  height: 24px;
-  background: linear-gradient(135deg, #8b5cf6, #a855f7);
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 600;
-  color: #ffffff;
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-
-.feature-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: #111827;
-  margin: 0;
-  letter-spacing: -0.01em;
-  line-height: 1.3;
-}
-
-.feature-description {
-  font-size: 13px;
-  line-height: 1.5;
+.benefit-label {
+  font-size: 11px;
+  font-weight: 500;
   color: #6b7280;
-  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   position: relative;
   z-index: 1;
 }
@@ -330,8 +462,13 @@ export default {
     margin-bottom: 0;
   }
   
-  .features-list {
-    grid-template-columns: 1fr 1fr;
+  .features-nav {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+  
+  .benefits-grid {
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 
@@ -358,13 +495,20 @@ export default {
     gap: 12px;
   }
   
-  .features-list {
-    grid-template-columns: 1fr;
-    gap: 16px;
+  .features-nav {
+    grid-template-columns: repeat(2, 1fr);
   }
   
-  .feature-item {
+  .benefits-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .main-feature-display {
     padding: 20px;
+  }
+  
+  .lesson-steps {
+    flex-wrap: wrap;
   }
 }
 
@@ -381,8 +525,12 @@ export default {
     padding: 20px 12px;
   }
   
-  .feature-header {
-    gap: 12px;
+  .features-nav {
+    grid-template-columns: 1fr;
+  }
+  
+  .feature-nav-item {
+    padding: 12px;
   }
 }
 </style>
