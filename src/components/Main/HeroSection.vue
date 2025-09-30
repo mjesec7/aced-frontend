@@ -115,7 +115,7 @@ export default {
   position: relative;
   width: 100%;
   min-height: 100vh;
-  background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 50%, #16213e 100%);
+  background: #ffffff;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -129,7 +129,7 @@ export default {
   right: -20%;
   width: 80%;
   height: 80%;
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.08) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.03) 0%, transparent 70%);
   pointer-events: none;
   animation: float 20s ease-in-out infinite;
 }
@@ -141,7 +141,7 @@ export default {
   left: -20%;
   width: 70%;
   height: 70%;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.06) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.02) 0%, transparent 70%);
   pointer-events: none;
   animation: float 25s ease-in-out infinite reverse;
 }
@@ -160,9 +160,8 @@ export default {
   justify-content: center;
   align-items: center;
   z-index: 10;
-  backdrop-filter: blur(10px);
-  background: rgba(15, 15, 30, 0.5);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.98);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .nav-inner {
@@ -177,7 +176,6 @@ export default {
 .aced-logo {
   height: 50px;
   width: auto;
-  filter: brightness(0) invert(1);
 }
 
 /* Hero Content */
@@ -186,26 +184,29 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 60px 20px;
+  padding: 60px 40px;
   z-index: 2;
 }
 
 .hero-inner {
-  max-width: 1100px;
+  max-width: 1400px;
   width: 100%;
-  text-align: center;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: center;
 }
 
 /* Hero Message */
 .hero-message {
-  margin-bottom: 60px;
+  text-align: left;
 }
 
 .hero-title {
   font-family: 'Inter', sans-serif;
   font-size: clamp(2rem, 4vw, 3rem);
   font-weight: 600;
-  color: #ffffff;
+  color: #0f0f0f;
   line-height: 1.3;
   margin-bottom: 16px;
   letter-spacing: -0.02em;
@@ -214,20 +215,16 @@ export default {
 .hero-subtitle {
   font-family: 'Inter', sans-serif;
   font-size: clamp(1rem, 2vw, 1.125rem);
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(0, 0, 0, 0.6);
   font-weight: 400;
   line-height: 1.6;
 }
 
 /* CTA Cards */
 .cta-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 24px;
-  margin-bottom: 60px;
-  max-width: 900px;
-  margin-left: auto;
-  margin-right: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .cta-card {
@@ -243,14 +240,14 @@ export default {
 }
 
 .cta-card.glass {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
 }
 
 .cta-card.premium {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(99, 102, 241, 0.05) 100%);
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(99, 102, 241, 0.04) 100%);
   border: 1px solid rgba(139, 92, 246, 0.2);
 }
 
@@ -330,7 +327,7 @@ export default {
   font-family: 'Inter', sans-serif;
   font-size: 1.375rem;
   font-weight: 600;
-  color: #ffffff;
+  color: #0f0f0f;
   margin-bottom: 12px;
   letter-spacing: -0.01em;
 }
@@ -338,7 +335,7 @@ export default {
 .card-description {
   font-family: 'Inter', sans-serif;
   font-size: 0.9375rem;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(0, 0, 0, 0.6);
   line-height: 1.6;
   margin-bottom: 24px;
   flex: 1;
@@ -355,7 +352,7 @@ export default {
   font-family: 'Inter', sans-serif;
   font-size: 0.9375rem;
   font-weight: 500;
-  color: #ffffff;
+  color: #0f0f0f;
   letter-spacing: 0.01em;
 }
 
@@ -373,22 +370,21 @@ export default {
 /* Stats Bar */
 .stats-bar {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   gap: 40px;
   padding: 24px 32px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(0, 0, 0, 0.02);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.05);
   border-radius: 12px;
-  max-width: 700px;
-  margin: 0 auto;
+  margin-top: 40px;
 }
 
 .stat-item {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   gap: 4px;
 }
 
@@ -396,14 +392,14 @@ export default {
   font-family: 'Inter', sans-serif;
   font-size: 1.5rem;
   font-weight: 600;
-  color: #ffffff;
+  color: #0f0f0f;
   line-height: 1;
 }
 
 .stat-label {
   font-family: 'Inter', sans-serif;
   font-size: 0.8125rem;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(0, 0, 0, 0.5);
   font-weight: 400;
   text-transform: lowercase;
 }
@@ -411,7 +407,7 @@ export default {
 .stat-divider {
   width: 1px;
   height: 32px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.1);
 }
 
 /* Responsive Design */
@@ -422,6 +418,23 @@ export default {
   
   .hero-title {
     font-size: clamp(1.75rem, 4vw, 2.5rem);
+  }
+  
+  .hero-inner {
+    grid-template-columns: 1fr;
+    gap: 50px;
+  }
+  
+  .hero-message {
+    text-align: center;
+  }
+  
+  .stats-bar {
+    justify-content: center;
+  }
+  
+  .stat-item {
+    align-items: center;
   }
 }
 
@@ -442,14 +455,17 @@ export default {
     padding: 40px 20px;
   }
   
+  .hero-inner {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+  
   .hero-message {
-    margin-bottom: 40px;
+    text-align: center;
   }
   
   .cta-cards {
-    grid-template-columns: 1fr;
-    gap: 20px;
-    margin-bottom: 40px;
+    gap: 16px;
   }
   
   .cta-card {
@@ -465,6 +481,11 @@ export default {
     gap: 24px;
     padding: 20px 24px;
     flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .stat-item {
+    align-items: center;
   }
   
   .stat-number {
@@ -489,12 +510,12 @@ export default {
     padding: 30px 16px;
   }
   
-  .hero-message {
-    margin-bottom: 32px;
+  .hero-inner {
+    gap: 32px;
   }
   
   .cta-cards {
-    gap: 16px;
+    gap: 14px;
   }
   
   .cta-card {
@@ -544,15 +565,11 @@ export default {
 /* Landscape orientation */
 @media (max-height: 600px) and (orientation: landscape) {
   .hero-content {
-    padding: 30px 20px;
+    padding: 30px 40px;
   }
   
-  .hero-message {
-    margin-bottom: 30px;
-  }
-  
-  .cta-cards {
-    margin-bottom: 30px;
+  .hero-inner {
+    gap: 40px;
   }
 }
 
