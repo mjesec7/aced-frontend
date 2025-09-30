@@ -224,115 +224,74 @@ export default {
 .cta-cards {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
   position: relative;
 }
 
 .cta-card {
   position: relative;
-  padding: 32px 28px;
-  border-radius: 20px;
+  padding: 28px 32px;
+  border-radius: 16px;
   cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s ease;
   overflow: hidden;
-  min-height: 200px;
+  min-height: 160px;
   display: flex;
   flex-direction: column;
+  border: 1px solid;
 }
 
 .cta-card.glass {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
-  backdrop-filter: blur(20px);
-  border: 2px solid rgba(139, 92, 246, 0.1);
-  box-shadow: 
-    0 8px 32px rgba(139, 92, 246, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  background: #ffffff;
+  border-color: #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 .cta-card.premium {
-  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
-  border: 2px solid rgba(139, 92, 246, 0.3);
-  box-shadow: 
-    0 20px 60px rgba(139, 92, 246, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  background: #fafafa;
+  border-color: #8b5cf6;
+  position: relative;
 }
 
-.cta-card::before {
+.cta-card.premium::after {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
-  opacity: 0;
-  transition: opacity 0.4s ease;
+  height: 3px;
+  background: linear-gradient(90deg, #8b5cf6, #6d28d9, #8b5cf6);
+  background-size: 200% 100%;
 }
 
 .cta-card:hover {
-  transform: translateY(-12px) scale(1.02);
+  border-color: #8b5cf6;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
 }
 
-.cta-card.glass:hover {
-  box-shadow: 
-    0 25px 70px rgba(139, 92, 246, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  border-color: rgba(139, 92, 246, 0.3);
+.cta-card.premium:hover::after {
+  animation: shimmer 2s ease-in-out infinite;
 }
 
-.cta-card.premium:hover {
-  box-shadow: 
-    0 30px 80px rgba(139, 92, 246, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
-}
-
-.cta-card:hover::before {
-  opacity: 1;
-}
-
-.card-shine {
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: linear-gradient(
-    45deg,
-    transparent 30%,
-    rgba(255, 255, 255, 0.2) 50%,
-    transparent 70%
-  );
-  opacity: 0;
-  transition: opacity 0.6s ease;
-  pointer-events: none;
-}
-
-.cta-card:hover .card-shine {
-  opacity: 1;
-  animation: shine 1.5s ease-in-out;
-}
-
-@keyframes shine {
-  0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-  100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 .card-badge {
   position: absolute;
-  top: 20px;
-  right: 20px;
-  padding: 6px 14px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(139, 92, 246, 0.2);
-  border-radius: 20px;
-  font-size: 0.75rem;
-  color: #7c3aed;
+  top: 16px;
+  right: 16px;
+  padding: 4px 10px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 0.6875rem;
+  color: #6b7280;
   font-weight: 600;
   font-family: 'Inter', sans-serif;
-  letter-spacing: 0.02em;
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
-  backdrop-filter: blur(10px);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
 
 .card-content {
@@ -345,95 +304,77 @@ export default {
 
 .card-title {
   font-family: 'Inter', sans-serif;
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin-bottom: 12px;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 8px;
   letter-spacing: -0.01em;
-}
-
-.cta-card.glass .card-title {
-  color: #0f0f0f;
-  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.cta-card.premium .card-title {
-  color: #ffffff;
+  color: #111827;
 }
 
 .card-description {
   font-family: 'Inter', sans-serif;
-  font-size: 0.9375rem;
-  line-height: 1.6;
-  margin-bottom: 24px;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin-bottom: 20px;
   flex: 1;
-}
-
-.cta-card.glass .card-description {
-  color: rgba(0, 0, 0, 0.65);
-}
-
-.cta-card.premium .card-description {
-  color: rgba(255, 255, 255, 0.9);
+  color: #6b7280;
 }
 
 .card-action {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  margin-top: auto;
-  padding: 12px 20px;
-  background: rgba(139, 92, 246, 0.08);
-  border-radius: 12px;
-  transition: all 0.3s ease;
-  width: fit-content;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  width: 100%;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: 1px solid;
+}
+
+.cta-card.glass .card-action {
+  background: #ffffff;
+  border-color: #e5e7eb;
+  color: #111827;
+}
+
+.cta-card.glass:hover .card-action {
+  background: #f9fafb;
+  border-color: #d1d5db;
 }
 
 .cta-card.premium .card-action {
-  background: rgba(255, 255, 255, 0.15);
-}
-
-.cta-card:hover .card-action {
-  background: rgba(139, 92, 246, 0.15);
-  transform: translateX(4px);
+  background: #8b5cf6;
+  border-color: #8b5cf6;
+  color: #ffffff;
 }
 
 .cta-card.premium:hover .card-action {
-  background: rgba(255, 255, 255, 0.25);
+  background: #7c3aed;
+  border-color: #7c3aed;
 }
 
 .action-text {
   font-family: 'Inter', sans-serif;
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
   font-weight: 600;
   letter-spacing: 0.01em;
 }
 
-.cta-card.glass .action-text {
-  color: #7c3aed;
-}
-
-.cta-card.premium .action-text {
-  color: #ffffff;
-}
-
 .action-arrow {
-  font-size: 1.25rem;
-  transition: transform 0.3s ease;
-}
-
-.cta-card.glass .action-arrow {
-  color: #8b5cf6;
-}
-
-.cta-card.premium .action-arrow {
-  color: rgba(255, 255, 255, 0.9);
+  font-size: 1rem;
+  transition: transform 0.2s ease;
 }
 
 .cta-card:hover .action-arrow {
-  transform: translateX(4px);
+  transform: translateX(2px);
+}
+
+.card-shine {
+  display: none;
 }
 
 /* Stats Bar */
