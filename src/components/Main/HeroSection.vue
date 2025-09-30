@@ -11,61 +11,81 @@
     <!-- Main Hero Content -->
     <div class="hero-content">
       <div class="hero-inner">
-        <!-- Main Message -->
-        <div class="hero-message">
-          <h1 class="hero-title">Образовательная платформа нового поколения</h1>
-          <p class="hero-subtitle">
-            Персонализированное обучение с отслеживанием прогресса
-          </p>
-        </div>
+        <!-- Left Side - Enhanced Message -->
+        <div class="hero-left">
+          <div class="hero-message">
+            <div class="label-badge">Образовательная платформа</div>
+            <h1 class="hero-title">
+              Учитесь эффективно.<br />
+              Достигайте большего.
+            </h1>
+            <p class="hero-subtitle">
+              Персонализированное обучение с AI-ассистентом и отслеживанием прогресса в реальном времени
+            </p>
+          </div>
 
-        <!-- CTA Cards -->
-        <div class="cta-cards">
-          <div class="cta-card glass" @click="handleStartFree">
-            <div class="card-content">
-              <h3 class="card-title">Начать бесплатно</h3>
-              <p class="card-description">
-                Доступ к бесплатным урокам без регистрации
-              </p>
-              <div class="card-action">
-                <span class="action-text">Попробовать</span>
-                <span class="action-arrow">→</span>
+          <!-- Quick Stats -->
+          <div class="quick-stats">
+            <div class="stat-item">
+              <div class="stat-icon">👥</div>
+              <div class="stat-info">
+                <div class="stat-number">2,847</div>
+                <div class="stat-label">Активных студентов</div>
               </div>
             </div>
-            <div class="card-shine"></div>
-          </div>
-
-          <div class="cta-card glass premium" @click="handleRegister">
-            <div class="card-badge">Рекомендуем</div>
-            <div class="card-content">
-              <h3 class="card-title">Зарегистрироваться</h3>
-              <p class="card-description">
-                Отслеживайте прогресс и получайте сертификаты
-              </p>
-              <div class="card-action">
-                <span class="action-text">Начать</span>
-                <span class="action-arrow">→</span>
+            <div class="stat-item">
+              <div class="stat-icon">📚</div>
+              <div class="stat-info">
+                <div class="stat-number">120+</div>
+                <div class="stat-label">Уроков доступно</div>
               </div>
             </div>
-            <div class="card-shine"></div>
+            <div class="stat-item">
+              <div class="stat-icon">⭐</div>
+              <div class="stat-info">
+                <div class="stat-number">4.8/5</div>
+                <div class="stat-label">Средний рейтинг</div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Stats -->
-        <div class="stats-bar">
-          <div class="stat-item">
-            <span class="stat-number">2,847</span>
-            <span class="stat-label">активных студентов</span>
-          </div>
-          <div class="stat-divider"></div>
-          <div class="stat-item">
-            <span class="stat-number">120+</span>
-            <span class="stat-label">уроков</span>
-          </div>
-          <div class="stat-divider"></div>
-          <div class="stat-item">
-            <span class="stat-number">4.8/5</span>
-            <span class="stat-label">рейтинг</span>
+        <!-- Right Side - Glassmorphism Cards -->
+        <div class="hero-right">
+          <div class="cards-stack">
+            <!-- Free Card -->
+            <div class="glass-card" @click="handleStartFree">
+              <div class="card-inner">
+                <div class="card-header">
+                  <h3 class="card-title">Начать бесплатно</h3>
+                  <div class="card-tag">Free</div>
+                </div>
+                <p class="card-description">
+                  Мгновенный доступ к бесплатным урокам без регистрации
+                </p>
+                <div class="card-footer">
+                  <span class="card-link">Попробовать →</span>
+                </div>
+              </div>
+              <div class="glass-shine"></div>
+            </div>
+
+            <!-- Premium Card -->
+            <div class="glass-card premium" @click="handleRegister">
+              <div class="card-inner">
+                <div class="card-header">
+                  <h3 class="card-title">Зарегистрироваться</h3>
+                  <div class="card-tag premium">Pro</div>
+                </div>
+                <p class="card-description">
+                  Полный доступ с отслеживанием прогресса и сертификатами
+                </p>
+                <div class="card-footer">
+                  <span class="card-link">Начать →</span>
+                </div>
+              </div>
+              <div class="glass-shine"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -103,7 +123,7 @@ export default {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 * {
   margin: 0;
@@ -115,66 +135,62 @@ export default {
   position: relative;
   width: 100%;
   min-height: 100vh;
-  background: #ffffff;
+  background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
   overflow: hidden;
   display: flex;
   flex-direction: column;
 }
 
-/* Subtle metallic purple accents */
+/* Subtle gradient orbs */
 .hero-container::before {
   content: '';
   position: absolute;
-  top: -50%;
-  right: -20%;
-  width: 80%;
-  height: 80%;
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.03) 0%, transparent 70%);
+  top: -30%;
+  right: -15%;
+  width: 60%;
+  height: 60%;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.06) 0%, transparent 70%);
   pointer-events: none;
-  animation: float 20s ease-in-out infinite;
+  filter: blur(60px);
 }
 
 .hero-container::after {
   content: '';
   position: absolute;
-  bottom: -30%;
-  left: -20%;
-  width: 70%;
-  height: 70%;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.02) 0%, transparent 70%);
+  bottom: -20%;
+  left: -10%;
+  width: 50%;
+  height: 50%;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.04) 0%, transparent 70%);
   pointer-events: none;
-  animation: float 25s ease-in-out infinite reverse;
-}
-
-@keyframes float {
-  0%, 100% { transform: translate(0, 0); }
-  50% { transform: translate(-20px, 20px); }
+  filter: blur(50px);
 }
 
 /* Navigation */
 .top-nav {
   position: relative;
   width: 100%;
-  height: 90px;
+  height: 80px;
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 10;
-  background: rgba(255, 255, 255, 0.98);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .nav-inner {
   max-width: 1400px;
   width: 100%;
-  padding: 0 40px;
+  padding: 0 50px;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .aced-logo {
-  height: 50px;
+  height: 45px;
   width: auto;
 }
 
@@ -184,7 +200,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 60px 40px;
+  padding: 0 50px;
   z-index: 2;
 }
 
@@ -192,242 +208,281 @@ export default {
   max-width: 1400px;
   width: 100%;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 80px;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 60px;
   align-items: center;
 }
 
-/* Hero Message */
+/* Left Side */
+.hero-left {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
 .hero-message {
-  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.label-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 8px 16px;
+  background: rgba(139, 92, 246, 0.08);
+  border: 1px solid rgba(139, 92, 246, 0.15);
+  border-radius: 30px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #7c3aed;
+  letter-spacing: 0.02em;
 }
 
 .hero-title {
   font-family: 'Inter', sans-serif;
-  font-size: clamp(2rem, 4vw, 3rem);
-  font-weight: 600;
-  color: #0f0f0f;
-  line-height: 1.3;
-  margin-bottom: 16px;
-  letter-spacing: -0.02em;
+  font-size: clamp(2.5rem, 5vw, 3.5rem);
+  font-weight: 700;
+  color: #0a0a0a;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
 }
 
 .hero-subtitle {
   font-family: 'Inter', sans-serif;
   font-size: clamp(1rem, 2vw, 1.125rem);
-  color: rgba(0, 0, 0, 0.6);
+  color: #525252;
   font-weight: 400;
-  line-height: 1.6;
+  line-height: 1.7;
+  max-width: 540px;
 }
 
-/* CTA Cards */
-.cta-cards {
+/* Quick Stats */
+.quick-stats {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  position: relative;
-}
-
-.cta-card {
-  position: relative;
-  padding: 28px 32px;
-  border-radius: 16px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  overflow: hidden;
-  min-height: 160px;
-  display: flex;
-  flex-direction: column;
-  border: 1px solid;
-}
-
-.cta-card.glass {
-  background: #ffffff;
-  border-color: #e5e7eb;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-}
-
-.cta-card.premium {
-  background: #fafafa;
-  border-color: #8b5cf6;
-  position: relative;
-}
-
-.cta-card.premium::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #8b5cf6, #6d28d9, #8b5cf6);
-  background-size: 200% 100%;
-}
-
-.cta-card:hover {
-  border-color: #8b5cf6;
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
-}
-
-.cta-card.premium:hover::after {
-  animation: shimmer 2s ease-in-out infinite;
-}
-
-@keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-.card-badge {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  padding: 4px 10px;
-  background: #f3f4f6;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  font-size: 0.6875rem;
-  color: #6b7280;
-  font-weight: 600;
-  font-family: 'Inter', sans-serif;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
-
-.card-content {
-  position: relative;
-  z-index: 2;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.card-title {
-  font-family: 'Inter', sans-serif;
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin-bottom: 8px;
-  letter-spacing: -0.01em;
-  color: #111827;
-}
-
-.card-description {
-  font-family: 'Inter', sans-serif;
-  font-size: 0.875rem;
-  line-height: 1.5;
-  margin-bottom: 20px;
-  flex: 1;
-  color: #6b7280;
-}
-
-.card-action {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 10px 20px;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-  width: 100%;
-  font-family: 'Inter', sans-serif;
-  font-size: 0.875rem;
-  font-weight: 600;
-  border: 1px solid;
-}
-
-.cta-card.glass .card-action {
-  background: #ffffff;
-  border-color: #e5e7eb;
-  color: #111827;
-}
-
-.cta-card.glass:hover .card-action {
-  background: #f9fafb;
-  border-color: #d1d5db;
-}
-
-.cta-card.premium .card-action {
-  background: #8b5cf6;
-  border-color: #8b5cf6;
-  color: #ffffff;
-}
-
-.cta-card.premium:hover .card-action {
-  background: #7c3aed;
-  border-color: #7c3aed;
-}
-
-.action-text {
-  font-family: 'Inter', sans-serif;
-  font-size: 0.875rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-}
-
-.action-arrow {
-  font-size: 1rem;
-  transition: transform 0.2s ease;
-}
-
-.cta-card:hover .action-arrow {
-  transform: translateX(2px);
-}
-
-.card-shine {
-  display: none;
-}
-
-/* Stats Bar */
-.stats-bar {
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  gap: 40px;
-  padding: 24px 32px;
-  background: rgba(0, 0, 0, 0.02);
+  gap: 20px;
+  padding: 30px;
+  background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  border-radius: 12px;
-  margin-top: 40px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
 }
 
 .stat-item {
   display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.stat-icon {
+  font-size: 2rem;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(139, 92, 246, 0.08);
+  border-radius: 12px;
+}
+
+.stat-info {
+  display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
+  gap: 2px;
 }
 
 .stat-number {
   font-family: 'Inter', sans-serif;
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #0f0f0f;
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: #0a0a0a;
   line-height: 1;
 }
 
 .stat-label {
   font-family: 'Inter', sans-serif;
   font-size: 0.8125rem;
-  color: rgba(0, 0, 0, 0.5);
-  font-weight: 400;
-  text-transform: lowercase;
+  color: #737373;
+  font-weight: 500;
 }
 
-.stat-divider {
-  width: 1px;
-  height: 32px;
-  background: rgba(0, 0, 0, 0.1);
+/* Right Side - Glassmorphism Cards */
+.hero-right {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cards-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 480px;
+}
+
+.glass-card {
+  position: relative;
+  padding: 32px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(30px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 24px;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.glass-card.premium {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  box-shadow: 
+    0 12px 40px rgba(139, 92, 246, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+.glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.03) 0%, transparent 100%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.glass-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 
+    0 16px 48px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+.glass-card.premium:hover {
+  box-shadow: 
+    0 20px 60px rgba(139, 92, 246, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+  border-color: rgba(139, 92, 246, 0.3);
+}
+
+.glass-card:hover::before {
+  opacity: 1;
+}
+
+.glass-shine {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  transition: left 0.6s ease;
+  pointer-events: none;
+}
+
+.glass-card:hover .glass-shine {
+  left: 100%;
+}
+
+.card-inner {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.card-title {
+  font-family: 'Inter', sans-serif;
+  font-size: 1.375rem;
+  font-weight: 600;
+  color: #0a0a0a;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.card-tag {
+  padding: 4px 12px;
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 20px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #525252;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.card-tag.premium {
+  background: rgba(139, 92, 246, 0.1);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  color: #7c3aed;
+}
+
+.card-description {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9375rem;
+  color: #525252;
+  line-height: 1.6;
+  font-weight: 400;
+}
+
+.card-footer {
+  margin-top: 8px;
+}
+
+.card-link {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #7c3aed;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: gap 0.3s ease;
+}
+
+.glass-card:hover .card-link {
+  gap: 8px;
 }
 
 /* Responsive Design */
+@media (max-width: 1200px) {
+  .hero-inner {
+    grid-template-columns: 1fr 1fr;
+    gap: 50px;
+  }
+}
+
 @media (max-width: 1024px) {
   .nav-inner {
-    padding: 0 30px;
+    padding: 0 40px;
   }
   
-  .hero-title {
-    font-size: clamp(1.75rem, 4vw, 2.5rem);
+  .hero-content {
+    padding: 0 40px;
   }
   
   .hero-inner {
@@ -435,81 +490,31 @@ export default {
     gap: 50px;
   }
   
-  .hero-message {
+  .hero-left {
+    align-items: center;
     text-align: center;
   }
   
-  .stats-bar {
-    justify-content: center;
+  .label-badge {
+    margin: 0 auto;
   }
   
-  .stat-item {
-    align-items: center;
+  .hero-subtitle {
+    margin: 0 auto;
+  }
+  
+  .cards-stack {
+    max-width: 100%;
   }
 }
 
 @media (max-width: 768px) {
   .top-nav {
-    height: 80px;
+    height: 70px;
   }
   
   .nav-inner {
-    padding: 0 20px;
-  }
-  
-  .aced-logo {
-    height: 45px;
-  }
-  
-  .hero-content {
-    padding: 40px 20px;
-  }
-  
-  .hero-inner {
-    grid-template-columns: 1fr;
-    gap: 40px;
-  }
-  
-  .hero-message {
-    text-align: center;
-  }
-  
-  .cta-cards {
-    gap: 16px;
-  }
-  
-  .cta-card {
-    padding: 28px 24px;
-    min-height: 180px;
-  }
-  
-  .card-title {
-    font-size: 1.25rem;
-  }
-  
-  .stats-bar {
-    gap: 24px;
-    padding: 20px 24px;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  
-  .stat-item {
-    align-items: center;
-  }
-  
-  .stat-number {
-    font-size: 1.25rem;
-  }
-  
-  .stat-label {
-    font-size: 0.75rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .top-nav {
-    height: 70px;
+    padding: 0 24px;
   }
   
   .aced-logo {
@@ -517,69 +522,69 @@ export default {
   }
   
   .hero-content {
-    padding: 30px 16px;
+    padding: 30px 24px;
   }
   
-  .hero-inner {
-    gap: 32px;
+  .hero-left {
+    gap: 30px;
   }
   
-  .cta-cards {
-    gap: 14px;
-  }
-  
-  .cta-card {
-    padding: 24px 20px;
-    min-height: 160px;
-  }
-  
-  .card-title {
-    font-size: 1.125rem;
-    margin-bottom: 10px;
-  }
-  
-  .card-description {
-    font-size: 0.875rem;
-    margin-bottom: 20px;
-  }
-  
-  .action-text {
-    font-size: 0.875rem;
-  }
-  
-  .stats-bar {
-    padding: 16px 20px;
+  .hero-message {
     gap: 16px;
   }
   
-  .stat-divider {
-    display: none;
+  .quick-stats {
+    padding: 24px;
+    gap: 16px;
+  }
+  
+  .stat-icon {
+    font-size: 1.5rem;
+    width: 40px;
+    height: 40px;
+  }
+  
+  .stat-number {
+    font-size: 1.125rem;
+  }
+  
+  .glass-card {
+    padding: 28px;
+  }
+  
+  .card-title {
+    font-size: 1.25rem;
   }
 }
 
-@media (max-width: 320px) {
-  .hero-title {
-    font-size: 1.5rem;
-  }
-  
-  .cta-card {
+@media (max-width: 480px) {
+  .hero-content {
     padding: 20px 16px;
   }
   
-  .card-badge {
-    font-size: 0.625rem;
-    padding: 3px 8px;
-  }
-}
-
-/* Landscape orientation */
-@media (max-height: 600px) and (orientation: landscape) {
-  .hero-content {
-    padding: 30px 40px;
+  .hero-left {
+    gap: 24px;
   }
   
-  .hero-inner {
-    gap: 40px;
+  .label-badge {
+    font-size: 0.75rem;
+    padding: 6px 12px;
+  }
+  
+  .quick-stats {
+    padding: 20px;
+  }
+  
+  .cards-stack {
+    gap: 12px;
+  }
+  
+  .glass-card {
+    padding: 24px;
+  }
+  
+  .card-inner {
+    gap: 12px;
   }
 }
 
