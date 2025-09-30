@@ -14,38 +14,42 @@
         <!-- Left Side - Enhanced Message -->
         <div class="hero-left">
           <div class="hero-message">
-            <div class="label-badge">Образовательная платформа</div>
+            <div class="label-badge">🚀 Платформа №1 в Узбекистане</div>
             <h1 class="hero-title">
-              Учитесь эффективно.<br />
-              Достигайте большего.
+              Твой путь к знаниям<br />
+              начинается здесь
             </h1>
             <p class="hero-subtitle">
-              Персонализированное обучение с AI-ассистентом и отслеживанием прогресса в реальном времени
+              Более 2,800 студентов уже учатся на ACED. Присоединяйся и получи доступ к урокам прямо сейчас — это займет 30 секунд
             </p>
           </div>
 
-          <!-- Quick Stats -->
-          <div class="quick-stats">
-            <div class="stat-item">
-              <div class="stat-icon">👥</div>
-              <div class="stat-info">
-                <div class="stat-number">2,847</div>
-                <div class="stat-label">Активных студентов</div>
-              </div>
+          <!-- Social Proof -->
+          <div class="proof-section">
+            <div class="proof-avatars">
+              <div class="avatar">👤</div>
+              <div class="avatar">👤</div>
+              <div class="avatar">👤</div>
+              <div class="avatar-more">+2,844</div>
             </div>
-            <div class="stat-item">
-              <div class="stat-icon">📚</div>
-              <div class="stat-info">
-                <div class="stat-number">120+</div>
-                <div class="stat-label">Уроков доступно</div>
-              </div>
+            <div class="proof-text">
+              <strong>Уже учатся</strong> и достигают результатов
             </div>
-            <div class="stat-item">
-              <div class="stat-icon">⭐</div>
-              <div class="stat-info">
-                <div class="stat-number">4.8/5</div>
-                <div class="stat-label">Средний рейтинг</div>
-              </div>
+          </div>
+
+          <!-- Trust Badges -->
+          <div class="trust-badges">
+            <div class="badge-item">
+              <span class="badge-icon">✓</span>
+              <span>Бесплатный старт</span>
+            </div>
+            <div class="badge-item">
+              <span class="badge-icon">✓</span>
+              <span>Без кредитной карты</span>
+            </div>
+            <div class="badge-item">
+              <span class="badge-icon">✓</span>
+              <span>Отменить в любое время</span>
             </div>
           </div>
         </div>
@@ -56,15 +60,12 @@
             <!-- Free Card -->
             <div class="glass-card" @click="handleStartFree">
               <div class="card-inner">
-                <div class="card-header">
-                  <h3 class="card-title">Начать бесплатно</h3>
-                  <div class="card-tag">Free</div>
-                </div>
+                <h3 class="card-title">Попробуй бесплатно</h3>
                 <p class="card-description">
-                  Мгновенный доступ к бесплатным урокам без регистрации
+                  Начни учиться прямо сейчас. Никаких карт, никаких обязательств.
                 </p>
                 <div class="card-footer">
-                  <span class="card-link">Попробовать →</span>
+                  <span class="card-link">Начать учиться →</span>
                 </div>
               </div>
               <div class="glass-shine"></div>
@@ -73,15 +74,12 @@
             <!-- Premium Card -->
             <div class="glass-card premium" @click="handleRegister">
               <div class="card-inner">
-                <div class="card-header">
-                  <h3 class="card-title">Зарегистрироваться</h3>
-                  <div class="card-tag premium">Pro</div>
-                </div>
+                <h3 class="card-title">Зарегистрируйся и сохрани прогресс</h3>
                 <p class="card-description">
-                  Полный доступ с отслеживанием прогресса и сертификатами
+                  Отслеживай достижения, получай сертификаты, учись где угодно.
                 </p>
                 <div class="card-footer">
-                  <span class="card-link">Начать →</span>
+                  <span class="card-link">Создать аккаунт →</span>
                 </div>
               </div>
               <div class="glass-shine"></div>
@@ -217,7 +215,7 @@ export default {
 .hero-left {
   display: flex;
   flex-direction: column;
-  gap: 40px;
+  gap: 32px;
 }
 
 .hero-message {
@@ -231,83 +229,123 @@ export default {
   align-items: center;
   width: fit-content;
   padding: 8px 16px;
-  background: rgba(139, 92, 246, 0.08);
-  border: 1px solid rgba(139, 92, 246, 0.15);
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.12) 0%, rgba(99, 102, 241, 0.08) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.25);
   border-radius: 30px;
   font-family: 'Inter', sans-serif;
   font-size: 0.8125rem;
   font-weight: 600;
   color: #7c3aed;
   letter-spacing: 0.02em;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.15);
 }
 
 .hero-title {
   font-family: 'Inter', sans-serif;
-  font-size: clamp(2.5rem, 5vw, 3.5rem);
+  font-size: clamp(2.5rem, 5vw, 3.75rem);
   font-weight: 700;
   color: #0a0a0a;
-  line-height: 1.15;
+  line-height: 1.1;
   letter-spacing: -0.03em;
 }
 
 .hero-subtitle {
   font-family: 'Inter', sans-serif;
-  font-size: clamp(1rem, 2vw, 1.125rem);
-  color: #525252;
+  font-size: clamp(1.0625rem, 2vw, 1.1875rem);
+  color: #404040;
   font-weight: 400;
-  line-height: 1.7;
+  line-height: 1.65;
   max-width: 540px;
 }
 
-/* Quick Stats */
-.quick-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  padding: 30px;
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  border-radius: 20px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-}
-
-.stat-item {
+/* Social Proof */
+.proof-section {
   display: flex;
   align-items: center;
   gap: 16px;
+  padding: 20px 24px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(139, 92, 246, 0.15);
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.08);
 }
 
-.stat-icon {
-  font-size: 2rem;
-  width: 48px;
-  height: 48px;
+.proof-avatars {
+  display: flex;
+  align-items: center;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(139, 92, 246, 0.08);
-  border-radius: 12px;
+  border: 3px solid white;
+  margin-left: -12px;
+  font-size: 1.25rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.stat-info {
+.avatar:first-child {
+  margin-left: 0;
+}
+
+.avatar-more {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #7c3aed, #5b21b6);
+  border-radius: 50%;
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.stat-number {
-  font-family: 'Inter', sans-serif;
-  font-size: 1.375rem;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid white;
+  margin-left: -12px;
+  font-size: 0.75rem;
   font-weight: 700;
-  color: #0a0a0a;
-  line-height: 1;
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.stat-label {
+.proof-text {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9375rem;
+  color: #404040;
+  line-height: 1.4;
+}
+
+.proof-text strong {
+  color: #0a0a0a;
+  font-weight: 600;
+}
+
+/* Trust Badges */
+.trust-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.badge-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  border-radius: 8px;
   font-family: 'Inter', sans-serif;
   font-size: 0.8125rem;
-  color: #737373;
   font-weight: 500;
+  color: #15803d;
+}
+
+.badge-icon {
+  font-size: 0.875rem;
+  font-weight: 700;
 }
 
 /* Right Side - Glassmorphism Cards */
@@ -328,24 +366,48 @@ export default {
 .glass-card {
   position: relative;
   padding: 32px;
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.75);
   backdrop-filter: blur(30px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  border: 2px solid;
+  border-image: linear-gradient(135deg, #8b5cf6, #6d28d9, #8b5cf6) 1;
   border-radius: 24px;
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
   box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.06),
+    0 8px 32px rgba(139, 92, 246, 0.15),
     inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
+.glass-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 22px;
+  padding: 2px;
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9, #a78bfa);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
 .glass-card.premium {
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: rgba(255, 255, 255, 0.85);
   box-shadow: 
-    0 12px 40px rgba(139, 92, 246, 0.12),
+    0 12px 48px rgba(139, 92, 246, 0.25),
     inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+.glass-card.premium::after {
+  background: linear-gradient(135deg, #7c3aed, #5b21b6, #8b5cf6);
+  animation: borderRotate 3s linear infinite;
+}
+
+@keyframes borderRotate {
+  0% { filter: hue-rotate(0deg) brightness(1); }
+  50% { filter: hue-rotate(10deg) brightness(1.1); }
+  100% { filter: hue-rotate(0deg) brightness(1); }
 }
 
 .glass-card::before {
@@ -362,17 +424,16 @@ export default {
 }
 
 .glass-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-6px) scale(1.01);
   box-shadow: 
-    0 16px 48px rgba(0, 0, 0, 0.1),
+    0 20px 60px rgba(139, 92, 246, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 1);
 }
 
 .glass-card.premium:hover {
   box-shadow: 
-    0 20px 60px rgba(139, 92, 246, 0.2),
+    0 24px 70px rgba(139, 92, 246, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 1);
-  border-color: rgba(139, 92, 246, 0.3);
 }
 
 .glass-card:hover::before {
@@ -407,12 +468,6 @@ export default {
   gap: 16px;
 }
 
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
-
 .card-title {
   font-family: 'Inter', sans-serif;
   font-size: 1.375rem;
@@ -420,25 +475,6 @@ export default {
   color: #0a0a0a;
   letter-spacing: -0.01em;
   line-height: 1.3;
-}
-
-.card-tag {
-  padding: 4px 12px;
-  background: rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 20px;
-  font-family: 'Inter', sans-serif;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: #525252;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.card-tag.premium {
-  background: rgba(139, 92, 246, 0.1);
-  border: 1px solid rgba(139, 92, 246, 0.2);
-  color: #7c3aed;
 }
 
 .card-description {
