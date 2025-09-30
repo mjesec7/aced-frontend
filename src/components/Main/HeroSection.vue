@@ -225,12 +225,13 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  position: relative;
 }
 
 .cta-card {
   position: relative;
   padding: 32px 28px;
-  border-radius: 16px;
+  border-radius: 20px;
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
@@ -240,15 +241,20 @@ export default {
 }
 
 .cta-card.glass {
-  background: rgba(255, 255, 255, 0.6);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  border: 2px solid rgba(139, 92, 246, 0.1);
+  box-shadow: 
+    0 8px 32px rgba(139, 92, 246, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .cta-card.premium {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(99, 102, 241, 0.04) 100%);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+  border: 2px solid rgba(139, 92, 246, 0.3);
+  box-shadow: 
+    0 20px 60px rgba(139, 92, 246, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .cta-card::before {
@@ -258,15 +264,27 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, transparent 100%);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
   opacity: 0;
   transition: opacity 0.4s ease;
 }
 
 .cta-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 20px 60px rgba(139, 92, 246, 0.2);
-  border-color: rgba(139, 92, 246, 0.4);
+  transform: translateY(-12px) scale(1.02);
+}
+
+.cta-card.glass:hover {
+  box-shadow: 
+    0 25px 70px rgba(139, 92, 246, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  border-color: rgba(139, 92, 246, 0.3);
+}
+
+.cta-card.premium:hover {
+  box-shadow: 
+    0 30px 80px rgba(139, 92, 246, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
 }
 
 .cta-card:hover::before {
@@ -282,7 +300,7 @@ export default {
   background: linear-gradient(
     45deg,
     transparent 30%,
-    rgba(255, 255, 255, 0.05) 50%,
+    rgba(255, 255, 255, 0.2) 50%,
     transparent 70%
   );
   opacity: 0;
@@ -296,23 +314,25 @@ export default {
 }
 
 @keyframes shine {
-  0% { transform: translateX(-100%) translateY(-100%); }
-  100% { transform: translateX(100%) translateY(100%); }
+  0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+  100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
 }
 
 .card-badge {
   position: absolute;
-  top: 16px;
-  right: 16px;
-  padding: 4px 12px;
-  background: rgba(139, 92, 246, 0.2);
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  top: 20px;
+  right: 20px;
+  padding: 6px 14px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 20px;
   font-size: 0.75rem;
-  color: #c4b5fd;
-  font-weight: 500;
+  color: #7c3aed;
+  font-weight: 600;
   font-family: 'Inter', sans-serif;
   letter-spacing: 0.02em;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+  backdrop-filter: blur(10px);
 }
 
 .card-content {
@@ -325,20 +345,38 @@ export default {
 
 .card-title {
   font-family: 'Inter', sans-serif;
-  font-size: 1.375rem;
-  font-weight: 600;
-  color: #0f0f0f;
+  font-size: 1.5rem;
+  font-weight: 700;
   margin-bottom: 12px;
   letter-spacing: -0.01em;
+}
+
+.cta-card.glass .card-title {
+  color: #0f0f0f;
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.cta-card.premium .card-title {
+  color: #ffffff;
 }
 
 .card-description {
   font-family: 'Inter', sans-serif;
   font-size: 0.9375rem;
-  color: rgba(0, 0, 0, 0.6);
   line-height: 1.6;
   margin-bottom: 24px;
   flex: 1;
+}
+
+.cta-card.glass .card-description {
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.cta-card.premium .card-description {
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .card-action {
@@ -346,25 +384,56 @@ export default {
   align-items: center;
   gap: 8px;
   margin-top: auto;
+  padding: 12px 20px;
+  background: rgba(139, 92, 246, 0.08);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  width: fit-content;
+}
+
+.cta-card.premium .card-action {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.cta-card:hover .card-action {
+  background: rgba(139, 92, 246, 0.15);
+  transform: translateX(4px);
+}
+
+.cta-card.premium:hover .card-action {
+  background: rgba(255, 255, 255, 0.25);
 }
 
 .action-text {
   font-family: 'Inter', sans-serif;
   font-size: 0.9375rem;
-  font-weight: 500;
-  color: #0f0f0f;
+  font-weight: 600;
   letter-spacing: 0.01em;
+}
+
+.cta-card.glass .action-text {
+  color: #7c3aed;
+}
+
+.cta-card.premium .action-text {
+  color: #ffffff;
 }
 
 .action-arrow {
   font-size: 1.25rem;
-  color: rgba(139, 92, 246, 0.8);
   transition: transform 0.3s ease;
+}
+
+.cta-card.glass .action-arrow {
+  color: #8b5cf6;
+}
+
+.cta-card.premium .action-arrow {
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .cta-card:hover .action-arrow {
   transform: translateX(4px);
-  color: #a78bfa;
 }
 
 /* Stats Bar */
