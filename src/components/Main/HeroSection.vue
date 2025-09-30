@@ -168,14 +168,12 @@ export default {
 .top-nav {
   position: relative;
   width: 100%;
-  height: 80px;
+  height: 90px;
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 10;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background: transparent;
 }
 
 .nav-inner {
@@ -188,7 +186,7 @@ export default {
 }
 
 .aced-logo {
-  height: 45px;
+  height: 60px;
   width: auto;
 }
 
@@ -198,7 +196,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 50px;
+  padding: 0 50px 60px;
   z-index: 2;
 }
 
@@ -206,8 +204,8 @@ export default {
   max-width: 1400px;
   width: 100%;
   display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
-  gap: 60px;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
   align-items: center;
 }
 
@@ -215,7 +213,7 @@ export default {
 .hero-left {
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 40px;
 }
 
 .hero-message {
@@ -358,32 +356,34 @@ export default {
 .cards-stack {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
   width: 100%;
-  max-width: 480px;
 }
 
 .glass-card {
   position: relative;
-  padding: 32px;
+  padding: 36px;
   background: rgba(255, 255, 255, 0.75);
   backdrop-filter: blur(30px);
   border: 2px solid;
   border-image: linear-gradient(135deg, #8b5cf6, #6d28d9, #8b5cf6) 1;
-  border-radius: 24px;
+  border-radius: 16px;
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
   box-shadow: 
     0 8px 32px rgba(139, 92, 246, 0.15),
     inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  aspect-ratio: 1.8 / 1;
+  display: flex;
+  align-items: center;
 }
 
 .glass-card::after {
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 22px;
+  border-radius: 14px;
   padding: 2px;
   background: linear-gradient(135deg, #8b5cf6, #6d28d9, #a78bfa);
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -546,7 +546,7 @@ export default {
 
 @media (max-width: 768px) {
   .top-nav {
-    height: 70px;
+    height: 80px;
   }
   
   .nav-inner {
@@ -554,7 +554,7 @@ export default {
   }
   
   .aced-logo {
-    height: 40px;
+    height: 50px;
   }
   
   .hero-content {
@@ -569,23 +569,14 @@ export default {
     gap: 16px;
   }
   
-  .quick-stats {
-    padding: 24px;
-    gap: 16px;
-  }
-  
-  .stat-icon {
-    font-size: 1.5rem;
-    width: 40px;
-    height: 40px;
-  }
-  
-  .stat-number {
-    font-size: 1.125rem;
+  .proof-section {
+    padding: 16px 20px;
   }
   
   .glass-card {
     padding: 28px;
+    aspect-ratio: auto;
+    min-height: 180px;
   }
   
   .card-title {
@@ -595,7 +586,7 @@ export default {
 
 @media (max-width: 480px) {
   .hero-content {
-    padding: 20px 16px;
+    padding: 20px 16px 40px;
   }
   
   .hero-left {
@@ -607,16 +598,18 @@ export default {
     padding: 6px 12px;
   }
   
-  .quick-stats {
-    padding: 20px;
+  .proof-section {
+    padding: 14px 16px;
   }
   
   .cards-stack {
-    gap: 12px;
+    gap: 16px;
   }
   
   .glass-card {
     padding: 24px;
+    aspect-ratio: auto;
+    min-height: 160px;
   }
   
   .card-inner {
