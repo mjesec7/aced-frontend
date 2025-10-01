@@ -3,6 +3,7 @@
     <div class="content-wrapper">
       <div class="about-content">
         <div class="title-section">
+          <div class="label-badge">✨ Новое поколение образования</div>
           <h2 class="title">О платформе ACED</h2>
           <div class="title-accent"></div>
         </div>
@@ -17,27 +18,27 @@
           </p>
         </div>
 
-        <div class="mission-section">
-          <div class="mission-card">
-            <div class="mission-header">
-              <div class="mission-icon">🎯</div>
-              <h4 class="mission-title">Наша миссия</h4>
+        <div class="cards-grid">
+          <div class="mission-card glass-card">
+            <div class="card-header">
+              <div class="card-icon">🎯</div>
+              <h4 class="card-title">Наша миссия</h4>
             </div>
-            <p class="mission-text">
-              Трансформировать образование через технологии, делая качественное обучение доступным каждому студенту в Узбекистане и за его пределами.
+            <p class="card-text">
+              Трансформировать образование через технологии, делая качественное обучение доступным каждому студенту.
             </p>
+            <div class="card-shine"></div>
           </div>
-        </div>
 
-        <div class="vision-section">
-          <div class="vision-card">
-            <div class="vision-header">
-              <div class="vision-icon">🌟</div>
-              <h4 class="vision-title">Наше видение</h4>
+          <div class="vision-card glass-card">
+            <div class="card-header">
+              <div class="card-icon">🌟</div>
+              <h4 class="card-title">Наше видение</h4>
             </div>
-            <p class="vision-text">
+            <p class="card-text">
               Создание экосистемы персонализированного обучения, где каждый студент может раскрыть свой потенциал с помощью современных AI-технологий.
             </p>
+            <div class="card-shine"></div>
           </div>
         </div>
       </div>
@@ -45,7 +46,7 @@
       <div class="features-section">
         <h3 class="section-subtitle">Возможности платформы</h3>
         
-        <div class="main-feature-display">
+        <div class="main-feature-display glass-card">
           <div class="feature-preview">
             <div class="preview-header">
               <div class="preview-indicator"></div>
@@ -108,39 +109,47 @@
               </div>
             </div>
           </div>
+          <div class="card-shine"></div>
         </div>
 
         <div class="features-nav">
-          <div class="feature-nav-item active" data-feature="lessons">
+          <div class="feature-nav-item glass-card active" data-feature="lessons">
             <div class="nav-icon">📚</div>
             <span>Уроки</span>
+            <div class="nav-shine"></div>
           </div>
-          <div class="feature-nav-item" data-feature="analytics">
+          <div class="feature-nav-item glass-card" data-feature="analytics">
             <div class="nav-icon">📊</div>
             <span>Аналитика</span>
+            <div class="nav-shine"></div>
           </div>
-          <div class="feature-nav-item" data-feature="ai">
+          <div class="feature-nav-item glass-card" data-feature="ai">
             <div class="nav-icon">🤖</div>
             <span>AI-помощник</span>
+            <div class="nav-shine"></div>
           </div>
-          <div class="feature-nav-item" data-feature="sync">
+          <div class="feature-nav-item glass-card" data-feature="sync">
             <div class="nav-icon">🔄</div>
             <span>Синхронизация</span>
+            <div class="nav-shine"></div>
           </div>
         </div>
 
         <div class="benefits-grid">
-          <div class="benefit-card">
+          <div class="benefit-card glass-card">
             <div class="benefit-number">95%</div>
             <div class="benefit-label">Улучшение результатов</div>
+            <div class="card-shine"></div>
           </div>
-          <div class="benefit-card">
+          <div class="benefit-card glass-card">
             <div class="benefit-number">24/7</div>
             <div class="benefit-label">Доступность</div>
+            <div class="card-shine"></div>
           </div>
-          <div class="benefit-card">
+          <div class="benefit-card glass-card">
             <div class="benefit-number">∞</div>
             <div class="benefit-label">Попыток сдачи</div>
+            <div class="card-shine"></div>
           </div>
         </div>
       </div>
@@ -155,16 +164,11 @@ export default {
   name: 'AboutUs',
   setup() {
     onMounted(() => {
-      // Feature navigation functionality
       const navItems = document.querySelectorAll('.feature-nav-item');
       const contentSections = document.querySelectorAll('.content-section');
       const previewTitle = document.getElementById('previewTitle');
-      
-      // Lesson step functionality
       const lessonSteps = document.querySelectorAll('.step');
       const progressFill = document.getElementById('progressFill');
-      
-      // Left side animations
       const highlightTexts = document.querySelectorAll('.highlight-text');
       
       const featureTitles = {
@@ -181,13 +185,11 @@ export default {
         test: 100
       };
       
-      // Highlight text hover effects
       highlightTexts.forEach(text => {
         text.addEventListener('mouseenter', () => {
           const highlight = text.dataset.highlight;
           text.style.transform = 'scale(1.05)';
           
-          // Add corresponding animation based on highlight type
           if (highlight === 'interactive') {
             text.style.animation = 'bounce 0.6s ease';
           } else if (highlight === 'personalized') {
@@ -203,48 +205,36 @@ export default {
         });
       });
       
-      // Navigation click handlers
       navItems.forEach(item => {
         item.addEventListener('click', () => {
           const feature = item.dataset.feature;
           
-          // Remove active from all nav items
           navItems.forEach(nav => nav.classList.remove('active'));
           item.classList.add('active');
           
-          // Hide all content sections
           contentSections.forEach(section => section.classList.remove('active'));
           
-          // Show selected content
           const targetContent = document.querySelector(`[data-content="${feature}"]`);
           if (targetContent) {
             targetContent.classList.add('active');
           }
           
-          // Update title
           if (previewTitle && featureTitles[feature]) {
             previewTitle.textContent = featureTitles[feature];
           }
         });
       });
       
-      // Lesson step click handlers
       lessonSteps.forEach(step => {
         step.addEventListener('click', () => {
           const stepType = step.dataset.step;
           
-          // Remove active from all steps
           lessonSteps.forEach(s => s.classList.remove('active'));
           step.classList.add('active');
           
-          // Update progress bar
           if (progressFill && stepProgress[stepType]) {
             progressFill.style.width = stepProgress[stepType] + '%';
-            
-            // Temporarily pause animation
             progressFill.style.animation = 'none';
-            
-            // Resume animation after a brief pause
             setTimeout(() => {
               progressFill.style.animation = 'progress-animate 3s infinite';
             }, 1000);
@@ -252,7 +242,6 @@ export default {
         });
       });
       
-      // Add CSS animations
       const style = document.createElement('style');
       style.textContent = `
         @keyframes bounce {
@@ -278,19 +267,35 @@ export default {
 
 .about-container {
   padding: 120px 0;
-  background-color: #ffffff;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  color: #111827;
+  background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
+  font-family: 'Inter', sans-serif;
+  color: #0a0a0a;
+  position: relative;
+  overflow: hidden;
+}
+
+.about-container::before {
+  content: '';
+  position: absolute;
+  top: -20%;
+  left: -10%;
+  width: 50%;
+  height: 50%;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.04) 0%, transparent 70%);
+  pointer-events: none;
+  filter: blur(60px);
 }
 
 .content-wrapper {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 0 32px;
+  padding: 0 50px;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 80px;
-  align-items: center;
+  align-items: start;
+  position: relative;
+  z-index: 2;
 }
 
 /* Left Content */
@@ -301,46 +306,58 @@ export default {
 }
 
 .title-section {
-  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.label-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.12) 0%, rgba(99, 102, 241, 0.08) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  border-radius: 30px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #7c3aed;
+  letter-spacing: 0.02em;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.15);
 }
 
 .title {
-  font-size: 48px;
+  font-size: clamp(2.5rem, 5vw, 3.75rem);
   font-weight: 700;
+  color: #0a0a0a;
   line-height: 1.1;
-  color: #111827;
-  margin-bottom: 16px;
-  letter-spacing: -0.02em;
-  position: relative;
+  letter-spacing: -0.03em;
+  margin: 0;
 }
 
 .title-accent {
-  width: 60px;
+  width: 80px;
   height: 4px;
-  background: linear-gradient(90deg, #4c1d95, #6366f1, #3b82f6);
+  background: linear-gradient(90deg, #8b5cf6, #7c3aed);
   border-radius: 2px;
   animation: accent-grow 2s ease-in-out infinite alternate;
 }
 
 @keyframes accent-grow {
-  0% { width: 60px; opacity: 0.8; }
-  100% { width: 120px; opacity: 1; }
-}
-
-.description-wrapper {
-  position: relative;
+  0% { width: 80px; opacity: 0.8; }
+  100% { width: 140px; opacity: 1; }
 }
 
 .description {
-  font-size: 18px;
+  font-size: clamp(1.0625rem, 2vw, 1.1875rem);
   line-height: 1.7;
-  color: #4b5563;
+  color: #404040;
   font-weight: 400;
   margin: 0;
 }
 
 .highlight-text {
-  background: linear-gradient(135deg, #4c1d95, #6366f1);
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -348,12 +365,6 @@ export default {
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
-  overflow: hidden;
-}
-
-.highlight-text:hover {
-  transform: scale(1.05);
-  text-shadow: 0 0 10px rgba(76, 29, 149, 0.3);
 }
 
 .highlight-text::after {
@@ -363,7 +374,7 @@ export default {
   left: 0;
   width: 0;
   height: 2px;
-  background: linear-gradient(90deg, #4c1d95, #6366f1);
+  background: linear-gradient(90deg, #8b5cf6, #7c3aed);
   transition: width 0.3s ease;
 }
 
@@ -371,184 +382,121 @@ export default {
   width: 100%;
 }
 
-/* Mission Section */
-.mission-section {
-  position: relative;
+/* Cards Grid */
+.cards-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
 }
 
-.mission-card {
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(20px);
-  border: 1px solid #e5e7eb;
+.glass-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(25px);
   border-radius: 16px;
-  padding: 24px;
-  position: relative;
+  border: 1.5px solid rgba(139, 92, 246, 0.15);
   overflow: hidden;
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.08);
 }
 
-.mission-card::before {
+.glass-card::before {
   content: '';
   position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.03) 0%, transparent 100%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.glass-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(139, 92, 246, 0.3);
+  box-shadow: 0 12px 32px rgba(139, 92, 246, 0.2);
+}
+
+.glass-card:hover::before {
+  opacity: 1;
+}
+
+.card-shine {
+  position: absolute;
   top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(76, 29, 149, 0.08), rgba(99, 102, 241, 0.05));
-  border-radius: 16px;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.6s ease;
+  pointer-events: none;
 }
 
-.mission-card:hover {
-  transform: translateX(8px);
-  box-shadow: 
-    0 0 0 1px rgba(76, 29, 149, 0.2),
-    0 10px 25px rgba(76, 29, 149, 0.1);
+.glass-card:hover .card-shine {
+  left: 100%;
 }
 
-.mission-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-  position: relative;
-  z-index: 1;
-}
-
-.mission-icon {
-  font-size: 20px;
-  animation: spin 4s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.mission-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #111827;
-  margin: 0;
-}
-
-.mission-text {
-  font-size: 14px;
-  line-height: 1.6;
-  color: #4b5563;
-  margin: 0;
-  position: relative;
-  z-index: 1;
-}
-
-/* Vision Section */
-.vision-section {
-  position: relative;
-}
-
+.mission-card,
 .vision-card {
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(20px);
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
   padding: 24px;
-  position: relative;
-  overflow: hidden;
-  transition: all 0.3s ease;
 }
 
-.vision-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(168, 85, 247, 0.05));
-  border-radius: 16px;
-}
-
-.vision-card:hover {
-  transform: translateX(8px);
-  box-shadow: 
-    0 0 0 1px rgba(139, 92, 246, 0.2),
-    0 10px 25px rgba(139, 92, 246, 0.1);
-}
-
-.vision-header {
+.card-header {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   position: relative;
-  z-index: 1;
+  z-index: 2;
 }
 
-.vision-icon {
-  font-size: 20px;
-  animation: twinkle 2s ease-in-out infinite;
+.card-icon {
+  font-size: 1.5rem;
+  animation: float 3s ease-in-out infinite;
 }
 
-@keyframes twinkle {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.7; transform: scale(1.1); }
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
 }
 
-.vision-title {
-  font-size: 16px;
+.card-title {
+  font-size: 1.125rem;
   font-weight: 600;
-  color: #111827;
+  color: #0a0a0a;
   margin: 0;
 }
 
-.vision-text {
-  font-size: 14px;
+.card-text {
+  font-size: 0.9375rem;
   line-height: 1.6;
-  color: #4b5563;
+  color: #525252;
   margin: 0;
   position: relative;
-  z-index: 1;
+  z-index: 2;
 }
 
-/* Right Content - Interactive Showcase */
+/* Features Section */
 .features-section {
-  padding-left: 24px;
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 24px;
 }
 
 .section-subtitle {
-  font-size: 24px;
+  font-size: 1.5rem;
   font-weight: 600;
-  color: #111827;
+  color: #0a0a0a;
   letter-spacing: -0.01em;
   margin: 0;
 }
 
 .main-feature-display {
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(20px);
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
-  padding: 24px;
-  position: relative;
-  overflow: hidden;
-}
-
-.main-feature-display::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(168, 85, 247, 0.05));
-  border-radius: 16px;
+  padding: 28px;
 }
 
 .feature-preview {
   position: relative;
-  z-index: 1;
+  z-index: 2;
 }
 
 .preview-header {
@@ -559,22 +507,22 @@ export default {
 }
 
 .preview-indicator {
-  width: 12px;
-  height: 12px;
-  background: linear-gradient(135deg, #6366f1, #3b82f6);
+  width: 10px;
+  height: 10px;
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
   border-radius: 50%;
   animation: pulse 2s infinite;
 }
 
 @keyframes pulse {
   0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.7; transform: scale(1.1); }
+  50% { opacity: 0.7; transform: scale(1.15); }
 }
 
 .preview-title {
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 600;
-  color: #111827;
+  color: #0a0a0a;
 }
 
 .preview-content {
@@ -584,7 +532,7 @@ export default {
 
 .content-section {
   display: none;
-  animation: fadeIn 0.3s ease-in-out;
+  animation: fadeIn 0.4s ease;
 }
 
 .content-section.active {
@@ -604,25 +552,29 @@ export default {
 }
 
 .step {
-  background: #f3f4f6;
-  color: #6b7280;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 12px;
+  background: rgba(139, 92, 246, 0.08);
+  color: #737373;
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-size: 0.8125rem;
   font-weight: 500;
   transition: all 0.3s ease;
   cursor: pointer;
+  border: 1.5px solid transparent;
 }
 
 .step.active {
-  background: linear-gradient(135deg, #4c1d95, #5b21b6);
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
   color: white;
   transform: scale(1.05);
+  border-color: rgba(139, 92, 246, 0.3);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
 }
 
-.step:hover {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: white;
+.step:hover:not(.active) {
+  background: rgba(139, 92, 246, 0.15);
+  color: #7c3aed;
+  border-color: rgba(139, 92, 246, 0.2);
 }
 
 .analytics-display {
@@ -633,8 +585,8 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px solid #f3f4f6;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.1);
 }
 
 .metric-row:last-child {
@@ -642,38 +594,43 @@ export default {
 }
 
 .metric-label {
-  font-size: 13px;
-  color: #6b7280;
+  font-size: 0.875rem;
+  color: #737373;
   font-weight: 500;
 }
 
 .metric-value {
-  font-size: 13px;
-  color: #111827;
+  font-size: 0.875rem;
+  color: #0a0a0a;
   font-weight: 600;
 }
 
 .ai-chat {
   margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .chat-message {
-  padding: 8px 12px;
+  padding: 10px 14px;
   border-radius: 12px;
-  margin-bottom: 8px;
-  font-size: 12px;
-  max-width: 80%;
+  font-size: 0.8125rem;
+  max-width: 85%;
+  line-height: 1.5;
 }
 
 .chat-message.user {
-  background: #f3f4f6;
-  color: #4b5563;
+  background: rgba(139, 92, 246, 0.08);
+  color: #525252;
   margin-left: auto;
+  border: 1px solid rgba(139, 92, 246, 0.15);
 }
 
 .chat-message.ai {
-  background: linear-gradient(135deg, #4c1d95, #5b21b6);
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
   color: white;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
 }
 
 .sync-devices {
@@ -685,7 +642,7 @@ export default {
 }
 
 .device {
-  font-size: 24px;
+  font-size: 2rem;
   animation: bounce 2s infinite;
 }
 
@@ -693,23 +650,22 @@ export default {
 .device:nth-child(3) { animation-delay: 0.5s; }
 .device:nth-child(5) { animation-delay: 1s; }
 
-.sync-arrow {
-  color: #8b5cf6;
-  font-size: 16px;
-  animation: pulse 1.5s infinite;
-}
-
-/* Duplicated bounce animation for device - can be removed if not needed */
 @keyframes bounce {
   0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
   40% { transform: translateY(-5px); }
   60% { transform: translateY(-3px); }
 }
 
+.sync-arrow {
+  color: #8b5cf6;
+  font-size: 1.25rem;
+  animation: pulse 1.5s infinite;
+}
+
 .progress-bar {
   width: 100%;
   height: 6px;
-  background: #f3f4f6;
+  background: rgba(139, 92, 246, 0.1);
   border-radius: 3px;
   overflow: hidden;
 }
@@ -722,25 +678,25 @@ export default {
 
 #progressFill {
   width: 35%;
-  background: linear-gradient(90deg, #6366f1, #3b82f6);
+  background: linear-gradient(90deg, #8b5cf6, #7c3aed);
   animation: progress-animate 3s infinite;
 }
 
 .analytics-progress {
   width: 87%;
-  background: linear-gradient(90deg, #4c1d95, #5b21b6);
+  background: linear-gradient(90deg, #7c3aed, #6d28d9);
   animation: analytics-animate 4s infinite;
 }
 
 .ai-progress {
   width: 60%;
-  background: linear-gradient(90deg, #312e81, #4c1d95);
+  background: linear-gradient(90deg, #6d28d9, #5b21b6);
   animation: ai-animate 2s infinite;
 }
 
 .sync-progress {
   width: 100%;
-  background: linear-gradient(90deg, #1e40af, #3b82f6);
+  background: linear-gradient(90deg, #8b5cf6, #a78bfa);
   animation: sync-animate 2.5s infinite;
 }
 
@@ -770,7 +726,7 @@ export default {
   100% { width: 100%; opacity: 1; }
 }
 
-/* Feature Navigation */
+/* Features Navigation */
 .features-nav {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -778,50 +734,36 @@ export default {
 }
 
 .feature-nav-item {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(20px);
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 16px 12px;
+  padding: 18px 14px;
   text-align: center;
   cursor: pointer;
   position: relative;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.feature-nav-item::before {
-  content: '';
+.feature-nav-item .nav-shine {
   position: absolute;
   top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, #4c1d95, #5b21b6, #6366f1);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  border-radius: 12px;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transition: left 0.5s ease;
+  pointer-events: none;
 }
 
-.feature-nav-item:hover::before {
-  opacity: 0.1;
-}
-
-.feature-nav-item:hover {
-  transform: translateY(-4px);
-  box-shadow: 
-    0 0 0 2px rgba(76, 29, 149, 0.4),
-    0 8px 25px rgba(76, 29, 149, 0.2);
-  border-color: rgba(76, 29, 149, 0.5);
+.feature-nav-item:hover .nav-shine {
+  left: 100%;
 }
 
 .feature-nav-item.active {
-  background: linear-gradient(135deg, #4c1d95, #5b21b6);
-  color: white;
-  border-color: #4c1d95;
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  border-color: rgba(139, 92, 246, 0.4);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.3);
 }
 
 .feature-nav-item.active .nav-icon {
   filter: brightness(2);
+  transform: scale(1.1);
 }
 
 .feature-nav-item.active span {
@@ -830,23 +772,25 @@ export default {
 }
 
 .nav-icon {
-  font-size: 20px;
+  font-size: 1.5rem;
   margin-bottom: 8px;
   display: block;
   position: relative;
-  z-index: 1;
+  z-index: 2;
+  transition: transform 0.3s ease;
 }
 
 .feature-nav-item span {
-  font-size: 12px;
+  font-size: 0.8125rem;
   font-weight: 500;
-  color: #4b5563;
+  color: #525252;
   position: relative;
-  z-index: 1;
+  z-index: 2;
+  transition: color 0.3s ease;
 }
 
-.feature-nav-item:hover span {
-  color: #111827;
+.feature-nav-item:hover:not(.active) span {
+  color: #7c3aed;
   font-weight: 600;
 }
 
@@ -858,60 +802,32 @@ export default {
 }
 
 .benefit-card {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(20px);
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 20px 16px;
+  padding: 24px 18px;
   text-align: center;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
-}
-
-.benefit-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, #8b5cf6, #a855f7);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  border-radius: 12px;
-}
-
-.benefit-card:hover::before {
-  opacity: 0.08;
-}
-
-.benefit-card:hover {
-  transform: translateY(-6px) scale(1.02);
-  box-shadow: 
-    0 0 0 2px rgba(139, 92, 246, 0.4),
-    0 12px 30px rgba(139, 92, 246, 0.2);
-  border-color: rgba(139, 92, 246, 0.5);
 }
 
 .benefit-number {
-  font-size: 28px;
+  font-size: 2.25rem;
   font-weight: 700;
-  color: #111827;
+  color: #0a0a0a;
   line-height: 1;
   margin-bottom: 8px;
   position: relative;
-  z-index: 1;
+  z-index: 2;
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .benefit-label {
-  font-size: 11px;
+  font-size: 0.75rem;
   font-weight: 500;
-  color: #6b7280;
+  color: #737373;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   position: relative;
-  z-index: 1;
+  z-index: 2;
 }
 
 /* Responsive Design */
@@ -919,19 +835,11 @@ export default {
   .content-wrapper {
     grid-template-columns: 1fr;
     gap: 60px;
-  }
-  
-  .about-content {
-    position: static;
-  }
-  
-  .features-section {
-    padding-left: 0;
+    padding: 0 40px;
   }
   
   .features-nav {
     grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
   }
 }
 
@@ -945,20 +853,12 @@ export default {
     gap: 48px;
   }
   
-  .title {
-    font-size: 36px;
-  }
-  
-  .description {
-    font-size: 16px;
-  }
-  
   .benefits-grid {
     grid-template-columns: 1fr;
   }
   
   .main-feature-display {
-    padding: 20px;
+    padding: 24px;
   }
 }
 
@@ -966,7 +866,18 @@ export default {
   .content-wrapper {
     padding: 0 16px;
   }
+  
+  .features-nav {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 </style>
-
-<!-- just to make it work  -->

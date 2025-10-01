@@ -1,43 +1,20 @@
 <template>
   <section class="aced-section" id="aced">
-    <div class="left-content">
-      <h1 class="headline">Начни своё обучение <br />уже сегодня</h1>
-      <p class="context-text">Выбери курс и начни изучать прямо сейчас</p>
-      
-      <!-- Filter Controls -->
-      <div class="filter-controls">
-        <div class="subject-filter">
-          <label>Предмет:</label>
-          <select v-model="selectedSubject" @change="filterCourses">
-            <option value="">Все предметы</option>
-            <option v-for="subject in availableSubjects" :key="subject" :value="subject">
-              {{ subject }}
-            </option>
-          </select>
-        </div>
-        
-        <div class="type-filter">
-          <label>Тип:</label>
-          <select v-model="selectedType" @change="filterCourses">
-            <option value="">Все курсы</option>
-            <option value="free">💚 Бесплатные</option>
-            <option value="premium">💎 Премиум</option>
-            <option value="pro">🌟 Pro</option>
-          </select>
-        </div>
-        
-        <button class="refresh-btn" @click="refreshCourses" :disabled="loadingCourses">
-          <span class="refresh-icon" :class="{ 'spinning': loadingCourses }">🔄</span>
-          {{ loadingCourses ? 'Загрузка...' : 'Обновить' }}
-        </button>
+    <div class="section-header">
+      <div class="header-content">
+        <div class="label-badge">🚀 Начни обучение</div>
+        <h1 class="headline">Начни своё обучение<br />уже сегодня</h1>
+        <p class="context-text">Выбери курс и начни изучать прямо сейчас</p>
       </div>
     </div>
 
     <!-- Course Cards Grid -->
     <div class="courses-grid">
       <div v-if="loadingCourses" class="loading-grid">
-        <div class="course-placeholder" v-for="n in 6" :key="n">
-          <div class="placeholder-content">⏳</div>
+        <div class="course-placeholder glass-card" v-for="n in 6" :key="n">
+          <div class="placeholder-content">
+            <div class="loader-spinner"></div>
+          </div>
         </div>
       </div>
       
@@ -45,7 +22,7 @@
         <div 
           v-for="course in displayedCourses" 
           :key="course._id"
-          class="course-card"
+          class="course-card glass-card"
           :class="[
             `course-${getTopicType(course)}`,
             { 'featured': isFeaturedCourse(course) }
@@ -92,39 +69,43 @@
             >
               <span class="btn-icon">{{ getStartButtonIcon(course) }}</span>
               <span class="btn-text">{{ getStartButtonText(course) }}</span>
+              <span class="btn-glow"></span>
             </button>
           </div>
           
           <!-- Hover Effect Overlay -->
-          <div class="course-hover-overlay"></div>
+          <div class="card-shine"></div>
         </div>
       </div>
       
-      <div v-else class="empty-courses">
+      <div v-else class="empty-courses glass-card">
         <div class="empty-icon">🔍</div>
         <h3>Курсы не найдены</h3>
         <p>Загружаем актуальные курсы...</p>
         <button v-if="!loadingCourses" @click="refreshCourses" class="retry-btn">
-          🔄 Попробовать снова
+          <span>🔄</span>
+          <span>Попробовать снова</span>
         </button>
       </div>
     </div>
 
     <!-- Registration Modal for Premium Access -->
     <div v-if="showRegistrationModal" class="modal-overlay" @click="closeRegistrationModal">
-      <div class="registration-modal" @click.stop>
-        <span class="close-btn" @click="closeRegistrationModal">×</span>
+      <div class="registration-modal glass-card" @click.stop>
+        <button class="close-btn" @click="closeRegistrationModal">
+          <span>×</span>
+        </button>
         
         <div class="modal-header">
-          <h2>🎓 Премиум доступ</h2>
+          <div class="modal-icon">🎓</div>
+          <h2>Премиум доступ</h2>
           <p>Для доступа к этому курсу необходимо зарегистрироваться</p>
         </div>
         
         <div class="course-preview" v-if="selectedCourse">
-          <img :src="getCourseIcon(selectedCourse)" class="course-icon" />
           <div class="course-info">
             <h3>{{ getTopicName(selectedCourse) }}</h3>
-            <p>{{ getTopicTypeLabel(selectedCourse) }} курс</p>
+            <p class="course-type">{{ getTopicTypeLabel(selectedCourse) }} курс</p>
             <div class="course-benefits">
               <div class="benefit-item">
                 <span class="benefit-icon">📚</span>
@@ -146,6 +127,7 @@
           <button class="register-btn" @click="triggerRegistration">
             <span class="btn-icon">🚀</span>
             <span>Зарегистрироваться и начать</span>
+            <span class="btn-glow"></span>
           </button>
           <button class="cancel-btn" @click="closeRegistrationModal">
             Пока не готов
@@ -155,10 +137,13 @@
     </div>
 
     <!-- Error Alert -->
-    <div v-if="errorMessage" class="error-alert">
+    <div v-if="errorMessage" class="error-alert glass-card">
       <span class="error-icon">⚠️</span>
       <span class="error-text">{{ errorMessage }}</span>
-      <button class="retry-error-btn" @click="refreshCourses">🔄 Повторить</button>
+      <button class="retry-error-btn" @click="refreshCourses">
+        <span>🔄</span>
+        <span>Повторить</span>
+      </button>
     </div>
   </section>
 </template>
@@ -172,31 +157,20 @@ export default {
   name: "AcedSection",
   data() {
     return {
-      // Course data
       allCourses: [],
       filteredCourses: [],
       displayedCourses: [],
       maxDisplayedCourses: 6,
-      
-      // Filter states
       selectedSubject: '',
       selectedType: '',
       availableSubjects: [],
-      
-      // Loading states
       loadingCourses: true,
       processingCourse: null,
-      
-      // Modal states
       showRegistrationModal: false,
       selectedCourse: null,
-      
-      // Error handling
       errorMessage: null,
       retryCount: 0,
       maxRetries: 3,
-      
-      // Configuration
       lang: localStorage.getItem('lang') || 'ru'
     };
   },
@@ -216,11 +190,9 @@ export default {
       this.errorMessage = null;
       
       try {
-        // Try to get courses from lessons first (same as MainPage)
         let coursesData = await this.fetchCoursesFromLessons();
         
         if (!coursesData || coursesData.length === 0) {
-          // Fallback to topics
           coursesData = await this.fetchCoursesFromTopics();
         }
         
@@ -310,7 +282,6 @@ export default {
       return Array.from(coursesMap.values())
         .filter(course => course.lessons.length > 0)
         .sort((a, b) => {
-          // Prioritize free courses for non-registered users
           if (a.type !== b.type) {
             if (a.type === 'free') return -1;
             if (b.type === 'free') return 1;
@@ -330,7 +301,6 @@ export default {
     },
     
     filterCourses() {
-      // Simplified - no filtering, just show all courses
       this.filteredCourses = [...this.allCourses];
       this.updateDisplayedCourses();
     },
@@ -354,7 +324,6 @@ export default {
     },
     
     handleCourseClick(course) {
-      // Show course details or start course
       this.handleStartCourse(course);
     },
     
@@ -369,17 +338,14 @@ export default {
         const topicType = this.getTopicType(course);
         const isAuthenticated = this.checkUserAuthentication();
         
-        // Free courses - allow access for everyone
         if (topicType === 'free') {
           if (isAuthenticated) {
-            // Redirect to course
             await this.$router.push({ 
               name: 'TopicOverview',
               params: { id: course._id },
               query: { source: 'aced-section' }
             });
           } else {
-            // Start course directly for free content
             await this.$router.push({ 
               name: 'TopicOverview',
               params: { id: course._id },
@@ -387,7 +353,6 @@ export default {
             });
           }
         } else {
-          // Premium/Pro courses - require registration
           this.selectedCourse = course;
           this.showRegistrationModal = true;
         }
@@ -448,20 +413,9 @@ export default {
       this.errorMessage = errorMessage;
     },
     
-    // Utility methods (same as MainPage)
     getTopicName(course) {
       if (!course) return 'Без названия';
       return course.name || course.topicName || course.topic || course.title || 'Без названия';
-    },
-    
-    getTopicDescription(course) {
-      if (!course) return 'Описание отсутствует';
-      
-      const description = course.description || course.topicDescription;
-      if (description && description.length > 100) {
-        return description.substring(0, 100) + '...';
-      }
-      return description || `Изучите ${this.getTopicName(course)} с практическими упражнениями`;
     },
     
     getTopicType(course) {
@@ -481,8 +435,8 @@ export default {
     
     getTopicTypeIcon(course) {
       const type = this.getTopicType(course);
-      const icons = { free: '🔓', premium: '💎', pro: '🌟' };
-      return icons[type] || '🔓';
+      const icons = { free: '💚', premium: '💎', pro: '🌟' };
+      return icons[type] || '💚';
     },
     
     getTopicTypeLabel(course) {
@@ -513,18 +467,6 @@ export default {
       return 'Pro доступ';
     },
     
-    getCourseIcon(course) {
-      const subject = course.subject?.toLowerCase() || 'general';
-      const iconMap = {
-        'история': '/assets/icons/history2.svg',
-        'биология': '/assets/icons/biology2.svg',
-        'кодинг': '/assets/icons/coding2.svg',
-        'математика': '/assets/icons/math2.svg',
-        'физика': '/assets/icons/physics2.png'
-      };
-      return iconMap[subject] || '/assets/icons/coding2.svg';
-    },
-    
     isFeaturedCourse(course) {
       return course.type === 'free' && course.lessons?.length >= 5;
     },
@@ -545,54 +487,91 @@ export default {
     calculateLessonTime(lesson) {
       if (lesson.estimatedTime) return parseInt(lesson.estimatedTime);
       if (lesson.duration) return parseInt(lesson.duration);
-      return 10; // Default 10 minutes
+      return 10;
     }
   }
 };
 </script>
 
 <style scoped>
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap");
 
 .aced-section {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: clamp(30px, 5vw, 50px);
-  padding: clamp(40px, 8vw, 80px) clamp(20px, 5vw, 80px);
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  gap: 50px;
+  padding: clamp(60px, 8vw, 100px) clamp(20px, 5vw, 80px);
+  background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
   min-height: 100vh;
-  color: #1e293b;
+  color: #0a0a0a;
   font-family: 'Inter', sans-serif;
+  overflow: hidden;
 }
 
-.header-section {
-  text-align: left;
-  margin-bottom: 20px;
+.aced-section::before {
+  content: '';
+  position: absolute;
+  bottom: -30%;
+  right: -15%;
+  width: 60%;
+  height: 60%;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.06) 0%, transparent 70%);
+  pointer-events: none;
+  filter: blur(60px);
 }
 
-.main-title {
-  font-size: clamp(1.8rem, 4vw, 2.5rem);
-  font-weight: 800;
-  color: #1a1a1a;
-  margin-bottom: 8px;
-  line-height: 1.2;
-  letter-spacing: -0.01em;
+.section-header {
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 2;
 }
 
-.subtitle {
-  font-size: clamp(0.9rem, 2vw, 1.1rem);
-  color: #666666;
-  font-weight: 500;
+.header-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.label-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.12) 0%, rgba(99, 102, 241, 0.08) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  border-radius: 30px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #7c3aed;
+  letter-spacing: 0.02em;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.15);
+}
+
+.headline {
+  font-size: clamp(2.5rem, 5vw, 3.75rem);
+  font-weight: 700;
+  color: #0a0a0a;
+  margin: 0;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+
+.context-text {
+  font-size: clamp(1.0625rem, 2vw, 1.1875rem);
+  color: #404040;
+  font-weight: 400;
   margin: 0;
 }
-
-/* Remove all filter-related styles */
 
 .courses-grid {
   width: 100%;
   max-width: 1400px;
   margin: 0 auto;
+  position: relative;
+  z-index: 2;
 }
 
 .loading-grid, .courses-container {
@@ -602,58 +581,84 @@ export default {
   padding: 20px 0;
 }
 
-.course-placeholder {
-  height: 320px;
-  background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+.glass-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(25px);
   border-radius: 20px;
+  border: 1.5px solid rgba(139, 92, 246, 0.15);
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.08);
+}
+
+.glass-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.03) 0%, transparent 100%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.glass-card:hover::before {
+  opacity: 1;
+}
+
+.card-shine {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.6s ease;
+  pointer-events: none;
+}
+
+.glass-card:hover .card-shine {
+  left: 100%;
+}
+
+.course-placeholder {
+  height: 280px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2rem;
-  animation: pulse 2s ease-in-out infinite;
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 1; }
+.placeholder-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loader-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(139, 92, 246, 0.2);
+  border-top-color: #8b5cf6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .course-card {
-  position: relative;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(200, 200, 200, 0.3);
-  border-radius: 24px;
   padding: 24px;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  overflow: hidden;
-  height: 200px;
+  min-height: 280px;
   display: flex;
   flex-direction: column;
 }
 
-.course-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, transparent 0%, rgba(99, 102, 241, 0.03) 100%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  pointer-events: none;
-}
-
 .course-card:hover {
   transform: translateY(-8px);
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
-  border-color: rgba(99, 102, 241, 0.2);
-}
-
-.course-card:hover::before {
-  opacity: 1;
+  box-shadow: 0 20px 50px rgba(139, 92, 246, 0.2);
+  border-color: rgba(139, 92, 246, 0.3);
 }
 
 .course-card.course-free {
@@ -668,18 +673,14 @@ export default {
   border-left: 4px solid #f59e0b;
 }
 
-.course-card.featured {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(255, 255, 255, 0.9));
-}
-
 .course-badge {
   position: absolute;
   top: 16px;
   right: 16px;
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
+  gap: 6px;
+  padding: 6px 12px;
   border-radius: 12px;
   font-size: 0.75rem;
   font-weight: 600;
@@ -687,87 +688,90 @@ export default {
 }
 
 .course-badge.free {
-  background: rgba(99, 102, 241, 0.1);
+  background: rgba(99, 102, 241, 0.12);
   color: #4f46e5;
-  border: 1px solid rgba(99, 102, 241, 0.2);
+  border: 1px solid rgba(99, 102, 241, 0.25);
 }
 
 .course-badge.premium {
-  background: rgba(139, 92, 246, 0.1);
+  background: rgba(139, 92, 246, 0.12);
   color: #7c3aed;
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  border: 1px solid rgba(139, 92, 246, 0.25);
 }
 
 .course-badge.pro {
-  background: rgba(245, 158, 11, 0.1);
+  background: rgba(245, 158, 11, 0.12);
   color: #d97706;
-  border: 1px solid rgba(245, 158, 11, 0.2);
+  border: 1px solid rgba(245, 158, 11, 0.25);
 }
 
 .course-content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
+  position: relative;
+  z-index: 2;
 }
 
 .course-title {
-  font-size: 1.1rem;
+  font-size: 1.25rem;
   font-weight: 700;
-  color: #1a1a1a;
-  line-height: 1.2;
-  margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-bottom: 12px;
+  color: #0a0a0a;
+  line-height: 1.3;
+  margin: 0 0 auto 0;
+  padding-right: 80px;
 }
 
 .course-stats {
   display: flex;
   gap: 16px;
-  margin-top: auto;
   padding-top: 16px;
-  border-top: 1px solid rgba(200, 200, 200, 0.3);
+  border-top: 1.5px solid rgba(139, 92, 246, 0.1);
 }
 
 .stat-item {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 0.75rem;
+  gap: 6px;
+  font-size: 0.8125rem;
 }
 
 .stat-icon {
-  font-size: 0.9rem;
+  font-size: 1rem;
 }
 
 .stat-value {
   font-weight: 700;
-  color: #1a1a1a;
+  color: #0a0a0a;
 }
 
 .stat-label {
-  color: #666666;
+  color: #737373;
+  font-weight: 500;
 }
 
 .course-actions {
   margin-top: 16px;
+  position: relative;
+  z-index: 2;
 }
 
 .start-course-btn {
+  position: relative;
   width: 100%;
-  padding: 12px 20px;
+  padding: 14px 24px;
   border: none;
   border-radius: 12px;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.9375rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  overflow: hidden;
 }
 
 .start-course-btn:disabled {
@@ -775,148 +779,95 @@ export default {
   cursor: not-allowed;
 }
 
-.btn-free {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  position: relative;
-  overflow: hidden;
+.btn-glow {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
-.btn-free::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-  transition: left 0.5s;
+.start-course-btn:hover:not(:disabled) .btn-glow {
+  opacity: 1;
+}
+
+.btn-free {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  color: white;
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
 }
 
 .btn-free:hover:not(:disabled) {
-  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
   transform: translateY(-2px);
-  box-shadow: 0 12px 30px rgba(102, 126, 234, 0.4);
-}
-
-.btn-free:hover:not(:disabled)::before {
-  left: 100%;
+  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.4);
 }
 
 .btn-premium {
-  background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
   color: white;
-  position: relative;
-  overflow: hidden;
-}
-
-.btn-premium::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-  transition: left 0.5s;
+  box-shadow: 0 4px 16px rgba(124, 58, 237, 0.3);
 }
 
 .btn-premium:hover:not(:disabled) {
-  background: linear-gradient(135deg, #7c3aed 0%, #9333ea 100%);
   transform: translateY(-2px);
-  box-shadow: 0 12px 30px rgba(139, 92, 246, 0.4);
-}
-
-.btn-premium:hover:not(:disabled)::before {
-  left: 100%;
+  box-shadow: 0 8px 32px rgba(124, 58, 237, 0.4);
 }
 
 .btn-pro {
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  background: linear-gradient(135deg, #f59e0b, #d97706);
   color: white;
-  position: relative;
-  overflow: hidden;
-}
-
-.btn-pro::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-  transition: left 0.5s;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.3);
 }
 
 .btn-pro:hover:not(:disabled) {
-  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
   transform: translateY(-2px);
-  box-shadow: 0 12px 30px rgba(59, 130, 246, 0.4);
-}
-
-.btn-pro:hover:not(:disabled)::before {
-  left: 100%;
-}
-
-.course-hover-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, transparent, rgba(99, 102, 241, 0.1));
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  pointer-events: none;
-  border-radius: 24px;
-}
-
-.course-card:hover .course-hover-overlay {
-  opacity: 1;
+  box-shadow: 0 8px 32px rgba(245, 158, 11, 0.4);
 }
 
 .empty-courses {
   text-align: center;
-  padding: 60px 20px;
-  background: rgba(255, 255, 255, 0.6);
-  border-radius: 20px;
-  border: 2px dashed rgba(226, 232, 240, 0.8);
+  padding: 60px 30px;
+  max-width: 500px;
+  margin: 0 auto;
 }
 
 .empty-icon {
   font-size: 4rem;
   margin-bottom: 20px;
-  opacity: 0.6;
+  opacity: 0.5;
 }
 
 .empty-courses h3 {
-  font-size: 1.3rem;
+  font-size: 1.5rem;
   font-weight: 700;
-  color: #1a1a1a;
+  color: #0a0a0a;
   margin-bottom: 12px;
 }
 
 .empty-courses p {
-  color: #666666;
+  color: #737373;
   margin-bottom: 24px;
-  font-size: 0.95rem;
+  font-size: 1rem;
 }
 
 .retry-btn {
-  padding: 10px 20px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
   color: white;
   border: none;
-  border-radius: 10px;
-  font-weight: 500;
+  border-radius: 12px;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
 }
 
 .retry-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.4);
 }
 
 /* Modal Styles */
@@ -942,113 +893,114 @@ export default {
 }
 
 .registration-modal {
-  background: white;
-  border-radius: 24px;
-  padding: 32px;
   width: 100%;
   max-width: 500px;
-  max-height: 90vh;
-  overflow-y: auto;
+  padding: 40px;
   position: relative;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
-  animation: slideUp 0.3s ease;
+  animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @keyframes slideUp {
   from { 
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(40px) scale(0.95);
   }
   to { 
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
 .close-btn {
   position: absolute;
-  top: 16px;
+  top: 20px;
   right: 20px;
+  width: 36px;
+  height: 36px;
+  background: rgba(139, 92, 246, 0.08);
+  border: 1.5px solid rgba(139, 92, 246, 0.2);
+  border-radius: 10px;
+  color: #737373;
   font-size: 1.5rem;
   cursor: pointer;
-  color: #64748b;
-  transition: color 0.2s ease;
-  background: none;
-  border: none;
-  padding: 4px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  z-index: 10;
 }
 
 .close-btn:hover {
-  color: #1e293b;
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #dc2626;
+  transform: rotate(90deg);
 }
 
 .modal-header {
   text-align: center;
-  margin-bottom: 24px;
+  margin-bottom: 32px;
+}
+
+.modal-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
 }
 
 .modal-header h2 {
-  font-size: 1.4rem;
-  font-weight: 800;
-  color: #1a1a1a;
-  margin-bottom: 8px;
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #0a0a0a;
+  margin: 0 0 12px 0;
+  letter-spacing: -0.02em;
 }
 
 .modal-header p {
-  color: #666666;
-  font-size: 0.95rem;
+  color: #737373;
+  font-size: 0.9375rem;
+  margin: 0;
 }
 
 .course-preview {
-  display: flex;
-  gap: 16px;
-  padding: 20px;
-  background: rgba(99, 102, 241, 0.05);
+  padding: 24px;
+  background: rgba(139, 92, 246, 0.05);
   border-radius: 16px;
-  margin-bottom: 24px;
-  border: 1px solid rgba(99, 102, 241, 0.1);
-}
-
-.course-icon {
-  width: 60px;
-  height: 60px;
-  border-radius: 12px;
-  object-fit: cover;
-  background: white;
-  padding: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin-bottom: 32px;
+  border: 1.5px solid rgba(139, 92, 246, 0.1);
 }
 
 .course-info h3 {
-  font-size: 1rem;
+  font-size: 1.25rem;
   font-weight: 700;
-  color: #1a1a1a;
-  margin-bottom: 4px;
+  color: #0a0a0a;
+  margin: 0 0 8px 0;
 }
 
-.course-info p {
-  color: #6366f1;
+.course-type {
+  color: #7c3aed;
   font-weight: 600;
-  font-size: 0.85rem;
-  margin-bottom: 12px;
+  font-size: 0.875rem;
+  margin: 0 0 20px 0;
 }
 
 .course-benefits {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 12px;
 }
 
 .benefit-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.8rem;
-  color: #333333;
+  gap: 12px;
+  font-size: 0.875rem;
+  color: #404040;
+  font-weight: 500;
 }
 
 .benefit-icon {
-  font-size: 1rem;
+  font-size: 1.25rem;
 }
 
 .modal-actions {
@@ -1058,61 +1010,60 @@ export default {
 }
 
 .register-btn {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 14px 24px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  padding: 16px 32px;
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
   color: white;
   border: none;
   border-radius: 12px;
   font-weight: 600;
   font-size: 1rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
 }
 
 .register-btn:hover {
-  background: linear-gradient(135deg, #5b21b6, #7c3aed);
-  transform: translateY(-1px);
-  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.4);
 }
 
 .cancel-btn {
-  padding: 12px 24px;
+  padding: 14px 32px;
   background: transparent;
-  color: #64748b;
-  border: 1px solid rgba(226, 232, 240, 0.8);
+  color: #737373;
+  border: 1.5px solid rgba(139, 92, 246, 0.2);
   border-radius: 12px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
 }
 
 .cancel-btn:hover {
-  background: rgba(248, 250, 252, 0.8);
-  border-color: rgba(203, 213, 225, 0.8);
-  color: #475569;
+  background: rgba(139, 92, 246, 0.05);
+  border-color: rgba(139, 92, 246, 0.3);
+  color: #525252;
 }
 
 /* Error Alert */
 .error-alert {
   position: fixed;
-  top: 20px;
-  right: 20px;
-  z-index: 1000;
-  background: rgba(239, 68, 68, 0.95);
-  color: white;
+  bottom: 30px;
+  right: 30px;
+  z-index: 10000;
   padding: 16px 20px;
-  border-radius: 12px;
   display: flex;
   align-items: center;
   gap: 12px;
   max-width: 400px;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 10px 25px rgba(239, 68, 68, 0.3);
   animation: slideInRight 0.3s ease;
+  background: rgba(239, 68, 68, 0.95);
+  border: 1.5px solid rgba(239, 68, 68, 0.3);
 }
 
 @keyframes slideInRight {
@@ -1127,21 +1078,28 @@ export default {
 }
 
 .error-icon {
-  font-size: 1.2rem;
+  font-size: 1.5rem;
+  flex-shrink: 0;
 }
 
 .error-text {
   flex: 1;
+  color: white;
   font-weight: 500;
+  font-size: 0.9375rem;
 }
 
 .retry-error-btn {
-  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
   background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 6px;
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
   color: white;
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -1151,33 +1109,20 @@ export default {
 }
 
 /* Responsive Design */
+@media (max-width: 1024px) {
+  .loading-grid, .courses-container {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  }
+}
+
 @media (max-width: 768px) {
   .aced-section {
-    padding: 40px 20px;
-    gap: 30px;
+    padding: 60px 24px;
+    gap: 40px;
   }
   
   .headline {
     font-size: 2.5rem;
-  }
-  
-  .context-text {
-    font-size: 1.1rem;
-  }
-  
-  .filter-controls {
-    flex-direction: column;
-    gap: 16px;
-    padding: 16px;
-  }
-  
-  .subject-filter, .type-filter {
-    width: 100%;
-    justify-content: space-between;
-  }
-  
-  .filter-controls select {
-    min-width: 160px;
   }
   
   .courses-container {
@@ -1185,115 +1130,52 @@ export default {
     gap: 20px;
   }
   
-  .course-card {
-    height: auto;
-    min-height: 280px;
-  }
-  
   .registration-modal {
-    margin: 20px;
-    padding: 24px;
-  }
-  
-  .course-preview {
-    flex-direction: column;
-    text-align: center;
+    padding: 32px 24px;
   }
   
   .error-alert {
-    position: relative;
-    top: auto;
-    right: auto;
-    margin: 20px;
+    bottom: 20px;
+    right: 20px;
+    left: 20px;
     max-width: none;
   }
 }
 
 @media (max-width: 480px) {
+  .aced-section {
+    padding: 40px 16px;
+  }
+  
   .headline {
     font-size: 2rem;
   }
   
-  .filter-controls {
-    padding: 12px;
-  }
-  
   .course-card {
     padding: 20px;
+    min-height: 260px;
+  }
+  
+  .course-title {
+    font-size: 1.125rem;
+    padding-right: 70px;
   }
   
   .registration-modal {
-    padding: 20px;
-  }
-}
-
-/* High contrast mode */
-@media (prefers-contrast: high) {
-  .aced-section {
-    background: #ffffff;
+    padding: 28px 20px;
   }
   
-  .course-card {
-    border: 2px solid #1e293b;
-    background: #ffffff;
-  }
-  
-  .headline {
-    -webkit-text-fill-color: #1e293b;
+  .modal-header h2 {
+    font-size: 1.5rem;
   }
 }
 
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  .course-card,
-  .start-course-btn,
-  .refresh-btn,
-  .retry-btn {
-    transition: none;
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
-  
-  .course-card:hover {
-    transform: none;
-  }
-  
-  .refresh-icon.spinning {
-    animation: none;
-  }
-  
-
-  @keyframes fadeIn {
-  from, to { 
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@keyframes slideUp {
-  from, to { 
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@keyframes slideInRight {
-  from, to { 
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@keyframes pulse {
-  from, to { 
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@keyframes spin {
-  from, to { 
-    opacity: 1;
-    transform: none;
-  }
-}
 }
 </style>
