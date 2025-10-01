@@ -358,15 +358,14 @@ export default {
   flex-direction: column;
   gap: 20px;
   width: 100%;
+  max-width: 450px;
 }
 
 .glass-card {
   position: relative;
-  padding: 36px;
+  padding: 32px;
   background: rgba(255, 255, 255, 0.75);
   backdrop-filter: blur(30px);
-  border: 2px solid;
-  border-image: linear-gradient(135deg, #8b5cf6, #6d28d9, #8b5cf6) 1;
   border-radius: 16px;
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -374,16 +373,16 @@ export default {
   box-shadow: 
     0 8px 32px rgba(139, 92, 246, 0.15),
     inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  aspect-ratio: 1.8 / 1;
   display: flex;
   align-items: center;
+  min-height: 160px;
 }
 
 .glass-card::after {
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 14px;
+  border-radius: 16px;
   padding: 2px;
   background: linear-gradient(135deg, #8b5cf6, #6d28d9, #a78bfa);
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -573,10 +572,13 @@ export default {
     padding: 16px 20px;
   }
   
+  .cards-stack {
+    max-width: 100%;
+  }
+  
   .glass-card {
     padding: 28px;
-    aspect-ratio: auto;
-    min-height: 180px;
+    min-height: 150px;
   }
   
   .card-title {
@@ -608,8 +610,7 @@ export default {
   
   .glass-card {
     padding: 24px;
-    aspect-ratio: auto;
-    min-height: 160px;
+    min-height: 140px;
   }
   
   .card-inner {
