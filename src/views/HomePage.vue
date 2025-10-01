@@ -14,23 +14,13 @@
       <AboutUs />
     </section>
 
-    <!-- Features Section -->
-    <section id="features">
-      <PassionTest />
-    </section>
-
-    <!-- ACEED Section -->
+    
+    <!-- ACED Section -->
     <section id="aced">
       <AcedSection />
     </section>
-    <section id="greatpeople">
-<GreatPeopleSection/>
-    </section>
+ 
 
-    <!-- Analytics Section -->
-    <section id="analytics">
-      <AnalyticsSection />
-    </section>
     <!-- Tariff Section -->
 <section id="tariffs">
   <TariffSection />
@@ -51,10 +41,7 @@
 <script setup>
 import HeroSection from '@/components/Main/HeroSection.vue';
 import AboutUs from '@/components/Main/AboutUs.vue';
-import PassionTest from '@/components/Main/PassionTest.vue';
 import AcedSection from '@/components/Main/AcedSection.vue';
-import GreatPeopleSection from '@/components/Main/GreatPeopleSection.vue'
-import AnalyticsSection from '@/components/Main/AnalyticsSection.vue';
 import TariffSection from '@/components/Main/TariffSection.vue'
 
 import FooterBar from '@/components/Main/FooterBar.vue';
