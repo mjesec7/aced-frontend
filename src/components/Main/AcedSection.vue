@@ -35,7 +35,10 @@
               <span class="badge-icon">{{ getTopicTypeIcon(course) }}</span>
               <span class="badge-text">{{ getTopicTypeLabel(course) }}</span>
             </div>
-            <div class="course-level">Ур. {{ course.level || 1 }}</div>
+            <div class="course-meta">
+              <div class="course-subject">{{ course.subject || 'Общий' }}</div>
+              <div class="course-level">Ур. {{ course.level || 1 }}</div>
+            </div>
           </div>
           
           <!-- Course Content -->
@@ -356,19 +359,23 @@ export default {
     filterCourses() {
       console.log('🔍 Filtering courses from', this.allCourses.length, 'total courses');
       
-      // Simply show all courses without any filtering
-      this.filteredCourses = [...this.allCourses];
+      // Show ALL free courses regardless of subject
+      this.filteredCourses = this.allCourses.filter(course => {
+        const type = this.getTopicType(course);
+        return type === 'free';
+      });
       
-      console.log('✅ Filtered courses:', this.filteredCourses.length);
+      console.log('✅ Filtered to', this.filteredCourses.length, 'free courses');
       this.updateDisplayedCourses();
     },
 
     updateDisplayedCourses() {
       console.log('📋 Updating displayed courses from', this.filteredCourses.length, 'filtered courses');
       
-      this.displayedCourses = this.filteredCourses.slice(0, this.maxDisplayedCourses);
+      // Display ALL free courses without limit
+      this.displayedCourses = [...this.filteredCourses];
       
-      console.log('✅ Displayed courses set to:', this.displayedCourses.length, this.displayedCourses);
+      console.log('✅ Displayed all', this.displayedCourses.length, 'free courses');
     },
 
     async refreshCourses() {
@@ -799,6 +806,22 @@ export default {
   font-size: 0.875rem;
 }
 
+.course-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.course-subject {
+  padding: 4px 12px;
+  background: rgba(139, 92, 246, 0.08);
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #7c3aed;
+  white-space: nowrap;
+}
+
 .course-level {
   padding: 4px 12px;
   background: rgba(0, 0, 0, 0.04);
@@ -806,6 +829,7 @@ export default {
   font-size: 0.75rem;
   font-weight: 600;
   color: #525252;
+  white-space: nowrap;
 }
 
 .course-content {
