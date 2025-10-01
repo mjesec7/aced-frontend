@@ -14,7 +14,7 @@
         <!-- Left Side - Enhanced Message -->
         <div class="hero-left">
           <div class="hero-message">
-            <div class="label-badge">🚀 Платформа №1 в Узбекистане</div>
+            <div class="label-badge">🎓 Проверенное качество образования</div>
             <h1 class="hero-title">
               Твой путь к знаниям<br />
               начинается здесь
@@ -30,10 +30,11 @@
               <div class="avatar">👤</div>
               <div class="avatar">👤</div>
               <div class="avatar">👤</div>
-              <div class="avatar-more">+2,844</div>
+              <div class="avatar-more">+2.8K</div>
             </div>
             <div class="proof-text">
-              <strong>Уже учатся</strong> и достигают результатов
+              <div class="proof-number">2,844 студентов</div>
+              <div class="proof-label">уже учатся и достигают результатов</div>
             </div>
           </div>
 
@@ -309,15 +310,24 @@ export default {
 }
 
 .proof-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   font-family: 'Inter', sans-serif;
-  font-size: 0.9375rem;
-  color: #404040;
-  line-height: 1.4;
 }
 
-.proof-text strong {
+.proof-number {
+  font-size: 1.125rem;
+  font-weight: 700;
   color: #0a0a0a;
-  font-weight: 600;
+  line-height: 1.3;
+}
+
+.proof-label {
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: #737373;
+  line-height: 1.4;
 }
 
 /* Trust Badges */
