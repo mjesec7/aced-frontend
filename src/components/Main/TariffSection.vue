@@ -2,49 +2,88 @@
   <section class="pricing-section">
     <div class="container">
       <div class="text-center">
-        <div class="sale-badge">🔥 СКИДКА 50% ТОЛЬКО СЕГОДНЯ!</div>
-        <h2 class="section-title">Инвестируйте в своё будущее <span class="gradient-text">прямо сейчас!</span></h2>
+        <div class="label-badge">🎯 Инвестиция в будущее</div>
+        <h2 class="section-title">
+          Выберите свой план<br />
+          <span class="gradient-text">и начните расти</span>
+        </h2>
         <p class="section-subtitle">
-          Выберите план, который изменит вашу карьеру навсегда. Каждый сум вернётся увеличением зарплаты!
+          Инвестируйте в своё образование сегодня. Каждый урок — это шаг к новым возможностям.
         </p>
       </div>
 
       <div class="pricing-cards">
-        <div class="card">
-          <h3 class="plan-name">Базовый</h3>
-          <p class="plan-desc">Для начинающих</p>
+        <div class="card glass-card">
+          <div class="card-header">
+            <div class="plan-icon">✨</div>
+            <h3 class="plan-name">Базовый</h3>
+            <p class="plan-desc">Для начинающих</p>
+          </div>
+          
           <div class="price-wrapper">
-            <p class="old-price">520,000 сум</p>
+            <div class="price-row">
+              <p class="old-price">520,000 сум</p>
+              <div class="discount-badge">-50%</div>
+            </div>
             <p class="price">260,000 <span class="currency">сум</span></p>
             <p class="period">единовременно</p>
           </div>
+          
           <ul class="features">
-            <li><span class="check">✔</span> Доступ ко всем предметам</li>
-            <li><span class="check">✔</span> Помощь ИИ с домашкой</li>
-            <li><span class="check">✔</span> Прогресс и статистика</li>
+            <li><span class="check">✓</span> <span>Доступ ко всем предметам</span></li>
+            <li><span class="check">✓</span> <span>Помощь ИИ с домашкой</span></li>
+            <li><span class="check">✓</span> <span>Прогресс и статистика</span></li>
           </ul>
-           <button class="btn outline" @click="handleClick('start')">Выбрать план</button>
+          
+          <button class="btn btn-outline" @click="handleClick('start')">
+            <span class="btn-text">Выбрать план</span>
+            <span class="btn-icon">→</span>
+            <span class="btn-glow"></span>
+          </button>
+          
+          <div class="card-shine"></div>
         </div>
 
-        <div class="card popular">
-           <div class="popular-badge">⭐ САМЫЙ ПОПУЛЯРНЫЙ</div>
-           <h3 class="plan-name">Профессионал</h3>
-           <p class="plan-desc">Для карьерного роста</p>
-           <div class="price-wrapper">
-             <p class="old-price">900,000 сум</p>
-             <p class="price">450,000 <span class="currency">сум</span></p>
-             <p class="period">единовременно</p>
-           </div>
-           <div class="economy-badge">ЭКОНОМИЯ 450,000 сум</div>
-           <ul class="features">
-             <li><span class="check">✔</span> Всё из STARTER +</li>
-             <li><span class="check">✔</span> Персональный ИИ-наставник</li>
-             <li><span class="check">✔</span> Продвинутая аналитика</li>
-             <li><span class="check">✔</span> Индивидуальная карта обучения</li>
-           </ul>
-            <button class="btn gradient" @click="handleClick('pro')">Начать сейчас!</button>
+        <div class="card glass-card popular">
+          <div class="popular-badge">
+            <span class="badge-icon">⭐</span>
+            <span>Самый популярный</span>
+          </div>
+          
+          <div class="card-header">
+            <div class="plan-icon premium">💎</div>
+            <h3 class="plan-name">Профессионал</h3>
+            <p class="plan-desc">Для карьерного роста</p>
+          </div>
+          
+          <div class="price-wrapper">
+            <div class="price-row">
+              <p class="old-price">900,000 сум</p>
+              <div class="discount-badge premium">-50%</div>
+            </div>
+            <p class="price premium">450,000 <span class="currency">сум</span></p>
+            <p class="period">единовременно</p>
+            <div class="economy-badge">
+              <span class="economy-icon">🎉</span>
+              <span>Экономия 450,000 сум</span>
+            </div>
+          </div>
+          
+          <ul class="features">
+            <li><span class="check premium">✓</span> <span>Всё из Базового +</span></li>
+            <li><span class="check premium">✓</span> <span>Персональный ИИ-наставник</span></li>
+            <li><span class="check premium">✓</span> <span>Продвинутая аналитика</span></li>
+            <li><span class="check premium">✓</span> <span>Индивидуальная карта обучения</span></li>
+          </ul>
+          
+          <button class="btn btn-gradient" @click="handleClick('pro')">
+            <span class="btn-text">Начать сейчас!</span>
+            <span class="btn-icon">🚀</span>
+            <span class="btn-glow"></span>
+          </button>
+          
+          <div class="card-shine"></div>
         </div>
-
       </div>
     </div>
   </section>
@@ -71,174 +110,488 @@ export default {
 </script>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
 .pricing-section {
-  padding: 80px 20px;
-  background-color: #110d2e;
-  font-family: 'Unbounded', sans-serif;
+  padding: clamp(80px, 10vw, 120px) clamp(20px, 5vw, 80px);
+  background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
+  font-family: 'Inter', sans-serif;
+  position: relative;
+  overflow: hidden;
 }
+
+.pricing-section::before {
+  content: '';
+  position: absolute;
+  top: -30%;
+  left: -15%;
+  width: 60%;
+  height: 60%;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.05) 0%, transparent 70%);
+  pointer-events: none;
+  filter: blur(60px);
+}
+
 .container {
   max-width: 1200px;
   margin: 0 auto;
+  position: relative;
+  z-index: 2;
 }
+
 .text-center {
   text-align: center;
-  margin-bottom: 4rem;
-}
-.sale-badge {
-  display: inline-block;
-  background-color: #ef4444;
-  color: white;
-  padding: 0.5rem 1.5rem;
-  border-radius: 99px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  margin-bottom: 2rem;
-}
-.section-title {
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: #fff;
-  margin-bottom: 1rem;
-}
-.gradient-text {
-  background: linear-gradient(90deg, #a78bfa, #c084fc);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-.section-subtitle {
-  font-size: 1.1rem;
-  color: #a3a3c2;
-  max-width: 700px;
-  margin: 0 auto;
-  line-height: 1.6;
-}
-.pricing-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
-  align-items: center;
-  max-width: 800px; /* Constrain width for 2 cards */
-  margin: 0 auto; /* Center the two cards */
-}
-.card {
-  background-color: #191645;
-  border-radius: 1.5rem;
-  padding: 2.5rem;
-  text-align: center;
-  border: 2px solid transparent;
+  margin-bottom: 60px;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  align-items: center;
+  gap: 20px;
 }
-.card.popular {
-  background: linear-gradient(145deg, #2c1a4d, #191645);
-  border: 2px solid #7c3aed;
+
+.label-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.12) 0%, rgba(99, 102, 241, 0.08) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  border-radius: 30px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #7c3aed;
+  letter-spacing: 0.02em;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.15);
+}
+
+.section-title {
+  font-size: clamp(2.5rem, 5vw, 3.5rem);
+  font-weight: 700;
+  color: #0a0a0a;
+  margin: 0;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.section-subtitle {
+  font-size: clamp(1rem, 2vw, 1.125rem);
+  color: #737373;
+  max-width: 600px;
+  line-height: 1.6;
+  font-weight: 400;
+}
+
+.pricing-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 32px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.glass-card {
   position: relative;
-  transform: translateY(-20px);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(25px);
+  border-radius: 24px;
+  border: 1.5px solid rgba(139, 92, 246, 0.15);
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.08);
+  display: flex;
+  flex-direction: column;
 }
+
+.glass-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.03) 0%, transparent 100%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.glass-card:hover {
+  transform: translateY(-8px);
+  border-color: rgba(139, 92, 246, 0.3);
+  box-shadow: 0 20px 50px rgba(139, 92, 246, 0.2);
+}
+
+.glass-card:hover::before {
+  opacity: 1;
+}
+
+.card-shine {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.6s ease;
+  pointer-events: none;
+}
+
+.glass-card:hover .card-shine {
+  left: 100%;
+}
+
+.card {
+  padding: 40px 32px;
+  text-align: center;
+}
+
+.card.popular {
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid rgba(139, 92, 246, 0.3);
+  transform: translateY(-10px);
+  box-shadow: 0 8px 40px rgba(139, 92, 246, 0.15);
+}
+
+.card.popular::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
+  padding: 2px;
+  background: linear-gradient(135deg, #8b5cf6, #a78bfa, #c4b5fd);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.5;
+  animation: borderRotate 3s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes borderRotate {
+  0% { filter: hue-rotate(0deg) brightness(1); }
+  50% { filter: hue-rotate(10deg) brightness(1.1); }
+  100% { filter: hue-rotate(0deg) brightness(1); }
+}
+
 .popular-badge {
   position: absolute;
   top: -18px;
   left: 50%;
   transform: translateX(-50%);
-  background: linear-gradient(90deg, #9333ea, #c084fc);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
   color: white;
-  padding: 0.5rem 1.5rem;
-  border-radius: 99px;
-  font-size: 0.8rem;
-  font-weight: 600;
+  padding: 8px 20px;
+  border-radius: 30px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
+  z-index: 10;
 }
+
+.badge-icon {
+  font-size: 0.875rem;
+}
+
+.card-header {
+  margin-bottom: 32px;
+  position: relative;
+  z-index: 2;
+}
+
+.plan-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+  animation: float 3s ease-in-out infinite;
+}
+
+.plan-icon.premium {
+  filter: drop-shadow(0 4px 12px rgba(139, 92, 246, 0.3));
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
 .plan-name {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #0a0a0a;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.01em;
+}
+
+.plan-desc {
+  font-size: 0.9375rem;
+  color: #737373;
+  font-weight: 500;
+  margin: 0;
+}
+
+.price-wrapper {
+  margin-bottom: 32px;
+  position: relative;
+  z-index: 2;
+}
+
+.price-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.old-price {
+  font-size: 1.125rem;
+  color: #a3a3a3;
+  text-decoration: line-through;
+  font-weight: 500;
+  margin: 0;
+}
+
+.discount-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.1));
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 12px;
+  color: #dc2626;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.discount-badge.premium {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(124, 58, 237, 0.1));
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  color: #7c3aed;
+}
+
+.price {
+  font-size: 3rem;
+  font-weight: 800;
+  color: #0a0a0a;
+  line-height: 1;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.price.premium {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.currency {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #fff;
 }
-.plan-desc {
-  font-size: 0.9rem;
-  color: #a3a3c2;
-  margin-bottom: 2rem;
-}
-.price-wrapper {
-  margin-bottom: 1rem;
-}
-.old-price {
-  font-size: 1.25rem;
-  color: #6b7280;
-  text-decoration: line-through;
-}
-.price {
-  font-size: 2.5rem;
-  font-weight: 800;
-  color: #fff;
-  line-height: 1.1;
-}
-.currency {
-  font-size: 2rem;
-}
+
 .period {
-  color: #a3a3c2;
+  color: #a3a3a3;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin: 8px 0 0 0;
 }
+
 .economy-badge {
-  display: inline-block;
-  background-color: rgba(239, 68, 68, 0.1);
-  color: #fca5a5;
-  border-radius: 0.5rem;
-  padding: 0.5rem;
-  margin-top: 1rem;
-  font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.12), rgba(22, 163, 74, 0.08));
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  color: #15803d;
+  border-radius: 12px;
+  padding: 8px 16px;
+  margin-top: 16px;
+  font-size: 0.8125rem;
   font-weight: 600;
 }
+
+.economy-icon {
+  font-size: 1rem;
+}
+
 .features {
   list-style: none;
   padding: 0;
-  margin: 2rem 0;
+  margin: 0 0 32px 0;
   text-align: left;
   flex-grow: 1;
-}
-.features li {
-  color: #d1d5db;
-  margin-bottom: 0.75rem;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-.check {
-  color: #34d399;
-}
-.btn {
-  width: 100%;
-  padding: 1rem;
-  border-radius: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 1rem;
-}
-.btn.outline {
-  background: transparent;
-  border: 2px solid #4f46e5;
-  color: #a3a3c2;
-}
-.btn.outline:hover {
-  background: #4f46e5;
-  color: #fff;
-}
-.btn.gradient {
-  background: linear-gradient(90deg, #9333ea, #7f5af0);
-  border: none;
-  color: white;
-  border: 2px solid transparent;
-}
-.btn.gradient:hover {
-  filter: brightness(1.2);
+  position: relative;
+  z-index: 2;
 }
 
-@media (max-width: 680px) {
-  .pricing-cards {
-    max-width: 100%; /* Allow cards to stack on mobile */
+.features li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  font-size: 0.9375rem;
+  color: #404040;
+  font-weight: 500;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(124, 58, 237, 0.1));
+  border: 1.5px solid rgba(139, 92, 246, 0.3);
+  border-radius: 50%;
+  color: #7c3aed;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.check.premium {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  border: none;
+  color: white;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+}
+
+.btn {
+  position: relative;
+  width: 100%;
+  padding: 16px 28px;
+  border: none;
+  border-radius: 14px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  overflow: hidden;
+  font-family: 'Inter', sans-serif;
+  z-index: 2;
+}
+
+.btn-glow {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.4), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.btn:hover .btn-glow {
+  opacity: 1;
+}
+
+.btn-icon {
+  transition: transform 0.3s ease;
+}
+
+.btn:hover .btn-icon {
+  transform: translateX(4px);
+}
+
+.btn-outline {
+  background: transparent;
+  border: 2px solid rgba(139, 92, 246, 0.3);
+  color: #7c3aed;
+}
+
+.btn-outline:hover {
+  background: rgba(139, 92, 246, 0.08);
+  border-color: rgba(139, 92, 246, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.2);
+}
+
+.btn-gradient {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 50%, #6d28d9 100%);
+  color: white;
+  box-shadow: 
+    0 4px 20px rgba(139, 92, 246, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.btn-gradient::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  padding: 2px;
+  background: linear-gradient(135deg, #a78bfa, #d8b4fe);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.btn-gradient:hover {
+  transform: translateY(-3px);
+  box-shadow: 
+    0 8px 35px rgba(139, 92, 246, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.btn-gradient:hover::before {
+  opacity: 1;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .pricing-section {
+    padding: 60px 24px;
   }
+  
+  .pricing-cards {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  
   .card.popular {
-    transform: translateY(0); /* Remove vertical shift on mobile stack */
+    transform: translateY(0);
+  }
+  
+  .card {
+    padding: 32px 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .pricing-section {
+    padding: 40px 16px;
+  }
+  
+  .text-center {
+    margin-bottom: 40px;
+  }
+  
+  .plan-icon {
+    font-size: 2.5rem;
+  }
+  
+  .price {
+    font-size: 2.5rem;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 </style>
