@@ -1,13 +1,20 @@
 <template>
   <div>
     <div v-if="!currentUser" class="auth-buttons">
-      <button class="auth-btn" @click="openModal('register')">Регистрация</button>
-      <button class="auth-btn" @click="openModal('Login')">Вход</button>
+      <button class="auth-btn login-btn" @click="openModal('Login')">
+        <span class="btn-text">Вход</span>
+        <span class="btn-icon">→</span>
+      </button>
+      <button class="auth-btn register-btn" @click="openModal('register')">
+        <span class="btn-text">Регистрация</span>
+        <span class="btn-glow"></span>
+      </button>
     </div>
 
     <div v-else class="user-section">
-      <button class="auth-btn profile" @click="$router.push('/profile')">
-        Профиль
+      <button class="auth-btn profile-btn" @click="$router.push('/profile')">
+        <span class="profile-icon">👤</span>
+        <span>Профиль</span>
       </button>
       
       <div class="user-menu">
@@ -16,10 +23,11 @@
           :class="{ active: dropdownOpen }"
           @click="toggleDropdown"
         >
-          Привет, {{ currentUser.name }}
-          <span class="badge">
+          <span class="user-greeting">Привет, {{ currentUser.name }}</span>
+          <span class="badge" :class="planClass">
             {{ displayPlan }}
           </span>
+          <span class="dropdown-arrow" :class="{ rotated: dropdownOpen }">▼</span>
         </button>
         <div 
           v-if="dropdownOpen" 
@@ -27,8 +35,14 @@
           @click.stop
         >
           <ul>
-            <li @click="$router.push('/settings')">⚙️ Настройки</li>
-            <li @click="logout">🚪 Выйти</li>
+            <li @click="$router.push('/settings')">
+              <span class="menu-icon">⚙️</span>
+              <span>Настройки</span>
+            </li>
+            <li @click="logout">
+              <span class="menu-icon">🚪</span>
+              <span>Выйти</span>
+            </li>
           </ul>
         </div>
       </div>
@@ -36,47 +50,108 @@
 
     <div v-if="isModalOpen" class="global-auth-modal" @click="closeModal">
       <div class="modal-content" @click.stop>
-        <span class="close-btn" @click="closeModal">&times;</span>
+        <button class="close-btn" @click="closeModal">
+          <span>×</span>
+        </button>
 
         <div v-if="isLoading" class="loading-state">
+          <div class="loader-spinner"></div>
           <p>{{ loadingMessage }}</p>
         </div>
 
-        <div v-else-if="authMode === 'register'">
-          <h2>Регистрация</h2>
-          <input v-model="user.name" placeholder="Имя" :disabled="isLoading" />
-          <input v-model="user.surname" placeholder="Фамилия" :disabled="isLoading" />
-          <input v-model="user.email" type="email" placeholder="Email" :disabled="isLoading" />
-          <input v-model="user.password" type="password" placeholder="Пароль" :disabled="isLoading" />
-          <input v-model="user.confirmPassword" type="password" placeholder="Повторите пароль" :disabled="isLoading" />
+        <div v-else-if="authMode === 'register'" class="auth-form">
+          <div class="modal-header">
+            <h2>Создайте аккаунт</h2>
+            <p class="modal-subtitle">Начните свой путь обучения</p>
+          </div>
+
+          <div class="form-group">
+            <input v-model="user.name" placeholder="Имя" :disabled="isLoading" class="form-input" />
+          </div>
+          <div class="form-group">
+            <input v-model="user.surname" placeholder="Фамилия" :disabled="isLoading" class="form-input" />
+          </div>
+          <div class="form-group">
+            <input v-model="user.email" type="email" placeholder="Email" :disabled="isLoading" class="form-input" />
+          </div>
+          <div class="form-group">
+            <input v-model="user.password" type="password" placeholder="Пароль" :disabled="isLoading" class="form-input" />
+          </div>
+          <div class="form-group">
+            <input v-model="user.confirmPassword" type="password" placeholder="Повторите пароль" :disabled="isLoading" class="form-input" />
+          </div>
+
           <button class="auth-submit" @click="register" :disabled="isLoading">
-            {{ isLoading ? 'Регистрация...' : 'Зарегистрироваться' }}
+            <span>{{ isLoading ? 'Регистрация...' : 'Зарегистрироваться' }}</span>
+            <span class="submit-glow"></span>
           </button>
+
+          <div class="divider">
+            <span>или</span>
+          </div>
+
           <button class="google-auth" @click="LoginWithGoogle" :disabled="isLoading">
-            {{ isLoading ? 'Загрузка...' : 'Регистрация через Google' }}
+            <svg class="google-icon" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            <span>{{ isLoading ? 'Загрузка...' : 'Продолжить с Google' }}</span>
           </button>
-          <p class="switch-text">Уже есть аккаунт? <span @click="switchAuth('Login')">Войти</span></p>
+
+          <p class="switch-text">
+            Уже есть аккаунт? 
+            <span class="switch-link" @click="switchAuth('Login')">Войти</span>
+          </p>
         </div>
 
-        <div v-else>
-          <h2>Вход</h2>
-          <input v-model="Login.email" type="email" placeholder="Email" :disabled="isLoading" />
-          <input v-model="Login.password" type="password" placeholder="Пароль" :disabled="isLoading" />
+        <div v-else class="auth-form">
+          <div class="modal-header">
+            <h2>С возвращением!</h2>
+            <p class="modal-subtitle">Продолжите обучение</p>
+          </div>
+
+          <div class="form-group">
+            <input v-model="Login.email" type="email" placeholder="Email" :disabled="isLoading" class="form-input" />
+          </div>
+          <div class="form-group">
+            <input v-model="Login.password" type="password" placeholder="Пароль" :disabled="isLoading" class="form-input" />
+          </div>
+
           <button class="auth-submit" @click="handleEmailLogin" :disabled="isLoading">
-            {{ isLoading ? 'Вход...' : 'Войти' }}
+            <span>{{ isLoading ? 'Вход...' : 'Войти' }}</span>
+            <span class="submit-glow"></span>
           </button>
+
+          <div class="divider">
+            <span>или</span>
+          </div>
+
           <button class="google-auth" @click="LoginWithGoogle" :disabled="isLoading">
-            {{ isLoading ? 'Загрузка...' : 'Войти через Google' }}
+            <svg class="google-icon" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            <span>{{ isLoading ? 'Загрузка...' : 'Продолжить с Google' }}</span>
           </button>
-          <p class="switch-text">Нет аккаунта? <span @click="switchAuth('register')">Зарегистрироваться</span></p>
+
+          <p class="switch-text">
+            Нет аккаунта? 
+            <span class="switch-link" @click="switchAuth('register')">Зарегистрироваться</span>
+          </p>
         </div>
 
         <div v-if="errorMessage" class="error-message">
-          {{ errorMessage }}
+          <span class="message-icon">⚠️</span>
+          <span>{{ errorMessage }}</span>
         </div>
         
         <div v-if="successMessage" class="success-message">
-          {{ successMessage }}
+          <span class="message-icon">✓</span>
+          <span>{{ successMessage }}</span>
         </div>
       </div>
     </div>
@@ -124,6 +199,10 @@ export default {
     displayPlan() {
       const plan = this.currentUser?.subscriptionPlan || localStorage.getItem("plan") || 'free';
       return plan.toUpperCase();
+    },
+    planClass() {
+      const plan = (this.currentUser?.subscriptionPlan || localStorage.getItem("plan") || 'free').toLowerCase();
+      return `badge-${plan}`;
     }
   },
 
@@ -470,46 +549,610 @@ export default {
 </script>
 
 <style scoped>
-@import "@/assets/css/UserSection.css";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
+* {
+  font-family: 'Inter', sans-serif;
+}
+
+/* Auth Buttons */
+.auth-buttons {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.auth-btn {
+  position: relative;
+  padding: 10px 24px;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.login-btn {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  color: #0a0a0a;
+  border: 1.5px solid rgba(139, 92, 246, 0.2);
+}
+
+.login-btn:hover {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(139, 92, 246, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.15);
+}
+
+.login-btn .btn-icon {
+  transition: transform 0.3s ease;
+}
+
+.login-btn:hover .btn-icon {
+  transform: translateX(4px);
+}
+
+.register-btn {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  color: white;
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
+}
+
+.register-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.4);
+}
+
+.btn-glow {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.register-btn:hover .btn-glow {
+  opacity: 1;
+}
+
+/* User Section */
+.user-section {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.profile-btn {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  color: #0a0a0a;
+  border: 1.5px solid rgba(139, 92, 246, 0.2);
+}
+
+.profile-btn:hover {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(139, 92, 246, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.15);
+}
+
+.profile-icon {
+  font-size: 1.125rem;
+}
+
+/* User Menu */
+.user-menu {
+  position: relative;
+}
+
+.user-button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(25px);
+  border: 1.5px solid rgba(139, 92, 246, 0.25);
+  border-radius: 12px;
+  color: #0a0a0a;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 12px rgba(139, 92, 246, 0.1);
+}
+
+.user-button:hover {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(139, 92, 246, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.2);
+}
+
+.user-button.active {
+  border-color: rgba(139, 92, 246, 0.5);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.25);
+}
+
+.user-greeting {
+  font-weight: 600;
+}
+
+.badge {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.badge-free {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.15));
+  color: #7c3aed;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.badge-premium,
+.badge-pro {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: #78350f;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.2);
+}
+
+.dropdown-arrow {
+  font-size: 0.625rem;
+  transition: transform 0.3s ease;
+  color: #737373;
+}
+
+.dropdown-arrow.rotated {
+  transform: rotate(180deg);
+}
+
+/* Dropdown Menu */
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 200px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(30px);
+  border: 1.5px solid rgba(139, 92, 246, 0.2);
+  border-radius: 12px;
+  box-shadow: 0 12px 48px rgba(139, 92, 246, 0.2);
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-10px);
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1000;
+}
+
+.dropdown-menu.show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: all;
+}
+
+.dropdown-menu ul {
+  list-style: none;
+  padding: 8px;
+  margin: 0;
+}
+
+.dropdown-menu li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  cursor: pointer;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #404040;
+  transition: all 0.2s ease;
+}
+
+.dropdown-menu li:hover {
+  background: rgba(139, 92, 246, 0.08);
+  color: #7c3aed;
+  transform: translateX(4px);
+}
+
+.menu-icon {
+  font-size: 1.125rem;
+}
+
+/* Global Auth Modal */
+.global-auth-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-content {
+  position: relative;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(40px);
+  border: 2px solid rgba(139, 92, 246, 0.15);
+  border-radius: 24px;
+  padding: 48px;
+  max-width: 480px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 
+    0 24px 80px rgba(139, 92, 246, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.close-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 36px;
+  height: 36px;
+  background: rgba(139, 92, 246, 0.08);
+  border: 1.5px solid rgba(139, 92, 246, 0.2);
+  border-radius: 10px;
+  color: #737373;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.close-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #dc2626;
+  transform: rotate(90deg);
+}
+
+/* Loading State */
 .loading-state {
   text-align: center;
-  padding: 2rem;
+  padding: 3rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
 }
 
-.error-message {
-  background-color: #fee;
-  border: 1px solid #fcc;
-  color: #c33;
-  padding: 0.75rem;
-  border-radius: 4px;
-  margin-top: 1rem;
-  font-size: 0.9rem;
+.loader-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(139, 92, 246, 0.15);
+  border-top-color: #8b5cf6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
 }
 
-.success-message {
-  background-color: #efe;
-  border: 1px solid #cfc;
-  color: #3c3;
-  padding: 0.75rem;
-  border-radius: 4px;
-  margin-top: 1rem;
-  font-size: 0.9rem;
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-.auth-submit:disabled,
+.loading-state p {
+  font-size: 1rem;
+  color: #525252;
+  font-weight: 500;
+}
+
+/* Auth Form */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.modal-header {
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.modal-header h2 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #0a0a0a;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.02em;
+}
+
+.modal-subtitle {
+  font-size: 0.9375rem;
+  color: #737373;
+  margin: 0;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-input {
+  padding: 14px 18px;
+  border: 2px solid rgba(139, 92, 246, 0.15);
+  border-radius: 12px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #0a0a0a;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.form-input::placeholder {
+  color: #a3a3a3;
+}
+
+.form-input:focus {
+  border-color: #8b5cf6;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.08);
+}
+
+.form-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Submit Button */
+.auth-submit {
+  position: relative;
+  padding: 16px 24px;
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  border: none;
+  border-radius: 12px;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
+  margin-top: 8px;
+}
+
+.auth-submit:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.4);
+}
+
+.auth-submit:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.auth-submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.submit-glow {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.auth-submit:hover:not(:disabled) .submit-glow {
+  opacity: 1;
+}
+
+/* Divider */
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 8px 0;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1.5px solid rgba(139, 92, 246, 0.15);
+}
+
+.divider span {
+  padding: 0 16px;
+  font-size: 0.8125rem;
+  color: #a3a3a3;
+  font-weight: 500;
+}
+
+/* Google Auth Button */
+.google-auth {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 14px 24px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid rgba(139, 92, 246, 0.2);
+  border-radius: 12px;
+  color: #404040;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.google-auth:hover:not(:disabled) {
+  background: white;
+  border-color: rgba(139, 92, 246, 0.35);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.15);
+}
+
 .google-auth:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-.switch-text span {
-  cursor: pointer;
-  color: #007bff;
-  text-decoration: underline;
+.google-icon {
+  width: 20px;
+  height: 20px;
 }
 
-.switch-text span:hover {
-  color: #0056b3;
+/* Switch Text */
+.switch-text {
+  text-align: center;
+  font-size: 0.875rem;
+  color: #737373;
+  margin-top: 8px;
+}
+
+.switch-link {
+  color: #7c3aed;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  border-bottom: 1.5px solid transparent;
+}
+
+.switch-link:hover {
+  color: #6d28d9;
+  border-bottom-color: #7c3aed;
+}
+
+/* Messages */
+.error-message,
+.success-message {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-top: 16px;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.error-message {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1.5px solid rgba(239, 68, 68, 0.25);
+  color: #dc2626;
+}
+
+.success-message {
+  background: rgba(34, 197, 94, 0.08);
+  border: 1.5px solid rgba(34, 197, 94, 0.25);
+  color: #15803d;
+}
+
+.message-icon {
+  font-size: 1.125rem;
+  flex-shrink: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .modal-content {
+    padding: 32px 24px;
+    border-radius: 20px;
+  }
+
+  .modal-header h2 {
+    font-size: 1.5rem;
+  }
+
+  .auth-buttons {
+    gap: 8px;
+  }
+
+  .auth-btn {
+    padding: 9px 18px;
+    font-size: 0.875rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-content {
+    padding: 28px 20px;
+    width: 95%;
+  }
+
+  .user-button {
+    padding: 9px 16px;
+    font-size: 0.875rem;
+  }
+
+  .user-greeting {
+    display: none;
+  }
+
+  .badge {
+    padding: 4px 8px;
+    font-size: 0.625rem;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 </style>
