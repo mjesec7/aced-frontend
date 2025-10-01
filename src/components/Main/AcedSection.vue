@@ -1,17 +1,21 @@
 <template>
   <section class="aced-section" id="aced">
     <div class="section-header">
-      <div class="header-content">
+      <div class="header-left">
         <div class="label-badge">🚀 Начни обучение</div>
         <h1 class="headline">Начни своё обучение уже сегодня</h1>
         <p class="context-text">Выбери курс и начни изучать прямо сейчас</p>
       </div>
+      <button class="refresh-courses-btn" @click="shuffleCourses" :disabled="loadingCourses">
+        <span class="refresh-icon" :class="{ 'spinning': isShuffling }">🔄</span>
+        <span class="refresh-text">Обновить курсы</span>
+      </button>
     </div>
 
     <!-- Course Cards Grid -->
     <div class="courses-grid">
       <div v-if="loadingCourses" class="loading-grid">
-        <div class="course-placeholder glass-card" v-for="n in 6" :key="n">
+        <div class="course-placeholder" v-for="n in 8" :key="n">
           <div class="placeholder-content">
             <div class="loader-spinner"></div>
           </div>
@@ -23,75 +27,83 @@
           v-for="course in displayedCourses" 
           :key="course._id"
           class="course-card"
-          :class="[
-            `course-${getTopicType(course)}`,
-            { 'featured': isFeaturedCourse(course) }
-          ]"
+          :class="getTopicType(course)"
           @click="handleCourseClick(course)"
         >
+          <!-- Decorative Corner -->
+          <div class="card-corner"></div>
+          
           <!-- Course Header -->
           <div class="course-header">
-            <div class="course-badge" :class="getTopicType(course)">
-              <span class="badge-icon">{{ getTopicTypeIcon(course) }}</span>
-              <span class="badge-text">{{ getTopicTypeLabel(course) }}</span>
+            <div class="badge-group">
+              <div class="type-badge" :class="getTopicType(course)">
+                <span class="badge-icon">{{ getTopicTypeIcon(course) }}</span>
+                <span>{{ getTopicTypeLabel(course) }}</span>
+              </div>
+              <div class="subject-badge">
+                {{ course.subject || 'Общий' }}
+              </div>
             </div>
-            <div class="course-meta">
-              <div class="course-subject">{{ course.subject || 'Общий' }}</div>
-              <div class="course-level">Ур. {{ course.level || 1 }}</div>
+            <div class="level-badge">
+              <span class="level-icon">📊</span>
+              <span>{{ course.level || 1 }}</span>
             </div>
           </div>
           
           <!-- Course Content -->
-          <div class="course-content">
+          <div class="course-body">
             <h3 class="course-title">{{ getTopicName(course) }}</h3>
             <p class="course-description">{{ getTopicDescription(course) }}</p>
+            
+            <!-- Course Meta Info -->
+            <div class="course-meta-info">
+              <div class="meta-item">
+                <span class="meta-icon">📖</span>
+                <span class="meta-value">{{ course.lessons?.length || 0 }}</span>
+                <span class="meta-label">уроков</span>
+              </div>
+              <div class="meta-divider"></div>
+              <div class="meta-item">
+                <span class="meta-icon">⏰</span>
+                <span class="meta-value">{{ Math.round((course.totalTime || 0) / 60) || 1 }}</span>
+                <span class="meta-label">часов</span>
+              </div>
+            </div>
           </div>
           
-          <!-- Course Stats -->
-          <div class="course-stats">
-            <div class="stat-item">
-              <span class="stat-icon">📚</span>
-              <span class="stat-text">{{ course.lessons?.length || 0 }} уроков</span>
-            </div>
-            <div class="stat-divider">•</div>
-            <div class="stat-item">
-              <span class="stat-icon">⏱</span>
-              <span class="stat-text">{{ Math.round((course.totalTime || 0) / 60) || 1 }}ч</span>
-            </div>
-          </div>
-          
-          <!-- Course Actions -->
-          <div class="course-actions">
+          <!-- Course Footer -->
+          <div class="course-footer">
             <button 
-              class="start-course-btn"
+              class="course-btn"
               :class="getStartButtonClass(course)"
               @click.stop="handleStartCourse(course)"
               :disabled="processingCourse === course._id"
             >
               <span class="btn-icon">{{ getStartButtonIcon(course) }}</span>
-              <span class="btn-text">{{ getStartButtonText(course) }}</span>
+              <span class="btn-label">{{ getStartButtonText(course) }}</span>
+              <div class="btn-shine"></div>
             </button>
           </div>
           
-          <!-- Gradient Overlay -->
-          <div class="card-gradient" :class="getTopicType(course)"></div>
+          <!-- Hover Glow Effect -->
+          <div class="card-glow"></div>
         </div>
       </div>
       
-      <div v-else class="empty-courses glass-card">
-        <div class="empty-icon">🔍</div>
+      <div v-else class="empty-state">
+        <div class="empty-icon">📚</div>
         <h3>Курсы не найдены</h3>
-        <p>Загружаем актуальные курсы...</p>
-        <button v-if="!loadingCourses" @click="refreshCourses" class="retry-btn">
+        <p>Попробуйте обновить список курсов</p>
+        <button @click="refreshCourses" class="retry-btn">
           <span>🔄</span>
-          <span>Попробовать снова</span>
+          <span>Загрузить курсы</span>
         </button>
       </div>
     </div>
 
     <!-- Registration Modal for Premium Access -->
     <div v-if="showRegistrationModal" class="modal-overlay" @click="closeRegistrationModal">
-      <div class="registration-modal glass-card" @click.stop>
+      <div class="registration-modal" @click.stop>
         <button class="close-btn" @click="closeRegistrationModal">
           <span>×</span>
         </button>
@@ -127,7 +139,6 @@
           <button class="register-btn" @click="triggerRegistration">
             <span class="btn-icon">🚀</span>
             <span>Зарегистрироваться и начать</span>
-            <span class="btn-glow"></span>
           </button>
           <button class="cancel-btn" @click="closeRegistrationModal">
             Пока не готов
@@ -137,12 +148,11 @@
     </div>
 
     <!-- Error Alert -->
-    <div v-if="errorMessage" class="error-alert glass-card">
+    <div v-if="errorMessage" class="error-alert">
       <span class="error-icon">⚠️</span>
       <span class="error-text">{{ errorMessage }}</span>
       <button class="retry-error-btn" @click="refreshCourses">
         <span>🔄</span>
-        <span>Повторить</span>
       </button>
     </div>
   </section>
@@ -160,7 +170,7 @@ export default {
       allCourses: [],
       filteredCourses: [],
       displayedCourses: [],
-      maxDisplayedCourses: 6,
+      maxDisplayedCourses: 8,
       selectedSubject: '',
       selectedType: '',
       availableSubjects: [],
@@ -171,6 +181,7 @@ export default {
       errorMessage: null,
       retryCount: 0,
       maxRetries: 3,
+      isShuffling: false,
       lang: localStorage.getItem('lang') || 'ru'
     };
   },
@@ -192,18 +203,15 @@ export default {
       this.errorMessage = null;
       
       try {
-        // Try fetching from lessons first
         let coursesData = await this.fetchCoursesFromLessons();
-        console.log('📊 Courses from lessons:', coursesData?.length, coursesData);
+        console.log('📊 Courses from lessons:', coursesData?.length);
         
-        // Fallback to topics if lessons didn't work
         if (!coursesData || coursesData.length === 0) {
           console.log('⚠️ No courses from lessons, trying topics...');
           coursesData = await this.fetchCoursesFromTopics();
-          console.log('📊 Courses from topics:', coursesData?.length, coursesData);
+          console.log('📊 Courses from topics:', coursesData?.length);
         }
         
-        // Set the courses data
         if (coursesData && coursesData.length > 0) {
           this.allCourses = coursesData;
           console.log('✅ Set allCourses:', this.allCourses.length);
@@ -214,8 +222,7 @@ export default {
           console.log('✅ Final state:', {
             allCourses: this.allCourses.length,
             filteredCourses: this.filteredCourses.length,
-            displayedCourses: this.displayedCourses.length,
-            courses: this.displayedCourses
+            displayedCourses: this.displayedCourses.length
           });
         } else {
           console.warn('⚠️ No courses found from any source');
@@ -237,7 +244,6 @@ export default {
       try {
         console.log('📡 Fetching lessons...');
         const lessonsResult = await getAllLessons();
-        console.log('📡 Lessons result:', lessonsResult);
         
         if (lessonsResult?.success && Array.isArray(lessonsResult.data) && lessonsResult.data.length > 0) {
           console.log('✅ Got', lessonsResult.data.length, 'lessons');
@@ -246,7 +252,6 @@ export default {
           return courses;
         }
         
-        console.warn('⚠️ No valid lessons data');
         return [];
       } catch (error) {
         console.error('❌ Error fetching courses from lessons:', error);
@@ -258,21 +263,16 @@ export default {
       try {
         console.log('📡 Fetching topics...');
         const topicsResult = await getTopics({ includeStats: true });
-        console.log('📡 Topics result:', topicsResult);
         
         if (topicsResult?.success && Array.isArray(topicsResult.data) && topicsResult.data.length > 0) {
           console.log('✅ Got', topicsResult.data.length, 'topics');
-          // Filter topics that have lessons
           const coursesWithLessons = topicsResult.data.filter(topic => {
-            const hasLessons = topic.lessons && topic.lessons.length > 0;
-            console.log('Topic:', topic.name, 'has lessons:', hasLessons, topic.lessons?.length);
-            return hasLessons;
+            return topic.lessons && topic.lessons.length > 0;
           });
           console.log('✅ Filtered to', coursesWithLessons.length, 'topics with lessons');
           return coursesWithLessons;
         }
         
-        console.warn('⚠️ No valid topics data');
         return [];
       } catch (error) {
         console.error('❌ Error fetching courses from topics:', error);
@@ -284,23 +284,14 @@ export default {
       console.log('🔨 Building courses from', lessons.length, 'lessons');
       const coursesMap = new Map();
       
-      lessons.forEach((lesson, index) => {
-        if (!lesson?.topicId) {
-          console.warn('⚠️ Lesson', index, 'has no topicId:', lesson);
-          return;
-        }
+      lessons.forEach((lesson) => {
+        if (!lesson?.topicId) return;
         
         const topicId = this.extractTopicId(lesson.topicId);
-        if (!topicId) {
-          console.warn('⚠️ Could not extract topicId from:', lesson.topicId);
-          return;
-        }
+        if (!topicId) return;
         
         const topicName = this.getTopicNameFromLesson(lesson);
-        if (!topicName) {
-          console.warn('⚠️ Could not get topic name from lesson:', lesson);
-          return;
-        }
+        if (!topicName) return;
         
         if (!coursesMap.has(topicId)) {
           const newCourse = {
@@ -319,20 +310,17 @@ export default {
             createdAt: lesson.createdAt || new Date().toISOString()
           };
           coursesMap.set(topicId, newCourse);
-          console.log('✅ Created new course:', topicName, 'ID:', topicId);
         } else {
           const course = coursesMap.get(topicId);
           course.lessons.push(lesson);
           course.lessonCount++;
           course.totalTime += this.calculateLessonTime(lesson);
-          console.log('✅ Added lesson to existing course:', topicName);
         }
       });
       
       const coursesArray = Array.from(coursesMap.values());
       console.log('🔨 Built courses map:', coursesArray.length, 'unique courses');
       
-      // Sort courses
       const sortedCourses = coursesArray.sort((a, b) => {
         if (a.type !== b.type) {
           if (a.type === 'free') return -1;
@@ -341,7 +329,6 @@ export default {
         return a.subject.localeCompare(b.subject);
       });
       
-      console.log('✅ Final sorted courses:', sortedCourses.length);
       return sortedCourses;
     },
 
@@ -353,29 +340,39 @@ export default {
         }
       });
       this.availableSubjects = Array.from(subjects).sort();
-      console.log('📚 Extracted subjects:', this.availableSubjects);
     },
 
     filterCourses() {
       console.log('🔍 Filtering courses from', this.allCourses.length, 'total courses');
       
-      // Show ALL free courses regardless of subject
-      this.filteredCourses = this.allCourses.filter(course => {
-        const type = this.getTopicType(course);
-        return type === 'free';
-      });
+      // Show all courses (free, premium, pro)
+      this.filteredCourses = [...this.allCourses];
       
-      console.log('✅ Filtered to', this.filteredCourses.length, 'free courses');
+      console.log('✅ Filtered courses:', this.filteredCourses.length);
       this.updateDisplayedCourses();
     },
 
     updateDisplayedCourses() {
-      console.log('📋 Updating displayed courses from', this.filteredCourses.length, 'filtered courses');
+      console.log('📋 Updating displayed courses');
       
-      // Display ALL free courses without limit
-      this.displayedCourses = [...this.filteredCourses];
+      // Shuffle and take 8 random courses
+      const shuffled = [...this.filteredCourses].sort(() => Math.random() - 0.5);
+      this.displayedCourses = shuffled.slice(0, this.maxDisplayedCourses);
       
-      console.log('✅ Displayed all', this.displayedCourses.length, 'free courses');
+      console.log('✅ Displayed', this.displayedCourses.length, 'random courses');
+    },
+
+    shuffleCourses() {
+      if (this.isShuffling || this.loadingCourses) return;
+      
+      this.isShuffling = true;
+      console.log('🔀 Shuffling courses...');
+      
+      // Animate shuffle
+      setTimeout(() => {
+        this.updateDisplayedCourses();
+        this.isShuffling = false;
+      }, 500);
     },
 
     async refreshCourses() {
@@ -498,8 +495,8 @@ export default {
       if (!course) return 'Изучайте новые навыки';
       
       const description = course.description || course.topicDescription;
-      if (description && description.length > 85) {
-        return description.substring(0, 85) + '...';
+      if (description && description.length > 100) {
+        return description.substring(0, 100) + '...';
       }
       return description || `Изучите ${this.getTopicName(course)} с практическими заданиями`;
     },
@@ -533,22 +530,20 @@ export default {
 
     getStartButtonClass(course) {
       const type = this.getTopicType(course);
-      if (type === 'pro') return 'btn-pro';
-      if (type === 'premium') return 'btn-premium';
-      return 'btn-free';
+      return `btn-${type}`;
     },
 
     getStartButtonIcon(course) {
       if (this.processingCourse === course._id) return '⏳';
       const type = this.getTopicType(course);
-      if (type === 'free') return '🚀';
+      if (type === 'free') return '▶';
       return '🔒';
     },
 
     getStartButtonText(course) {
-      if (this.processingCourse === course._id) return 'Открытие...';
+      if (this.processingCourse === course._id) return 'Загрузка...';
       const type = this.getTopicType(course);
-      if (type === 'free') return 'Начать';
+      if (type === 'free') return 'Начать курс';
       if (type === 'premium') return 'Получить доступ';
       return 'Pro доступ';
     },
@@ -580,415 +575,499 @@ export default {
 </script>
 
 <style scoped>
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
 .aced-section {
   position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 48px;
   padding: clamp(60px, 8vw, 100px) clamp(24px, 5vw, 80px);
-  background: linear-gradient(180deg, #fafafa 0%, #ffffff 100%);
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   min-height: 100vh;
-  color: #0a0a0a;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   overflow: hidden;
 }
 
-.section-header {
-  text-align: left;
-  max-width: 100%;
-  position: relative;
-  z-index: 2;
+.aced-section::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 60%;
+  height: 60%;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.08) 0%, transparent 70%);
+  filter: blur(60px);
+  pointer-events: none;
 }
 
-.header-content {
+/* Header Styles */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 32px;
+  margin-bottom: 56px;
+  position: relative;
+  z-index: 10;
+}
+
+.header-left {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
   gap: 16px;
 }
 
 .label-badge {
   display: inline-flex;
   align-items: center;
-  padding: 8px 16px;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(124, 58, 237, 0.05));
-  border: 1px solid rgba(139, 92, 246, 0.2);
-  border-radius: 24px;
+  align-self: flex-start;
+  padding: 8px 18px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.12), rgba(124, 58, 237, 0.08));
+  border: 1.5px solid rgba(139, 92, 246, 0.25);
+  border-radius: 30px;
   font-size: 0.8125rem;
-  font-weight: 600;
+  font-weight: 700;
   color: #7c3aed;
-  letter-spacing: 0.02em;
-  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.1);
+  letter-spacing: 0.03em;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
 }
 
 .headline {
-  font-size: clamp(2rem, 5vw, 3rem);
-  font-weight: 700;
-  color: #0a0a0a;
-  margin: 0;
+  font-size: clamp(2.25rem, 5vw, 3.5rem);
+  font-weight: 800;
+  color: #0f172a;
   line-height: 1.1;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.04em;
+  margin: 0;
 }
 
 .context-text {
   font-size: clamp(1rem, 1.8vw, 1.125rem);
-  color: #525252;
-  font-weight: 400;
+  color: #64748b;
+  font-weight: 500;
+  line-height: 1.6;
   margin: 0;
-  line-height: 1.5;
 }
 
+.refresh-courses-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 28px;
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  color: white;
+  border: none;
+  border-radius: 14px;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
+  white-space: nowrap;
+  height: fit-content;
+}
+
+.refresh-courses-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.45);
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+}
+
+.refresh-courses-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.refresh-icon {
+  font-size: 1.25rem;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.refresh-icon.spinning {
+  animation: spin 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Grid Styles */
 .courses-grid {
-  width: 100%;
-  max-width: 1400px;
-  margin: 0 auto;
   position: relative;
-  z-index: 2;
+  z-index: 5;
 }
 
-.loading-grid, .courses-container {
+.loading-grid,
+.courses-container {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 24px;
-  padding: 0;
-}
-
-.glass-card {
-  position: relative;
-  background: #ffffff;
-  border-radius: 16px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  overflow: hidden;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 28px;
 }
 
 .course-placeholder {
-  height: 280px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.placeholder-content {
+  height: 380px;
+  background: white;
+  border-radius: 20px;
+  border: 2px solid #e2e8f0;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .loader-spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid rgba(139, 92, 246, 0.1);
+  width: 48px;
+  height: 48px;
+  border: 4px solid #e2e8f0;
   border-top-color: #8b5cf6;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
+/* Card Styles */
 .course-card {
-  padding: 0;
-  cursor: pointer;
-  min-height: 320px;
-  display: flex;
-  flex-direction: column;
   position: relative;
-  background: #ffffff;
+  background: white;
+  border-radius: 20px;
+  overflow: hidden;
+  cursor: pointer;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid transparent;
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.08);
 }
 
 .course-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
-  border-color: rgba(139, 92, 246, 0.3);
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 16px 48px rgba(15, 23, 42, 0.15);
 }
 
-.course-card::before {
-  content: '';
+.course-card.free {
+  border-color: rgba(139, 92, 246, 0.2);
+}
+
+.course-card.free:hover {
+  border-color: rgba(139, 92, 246, 0.4);
+  box-shadow: 0 16px 48px rgba(139, 92, 246, 0.25);
+}
+
+.course-card.premium {
+  border-color: rgba(168, 85, 247, 0.2);
+}
+
+.course-card.premium:hover {
+  border-color: rgba(168, 85, 247, 0.4);
+  box-shadow: 0 16px 48px rgba(168, 85, 247, 0.25);
+}
+
+.course-card.pro {
+  border-color: rgba(236, 72, 153, 0.2);
+}
+
+.course-card.pro:hover {
+  border-color: rgba(236, 72, 153, 0.4);
+  box-shadow: 0 16px 48px rgba(236, 72, 153, 0.25);
+}
+
+.card-corner {
   position: absolute;
   top: 0;
-  left: 0;
   right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #8b5cf6, #7c3aed);
-  opacity: 0;
+  width: 100px;
+  height: 100px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), transparent);
+  clip-path: polygon(100% 0, 0 0, 100% 100%);
   transition: opacity 0.3s ease;
 }
 
-.course-card:hover::before {
-  opacity: 1;
-}
-
-.course-card.course-free::before {
-  background: linear-gradient(90deg, #8b5cf6, #7c3aed);
-}
-
-.course-card.course-premium::before {
-  background: linear-gradient(90deg, #a855f7, #9333ea);
-}
-
-.course-card.course-pro::before {
-  background: linear-gradient(90deg, #ec4899, #db2777);
-}
-
-.card-gradient {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 140px;
-  pointer-events: none;
-  opacity: 0.4;
-  transition: opacity 0.4s ease;
-}
-
-.card-gradient.free {
-  background: linear-gradient(180deg, rgba(139, 92, 246, 0.08) 0%, transparent 100%);
-}
-
-.card-gradient.premium {
-  background: linear-gradient(180deg, rgba(168, 85, 247, 0.08) 0%, transparent 100%);
-}
-
-.card-gradient.pro {
-  background: linear-gradient(180deg, rgba(236, 72, 153, 0.08) 0%, transparent 100%);
-}
-
-.course-card:hover .card-gradient {
+.course-card:hover .card-corner {
   opacity: 0.6;
 }
 
+.card-glow {
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.4), rgba(124, 58, 237, 0.4));
+  border-radius: 20px;
+  opacity: 0;
+  filter: blur(20px);
+  transition: opacity 0.4s ease;
+  z-index: -1;
+}
+
+.course-card:hover .card-glow {
+  opacity: 0.5;
+}
+
+/* Card Header */
 .course-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 20px 24px;
-  position: relative;
-  z-index: 3;
+  align-items: flex-start;
+  padding: 24px 24px 20px;
+  gap: 12px;
 }
 
-.course-badge {
+.badge-group {
   display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.type-badge {
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 14px;
+  padding: 6px 16px;
   border-radius: 20px;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  width: fit-content;
 }
 
-.course-badge.free {
-  background: rgba(139, 92, 246, 0.12);
+.type-badge.free {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(124, 58, 237, 0.1));
   color: #7c3aed;
-  border: 1px solid rgba(139, 92, 246, 0.25);
+  border: 1.5px solid rgba(139, 92, 246, 0.3);
 }
 
-.course-badge.premium {
-  background: rgba(168, 85, 247, 0.12);
+.type-badge.premium {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(147, 51, 234, 0.1));
   color: #9333ea;
-  border: 1px solid rgba(168, 85, 247, 0.25);
+  border: 1.5px solid rgba(168, 85, 247, 0.3);
 }
 
-.course-badge.pro {
-  background: rgba(236, 72, 153, 0.12);
+.type-badge.pro {
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.15), rgba(219, 39, 119, 0.1));
   color: #db2777;
-  border: 1px solid rgba(236, 72, 153, 0.25);
+  border: 1.5px solid rgba(236, 72, 153, 0.3);
 }
 
 .badge-icon {
   font-size: 0.875rem;
 }
 
-.course-meta {
+.subject-badge {
+  display: inline-flex;
+  padding: 4px 12px;
+  background: rgba(100, 116, 139, 0.08);
+  border-radius: 12px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #475569;
+  width: fit-content;
+}
+
+.level-badge {
   display: flex;
   align-items: center;
-  gap: 8px;
-}
-
-.course-subject {
-  padding: 4px 12px;
-  background: rgba(139, 92, 246, 0.08);
+  gap: 4px;
+  padding: 6px 14px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.05));
+  border: 1.5px solid rgba(59, 130, 246, 0.2);
   border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #7c3aed;
-  white-space: nowrap;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #2563eb;
 }
 
-.course-level {
-  padding: 4px 12px;
-  background: rgba(0, 0, 0, 0.04);
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #525252;
-  white-space: nowrap;
+.level-icon {
+  font-size: 0.875rem;
 }
 
-.course-content {
-  flex: 1;
+/* Card Body */
+.course-body {
+  padding: 0 24px 24px;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 0 24px 20px;
-  position: relative;
-  z-index: 3;
 }
 
 .course-title {
-  font-size: 1.25rem;
+  font-size: 1.375rem;
   font-weight: 700;
-  color: #0a0a0a;
+  color: #0f172a;
   line-height: 1.3;
-  margin: 0;
   letter-spacing: -0.02em;
+  margin: 0;
 }
 
 .course-description {
-  font-size: 0.875rem;
-  color: #737373;
+  font-size: 0.9375rem;
+  color: #64748b;
   line-height: 1.6;
   margin: 0;
-  font-weight: 400;
-}
-
-.course-stats {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 24px;
-  background: rgba(0, 0, 0, 0.02);
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
-  position: relative;
-  z-index: 3;
-}
-
-.stat-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.8125rem;
-  color: #525252;
   font-weight: 500;
 }
 
-.stat-icon {
+.course-meta-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 0 0;
+  margin-top: 8px;
+  border-top: 2px solid #f1f5f9;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.meta-icon {
+  font-size: 1.125rem;
+}
+
+.meta-value {
   font-size: 1rem;
-  opacity: 0.8;
+  font-weight: 700;
+  color: #0f172a;
 }
 
-.stat-text {
+.meta-label {
+  font-size: 0.8125rem;
   font-weight: 600;
-  color: #0a0a0a;
+  color: #94a3b8;
 }
 
-.stat-divider {
-  color: #d4d4d4;
-  font-weight: 300;
+.meta-divider {
+  width: 4px;
+  height: 4px;
+  background: #cbd5e1;
+  border-radius: 50%;
 }
 
-.course-actions {
-  padding: 20px 24px;
-  position: relative;
-  z-index: 3;
+/* Card Footer */
+.course-footer {
+  padding: 20px 24px 24px;
 }
 
-.start-course-btn {
+.course-btn {
   position: relative;
   width: 100%;
-  padding: 14px 24px;
+  padding: 16px 24px;
   border: none;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 0.9375rem;
+  border-radius: 14px;
+  font-size: 1rem;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
   overflow: hidden;
   letter-spacing: 0.01em;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.start-course-btn:disabled {
+.course-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
 .btn-icon {
   font-size: 1.125rem;
+  transition: transform 0.3s ease;
 }
 
-.btn-text {
-  font-weight: 600;
+.course-btn:hover:not(:disabled) .btn-icon {
+  transform: translateX(4px);
+}
+
+.btn-label {
+  font-weight: 700;
+}
+
+.btn-shine {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 70%
+  );
+  transform: translateX(-100%) translateY(-100%) rotate(45deg);
+  transition: transform 0.6s ease;
+}
+
+.course-btn:hover:not(:disabled) .btn-shine {
+  transform: translateX(100%) translateY(100%) rotate(45deg);
 }
 
 .btn-free {
   background: linear-gradient(135deg, #8b5cf6, #7c3aed);
   color: white;
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
 }
 
 .btn-free:hover:not(:disabled) {
   background: linear-gradient(135deg, #7c3aed, #6d28d9);
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.5);
 }
 
 .btn-premium {
   background: linear-gradient(135deg, #a855f7, #9333ea);
   color: white;
+  box-shadow: 0 4px 16px rgba(168, 85, 247, 0.3);
 }
 
 .btn-premium:hover:not(:disabled) {
   background: linear-gradient(135deg, #9333ea, #7e22ce);
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(168, 85, 247, 0.4);
+  box-shadow: 0 8px 24px rgba(168, 85, 247, 0.5);
 }
 
 .btn-pro {
   background: linear-gradient(135deg, #ec4899, #db2777);
   color: white;
+  box-shadow: 0 4px 16px rgba(236, 72, 153, 0.3);
 }
 
 .btn-pro:hover:not(:disabled) {
   background: linear-gradient(135deg, #db2777, #be185d);
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(236, 72, 153, 0.4);
+  box-shadow: 0 8px 24px rgba(236, 72, 153, 0.5);
 }
 
-.empty-courses {
+/* Empty State */
+.empty-state {
   text-align: center;
-  padding: 60px 40px;
+  padding: 80px 40px;
+  background: white;
+  border-radius: 20px;
+  border: 2px dashed #e2e8f0;
   max-width: 500px;
   margin: 0 auto;
-  background: #ffffff;
 }
 
 .empty-icon {
   font-size: 4rem;
-  margin-bottom: 20px;
-  opacity: 0.3;
+  margin-bottom: 24px;
+  opacity: 0.4;
 }
 
-.empty-courses h3 {
+.empty-state h3 {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #0a0a0a;
+  color: #0f172a;
   margin-bottom: 12px;
 }
 
-.empty-courses p {
-  color: #737373;
-  margin-bottom: 24px;
+.empty-state p {
+  color: #64748b;
+  margin-bottom: 28px;
   font-size: 1rem;
   line-height: 1.6;
 }
@@ -997,38 +1076,35 @@ export default {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 24px;
+  padding: 14px 28px;
   background: linear-gradient(135deg, #8b5cf6, #7c3aed);
   color: white;
   border: none;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 0.9375rem;
+  border-radius: 14px;
+  font-weight: 700;
+  font-size: 1rem;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
 }
 
 .retry-btn:hover {
   background: linear-gradient(135deg, #7c3aed, #6d28d9);
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.5);
 }
 
 /* Modal Styles */
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   z-index: 99999;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(15, 23, 42, 0.75);
   backdrop-filter: blur(12px);
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 20px;
+  padding: 24px;
   animation: fadeIn 0.3s ease;
 }
 
@@ -1039,12 +1115,13 @@ export default {
 
 .registration-modal {
   width: 100%;
-  max-width: 520px;
+  max-width: 540px;
   padding: 48px;
+  background: white;
+  border-radius: 24px;
   position: relative;
   animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  background: #ffffff;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 24px 64px rgba(15, 23, 42, 0.25);
 }
 
 @keyframes slideUp {
@@ -1062,24 +1139,24 @@ export default {
   position: absolute;
   top: 24px;
   right: 24px;
-  width: 40px;
-  height: 40px;
-  background: rgba(0, 0, 0, 0.04);
-  border: 1.5px solid rgba(0, 0, 0, 0.1);
-  border-radius: 12px;
-  color: #737373;
-  font-size: 1.75rem;
+  width: 44px;
+  height: 44px;
+  background: rgba(100, 116, 139, 0.08);
+  border: 2px solid rgba(100, 116, 139, 0.15);
+  border-radius: 14px;
+  color: #64748b;
+  font-size: 2rem;
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
-  z-index: 10;
+  line-height: 1;
 }
 
 .close-btn:hover {
-  background: rgba(239, 68, 68, 0.1);
+  background: rgba(239, 68, 68, 0.12);
   border-color: rgba(239, 68, 68, 0.3);
   color: #dc2626;
   transform: rotate(90deg);
@@ -1091,45 +1168,46 @@ export default {
 }
 
 .modal-icon {
-  font-size: 3.5rem;
+  font-size: 4rem;
   margin-bottom: 20px;
 }
 
 .modal-header h2 {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #0a0a0a;
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: #0f172a;
   margin: 0 0 12px 0;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
 }
 
 .modal-header p {
-  color: #737373;
-  font-size: 1rem;
+  color: #64748b;
+  font-size: 1.0625rem;
   margin: 0;
-  line-height: 1.5;
+  line-height: 1.6;
+  font-weight: 500;
 }
 
 .course-preview {
   padding: 28px;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.06), rgba(124, 58, 237, 0.04));
-  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(124, 58, 237, 0.05));
+  border-radius: 18px;
   margin-bottom: 36px;
-  border: 1.5px solid rgba(139, 92, 246, 0.15);
+  border: 2px solid rgba(139, 92, 246, 0.2);
 }
 
 .course-info h3 {
-  font-size: 1.375rem;
+  font-size: 1.5rem;
   font-weight: 700;
-  color: #0a0a0a;
+  color: #0f172a;
   margin: 0 0 8px 0;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
 }
 
 .course-type {
   color: #7c3aed;
-  font-weight: 600;
-  font-size: 0.9375rem;
+  font-weight: 700;
+  font-size: 1rem;
   margin: 0 0 24px 0;
 }
 
@@ -1143,13 +1221,13 @@ export default {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 0.9375rem;
-  color: #404040;
-  font-weight: 500;
+  font-size: 1rem;
+  color: #334155;
+  font-weight: 600;
 }
 
 .benefit-icon {
-  font-size: 1.375rem;
+  font-size: 1.5rem;
 }
 
 .modal-actions {
@@ -1168,59 +1246,54 @@ export default {
   background: linear-gradient(135deg, #8b5cf6, #7c3aed);
   color: white;
   border: none;
-  border-radius: 14px;
-  font-weight: 700;
-  font-size: 1.0625rem;
+  border-radius: 16px;
+  font-weight: 800;
+  font-size: 1.125rem;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
-  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.35);
+  box-shadow: 0 6px 24px rgba(139, 92, 246, 0.4);
 }
 
 .register-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 36px rgba(139, 92, 246, 0.5);
+  box-shadow: 0 12px 40px rgba(139, 92, 246, 0.5);
   background: linear-gradient(135deg, #7c3aed, #6d28d9);
-}
-
-.btn-glow {
-  display: none;
 }
 
 .cancel-btn {
   padding: 16px 36px;
   background: transparent;
-  color: #737373;
-  border: 1.5px solid rgba(0, 0, 0, 0.15);
-  border-radius: 14px;
-  font-weight: 600;
+  color: #64748b;
+  border: 2px solid #e2e8f0;
+  border-radius: 16px;
+  font-weight: 700;
   font-size: 1rem;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .cancel-btn:hover {
-  background: rgba(0, 0, 0, 0.03);
-  border-color: rgba(0, 0, 0, 0.25);
-  color: #525252;
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #475569;
 }
 
 /* Error Alert */
 .error-alert {
   position: fixed;
-  bottom: 28px;
-  right: 28px;
-  z-index: 10000;
-  padding: 16px 20px;
+  bottom: 32px;
+  right: 32px;
+  z-index: 100000;
+  padding: 18px 24px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  max-width: 420px;
-  animation: slideInRight 0.3s ease;
+  gap: 14px;
+  max-width: 450px;
   background: #ef4444;
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(239, 68, 68, 0.3);
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(239, 68, 68, 0.4);
+  animation: slideInRight 0.3s ease;
 }
 
 @keyframes slideInRight {
@@ -1235,48 +1308,57 @@ export default {
 }
 
 .error-icon {
-  font-size: 1.375rem;
+  font-size: 1.5rem;
   flex-shrink: 0;
 }
 
 .error-text {
   flex: 1;
   color: white;
-  font-weight: 600;
-  font-size: 0.9375rem;
+  font-weight: 700;
+  font-size: 1rem;
 }
 
 .retry-error-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 8px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.25);
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-radius: 10px;
   color: white;
-  font-size: 0.8125rem;
-  font-weight: 600;
+  font-size: 0.875rem;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .retry-error-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.35);
 }
 
 /* Responsive Design */
 @media (max-width: 1024px) {
-  .loading-grid, .courses-container {
+  .loading-grid,
+  .courses-container {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 20px;
+    gap: 24px;
+  }
+
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 24px;
+  }
+
+  .refresh-courses-btn {
+    align-self: flex-start;
   }
 }
 
 @media (max-width: 768px) {
   .aced-section {
     padding: 48px 24px;
-    gap: 36px;
   }
 
   .headline {
@@ -1289,7 +1371,11 @@ export default {
   }
 
   .registration-modal {
-    padding: 32px 24px;
+    padding: 36px 24px;
+  }
+
+  .modal-header h2 {
+    font-size: 1.75rem;
   }
 
   .error-alert {
@@ -1309,28 +1395,20 @@ export default {
     font-size: 1.75rem;
   }
 
-  .course-card {
-    min-height: 300px;
-  }
-
   .course-header {
-    padding: 16px 20px;
+    padding: 20px 20px 16px;
   }
 
-  .course-content {
-    padding: 0 20px 16px;
+  .course-body {
+    padding: 0 20px 20px;
   }
 
   .course-title {
-    font-size: 1.125rem;
+    font-size: 1.25rem;
   }
 
-  .course-stats {
-    padding: 14px 20px;
-  }
-
-  .course-actions {
-    padding: 16px 20px;
+  .course-footer {
+    padding: 16px 20px 20px;
   }
 
   .registration-modal {
@@ -1349,7 +1427,9 @@ export default {
 
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  * {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
