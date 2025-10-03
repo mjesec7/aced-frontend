@@ -345,21 +345,24 @@ export default {
     filterCourses() {
       console.log('🔍 Filtering courses from', this.allCourses.length, 'total courses');
       
-      // Show all courses (free, premium, pro)
-      this.filteredCourses = [...this.allCourses];
+      // Show ONLY free courses from all subjects
+      this.filteredCourses = this.allCourses.filter(course => {
+        const type = this.getTopicType(course);
+        return type === 'free';
+      });
       
-      console.log('✅ Filtered courses:', this.filteredCourses.length);
+      console.log('✅ Filtered to', this.filteredCourses.length, 'free courses');
       this.updateDisplayedCourses();
     },
 
     updateDisplayedCourses() {
       console.log('📋 Updating displayed courses');
       
-      // Shuffle and take 8 random courses
+      // Shuffle and take 8 random FREE courses (2 rows x 4 columns)
       const shuffled = [...this.filteredCourses].sort(() => Math.random() - 0.5);
       this.displayedCourses = shuffled.slice(0, this.maxDisplayedCourses);
       
-      console.log('✅ Displayed', this.displayedCourses.length, 'random courses');
+      console.log('✅ Displayed', this.displayedCourses.length, 'random free courses');
     },
 
     shuffleCourses() {
@@ -701,13 +704,17 @@ export default {
 .courses-grid {
   position: relative;
   z-index: 5;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .loading-grid,
 .courses-container {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 28px;
+  width: 100%;
 }
 
 .course-placeholder {
@@ -1341,7 +1348,7 @@ export default {
 @media (max-width: 1024px) {
   .loading-grid,
   .courses-container {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 24px;
   }
 
@@ -1365,8 +1372,9 @@ export default {
     font-size: 2rem;
   }
 
+  .loading-grid,
   .courses-container {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
     gap: 20px;
   }
 
@@ -1393,6 +1401,12 @@ export default {
 
   .headline {
     font-size: 1.75rem;
+  }
+
+  .loading-grid,
+  .courses-container {
+    grid-template-columns: 1fr;
+    gap: 20px;
   }
 
   .course-header {
