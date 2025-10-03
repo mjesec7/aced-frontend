@@ -610,16 +610,16 @@ export default {
 /* Header Styles */
 .section-header {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: flex-start;
-  gap: 32px;
+  gap: 24px;
   margin-bottom: 56px;
   position: relative;
   z-index: 10;
 }
 
 .header-left {
-  flex: 1;
+  width: 100%;
   display: flex;
   flex-direction: column;
   gap: 16px;
