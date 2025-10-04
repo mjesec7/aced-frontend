@@ -715,9 +715,42 @@ export default {
   min-height: 360px;
   display: flex;
   flex-direction: column;
-  background: #ffffff;
+  background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
+  border: 3px solid rgba(99, 102, 241, 0.2);
+}
+
+.course-card.course-free {
+  border: 3px solid rgba(99, 102, 241, 0.25);
+}
+
+.course-card.course-premium {
+  border: 3px solid rgba(139, 92, 246, 0.25);
+}
+
+.course-card.course-pro {
+  border: 3px solid rgba(236, 72, 153, 0.25);
+}
+
+.course-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.12), 0 8px 16px rgba(0, 0, 0, 0.08);
+}
+
+.course-card.course-free:hover {
+  border-color: rgba(99, 102, 241, 0.5);
+  box-shadow: 0 20px 48px rgba(99, 102, 241, 0.2), 0 8px 16px rgba(99, 102, 241, 0.1);
+}
+
+.course-card.course-premium:hover {
+  border-color: rgba(139, 92, 246, 0.5);
+  box-shadow: 0 20px 48px rgba(139, 92, 246, 0.2), 0 8px 16px rgba(139, 92, 246, 0.1);
+}
+
+.course-card.course-pro:hover {
+  border-color: rgba(236, 72, 153, 0.5);
+  box-shadow: 0 20px 48px rgba(236, 72, 153, 0.2), 0 8px 16px rgba(236, 72, 153, 0.1);
 }
 
 .course-card:hover {
@@ -759,15 +792,15 @@ export default {
 }
 
 .accent-bar.free {
-  background: linear-gradient(90deg, #6366f1, #4f46e5);
+  background: linear-gradient(90deg, #6366f1 0%, #4f46e5 50%, #3b82f6 100%);
 }
 
 .accent-bar.premium {
-  background: linear-gradient(90deg, #8b5cf6, #7c3aed);
+  background: linear-gradient(90deg, #a855f7 0%, #8b5cf6 50%, #7c3aed 100%);
 }
 
 .accent-bar.pro {
-  background: linear-gradient(90deg, #ec4899, #db2777);
+  background: linear-gradient(90deg, #ec4899 0%, #db2777 50%, #be185d 100%);
 }
 
 /* Course Header */
@@ -797,21 +830,21 @@ export default {
 }
 
 .course-badge.free {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(79, 70, 229, 0.1));
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(79, 70, 229, 0.15), rgba(59, 130, 246, 0.1));
   color: #4f46e5;
-  border: 1.5px solid rgba(99, 102, 241, 0.3);
+  border: 1.5px solid rgba(99, 102, 241, 0.35);
 }
 
 .course-badge.premium {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(124, 58, 237, 0.1));
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(139, 92, 246, 0.15), rgba(124, 58, 237, 0.1));
   color: #7c3aed;
-  border: 1.5px solid rgba(139, 92, 246, 0.3);
+  border: 1.5px solid rgba(139, 92, 246, 0.35);
 }
 
 .course-badge.pro {
-  background: linear-gradient(135deg, rgba(236, 72, 153, 0.15), rgba(219, 39, 119, 0.1));
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.2), rgba(219, 39, 119, 0.15), rgba(190, 24, 93, 0.1));
   color: #db2777;
-  border: 1.5px solid rgba(236, 72, 153, 0.3);
+  border: 1.5px solid rgba(236, 72, 153, 0.35);
 }
 
 .badge-icon {
@@ -876,8 +909,8 @@ export default {
 /* Course Meta */
 .course-meta {
   padding: 20px 28px;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.02) 0%, rgba(0, 0, 0, 0.025) 100%);
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.025) 0%, rgba(0, 0, 0, 0.035) 100%);
+  border-top: 2px solid rgba(0, 0, 0, 0.06);
   position: relative;
   z-index: 3;
 }
@@ -920,7 +953,7 @@ export default {
   padding: 24px 28px;
   position: relative;
   z-index: 3;
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  border-top: 2px solid rgba(0, 0, 0, 0.06);
 }
 
 .action-btn {
@@ -980,36 +1013,36 @@ export default {
 }
 
 .btn-free {
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #3b82f6 100%);
   color: white;
 }
 
 .btn-free:hover:not(:disabled) {
-  background: linear-gradient(135deg, #4f46e5, #4338ca);
+  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 50%, #2563eb 100%);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.5);
 }
 
 .btn-premium {
-  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  background: linear-gradient(135deg, #a855f7 0%, #8b5cf6 50%, #7c3aed 100%);
   color: white;
 }
 
 .btn-premium:hover:not(:disabled) {
-  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 50%, #6d28d9 100%);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.4);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.5);
 }
 
 .btn-pro {
-  background: linear-gradient(135deg, #ec4899, #db2777);
+  background: linear-gradient(135deg, #ec4899 0%, #db2777 50%, #be185d 100%);
   color: white;
 }
 
 .btn-pro:hover:not(:disabled) {
-  background: linear-gradient(135deg, #db2777, #be185d);
+  background: linear-gradient(135deg, #db2777 0%, #be185d 50%, #9f1239 100%);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(236, 72, 153, 0.4);
+  box-shadow: 0 8px 24px rgba(236, 72, 153, 0.5);
 }
 
 /* Empty State */
@@ -1018,7 +1051,8 @@ export default {
   padding: 72px 48px;
   max-width: 540px;
   margin: 0 auto;
-  background: #ffffff;
+  background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
+  border: 2px solid rgba(0, 0, 0, 0.08);
 }
 
 .empty-icon {
@@ -1047,7 +1081,7 @@ export default {
   align-items: center;
   gap: 10px;
   padding: 14px 28px;
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #3b82f6 100%);
   color: white;
   border: none;
   border-radius: 14px;
@@ -1059,7 +1093,7 @@ export default {
 }
 
 .retry-btn:hover {
-  background: linear-gradient(135deg, #4f46e5, #4338ca);
+  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 50%, #2563eb 100%);
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(99, 102, 241, 0.45);
 }
@@ -1092,8 +1126,9 @@ export default {
   padding: 52px;
   position: relative;
   animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  background: #ffffff;
+  background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
   box-shadow: 0 32px 80px rgba(0, 0, 0, 0.24);
+  border: 2px solid rgba(0, 0, 0, 0.08);
 }
 
 @keyframes slideUp {
@@ -1215,7 +1250,7 @@ export default {
   justify-content: center;
   gap: 12px;
   padding: 20px 40px;
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #3b82f6 100%);
   color: white;
   border: none;
   border-radius: 16px;
@@ -1230,7 +1265,7 @@ export default {
 .register-btn:hover {
   transform: translateY(-3px);
   box-shadow: 0 12px 40px rgba(99, 102, 241, 0.5);
-  background: linear-gradient(135deg, #4f46e5, #4338ca);
+  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 50%, #2563eb 100%);
 }
 
 .btn-glow {
