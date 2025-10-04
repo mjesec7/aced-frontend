@@ -674,12 +674,12 @@ export default {
 
 .glass-card {
   position: relative;
-  background: #ffffff;
+  background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
   border-radius: 20px;
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  border: 2px solid rgba(0, 0, 0, 0.08);
   overflow: hidden;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .course-placeholder {
