@@ -1,88 +1,118 @@
 <template>
   <section class="pricing-section">
     <div class="container">
-      <div class="text-center">
-        <div class="label-badge">🎯 Инвестиция в будущее</div>
+      <div class="section-header">
+        <span class="section-label">Тарифы</span>
         <h2 class="section-title">
-          Выберите свой план<br />
-          <span class="gradient-text">и начните расти</span>
+          Выберите свой план
         </h2>
         <p class="section-subtitle">
-          Инвестируйте в своё образование сегодня. Каждый урок — это шаг к новым возможностям.
+          Инвестируйте в своё образование. Каждый урок — шаг к новым возможностям
         </p>
       </div>
 
-      <div class="pricing-cards">
-        <div class="card glass-card">
-          <div class="card-header">
-            <div class="plan-icon">✨</div>
-            <h3 class="plan-name">Базовый</h3>
-            <p class="plan-desc">Для начинающих</p>
-          </div>
-          
-          <div class="price-wrapper">
-            <div class="price-row">
-              <p class="old-price">520,000 сум</p>
-              <div class="discount-badge">-50%</div>
+      <div class="pricing-grid">
+        <!-- Basic Plan -->
+        <div class="pricing-card">
+          <div class="card-content">
+            <div class="plan-header">
+              <h3 class="plan-title">Базовый</h3>
+              <p class="plan-subtitle">Для начинающих</p>
             </div>
-            <p class="price">260,000 <span class="currency">сум</span></p>
-            <p class="period">единовременно</p>
+
+            <div class="pricing-info">
+              <div class="price-compare">
+                <span class="old-price">520,000</span>
+                <span class="discount">-50%</span>
+              </div>
+              <div class="current-price">
+                <span class="amount">260,000</span>
+                <span class="currency">сум</span>
+              </div>
+            </div>
+
+            <ul class="features-list">
+              <li class="feature-item">
+                <svg class="check-icon" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                </svg>
+                <span>Доступ ко всем предметам</span>
+              </li>
+              <li class="feature-item">
+                <svg class="check-icon" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                </svg>
+                <span>Помощь ИИ с домашкой</span>
+              </li>
+              <li class="feature-item">
+                <svg class="check-icon" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                </svg>
+                <span>Прогресс и статистика</span>
+              </li>
+            </ul>
+
+            <button class="cta-button" @click="handleClick('start')">
+              Выбрать план
+            </button>
           </div>
-          
-          <ul class="features">
-            <li><span class="check">✓</span> <span>Доступ ко всем предметам</span></li>
-            <li><span class="check">✓</span> <span>Помощь ИИ с домашкой</span></li>
-            <li><span class="check">✓</span> <span>Прогресс и статистика</span></li>
-          </ul>
-          
-          <button class="btn btn-outline" @click="handleClick('start')">
-            <span class="btn-text">Выбрать план</span>
-            <span class="btn-icon">→</span>
-            <span class="btn-glow"></span>
-          </button>
-          
-          <div class="card-shine"></div>
         </div>
 
-        <div class="card glass-card popular">
-          <div class="popular-badge">
-            <span class="badge-icon">⭐</span>
-            <span>Самый популярный</span>
-          </div>
+        <!-- Professional Plan -->
+        <div class="pricing-card featured">
+          <div class="popular-tag">Популярный</div>
           
-          <div class="card-header">
-            <div class="plan-icon premium">💎</div>
-            <h3 class="plan-name">Профессионал</h3>
-            <p class="plan-desc">Для карьерного роста</p>
-          </div>
-          
-          <div class="price-wrapper">
-            <div class="price-row">
-              <p class="old-price">900,000 сум</p>
-              <div class="discount-badge premium">-50%</div>
+          <div class="card-content">
+            <div class="plan-header">
+              <h3 class="plan-title">Профессионал</h3>
+              <p class="plan-subtitle">Для карьерного роста</p>
             </div>
-            <p class="price premium">450,000 <span class="currency">сум</span></p>
-            <p class="period">единовременно</p>
-            <div class="economy-badge">
-              <span class="economy-icon">🎉</span>
-              <span>Экономия 450,000 сум</span>
+
+            <div class="pricing-info">
+              <div class="price-compare">
+                <span class="old-price">900,000</span>
+                <span class="discount featured">-50%</span>
+              </div>
+              <div class="current-price featured">
+                <span class="amount">450,000</span>
+                <span class="currency">сум</span>
+              </div>
+              <div class="savings-badge">
+                Экономия 450,000 сум
+              </div>
             </div>
+
+            <ul class="features-list">
+              <li class="feature-item">
+                <svg class="check-icon featured" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                </svg>
+                <span>Всё из Базового +</span>
+              </li>
+              <li class="feature-item">
+                <svg class="check-icon featured" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                </svg>
+                <span>Персональный ИИ-наставник</span>
+              </li>
+              <li class="feature-item">
+                <svg class="check-icon featured" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                </svg>
+                <span>Продвинутая аналитика</span>
+              </li>
+              <li class="feature-item">
+                <svg class="check-icon featured" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                </svg>
+                <span>Индивидуальная карта обучения</span>
+              </li>
+            </ul>
+
+            <button class="cta-button featured" @click="handleClick('pro')">
+              Начать сейчас
+            </button>
           </div>
-          
-          <ul class="features">
-            <li><span class="check premium">✓</span> <span>Всё из Базового +</span></li>
-            <li><span class="check premium">✓</span> <span>Персональный ИИ-наставник</span></li>
-            <li><span class="check premium">✓</span> <span>Продвинутая аналитика</span></li>
-            <li><span class="check premium">✓</span> <span>Индивидуальная карта обучения</span></li>
-          </ul>
-          
-          <button class="btn btn-gradient" @click="handleClick('pro')">
-            <span class="btn-text">Начать сейчас!</span>
-            <span class="btn-icon">🚀</span>
-            <span class="btn-glow"></span>
-          </button>
-          
-          <div class="card-shine"></div>
         </div>
       </div>
     </div>
@@ -110,83 +140,54 @@ export default {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
 .pricing-section {
-  padding: clamp(80px, 10vw, 120px) clamp(20px, 5vw, 80px);
-  background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
-  font-family: 'Inter', sans-serif;
+  padding: 100px 24px;
+  background: linear-gradient(180deg, #fafafa 0%, #ffffff 100%);
   position: relative;
-  overflow: hidden;
-}
-
-.pricing-section::before {
-  content: '';
-  position: absolute;
-  top: -30%;
-  left: -15%;
-  width: 60%;
-  height: 60%;
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.05) 0%, transparent 70%);
-  pointer-events: none;
-  filter: blur(60px);
 }
 
 .container {
-  max-width: 1200px;
+  max-width: 1100px;
   margin: 0 auto;
-  position: relative;
-  z-index: 2;
 }
 
-.text-center {
+/* Section Header */
+.section-header {
   text-align: center;
-  margin-bottom: 60px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
+  margin-bottom: 64px;
 }
 
-.label-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 8px 16px;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.12) 0%, rgba(99, 102, 241, 0.08) 100%);
-  border: 1px solid rgba(139, 92, 246, 0.25);
-  border-radius: 30px;
-  font-size: 0.8125rem;
+.section-label {
+  display: inline-block;
+  padding: 6px 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-size: 13px;
   font-weight: 600;
-  color: #7c3aed;
-  letter-spacing: 0.02em;
-  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.15);
+  letter-spacing: 0.5px;
+  border-radius: 20px;
+  margin-bottom: 20px;
+  text-transform: uppercase;
 }
 
 .section-title {
-  font-size: clamp(2.5rem, 5vw, 3.5rem);
+  font-size: 48px;
   font-weight: 700;
-  color: #0a0a0a;
-  margin: 0;
-  line-height: 1.1;
-  letter-spacing: -0.03em;
-}
-
-.gradient-text {
-  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #1a1a1a;
+  margin: 0 0 16px 0;
+  letter-spacing: -0.02em;
 }
 
 .section-subtitle {
-  font-size: clamp(1rem, 2vw, 1.125rem);
-  color: #737373;
+  font-size: 18px;
+  color: #666666;
   max-width: 600px;
+  margin: 0 auto;
   line-height: 1.6;
-  font-weight: 400;
 }
 
-.pricing-cards {
+/* Pricing Grid */
+.pricing-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 32px;
@@ -194,404 +195,249 @@ export default {
   margin: 0 auto;
 }
 
-.glass-card {
+/* Pricing Card */
+.pricing-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
   position: relative;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(25px);
-  border-radius: 24px;
-  border: 1.5px solid rgba(139, 92, 246, 0.15);
-  overflow: hidden;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.08);
-  display: flex;
-  flex-direction: column;
+  transition: all 0.3s ease;
 }
 
-.glass-card::before {
+.pricing-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+}
+
+.pricing-card.featured {
+  background: linear-gradient(180deg, #ffffff 0%, #faf5ff 100%);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  position: relative;
+}
+
+.pricing-card.featured::before {
   content: '';
   position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.03) 0%, transparent 100%);
-  opacity: 0;
-  transition: opacity 0.4s ease;
-  pointer-events: none;
+  inset: -2px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  z-index: -1;
 }
 
-.glass-card:hover {
-  transform: translateY(-8px);
-  border-color: rgba(139, 92, 246, 0.3);
-  box-shadow: 0 20px 50px rgba(139, 92, 246, 0.2);
+.pricing-card.featured:hover {
+  box-shadow: 0 20px 60px rgba(102, 126, 234, 0.25);
 }
 
-.glass-card:hover::before {
-  opacity: 1;
-}
-
-.card-shine {
+/* Popular Tag */
+.popular-tag {
   position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  transition: left 0.6s ease;
-  pointer-events: none;
-}
-
-.glass-card:hover .card-shine {
-  left: 100%;
-}
-
-.card {
-  padding: 40px 32px;
-  text-align: center;
-}
-
-.card.popular {
-  background: rgba(255, 255, 255, 0.9);
-  border: 2px solid rgba(139, 92, 246, 0.3);
-  transform: translateY(-10px);
-  box-shadow: 0 8px 40px rgba(139, 92, 246, 0.15);
-}
-
-.card.popular::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 24px;
-  padding: 2px;
-  background: linear-gradient(135deg, #8b5cf6, #a78bfa, #c4b5fd);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  opacity: 0.5;
-  animation: borderRotate 3s linear infinite;
-  pointer-events: none;
-}
-
-@keyframes borderRotate {
-  0% { filter: hue-rotate(0deg) brightness(1); }
-  50% { filter: hue-rotate(10deg) brightness(1.1); }
-  100% { filter: hue-rotate(0deg) brightness(1); }
-}
-
-.popular-badge {
-  position: absolute;
-  top: -18px;
+  top: -14px;
   left: 50%;
   transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  padding: 8px 20px;
-  border-radius: 30px;
-  font-size: 0.75rem;
+  padding: 6px 20px;
+  border-radius: 20px;
+  font-size: 12px;
   font-weight: 700;
+  letter-spacing: 0.5px;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
-  z-index: 10;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
-.badge-icon {
-  font-size: 0.875rem;
+/* Card Content */
+.card-content {
+  padding: 40px 32px;
 }
 
-.card-header {
+/* Plan Header */
+.plan-header {
   margin-bottom: 32px;
-  position: relative;
-  z-index: 2;
 }
 
-.plan-icon {
-  font-size: 3rem;
-  margin-bottom: 16px;
-  animation: float 3s ease-in-out infinite;
-}
-
-.plan-icon.premium {
-  filter: drop-shadow(0 4px 12px rgba(139, 92, 246, 0.3));
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
-}
-
-.plan-name {
-  font-size: 1.75rem;
+.plan-title {
+  font-size: 28px;
   font-weight: 700;
-  color: #0a0a0a;
+  color: #1a1a1a;
   margin: 0 0 8px 0;
   letter-spacing: -0.01em;
 }
 
-.plan-desc {
-  font-size: 0.9375rem;
-  color: #737373;
-  font-weight: 500;
+.plan-subtitle {
+  font-size: 15px;
+  color: #666666;
   margin: 0;
+  font-weight: 500;
 }
 
-.price-wrapper {
+/* Pricing Info */
+.pricing-info {
   margin-bottom: 32px;
-  position: relative;
-  z-index: 2;
+  padding-bottom: 32px;
+  border-bottom: 1px solid #f0f0f0;
 }
 
-.price-row {
+.price-compare {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 12px;
   margin-bottom: 12px;
 }
 
 .old-price {
-  font-size: 1.125rem;
-  color: #a3a3a3;
+  font-size: 16px;
+  color: #999999;
   text-decoration: line-through;
   font-weight: 500;
-  margin: 0;
 }
 
-.discount-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 12px;
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.1));
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  border-radius: 12px;
+.discount {
+  display: inline-block;
+  padding: 4px 10px;
+  background: #fee2e2;
   color: #dc2626;
-  font-size: 0.75rem;
+  font-size: 12px;
   font-weight: 700;
+  border-radius: 6px;
 }
 
-.discount-badge.premium {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(124, 58, 237, 0.1));
-  border: 1px solid rgba(139, 92, 246, 0.3);
-  color: #7c3aed;
+.discount.featured {
+  background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+  color: #667eea;
 }
 
-.price {
-  font-size: 3rem;
+.current-price {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.current-price .amount {
+  font-size: 48px;
   font-weight: 800;
-  color: #0a0a0a;
+  color: #1a1a1a;
   line-height: 1;
-  margin: 0;
   letter-spacing: -0.02em;
 }
 
-.price.premium {
-  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+.current-price.featured .amount {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-.currency {
-  font-size: 1.5rem;
+.current-price .currency {
+  font-size: 18px;
+  color: #666666;
   font-weight: 600;
 }
 
-.period {
-  color: #a3a3a3;
-  font-size: 0.875rem;
-  font-weight: 500;
-  margin: 8px 0 0 0;
-}
-
-.economy-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.12), rgba(22, 163, 74, 0.08));
-  border: 1px solid rgba(34, 197, 94, 0.25);
-  color: #15803d;
-  border-radius: 12px;
-  padding: 8px 16px;
+.savings-badge {
+  display: inline-block;
   margin-top: 16px;
-  font-size: 0.8125rem;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #d1fae515 0%, #10b98115 100%);
+  border: 1px solid #10b98130;
+  color: #059669;
+  font-size: 13px;
   font-weight: 600;
+  border-radius: 8px;
 }
 
-.economy-icon {
-  font-size: 1rem;
-}
-
-.features {
+/* Features List */
+.features-list {
   list-style: none;
   padding: 0;
   margin: 0 0 32px 0;
-  text-align: left;
-  flex-grow: 1;
-  position: relative;
-  z-index: 2;
 }
 
-.features li {
+.feature-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
-  margin-bottom: 16px;
-  font-size: 0.9375rem;
+  margin-bottom: 14px;
+  font-size: 15px;
   color: #404040;
-  font-weight: 500;
+  line-height: 1.5;
 }
 
-.check {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(124, 58, 237, 0.1));
-  border: 1.5px solid rgba(139, 92, 246, 0.3);
-  border-radius: 50%;
-  color: #7c3aed;
-  font-size: 0.75rem;
-  font-weight: 700;
+.check-icon {
+  width: 20px;
+  height: 20px;
+  color: #667eea;
   flex-shrink: 0;
+  margin-top: 2px;
 }
 
-.check.premium {
-  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-  border: none;
-  color: white;
-  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+.check-icon.featured {
+  color: #764ba2;
 }
 
-.btn {
-  position: relative;
+/* CTA Button */
+.cta-button {
   width: 100%;
-  padding: 16px 28px;
-  border: none;
-  border-radius: 14px;
-  font-weight: 600;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  overflow: hidden;
-  font-family: 'Inter', sans-serif;
-  z-index: 2;
-}
-
-.btn-glow {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.4), transparent);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.btn:hover .btn-glow {
-  opacity: 1;
-}
-
-.btn-icon {
-  transition: transform 0.3s ease;
-}
-
-.btn:hover .btn-icon {
-  transform: translateX(4px);
-}
-
-.btn-outline {
-  background: transparent;
-  border: 2px solid rgba(139, 92, 246, 0.3);
-  color: #7c3aed;
-}
-
-.btn-outline:hover {
-  background: rgba(139, 92, 246, 0.08);
-  border-color: rgba(139, 92, 246, 0.5);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.2);
-}
-
-.btn-gradient {
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 50%, #6d28d9 100%);
+  padding: 16px 24px;
+  background: #1a1a1a;
   color: white;
-  box-shadow: 
-    0 4px 20px rgba(139, 92, 246, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: inherit;
 }
 
-.btn-gradient::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 14px;
-  padding: 2px;
-  background: linear-gradient(135deg, #a78bfa, #d8b4fe);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  opacity: 0;
-  transition: opacity 0.3s ease;
+.cta-button:hover {
+  background: #333333;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
 
-.btn-gradient:hover {
-  transform: translateY(-3px);
-  box-shadow: 
-    0 8px 35px rgba(139, 92, 246, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+.cta-button.featured {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
 }
 
-.btn-gradient:hover::before {
-  opacity: 1;
+.cta-button.featured:hover {
+  background: linear-gradient(135deg, #5568d3 0%, #653a8b 100%);
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
 }
 
-/* Responsive Design */
+/* Responsive */
 @media (max-width: 768px) {
   .pricing-section {
-    padding: 60px 24px;
+    padding: 60px 20px;
   }
-  
-  .pricing-cards {
+
+  .section-title {
+    font-size: 36px;
+  }
+
+  .section-subtitle {
+    font-size: 16px;
+  }
+
+  .pricing-grid {
     grid-template-columns: 1fr;
     gap: 24px;
   }
-  
-  .card.popular {
-    transform: translateY(0);
-  }
-  
-  .card {
+
+  .card-content {
     padding: 32px 24px;
   }
-}
 
-@media (max-width: 480px) {
-  .pricing-section {
-    padding: 40px 16px;
-  }
-  
-  .text-center {
-    margin-bottom: 40px;
-  }
-  
-  .plan-icon {
-    font-size: 2.5rem;
-  }
-  
-  .price {
-    font-size: 2.5rem;
+  .current-price .amount {
+    font-size: 40px;
   }
 }
 
-/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    animation: none !important;
+    transition: none !important;
   }
 }
 </style>
