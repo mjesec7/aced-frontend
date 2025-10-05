@@ -629,15 +629,15 @@ export default {
   display: inline-flex;
   align-items: center;
   padding: 10px 18px;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(79, 70, 229, 0.05));
-  border: 1.5px solid rgba(99, 102, 241, 0.25);
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(124, 58, 237, 0.05));
+  border: 1.5px solid rgba(139, 92, 246, 0.25);
   border-radius: 30px;
   font-size: 0.8125rem;
   font-weight: 700;
-  color: #4f46e5;
+  color: #7c3aed;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.15);
+  box-shadow: 0 2px 12px rgba(139, 92, 246, 0.15);
 }
 
 .headline {
@@ -718,19 +718,20 @@ export default {
   background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
-  border: 3px solid rgba(99, 102, 241, 0.2);
+  border: 2.5px solid rgba(139, 92, 246, 0.15);
+  border-radius: 24px;
 }
 
 .course-card.course-free {
-  border: 3px solid rgba(99, 102, 241, 0.25);
+  border: 2.5px solid rgba(139, 92, 246, 0.15);
 }
 
 .course-card.course-premium {
-  border: 3px solid rgba(139, 92, 246, 0.25);
+  border: 2.5px solid rgba(168, 85, 247, 0.15);
 }
 
 .course-card.course-pro {
-  border: 3px solid rgba(236, 72, 153, 0.25);
+  border: 2.5px solid rgba(236, 72, 153, 0.15);
 }
 
 .course-card:hover {
@@ -739,18 +740,18 @@ export default {
 }
 
 .course-card.course-free:hover {
-  border-color: rgba(99, 102, 241, 0.5);
-  box-shadow: 0 20px 48px rgba(99, 102, 241, 0.2), 0 8px 16px rgba(99, 102, 241, 0.1);
+  border-color: rgba(139, 92, 246, 0.4);
+  box-shadow: 0 20px 48px rgba(139, 92, 246, 0.15), 0 8px 16px rgba(139, 92, 246, 0.08);
 }
 
 .course-card.course-premium:hover {
-  border-color: rgba(139, 92, 246, 0.5);
-  box-shadow: 0 20px 48px rgba(139, 92, 246, 0.2), 0 8px 16px rgba(139, 92, 246, 0.1);
+  border-color: rgba(168, 85, 247, 0.4);
+  box-shadow: 0 20px 48px rgba(168, 85, 247, 0.15), 0 8px 16px rgba(168, 85, 247, 0.08);
 }
 
 .course-card.course-pro:hover {
-  border-color: rgba(236, 72, 153, 0.5);
-  box-shadow: 0 20px 48px rgba(236, 72, 153, 0.2), 0 8px 16px rgba(236, 72, 153, 0.1);
+  border-color: rgba(236, 72, 153, 0.4);
+  box-shadow: 0 20px 48px rgba(236, 72, 153, 0.15), 0 8px 16px rgba(236, 72, 153, 0.08);
 }
 
 .course-card:hover {
@@ -792,15 +793,15 @@ export default {
 }
 
 .accent-bar.free {
-  background: linear-gradient(90deg, #6366f1 0%, #4f46e5 50%, #3b82f6 100%);
+  background: linear-gradient(90deg, #a78bfa 0%, #8b5cf6 50%, #7c3aed 100%);
 }
 
 .accent-bar.premium {
-  background: linear-gradient(90deg, #a855f7 0%, #8b5cf6 50%, #7c3aed 100%);
+  background: linear-gradient(90deg, #c084fc 0%, #a855f7 50%, #9333ea 100%);
 }
 
 .accent-bar.pro {
-  background: linear-gradient(90deg, #ec4899 0%, #db2777 50%, #be185d 100%);
+  background: linear-gradient(90deg, #f0abfc 0%, #ec4899 50%, #db2777 100%);
 }
 
 /* Course Header */
@@ -808,6 +809,7 @@ export default {
   padding: 24px 28px 20px;
   position: relative;
   z-index: 3;
+  background: linear-gradient(180deg, rgba(139, 92, 246, 0.03) 0%, transparent 100%);
 }
 
 .header-top {
@@ -821,7 +823,7 @@ export default {
   align-items: center;
   gap: 7px;
   padding: 8px 16px;
-  border-radius: 24px;
+  border-radius: 30px;
   font-size: 0.6875rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -830,15 +832,15 @@ export default {
 }
 
 .course-badge.free {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(79, 70, 229, 0.15), rgba(59, 130, 246, 0.1));
-  color: #4f46e5;
-  border: 1.5px solid rgba(99, 102, 241, 0.35);
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(124, 58, 237, 0.15), rgba(109, 40, 217, 0.1));
+  color: #7c3aed;
+  border: 1.5px solid rgba(139, 92, 246, 0.35);
 }
 
 .course-badge.premium {
-  background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(139, 92, 246, 0.15), rgba(124, 58, 237, 0.1));
-  color: #7c3aed;
-  border: 1.5px solid rgba(139, 92, 246, 0.35);
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(147, 51, 234, 0.15), rgba(126, 34, 206, 0.1));
+  color: #9333ea;
+  border: 1.5px solid rgba(168, 85, 247, 0.35);
 }
 
 .course-badge.pro {
@@ -853,23 +855,26 @@ export default {
 
 .course-level {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(124, 58, 237, 0.05));
+  border: 1.5px solid rgba(139, 92, 246, 0.15);
+  border-radius: 30px;
 }
 
 .level-label {
-  font-size: 0.625rem;
-  font-weight: 600;
-  color: #a3a3a3;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: #8b5cf6;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .level-number {
-  font-size: 1.5rem;
+  font-size: 1.125rem;
   font-weight: 800;
-  color: #0a0a0a;
+  color: #7c3aed;
   line-height: 1;
 }
 
@@ -895,7 +900,7 @@ export default {
 }
 
 .course-card:hover .course-title {
-  color: #4f46e5;
+  color: #8b5cf6;
 }
 
 .course-description {
@@ -913,6 +918,7 @@ export default {
   border-top: 2px solid rgba(0, 0, 0, 0.06);
   position: relative;
   z-index: 3;
+  border-radius: 0 0 24px 24px;
 }
 
 .meta-group {
@@ -943,9 +949,10 @@ export default {
 }
 
 .meta-divider {
-  width: 1px;
-  height: 18px;
-  background: rgba(0, 0, 0, 0.12);
+  width: 4px;
+  height: 4px;
+  background: rgba(139, 92, 246, 0.3);
+  border-radius: 50%;
 }
 
 /* Course Footer */
@@ -961,7 +968,7 @@ export default {
   width: 100%;
   padding: 16px 28px;
   border: none;
-  border-radius: 14px;
+  border-radius: 16px;
   font-weight: 700;
   font-size: 1rem;
   cursor: pointer;
@@ -1132,21 +1139,21 @@ export default {
   align-items: center;
   gap: 10px;
   padding: 14px 28px;
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #3b82f6 100%);
+  background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 50%, #7c3aed 100%);
   color: white;
   border: none;
-  border-radius: 14px;
+  border-radius: 16px;
   font-weight: 700;
   font-size: 1rem;
   cursor: pointer;
   transition: all 0.35s ease;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
 }
 
 .retry-btn:hover {
-  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 50%, #2563eb 100%);
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 50%, #6d28d9 100%);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.45);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.45);
 }
 
 /* Modal Styles */
@@ -1201,7 +1208,7 @@ export default {
   height: 44px;
   background: rgba(0, 0, 0, 0.04);
   border: 1.5px solid rgba(0, 0, 0, 0.08);
-  border-radius: 14px;
+  border-radius: 16px;
   color: #737373;
   font-size: 2rem;
   cursor: pointer;
@@ -1248,10 +1255,10 @@ export default {
 
 .course-preview {
   padding: 32px;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(79, 70, 229, 0.05));
-  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(124, 58, 237, 0.05));
+  border-radius: 20px;
   margin-bottom: 40px;
-  border: 2px solid rgba(99, 102, 241, 0.15);
+  border: 2px solid rgba(139, 92, 246, 0.15);
 }
 
 .course-info h3 {
@@ -1263,7 +1270,7 @@ export default {
 }
 
 .course-type {
-  color: #4f46e5;
+  color: #7c3aed;
   font-weight: 700;
   font-size: 1rem;
   margin: 0 0 28px 0;
@@ -1301,22 +1308,37 @@ export default {
   justify-content: center;
   gap: 12px;
   padding: 20px 40px;
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #3b82f6 100%);
+  background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 25%, #7c3aed 50%, #6d28d9 75%, #5b21b6 100%);
   color: white;
   border: none;
-  border-radius: 16px;
+  border-radius: 18px;
   font-weight: 800;
   font-size: 1.125rem;
   cursor: pointer;
   transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
-  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.4);
+}
+
+.register-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.register-btn:hover::before {
+  left: 100%;
 }
 
 .register-btn:hover {
   transform: translateY(-3px);
-  box-shadow: 0 12px 40px rgba(99, 102, 241, 0.5);
-  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 50%, #2563eb 100%);
+  box-shadow: 0 12px 40px rgba(139, 92, 246, 0.5);
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 25%, #6d28d9 50%, #5b21b6 75%, #4c1d95 100%);
 }
 
 .btn-glow {
@@ -1328,7 +1350,7 @@ export default {
   background: transparent;
   color: #737373;
   border: 2px solid rgba(0, 0, 0, 0.12);
-  border-radius: 16px;
+  border-radius: 18px;
   font-weight: 700;
   font-size: 1.0625rem;
   cursor: pointer;
