@@ -197,8 +197,8 @@ export default {
 
 /* Pricing Card */
 .pricing-card {
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
   border-radius: 16px;
   position: relative;
   transition: all 0.3s ease;
@@ -206,7 +206,9 @@ export default {
 
 .pricing-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: transparent;
+  box-shadow: 0 12px 40px rgba(102, 126, 234, 0.4);
 }
 
 .pricing-card.featured {
