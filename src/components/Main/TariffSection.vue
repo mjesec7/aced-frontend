@@ -197,8 +197,8 @@ export default {
 
 /* Pricing Card */
 .pricing-card {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: white;
+  border: 1px solid #e5e7eb;
   border-radius: 16px;
   position: relative;
   transition: all 0.3s ease;
@@ -206,16 +206,14 @@ export default {
 
 .pricing-card:hover {
   transform: translateY(-4px);
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-color: transparent;
-  box-shadow: 0 12px 40px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
 }
 
 .pricing-card.featured {
-  background: linear-gradient(180deg, #ffffff 0%, #faf5ff 100%);
+  background: white;
   border: 2px solid transparent;
-  background-clip: padding-box;
   position: relative;
+  transition: all 0.4s ease;
 }
 
 .pricing-card.featured::before {
@@ -225,10 +223,21 @@ export default {
   border-radius: 16px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
   z-index: -1;
+  animation: borderSparkle 3s linear infinite;
+}
+
+@keyframes borderSparkle {
+  0%, 100% { 
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  }
+  50% { 
+    background: linear-gradient(135deg, #f093fb 0%, #667eea 50%, #764ba2 100%);
+  }
 }
 
 .pricing-card.featured:hover {
-  box-shadow: 0 20px 60px rgba(102, 126, 234, 0.25);
+  background: #1a1a1a;
+  box-shadow: 0 20px 60px rgba(102, 126, 234, 0.5);
 }
 
 /* Popular Tag */
@@ -261,14 +270,14 @@ export default {
 .plan-title {
   font-size: 28px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: #ffffff;
   margin: 0 0 8px 0;
   letter-spacing: -0.01em;
 }
 
 .plan-subtitle {
   font-size: 15px;
-  color: #666666;
+  color: #cccccc;
   margin: 0;
   font-weight: 500;
 }
@@ -277,7 +286,7 @@ export default {
 .pricing-info {
   margin-bottom: 32px;
   padding-bottom: 32px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #333333;
 }
 
 .price-compare {
@@ -289,7 +298,7 @@ export default {
 
 .old-price {
   font-size: 16px;
-  color: #999999;
+  color: #888888;
   text-decoration: line-through;
   font-weight: 500;
 }
@@ -318,21 +327,18 @@ export default {
 .current-price .amount {
   font-size: 48px;
   font-weight: 800;
-  color: #1a1a1a;
+  color: #ffffff;
   line-height: 1;
   letter-spacing: -0.02em;
 }
 
 .current-price.featured .amount {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #ffffff;
 }
 
 .current-price .currency {
   font-size: 18px;
-  color: #666666;
+  color: #cccccc;
   font-weight: 600;
 }
 
@@ -361,28 +367,28 @@ export default {
   gap: 12px;
   margin-bottom: 14px;
   font-size: 15px;
-  color: #404040;
+  color: #e5e5e5;
   line-height: 1.5;
 }
 
 .check-icon {
   width: 20px;
   height: 20px;
-  color: #667eea;
+  color: #a78bfa;
   flex-shrink: 0;
   margin-top: 2px;
 }
 
 .check-icon.featured {
-  color: #764ba2;
+  color: #ffffff;
 }
 
 /* CTA Button */
 .cta-button {
   width: 100%;
   padding: 16px 24px;
-  background: #1a1a1a;
-  color: white;
+  background: #ffffff;
+  color: #1a1a1a;
   border: none;
   border-radius: 10px;
   font-size: 16px;
@@ -393,19 +399,21 @@ export default {
 }
 
 .cta-button:hover {
-  background: #333333;
+  background: #f5f5f5;
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 20px rgba(255, 255, 255, 0.2);
 }
 
 .cta-button.featured {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+  background: #ffffff;
+  color: #764ba2;
+  font-weight: 700;
+  box-shadow: 0 4px 16px rgba(255, 255, 255, 0.3);
 }
 
 .cta-button.featured:hover {
-  background: linear-gradient(135deg, #5568d3 0%, #653a8b 100%);
-  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+  background: #f5f5f5;
+  box-shadow: 0 8px 24px rgba(255, 255, 255, 0.4);
 }
 
 /* Responsive */
