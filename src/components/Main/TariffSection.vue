@@ -1,118 +1,106 @@
 <template>
   <section class="pricing-section">
     <div class="container">
-      <div class="section-header">
-        <span class="section-label">Тарифы</span>
-        <h2 class="section-title">
-          Выберите свой план
-        </h2>
-        <p class="section-subtitle">
-          Инвестируйте в своё образование. Каждый урок — шаг к новым возможностям
-        </p>
+      <div class="header">
+        <h2 class="title">Простые и прозрачные тарифы</h2>
+        <p class="subtitle">Выберите план, который подходит именно вам</p>
       </div>
 
-      <div class="pricing-grid">
+      <div class="plans">
         <!-- Basic Plan -->
-        <div class="pricing-card">
-          <div class="card-content">
-            <div class="plan-header">
-              <h3 class="plan-title">Базовый</h3>
-              <p class="plan-subtitle">Для начинающих</p>
-            </div>
-
-            <div class="pricing-info">
-              <div class="price-compare">
-                <span class="old-price">520,000</span>
-                <span class="discount">-50%</span>
-              </div>
-              <div class="current-price">
-                <span class="amount">260,000</span>
-                <span class="currency">сум</span>
-              </div>
-            </div>
-
-            <ul class="features-list">
-              <li class="feature-item">
-                <svg class="check-icon" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                </svg>
-                <span>Доступ ко всем предметам</span>
-              </li>
-              <li class="feature-item">
-                <svg class="check-icon" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                </svg>
-                <span>Помощь ИИ с домашкой</span>
-              </li>
-              <li class="feature-item">
-                <svg class="check-icon" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                </svg>
-                <span>Прогресс и статистика</span>
-              </li>
-            </ul>
-
-            <button class="cta-button" @click="handleClick('start')">
-              Выбрать план
-            </button>
+        <div class="plan-card">
+          <div class="plan-top">
+            <h3 class="plan-name">Базовый</h3>
+            <p class="plan-description">Идеально для старта</p>
           </div>
+
+          <div class="plan-price">
+            <div class="price-main">
+              <span class="amount">260,000</span>
+              <span class="currency">сум</span>
+            </div>
+            <div class="price-note">
+              <span class="original">520,000 сум</span>
+              <span class="save">Скидка 50%</span>
+            </div>
+          </div>
+
+          <div class="plan-features">
+            <div class="feature">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>Доступ ко всем предметам</span>
+            </div>
+            <div class="feature">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>Помощь ИИ с домашкой</span>
+            </div>
+            <div class="feature">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>Прогресс и статистика</span>
+            </div>
+          </div>
+
+          <button class="plan-button" @click="handleClick('start')">
+            Начать обучение
+          </button>
         </div>
 
-        <!-- Professional Plan -->
-        <div class="pricing-card featured">
-          <div class="popular-tag">Популярный</div>
+        <!-- Pro Plan -->
+        <div class="plan-card premium">
+          <div class="badge">Рекомендуем</div>
           
-          <div class="card-content">
-            <div class="plan-header">
-              <h3 class="plan-title">Профессионал</h3>
-              <p class="plan-subtitle">Для карьерного роста</p>
-            </div>
-
-            <div class="pricing-info">
-              <div class="price-compare">
-                <span class="old-price">900,000</span>
-                <span class="discount featured">-50%</span>
-              </div>
-              <div class="current-price featured">
-                <span class="amount">450,000</span>
-                <span class="currency">сум</span>
-              </div>
-              <div class="savings-badge">
-                Экономия 450,000 сум
-              </div>
-            </div>
-
-            <ul class="features-list">
-              <li class="feature-item">
-                <svg class="check-icon featured" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                </svg>
-                <span>Всё из Базового +</span>
-              </li>
-              <li class="feature-item">
-                <svg class="check-icon featured" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                </svg>
-                <span>Персональный ИИ-наставник</span>
-              </li>
-              <li class="feature-item">
-                <svg class="check-icon featured" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                </svg>
-                <span>Продвинутая аналитика</span>
-              </li>
-              <li class="feature-item">
-                <svg class="check-icon featured" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                </svg>
-                <span>Индивидуальная карта обучения</span>
-              </li>
-            </ul>
-
-            <button class="cta-button featured" @click="handleClick('pro')">
-              Начать сейчас
-            </button>
+          <div class="plan-top">
+            <h3 class="plan-name">Профессионал</h3>
+            <p class="plan-description">Максимум возможностей</p>
           </div>
+
+          <div class="plan-price">
+            <div class="price-main">
+              <span class="amount">450,000</span>
+              <span class="currency">сум</span>
+            </div>
+            <div class="price-note">
+              <span class="original">900,000 сум</span>
+              <span class="save premium">Скидка 50%</span>
+            </div>
+          </div>
+
+          <div class="plan-features">
+            <div class="feature">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>Всё из Базового</span>
+            </div>
+            <div class="feature">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>Персональный ИИ-наставник</span>
+            </div>
+            <div class="feature">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>Продвинутая аналитика</span>
+            </div>
+            <div class="feature">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>Индивидуальная карта обучения</span>
+            </div>
+          </div>
+
+          <button class="plan-button premium" @click="handleClick('pro')">
+            Начать сейчас
+          </button>
         </div>
       </div>
     </div>
@@ -140,307 +128,272 @@ export default {
 </script>
 
 <style scoped>
+* {
+  box-sizing: border-box;
+}
+
 .pricing-section {
-  padding: 100px 24px;
-  background: linear-gradient(180deg, #fafafa 0%, #ffffff 100%);
-  position: relative;
+  padding: 120px 24px;
+  background: #ffffff;
 }
 
 .container {
-  max-width: 1100px;
+  max-width: 1000px;
   margin: 0 auto;
 }
 
-/* Section Header */
-.section-header {
+/* Header */
+.header {
   text-align: center;
-  margin-bottom: 64px;
+  margin-bottom: 80px;
 }
 
-.section-label {
-  display: inline-block;
-  padding: 6px 16px;
+.title {
+  font-size: 56px;
+  font-weight: 700;
+  color: #000000;
+  margin: 0 0 16px 0;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.subtitle {
+  font-size: 20px;
+  color: #666666;
+  margin: 0;
+  font-weight: 400;
+}
+
+/* Plans Grid */
+.plans {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 40px;
+  max-width: 880px;
+  margin: 0 auto;
+}
+
+/* Plan Card */
+.plan-card {
+  background: #fafafa;
+  border-radius: 20px;
+  padding: 48px 40px;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid transparent;
+}
+
+.plan-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.08);
+}
+
+.plan-card.premium {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  border-radius: 20px;
-  margin-bottom: 20px;
-  text-transform: uppercase;
 }
 
-.section-title {
-  font-size: 48px;
-  font-weight: 700;
-  color: #1a1a1a;
-  margin: 0 0 16px 0;
-  letter-spacing: -0.02em;
+.plan-card.premium:hover {
+  box-shadow: 0 32px 64px rgba(102, 126, 234, 0.3);
 }
 
-.section-subtitle {
-  font-size: 18px;
-  color: #666666;
-  max-width: 600px;
-  margin: 0 auto;
-  line-height: 1.6;
-}
-
-/* Pricing Grid */
-.pricing-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 32px;
-  max-width: 900px;
-  margin: 0 auto;
-}
-
-/* Pricing Card */
-.pricing-card {
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
-  position: relative;
-  transition: all 0.3s ease;
-}
-
-.pricing-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
-}
-
-.pricing-card.featured {
-  background: white;
-  border: 2px solid transparent;
-  position: relative;
-  transition: all 0.4s ease;
-}
-
-.pricing-card.featured::before {
-  content: '';
+/* Badge */
+.badge {
   position: absolute;
-  inset: -2px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-  z-index: -1;
-  animation: borderSparkle 3s linear infinite;
-}
-
-@keyframes borderSparkle {
-  0%, 100% { 
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-  }
-  50% { 
-    background: linear-gradient(135deg, #f093fb 0%, #667eea 50%, #764ba2 100%);
-  }
-}
-
-.pricing-card.featured:hover {
-  background: #1a1a1a;
-  box-shadow: 0 20px 60px rgba(102, 126, 234, 0.5);
-}
-
-/* Popular Tag */
-.popular-tag {
-  position: absolute;
-  top: -14px;
+  top: -16px;
   left: 50%;
   transform: translateX(-50%);
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 6px 20px;
-  border-radius: 20px;
-  font-size: 12px;
+  background: #000000;
+  color: #ffffff;
+  padding: 8px 24px;
+  border-radius: 24px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.5px;
   text-transform: uppercase;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
-/* Card Content */
-.card-content {
-  padding: 40px 32px;
-}
-
-/* Plan Header */
-.plan-header {
+/* Plan Top */
+.plan-top {
   margin-bottom: 32px;
 }
 
-.plan-title {
-  font-size: 28px;
+.plan-name {
+  font-size: 32px;
   font-weight: 700;
-  color: #ffffff;
   margin: 0 0 8px 0;
-  letter-spacing: -0.01em;
+  color: inherit;
 }
 
-.plan-subtitle {
-  font-size: 15px;
-  color: #cccccc;
-  margin: 0;
-  font-weight: 500;
-}
-
-/* Pricing Info */
-.pricing-info {
-  margin-bottom: 32px;
-  padding-bottom: 32px;
-  border-bottom: 1px solid #333333;
-}
-
-.price-compare {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.old-price {
+.plan-description {
   font-size: 16px;
-  color: #888888;
-  text-decoration: line-through;
-  font-weight: 500;
+  margin: 0;
+  opacity: 0.7;
 }
 
-.discount {
-  display: inline-block;
-  padding: 4px 10px;
-  background: #fee2e2;
-  color: #dc2626;
-  font-size: 12px;
-  font-weight: 700;
-  border-radius: 6px;
+/* Pricing */
+.plan-price {
+  margin-bottom: 40px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-.discount.featured {
-  background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
-  color: #667eea;
+.plan-card.premium .plan-price {
+  border-bottom-color: rgba(255, 255, 255, 0.2);
 }
 
-.current-price {
+.price-main {
   display: flex;
   align-items: baseline;
   gap: 8px;
+  margin-bottom: 12px;
 }
 
-.current-price .amount {
-  font-size: 48px;
+.amount {
+  font-size: 64px;
   font-weight: 800;
-  color: #ffffff;
   line-height: 1;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.04em;
 }
 
-.current-price.featured .amount {
+.currency {
+  font-size: 24px;
+  font-weight: 600;
+  opacity: 0.8;
+}
+
+.price-note {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.original {
+  font-size: 16px;
+  text-decoration: line-through;
+  opacity: 0.5;
+}
+
+.save {
+  background: #000000;
   color: #ffffff;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
 }
 
-.current-price .currency {
-  font-size: 18px;
-  color: #cccccc;
-  font-weight: 600;
+.save.premium {
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
 }
 
-.savings-badge {
-  display: inline-block;
-  margin-top: 16px;
-  padding: 8px 16px;
-  background: linear-gradient(135deg, #d1fae515 0%, #10b98115 100%);
-  border: 1px solid #10b98130;
-  color: #059669;
-  font-size: 13px;
-  font-weight: 600;
-  border-radius: 8px;
+/* Features */
+.plan-features {
+  margin-bottom: 40px;
 }
 
-/* Features List */
-.features-list {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 32px 0;
-}
-
-.feature-item {
+.feature {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  margin-bottom: 14px;
-  font-size: 15px;
-  color: #e5e5e5;
+  margin-bottom: 16px;
+  font-size: 16px;
   line-height: 1.5;
 }
 
-.check-icon {
+.feature .icon {
   width: 20px;
   height: 20px;
-  color: #a78bfa;
   flex-shrink: 0;
   margin-top: 2px;
+  color: #667eea;
 }
 
-.check-icon.featured {
+.plan-card.premium .feature .icon {
   color: #ffffff;
 }
 
-/* CTA Button */
-.cta-button {
+.feature span {
+  opacity: 0.9;
+}
+
+/* Button */
+.plan-button {
   width: 100%;
-  padding: 16px 24px;
-  background: #ffffff;
-  color: #1a1a1a;
+  padding: 18px 32px;
+  background: #000000;
+  color: #ffffff;
   border: none;
-  border-radius: 10px;
-  font-size: 16px;
+  border-radius: 12px;
+  font-size: 17px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
   font-family: inherit;
 }
 
-.cta-button:hover {
-  background: #f5f5f5;
+.plan-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(255, 255, 255, 0.2);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
 }
 
-.cta-button.featured {
+.plan-button.premium {
   background: #ffffff;
   color: #764ba2;
-  font-weight: 700;
-  box-shadow: 0 4px 16px rgba(255, 255, 255, 0.3);
 }
 
-.cta-button.featured:hover {
-  background: #f5f5f5;
-  box-shadow: 0 8px 24px rgba(255, 255, 255, 0.4);
+.plan-button.premium:hover {
+  box-shadow: 0 12px 24px rgba(255, 255, 255, 0.3);
 }
 
 /* Responsive */
 @media (max-width: 768px) {
   .pricing-section {
-    padding: 60px 20px;
+    padding: 80px 20px;
   }
 
-  .section-title {
-    font-size: 36px;
+  .title {
+    font-size: 40px;
   }
 
-  .section-subtitle {
-    font-size: 16px;
+  .subtitle {
+    font-size: 18px;
   }
 
-  .pricing-grid {
+  .plans {
     grid-template-columns: 1fr;
-    gap: 24px;
+    gap: 32px;
   }
 
-  .card-content {
+  .plan-card {
+    padding: 40px 32px;
+  }
+
+  .amount {
+    font-size: 56px;
+  }
+}
+
+@media (max-width: 480px) {
+  .pricing-section {
+    padding: 60px 16px;
+  }
+
+  .header {
+    margin-bottom: 60px;
+  }
+
+  .title {
+    font-size: 32px;
+  }
+
+  .plan-card {
     padding: 32px 24px;
   }
 
-  .current-price .amount {
-    font-size: 40px;
+  .amount {
+    font-size: 48px;
   }
 }
 
