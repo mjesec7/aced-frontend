@@ -434,16 +434,18 @@ export default {
           const firstLesson = course.lessons && course.lessons.length > 0 ? course.lessons[0] : null;
           
           if (firstLesson && firstLesson._id) {
-            // Navigate directly to the lesson page
+            console.log('📖 Opening first lesson:', firstLesson._id);
+            // Navigate directly to the lesson page using correct param name 'id'
             await this.$router.push({ 
               name: 'LessonPage',
-              params: { lessonId: firstLesson._id },
+              params: { id: firstLesson._id }, // ✅ FIXED: Use 'id' not 'lessonId'
               query: { 
                 source: 'aced-section',
                 guest: isAuthenticated ? undefined : 'true'
               }
             });
           } else {
+            console.log('⚠️ No lesson found, fallback to topic overview');
             // Fallback to topic overview if no lesson found
             await this.$router.push({ 
               name: 'TopicOverview',
@@ -461,12 +463,14 @@ export default {
             const firstLesson = course.lessons && course.lessons.length > 0 ? course.lessons[0] : null;
             
             if (firstLesson && firstLesson._id) {
+              console.log('📖 Opening first lesson (authenticated):', firstLesson._id);
               await this.$router.push({ 
                 name: 'LessonPage',
-                params: { lessonId: firstLesson._id },
+                params: { id: firstLesson._id }, // ✅ FIXED: Use 'id' not 'lessonId'
                 query: { source: 'aced-section' }
               });
             } else {
+              console.log('⚠️ No lesson found, fallback to topic overview');
               await this.$router.push({ 
                 name: 'TopicOverview',
                 params: { id: course._id },
