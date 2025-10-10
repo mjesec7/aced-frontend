@@ -428,23 +428,30 @@ export default {
         
         console.log('Course type:', topicType, 'Authenticated:', isAuthenticated);
         
+        // Allow all users (authenticated and guest) to access free courses
         if (topicType === 'free') {
+          await this.$router.push({ 
+            name: 'TopicOverview',
+            params: { id: course._id },
+            query: { 
+              source: 'aced-section',
+              guest: isAuthenticated ? undefined : 'true' // Only add guest param if not authenticated
+            }
+          });
+        } else {
+          // Premium/Pro courses require authentication
           if (isAuthenticated) {
+            // If authenticated, allow access (implement payment check if needed)
             await this.$router.push({ 
               name: 'TopicOverview',
               params: { id: course._id },
               query: { source: 'aced-section' }
             });
           } else {
-            await this.$router.push({ 
-              name: 'TopicOverview',
-              params: { id: course._id },
-              query: { source: 'aced-section', guest: 'true' }
-            });
+            // Show registration modal for premium courses when not authenticated
+            this.selectedCourse = course;
+            this.showRegistrationModal = true;
           }
-        } else {
-          this.selectedCourse = course;
-          this.showRegistrationModal = true;
         }
         
       } catch (error) {
@@ -553,17 +560,15 @@ export default {
       return 'btn-free';
     },
 
-    getStartButtonIcon(course) {
-      if (this.processingCourse === course._id) return '⏳';
-      const type = this.getTopicType(course);
-      if (type === 'free') return '🚀';
-      return '🔒';
-    },
-
     getStartButtonText(course) {
       if (this.processingCourse === course._id) return 'Открытие...';
+      
       const type = this.getTopicType(course);
-      if (type === 'free') return 'Начать обучение';
+      const isAuthenticated = this.checkUserAuthentication();
+      
+      if (type === 'free') {
+        return isAuthenticated ? 'Начать обучение' : 'Попробовать бесплатно';
+      }
       if (type === 'premium') return 'Получить доступ';
       return 'Открыть Pro';
     },
@@ -593,7 +598,6 @@ export default {
   }
 };
 </script>
-
 
 <style scoped>
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap");
@@ -752,12 +756,6 @@ export default {
 .course-card.course-pro:hover {
   border-color: rgba(236, 72, 153, 0.4);
   box-shadow: 0 20px 48px rgba(236, 72, 153, 0.15), 0 8px 16px rgba(236, 72, 153, 0.08);
-}
-
-.course-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.12), 0 8px 16px rgba(0, 0, 0, 0.08);
-  border-color: rgba(99, 102, 241, 0.2);
 }
 
 .course-card:hover .hover-overlay {
@@ -1339,6 +1337,10 @@ export default {
   transform: translateY(-3px);
   box-shadow: 0 12px 40px rgba(139, 92, 246, 0.5);
   background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 25%, #6d28d9 50%, #5b21b6 75%, #4c1d95 100%);
+}
+
+.btn-icon {
+  font-size: 1.25rem;
 }
 
 .btn-glow {
