@@ -358,9 +358,9 @@
 </template>
 
 <script>
-// ✅ COMPLETE LESSONPAGE.VUE SCRIPT with Enhanced Resizable Split Screen
+// ✅ COMPLETE LESSONPAGE.VUE SCRIPT with Guest Mode Support
 import { computed, ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 
 // Import composables
 import { useVocabulary } from '@/composables/useVocabulary'
@@ -374,7 +374,6 @@ import { useLessonOrchestrator } from '@/composables/useLessonOrchestrator'
 import VocabularyModal from '@/components/lesson/VocabularyModal.vue'
 import LessonIntro from '@/components/lesson/LessonIntro.vue'
 import LessonHeader from '@/components/lesson/LessonHeader.vue'
-// ✅ REMOVED: ProgressBar import - now integrated into LessonHeader
 import ContentPanel from '@/components/lesson/ContentPanel.vue'
 import InteractivePanel from '@/components/lesson/InteractivePanel.vue'
 import AIHelpPanel from '@/components/lesson/AIHelpPanel.vue'
@@ -388,7 +387,6 @@ export default {
     VocabularyModal,
     LessonIntro,
     LessonHeader,
-    // ✅ REMOVED: ProgressBar component
     ContentPanel,
     InteractivePanel,
     AIHelpPanel,
@@ -398,6 +396,16 @@ export default {
 
   setup() {
     const router = useRouter()
+    const route = useRoute()
+    
+    // ==========================================
+    // GUEST MODE STATE
+    // ==========================================
+    const isGuestMode = computed(() => {
+      return route.query.guest === 'true' || !localStorage.getItem('authToken')
+    })
+    
+    const guestBannerDismissed = ref(false)
     
     // ==========================================
     // COMPOSABLES INITIALIZATION
@@ -414,16 +422,16 @@ export default {
     explanation.initializeAI?.()
 
     // ==========================================
-    // RESIZABLE SPLIT SCREEN STATE - MAXIMUM CONTENT SPACE
+    // RESIZABLE SPLIT SCREEN STATE
     // ==========================================
     const isResizing = ref(false)
     const startX = ref(0)
     const startY = ref(0)
-    const startWidthLeft = ref(75)  // ✅ NEW DEFAULT: 75% for content
-    const startWidthRight = ref(25) // ✅ NEW DEFAULT: 25% for interactive
-    const currentLeftWidth = ref(75)  // ✅ INCREASED: 75% by default instead of 50%
-    const currentRightWidth = ref(25) // ✅ DECREASED: 25% for interactive panel
-    const resizeDirection = ref('horizontal') // 'horizontal' or 'vertical'
+    const startWidthLeft = ref(75)
+    const startWidthRight = ref(25)
+    const currentLeftWidth = ref(75)
+    const currentRightWidth = ref(25)
+    const resizeDirection = ref('horizontal')
 
     // ==========================================
     // OTHER REACTIVE STATE
@@ -458,23 +466,107 @@ export default {
     const showConfetti = ref(false)
 
     // ==========================================
-    // RESIZABLE SPLIT SCREEN COMPUTED PROPERTIES - MAXIMUM CONTENT SPACE
+    // GUEST MODE METHODS
+    // ==========================================
+    const handleGuestRegister = () => {
+      console.log('🚀 Guest user requesting registration')
+      
+      // Save current lesson ID to return to after registration
+      if (lessonOrchestrator.lesson.value?._id) {
+        try {
+          sessionStorage.setItem('returnToLesson', lessonOrchestrator.lesson.value._id)
+        } catch (error) {
+          console.error('Error saving return lesson:', error)
+        }
+      }
+      
+      // Trigger registration modal
+      const hero = document.getElementById("hero")
+      if (hero) {
+        hero.scrollIntoView({ behavior: "smooth" })
+        setTimeout(() => {
+          window.dispatchEvent(new Event("open-Login-modal"))
+        }, 600)
+      } else {
+        window.dispatchEvent(new Event("open-Login-modal"))
+      }
+      
+      // Close any modals
+      if (lessonOrchestrator.showExitModal) {
+        lessonOrchestrator.showExitModal.value = false
+      }
+    }
+    
+    const dismissGuestBanner = () => {
+      guestBannerDismissed.value = true
+      try {
+        sessionStorage.setItem('guestBannerDismissed', 'true')
+      } catch (error) {
+        console.error('Error saving banner state:', error)
+      }
+    }
+    
+    const saveGuestProgress = () => {
+      if (!isGuestMode.value) return
+      
+      try {
+        const guestProgress = JSON.parse(localStorage.getItem('guestProgress') || '{}')
+        const lessonId = lessonOrchestrator.lesson.value?._id
+        
+        if (lessonId) {
+          guestProgress[lessonId] = {
+            currentStep: lessonOrchestrator.currentIndex.value,
+            completedSteps: Array.from({length: lessonOrchestrator.currentIndex.value}, (_, i) => i),
+            mistakes: lessonOrchestrator.mistakeCount.value,
+            stars: lessonOrchestrator.stars.value,
+            elapsedSeconds: lessonOrchestrator.elapsedSeconds.value,
+            timestamp: Date.now()
+          }
+          
+          localStorage.setItem('guestProgress', JSON.stringify(guestProgress))
+          console.log('📝 Guest progress saved to localStorage')
+        }
+      } catch (error) {
+        console.error('❌ Error saving guest progress:', error)
+      }
+    }
+    
+    const loadGuestProgress = () => {
+      if (!isGuestMode.value) return null
+      
+      try {
+        const guestProgress = JSON.parse(localStorage.getItem('guestProgress') || '{}')
+        const lessonId = lessonOrchestrator.lesson.value?._id
+        
+        if (lessonId && guestProgress[lessonId]) {
+          console.log('📂 Loaded guest progress from localStorage')
+          return guestProgress[lessonId]
+        }
+      } catch (error) {
+        console.error('❌ Error loading guest progress:', error)
+      }
+      
+      return null
+    }
+
+    // ==========================================
+    // RESIZABLE SPLIT SCREEN COMPUTED PROPERTIES
     // ==========================================
     const leftPanelStyle = computed(() => {
       const isVertical = window.innerWidth <= 1023
       if (isVertical) {
         return { 
           flex: `1 1 ${currentLeftWidth.value}%`,
-          minHeight: '300px', // ✅ INCREASED: More space for content
-          maxHeight: currentLeftWidth.value >= 80 ? '80%' : 'none' // ✅ UPDATED: New constraint
+          minHeight: '300px',
+          maxHeight: currentLeftWidth.value >= 80 ? '80%' : 'none'
         }
       }
       return { 
         flex: `0 0 ${currentLeftWidth.value}%`,
-        minWidth: '300px', // ✅ MAINTAINED: Adequate minimum
-        maxWidth: currentLeftWidth.value >= 85 ? '85%' : 'none', // ✅ UPDATED: New constraint
-        height: '100%', // ✅ ENSURE: Full height usage
-        overflow: 'hidden' // ✅ ENSURE: No overflow on container
+        minWidth: '300px',
+        maxWidth: currentLeftWidth.value >= 85 ? '85%' : 'none',
+        height: '100%',
+        overflow: 'hidden'
       }
     })
 
@@ -483,16 +575,16 @@ export default {
       if (isVertical) {
         return { 
           flex: `1 1 ${currentRightWidth.value}%`,
-          minHeight: '150px', // ✅ REDUCED: Allow more space for content
+          minHeight: '150px',
           maxHeight: currentRightWidth.value >= 75 ? '75%' : 'none'
         }
       }
       return { 
         flex: `0 0 ${currentRightWidth.value}%`,
-        minWidth: '200px', // ✅ REDUCED: Lower minimum for max content space
+        minWidth: '200px',
         maxWidth: currentRightWidth.value >= 80 ? '80%' : 'none',
-        height: '100%', // ✅ ENSURE: Full height usage
-        overflow: 'hidden' // ✅ ENSURE: Container doesn't overflow
+        height: '100%',
+        overflow: 'hidden'
       }
     })
 
@@ -520,14 +612,12 @@ export default {
     })
 
     // ==========================================
-    // RESIZABLE SPLIT SCREEN METHODS - MAXIMUM CONTENT SPACE
+    // RESIZABLE SPLIT SCREEN METHODS
     // ==========================================
     const startResize = (event) => {
       event.preventDefault()
       
       isResizing.value = true
-      
-      // Determine if we're in mobile/tablet mode (vertical) or desktop mode (horizontal)
       resizeDirection.value = window.innerWidth <= 1023 ? 'vertical' : 'horizontal'
       
       if (resizeDirection.value === 'horizontal') {
@@ -539,16 +629,13 @@ export default {
       startWidthLeft.value = currentLeftWidth.value
       startWidthRight.value = currentRightWidth.value
       
-      // Add event listeners
       document.addEventListener('mousemove', handleResize, { passive: false })
       document.addEventListener('mouseup', stopResize)
       document.addEventListener('touchmove', handleResize, { passive: false })
       document.addEventListener('touchend', stopResize)
       
-      // Prevent text selection during resize
       document.body.style.userSelect = 'none'
       document.body.style.cursor = resizeDirection.value === 'horizontal' ? 'col-resize' : 'row-resize'
-      
     }
 
     const handleResize = (event) => {
@@ -572,18 +659,15 @@ export default {
         containerSize = splitContent.offsetHeight
       }
       
-      // Calculate percentage change
       const deltaPercentage = (delta / containerSize) * 100
       
-      // Calculate new widths
       let newLeftWidth = startWidthLeft.value + deltaPercentage
       let newRightWidth = startWidthRight.value - deltaPercentage
       
-      // ✅ UPDATED: New constraints for maximum content space
-      const minLeftWidth = 20   // ✅ REDUCED: Allow content to shrink to 20%
-      const maxLeftWidth = 85   // ✅ INCREASED: Allow content to expand to 85%
-      const minRightWidth = 15  // ✅ REDUCED: Interactive can be as small as 15%
-      const maxRightWidth = 80  // ✅ INCREASED: Interactive can be as large as 80%
+      const minLeftWidth = 20
+      const maxLeftWidth = 85
+      const minRightWidth = 15
+      const maxRightWidth = 80
       
       if (newLeftWidth < minLeftWidth) {
         newLeftWidth = minLeftWidth
@@ -601,7 +685,6 @@ export default {
         newLeftWidth = 100 - newRightWidth
       }
       
-      // Update reactive values
       currentLeftWidth.value = newLeftWidth
       currentRightWidth.value = newRightWidth
     }
@@ -611,17 +694,14 @@ export default {
       
       isResizing.value = false
       
-      // Remove event listeners
       document.removeEventListener('mousemove', handleResize)
       document.removeEventListener('mouseup', stopResize)
       document.removeEventListener('touchmove', handleResize)
       document.removeEventListener('touchend', stopResize)
       
-      // Restore text selection and cursor
       document.body.style.userSelect = ''
       document.body.style.cursor = ''
       
-      // Save the current sizes to localStorage for persistence
       try {
         localStorage.setItem('lessonPageSplitSizes', JSON.stringify({
           left: currentLeftWidth.value,
@@ -629,24 +709,22 @@ export default {
           timestamp: Date.now()
         }))
       } catch (error) {
+        console.error('Error saving split sizes:', error)
       }
-      
-    
     }
 
-    // Keyboard support for accessibility with new constraints
     const handleResizeKeyboard = (event) => {
-      const step = 5 // 5% step size
+      const step = 5
       let newLeftWidth = currentLeftWidth.value
       
       switch (event.key) {
         case 'ArrowLeft':
           event.preventDefault()
-          newLeftWidth = Math.max(20, currentLeftWidth.value - step) // ✅ UPDATED: New minimum
+          newLeftWidth = Math.max(20, currentLeftWidth.value - step)
           break
         case 'ArrowRight':
           event.preventDefault()
-          newLeftWidth = Math.min(85, currentLeftWidth.value + step) // ✅ UPDATED: New maximum
+          newLeftWidth = Math.min(85, currentLeftWidth.value + step)
           break
         case 'ArrowUp':
           if (resizeDirection.value === 'vertical') {
@@ -662,16 +740,16 @@ export default {
           break
         case 'Home':
           event.preventDefault()
-          newLeftWidth = 20 // ✅ UPDATED: New minimum
+          newLeftWidth = 20
           break
         case 'End':
           event.preventDefault()
-          newLeftWidth = 85 // ✅ UPDATED: New maximum
+          newLeftWidth = 85
           break
         case ' ':
         case 'Enter':
           event.preventDefault()
-          newLeftWidth = 75 // ✅ UPDATED: New default
+          newLeftWidth = 75
           break
         default:
           return
@@ -680,7 +758,6 @@ export default {
       currentLeftWidth.value = newLeftWidth
       currentRightWidth.value = 100 - newLeftWidth
       
-      // Save the new sizes
       try {
         localStorage.setItem('lessonPageSplitSizes', JSON.stringify({
           left: currentLeftWidth.value,
@@ -688,53 +765,46 @@ export default {
           timestamp: Date.now()
         }))
       } catch (error) {
+        console.error('Error saving split sizes:', error)
       }
     }
 
-    // Function to reset to new default sizes
     const resetSplitSizes = () => {
-      currentLeftWidth.value = 75  // ✅ NEW DEFAULT: 75% for content
-      currentRightWidth.value = 25 // ✅ NEW DEFAULT: 25% for interactive
+      currentLeftWidth.value = 75
+      currentRightWidth.value = 25
       
-      // Remove saved sizes from localStorage
       try {
         localStorage.removeItem('lessonPageSplitSizes')
       } catch (error) {
+        console.error('Error removing split sizes:', error)
       }
-      
     }
 
-    // Function to load saved sizes from localStorage with new defaults
     const loadSavedSizes = () => {
       try {
         const saved = localStorage.getItem('lessonPageSplitSizes')
         if (saved) {
           const { left, right, timestamp } = JSON.parse(saved)
           
-          // Check if saved data is recent (within 30 days)
           const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000)
           if (timestamp && timestamp > thirtyDaysAgo) {
-            currentLeftWidth.value = Math.max(20, Math.min(85, left || 75)) // ✅ UPDATED: New ranges
-            currentRightWidth.value = Math.max(15, Math.min(80, right || 25)) // ✅ UPDATED: New ranges
+            currentLeftWidth.value = Math.max(20, Math.min(85, left || 75))
+            currentRightWidth.value = Math.max(15, Math.min(80, right || 25))
           } else {
-            // Remove old data and use new defaults
             localStorage.removeItem('lessonPageSplitSizes')
-            currentLeftWidth.value = 75  // ✅ NEW DEFAULT
-            currentRightWidth.value = 25 // ✅ NEW DEFAULT
+            currentLeftWidth.value = 75
+            currentRightWidth.value = 25
           }
         } else {
-          // Use new defaults
           currentLeftWidth.value = 75
           currentRightWidth.value = 25
         }
       } catch (error) {
-        // Fallback to new defaults
         currentLeftWidth.value = 75
         currentRightWidth.value = 25
       }
     }
 
-    // Handle window resize with mobile optimization
     const handleWindowResize = () => {
       const wasVertical = resizeDirection.value === 'vertical'
       const isNowVertical = window.innerWidth <= 1023
@@ -742,24 +812,21 @@ export default {
       if (wasVertical !== isNowVertical) {
         resizeDirection.value = isNowVertical ? 'vertical' : 'horizontal'
         
-        // ✅ MOBILE OPTIMIZATION: Adjust splits for mobile
         if (isNowVertical && currentLeftWidth.value < 65) {
-          currentLeftWidth.value = 70  // ✅ GIVE MORE SPACE: To content on mobile
+          currentLeftWidth.value = 70
           currentRightWidth.value = 30
         } else if (!isNowVertical && currentLeftWidth.value > 80) {
-          currentLeftWidth.value = 75  // ✅ BALANCE: For desktop
+          currentLeftWidth.value = 75
           currentRightWidth.value = 25
         }
-        
       }
     }
 
     // ==========================================
-    // ALL OTHER METHODS FROM ORIGINAL FILE
+    // NAVIGATION METHODS
     // ==========================================
-    
-    // Navigation methods
     const handleReturnToCatalogue = () => {
+      console.log('🔙 Returning to catalogue')
       
       try {
         router.push({ 
@@ -783,6 +850,13 @@ export default {
     }
 
     const handleGoToHomework = () => {
+      console.log('📝 Navigating to homework')
+      
+      if (isGuestMode.value) {
+        console.log('⚠️ Guest user trying to access homework - redirecting to registration')
+        handleGuestRegister()
+        return
+      }
       
       if (lessonOrchestrator.lesson.value?._id) {
         try {
@@ -821,10 +895,15 @@ export default {
     }
 
     const exitLesson = () => {
+      console.log('👋 Exiting lesson')
       
       try {
-        if (lessonOrchestrator.saveProgress) {
+        // Save progress for guests in localStorage
+        if (isGuestMode.value) {
+          saveGuestProgress()
+        } else if (lessonOrchestrator.saveProgress) {
           lessonOrchestrator.saveProgress().catch(err => {
+            console.error('Error saving progress:', err)
           })
         }
         
@@ -847,7 +926,9 @@ export default {
       }
     }
 
-    // Problem reporting methods
+    // ==========================================
+    // PROBLEM REPORTING METHODS
+    // ==========================================
     const openProblemReportModal = () => {
       showProblemReportModal.value = true
       resetProblemForm()
@@ -881,7 +962,8 @@ export default {
         totalSteps: lessonOrchestrator.steps.value?.length || 0,
         userAgent: navigator.userAgent,
         timestamp: new Date().toLocaleString('ru-RU'),
-        url: window.location.href
+        url: window.location.href,
+        isGuestMode: isGuestMode.value
       }
     }
 
@@ -892,6 +974,7 @@ export default {
       message += `📚 Урок: ${lessonInfo.lessonName}\n`
       message += `🆔 ID урока: ${lessonInfo.lessonId}\n`
       message += `📍 Текущий шаг: ${lessonInfo.currentStep}/${lessonInfo.totalSteps}\n`
+      message += `👤 Режим: ${lessonInfo.isGuestMode ? 'Гость (пробный)' : 'Зарегистрированный'}\n`
       message += `🕐 Время: ${lessonInfo.timestamp}\n\n`
       
       if (problemType.value) {
@@ -935,14 +1018,14 @@ export default {
         const encodedMessage = encodeURIComponent(reportMessage)
         const telegramLink = `https://t.me/aced_live?text=${encodedMessage}`
         
-       
+        console.log('📤 Submitting problem report')
         
         try {
           await fetch('/api/analytics/problem-report', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${userToken.value}`
+              'Authorization': `Bearer ${userToken.value || 'guest'}`
             },
             body: JSON.stringify({
               lessonId: getCurrentLessonInfo().lessonId,
@@ -950,11 +1033,13 @@ export default {
               description: problemDescription.value,
               hasScreenshot: !!screenshotUrl.value,
               hasContact: !!contactInfo.value,
+              isGuestMode: isGuestMode.value,
               userAgent: navigator.userAgent,
               timestamp: new Date().toISOString()
             })
           })
         } catch (analyticsError) {
+          console.error('Analytics error:', analyticsError)
         }
         
         window.open(telegramLink, '_blank')
@@ -991,15 +1076,17 @@ export default {
         }
       }
       
-      // Keyboard shortcut for resetting split sizes
       if (event.ctrlKey && event.altKey && event.key === 'R') {
         event.preventDefault()
         resetSplitSizes()
       }
     }
 
-    // Vocabulary methods
+    // ==========================================
+    // VOCABULARY METHODS
+    // ==========================================
     const initializeVocabularyModal = (step) => {
+      console.log('📚 Initializing vocabulary modal')
 
       let vocabularyStep = step
 
@@ -1028,6 +1115,7 @@ export default {
     }
 
     const jumpToVocabWord = (index) => {
+      console.log('🔢 Jumping to vocab word:', index)
 
       if (index >= 0 && index < vocabulary.vocabularyModal.words.length) {
         vocabulary.cardAnimation.isFlipping = false
@@ -1037,6 +1125,7 @@ export default {
           vocabulary.vocabularyModal.currentIndex = index
         }, 50)
       } else {
+        console.warn('Invalid vocab word index')
       }
     }
 
@@ -1090,7 +1179,9 @@ export default {
       }
     }
 
-    // Exercise methods
+    // ==========================================
+    // EXERCISE METHODS
+    // ==========================================
     const getCurrentExercise = () => {
       const exercise = exercises.getCurrentExercise(lessonOrchestrator.currentStep.value)
       if (exercise) {
@@ -1148,8 +1239,12 @@ export default {
         sound.playSuccessSound()
       }
       
-      if (lessonOrchestrator.saveProgress) {
+      // Save guest progress after drop
+      if (isGuestMode.value) {
+        saveGuestProgress()
+      } else if (lessonOrchestrator.saveProgress) {
         lessonOrchestrator.saveProgress().catch(err => {
+          console.error('Error saving progress:', err)
         })
       }
     }
@@ -1162,7 +1257,6 @@ export default {
       }
     }
 
-    // Drag & Drop helper methods
     const ensureDragDropInitialization = () => {
       const currentExercise = getCurrentExercise()
       
@@ -1258,7 +1352,13 @@ export default {
           }
         }
       }
-      await lessonOrchestrator.saveProgress()
+      
+      // Save progress after submission
+      if (isGuestMode.value) {
+        saveGuestProgress()
+      } else {
+        await lessonOrchestrator.saveProgress()
+      }
     }
 
     // Navigation functions
@@ -1283,26 +1383,43 @@ export default {
           exercises.goToNextQuiz(lessonOrchestrator.currentStep.value, lessonOrchestrator.goNext)
         }
       }
+      
+      // Save progress after navigation
+      if (isGuestMode.value) {
+        saveGuestProgress()
+      }
     }
     
     const goToNextExercise = () => {
       resetAttempts()
       exercises.goToNextExercise(lessonOrchestrator.currentStep.value, lessonOrchestrator.goNext)
+      if (isGuestMode.value) {
+        saveGuestProgress()
+      }
     }
     
     const goToNextQuiz = () => {
       resetAttempts()
       exercises.goToNextQuiz(lessonOrchestrator.currentStep.value, lessonOrchestrator.goNext)
+      if (isGuestMode.value) {
+        saveGuestProgress()
+      }
     }
     
     const goNext = () => {
       resetAttempts()
       lessonOrchestrator.goNext()
+      if (isGuestMode.value) {
+        saveGuestProgress()
+      }
     }
     
     const goPrevious = () => {
       resetAttempts()
       lessonOrchestrator.goPrevious()
+      if (isGuestMode.value) {
+        saveGuestProgress()
+      }
     }
 
     // Simplified exercise methods
@@ -1333,6 +1450,12 @@ export default {
 
     // Migration functionality
     const migrateLessonContent = async () => {
+      if (isGuestMode.value) {
+        console.log('⚠️ Guest user trying to migrate content - redirecting to registration')
+        handleGuestRegister()
+        return
+      }
+      
       try {
         migrationLoading.value = true
 
@@ -1396,10 +1519,15 @@ export default {
         const completionResult = await lessonOrchestrator.completeLesson?.()
 
         if (completionResult?.success || lessonOrchestrator.lessonCompleted.value) {
-          const extractionResult = await extractLessonContent()
+          // Skip extraction for guest users
+          if (!isGuestMode.value) {
+            const extractionResult = await extractLessonContent()
 
-          if (extractionResult?.success) {
-            showCompletionMessage(extractionResult)
+            if (extractionResult?.success) {
+              showCompletionMessage(extractionResult)
+            } else {
+              lessonOrchestrator.lessonCompleted.value = true
+            }
           } else {
             lessonOrchestrator.lessonCompleted.value = true
           }
@@ -1468,11 +1596,28 @@ export default {
       document.addEventListener('keydown', handleKeyboardShortcuts)
       window.addEventListener('resize', handleWindowResize)
       
-      // ✅ LOAD: Saved split sizes with new defaults
+      // Load saved split sizes
       loadSavedSizes()
       
-      // ✅ RESPONSIVE: Adjust for current screen size
+      // Adjust for current screen size
       handleWindowResize()
+      
+      // Check if guest banner was dismissed
+      try {
+        if (sessionStorage.getItem('guestBannerDismissed')) {
+          guestBannerDismissed.value = true
+        }
+      } catch (error) {
+        console.error('Error loading banner state:', error)
+      }
+      
+      // Load guest progress if available
+      if (isGuestMode.value) {
+        const savedProgress = loadGuestProgress()
+        if (savedProgress) {
+          console.log('📂 Guest progress loaded from localStorage')
+        }
+      }
       
       // Make debug functions globally available
       window.resetSplitSizes = resetSplitSizes
@@ -1483,6 +1628,10 @@ export default {
         direction: resizeDirection.value
       })
       
+      console.log('✅ LessonPage mounted', {
+        isGuestMode: isGuestMode.value,
+        guestBannerDismissed: guestBannerDismissed.value
+      })
     })
 
     onUnmounted(() => {
@@ -1492,6 +1641,11 @@ export default {
       // Clean up any active resize state
       if (isResizing.value) {
         stopResize()
+      }
+      
+      // Save guest progress one last time
+      if (isGuestMode.value && lessonOrchestrator.started.value) {
+        saveGuestProgress()
       }
       
       // Clean up debug functions
@@ -1522,12 +1676,28 @@ export default {
       { immediate: true }
     )
 
-    // Watch for window size changes to update resize direction
+    // Watch for resize direction changes
     watch(() => resizeDirection.value, (newDirection) => {
+      console.log('🔄 Resize direction changed:', newDirection)
+    })
+    
+    // Auto-save guest progress periodically
+    watch(() => lessonOrchestrator.currentIndex.value, () => {
+      if (isGuestMode.value && lessonOrchestrator.started.value) {
+        saveGuestProgress()
+      }
     })
 
     // Return all props and methods
     return {
+      // Guest Mode
+      isGuestMode,
+      guestBannerDismissed,
+      handleGuestRegister,
+      dismissGuestBanner,
+      saveGuestProgress,
+      loadGuestProgress,
+
       // Resizable Split Screen State
       isResizing,
       currentLeftWidth,

@@ -17,6 +17,122 @@
   }
   
   /* ================================
+     GUEST MODE BANNER STYLES
+     ================================ */
+
+  /* Guest Banner */
+  .guest-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 9998;
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    color: white;
+    padding: 16px 24px;
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+    animation: slideDown 0.4s ease-out;
+  }
+
+  @keyframes slideDown {
+    from {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .banner-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .banner-icon {
+    font-size: 2rem;
+    flex-shrink: 0;
+    animation: wave 2s ease-in-out infinite;
+  }
+
+  @keyframes wave {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(14deg); }
+    75% { transform: rotate(-14deg); }
+  }
+
+  .banner-text {
+    flex: 1;
+  }
+
+  .banner-text strong {
+    display: block;
+    font-size: 1.125rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .banner-text p {
+    margin: 0;
+    font-size: 0.9375rem;
+    opacity: 0.95;
+    line-height: 1.4;
+  }
+
+  .banner-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .register-btn-banner {
+    padding: 10px 24px;
+    background: white;
+    color: #7c3aed;
+    border: none;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.9375rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+  }
+
+  .register-btn-banner:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
+  }
+
+  .close-banner-btn {
+    width: 36px;
+    height: 36px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1.5px solid rgba(255, 255, 255, 0.3);
+    border-radius: 10px;
+    color: white;
+    font-size: 1.25rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .close-banner-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  /* Adjust lesson container when guest banner is visible */
+  .lesson-container.guest-mode-active {
+    padding-top: 80px;
+  }
+  
+  /* ================================
      LOADING & ERROR STATES
      ================================ */
   
@@ -1158,7 +1274,8 @@
     .confetti-canvas,
     .vocabulary-modal-overlay,
     .success-notification,
-    .resize-divider {
+    .resize-divider,
+    .guest-banner {
       display: none !important;
     }
   
@@ -1332,6 +1449,73 @@
   }
   
   /* ================================
+     GUEST BANNER MOBILE RESPONSIVE
+     ================================ */
+
+  @media (max-width: 768px) {
+    .guest-banner {
+      padding: 12px 16px;
+    }
+    
+    .banner-content {
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    
+    .banner-icon {
+      font-size: 1.5rem;
+    }
+    
+    .banner-text strong {
+      font-size: 1rem;
+    }
+    
+    .banner-text p {
+      font-size: 0.875rem;
+    }
+    
+    .banner-actions {
+      width: 100%;
+      justify-content: space-between;
+    }
+    
+    .register-btn-banner {
+      flex: 1;
+      padding: 10px 16px;
+      font-size: 0.875rem;
+    }
+    
+    .lesson-container.guest-mode-active {
+      padding-top: 120px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .guest-banner {
+      padding: 10px 12px;
+    }
+    
+    .banner-text strong {
+      font-size: 0.9375rem;
+    }
+    
+    .banner-text p {
+      font-size: 0.8125rem;
+    }
+    
+    .register-btn-banner {
+      font-size: 0.8125rem;
+      padding: 8px 12px;
+    }
+    
+    .close-banner-btn {
+      width: 32px;
+      height: 32px;
+      font-size: 1.125rem;
+    }
+  }
+  
+  /* ================================
      TOUCH IMPROVEMENTS
      ================================ */
   
@@ -1394,6 +1578,15 @@
       .close-success:hover {
         background: transparent;
       }
+
+      .register-btn-banner:hover {
+        transform: none;
+        box-shadow: none;
+      }
+      
+      .close-banner-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
     }
   }
   
@@ -1449,7 +1642,8 @@
     .modal-content,
     .vocabulary-modal-container,
     .problem-report-modal,
-    .success-content {
+    .success-content,
+    .guest-banner {
       border-width: 0.5px;
     }
     
@@ -1468,6 +1662,20 @@
     .lesson-page {
       padding-left: env(safe-area-inset-left);
       padding-right: env(safe-area-inset-right);
+    }
+
+    .guest-banner {
+      padding-left: max(24px, calc(24px + env(safe-area-inset-left)));
+      padding-right: max(24px, calc(24px + env(safe-area-inset-right)));
+      padding-top: max(16px, calc(16px + env(safe-area-inset-top)));
+    }
+    
+    @media (max-width: 768px) {
+      .guest-banner {
+        padding-left: max(16px, calc(16px + env(safe-area-inset-left)));
+        padding-right: max(16px, calc(16px + env(safe-area-inset-right)));
+        padding-top: max(12px, calc(12px + env(safe-area-inset-top)));
+      }
     }
     
     .floating-ai-btn {
@@ -1515,7 +1723,8 @@
   .vocabulary-card,
   .floating-ai-btn,
   .modal-content,
-  .vocabulary-modal-container {
+  .vocabulary-modal-container,
+  .guest-banner {
     will-change: transform;
     transform: translateZ(0);
   }
