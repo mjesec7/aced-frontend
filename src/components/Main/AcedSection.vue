@@ -190,7 +190,9 @@ export default {
       errorMessage: null,
       retryCount: 0,
       maxRetries: 3,
-      lang: localStorage.getItem('lang') || 'ru'
+      lang: localStorage.getItem('lang') || 'ru',
+      // ✅ Navigation tracking to prevent loops
+      navigationInProgress: false
     };
   },
 
@@ -281,7 +283,6 @@ export default {
         
         if (topicsResult?.success && Array.isArray(topicsResult.data) && topicsResult.data.length > 0) {
           console.log('✅ Got', topicsResult.data.length, 'topics');
-          // Filter topics that have lessons
           const coursesWithLessons = topicsResult.data.filter(topic => {
             const hasLessons = topic.lessons && topic.lessons.length > 0;
             console.log('Topic:', topic.name, 'has lessons:', hasLessons, topic.lessons?.length);
@@ -414,13 +415,15 @@ export default {
     },
 
     async handleStartCourse(course) {
-      if (!course?._id || this.processingCourse === course._id) {
-        console.warn('⚠️ Invalid course or already processing');
+      // ✅ CRITICAL: Prevent duplicate processing and navigation loops
+      if (!course?._id || this.processingCourse === course._id || this.navigationInProgress) {
+        console.warn('⚠️ Invalid course, already processing, or navigation in progress');
         return;
       }
       
       console.log('🚀 Starting course:', course);
       this.processingCourse = course._id;
+      this.navigationInProgress = true;
       
       try {
         const topicType = this.getTopicType(course);
@@ -435,26 +438,71 @@ export default {
           
           if (firstLesson && firstLesson._id) {
             console.log('📖 Opening first lesson:', firstLesson._id);
-            // Navigate directly to the lesson page using correct param name 'id'
-            await this.$router.push({ 
-              name: 'LessonPage',
-              params: { id: firstLesson._id }, // ✅ FIXED: Use 'id' not 'lessonId'
-              query: { 
-                source: 'aced-section',
-                guest: isAuthenticated ? undefined : 'true'
+            
+            // ✅ CRITICAL FIX: Validate and sanitize lesson ID
+            const lessonId = String(firstLesson._id).trim();
+            
+            // Validate the lesson ID is not null/undefined/invalid
+            if (!lessonId || lessonId === 'null' || lessonId === 'undefined' || lessonId === '') {
+              console.error('❌ Invalid lesson ID:', firstLesson._id);
+              this.errorMessage = 'Недействительный ID урока';
+              return;
+            }
+            
+            console.log('✅ Validated lesson ID:', lessonId);
+            
+            // Navigate directly to the lesson page with proper error handling
+            try {
+              console.log('🔄 Attempting navigation to LessonPage...');
+              
+              await this.$router.push({ 
+                name: 'LessonPage',
+                params: { id: lessonId },
+                query: { 
+                  source: 'aced-section',
+                  guest: isAuthenticated ? undefined : 'true'
+                }
+              });
+              
+              console.log('✅ Successfully navigated to lesson page');
+              
+            } catch (navError) {
+              console.error('❌ Navigation error:', navError);
+              
+              // ✅ FALLBACK: Try direct path navigation
+              try {
+                console.log('🔄 Trying fallback navigation...');
+                const guestParam = isAuthenticated ? '' : '&guest=true';
+                await this.$router.push(`/lesson/${lessonId}?source=aced-section${guestParam}`);
+                console.log('✅ Fallback navigation successful');
+                
+              } catch (fallbackError) {
+                console.error('❌ Fallback navigation also failed:', fallbackError);
+                
+                // ✅ LAST RESORT: Force reload with direct URL
+                console.log('🔄 Using last resort: direct URL navigation');
+                const guestParam = isAuthenticated ? '' : '&guest=true';
+                window.location.href = `/lesson/${lessonId}?source=aced-section${guestParam}`;
               }
-            });
+            }
+            
           } else {
             console.log('⚠️ No lesson found, fallback to topic overview');
+            
             // Fallback to topic overview if no lesson found
-            await this.$router.push({ 
-              name: 'TopicOverview',
-              params: { id: course._id },
-              query: { 
-                source: 'aced-section',
-                guest: isAuthenticated ? undefined : 'true'
-              }
-            });
+            try {
+              await this.$router.push({ 
+                name: 'TopicOverview',
+                params: { id: course._id },
+                query: { 
+                  source: 'aced-section',
+                  guest: isAuthenticated ? undefined : 'true'
+                }
+              });
+            } catch (topicError) {
+              console.error('❌ Topic overview navigation failed:', topicError);
+              this.errorMessage = 'Не удалось открыть тему';
+            }
           }
         } else {
           // Premium/Pro courses require authentication
@@ -464,11 +512,26 @@ export default {
             
             if (firstLesson && firstLesson._id) {
               console.log('📖 Opening first lesson (authenticated):', firstLesson._id);
-              await this.$router.push({ 
-                name: 'LessonPage',
-                params: { id: firstLesson._id }, // ✅ FIXED: Use 'id' not 'lessonId'
-                query: { source: 'aced-section' }
-              });
+              
+              const lessonId = String(firstLesson._id).trim();
+              
+              if (!lessonId || lessonId === 'null' || lessonId === 'undefined' || lessonId === '') {
+                console.error('❌ Invalid lesson ID:', firstLesson._id);
+                this.errorMessage = 'Недействительный ID урока';
+                return;
+              }
+              
+              try {
+                await this.$router.push({ 
+                  name: 'LessonPage',
+                  params: { id: lessonId },
+                  query: { source: 'aced-section' }
+                });
+              } catch (navError) {
+                console.error('❌ Premium lesson navigation failed:', navError);
+                window.location.href = `/lesson/${lessonId}?source=aced-section`;
+              }
+              
             } else {
               console.log('⚠️ No lesson found, fallback to topic overview');
               await this.$router.push({ 
@@ -488,7 +551,11 @@ export default {
         console.error('❌ Error starting course:', error);
         this.errorMessage = 'Не удалось открыть курс';
       } finally {
-        this.processingCourse = null;
+        // ✅ Reset processing flags with delay to prevent rapid re-clicks
+        setTimeout(() => {
+          this.processingCourse = null;
+          this.navigationInProgress = false;
+        }, 1000);
       }
     },
 
