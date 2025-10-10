@@ -428,25 +428,51 @@ export default {
         
         console.log('Course type:', topicType, 'Authenticated:', isAuthenticated);
         
-        // Allow all users (authenticated and guest) to access free courses
+        // For free courses - go directly to lesson page
         if (topicType === 'free') {
-          await this.$router.push({ 
-            name: 'TopicOverview',
-            params: { id: course._id },
-            query: { 
-              source: 'aced-section',
-              guest: isAuthenticated ? undefined : 'true' // Only add guest param if not authenticated
-            }
-          });
+          // Get the first lesson from this topic
+          const firstLesson = course.lessons && course.lessons.length > 0 ? course.lessons[0] : null;
+          
+          if (firstLesson && firstLesson._id) {
+            // Navigate directly to the lesson page
+            await this.$router.push({ 
+              name: 'LessonPage',
+              params: { lessonId: firstLesson._id },
+              query: { 
+                source: 'aced-section',
+                guest: isAuthenticated ? undefined : 'true'
+              }
+            });
+          } else {
+            // Fallback to topic overview if no lesson found
+            await this.$router.push({ 
+              name: 'TopicOverview',
+              params: { id: course._id },
+              query: { 
+                source: 'aced-section',
+                guest: isAuthenticated ? undefined : 'true'
+              }
+            });
+          }
         } else {
           // Premium/Pro courses require authentication
           if (isAuthenticated) {
             // If authenticated, allow access (implement payment check if needed)
-            await this.$router.push({ 
-              name: 'TopicOverview',
-              params: { id: course._id },
-              query: { source: 'aced-section' }
-            });
+            const firstLesson = course.lessons && course.lessons.length > 0 ? course.lessons[0] : null;
+            
+            if (firstLesson && firstLesson._id) {
+              await this.$router.push({ 
+                name: 'LessonPage',
+                params: { lessonId: firstLesson._id },
+                query: { source: 'aced-section' }
+              });
+            } else {
+              await this.$router.push({ 
+                name: 'TopicOverview',
+                params: { id: course._id },
+                query: { source: 'aced-section' }
+              });
+            }
           } else {
             // Show registration modal for premium courses when not authenticated
             this.selectedCourse = course;
