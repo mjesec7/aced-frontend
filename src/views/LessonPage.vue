@@ -1,12 +1,10 @@
 <template>
   <div class="lesson-page">
-    <!-- Loading State -->
     <div v-if="loading" class="loading-screen">
       <div class="loading-spinner"></div>
       <p>Загрузка урока...</p>
     </div>
 
-    <!-- Error State -->
     <div v-else-if="error" class="error-screen">
       <div class="error-icon">❌</div>
       <h3>Ошибка загрузки урока</h3>
@@ -17,7 +15,6 @@
       </div>
     </div>
 
-    <!-- Paywall Modal -->
     <div v-if="showPaywallModal" class="modal-overlay">
       <div class="modal-content">
         <h3>🔒 Платный контент</h3>
@@ -29,7 +26,6 @@
       </div>
     </div>
 
-    <!-- Exit Confirmation Modal -->
     <div v-if="showExitModal" class="modal-overlay">
       <div class="modal-content">
         <h3>Вы действительно хотите выйти?</h3>
@@ -41,7 +37,6 @@
       </div>
     </div>
 
-    <!-- Enhanced Problem Report Modal -->
     <div v-if="showProblemReportModal" class="modal-overlay" @click.self="closeProblemReportModal">
       <div class="problem-report-modal">
         <div class="modal-header">
@@ -123,7 +118,6 @@
       </div>
     </div>
 
-    <!-- Success notification -->
     <div v-if="showSuccessMessage" class="success-notification">
       <div class="success-content">
         <div class="success-icon">✅</div>
@@ -135,7 +129,6 @@
       </div>
     </div>
 
-    <!-- Vocabulary Learning Modal -->
     <VocabularyModal
       v-if="vocabularyModal.isVisible"
       :vocabulary-data="vocabularyModal"
@@ -155,7 +148,6 @@
       @jump-to-word="jumpToVocabWord"
     />
 
-    <!-- Intro Screen with Problem Report Button at Bottom -->
     <LessonIntro
       v-if="!started && !showPaywallModal && !loading && !error"
       :lesson="lesson"
@@ -168,10 +160,8 @@
       @report-problem="openProblemReportModal"
     />
 
-    <!-- Main Lesson Content -->
     <div v-else-if="started && !showPaywallModal && !loading && !error" class="lesson-container">
 
-      <!-- Combined Header with Progress Bar -->
       <LessonHeader
         :lesson="lesson"
         :current-step="currentIndex + 1"
@@ -183,9 +173,7 @@
         @report-problem="openProblemReportModal"
       />
 
-      <!-- Split Screen Content -->
       <div class="split-content" :class="{ dragging: isResizing }">
-        <!-- Left Panel - Clean Content Display -->
         <div class="content-panel" :style="leftPanelStyle">
           <ContentPanel
             :current-step="currentStep"
@@ -212,7 +200,6 @@
           />
         </div>
 
-        <!-- Resize Divider -->
         <div 
           class="resize-divider"
           :class="{ active: isResizing }"
@@ -225,9 +212,7 @@
           :title="`Current split: ${widthIndicatorText}. Use arrow keys or drag to resize.`"
         ></div>
 
-        <!-- Right Panel - Interactive Content -->
         <div class="right-panel" :style="rightPanelStyle">
-          <!-- Interactive Panel (Exercises/Quizzes) -->
           <div v-if="isInteractiveStep" class="interactive-panel-container">
             <InteractivePanel
               :current-step="currentStep"
@@ -272,7 +257,6 @@
             />
           </div>
 
-          <!-- Non-interactive step placeholder -->
           <div v-else class="non-interactive-panel">
             <div class="panel-placeholder">
               <div class="placeholder-icon">📖</div>
@@ -284,7 +268,6 @@
       </div>
     </div>
 
-    <!-- Enhanced Lesson Completion Screen -->
     <CompletionScreen
       v-if="lessonCompleted"
       :lesson="lesson"
@@ -302,7 +285,6 @@
       @homework="handleGoToHomework"
       @vocabulary="goToVocabulary"
     >
-      <!-- Slot for additional buttons/content in CompletionScreen -->
       <template #extra-actions>
         <button @click="openProblemReportModal" class="btn-secondary">
           ⚠️ Сообщить о проблеме с уроком
@@ -310,7 +292,6 @@
       </template>
     </CompletionScreen>
 
-    <!-- Migration Panel (Admin/User) -->
     <div v-if="showMigrationPanel" class="migration-panel">
       <div class="migration-content">
         <h3>🔄 Обновление контента</h3>
@@ -328,7 +309,6 @@
       </div>
     </div>
 
-    <!-- Floating AI Assistant Toggle -->
     <button
       v-if="started && !lessonCompleted"
       class="floating-ai-btn"
@@ -338,7 +318,6 @@
       🤖
     </button>
 
-    <!-- Floating AI Assistant -->
     <FloatingAIAssistant
       v-if="showFloatingAI && started && !lessonCompleted"
       :ai-usage="aiUsage"
@@ -352,7 +331,6 @@
       @clear-chat="clearAIChat"
     />
 
-    <!-- Confetti Animation -->
     <canvas v-if="showConfetti" ref="confettiCanvas" class="confetti-canvas"></canvas>
   </div>
 </template>
@@ -406,6 +384,7 @@ export default {
     })
     
     const guestBannerDismissed = ref(false)
+    let guestAutoSaveInterval = null
     
     // ==========================================
     // COMPOSABLES INITIALIZATION
@@ -416,6 +395,13 @@ export default {
     const paymentValidation = usePaymentValidation()
     const sound = useSound()
     const explanation = useExplanation()
+
+    // Sync guest mode with orchestrator
+    watch(isGuestMode, (newValue) => {
+      if (lessonOrchestrator.isGuestMode) {
+        lessonOrchestrator.isGuestMode.value = newValue
+      }
+    }, { immediate: true })
 
     // Initialize services
     sound.initializeSpeech?.()
@@ -516,11 +502,12 @@ export default {
         if (lessonId) {
           guestProgress[lessonId] = {
             currentStep: lessonOrchestrator.currentIndex.value,
-            completedSteps: Array.from({length: lessonOrchestrator.currentIndex.value}, (_, i) => i),
+            completedSteps: Array.from({length: lessonOrchestrator.currentIndex.value + 1}, (_, i) => i),
             mistakes: lessonOrchestrator.mistakeCount.value,
             stars: lessonOrchestrator.stars.value,
             elapsedSeconds: lessonOrchestrator.elapsedSeconds.value,
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            completed: lessonOrchestrator.lessonCompleted.value || false
           }
           
           localStorage.setItem('guestProgress', JSON.stringify(guestProgress))
@@ -547,6 +534,24 @@ export default {
       }
       
       return null
+    }
+
+    const startGuestAutoSave = () => {
+      if (!isGuestMode.value) return
+      
+      // Save every 30 seconds for guests
+      guestAutoSaveInterval = setInterval(() => {
+        if (lessonOrchestrator.started.value && !lessonOrchestrator.lessonCompleted.value) {
+          saveGuestProgress()
+        }
+      }, 30000)
+    }
+
+    const stopGuestAutoSave = () => {
+      if (guestAutoSaveInterval) {
+        clearInterval(guestAutoSaveInterval)
+        guestAutoSaveInterval = null
+      }
     }
 
     // ==========================================
@@ -895,13 +900,14 @@ export default {
     }
 
     const exitLesson = () => {
-      console.log('👋 Exiting lesson')
+      console.log('👋 Exiting lesson', { isGuestMode: isGuestMode.value })
       
       try {
-        // Save progress for guests in localStorage
+        // Save progress before exit
         if (isGuestMode.value) {
           saveGuestProgress()
         } else if (lessonOrchestrator.saveProgress) {
+          // Don't await for faster exit
           lessonOrchestrator.saveProgress().catch(err => {
             console.error('Error saving progress:', err)
           })
@@ -912,15 +918,27 @@ export default {
         }
         
         lessonOrchestrator.showExitModal.value = false
-        handleReturnToCatalogue()
+        
+        // Different navigation for guests
+        if (isGuestMode.value) {
+          router.push({ 
+            name: 'HomePage',
+            query: { 
+              message: 'Спасибо за пробный урок! Зарегистрируйтесь для сохранения прогресса.'
+            }
+          })
+        } else {
+          handleReturnToCatalogue()
+        }
         
       } catch (error) {
         console.error('❌ Error during lesson exit:', error)
         lessonOrchestrator.showExitModal.value = false
         
-        try {
-          router.push({ path: '/profile/catalogue' })
-        } catch (navError) {
+        // Fallback navigation
+        if (isGuestMode.value) {
+          window.location.href = '/'
+        } else {
           window.location.href = '/profile/catalogue'
         }
       }
@@ -1020,26 +1038,30 @@ export default {
         
         console.log('📤 Submitting problem report')
         
-        try {
-          await fetch('/api/analytics/problem-report', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${userToken.value || 'guest'}`
-            },
-            body: JSON.stringify({
-              lessonId: getCurrentLessonInfo().lessonId,
-              problemType: problemType.value,
-              description: problemDescription.value,
-              hasScreenshot: !!screenshotUrl.value,
-              hasContact: !!contactInfo.value,
-              isGuestMode: isGuestMode.value,
-              userAgent: navigator.userAgent,
-              timestamp: new Date().toISOString()
+        // Only try analytics for authenticated users
+        if (!isGuestMode.value) {
+          try {
+            await fetch('/api/analytics/problem-report', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${userToken.value}`
+              },
+              body: JSON.stringify({
+                lessonId: getCurrentLessonInfo().lessonId,
+                problemType: problemType.value,
+                description: problemDescription.value,
+                hasScreenshot: !!screenshotUrl.value,
+                hasContact: !!contactInfo.value,
+                isGuestMode: isGuestMode.value,
+                userAgent: navigator.userAgent,
+                timestamp: new Date().toISOString()
+              })
             })
-          })
-        } catch (analyticsError) {
-          console.error('Analytics error:', analyticsError)
+          } catch (analyticsError) {
+            console.error('Analytics error:', analyticsError)
+            // Don't block the report submission
+          }
         }
         
         window.open(telegramLink, '_blank')
@@ -1353,10 +1375,11 @@ export default {
         }
       }
       
-      // Save progress after submission
+      // Save progress based on mode
       if (isGuestMode.value) {
         saveGuestProgress()
       } else {
+        // Only save to server if authenticated
         await lessonOrchestrator.saveProgress()
       }
     }
@@ -1529,7 +1552,17 @@ export default {
               lessonOrchestrator.lessonCompleted.value = true
             }
           } else {
+            // For guests, just mark as completed
             lessonOrchestrator.lessonCompleted.value = true
+            saveGuestProgress() // Save final state
+            
+            // Show guest-specific completion message
+            if (lessonOrchestrator.showToast) {
+              lessonOrchestrator.showToast(
+                '🎉 Урок завершен! Зарегистрируйтесь, чтобы сохранить ваш прогресс навсегда.',
+                'success'
+              )
+            }
           }
         }
       } catch (error) {
@@ -1617,6 +1650,8 @@ export default {
         if (savedProgress) {
           console.log('📂 Guest progress loaded from localStorage')
         }
+        startGuestAutoSave()
+        console.log('✅ Guest mode initialized with auto-save')
       }
       
       // Make debug functions globally available
@@ -1630,7 +1665,8 @@ export default {
       
       console.log('✅ LessonPage mounted', {
         isGuestMode: isGuestMode.value,
-        guestBannerDismissed: guestBannerDismissed.value
+        guestBannerDismissed: guestBannerDismissed.value,
+        lessonId: route.params.id
       })
     })
 
@@ -1643,9 +1679,13 @@ export default {
         stopResize()
       }
       
+      // Stop guest auto-save
+      stopGuestAutoSave()
+      
       // Save guest progress one last time
       if (isGuestMode.value && lessonOrchestrator.started.value) {
         saveGuestProgress()
+        console.log('📝 Final guest progress saved on unmount')
       }
       
       // Clean up debug functions
@@ -1655,9 +1695,13 @@ export default {
     })
 
     // Watchers
-    watch(() => lessonOrchestrator.lessonCompleted.value, (newVal) => {
-      if (newVal) {
+    watch(() => lessonOrchestrator.lessonCompleted.value, (newVal, oldVal) => {
+      if (newVal && !oldVal) {
         startConfetti()
+        if (isGuestMode.value) {
+          saveGuestProgress()
+          console.log('🎉 Guest lesson completed and saved')
+        }
       }
     })
 
@@ -1681,10 +1725,11 @@ export default {
       console.log('🔄 Resize direction changed:', newDirection)
     })
     
-    // Auto-save guest progress periodically
-    watch(() => lessonOrchestrator.currentIndex.value, () => {
-      if (isGuestMode.value && lessonOrchestrator.started.value) {
+    // Auto-save guest progress on step change
+    watch(() => lessonOrchestrator.currentIndex.value, (newIndex, oldIndex) => {
+      if (isGuestMode.value && lessonOrchestrator.started.value && newIndex !== oldIndex) {
         saveGuestProgress()
+        console.log(`📝 Guest progress auto-saved at step ${newIndex + 1}`)
       }
     })
 
