@@ -35,12 +35,9 @@ const PaymeCheckout = () => import('@/views/PaymeCheckout.vue');
 
 // ✅ ENHANCED HELPER: Get effective user plan from multiple sources
 const getEffectiveUserPlan = () => {
-  // Try multiple sources with priority order
   const storeStatus = store.getters['user/userStatus'];
   const localStatus = localStorage.getItem('userStatus');
   const subscriptionData = localStorage.getItem('subscriptionData');
-  
-
   
   // Check subscription data first for active subscriptions
   let subscriptionPlan = null;
@@ -52,10 +49,10 @@ const getEffectiveUserPlan = () => {
         const expiry = new Date(parsed.expiryDate);
         if (now < expiry && parsed.plan !== 'free') {
           subscriptionPlan = parsed.plan;
-        } else {
         }
       }
     } catch (e) {
+      console.error('Error parsing subscription data:', e);
     }
   }
   
@@ -86,8 +83,6 @@ const hasFeatureAccess = (feature, requiredPlans = ['start', 'pro']) => {
   }
   
   const hasAccess = requiredPlans.includes(effectiveStatus);
- 
-  
   return hasAccess;
 };
 
@@ -112,9 +107,6 @@ const routes = [
     meta: { 
       title: 'Настройки',
       requiresAuth: true 
-    },
-    beforeEnter: (to, from, next) => {
-      next();
     }
   },
 
@@ -137,7 +129,7 @@ const routes = [
         meta: { title: 'Каталог' }
       },
       
-      // ✅ NEW: Updated Courses Route
+      // ✅ Updated Courses Route
       { 
         path: 'updated-courses', 
         name: 'UpdatedCourses', 
@@ -146,51 +138,17 @@ const routes = [
           title: 'Актуальные курсы',
           description: 'Изучайте новейшие технологии и инструменты - от создания ИИ-помощников до современных методов редактирования'
         }
-        // No beforeEnter - free for everyone by default
-        // Add access control here if you want to make it premium:
-        /*
-        beforeEnter: async (to, from, next) => {
-          const hasAccess = hasFeatureAccess('updated_courses', ['start', 'pro']);
-          
-          if (!hasAccess) {
-            sessionStorage.setItem('intendedRoute', JSON.stringify({
-              path: to.path,
-              name: to.name,
-              params: to.params,
-              query: to.query
-            }));
-            
-            return next({ 
-              name: 'PaymePayment',
-              params: { plan: 'start' },
-              query: { 
-                feature: 'updated_courses',
-                requiredPlan: 'start',
-                returnTo: to.path,
-                message: 'Актуальные курсы доступны с подпиской Start'
-              }
-            });
-          }
-          
-          next();
-        }
-        */
       },
       
       { 
         path: 'analytics', 
         name: 'UserAnalyticsPanel', 
         component: UserAnalyticsPanel,
-        meta: { 
-          title: 'Аналитика'
-        },
+        meta: { title: 'Аналитика' },
         beforeEnter: async (to, from, next) => {
-          
-          // ✅ CRITICAL FIX: Use consistent access checking logic  
-          const hasAccess = hasFeatureAccess('analytics', ['pro']); // Analytics requires Pro only
+          const hasAccess = hasFeatureAccess('analytics', ['pro']);
           
           if (!hasAccess) {
-            
             sessionStorage.setItem('intendedRoute', JSON.stringify({
               path: to.path,
               name: to.name,
@@ -280,10 +238,9 @@ const routes = [
         name: 'HomeworkList', 
         component: HomeworkList,
         meta: { title: 'Домашние задания' }
-        // No beforeEnter - free for everyone
       },
       
-      // ✅ ENHANCED: Flexible homework routes that support both standalone and lesson-based homework
+      // ✅ Homework routes
       { 
         path: 'homeworks/:id', 
         name: 'HomeworkPage', 
@@ -353,7 +310,6 @@ const routes = [
         name: 'DiaryPage', 
         component: DiaryPage,
         meta: { title: 'Дневник' }
-        // No beforeEnter - free for everyone
       },
       { 
         path: 'tests', 
@@ -419,7 +375,7 @@ const routes = [
         }
       },
       
-      // ✅ VOCABULARY ROUTE MOVED INSIDE PROFILE WITH FULL ACCESS CONTROL
+      // ✅ Vocabulary route with access control
       { 
         path: 'vocabulary', 
         name: 'ProfileVocabularyPage', 
@@ -429,13 +385,9 @@ const routes = [
           description: 'Персональный словарь с изученными словами'
         },
         beforeEnter: async (to, from, next) => {
-          
-          // ✅ CRITICAL FIX: Use consistent access checking logic
           const hasAccess = hasFeatureAccess('vocabulary', ['start', 'pro']);
           
           if (!hasAccess) {
-            
-            // Store the intended destination for after subscription
             sessionStorage.setItem('intendedRoute', JSON.stringify({
               path: to.path,
               name: to.name,
@@ -443,7 +395,6 @@ const routes = [
               query: to.query
             }));
             
-            // Redirect to payment page with vocabulary context
             return next({ 
               name: 'PaymePayment',
               params: { plan: 'start' },
@@ -507,7 +458,6 @@ const routes = [
     }
   },
 
-  // ✅ PayMe Checkout Simulation (for development/testing)
   {
     path: '/payment/checkout',
     name: 'PaymeCheckout',
@@ -517,7 +467,6 @@ const routes = [
       description: 'Secure payment with PayMe'
     },
     beforeEnter: (to, from, next) => {
-      // Validate required query parameters
       const requiredParams = ['transactionId', 'userId', 'amount', 'plan'];
       const hasAllParams = requiredParams.every(param => to.query[param]);
       
@@ -533,34 +482,28 @@ const routes = [
     }
   },
 
-  // ✅ Payment Success Page (shows modal or page)
   {
     path: '/payment-success',
     name: 'PaymentSuccess',
     beforeEnter: async (to, from, next) => {
-      
-      // Update user subscription status
       if (store.getters['user/isAuthenticated']) {
         try {
           await store.dispatch('user/checkPendingPayments');
           
-          // If there's a plan in query, update immediately
           if (to.query.plan) {
             await store.dispatch('user/updateUserStatus', to.query.plan);
           }
         } catch (err) {
+          console.error('Error updating payment status:', err);
         }
       }
       
-      // Check for intended route to redirect to
       const intendedRoute = sessionStorage.getItem('intendedRoute');
       if (intendedRoute) {
         try {
           const route = JSON.parse(intendedRoute);
           sessionStorage.removeItem('intendedRoute');
           
-          
-          // Small delay to ensure status is updated
           setTimeout(() => {
             next(route);
           }, 1000);
@@ -570,69 +513,50 @@ const routes = [
         }
       }
       
-      // Check if we should show modal or page
       if (to.query.showModal === 'true' || !to.query.noModal) {
-        // Store transaction data for modal
         if (store.dispatch) {
           store.dispatch('payment/showSuccessModal', {
             transactionId: to.query.transaction || to.query.id,
             plan: to.query.plan,
             amount: to.query.amount,
             source: to.query.source || 'payme'
-          }).catch(() => {
-            // Ignore if payment module doesn't exist
-          });
+          }).catch(() => {});
         }
         
-        // Redirect to main page (modal will show there)
         next({ name: 'MainPage' });
       } else {
-        // Show full success page
         next();
       }
     },
     component: PaymentSuccess,
-    meta: { 
-      title: 'Платеж успешен'
-    }
+    meta: { title: 'Платеж успешен' }
   },
 
-  // ✅ Payment Failed Page
   {
     path: '/payment-failed',
     name: 'PaymentFailed',
     component: PaymentFailed,
-    meta: { 
-      title: 'Payment Failed'
-    },
+    meta: { title: 'Payment Failed' },
     beforeEnter: (to, from, next) => {
-      // Clear any intended route on payment failure
       sessionStorage.removeItem('intendedRoute');
       next();
     }
   },
 
-  // ✅ Payment Return Handler
   {
     path: '/payment/return',
     name: 'PaymentReturn',
     component: PaymentReturn,
-    meta: {
-      title: 'Обработка платежа'
-    }
+    meta: { title: 'Обработка платежа' }
   },
 
-  // ✅ PayMe Return URLs (these are what PayMe will redirect to)
   {
     path: '/payme/return/success',
     name: 'PaymeReturnSuccess',
     beforeEnter: (to, from, next) => {
-      
-      // Extract transaction info from PayMe response
       const transactionId = to.query.transaction || to.query.id;
       const plan = to.query.plan;
       
-      // Redirect to payment return handler
       next({ 
         name: 'PaymentReturn',
         query: to.query
@@ -644,12 +568,9 @@ const routes = [
     path: '/payme/return/failure',
     name: 'PaymeReturnFailure', 
     beforeEnter: (to, from, next) => {
-      
-      // Extract error info from PayMe response
       const transactionId = to.query.transaction || to.query.id;
       const error = to.query.error || 'Payment failed';
       
-      // Redirect to your failure page
       next({ 
         name: 'PaymentFailed',
         query: { 
@@ -661,7 +582,6 @@ const routes = [
     }
   },
 
-  // ✅ Payment Status Check (for webhooks/callbacks)
   {
     path: '/payment/status/:transactionId',
     name: 'PaymentStatus',
@@ -669,13 +589,11 @@ const routes = [
       const { transactionId } = to.params;
       
       try {
-        // Check payment status via API
         const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/payments/status/${transactionId}`);
         const result = await response.json();
         
         if (result.success && result.transaction) {
           if (result.transaction.state === 2) {
-            // Payment successful
             next({ 
               name: 'PaymentSuccess',
               query: { 
@@ -684,7 +602,6 @@ const routes = [
               }
             });
           } else {
-            // Payment failed or pending
             next({ 
               name: 'PaymentFailed',
               query: { 
@@ -703,23 +620,26 @@ const routes = [
     }
   },
   
-  // ✅ Learning Content Routes
+  // ✅ UPDATED: Learning Content Routes with Guest Access
   {
     path: '/lesson/:id',
     name: 'LessonPage',
     component: LessonPage,
     props: true,
     meta: { 
-      requiresAuth: true, 
+      requiresAuth: false,  // ✅ Allow guest access
+      requiresAuthForPremium: true,  // ✅ Only require auth for premium content
       title: 'Урок',
       description: 'Страница урока'
     },
     beforeEnter: (to, from, next) => {
       if (!to.params.id || to.params.id === 'null' || to.params.id === 'undefined') {
         console.error('❌ Invalid lesson ID:', to.params.id);
-        return next({ name: 'CataloguePage' });
+        return next({ name: 'HomePage' });
       }
       
+      // ✅ Allow navigation for both authenticated and guest users
+      console.log('📚 Allowing lesson access (guest or authenticated)');
       next();
     }
   },
@@ -730,16 +650,19 @@ const routes = [
     component: TopicOverview,
     props: true,
     meta: { 
-      requiresAuth: true, 
+      requiresAuth: false,  // ✅ Allow guest access
+      requiresAuthForPremium: true,  // ✅ Only require auth for premium content
       title: 'Обзор темы',
       description: 'Обзор темы курса'
     },
     beforeEnter: (to, from, next) => {
       if (!to.params.id || to.params.id === 'null' || to.params.id === 'undefined') {
         console.error('❌ Invalid topic ID:', to.params.id);
-        return next({ name: 'CataloguePage' });
+        return next({ name: 'HomePage' });
       }
       
+      // ✅ Allow navigation for both authenticated and guest users
+      console.log('📚 Allowing topic overview access (guest or authenticated)');
       next();
     }
   },
@@ -749,13 +672,13 @@ const routes = [
     name: 'TopicFinished',
     component: TopicFinished,
     meta: { 
-      requiresAuth: true, 
+      requiresAuth: true,  // Keep this authenticated (only logged-in users can finish topics)
       title: 'Тема завершена',
       description: 'Страница завершения темы'
     }
   },
   
-  // ✅ REDIRECTS: Old vocabulary routes to new profile vocabulary
+  // ✅ REDIRECTS
   {
     path: '/vocabulary',
     redirect: '/profile/vocabulary'
@@ -765,7 +688,6 @@ const routes = [
     redirect: '/profile/vocabulary'
   },
   
-  // ✅ OLD PAYMENT REDIRECTS: Handle legacy payment URLs
   {
     path: '/payment/:plan?',
     redirect: to => {
@@ -787,7 +709,6 @@ const router = createRouter({
   history: createWebHistory(),
   routes,
   scrollBehavior(to, from, savedPosition) {
-    // Handle anchors
     if (to.hash) {
       return {
         el: to.hash,
@@ -796,39 +717,66 @@ const router = createRouter({
       };
     }
     
-    // Return to saved position when using browser back/forward
     if (savedPosition) {
       return savedPosition;
     }
     
-    // Scroll to top for new routes
     return { top: 0 };
   },
 });
 
-// ✅ ENHANCED Route Guard with Subscription Integration
+// ✅ UPDATED: Enhanced beforeEach guard with guest access support
 router.beforeEach(async (to, from, next) => {
+  console.log(`🔄 Navigation: ${from.name || 'START'} → ${to.name}`);
   
-  // Public routes that don't require authentication
-  const publicRoutes = ['HomePage', 'NotFound', 'PaymentFailed', 'PaymeCheckout', 'PaymentSuccess', 'PaymentReturn'];
+  // ✅ Public routes that don't require authentication
+  const publicRoutes = [
+    'HomePage', 
+    'NotFound', 
+    'PaymentFailed', 
+    'PaymeCheckout', 
+    'PaymentSuccess', 
+    'PaymentReturn',
+    'LessonPage',      // ✅ Allow for guests
+    'TopicOverview',   // ✅ Allow for guests
+    'AboutUsPage'
+  ];
+  
   const isPublic = publicRoutes.includes(to.name);
   
   // Check if route requires authentication
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
+  const requiresAuthForPremium = to.matched.some(record => record.meta.requiresAuthForPremium);
 
-  // 🔥 CRITICAL FIX: Wait for our auth initialization from main.js
+  // ✅ Wait for auth initialization
   try {
-    // Dynamically import main.js to get authInitPromise
     const { authInitPromise } = await import('@/main.js'); 
     await authInitPromise;
   } catch (err) {
+    console.warn('⚠️ Auth init not ready yet:', err);
   }
 
   const isLoggedIn = store.getters.isLoggedIn;
   const userId = store.getters['user/getUserId'];
 
-  // ✅ AUTHENTICATION CHECKS (only after auth is ready)
-  if (requiresAuth && !isLoggedIn) {
+  // ✅ NEW: Special handling for lesson and topic pages
+  if (to.name === 'LessonPage' || to.name === 'TopicOverview') {
+    const isGuestAccess = to.query.guest === 'true' || !isLoggedIn;
+    
+    if (isGuestAccess) {
+      console.log('🆓 Guest access to lesson/topic allowed');
+      // The LessonPage/TopicOverview component will handle premium content checks
+      return next();
+    }
+    
+    // Logged-in users can also access
+    console.log('👤 Authenticated user accessing lesson/topic');
+    return next();
+  }
+
+  // ✅ AUTHENTICATION CHECKS for other routes
+  if (requiresAuth && !isLoggedIn && !isPublic) {
+    console.log('🔒 Authentication required, redirecting to HomePage');
     return next({ 
       name: 'HomePage',
       query: { 
@@ -851,7 +799,6 @@ router.beforeEach(async (to, from, next) => {
       });
     }
     
-    // Add userId to query if not present
     if (!to.query.userId && userId) {
       const newQuery = { ...to.query, userId };
       return next({ 
@@ -860,15 +807,16 @@ router.beforeEach(async (to, from, next) => {
       });
     }
     
-    // Check user subscription status
     try {
       await store.dispatch('user/checkPendingPayments');
     } catch (err) {
+      console.error('Error checking pending payments:', err);
     }
   }
 
   // ✅ PROFILE ROUTE CHECKS
   if (!isPublic && !isLoggedIn && to.path.startsWith('/profile')) {
+    console.log('🔒 Profile access requires authentication');
     return next({ 
       name: 'HomePage',
       query: { 
@@ -879,28 +827,30 @@ router.beforeEach(async (to, from, next) => {
   }
 
   // ✅ SUCCESS: Allow navigation
+  console.log('✅ Navigation allowed');
   next();
 });
 
-// ✅ ENHANCED navigation logging after route changes
+// ✅ Enhanced afterEach for analytics and status checks
 router.afterEach((to, from) => {
-  // Update document title
   const baseTitle = 'ACED - Образовательная платформа';
   document.title = to.meta.title ? `${to.meta.title} - ACED` : baseTitle;
   
-  // Enhanced logging for specific route types
+  console.log(`✅ Navigated to: ${to.name} (${to.path})`);
+  
+  // Log special route types
   if (to.name && (to.name.includes('Vocabulary') || to.name.includes('Analytics') || to.name.includes('UpdatedCourses'))) {
+    console.log('📊 Feature route accessed:', to.name);
   } 
   else if (to.name && (to.name.includes('Payme') || to.name.includes('Payment'))) {
+    console.log('💳 Payment route accessed:', to.name);
+  }
+  else if (to.name && (to.name === 'LessonPage' || to.name === 'TopicOverview')) {
+    console.log('📚 Learning content accessed:', to.name);
   }
   
-  // Log params if any
-  if (Object.keys(to.params).length > 0) {
-  }
-  
-  // ✅ AUTO-CHECK SUBSCRIPTION STATUS on navigation (for authenticated users)
+  // ✅ AUTO-CHECK SUBSCRIPTION STATUS
   if (store.getters.isLoggedIn && !to.path.includes('/pay')) {
-    // Check for pending payments periodically
     const lastCheck = store.getters['user/lastPaymentCheck'];
     const now = Date.now();
     const fiveMinutes = 5 * 60 * 1000;
@@ -913,18 +863,17 @@ router.afterEach((to, from) => {
   }
 });
 
-// ✅ ENHANCED error handling for routing errors
+// ✅ Enhanced error handling
 router.onError((err) => {
   console.error('❌ Router error:', err);
   
-  // Handle chunk loading failures (common in production)
   if (err.message.includes('Failed to fetch dynamically imported module') || 
       err.message.includes('Loading chunk')) {
+    console.log('🔄 Chunk loading failed, reloading page...');
     window.location.reload();
     return;
   }
   
-  // Handle navigation errors for specific route types
   if (err.message.includes('homework') || err.message.includes('Homework')) {
     console.error('📚 Homework route error:', err);
   }
@@ -937,11 +886,15 @@ router.onError((err) => {
     console.error('📚 Updated Courses route error:', err);
   }
   
-  // Generic error handling
+  if (err.message.includes('lesson') || err.message.includes('Lesson') || err.message.includes('topic') || err.message.includes('Topic')) {
+    console.error('📖 Learning content route error:', err);
+  }
+  
   console.error('🔄 Navigation failed, attempting recovery...');
 });
 
-// ✅ PAYMENT NAVIGATION HELPERS (can be imported and used in components)
+// ✅ NAVIGATION HELPERS
+
 export const navigateToPayment = (plan = 'start', options = {}) => {
   const { userId, returnTo, router: routerInstance, feature } = options;
   
@@ -961,6 +914,7 @@ export const navigateToPayment = (plan = 'start', options = {}) => {
     ...(Object.keys(query).length > 0 && { query })
   };
   
+  console.log('💳 Navigating to payment:', route);
   
   if (routerInstance) {
     return routerInstance.push(route);
@@ -977,6 +931,7 @@ export const navigateToSettings = (options = {}) => {
     ...(returnTo && { query: { returnTo } })
   };
   
+  console.log('⚙️ Navigating to settings:', route);
   
   if (routerInstance) {
     return routerInstance.push(route);
@@ -985,7 +940,6 @@ export const navigateToSettings = (options = {}) => {
   }
 };
 
-// ✅ UPDATED COURSES NAVIGATION HELPER
 export const navigateToUpdatedCourses = (options = {}) => {
   const { router: routerInstance, category, difficulty } = options;
   
@@ -1006,9 +960,61 @@ export const navigateToUpdatedCourses = (options = {}) => {
   }
 };
 
-// ✅ ENHANCED SUBSCRIPTION CHECK HELPER
+// ✅ NEW: Navigate to lesson with guest support
+export const navigateToLesson = (lessonId, options = {}) => {
+  const { router: routerInstance, asGuest = false, fromTopic } = options;
+  
+  if (!lessonId || lessonId === 'null' || lessonId === 'undefined') {
+    console.error('❌ Invalid lesson ID:', lessonId);
+    return false;
+  }
+  
+  const route = {
+    name: 'LessonPage',
+    params: { id: lessonId },
+    query: {
+      ...(asGuest && { guest: 'true' }),
+      ...(fromTopic && { topic: fromTopic })
+    }
+  };
+  
+  console.log('📚 Navigating to lesson:', route);
+  
+  if (routerInstance) {
+    return routerInstance.push(route);
+  } else {
+    return router.push(route);
+  }
+};
+
+// ✅ NEW: Navigate to topic overview with guest support
+export const navigateToTopicOverview = (topicId, options = {}) => {
+  const { router: routerInstance, asGuest = false } = options;
+  
+  if (!topicId || topicId === 'null' || topicId === 'undefined') {
+    console.error('❌ Invalid topic ID:', topicId);
+    return false;
+  }
+  
+  const route = {
+    name: 'TopicOverview',
+    params: { id: topicId },
+    query: {
+      ...(asGuest && { guest: 'true' })
+    }
+  };
+  
+  console.log('📚 Navigating to topic overview:', route);
+  
+  if (routerInstance) {
+    return routerInstance.push(route);
+  } else {
+    return router.push(route);
+  }
+};
+
+// ✅ SUBSCRIPTION CHECK HELPER
 export const checkSubscriptionAccess = (userStatus, requiredPlan = 'start') => {
-  // Handle null/undefined/invalid statuses
   if (!userStatus || userStatus === 'undefined' || userStatus === null) {
     userStatus = 'free';
   }
@@ -1023,7 +1029,7 @@ export const checkSubscriptionAccess = (userStatus, requiredPlan = 'start') => {
   const userLevel = planHierarchy[userStatus] || 0;
   const requiredLevel = planHierarchy[requiredPlan] || 1;
   
-
+  console.log(`🔐 Subscription check: ${userStatus} (${userLevel}) vs ${requiredPlan} (${requiredLevel})`);
   
   return userLevel >= requiredLevel;
 };
@@ -1036,6 +1042,7 @@ export const navigateToIntendedRoute = (router) => {
       const route = JSON.parse(intendedRoute);
       sessionStorage.removeItem('intendedRoute');
       
+      console.log('🎯 Navigating to intended route:', route);
       router.push(route);
       return true;
     }
@@ -1045,7 +1052,7 @@ export const navigateToIntendedRoute = (router) => {
   return false;
 };
 
-// ✅ VOCABULARY ACCESS HELPER - Updated for profile vocabulary
+// ✅ VOCABULARY ACCESS HELPER
 export const checkVocabularyAccess = () => {
   const effectiveStatus = getEffectiveUserPlan();
   return ['start', 'pro', 'premium'].includes(effectiveStatus);
@@ -1053,7 +1060,6 @@ export const checkVocabularyAccess = () => {
 
 // ✅ UPDATED COURSES ACCESS HELPER
 export const checkUpdatedCoursesAccess = () => {
-  const effectiveStatus = getEffectiveUserPlan();
   // By default, Updated Courses is free for everyone
   // Change this if you want to make it premium
   return true; // or return ['start', 'pro', 'premium'].includes(effectiveStatus);
@@ -1065,11 +1071,11 @@ export const getFeatureAccess = (feature) => {
   
   const featureRequirements = {
     vocabulary: ['start', 'pro', 'premium'],
-    analytics: ['pro', 'premium'], // Analytics requires Pro only
+    analytics: ['pro', 'premium'],
     goals: ['start', 'pro', 'premium'],
     homework_help: ['start', 'pro', 'premium'],
     tests: ['start', 'pro', 'premium'],
-    updated_courses: ['free', 'start', 'pro', 'premium'], // Free for everyone by default
+    updated_courses: ['free', 'start', 'pro', 'premium'],
     advanced_lessons: ['start', 'pro', 'premium'],
     unlimited_practice: ['pro', 'premium'],
     priority_support: ['start', 'pro', 'premium'],
@@ -1080,29 +1086,52 @@ export const getFeatureAccess = (feature) => {
   return requiredPlans.includes(effectiveStatus);
 };
 
+// ✅ NEW: Check if lesson/topic is accessible for guests
+export const checkGuestLessonAccess = (lessonData) => {
+  // Logic to determine if a lesson is accessible for guests
+  // This should be implemented based on your lesson data structure
+  if (!lessonData) return false;
+  
+  // Examples of free lesson criteria:
+  // - First lesson of each topic
+  // - Lessons marked as "preview" or "free"
+  // - Lessons in free topics
+  
+  if (lessonData.isFree === true) return true;
+  if (lessonData.isPreview === true) return true;
+  if (lessonData.order === 0 || lessonData.order === 1) return true; // First lesson
+  
+  return false;
+};
+
 // ✅ DEBUG HELPERS FOR ROUTER
 if (typeof window !== 'undefined') {
   window.routerDebug = {
     // Check current effective plan
     getCurrentPlan: () => {
-      return getEffectiveUserPlan();
+      const plan = getEffectiveUserPlan();
+      console.log('📊 Current plan:', plan);
+      return plan;
     },
     
     // Test feature access
     testFeature: (feature) => {
       const hasAccess = getFeatureAccess(feature);
+      console.log(`🔐 Feature '${feature}' access:`, hasAccess);
       return hasAccess;
     },
     
     // Check vocabulary access specifically
     checkVocabulary: () => {
       const hasAccess = checkVocabularyAccess();
+      console.log('📚 Vocabulary access:', hasAccess);
       return hasAccess;
     },
     
     // Check updated courses access
     checkUpdatedCourses: () => {
       const hasAccess = checkUpdatedCoursesAccess();
+      console.log('📚 Updated Courses access:', hasAccess);
       return hasAccess;
     },
     
@@ -1121,25 +1150,70 @@ if (typeof window !== 'undefined') {
         }
       }
       
-      return {
+      const sources = {
         store: storeStatus,
         localStorage: localStatus,
         subscription: parsedSubscription,
         effective: getEffectiveUserPlan()
       };
+      
+      console.table(sources);
+      return sources;
     },
     
-    // Force navigation to vocabulary (for testing) - Updated to use profile path
+    // Force navigation to vocabulary (for testing)
     goToVocabulary: () => {
+      console.log('🧭 Navigating to vocabulary...');
       router.push('/profile/vocabulary');
     },
     
     // Force navigation to updated courses (for testing)
     goToUpdatedCourses: () => {
+      console.log('🧭 Navigating to updated courses...');
       router.push('/profile/updated-courses');
+    },
+    
+    // NEW: Navigate to lesson as guest
+    goToLessonAsGuest: (lessonId) => {
+      console.log('🧭 Navigating to lesson as guest:', lessonId);
+      navigateToLesson(lessonId, { asGuest: true });
+    },
+    
+    // NEW: Navigate to topic as guest
+    goToTopicAsGuest: (topicId) => {
+      console.log('🧭 Navigating to topic as guest:', topicId);
+      navigateToTopicOverview(topicId, { asGuest: true });
+    },
+    
+    // Check current route info
+    getCurrentRoute: () => {
+      const current = router.currentRoute.value;
+      const info = {
+        name: current.name,
+        path: current.path,
+        params: current.params,
+        query: current.query,
+        meta: current.meta
+      };
+      console.table(info);
+      return info;
+    },
+    
+    // Test guest access to a lesson
+    testGuestAccess: (lessonId) => {
+      console.log('🧪 Testing guest access for lesson:', lessonId);
+      navigateToLesson(lessonId, { asGuest: true });
     }
   };
   
+  console.log('🐛 Router debug helpers available at window.routerDebug');
+  console.log('Available commands:');
+  console.log('  - window.routerDebug.getCurrentPlan()');
+  console.log('  - window.routerDebug.testFeature("vocabulary")');
+  console.log('  - window.routerDebug.getAllSources()');
+  console.log('  - window.routerDebug.goToLessonAsGuest(lessonId)');
+  console.log('  - window.routerDebug.goToTopicAsGuest(topicId)');
+  console.log('  - window.routerDebug.getCurrentRoute()');
 }
 
 export default router;

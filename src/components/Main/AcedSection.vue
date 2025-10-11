@@ -168,8 +168,7 @@
 </template>
 
 <script>
-import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { useRouter } from "vue-router";
+import { getAuth } from "firebase/auth";
 import { getTopics, getAllLessons } from '@/api';
 
 export default {
@@ -191,7 +190,6 @@ export default {
       retryCount: 0,
       maxRetries: 3,
       lang: localStorage.getItem('lang') || 'ru',
-      // ✅ Navigation tracking to prevent loops
       navigationInProgress: false
     };
   },
@@ -213,18 +211,15 @@ export default {
       this.errorMessage = null;
       
       try {
-        // Try fetching from lessons first
         let coursesData = await this.fetchCoursesFromLessons();
-        console.log('📊 Courses from lessons:', coursesData?.length, coursesData);
+        console.log('📊 Courses from lessons:', coursesData?.length);
         
-        // Fallback to topics if lessons didn't work
         if (!coursesData || coursesData.length === 0) {
           console.log('⚠️ No courses from lessons, trying topics...');
           coursesData = await this.fetchCoursesFromTopics();
-          console.log('📊 Courses from topics:', coursesData?.length, coursesData);
+          console.log('📊 Courses from topics:', coursesData?.length);
         }
         
-        // Set the courses data
         if (coursesData && coursesData.length > 0) {
           this.allCourses = coursesData;
           console.log('✅ Set allCourses:', this.allCourses.length);
@@ -235,8 +230,7 @@ export default {
           console.log('✅ Final state:', {
             allCourses: this.allCourses.length,
             filteredCourses: this.filteredCourses.length,
-            displayedCourses: this.displayedCourses.length,
-            courses: this.displayedCourses
+            displayedCourses: this.displayedCourses.length
           });
         } else {
           console.warn('⚠️ No courses found from any source');
@@ -258,7 +252,6 @@ export default {
       try {
         console.log('📡 Fetching lessons...');
         const lessonsResult = await getAllLessons();
-        console.log('📡 Lessons result:', lessonsResult);
         
         if (lessonsResult?.success && Array.isArray(lessonsResult.data) && lessonsResult.data.length > 0) {
           console.log('✅ Got', lessonsResult.data.length, 'lessons');
@@ -279,14 +272,11 @@ export default {
       try {
         console.log('📡 Fetching topics...');
         const topicsResult = await getTopics({ includeStats: true });
-        console.log('📡 Topics result:', topicsResult);
         
         if (topicsResult?.success && Array.isArray(topicsResult.data) && topicsResult.data.length > 0) {
           console.log('✅ Got', topicsResult.data.length, 'topics');
           const coursesWithLessons = topicsResult.data.filter(topic => {
-            const hasLessons = topic.lessons && topic.lessons.length > 0;
-            console.log('Topic:', topic.name, 'has lessons:', hasLessons, topic.lessons?.length);
-            return hasLessons;
+            return topic.lessons && topic.lessons.length > 0;
           });
           console.log('✅ Filtered to', coursesWithLessons.length, 'topics with lessons');
           return coursesWithLessons;
@@ -306,7 +296,7 @@ export default {
       
       lessons.forEach((lesson, index) => {
         if (!lesson?.topicId) {
-          console.warn('⚠️ Lesson', index, 'has no topicId:', lesson);
+          console.warn('⚠️ Lesson', index, 'has no topicId');
           return;
         }
         
@@ -318,7 +308,7 @@ export default {
         
         const topicName = this.getTopicNameFromLesson(lesson);
         if (!topicName) {
-          console.warn('⚠️ Could not get topic name from lesson:', lesson);
+          console.warn('⚠️ Could not get topic name from lesson');
           return;
         }
         
@@ -339,20 +329,18 @@ export default {
             createdAt: lesson.createdAt || new Date().toISOString()
           };
           coursesMap.set(topicId, newCourse);
-          console.log('✅ Created new course:', topicName, 'ID:', topicId);
+          console.log('✅ Created new course:', topicName);
         } else {
           const course = coursesMap.get(topicId);
           course.lessons.push(lesson);
           course.lessonCount++;
           course.totalTime += this.calculateLessonTime(lesson);
-          console.log('✅ Added lesson to existing course:', topicName);
         }
       });
       
       const coursesArray = Array.from(coursesMap.values());
       console.log('🔨 Built courses map:', coursesArray.length, 'unique courses');
       
-      // Sort courses
       const sortedCourses = coursesArray.sort((a, b) => {
         if (a.type !== b.type) {
           if (a.type === 'free') return -1;
@@ -378,20 +366,15 @@ export default {
 
     filterCourses() {
       console.log('🔍 Filtering courses from', this.allCourses.length, 'total courses');
-      
-      // Simply show all courses without any filtering
       this.filteredCourses = [...this.allCourses];
-      
       console.log('✅ Filtered courses:', this.filteredCourses.length);
       this.updateDisplayedCourses();
     },
 
     updateDisplayedCourses() {
-      console.log('📋 Updating displayed courses from', this.filteredCourses.length, 'filtered courses');
-      
+      console.log('📋 Updating displayed courses');
       this.displayedCourses = this.filteredCourses.slice(0, this.maxDisplayedCourses);
-      
-      console.log('✅ Displayed courses set to:', this.displayedCourses.length, this.displayedCourses);
+      console.log('✅ Displayed courses set to:', this.displayedCourses.length);
     },
 
     async refreshCourses() {
@@ -415,7 +398,7 @@ export default {
     },
 
     async handleStartCourse(course) {
-      // ✅ CRITICAL: Prevent duplicate processing and navigation loops
+      // ✅ UPDATED: Prevent duplicate processing
       if (!course?._id || this.processingCourse === course._id || this.navigationInProgress) {
         console.warn('⚠️ Invalid course, already processing, or navigation in progress');
         return;
@@ -431,18 +414,15 @@ export default {
         
         console.log('Course type:', topicType, 'Authenticated:', isAuthenticated);
         
-        // For free courses - go directly to lesson page
+        // ✅ UPDATED: For free courses - allow guest access
         if (topicType === 'free') {
-          // Get the first lesson from this topic
           const firstLesson = course.lessons && course.lessons.length > 0 ? course.lessons[0] : null;
           
           if (firstLesson && firstLesson._id) {
             console.log('📖 Opening first lesson:', firstLesson._id);
             
-            // ✅ CRITICAL FIX: Validate and sanitize lesson ID
             const lessonId = String(firstLesson._id).trim();
             
-            // Validate the lesson ID is not null/undefined/invalid
             if (!lessonId || lessonId === 'null' || lessonId === 'undefined' || lessonId === '') {
               console.error('❌ Invalid lesson ID:', firstLesson._id);
               this.errorMessage = 'Недействительный ID урока';
@@ -451,16 +431,15 @@ export default {
             
             console.log('✅ Validated lesson ID:', lessonId);
             
-            // Navigate directly to the lesson page with proper error handling
+            // ✅ NEW: Navigate with guest parameter for unauthenticated users
             try {
-              console.log('🔄 Attempting navigation to LessonPage...');
-              
               await this.$router.push({ 
                 name: 'LessonPage',
                 params: { id: lessonId },
                 query: { 
                   source: 'aced-section',
-                  guest: isAuthenticated ? undefined : 'true'
+                  guest: !isAuthenticated ? 'true' : undefined,  // ✅ Pass guest=true
+                  type: 'free'  // ✅ Mark as free content
                 }
               });
               
@@ -469,34 +448,21 @@ export default {
             } catch (navError) {
               console.error('❌ Navigation error:', navError);
               
-              // ✅ FALLBACK: Try direct path navigation
-              try {
-                console.log('🔄 Trying fallback navigation...');
-                const guestParam = isAuthenticated ? '' : '&guest=true';
-                await this.$router.push(`/lesson/${lessonId}?source=aced-section${guestParam}`);
-                console.log('✅ Fallback navigation successful');
-                
-              } catch (fallbackError) {
-                console.error('❌ Fallback navigation also failed:', fallbackError);
-                
-                // ✅ LAST RESORT: Force reload with direct URL
-                console.log('🔄 Using last resort: direct URL navigation');
-                const guestParam = isAuthenticated ? '' : '&guest=true';
-                window.location.href = `/lesson/${lessonId}?source=aced-section${guestParam}`;
-              }
+              // Fallback: Try direct path navigation
+              const guestParam = !isAuthenticated ? '&guest=true&type=free' : '&type=free';
+              window.location.href = `/lesson/${lessonId}?source=aced-section${guestParam}`;
             }
             
           } else {
-            console.log('⚠️ No lesson found, fallback to topic overview');
-            
-            // Fallback to topic overview if no lesson found
+            // Fallback to topic overview
             try {
               await this.$router.push({ 
                 name: 'TopicOverview',
                 params: { id: course._id },
                 query: { 
                   source: 'aced-section',
-                  guest: isAuthenticated ? undefined : 'true'
+                  guest: !isAuthenticated ? 'true' : undefined,
+                  type: 'free'
                 }
               });
             } catch (topicError) {
@@ -505,43 +471,30 @@ export default {
             }
           }
         } else {
-          // Premium/Pro courses require authentication
+          // ✅ UPDATED: Premium/Pro courses handling
           if (isAuthenticated) {
-            // If authenticated, allow access (implement payment check if needed)
+            // Allow authenticated users to access premium content
             const firstLesson = course.lessons && course.lessons.length > 0 ? course.lessons[0] : null;
             
             if (firstLesson && firstLesson._id) {
-              console.log('📖 Opening first lesson (authenticated):', firstLesson._id);
-              
               const lessonId = String(firstLesson._id).trim();
-              
-              if (!lessonId || lessonId === 'null' || lessonId === 'undefined' || lessonId === '') {
-                console.error('❌ Invalid lesson ID:', firstLesson._id);
-                this.errorMessage = 'Недействительный ID урока';
-                return;
-              }
               
               try {
                 await this.$router.push({ 
                   name: 'LessonPage',
                   params: { id: lessonId },
-                  query: { source: 'aced-section' }
+                  query: { 
+                    source: 'aced-section',
+                    type: topicType  // Pass the course type
+                  }
                 });
               } catch (navError) {
                 console.error('❌ Premium lesson navigation failed:', navError);
-                window.location.href = `/lesson/${lessonId}?source=aced-section`;
+                window.location.href = `/lesson/${lessonId}?source=aced-section&type=${topicType}`;
               }
-              
-            } else {
-              console.log('⚠️ No lesson found, fallback to topic overview');
-              await this.$router.push({ 
-                name: 'TopicOverview',
-                params: { id: course._id },
-                query: { source: 'aced-section' }
-              });
             }
           } else {
-            // Show registration modal for premium courses when not authenticated
+            // Show registration modal for unauthenticated users
             this.selectedCourse = course;
             this.showRegistrationModal = true;
           }
@@ -551,7 +504,7 @@ export default {
         console.error('❌ Error starting course:', error);
         this.errorMessage = 'Не удалось открыть курс';
       } finally {
-        // ✅ Reset processing flags with delay to prevent rapid re-clicks
+        // Reset processing flags with delay
         setTimeout(() => {
           this.processingCourse = null;
           this.navigationInProgress = false;
@@ -561,7 +514,9 @@ export default {
 
     checkUserAuthentication() {
       const auth = getAuth();
-      return !!auth.currentUser;
+      const isAuth = !!auth.currentUser;
+      console.log('🔐 User authenticated:', isAuth);
+      return isAuth;
     },
 
     triggerRegistration() {
@@ -605,7 +560,7 @@ export default {
       }
       
       this.errorMessage = errorMessage;
-      console.error('❌ Error handled:', errorMessage, error);
+      console.error('❌ Error handled:', errorMessage);
     },
 
     getTopicName(course) {
@@ -663,11 +618,12 @@ export default {
       const type = this.getTopicType(course);
       const isAuthenticated = this.checkUserAuthentication();
       
+      // ✅ UPDATED: Better button text for guests
       if (type === 'free') {
         return isAuthenticated ? 'Начать обучение' : 'Попробовать бесплатно';
       }
-      if (type === 'premium') return 'Получить доступ';
-      return 'Открыть Pro';
+      if (type === 'premium') return isAuthenticated ? 'Начать курс' : 'Получить доступ';
+      return isAuthenticated ? 'Открыть Pro' : 'Получить Pro доступ';
     },
 
     isFeaturedCourse(course) {
