@@ -1,4 +1,77 @@
 // src/api.js - UNIFIED AND FIXED API FILE
+
+// =============================================
+// 💳 MULTICARD INTEGRATION - MODULAR IMPORT
+// =============================================
+
+// Import all Multicard functions from separate module
+import * as multicardAPI from './api/multicard.js';
+
+// Re-export Multicard functions for convenience
+export const {
+  // Auth
+  testMulticardAuth,
+
+  // Payment Initiation
+  initiateMulticardPayment,
+
+  // Invoice Management
+  getInvoiceInfo,
+  cancelInvoice,
+
+  // Card Binding
+  createCardBindingSession,
+  checkCardBindingStatus,
+  getCardInfo,
+  deleteCard,
+
+  // Payment by Token
+  createPaymentByToken,
+  createPaymentViaApp,
+  confirmPayment,
+  refundPayment,
+  getPaymentInfo,
+
+  // Statistics
+  getPaymentHistory,
+  getPaymentStatistics,
+  getApplicationInfo,
+
+  // Utilities
+  uzsToTiyin,
+  tiyinToUzs,
+  formatPrice,
+  createOfdData,
+  getPaymentStatusText,
+  getPaymentSystemName
+} = multicardAPI;
+
+// Also export the entire module for those who want to use it as a namespace
+export { multicardAPI };
+
+// =============================================
+// 💡 USAGE EXAMPLES IN YOUR COMPONENTS
+// =============================================
+
+/*
+// Example 1: Named imports (recommended)
+import { 
+  initiateMulticardPayment, 
+  createCardBindingSession,
+  formatPrice 
+} from '@/api';
+
+// Example 2: Namespace import (if you prefer)
+import { multicardAPI } from '@/api';
+await multicardAPI.initiateMulticardPayment(paymentData);
+
+// Example 3: Import directly from module
+import { initiateMulticardPayment } from '@/api/multicard';
+*/
+
+// =============================================
+// 📝 YOUR EXISTING API.JS CODE CONTINUES HERE
+// =============================================
 import axios from 'axios';
 import { auth } from '@/firebase';
 
