@@ -1,12 +1,10 @@
 <template>
   <div class="sidebar-wrapper">
-    <!-- Sidebar -->
     <div 
       class="sidebar" 
       :class="{ open: isOpen }"
     >
       <div class="sidebar-content">
-        <!-- Header with subtle shine effect -->
         <div class="sidebar-header">
           <div class="shine-overlay"></div>
           <div class="header-top">
@@ -17,7 +15,6 @@
             </button>
           </div>
           
-          <!-- User Card with metallic effect -->
           <div class="user-card">
             <div class="user-avatar">
               {{ getUserInitials }}
@@ -31,7 +28,6 @@
           </div>
         </div>
 
-        <!-- Navigation -->
         <nav class="nav-menu">
           <button
             v-for="link in navigationLinks"
@@ -43,7 +39,7 @@
               locked: link.premium && !hasAccess(link)
             }"
           >
-            <div class="icon-wrapper" :class="{ 'active-icon': isActive(link.name) }">
+            <div class="icon-wrapper">
               <component :is="link.icon" class="link-icon" />
             </div>
             <div class="link-content">
@@ -53,23 +49,20 @@
             <svg 
               v-if="link.premium && !hasAccess(link)" 
               class="crown-icon"
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
-              stroke-width="2"
+              xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
             >
-              <path d="M2 20h20M4 16V8l4 4 4-6 4 6 4-4v8M4 16h16"/>
+              <path d="m2 16 2.29-2.29a2.12 2.12 0 0 1 3.01 0L12 18.43l4.7-4.71a2.12 2.12 0 0 1 3.01 0L22 16"/>
+              <path d="M7.28 9.99a5.72 5.72 0 0 1 9.44 0"/>
+              <path d="M12 2v5"/>
             </svg>
           </button>
         </nav>
 
-        <!-- Premium CTA with metallic purple -->
         <div v-if="currentUserStatus === 'free'" class="premium-cta">
           <div class="cta-card">
-            <div class="shine-overlay"></div>
             <div class="cta-content">
               <div class="cta-header">
-                <svg class="sparkle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg class="sparkle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                   <path d="M12 3v18M3 12h18M6.5 6.5l11 11M6.5 17.5l11-11"/>
                 </svg>
                 <h4>Разблокировать Премиум</h4>
@@ -82,7 +75,6 @@
           </div>
         </div>
 
-        <!-- Logout -->
         <div class="sidebar-footer">
           <button class="logout-btn" @click="showLogoutModal = true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -94,14 +86,12 @@
       </div>
     </div>
 
-    <!-- Mobile Overlay -->
     <div 
       v-if="isOpen && isMobile"
       class="sidebar-overlay"
       @click="closeSidebar"
     ></div>
 
-    <!-- Logout Modal -->
     <div v-if="showLogoutModal" class="modal-overlay" @click="showLogoutModal = false">
       <div class="modal-content logout-modal" @click.stop>
         <h3 class="modal-title">Выход</h3>
@@ -117,15 +107,15 @@
       </div>
     </div>
 
-    <!-- Premium Modal with metallic purple -->
     <div v-if="showPremiumModal" class="modal-overlay" @click="showPremiumModal = false">
       <div class="modal-content premium-modal" @click.stop>
         <div class="premium-header">
           <div class="shine-overlay"></div>
           <div class="premium-header-content">
             <div class="premium-icon-wrapper">
-              <svg class="crown-icon-large" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M2 20h20M4 16V8l4 4 4-6 4 6 4-4v8M4 16h16"/>
+              <svg class="crown-icon-large" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m2 16 2.29-2.29a2.12 2.12 0 0 1 3.01 0L12 18.43l4.7-4.71a2.12 2.12 0 0 1 3.01 0L22 16"/>
+                <path d="M7.28 9.99a5.72 5.72 0 0 1 9.44 0"/><path d="M12 2v5"/>
               </svg>
             </div>
             <h3 class="premium-title">Премиум функция</h3>
@@ -189,7 +179,7 @@ const ClipboardCheckIcon = {
 };
 
 const SettingsIcon = {
-  template: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"/></svg>`
+  template: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`
 };
 
 export default {
@@ -417,7 +407,7 @@ export default {
   left: 0;
   top: 0;
   background: #ffffff;
-  border-right: 1px solid #e9d5ff;
+  border-right: 1px solid #f3f4f6; /* Lighter border */
   z-index: 1000;
   transform: translateX(-100%);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -447,10 +437,10 @@ export default {
   overflow-y: auto;
 }
 
-/* Header */
+/* Header - Keeping original styles */
 .sidebar-header {
-  padding: 12px 24px 40px 24px;
-  border-bottom: 1px solid #e9d5ff;
+  padding: 12px 24px 24px 24px;
+  border-bottom: 1px solid #f3f4f6;
   position: relative;
   overflow: hidden;
   flex-shrink: 0;
@@ -459,18 +449,13 @@ export default {
 .shine-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(168, 85, 247, 0.1), transparent);
-  transform: translateX(-100%) skewX(-12deg);
-  animation: shine 3s infinite;
+  background: linear-gradient(90deg, transparent, rgba(233, 213, 255, 0.2), transparent);
+  animation: shine 5s infinite;
 }
 
 @keyframes shine {
-  0% {
-    transform: translateX(-100%) skewX(-12deg);
-  }
-  100% {
-    transform: translateX(200%) skewX(-12deg);
-  }
+  0% { transform: translateX(-100%) skewX(-12deg); }
+  100% { transform: translateX(200%) skewX(-12deg); }
 }
 
 .header-top {
@@ -478,40 +463,8 @@ export default {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  margin-bottom: 40px;
-}
-
-.logo-section {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.logo-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #a855f7 0%, #9333ea 50%, #7e22ce 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 14px rgba(168, 85, 247, 0.3);
-}
-
-.sparkle-icon {
-  width: 16px;
-  height: 16px;
-  color: white;
-}
-
-.logo-text {
-  font-size: 20px;
-  font-weight: 700;
-  background: linear-gradient(135deg, #9333ea 0%, #7e22ce 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin: 0;
+  margin-bottom: 20px;
+  min-height: 28px;
 }
 
 .close-btn {
@@ -529,33 +482,30 @@ export default {
   height: 20px;
 }
 
-/* User Card */
 .user-card {
   position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 18px;
+  padding: 12px;
   background: white;
-  border: 1px solid #e9d5ff;
+  border: 1px solid #f3f4f6;
   border-radius: 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
-  margin-top: 20px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
 .user-avatar {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #c084fc 0%, #a855f7 50%, #9333ea 100%);
+  background: linear-gradient(135deg, #c084fc 0%, #a855f7 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   font-weight: 600;
   font-size: 14px;
-  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.4);
-  border: 2px solid #e9d5ff;
+  border: 2px solid white;
   flex-shrink: 0;
 }
 
@@ -564,7 +514,7 @@ export default {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 2px;
   align-items: flex-start;
 }
 
@@ -583,105 +533,71 @@ export default {
 .user-badge {
   display: inline-flex;
   font-size: 11px;
-  font-weight: 700;
-  padding: 4px 12px;
+  font-weight: 600;
+  padding: 3px 8px;
   border-radius: 9999px;
-  letter-spacing: 0.5px;
-  will-change: auto;
-  transform: translateZ(0);
   margin-top: 2px;
 }
 
-.user-badge.badge-free {
-  background: #f3f4f6;
-  color: #6b7280;
-}
+.user-badge.badge-free { background: #f3f4f6; color: #4b5563; }
+.user-badge.badge-start { background: #f3e8ff; color: #8b5cf6; }
+.user-badge.badge-pro { background: #a855f7; color: white; }
 
-.user-badge.badge-start {
-  background: linear-gradient(90deg, #e9d5ff 0%, #ddd6fe 100%);
-  color: #7e22ce;
-}
-
-.user-badge.badge-pro {
-  background: linear-gradient(90deg, #c084fc 0%, #a855f7 100%);
-  color: white;
-}
-
-/* Navigation */
+/* Navigation - Styled to match image */
 .nav-menu {
-  flex: 1 1 auto;
+  flex-grow: 1; /* Pushes footer down */
   padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  overflow-y: auto;
-  min-height: 0;
-  max-height: calc(100vh - 550px);
+  gap: 4px; /* Reduced gap */
 }
 
 .nav-link {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  background: white;
+  gap: 16px;
+  padding: 12px;
+  background: transparent;
   border: none;
-  border-radius: 12px;
+  border-radius: 10px;
   text-align: left;
   cursor: pointer;
-  transition: all 0.2s ease;
-  color: #374151;
+  transition: background-color 0.2s ease, color 0.2s ease;
   width: 100%;
 }
 
 .nav-link:hover {
-  background: #faf5ff;
-  transform: scale(1.01);
+  background: #f9fafb; /* Light grey on hover */
 }
 
 .nav-link.active {
-  background: linear-gradient(90deg, #a855f7 0%, #9333ea 100%);
-  color: white;
-  box-shadow: 0 4px 14px rgba(168, 85, 247, 0.3);
-  transform: scale(1.02);
+  background: #faf5ff; /* Light purple for active */
 }
 
 .nav-link.locked {
   color: #9ca3af;
 }
 
-.nav-link.locked:hover {
-  background: #faf5ff;
-}
-
 .icon-wrapper {
-  width: 32px;
-  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  background: #f3e8ff;
   flex-shrink: 0;
-  transition: all 0.2s ease;
-}
-
-.icon-wrapper.active-icon {
-  background: rgba(255, 255, 255, 0.2);
 }
 
 .link-icon {
-  width: 16px;
-  height: 16px;
-  color: #9333ea;
+  width: 22px;
+  height: 22px;
+  color: #6b7280;
+  transition: color 0.2s ease;
 }
 
 .nav-link.active .link-icon {
-  color: white;
+  color: #9333ea;
 }
 
 .nav-link.locked .link-icon {
-  opacity: 0.5;
+   color: #9ca3af;
 }
 
 .link-content {
@@ -691,59 +607,39 @@ export default {
 
 .link-title {
   font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 2px;
+  font-weight: 500;
+  color: #374151;
 }
 
-.nav-link.locked .link-title {
-  opacity: 0.5;
+.nav-link.active .link-title {
+  font-weight: 600;
+  color: #581c87;
 }
 
 .link-description {
   font-size: 12px;
-  opacity: 0.7;
-}
-
-.nav-link.active .link-description {
-  color: #e9d5ff;
-}
-
-.nav-link.locked .link-description {
-  opacity: 0.5;
+  color: #6b7280;
 }
 
 .crown-icon {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   color: #f59e0b;
   flex-shrink: 0;
-  animation: pulse 2s infinite;
 }
 
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-/* Premium CTA */
+/* Premium CTA - Styled to match image */
 .premium-cta {
   padding: 16px;
-  border-top: 1px solid #e9d5ff;
   flex-shrink: 0;
 }
 
 .cta-card {
-  position: relative;
-  overflow: hidden;
-  background: linear-gradient(135deg, #a855f7 0%, #9333ea 50%, #7e22ce 100%);
-  border-radius: 12px;
-  padding: 18px;
+  background: #a855f7;
+  border-radius: 14px;
+  padding: 20px;
   color: white;
-  box-shadow: 0 10px 24px rgba(168, 85, 247, 0.4);
+  text-align: center;
 }
 
 .cta-content {
@@ -754,6 +650,7 @@ export default {
 .cta-header {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   margin-bottom: 8px;
 }
@@ -764,10 +661,17 @@ export default {
   margin: 0;
 }
 
+.sparkle-icon {
+  width: 20px;
+  height: 20px;
+  color: white;
+}
+
 .cta-text {
   font-size: 13px;
   color: #e9d5ff;
-  margin: 0 0 12px 0;
+  margin: 0 0 16px 0;
+  line-height: 1.4;
 }
 
 .cta-button {
@@ -775,24 +679,24 @@ export default {
   background: white;
   color: #9333ea;
   border: none;
-  padding: 10px 16px;
-  border-radius: 8px;
+  padding: 12px 16px;
+  border-radius: 10px;
   font-weight: 700;
   font-size: 14px;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .cta-button:hover {
-  transform: scale(1.02);
+  transform: translateY(-1px);
   background: #faf5ff;
 }
 
-/* Sidebar Footer */
+/* Sidebar Footer - Styled to match image */
 .sidebar-footer {
   padding: 16px;
-  border-top: 1px solid #e9d5ff;
+  border-top: 1px solid #f3f4f6;
   flex-shrink: 0;
 }
 
@@ -800,13 +704,13 @@ export default {
   width: 100%;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 10px 16px;
-  background: white;
-  color: #dc2626;
+  justify-content: flex-start; /* Align left */
+  gap: 12px;
+  padding: 10px 12px;
+  background: transparent;
+  color: #6b7280;
   border: none;
-  border-radius: 12px;
+  border-radius: 8px;
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
@@ -815,225 +719,71 @@ export default {
 
 .logout-btn:hover {
   background: #fef2f2;
-  transform: scale(1.01);
+  color: #ef4444;
 }
 
 .logout-btn svg {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
 }
 
-/* Modal Overlay */
+/* Modal Styles */
 .modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10000;
-  backdrop-filter: blur(4px);
-  padding: 16px;
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(0, 0, 0, 0.5); display: flex; align-items: center;
+  justify-content: center; z-index: 10000; backdrop-filter: blur(4px); padding: 16px;
 }
-
 .modal-content {
-  background: white;
-  border-radius: 16px;
-  max-width: 420px;
-  width: 100%;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  animation: modalAppear 0.3s ease-out;
+  background: white; border-radius: 16px; max-width: 420px; width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); animation: modalAppear 0.3s ease-out;
 }
-
 @keyframes modalAppear {
-  from {
-    opacity: 0;
-    transform: scale(0.9) translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
+  from { opacity: 0; transform: scale(0.9) translateY(-20px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
-
-/* Logout Modal */
-.logout-modal {
-  padding: 24px;
-  border: 1px solid #e9d5ff;
+.logout-modal { padding: 24px; }
+.modal-title { font-size: 18px; font-weight: 700; color: #1f2937; margin: 0 0 8px 0; }
+.modal-text { color: #6b7280; margin: 0 0 24px 0; line-height: 1.5; }
+.modal-actions { display: flex; gap: 12px; }
+.btn-secondary, .btn-danger, .btn-premium {
+  flex: 1; padding: 10px 20px; border: none; border-radius: 12px;
+  font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s ease;
 }
-
-.modal-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: #1f2937;
-  margin: 0 0 8px 0;
-}
-
-.modal-text {
-  color: #6b7280;
-  margin: 0 0 24px 0;
-  line-height: 1.5;
-}
-
-.modal-actions {
-  display: flex;
-  gap: 12px;
-}
-
-.btn-secondary,
-.btn-danger,
-.btn-premium {
-  flex: 1;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-secondary {
-  background: #f3f4f6;
-  color: #374151;
-  border: 1px solid #e5e7eb;
-}
-
-.btn-secondary:hover {
-  background: #e5e7eb;
-}
-
-.btn-danger {
-  background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
-  color: white;
-  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
-}
-
-.btn-danger:hover {
-  background: linear-gradient(90deg, #dc2626 0%, #b91c1c 100%);
-}
-
-.btn-premium {
-  background: linear-gradient(90deg, #a855f7 0%, #9333ea 100%);
-  color: white;
-  box-shadow: 0 4px 14px rgba(168, 85, 247, 0.3);
-}
-
-.btn-premium:hover {
-  background: linear-gradient(90deg, #9333ea 0%, #7e22ce 100%);
-}
-
-/* Premium Modal */
-.premium-modal {
-  overflow: hidden;
-  border: 1px solid #e9d5ff;
-}
-
+.btn-secondary { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; }
+.btn-secondary:hover { background: #e5e7eb; }
+.btn-danger { background: #ef4444; color: white; }
+.btn-danger:hover { background: #dc2626; }
+.btn-premium { background: #a855f7; color: white; }
+.btn-premium:hover { background: #9333ea; }
+.premium-modal { overflow: hidden; }
 .premium-header {
-  position: relative;
-  overflow: hidden;
-  background: linear-gradient(135deg, #a855f7 0%, #9333ea 50%, #7e22ce 100%);
-  padding: 32px 24px;
-  text-align: center;
-  color: white;
+  position: relative; overflow: hidden; background: #a855f7;
+  padding: 32px 24px; text-align: center; color: white;
 }
-
-.premium-header-content {
-  position: relative;
-}
-
+.premium-header-content { position: relative; }
 .premium-icon-wrapper {
-  display: inline-flex;
-  padding: 12px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  margin-bottom: 12px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  display: inline-flex; padding: 12px; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2); margin-bottom: 12px;
 }
-
-.crown-icon-large {
-  width: 32px;
-  height: 32px;
-}
-
-.premium-title {
-  font-size: 24px;
-  font-weight: 700;
-  margin: 0 0 4px 0;
-}
-
-.premium-subtitle {
-  color: #e9d5ff;
-  font-size: 13px;
-  margin: 0;
-}
-
-.premium-body {
-  padding: 24px;
-}
-
-.benefits-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 24px;
-}
-
+.crown-icon-large { width: 32px; height: 32px; }
+.premium-title { font-size: 24px; font-weight: 700; margin: 0 0 4px 0; }
+.premium-subtitle { color: #e9d5ff; font-size: 13px; margin: 0; }
+.premium-body { padding: 24px; }
+.benefits-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
 .benefit-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  background: #faf5ff;
-  border: 1px solid #e9d5ff;
-  border-radius: 12px;
+  display: flex; align-items: center; gap: 12px; padding: 12px;
+  background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 12px;
 }
+.benefit-emoji { font-size: 18px; }
+.benefit-text { font-size: 14px; font-weight: 500; color: #374151; }
 
-.benefit-emoji {
-  font-size: 18px;
-}
-
-.benefit-text {
-  font-size: 14px;
-  font-weight: 500;
-  color: #374151;
-}
-
-/* Desktop */
+/* Responsive */
 @media (min-width: 769px) {
-  .sidebar {
-    transform: translateX(0) !important;
-  }
-  
-  .sidebar-overlay {
-    display: none !important;
-  }
+  .sidebar { transform: translateX(0) !important; }
+  .sidebar-overlay { display: none !important; }
 }
-
-/* Mobile */
 @media (max-width: 768px) {
-  .sidebar {
-    width: 100%;
-    max-width: 320px;
-  }
-  
-  .close-btn {
-    display: block;
-  }
-  
-  .nav-link {
-    padding: 10px 12px;
-  }
-  
-  .link-title {
-    font-size: 13px;
-  }
-  
-  .link-description {
-    font-size: 11px;
-  }
+  .sidebar { width: 100%; max-width: 320px; }
+  .close-btn { display: block; }
 }
 </style>
