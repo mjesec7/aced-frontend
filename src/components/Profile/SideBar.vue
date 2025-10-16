@@ -449,10 +449,11 @@ export default {
 
 /* Header */
 .sidebar-header {
-  padding: 16px 24px 24px 24px;
+  padding: 12px 24px 32px 24px;
   border-bottom: 1px solid #e9d5ff;
   position: relative;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .shine-overlay {
@@ -477,7 +478,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  margin-bottom: 20px;
+  margin-bottom: 32px;
 }
 
 .logo-section {
@@ -534,12 +535,12 @@ export default {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px;
+  padding: 16px;
   background: white;
   border: 1px solid #e9d5ff;
   border-radius: 12px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
-  margin-top: 8px;
+  margin-top: 16px;
 }
 
 .user-avatar {
@@ -613,6 +614,8 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .nav-link {
@@ -729,7 +732,7 @@ export default {
 .premium-cta {
   padding: 16px;
   border-top: 1px solid #e9d5ff;
-  margin-top: auto;
+  flex-shrink: 0;
 }
 
 .cta-card {
@@ -789,6 +792,7 @@ export default {
 .sidebar-footer {
   padding: 16px;
   border-top: 1px solid #e9d5ff;
+  flex-shrink: 0;
 }
 
 .logout-btn {
