@@ -1,61 +1,102 @@
 <template>
   <div class="sidebar-wrapper">
-    <div class="sidebar" :class="{ open: isOpen }">
+    <!-- Sidebar -->
+    <div 
+      class="sidebar" 
+      :class="{ open: isOpen }"
+    >
       <div class="sidebar-content">
-        <!-- User Profile Card -->
-        <div class="user-card" v-if="user">
-          <div class="user-avatar">
-            <img src="@/assets/icons/user.png" alt="Avatar" />
+        <!-- Header with subtle shine effect -->
+        <div class="sidebar-header">
+          <div class="shine-overlay"></div>
+          <div class="header-top">
+            <div class="logo-section">
+              <div class="logo-icon">
+                <svg class="sparkle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 3v18M3 12h18M6.5 6.5l11 11M6.5 17.5l11-11"/>
+                </svg>
+              </div>
+              <h2 class="logo-text">EduPlatform</h2>
+            </div>
+            <button class="close-btn" @click="closeSidebar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </button>
           </div>
-          <div class="user-info">
-            <h3 class="user-name">{{ userDisplayName }}</h3>
-            <span class="user-badge" :class="userStatusBadgeClass">
-              {{ planLabel }}
-            </span>
+          
+          <!-- User Card with metallic effect -->
+          <div class="user-card">
+            <div class="user-avatar">
+              {{ getUserInitials }}
+            </div>
+            <div class="user-info">
+              <p class="user-name">{{ userDisplayName }}</p>
+              <span class="user-badge" :class="getBadgeClass">
+                {{ planLabel }}
+              </span>
+            </div>
           </div>
         </div>
 
-        <!-- Navigation Links -->
+        <!-- Navigation -->
         <nav class="nav-menu">
-          <router-link
+          <button
             v-for="link in navigationLinks"
             :key="link.name"
-            :to="link.path"
+            @click="handleNavClick(link)"
             class="nav-link"
-            :class="{ 
+            :class="{
               active: isActive(link.name),
               locked: link.premium && !hasAccess(link)
             }"
-            @click="handleNavClick(link)"
           >
-            <div class="link-icon">{{ link.icon }}</div>
+            <div class="icon-wrapper" :class="{ 'active-icon': isActive(link.name) }">
+              <component :is="link.icon" class="link-icon" />
+            </div>
             <div class="link-content">
               <div class="link-title">{{ link.label }}</div>
               <div class="link-description">{{ link.description }}</div>
             </div>
-            <div class="link-badge" v-if="link.premium && !hasAccess(link)">
-              <span class="lock-icon">🔒</span>
-            </div>
-          </router-link>
+            <svg 
+              v-if="link.premium && !hasAccess(link)" 
+              class="crown-icon"
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              stroke-width="2"
+            >
+              <path d="M2 20h20M4 16V8l4 4 4-6 4 6 4-4v8M4 16h16"/>
+            </svg>
+          </button>
         </nav>
 
-        <!-- Premium CTA (only for free users) -->
-        <div class="premium-cta" v-if="currentUserStatus === 'free'">
-          <div class="cta-content">
-            <div class="cta-icon">✨</div>
-            <h4>Откройте больше</h4>
-            <p>Тесты, аналитика и помощь с ДЗ</p>
-            <button @click="goToUpgrade" class="cta-button">
-              Улучшить план
-            </button>
+        <!-- Premium CTA with metallic purple -->
+        <div v-if="currentUserStatus === 'free'" class="premium-cta">
+          <div class="cta-card">
+            <div class="shine-overlay"></div>
+            <div class="cta-content">
+              <div class="cta-header">
+                <svg class="sparkle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 3v18M3 12h18M6.5 6.5l11 11M6.5 17.5l11-11"/>
+                </svg>
+                <h4>Unlock Premium</h4>
+              </div>
+              <p class="cta-text">Get tests, analytics & more! ✨</p>
+              <button @click="goToUpgrade" class="cta-button">
+                View Plans
+              </button>
+            </div>
           </div>
         </div>
 
-        <!-- Logout Button -->
+        <!-- Logout -->
         <div class="sidebar-footer">
           <button class="logout-btn" @click="showLogoutModal = true">
-            <span class="logout-icon">🚪</span>
-            Выйти
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
+            </svg>
+            Sign Out
           </button>
         </div>
       </div>
@@ -63,55 +104,69 @@
 
     <!-- Mobile Overlay -->
     <div 
-      class="sidebar-overlay" 
-      v-if="isOpen && isMobile" 
+      v-if="isOpen && isMobile"
+      class="sidebar-overlay"
       @click="closeSidebar"
     ></div>
 
-    <!-- Logout Confirmation Modal -->
-    <div class="modal-overlay" v-if="showLogoutModal" @click="showLogoutModal = false">
-      <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <h3>Выход из аккаунта</h3>
-        </div>
-        <div class="modal-body">
-          <p>Вы уверены, что хотите выйти?</p>
-        </div>
+    <!-- Logout Modal -->
+    <div v-if="showLogoutModal" class="modal-overlay" @click="showLogoutModal = false">
+      <div class="modal-content logout-modal" @click.stop>
+        <h3 class="modal-title">Sign Out</h3>
+        <p class="modal-text">Are you sure you want to sign out?</p>
         <div class="modal-actions">
           <button class="btn-secondary" @click="showLogoutModal = false">
-            Отмена
+            Cancel
           </button>
-          <button class="btn-primary" @click="logout">
-            Выйти
+          <button class="btn-danger" @click="logout">
+            Sign Out
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Premium Modal -->
-    <div class="modal-overlay" v-if="showPremiumModal" @click="showPremiumModal = false">
+    <!-- Premium Modal with metallic purple -->
+    <div v-if="showPremiumModal" class="modal-overlay" @click="showPremiumModal = false">
       <div class="modal-content premium-modal" @click.stop>
-        <button class="modal-close" @click="showPremiumModal = false">×</button>
-        <div class="modal-header">
-          <div class="premium-icon">✨</div>
-          <h3>Премиум функция</h3>
-        </div>
-        <div class="modal-body">
-          <p><strong>{{ selectedFeature?.label }}</strong> доступно в Start и Pro планах</p>
-          <div class="benefits-list">
-            <div class="benefit-item">✅ Безлимитные тесты</div>
-            <div class="benefit-item">✅ Детальная аналитика</div>
-            <div class="benefit-item">✅ Помощь с домашними заданиями</div>
-            <div class="benefit-item">✅ Персональный словарь</div>
+        <div class="premium-header">
+          <div class="shine-overlay"></div>
+          <div class="premium-header-content">
+            <div class="premium-icon-wrapper">
+              <svg class="crown-icon-large" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M2 20h20M4 16V8l4 4 4-6 4 6 4-4v8M4 16h16"/>
+              </svg>
+            </div>
+            <h3 class="premium-title">Premium Feature</h3>
+            <p class="premium-subtitle">Available in Start & Pro plans</p>
           </div>
         </div>
-        <div class="modal-actions">
-          <button class="btn-secondary" @click="showPremiumModal = false">
-            Позже
-          </button>
-          <button class="btn-premium" @click="goToUpgrade">
-            Улучшить план
-          </button>
+        <div class="premium-body">
+          <div class="benefits-list">
+            <div class="benefit-item">
+              <span class="benefit-emoji">🎯</span>
+              <span class="benefit-text">Unlimited tests</span>
+            </div>
+            <div class="benefit-item">
+              <span class="benefit-emoji">📊</span>
+              <span class="benefit-text">Detailed analytics</span>
+            </div>
+            <div class="benefit-item">
+              <span class="benefit-emoji">💡</span>
+              <span class="benefit-text">Homework assistance</span>
+            </div>
+            <div class="benefit-item">
+              <span class="benefit-emoji">📖</span>
+              <span class="benefit-text">Personal dictionary</span>
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button class="btn-secondary" @click="showPremiumModal = false">
+              Maybe Later
+            </button>
+            <button class="btn-premium" @click="goToUpgrade">
+              Upgrade Now ✨
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -124,8 +179,37 @@ import { auth } from '@/firebase';
 import { mapState, mapMutations, mapGetters } from 'vuex';
 import { userStatusMixin } from '@/composables/useUserStatus';
 
+// Icon components (inline SVG)
+const HomeIcon = {
+  template: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>`
+};
+
+const BookOpenIcon = {
+  template: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`
+};
+
+const FileTextIcon = {
+  template: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>`
+};
+
+const ClipboardCheckIcon = {
+  template: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 14l2 2 4-4"/></svg>`
+};
+
+const SettingsIcon = {
+  template: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"/></svg>`
+};
+
 export default {
-  name: 'SimplifiedSideBar',
+  name: 'ProfessionalSideBar',
+  
+  components: {
+    HomeIcon,
+    BookOpenIcon,
+    FileTextIcon,
+    ClipboardCheckIcon,
+    SettingsIcon
+  },
   
   mixins: [userStatusMixin],
   
@@ -143,46 +227,45 @@ export default {
       selectedFeature: null,
       isMobile: false,
       
-      // ✅ SIMPLIFIED: Only 5 essential navigation links
       navigationLinks: [
         {
           name: 'main',
-          label: 'Главная',
-          icon: '🏠',
-          description: 'Ваш прогресс и статистика',
+          label: 'Dashboard',
+          icon: 'HomeIcon',
+          description: 'Your progress & stats',
           path: '/profile/main',
           premium: false
         },
         {
           name: 'catalogue',
-          label: 'Мои курсы',
-          icon: '📚',
-          description: 'Все доступные уроки',
+          label: 'My Courses',
+          icon: 'BookOpenIcon',
+          description: 'All available lessons',
           path: '/profile/catalogue',
           premium: false
         },
         {
           name: 'homeworks',
-          label: 'Задания',
-          icon: '✏️',
-          description: 'Домашние работы и практика',
+          label: 'Assignments',
+          icon: 'FileTextIcon',
+          description: 'Practice & homework',
           path: '/profile/homeworks',
           premium: false
         },
         {
           name: 'tests',
-          label: 'Тесты',
-          icon: '📝',
-          description: 'Проверка знаний',
+          label: 'Tests',
+          icon: 'ClipboardCheckIcon',
+          description: 'Knowledge check',
           path: '/profile/tests',
           premium: true,
           requiredPlans: ['start', 'pro']
         },
         {
           name: 'settings',
-          label: 'Настройки',
-          icon: '⚙️',
-          description: 'Профиль и подписка',
+          label: 'Settings',
+          icon: 'SettingsIcon',
+          description: 'Profile & subscription',
           path: '/settings',
           premium: false
         }
@@ -206,20 +289,25 @@ export default {
     
     planLabel() {
       const status = this.currentUserStatus;
-      if (status === 'pro') return '💎 Pro';
-      if (status === 'start') return '⭐ Start';
-      return '🆓 Free';
+      if (status === 'pro') return 'Pro';
+      if (status === 'start') return 'Start';
+      return 'Free';
     },
     
     userDisplayName() {
-      if (!this.user) return 'Пользователь';
+      if (!this.user) return 'User';
       return this.user.name || 
              this.user.displayName || 
              this.user.email?.split('@')[0] || 
-             'Пользователь';
+             'User';
     },
     
-    userStatusBadgeClass() {
+    getUserInitials() {
+      const name = this.userDisplayName;
+      return name.substring(0, 2).toUpperCase();
+    },
+    
+    getBadgeClass() {
       const status = this.currentUserStatus;
       return {
         'badge-free': status === 'free',
@@ -268,6 +356,7 @@ export default {
         this.showPremiumModal = true;
         return;
       }
+      this.$router.push(link.path);
       this.closeSidebarOnMobile();
     },
     
@@ -324,6 +413,7 @@ export default {
   box-sizing: border-box;
 }
 
+/* Sidebar */
 .sidebar-wrapper {
   position: relative;
 }
@@ -334,8 +424,8 @@ export default {
   position: fixed;
   left: 0;
   top: 0;
-  background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
-  box-shadow: 2px 0 20px rgba(0, 0, 0, 0.08);
+  background: #ffffff;
+  border-right: 1px solid #e9d5ff;
   z-index: 1000;
   transform: translateX(-100%);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -355,7 +445,7 @@ export default {
   height: 100vh;
   background: rgba(0, 0, 0, 0.5);
   z-index: 999;
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(4px);
 }
 
 .sidebar-content {
@@ -363,37 +453,116 @@ export default {
   flex-direction: column;
   height: 100%;
   overflow-y: auto;
-  padding: 24px 16px 16px;
+}
+
+/* Header */
+.sidebar-header {
+  padding: 24px;
+  border-bottom: 1px solid #e9d5ff;
+  position: relative;
+  overflow: hidden;
+}
+
+.shine-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(168, 85, 247, 0.1), transparent);
+  transform: translateX(-100%) skewX(-12deg);
+  animation: shine 3s infinite;
+}
+
+@keyframes shine {
+  0% {
+    transform: translateX(-100%) skewX(-12deg);
+  }
+  100% {
+    transform: translateX(200%) skewX(-12deg);
+  }
+}
+
+.header-top {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.logo-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #a855f7 0%, #9333ea 50%, #7e22ce 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(168, 85, 247, 0.3);
+}
+
+.sparkle-icon {
+  width: 16px;
+  height: 16px;
+  color: white;
+}
+
+.logo-text {
+  font-size: 20px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #9333ea 0%, #7e22ce 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0;
+}
+
+.close-btn {
+  width: 28px;
+  height: 28px;
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6b7280;
+}
+
+.close-btn svg {
+  width: 20px;
+  height: 20px;
 }
 
 /* User Card */
 .user-card {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 16px;
+  padding: 12px;
   background: white;
-  border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  margin-bottom: 24px;
+  border: 1px solid #e9d5ff;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
 }
 
 .user-avatar {
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #c084fc 0%, #a855f7 50%, #9333ea 100%);
   display: flex;
   align-items: center;
   justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.4);
+  border: 2px solid #e9d5ff;
   flex-shrink: 0;
-}
-
-.user-avatar img {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  object-fit: cover;
 }
 
 .user-info {
@@ -402,8 +571,8 @@ export default {
 }
 
 .user-name {
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 600;
   color: #1f2937;
   margin: 0 0 4px 0;
   overflow: hidden;
@@ -414,87 +583,99 @@ export default {
 .user-badge {
   display: inline-block;
   font-size: 11px;
-  font-weight: 600;
-  padding: 3px 8px;
-  border-radius: 6px;
-  text-transform: uppercase;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 9999px;
   letter-spacing: 0.5px;
 }
 
 .user-badge.badge-free {
-  background: #e5e7eb;
+  background: #f3f4f6;
   color: #6b7280;
 }
 
 .user-badge.badge-start {
-  background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);
-  color: white;
+  background: linear-gradient(90deg, #e9d5ff 0%, #ddd6fe 100%);
+  color: #7e22ce;
 }
 
 .user-badge.badge-pro {
-  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-  color: #1f2937;
+  background: linear-gradient(90deg, #c084fc 0%, #a855f7 100%);
+  color: white;
 }
 
-/* Navigation Menu */
+/* Navigation */
 .nav-menu {
   flex: 1;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .nav-link {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px 16px;
-  border-radius: 12px;
-  text-decoration: none;
-  color: #4b5563;
+  padding: 12px 14px;
   background: white;
-  border: 2px solid transparent;
-  transition: all 0.2s ease;
+  border: none;
+  border-radius: 12px;
+  text-align: left;
   cursor: pointer;
-  position: relative;
+  transition: all 0.2s ease;
+  color: #374151;
+  width: 100%;
 }
 
 .nav-link:hover {
-  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-  border-color: #e5e7eb;
-  transform: translateX(2px);
+  background: #faf5ff;
+  transform: scale(1.01);
 }
 
 .nav-link.active {
-  background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
-  border-color: #a78bfa;
-  color: #5b21b6;
-}
-
-.nav-link.active .link-icon {
-  transform: scale(1.1);
+  background: linear-gradient(90deg, #a855f7 0%, #9333ea 100%);
+  color: white;
+  box-shadow: 0 4px 14px rgba(168, 85, 247, 0.3);
+  transform: scale(1.02);
 }
 
 .nav-link.locked {
-  opacity: 0.7;
-  background: #f9fafb;
-  border-color: #e5e7eb;
+  color: #9ca3af;
 }
 
 .nav-link.locked:hover {
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-  border-color: #fbbf24;
+  background: #faf5ff;
 }
 
-.link-icon {
-  font-size: 24px;
+.icon-wrapper {
   width: 32px;
   height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 8px;
+  background: #f3e8ff;
   flex-shrink: 0;
-  transition: transform 0.2s ease;
+  transition: all 0.2s ease;
+}
+
+.icon-wrapper.active-icon {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.link-icon {
+  width: 16px;
+  height: 16px;
+  color: #9333ea;
+}
+
+.nav-link.active .link-icon {
+  color: white;
+}
+
+.nav-link.locked .link-icon {
+  opacity: 0.5;
 }
 
 .link-content {
@@ -503,75 +684,107 @@ export default {
 }
 
 .link-title {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
-  color: #1f2937;
   margin-bottom: 2px;
+}
+
+.nav-link.locked .link-title {
+  opacity: 0.5;
 }
 
 .link-description {
   font-size: 12px;
-  color: #6b7280;
-  line-height: 1.3;
+  opacity: 0.7;
 }
 
-.link-badge {
+.nav-link.active .link-description {
+  color: #e9d5ff;
+}
+
+.nav-link.locked .link-description {
+  opacity: 0.5;
+}
+
+.crown-icon {
+  width: 16px;
+  height: 16px;
+  color: #f59e0b;
   flex-shrink: 0;
+  animation: pulse 2s infinite;
 }
 
-.lock-icon {
-  font-size: 16px;
-  opacity: 0.6;
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 /* Premium CTA */
 .premium-cta {
-  margin: 16px 0;
-  padding: 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 16px;
-  color: white;
-  text-align: center;
+  padding: 16px;
+  border-top: 1px solid #e9d5ff;
 }
 
-.cta-icon {
-  font-size: 32px;
+.cta-card {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #a855f7 0%, #9333ea 50%, #7e22ce 100%);
+  border-radius: 12px;
+  padding: 16px;
+  color: white;
+  box-shadow: 0 10px 24px rgba(168, 85, 247, 0.4);
+}
+
+.cta-content {
+  position: relative;
+}
+
+.cta-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-bottom: 8px;
 }
 
-.cta-content h4 {
-  font-size: 18px;
+.cta-header h4 {
+  font-size: 16px;
   font-weight: 700;
-  margin: 0 0 4px 0;
+  margin: 0;
 }
 
-.cta-content p {
+.cta-text {
   font-size: 13px;
+  color: #e9d5ff;
   margin: 0 0 12px 0;
-  opacity: 0.9;
 }
 
 .cta-button {
+  width: 100%;
   background: white;
-  color: #5b21b6;
+  color: #9333ea;
   border: none;
-  padding: 10px 24px;
+  padding: 10px 16px;
   border-radius: 8px;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 14px;
   cursor: pointer;
-  transition: transform 0.2s ease;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .cta-button:hover {
-  transform: scale(1.05);
+  transform: scale(1.02);
+  background: #faf5ff;
 }
 
 /* Sidebar Footer */
 .sidebar-footer {
-  padding-top: 16px;
-  border-top: 1px solid #e5e7eb;
-  margin-top: auto;
+  padding: 16px;
+  border-top: 1px solid #e9d5ff;
 }
 
 .logout-btn {
@@ -580,11 +793,11 @@ export default {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 12px;
-  background: #fef2f2;
+  padding: 10px 16px;
+  background: white;
   color: #dc2626;
-  border: 1px solid #fecaca;
-  border-radius: 8px;
+  border: none;
+  border-radius: 12px;
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
@@ -592,36 +805,36 @@ export default {
 }
 
 .logout-btn:hover {
-  background: #fee2e2;
-  border-color: #fca5a5;
+  background: #fef2f2;
+  transform: scale(1.01);
 }
 
-.logout-icon {
-  font-size: 18px;
+.logout-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
-/* Modal Styles */
+/* Modal Overlay */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 10000;
   backdrop-filter: blur(4px);
+  padding: 16px;
 }
 
 .modal-content {
   background: white;
-  border-radius: 20px;
+  border-radius: 16px;
   max-width: 420px;
-  width: 90%;
-  max-height: 80vh;
-  overflow-y: auto;
+  width: 100%;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   animation: modalAppear 0.3s ease-out;
 }
@@ -637,124 +850,147 @@ export default {
   }
 }
 
-.modal-close {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  background: rgba(0, 0, 0, 0.1);
-  border: none;
-  color: #6b7280;
-  font-size: 24px;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s ease;
+/* Logout Modal */
+.logout-modal {
+  padding: 24px;
+  border: 1px solid #e9d5ff;
 }
 
-.modal-close:hover {
-  background: rgba(0, 0, 0, 0.2);
-}
-
-.modal-header {
-  padding: 24px 24px 16px;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.modal-header h3 {
-  margin: 0;
-  font-size: 20px;
+.modal-title {
+  font-size: 18px;
   font-weight: 700;
   color: #1f2937;
+  margin: 0 0 8px 0;
 }
 
-.premium-modal .modal-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border-bottom: none;
-  text-align: center;
-  border-radius: 20px 20px 0 0;
-}
-
-.premium-icon {
-  font-size: 40px;
-  margin-bottom: 8px;
-}
-
-.modal-body {
-  padding: 24px;
-}
-
-.modal-body p {
-  margin: 0 0 16px;
-  color: #4b5563;
-  line-height: 1.6;
-}
-
-.benefits-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 16px;
-}
-
-.benefit-item {
-  padding: 12px;
-  background: #f3f4f6;
-  border-radius: 8px;
-  font-size: 14px;
-  color: #1f2937;
+.modal-text {
+  color: #6b7280;
+  margin: 0 0 24px 0;
+  line-height: 1.5;
 }
 
 .modal-actions {
-  padding: 16px 24px 24px;
   display: flex;
   gap: 12px;
-  border-top: 1px solid #e5e7eb;
 }
 
 .btn-secondary,
-.btn-primary,
+.btn-danger,
 .btn-premium {
   flex: 1;
-  padding: 12px 24px;
+  padding: 10px 20px;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   font-weight: 600;
-  font-size: 15px;
+  font-size: 14px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .btn-secondary {
   background: #f3f4f6;
-  color: #6b7280;
+  color: #374151;
+  border: 1px solid #e5e7eb;
 }
 
 .btn-secondary:hover {
   background: #e5e7eb;
 }
 
-.btn-primary {
-  background: #dc2626;
+.btn-danger {
+  background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
   color: white;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
 }
 
-.btn-primary:hover {
-  background: #b91c1c;
+.btn-danger:hover {
+  background: linear-gradient(90deg, #dc2626 0%, #b91c1c 100%);
 }
 
 .btn-premium {
-  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-  color: #1f2937;
+  background: linear-gradient(90deg, #a855f7 0%, #9333ea 100%);
+  color: white;
+  box-shadow: 0 4px 14px rgba(168, 85, 247, 0.3);
 }
 
 .btn-premium:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
+  background: linear-gradient(90deg, #9333ea 0%, #7e22ce 100%);
+}
+
+/* Premium Modal */
+.premium-modal {
+  overflow: hidden;
+  border: 1px solid #e9d5ff;
+}
+
+.premium-header {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #a855f7 0%, #9333ea 50%, #7e22ce 100%);
+  padding: 32px 24px;
+  text-align: center;
+  color: white;
+}
+
+.premium-header-content {
+  position: relative;
+}
+
+.premium-icon-wrapper {
+  display: inline-flex;
+  padding: 12px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  margin-bottom: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+}
+
+.crown-icon-large {
+  width: 32px;
+  height: 32px;
+}
+
+.premium-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+}
+
+.premium-subtitle {
+  color: #e9d5ff;
+  font-size: 13px;
+  margin: 0;
+}
+
+.premium-body {
+  padding: 24px;
+}
+
+.benefits-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.benefit-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #faf5ff;
+  border: 1px solid #e9d5ff;
+  border-radius: 12px;
+}
+
+.benefit-emoji {
+  font-size: 18px;
+}
+
+.benefit-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
 }
 
 /* Desktop */
@@ -768,23 +1004,23 @@ export default {
   }
 }
 
-/* Mobile Optimization */
+/* Mobile */
 @media (max-width: 768px) {
   .sidebar {
     width: 100%;
     max-width: 320px;
   }
   
-  .user-card {
-    padding: 12px;
+  .close-btn {
+    display: block;
   }
   
   .nav-link {
-    padding: 12px 14px;
+    padding: 10px 12px;
   }
   
   .link-title {
-    font-size: 14px;
+    font-size: 13px;
   }
   
   .link-description {
