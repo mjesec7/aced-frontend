@@ -10,14 +10,6 @@
         <div class="sidebar-header">
           <div class="shine-overlay"></div>
           <div class="header-top">
-            <div class="logo-section">
-              <div class="logo-icon">
-                <svg class="sparkle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 3v18M3 12h18M6.5 6.5l11 11M6.5 17.5l11-11"/>
-                </svg>
-              </div>
-              <h2 class="logo-text">EduPlatform</h2>
-            </div>
             <button class="close-btn" @click="closeSidebar">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M18 6L6 18M6 6l12 12"/>
