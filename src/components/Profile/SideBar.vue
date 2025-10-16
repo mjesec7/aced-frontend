@@ -72,11 +72,11 @@
                 <svg class="sparkle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M12 3v18M3 12h18M6.5 6.5l11 11M6.5 17.5l11-11"/>
                 </svg>
-                <h4>Unlock Premium</h4>
+                <h4>Разблокировать Премиум</h4>
               </div>
-              <p class="cta-text">Get tests, analytics & more! ✨</p>
+              <p class="cta-text">Получите тесты, аналитику и многое другое! ✨</p>
               <button @click="goToUpgrade" class="cta-button">
-                View Plans
+                Посмотреть планы
               </button>
             </div>
           </div>
@@ -88,7 +88,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
             </svg>
-            Sign Out
+            Выйти
           </button>
         </div>
       </div>
@@ -104,14 +104,14 @@
     <!-- Logout Modal -->
     <div v-if="showLogoutModal" class="modal-overlay" @click="showLogoutModal = false">
       <div class="modal-content logout-modal" @click.stop>
-        <h3 class="modal-title">Sign Out</h3>
-        <p class="modal-text">Are you sure you want to sign out?</p>
+        <h3 class="modal-title">Выход</h3>
+        <p class="modal-text">Вы уверены, что хотите выйти?</p>
         <div class="modal-actions">
           <button class="btn-secondary" @click="showLogoutModal = false">
-            Cancel
+            Отмена
           </button>
           <button class="btn-danger" @click="logout">
-            Sign Out
+            Выйти
           </button>
         </div>
       </div>
@@ -128,35 +128,35 @@
                 <path d="M2 20h20M4 16V8l4 4 4-6 4 6 4-4v8M4 16h16"/>
               </svg>
             </div>
-            <h3 class="premium-title">Premium Feature</h3>
-            <p class="premium-subtitle">Available in Start & Pro plans</p>
+            <h3 class="premium-title">Премиум функция</h3>
+            <p class="premium-subtitle">Доступно в тарифах Start и Pro</p>
           </div>
         </div>
         <div class="premium-body">
           <div class="benefits-list">
             <div class="benefit-item">
               <span class="benefit-emoji">🎯</span>
-              <span class="benefit-text">Unlimited tests</span>
+              <span class="benefit-text">Неограниченные тесты</span>
             </div>
             <div class="benefit-item">
               <span class="benefit-emoji">📊</span>
-              <span class="benefit-text">Detailed analytics</span>
+              <span class="benefit-text">Подробная аналитика</span>
             </div>
             <div class="benefit-item">
               <span class="benefit-emoji">💡</span>
-              <span class="benefit-text">Homework assistance</span>
+              <span class="benefit-text">Помощь с домашними заданиями</span>
             </div>
             <div class="benefit-item">
               <span class="benefit-emoji">📖</span>
-              <span class="benefit-text">Personal dictionary</span>
+              <span class="benefit-text">Личный словарь</span>
             </div>
           </div>
           <div class="modal-actions">
             <button class="btn-secondary" @click="showPremiumModal = false">
-              Maybe Later
+              Может быть позже
             </button>
             <button class="btn-premium" @click="goToUpgrade">
-              Upgrade Now ✨
+              Улучшить сейчас ✨
             </button>
           </div>
         </div>
@@ -222,42 +222,42 @@ export default {
       navigationLinks: [
         {
           name: 'main',
-          label: 'Dashboard',
+          label: 'Главная',
           icon: 'HomeIcon',
-          description: 'Your progress & stats',
+          description: 'Ваш прогресс и статистика',
           path: '/profile/main',
           premium: false
         },
         {
           name: 'catalogue',
-          label: 'My Courses',
+          label: 'Мои курсы',
           icon: 'BookOpenIcon',
-          description: 'All available lessons',
+          description: 'Все доступные уроки',
           path: '/profile/catalogue',
           premium: false
         },
         {
           name: 'homeworks',
-          label: 'Assignments',
+          label: 'Задания',
           icon: 'FileTextIcon',
-          description: 'Practice & homework',
+          description: 'Практика и домашние работы',
           path: '/profile/homeworks',
           premium: false
         },
         {
           name: 'tests',
-          label: 'Tests',
+          label: 'Тесты',
           icon: 'ClipboardCheckIcon',
-          description: 'Knowledge check',
+          description: 'Проверка знаний',
           path: '/profile/tests',
           premium: true,
           requiredPlans: ['start', 'pro']
         },
         {
           name: 'settings',
-          label: 'Settings',
+          label: 'Настройки',
           icon: 'SettingsIcon',
-          description: 'Profile & subscription',
+          description: 'Профиль и подписка',
           path: '/settings',
           premium: false
         }
@@ -287,11 +287,11 @@ export default {
     },
     
     userDisplayName() {
-      if (!this.user) return 'User';
+      if (!this.user) return 'Пользователь';
       return this.user.name || 
              this.user.displayName || 
              this.user.email?.split('@')[0] || 
-             'User';
+             'Пользователь';
     },
     
     getUserInitials() {
@@ -560,16 +560,20 @@ export default {
 .user-info {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .user-name {
   font-size: 14px;
   font-weight: 600;
   color: #1f2937;
-  margin: 0 0 4px 0;
+  margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 1.2;
 }
 
 .user-badge {
@@ -579,6 +583,9 @@ export default {
   padding: 3px 10px;
   border-radius: 9999px;
   letter-spacing: 0.5px;
+  align-self: flex-start;
+  will-change: auto;
+  transform: translateZ(0);
 }
 
 .user-badge.badge-free {
