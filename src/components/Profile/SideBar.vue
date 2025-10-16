@@ -449,7 +449,7 @@ export default {
 
 /* Header */
 .sidebar-header {
-  padding: 12px 24px 32px 24px;
+  padding: 12px 24px 40px 24px;
   border-bottom: 1px solid #e9d5ff;
   position: relative;
   overflow: hidden;
@@ -478,7 +478,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  margin-bottom: 32px;
+  margin-bottom: 40px;
 }
 
 .logo-section {
@@ -535,12 +535,12 @@ export default {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 16px;
+  padding: 18px;
   background: white;
   border: 1px solid #e9d5ff;
   border-radius: 12px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
-  margin-top: 16px;
+  margin-top: 20px;
 }
 
 .user-avatar {
@@ -609,13 +609,14 @@ export default {
 
 /* Navigation */
 .nav-menu {
-  flex: 1;
+  flex: 1 1 auto;
   padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 6px;
   overflow-y: auto;
   min-height: 0;
+  max-height: calc(100vh - 550px);
 }
 
 .nav-link {
