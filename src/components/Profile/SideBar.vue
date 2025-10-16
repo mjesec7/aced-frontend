@@ -449,7 +449,7 @@ export default {
 
 /* Header */
 .sidebar-header {
-  padding: 24px;
+  padding: 16px 24px 24px 24px;
   border-bottom: 1px solid #e9d5ff;
   position: relative;
   overflow: hidden;
@@ -476,8 +476,8 @@ export default {
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
+  justify-content: flex-end;
+  margin-bottom: 20px;
 }
 
 .logo-section {
@@ -534,11 +534,12 @@ export default {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px;
+  padding: 14px;
   background: white;
   border: 1px solid #e9d5ff;
   border-radius: 12px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  margin-top: 8px;
 }
 
 .user-avatar {
@@ -562,7 +563,8 @@ export default {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+  align-items: flex-start;
 }
 
 .user-name {
@@ -573,19 +575,20 @@ export default {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  line-height: 1.2;
+  line-height: 1.3;
+  width: 100%;
 }
 
 .user-badge {
-  display: inline-block;
+  display: inline-flex;
   font-size: 11px;
   font-weight: 700;
-  padding: 3px 10px;
+  padding: 4px 12px;
   border-radius: 9999px;
   letter-spacing: 0.5px;
-  align-self: flex-start;
   will-change: auto;
   transform: translateZ(0);
+  margin-top: 2px;
 }
 
 .user-badge.badge-free {
@@ -726,6 +729,7 @@ export default {
 .premium-cta {
   padding: 16px;
   border-top: 1px solid #e9d5ff;
+  margin-top: auto;
 }
 
 .cta-card {
@@ -733,13 +737,14 @@ export default {
   overflow: hidden;
   background: linear-gradient(135deg, #a855f7 0%, #9333ea 50%, #7e22ce 100%);
   border-radius: 12px;
-  padding: 16px;
+  padding: 18px;
   color: white;
   box-shadow: 0 10px 24px rgba(168, 85, 247, 0.4);
 }
 
 .cta-content {
   position: relative;
+  z-index: 1;
 }
 
 .cta-header {
