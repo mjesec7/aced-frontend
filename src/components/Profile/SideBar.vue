@@ -64,9 +64,8 @@
         </nav>
 
         <!-- Premium Unlock Card -->
-        <div v-if="currentUserStatus === 'free'" class="premium-unlock-section">
+        <div v-if="currentUserStatus !== 'pro'" class="premium-unlock-section">
           <div class="unlock-card">
-            <div class="shine-overlay"></div>
             <div class="unlock-content">
               <div class="unlock-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -74,8 +73,8 @@
                 </svg>
               </div>
               <div class="unlock-text">
-                <h5>Разблокировать Премиум</h5>
-                <p>Получите все функции и возможности</p>
+                <h5>{{ currentUserStatus === 'free' ? 'Разблокировать Премиум' : 'Разблокировать Pro' }}</h5>
+                <p>{{ currentUserStatus === 'free' ? 'Получите все функции и возможности' : 'Перейдите на Pro план' }}</p>
               </div>
               <button @click="goToUpgrade" class="unlock-arrow">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -482,6 +481,8 @@ export default {
   background: linear-gradient(90deg, transparent, rgba(168, 85, 247, 0.1), transparent);
   transform: translateX(-100%) skewX(-12deg);
   animation: shine 3s infinite;
+  pointer-events: none;
+  z-index: 0;
 }
 
 @keyframes shine {
@@ -495,6 +496,7 @@ export default {
 
 .header-top {
   position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -519,6 +521,7 @@ export default {
 /* User Card */
 .user-card {
   position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -712,12 +715,12 @@ export default {
 
 /* Premium Unlock Card */
 .premium-unlock-section {
-  padding: 0 16px 16px;
+  padding: 16px;
+  border-bottom: 1px solid #e9d5ff;
 }
 
 .unlock-card {
   position: relative;
-  overflow: hidden;
   background: linear-gradient(135deg, #a855f7 0%, #9333ea 50%, #7e22ce 100%);
   border-radius: 12px;
   padding: 14px 16px;
@@ -726,6 +729,7 @@ export default {
 
 .unlock-content {
   position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -802,7 +806,6 @@ export default {
 
 .cta-card {
   position: relative;
-  overflow: hidden;
   background: linear-gradient(135deg, #a855f7 0%, #9333ea 50%, #7e22ce 100%);
   border-radius: 12px;
   padding: 16px;
@@ -812,6 +815,7 @@ export default {
 
 .cta-content {
   position: relative;
+  z-index: 1;
 }
 
 .cta-header {
@@ -1103,4 +1107,4 @@ export default {
     font-size: 11px;
   }
 }
-</style>
+</style> 
