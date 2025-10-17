@@ -500,7 +500,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  margin-bottom: 16px;
+  margin-bottom: 24px;
 }
 
 .close-btn {
@@ -722,30 +722,29 @@ export default {
 .unlock-card {
   background: linear-gradient(135deg, #a855f7 0%, #9333ea 50%, #7e22ce 100%);
   border-radius: 12px;
-  padding: 14px 16px;
+  padding: 16px;
 }
 
 .unlock-content {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .unlock-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .unlock-icon svg {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   color: white;
 }
 
@@ -755,24 +754,24 @@ export default {
 }
 
 .unlock-text h5 {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
   color: white;
-  margin: 0 0 2px 0;
-  line-height: 1.2;
+  margin: 0 0 4px 0;
+  line-height: 1.3;
 }
 
 .unlock-text p {
-  font-size: 12px;
-  color: #e9d5ff;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
   margin: 0;
-  line-height: 1.2;
+  line-height: 1.4;
 }
 
 .unlock-arrow {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.2);
   border: none;
   display: flex;
@@ -785,12 +784,12 @@ export default {
 
 .unlock-arrow:hover {
   background: rgba(255, 255, 255, 0.3);
-  transform: scale(1.05);
+  transform: translateX(2px);
 }
 
 .unlock-arrow svg {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   color: white;
 }
 
