@@ -1,339 +1,232 @@
 <template>
-  <div class="catalogue-page">
-    <div class="page-header">
+  <div class="catalogue-page" :key="componentKey">
+    <header class="page-header">
       <div class="header-content">
         <div class="breadcrumb">
-          <button
-            v-if="currentView !== 'subjects'"
-            @click="goBack"
-            class="back-btn"
-          >
-            ← Назад
+          <button v-if="currentView !== 'subjects'" @click="goBack" class="back-btn">
+            &larr; Back
           </button>
           <div class="breadcrumb-path">
             <span class="breadcrumb-item" :class="{ active: currentView === 'subjects' }">
-              Предметы
+              Subjects
             </span>
-            <span v-if="selectedSubject" class="breadcrumb-separator">›</span>
-            <span
-              v-if="selectedSubject"
-              class="breadcrumb-item"
-              :class="{ active: currentView === 'levels' }"
-            >
-              {{ selectedSubject }}
-            </span>
-            <span v-if="selectedLevel" class="breadcrumb-separator">›</span>
-            <span
-              v-if="selectedLevel"
-              class="breadcrumb-item"
-              :class="{ active: currentView === 'topics' }"
-            >
-              {{ selectedLevel }}
-            </span>
+            <template v-if="selectedSubject">
+              <span class="breadcrumb-separator">&gt;</span>
+              <span class="breadcrumb-item" :class="{ active: currentView === 'levels' }">
+                {{ selectedSubject }}
+              </span>
+            </template>
+            <template v-if="selectedLevel">
+              <span class="breadcrumb-separator">&gt;</span>
+              <span class="breadcrumb-item" :class="{ active: currentView === 'topics' }">
+                Level {{ selectedLevel }}
+              </span>
+            </template>
           </div>
         </div>
-
-        <span class="subscription-badge" :class="subscriptionClass">
-          {{ subscriptionText }}
-        </span>
+        <div class="subscription-badge" :class="`badge-${userStatus}`">
+          {{ userStatus }} Plan
+        </div>
       </div>
+      <h1 class="page-title">{{ pageTitle }}</h1>
+    </header>
 
-      <h1 class="page-title">
-        <span v-if="currentView === 'subjects'">Каталог Предметов</span>
-        <span v-else-if="currentView === 'levels'">Выберите Уровень</span>
-        <span v-else>Темы для Изучения</span>
-      </h1>
-    </div>
-
-    <div class="main-content">
+    <main class="main-content">
       <div class="filter-bar">
         <div class="filter-row">
-          <div class="filter-item">
-            <input
-              v-model="searchQuery"
-              type="text"
-              class="search-input"
-              placeholder="🔍 Поиск..."
-            />
+          <input type="text" v-model="searchQuery" placeholder="🔍 Search catalogue..." class="search-input" />
+          <select v-model="filterSubject" class="filter-select" v-if="currentView === 'subjects'">
+            <option value="">All Subjects</option>
+            <option v-for="subject in uniqueSubjects" :key="subject" :value="subject">{{ subject }}</option>
+          </select>
+          <select v-model="filterLevel" class="filter-select" v-if="currentView !== 'subjects'">
+            <option value="">All Levels</option>
+            <option v-for="level in uniqueLevels" :key="level" :value="level">Level {{ level }}</option>
+          </select>
+          <button @click="clearFilters" class="clear-btn">Clear Filters</button>
+        </div>
+        <div class="filter-row" style="margin-top: 1rem; border-top: 1px solid #f1f3f4; padding-top: 1rem;">
+          <div class="checkbox-group">
+            <label class="checkbox-label"><input type="checkbox" v-model="showFree"> Free</label>
+            <label class="checkbox-label"><input type="checkbox" v-model="showPremium"> Premium</label>
           </div>
-
-          <div v-if="currentView !== 'subjects'" class="filter-item">
-            <select v-model="filterSubject" class="filter-select">
-              <option value="">Все предметы</option>
-              <option v-for="subject in availableSubjects" :key="subject" :value="subject">
-                {{ subject }}
-              </option>
-            </select>
+          <div class="checkbox-group" style="margin-left: 1rem; border-left: 1px solid #e9ecef; padding-left: 1rem;">
+            <label class="checkbox-label"><input type="checkbox" v-model="showNotStarted"> Not Started</label>
+            <label class="checkbox-label"><input type="checkbox" v-model="showInProgress"> In Progress</label>
+            <label class="checkbox-label"><input type="checkbox" v-model="showCompleted"> Completed</label>
           </div>
-
-          <div v-if="currentView === 'topics'" class="filter-item">
-            <select v-model="filterLevel" class="filter-select">
-              <option value="">Все уровни</option>
-              <option v-for="level in availableLevels" :key="level" :value="level">
-                {{ level }}
-              </option>
-            </select>
-          </div>
-
-          <div class="filter-item checkbox-filter">
-            <label class="checkbox-label">
-              <input type="checkbox" v-model="showFree" />
-              🆓 Бесплатные
-            </label>
-            <label class="checkbox-label">
-              <input type="checkbox" v-model="showPremium" />
-              ⭐ Премиум
-            </label>
-          </div>
-
-          <div v-if="currentView === 'topics'" class="filter-item checkbox-filter">
-            <label class="checkbox-label">
-              <input type="checkbox" v-model="showNotStarted" />
-              ⭕ Не начато
-            </label>
-            <label class="checkbox-label">
-              <input type="checkbox" v-model="showInProgress" />
-              🔄 В процессе
-            </label>
-            <label class="checkbox-label">
-              <input type="checkbox" v-model="showCompleted" />
-              ✅ Завершено
-            </label>
-          </div>
-
-          <button @click="clearFilters" class="clear-btn">Очистить</button>
         </div>
       </div>
 
-      <div class="content-area">
-        <div v-if="loading" class="loading">
-          <div class="loading-spinner"></div>
-          <span>Загрузка...</span>
-        </div>
+      <div v-if="isLoading" class="loading-state">
+        <div class="loading-spinner"></div>
+        <p>Loading catalogue...</p>
+      </div>
 
-        <div v-else-if="currentView === 'subjects'" class="subjects-grid">
-          <div
-            v-for="subject in filteredSubjects"
-            :key="subject.name"
-            @click="selectSubject(subject.name)"
-            class="subject-card"
-          >
-            <div class="card-icon">{{ subject.icon }}</div>
-            <h3 class="card-title">{{ subject.name }}</h3>
-            <div class="card-stats">
-              <span class="stat-badge">{{ subject.topicCount }} тем</span>
-              <span class="stat-badge">{{ subject.lessonCount }} уроков</span>
+      <div v-else>
+        <div v-if="currentView === 'subjects'">
+          <div v-if="filteredSubjects.length" class="subjects-grid">
+            <div v-for="subject in filteredSubjects" :key="subject.name" class="subject-card" @click="selectSubject(subject.name)">
+              <div class="card-icon">{{ getSubjectIcon(subject.name) }}</div>
+              <h2 class="card-title">{{ subject.name }}</h2>
+              <div class="card-stats">
+                <span class="stat-badge">{{ subject.topicCount }} topics</span>
+                <span class="stat-badge">{{ subject.levelCount }} levels</span>
+              </div>
             </div>
+          </div>
+          <div v-else class="empty-state">
+            <div class="empty-icon">🤷</div>
+            <h3>No Subjects Found</h3>
+            <p>Try adjusting your search or filter criteria.</p>
           </div>
         </div>
 
-        <div v-else-if="currentView === 'levels'" class="levels-grid">
-          <div
-            v-for="level in filteredLevels"
-            :key="level.name"
-            @click="selectLevel(level.name)"
-            class="level-card"
-          >
-            <div class="level-header">
-              <div class="level-icon" :class="getLevelClass(level.name)">
-                {{ getLevelIcon(level.name) }}
+        <div v-if="currentView === 'levels'">
+          <div v-if="filteredLevels.length" class="levels-grid">
+            <div v-for="level in filteredLevels" :key="level.name" class="level-card" @click="selectLevel(level.name)">
+              <div class="level-header">
+                <div class="level-icon" :class="getLevelClass(level.name)">{{ getLevelIcon(level.name) }}</div>
+                <div class="level-info">
+                  <h3 class="level-title">Level {{ level.name }}</h3>
+                  <p class="level-description">{{ getLevelDescription(level.name) }}</p>
+                </div>
               </div>
-              <h3 class="card-title">{{ level.name }}</h3>
-            </div>
-            <p class="level-description">{{ getLevelDescription(level.name) }}</p>
-            <div class="card-stats">
-              <span class="stat-badge">{{ level.topicCount }} тем</span>
-              <span class="stat-badge">{{ level.lessonCount }} уроков</span>
-              <span class="stat-badge">~{{ level.totalTime }} мин</span>
-            </div>
-            <div class="progress-info" v-if="level.progress !== undefined">
-              <div class="progress-bar">
-                <div
-                  class="progress-fill"
-                  :style="{ width: level.progress + '%' }"
-                  :class="getProgressClass(level.progress)"
-                ></div>
+              <div class="level-stats"><span class="stat-item"><span class="stat-icon">📚</span>{{ level.topicCount }} topics</span></div>
+              <div class="progress-container">
+                <div class="progress-header">
+                  <span class="progress-label">Level Progress</span>
+                  <span class="progress-value">{{ level.progress }}%</span>
+                </div>
+                <div class="progress-bar">
+                  <div class="progress-fill" :class="getProgressClass(level.progress)" :style="{ width: level.progress + '%' }"></div>
+                </div>
               </div>
-              <span class="progress-text">{{ Math.round(level.progress) }}% завершено</span>
             </div>
-            <div class="card-footer">
-              <span class="access-type" :class="level.hasFreeLessons ? 'has-free' : 'premium-only'">
-                {{ level.hasFreeLessons ? '🆓 Есть бесплатные' : '⭐ Только премиум' }}
-              </span>
-            </div>
+          </div>
+          <div v-else class="empty-state">
+            <div class="empty-icon">🤷</div>
+            <h3>No Levels Found</h3>
+            <p>No levels match your current filter settings.</p>
           </div>
         </div>
 
-        <div v-else-if="currentView === 'topics'" class="topics-grid">
-          <div
-            v-for="topic in filteredTopics"
-            :key="topic.topicId"
-            class="topic-card"
-          >
-            <div class="card-header">
-              <h3 class="topic-title">{{ topic.name }}</h3>
-              <button
-                class="add-btn"
-                @click="addToStudyPlan(topic)"
-                :disabled="topic.inStudyPlan"
-                :title="topic.inStudyPlan ? 'Уже в плане' : 'Добавить в план'"
-              >
-                {{ topic.inStudyPlan ? '✓' : '＋' }}
+        <div v-if="currentView === 'topics'">
+          <div v-if="filteredTopics.length" class="topics-grid">
+            <div v-for="topic in filteredTopics" :key="topic.topicId" class="topic-card">
+              <div class="topic-header">
+                <h3 class="topic-title">{{ topic.name }}</h3>
+                <button class="add-btn" @click="addToStudyPlan(topic)" :disabled="topic.inStudyPlan" :title="topic.inStudyPlan ? 'Already in your plan' : 'Add to study plan'">
+                  {{ topic.inStudyPlan ? '✓' : '+' }}
+                </button>
+              </div>
+              <div class="topic-meta">
+                <span class="access-badge" :class="topic.type">{{ topic.type }}</span>
+              </div>
+              <div class="topic-stats">
+                <span class="stat-item"><span class="stat-icon">📄</span>{{ topic.lessonCount }} lessons</span>
+                <span class="stat-item"><span class="stat-icon">🕒</span>{{ topic.totalTime }} min</span>
+              </div>
+              <div class="progress-container">
+                <div class="progress-header">
+                  <span class="progress-label">Your Progress</span>
+                  <span class="progress-value">{{ topic.progress }}%</span>
+                </div>
+                <div class="progress-bar">
+                  <div class="progress-fill" :class="getProgressClass(topic.progress)" :style="{ width: topic.progress + '%' }"></div>
+                </div>
+              </div>
+              <button class="action-btn" :class="getButtonClass(topic.progress)" @click="handleTopicAccess(topic.topicId, topic.type)">
+                {{ getButtonText(topic.progress) }}
               </button>
             </div>
-
-            <div class="topic-meta">
-              <span class="level-badge" :class="getLevelClass(topic.level)">
-                {{ topic.level }}
-              </span>
-              <span class="access-badge" :class="topic.type === 'premium' ? 'premium' : 'free'">
-                {{ topic.type === 'premium' ? '⭐ Премиум' : '🆓 Бесплатный' }}
-              </span>
-            </div>
-
-            <div class="topic-stats">
-              <span>📚 {{ topic.lessonCount }} уроков</span>
-              <span>⏱️ {{ topic.totalTime }} мин</span>
-            </div>
-
-            <div v-if="topic.progress !== undefined" class="progress-section">
-              <div class="progress-header">
-                <span class="progress-label">Прогресс</span>
-                <span class="progress-percentage">{{ Math.round(topic.progress) }}%</span>
-              </div>
-              <div class="progress-bar">
-                <div
-                  class="progress-fill"
-                  :style="{ width: topic.progress + '%' }"
-                  :class="getProgressClass(topic.progress)"
-                ></div>
-              </div>
-            </div>
-
-            <div class="status-section">
-              <span
-                class="status-badge"
-                :class="getStatusClass(topic.progress)"
-              >
-                {{ getStatusText(topic.progress) }}
-              </span>
-            </div>
-
-            <button
-              class="action-btn"
-              @click="handleTopicAccess(topic.topicId, topic.type)"
-              :class="getButtonClass(topic.progress)"
-            >
-              {{ getButtonText(topic.progress) }}
-            </button>
+          </div>
+          <div v-else class="empty-state">
+            <div class="empty-icon">🤷</div>
+            <h3>No Topics Found</h3>
+            <p>No topics match your current filter settings.</p>
           </div>
         </div>
-
-        <div v-if="!loading && filteredItems.length === 0" class="empty-state">
-          <div class="empty-icon">🔍</div>
-          <h3>Ничего не найдено</h3>
-          <p>Попробуйте изменить параметры фильтра</p>
-          <button @click="clearFilters" class="btn-secondary">
-            Сбросить фильтры
-          </button>
-        </div>
       </div>
-    </div>
+    </main>
 
-    <div v-if="showAddModal" class="modal-overlay" @click="showAddModal = false">
-      <div class="modal-content" @click.stop>
-        <button class="modal-close" @click="showAddModal = false">×</button>
-        <div class="modal-header">
-          <h3>📚 Добавить в учебный план</h3>
-        </div>
+    <div v-if="showAddModal" class="modal-overlay" @click.self="showAddModal = false">
+      <div class="modal-content">
+        <button @click="showAddModal = false" class="modal-close">&times;</button>
+        <div class="modal-header"><h3>Add to Study Plan?</h3></div>
         <div class="modal-body">
           <div class="topic-preview" v-if="selectedTopic">
             <h4>{{ selectedTopic.name }}</h4>
-            <p>{{ selectedTopic.subject }} • {{ selectedTopic.level }}</p>
+            <p>{{ getLevelDescription(selectedTopic.level) }}</p>
             <div class="topic-stats">
-              <span>📅 {{ selectedTopic.lessonCount }} уроков</span>
-              <span>⏱️ {{ selectedTopic.totalTime }} минут</span>
+              <span class="stat-item">📄 {{ selectedTopic.lessonCount }} lessons</span>
+              <span class="stat-item">🕒 {{ selectedTopic.totalTime }} min</span>
             </div>
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn-secondary" @click="showAddModal = false">Отмена</button>
-          <button class="btn-primary" @click="confirmAddToStudyPlan">
-            ✅ Добавить
-          </button>
+          <button @click="showAddModal = false" class="btn-secondary">Cancel</button>
+          <button @click="confirmAddToStudyPlan" class="btn-primary">Confirm</button>
         </div>
       </div>
     </div>
 
-    <div v-if="showSuccessModal" class="modal-overlay" @click="showSuccessModal = false">
-      <div class="modal-content success-modal" @click.stop>
-        <button class="modal-close" @click="showSuccessModal = false">×</button>
+    <div v-if="showSuccessModal" class="modal-overlay" @click.self="showSuccessModal = false">
+      <div class="modal-content success-modal">
         <div class="success-content">
-          <div class="success-icon">✅</div>
-          <h3>Успешно добавлено!</h3>
-          <p>Тема "{{ selectedTopic?.name }}" добавлена в ваш учебный план.</p>
-          <button class="btn-primary" @click="showSuccessModal = false">
-            Понятно
-          </button>
+          <div class="success-icon">🎉</div>
+          <h3>Added to Plan!</h3>
+          <p>"{{ selectedTopic.name }}" is now in your study plan. Keep up the great work!</p>
+          <button @click="showSuccessModal = false" class="btn-primary">Got it!</button>
         </div>
       </div>
     </div>
-
-    <PaymentModal
-      v-if="showPaywall"
-      :user-id="userId"
-      :visible="showPaywall"
-      :requested-topic-id="requestedTopicId"
-      @close="showPaywall = false"
-      @unlocked="handlePlanUpdate"
-    />
+    
+    <div v-if="showPaywall" class="modal-overlay" @click.self="showPaywall = false">
+      <div class="modal-content">
+        <button @click="showPaywall = false" class="modal-close">&times;</button>
+        <div class="modal-header"><h3>Upgrade Required</h3></div>
+        <div class="modal-body" style="text-align: center;">
+          <p>This topic is part of our premium content. Please upgrade your plan to access it.</p>
+          <button @click="showPaywall = false" class="btn-primary" style="margin-top: 1rem;">View Plans</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
-import { mapGetters, mapState } from 'vuex';
-import { auth } from '@/firebase';
-import PaymentModal from '@/components/Modals/PaymentModal.vue';
-
-// ✅ FIXED: Import API functions instead of using direct axios
-import { 
-  getAllLessons, 
-  getTopics, 
-  getLessonsByTopic, 
-  getUserProgress,
-  getUserStudyList,
-  getTopicById,
-  addToStudyList 
-} from '@/api';
+// Mock API functions - replace with your actual API calls
+const fetchLessonsFromAPI = () => Promise.resolve([]); 
+const fetchUserProgressFromAPI = () => Promise.resolve({});
+const fetchStudyPlanFromAPI = () => Promise.resolve([]);
+const addToStudyList = (userId, data) => Promise.resolve({ success: true, data });
 
 export default {
   name: 'CataloguePage',
-  components: {
-    PaymentModal
-  },
-
+  
+  // =======================
+  // Component State
+  // =======================
   data() {
     return {
-      // Navigation state
-      currentView: 'subjects',
+      // Raw data from API
+      lessons: [],
+      userProgress: {},
+      studyPlanTopics: [],
+      
+      // UI State
+      isLoading: true,
+      currentView: 'subjects', // 'subjects', 'levels', 'topics'
       selectedSubject: null,
       selectedLevel: null,
-
-      // Data
-      lessons: [],
+      
+      // Processed data for display
       subjects: [],
       levels: [],
       topics: [],
-      userProgress: {},
-      lessonProgress: {},
-      studyPlanTopics: [],
-
-      // UI state
-      loading: true,
-      userId: null,
-      lang: '',
-
-      // Filter state - ALL INITIALIZED AS EMPTY/FALSE
+      
+      // Filters
       searchQuery: '',
       filterSubject: '',
       filterLevel: '',
@@ -343,678 +236,216 @@ export default {
       showInProgress: false,
       showCompleted: false,
 
-      // Modal state
+      // Modals and interactivity
       showAddModal: false,
       showSuccessModal: false,
       showPaywall: false,
       selectedTopic: null,
       requestedTopicId: null,
 
-      // ✅ ENHANCED: Add comprehensive reactivity tracking
+      // Reactivity and event listeners
       componentKey: 0,
-      lastUpdateTime: Date.now(),
-      forceUpdateCounter: 0,
-      
-      // Event cleanup functions
       eventCleanupFunctions: [],
-      storeUnsubscribe: null
+      storeUnsubscribe: null,
+      
+      // Mock user data (replace with actual Vuex/Pinia state)
+      userId: 'user123', 
+      lang: 'en', // 'en' or 'ru'
     };
   },
-
+  
+  // =======================
+  // Computed Properties
+  // =======================
   computed: {
-    // ✅ FIXED: Map both user state and getters properly
-    ...mapState(['user']),
-    ...mapGetters(['getUser']),
-
-    // ✅ FIXED: Get current user consistently like UserSection
-    currentUser() {
-      return this.getUser || this.user || {};
-    },
-
-    // ✅ FIXED: Get user status from user object like UserSection
-    currentUserStatus() {
-      const userStatus = this.currentUser?.subscriptionPlan || 
-                        localStorage.getItem('userStatus') || 
-                        localStorage.getItem('plan') || 
-                        'free';
-      return userStatus;
-    },
-
-    // ✅ FIXED: Reactive subscription class based on user object
-    subscriptionClass() {
-      const status = this.currentUserStatus;
-      if (status === 'pro') return 'badge-pro';
-      if (status === 'start') return 'badge-start';
-      return 'badge-free';
-    },
-
-    // ✅ FIXED: Reactive subscription text based on user object
-    subscriptionText() {
-      const status = this.currentUserStatus;
-      switch (status) {
-        case 'pro': return 'Pro подписка';
-        case 'start': return 'Start подписка';
-        default: return 'Бесплатный доступ';
-      }
-    },
-
-    // ✅ FIXED: Check if user has premium access
     isPremiumUser() {
-      const status = this.currentUserStatus;
-      return status === 'pro' || status === 'start';
+      // Replace with your actual state management (Vuex/Pinia)
+      const status = /* this.$store.getters.userStatus || */ localStorage.getItem('userStatus') || 'free';
+      return status === 'pro' || status === 'premium';
     },
 
-    currentItems() {
-      switch (this.currentView) {
-        case 'subjects': return this.subjects || [];
-        case 'levels': return this.levels || [];
-        case 'topics': return this.topics || [];
-        default: return [];
-      }
+    userStatus() {
+      return this.isPremiumUser ? 'premium' : 'free';
     },
 
-    filteredItems() {
-      switch (this.currentView) {
-        case 'subjects': return this.filteredSubjects || [];
-        case 'levels': return this.filteredLevels || [];
-        case 'topics': return this.filteredTopics || [];
-        default: return [];
-      }
+    pageTitle() {
+      if (this.currentView === 'topics') return `Topics for ${this.selectedSubject} - Level ${this.selectedLevel}`;
+      if (this.currentView === 'levels') return `Levels for ${this.selectedSubject}`;
+      return 'Course Catalogue';
     },
-
-    availableSubjects() {
-      if (!Array.isArray(this.lessons)) return [];
-      return [...new Set(this.lessons
-        .map(lesson => lesson?.subject)
-        .filter(subject => subject && typeof subject === 'string'))];
+    
+    uniqueSubjects() {
+      return this.subjects.map(s => s.name).sort();
     },
-
-    availableLevels() {
-      if (!Array.isArray(this.lessons)) return [];
-      return [...new Set(this.lessons
-        .map(lesson => lesson?.level)
-        .filter(level => level && (typeof level === 'string' || typeof level === 'number')))];
+    
+    uniqueLevels() {
+      const allLevels = this.lessons.filter(l => this.selectedSubject ? l.subject === this.selectedSubject : true)
+                                   .map(l => l.level);
+      return [...new Set(allLevels)].sort((a, b) => a - b);
     },
 
     filteredSubjects() {
-      if (!Array.isArray(this.subjects)) return [];
       return this.subjects.filter(subject => {
-        if (!subject || !subject.name) return false;
-
-        const subjectName = String(subject.name || '');
-        const searchTerm = String(this.searchQuery || '').toLowerCase();
-
-        const matchesSearch = !this.searchQuery || subjectName.toLowerCase().includes(searchTerm);
-
-        let matchesAccess = true;
-        if (this.showFree || this.showPremium) {
-          matchesAccess = (this.showFree && subject.hasFreeLessons) ||
-                         (this.showPremium && subject.hasPremiumLessons);
-        }
-
-        return matchesSearch && matchesAccess;
+        const searchMatch = !this.searchQuery || subject.name.toLowerCase().includes(this.searchQuery.toLowerCase());
+        const premiumMatch = (!this.showFree && !this.showPremium) || (this.showFree && !subject.hasPremium) || (this.showPremium && subject.hasPremium);
+        return searchMatch && premiumMatch;
       });
     },
-
+    
     filteredLevels() {
-      if (!Array.isArray(this.levels)) return [];
       return this.levels.filter(level => {
-        if (!level || (!level.name && level.name !== 0)) return false;
-
-        const levelName = String(level.name || '');
-        const searchTerm = String(this.searchQuery || '').toLowerCase();
-
-        const matchesSearch = !this.searchQuery || levelName.toLowerCase().includes(searchTerm);
-
-        let matchesAccess = true;
-        if (this.showFree || this.showPremium) {
-          matchesAccess = (this.showFree && level.hasFreeLessons) ||
-                         (this.showPremium && level.hasPremiumLessons);
-        }
-
-        return matchesSearch && matchesAccess;
+        return !this.filterLevel || String(level.name) === String(this.filterLevel);
       });
     },
 
     filteredTopics() {
-      if (!Array.isArray(this.topics)) return [];
       return this.topics.filter(topic => {
-        if (!topic || !topic.name) return false;
+        const searchMatch = !this.searchQuery || topic.name.toLowerCase().includes(this.searchQuery.toLowerCase());
+        const levelMatch = !this.filterLevel || String(topic.level) === String(this.filterLevel);
+        const typeMatch = (!this.showFree && !this.showPremium) || (this.showFree && topic.type === 'free') || (this.showPremium && (topic.type === 'premium' || topic.type === 'pro'));
+        const progress = topic.progress || 0;
+        const progressMatch = (!this.showNotStarted && !this.showInProgress && !this.showCompleted) ||
+          (this.showNotStarted && progress === 0) ||
+          (this.showInProgress && progress > 0 && progress < 100) ||
+          (this.showCompleted && progress === 100);
 
-        const topicName = String(topic.name || '');
-        const searchTerm = String(this.searchQuery || '').toLowerCase();
-
-        const matchesSearch = !this.searchQuery || topicName.toLowerCase().includes(searchTerm);
-
-        const matchesSubject = !this.filterSubject || String(topic.subject || '') === String(this.filterSubject);
-
-        const matchesLevel = !this.filterLevel || String(topic.level || '') === String(this.filterLevel);
-
-        let matchesAccess = true;
-        if (this.showFree || this.showPremium) {
-          matchesAccess = (this.showFree && topic.type === 'free') ||
-                         (this.showPremium && topic.type === 'premium');
-        }
-
-        let matchesProgress = true;
-        if (this.showNotStarted || this.showInProgress || this.showCompleted) {
-          if (typeof topic.progress === 'number') {
-            const progress = Number(topic.progress) || 0;
-            const isNotStarted = progress === 0;
-            const isInProgress = progress > 0 && progress < 100;
-            const isCompleted = progress === 100;
-
-            matchesProgress = (this.showNotStarted && isNotStarted) ||
-                             (this.showInProgress && isInProgress) ||
-                             (this.showCompleted && isCompleted);
-          } else {
-            matchesProgress = this.showNotStarted;
-          }
-        }
-
-        return matchesSearch && matchesSubject && matchesLevel && matchesAccess && matchesProgress;
+        return searchMatch && levelMatch && typeMatch && progressMatch;
       });
     }
   },
 
-  // ✅ FIXED: Watch store changes like UserSection does
-  watch: {
-    // ✅ FIXED: Watch the user object from store (same as UserSection)
-    user: {
-      handler(newUser, oldUser) {
-        const newPlan = newUser?.subscriptionPlan;
-        const oldPlan = oldUser?.subscriptionPlan;
-        
-        if (newPlan !== oldPlan) {
-          this.handleUserStatusChange(newPlan, oldPlan);
-        }
-      },
-      deep: true,
-      immediate: true
-    },
-
-    // ✅ FIXED: Watch the getUser getter (same as UserSection)
-    getUser: {
-      handler(newUser, oldUser) {
-        const newPlan = newUser?.subscriptionPlan;
-        const oldPlan = oldUser?.subscriptionPlan;
-        
-        if (newPlan !== oldPlan) {
-          this.handleUserStatusChange(newPlan, oldPlan);
-        }
-      },
-      deep: true,
-      immediate: true
-    },
-
-    // ✅ FIXED: Watch current user status computed property
-    currentUserStatus: {
-      handler(newStatus, oldStatus) {
-        if (newStatus !== oldStatus) {
-          this.triggerReactivityUpdate();
-        }
-      },
-      immediate: true
-    }
-  },
-
+  // =======================
+  // Lifecycle Hooks
+  // =======================
   async mounted() {
-
+    this.isLoading = true;
     try {
-      // Initialize component
-      await this.initializeComponent();
-
-      // ✅ FIXED: Setup comprehensive event listeners
-      this.setupEventListeners();
-
-
+      const [lessonsData, progressData, planData] = await Promise.all([
+        fetchLessonsFromAPI(),
+        fetchUserProgressFromAPI(),
+        fetchStudyPlanFromAPI()
+      ]);
+      
+      this.lessons = lessonsData || [];
+      this.userProgress = progressData || {};
+      this.studyPlanTopics = (planData || []).map(item => this.extractTopicId(item.topicId));
+      this.processSubjects();
     } catch (error) {
-      console.error('❌ Catalogue: Mount error:', error);
+      this.showErrorMessage("Failed to load course data.");
+      console.error("❌ Data fetching error:", error);
+    } finally {
+      this.isLoading = false;
     }
+    this.setupEventListeners();
   },
 
   beforeUnmount() {
     this.cleanup();
   },
 
+  // =======================
+  // Methods
+  // =======================
   methods: {
-    // ===== INITIALIZATION =====
-    async initializeComponent() {
-      try {
-        this.loading = true;
-        this.lang = localStorage.getItem('lang') || 'en';
-
-        // Get user ID from multiple sources
-        const storedId = this.$store?.state?.firebaseUserId || 
-                         localStorage.getItem('firebaseUserId') || 
-                         localStorage.getItem('userId');
-        
-        if (!storedId) {
-          console.warn('⚠️ Catalogue: No user ID found, continuing without user data');
-          // Don't return here - still load public data
-        } else {
-          this.userId = storedId;
-        }
-
-        // Load all data in parallel with proper error handling
-        const dataPromises = [
-          this.loadLessons().catch(err => {
-            console.error('❌ Lessons loading failed:', err);
-            return null;
-          }),
-          this.userId ? this.loadUserProgress().catch(err => {
-            console.error('❌ User progress loading failed:', err);
-            return null;
-          }) : Promise.resolve(),
-          this.userId ? this.loadStudyPlan().catch(err => {
-            console.error('❌ Study plan loading failed:', err);
-            return null;
-          }) : Promise.resolve()
-        ];
-
-        await Promise.allSettled(dataPromises);
-
-        // Process subjects after all data is loaded
-        this.processSubjects();
-        
-        
-      } catch (error) {
-        console.error('❌ Catalogue: Critical initialization error:', error);
-        this.showErrorMessage('Ошибка загрузки данных. Попробуйте перезагрузить страницу.');
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    // ===== DATA LOADING =====
-    async loadLessons() {
-      try {
-        
-        // ✅ FIXED: Use the same API method as MainPage
-        const lessonsResult = await getAllLessons();
-        
-        if (lessonsResult?.success && Array.isArray(lessonsResult.data)) {
-          this.lessons = lessonsResult.data;
-        } else {
-          console.warn('⚠️ Catalogue: Invalid lessons response:', lessonsResult);
-          this.lessons = [];
-        }
-      } catch (error) {
-        console.error('❌ Catalogue: Error loading lessons:', error);
-        this.lessons = [];
-        
-        // Try fallback approach
-        try {
-          const topicsResult = await getTopics({ includeStats: true });
-          
-          if (topicsResult?.success && Array.isArray(topicsResult.data)) {
-            // Extract lessons from topics if available
-            const allLessons = [];
-            for (const topic of topicsResult.data) {
-              try {
-                const topicLessons = await getLessonsByTopic(topic._id);
-                if (topicLessons?.success && Array.isArray(topicLessons.data)) {
-                  allLessons.push(...topicLessons.data);
-                }
-              } catch (topicError) {
-                console.warn('⚠️ Failed to get lessons for topic:', topic._id);
-              }
-            }
-            
-            if (allLessons.length > 0) {
-              this.lessons = allLessons;
-            }
-          }
-        } catch (fallbackError) {
-          console.error('❌ Catalogue: Fallback lessons loading failed:', fallbackError);
-        }
-      }
-    },
-
-    async loadUserProgress() {
-      if (!this.userId) {
-        console.warn('⚠️ Catalogue: No userId available for loading progress');
-        this.userProgress = {};
-        return;
-      }
-
-      try {
-        
-        // ✅ FIXED: Use the same API method as MainPage
-        const progressResult = await getUserProgress(this.userId);
-        
-        if (progressResult?.success && Array.isArray(progressResult.data)) {
-          // Calculate topic progress from lesson progress data
-          await this.calculateTopicProgressFromLessons(progressResult.data);
-        } else if (progressResult?.success && typeof progressResult.data === 'object') {
-          // Direct topic progress format
-          this.userProgress = progressResult.data || {};
-        } else {
-          console.warn('⚠️ Catalogue: Invalid progress response:', progressResult);
-          this.userProgress = {};
-        }
-      } catch (error) {
-        console.error('❌ Catalogue: Error loading user progress:', error);
-        this.userProgress = {};
-      }
-    },
-
-    async loadStudyPlan() {
-      if (!this.userId) {
-        console.warn('⚠️ Catalogue: No userId available for loading study plan');
-        this.studyPlanTopics = [];
-        return;
-      }
-
-      try {
-        
-        // ✅ FIXED: Use the same API method as MainPage
-        const studyListResult = await getUserStudyList(this.userId);
-        
-        if (studyListResult?.success && Array.isArray(studyListResult.data)) {
-          this.studyPlanTopics = studyListResult.data
-            .map(item => {
-              if (!item) return '';
-              const topicId = item.topicId || item._id || item.id;
-              return topicId ? String(topicId) : '';
-            })
-            .filter(id => id);
-          
-        } else {
-          console.warn('⚠️ Catalogue: Invalid study list response:', studyListResult);
-          this.studyPlanTopics = [];
-        }
-      } catch (error) {
-        console.error('❌ Catalogue: Error loading study plan:', error);
-        this.studyPlanTopics = [];
-      }
-    },
-
-    // ✅ ENHANCED: Calculate topic progress from lessons (same as MainPage logic)
-    async calculateTopicProgressFromLessons(progressData) {
-      if (!Array.isArray(progressData)) {
-        console.warn('⚠️ Catalogue: Progress data is not an array for calculation');
-        this.userProgress = {};
-        return;
-      }
-
-      const topicProgressMap = {};
-      const topicLessonsCount = {};
-
-      // First, count lessons per topic
-      if (Array.isArray(this.lessons)) {
-        this.lessons.forEach(lesson => {
-          if (!lesson || !lesson.topicId) return;
-
-          const topicId = this.extractTopicId(lesson.topicId);
-          if (!topicId) return;
-
-          if (!topicLessonsCount[topicId]) {
-            topicLessonsCount[topicId] = { total: 0, completed: 0 };
-          }
-          topicLessonsCount[topicId].total++;
-        });
-      }
-
-      // Then, count completed lessons per topic
-      progressData.forEach(progress => {
-        if (!progress || !progress.completed || !progress.lessonId) return;
-
-        const lessonId = progress.lessonId._id || progress.lessonId;
-        if (!lessonId) return;
-
-        const lesson = this.lessons.find(l =>
-          l && (String(l._id) === String(lessonId))
-        );
-
-        if (lesson && lesson.topicId) {
-          const topicId = this.extractTopicId(lesson.topicId);
-          if (topicId && topicLessonsCount[topicId]) {
-            topicLessonsCount[topicId].completed++;
-          }
-        }
-      });
-
-      // Calculate progress percentages
-      Object.keys(topicLessonsCount).forEach(topicId => {
-        const topic = topicLessonsCount[topicId];
-        if (topic.total > 0) {
-          topicProgressMap[topicId] = Math.round((topic.completed / topic.total) * 100);
-        } else {
-          topicProgressMap[topicId] = 0;
-        }
-      });
-
-      this.userProgress = topicProgressMap;
-    },
-
-    // ===== DATA PROCESSING =====
+    // Data Processing
     processSubjects() {
-
-      if (!Array.isArray(this.lessons) || this.lessons.length === 0) {
-        console.warn('⚠️ Catalogue: No lessons available for processing');
-        this.subjects = [];
-        return;
-      }
-
+      if (!Array.isArray(this.lessons)) return;
       const subjectsMap = new Map();
-
       this.lessons.forEach(lesson => {
         if (!lesson || !lesson.subject) return;
-
         const subjectName = String(lesson.subject);
         if (!subjectsMap.has(subjectName)) {
           subjectsMap.set(subjectName, {
             name: subjectName,
-            icon: this.getSubjectIcon(subjectName),
-            levels: new Set(),
             topicCount: 0,
-            lessonCount: 0,
-            hasFreeLessons: false,
-            hasPremiumLessons: false,
-            topics: new Set()
+            levelCount: 0,
+            hasPremium: false,
+            _topics: new Set(),
+            _levels: new Set()
           });
         }
-
         const subject = subjectsMap.get(subjectName);
-
-        // Add level
-        if (lesson.level !== null && lesson.level !== undefined) {
-          subject.levels.add(String(lesson.level));
-        }
-
-        // Add topic
-        if (lesson.topicId || lesson.topic) {
-          const topicKey = this.extractTopicId(lesson.topicId) || this.getTopicName(lesson);
-          if (topicKey) {
-            subject.topics.add(String(topicKey));
-          }
-        }
-
-        subject.lessonCount++;
-
-        // Check lesson types
-        const lessonType = lesson.type || 'free';
-        if (lessonType === 'free') subject.hasFreeLessons = true;
-        if (lessonType === 'premium' || lessonType === 'start' || lessonType === 'pro') {
-          subject.hasPremiumLessons = true;
-        }
+        if (lesson.topicId) subject._topics.add(this.extractTopicId(lesson.topicId));
+        if (lesson.level) subject._levels.add(String(lesson.level));
+        if (lesson.type === 'premium' || lesson.type === 'pro') subject.hasPremium = true;
       });
-
-      this.subjects = Array.from(subjectsMap.values()).map(subject => ({
-        ...subject,
-        levels: Array.from(subject.levels).sort((a, b) => {
-          const aNum = parseInt(a);
-          const bNum = parseInt(b);
-          if (!isNaN(aNum) && !isNaN(bNum)) {
-            return aNum - bNum;
-          }
-          return String(a).localeCompare(String(b));
-        }),
-        topicCount: subject.topics.size
+      this.subjects = Array.from(subjectsMap.values()).map(s => ({
+        ...s,
+        topicCount: s._topics.size,
+        levelCount: s._levels.size,
       }));
-
     },
-
+    
     processLevels() {
-
-      if (!Array.isArray(this.lessons) || !this.selectedSubject) {
-        this.levels = [];
-        return;
-      }
-
+      if (!this.selectedSubject || !Array.isArray(this.lessons)) return;
       const levelsMap = new Map();
-
-      const subjectLessons = this.lessons.filter(lesson =>
-        lesson && lesson.subject === this.selectedSubject
-      );
-
-
-      subjectLessons.forEach(lesson => {
-        if (!lesson || (lesson.level === null || lesson.level === undefined)) return;
-
-        const levelName = String(lesson.level);
+      this.lessons.filter(l => l && String(l.subject) === this.selectedSubject).forEach(lesson => {
+        const levelName = String(lesson.level || '1');
         if (!levelsMap.has(levelName)) {
-          levelsMap.set(levelName, {
-            name: levelName,
-            topicCount: 0,
-            lessonCount: 0,
-            totalTime: 0,
-            hasFreeLessons: false,
-            hasPremiumLessons: false,
-            topics: new Set(),
-            progress: 0
-          });
+          levelsMap.set(levelName, { name: levelName, _topics: new Set() });
         }
-
-        const level = levelsMap.get(levelName);
-
-        // Add topic
-        if (lesson.topicId || lesson.topic) {
-          const topicKey = this.extractTopicId(lesson.topicId) || this.getTopicName(lesson);
-          if (topicKey) {
-            level.topics.add(String(topicKey));
-          }
-        }
-
-        level.lessonCount++;
-        level.totalTime += this.estimateLessonTime(lesson);
-
-        // Check lesson types
-        const lessonType = lesson.type || 'free';
-        if (lessonType === 'free') level.hasFreeLessons = true;
-        if (lessonType === 'premium' || lessonType === 'start' || lessonType === 'pro') {
-          level.hasPremiumLessons = true;
-        }
+        if (lesson.topicId) levelsMap.get(levelName)._topics.add(this.extractTopicId(lesson.topicId));
       });
-
       this.levels = Array.from(levelsMap.values()).map(level => ({
         ...level,
-        topicCount: level.topics.size,
+        topicCount: level._topics.size,
         progress: this.calculateLevelProgress(level.name)
-      })).sort((a, b) => {
-        const aNum = parseInt(a.name);
-        const bNum = parseInt(b.name);
-        if (!isNaN(aNum) && !isNaN(bNum)) {
-          return aNum - bNum;
-        }
-        return String(a.name).localeCompare(String(b.name));
-      });
-
+      })).sort((a,b) => a.name - b.name);
     },
 
     processTopics() {
-
-      if (!Array.isArray(this.lessons) || !this.selectedSubject || !this.selectedLevel) {
-        this.topics = [];
-        return;
-      }
-
+      if (!this.selectedSubject || !this.selectedLevel || !Array.isArray(this.lessons)) return;
       const topicsMap = new Map();
-
-      const levelLessons = this.lessons.filter(lesson =>
-        lesson &&
-        lesson.subject === this.selectedSubject &&
-        String(lesson.level) === String(this.selectedLevel)
-      );
-
-
-      levelLessons.forEach(lesson => {
-        if (!lesson) return;
-
+      const lessonsForLevel = this.lessons.filter(l => l && String(l.subject) === this.selectedSubject && String(l.level) === this.selectedLevel);
+      lessonsForLevel.forEach(lesson => {
+        if (!lesson || !lesson.topicId) return;
         const topicId = this.extractTopicId(lesson.topicId);
-        const name = this.getTopicName(lesson);
-        
-        if (!topicId || !name) return;
-
+        if (!topicId) return;
         if (!topicsMap.has(topicId)) {
           topicsMap.set(topicId, {
-            topicId,
-            name,
-            subject: String(lesson.subject || ''),
-            level: String(lesson.level || ''),
-            type: lesson.type || 'free',
-            lessonCount: 1,
-            totalTime: this.estimateLessonTime(lesson),
-            lessons: [lesson]
+            topicId: topicId,
+            name: this.getTopicName(lesson),
+            level: String(lesson.level),
+            subject: String(lesson.subject),
+            lessonCount: 0, totalTime: 0, type: 'free', lessons: []
           });
-        } else {
-          const entry = topicsMap.get(topicId);
-          entry.lessonCount += 1;
-          entry.totalTime += this.estimateLessonTime(lesson);
-          entry.lessons.push(lesson);
-          
-          // Update type to premium if any lesson is premium
-          if (lesson.type === 'premium' || lesson.type === 'start' || lesson.type === 'pro') {
-            entry.type = 'premium';
-          }
+        }
+        const entry = topicsMap.get(topicId);
+        entry.lessonCount++;
+        entry.totalTime += this.estimateLessonTime(lesson);
+        if (lesson.type === 'premium' || lesson.type === 'start' || lesson.type === 'pro') {
+          entry.type = 'premium';
         }
       });
-
       this.topics = Array.from(topicsMap.values()).map(topic => ({
         ...topic,
         progress: Number(this.userProgress[topic.topicId]) || 0,
-        inStudyPlan: Array.isArray(this.studyPlanTopics) && 
-                     this.studyPlanTopics.includes(topic.topicId)
+        inStudyPlan: this.studyPlanTopics.includes(topic.topicId)
       }));
-
     },
 
     calculateLevelProgress(levelName) {
-      if (!this.selectedSubject || !levelName || !Array.isArray(this.lessons)) {
-        return 0;
-      }
-
-      const levelTopics = this.lessons.filter(l =>
-        l && l.subject === this.selectedSubject && String(l.level) === String(levelName)
-      );
-
+      if (!this.selectedSubject || !levelName || !Array.isArray(this.lessons)) return 0;
+      const levelTopics = this.lessons.filter(l => l && l.subject === this.selectedSubject && String(l.level) === String(levelName));
       if (levelTopics.length === 0) return 0;
-
       let totalProgress = 0;
-      let topicCount = 0;
       const seenTopics = new Set();
-
       levelTopics.forEach(lesson => {
-        if (lesson && lesson.topicId && !seenTopics.has(lesson.topicId)) {
-          seenTopics.add(lesson.topicId);
-          const progress = Number(this.userProgress[lesson.topicId]) || 0;
-          totalProgress += progress;
-          topicCount++;
+        const topicId = this.extractTopicId(lesson.topicId);
+        if (topicId && !seenTopics.has(topicId)) {
+          seenTopics.add(topicId);
+          totalProgress += Number(this.userProgress[topicId]) || 0;
         }
       });
-
-      return topicCount > 0 ? Math.round(totalProgress / topicCount) : 0;
+      return seenTopics.size > 0 ? Math.round(totalProgress / seenTopics.size) : 0;
     },
 
-    // ===== NAVIGATION METHODS =====
+    // UI Navigation & Actions
     selectSubject(subjectName) {
       this.selectedSubject = String(subjectName);
       this.currentView = 'levels';
       this.processLevels();
-
       this.searchQuery = '';
-      this.filterSubject = '';
       this.filterLevel = '';
     },
 
@@ -1022,7 +453,6 @@ export default {
       this.selectedLevel = String(levelName);
       this.currentView = 'topics';
       this.processTopics();
-
       this.searchQuery = '';
     },
 
@@ -1034,15 +464,11 @@ export default {
       } else if (this.currentView === 'levels') {
         this.currentView = 'subjects';
         this.selectedSubject = null;
-        this.selectedLevel = null;
         this.levels = [];
-        this.topics = [];
       }
-
       this.searchQuery = '';
     },
 
-    // ===== FILTER METHODS =====
     clearFilters() {
       this.searchQuery = '';
       this.filterSubject = '';
@@ -1053,161 +479,74 @@ export default {
       this.showInProgress = false;
       this.showCompleted = false;
     },
-
-    // ===== UTILITY METHODS =====
+    
+    // UI Helpers
     getSubjectIcon(subject) {
       const subjectStr = String(subject || '');
       const icons = {
-        'Mathematics': '🔢', 'Math': '🔢', 'Математика': '🔢',
-        'English': '🇬🇧', 'Английский': '🇬🇧',
-        'Science': '🔬', 'Наука': '🔬',
-        'History': '📚', 'История': '📚',
-        'Geography': '🌍', 'География': '🌍',
-        'Programming': '💻', 'Программирование': '💻',
-        'Art': '🎨', 'Искусство': '🎨',
-        'Music': '🎵', 'Музыка': '🎵',
-        'Physics': '⚛️', 'Физика': '⚛️',
-        'Chemistry': '🧪', 'Химия': '🧪',
-        'Biology': '🧬', 'Биология': '🧬',
-        'Literature': '📖', 'Литература': '📖',
-        'Economics': '💰', 'Экономика': '💰',
-        'Philosophy': '🤔', 'Философия': '🤔'
+        'Mathematics': '🔢', 'Math': '🔢', 'Математика': '🔢', 'English': '🇬🇧', 'Английский': '🇬🇧',
+        'Science': '🔬', 'Наука': '🔬', 'History': '📚', 'История': '📚', 'Geography': '🌍', 'География': '🌍',
+        'Programming': '💻', 'Программирование': '💻', 'Art': '🎨', 'Искусство': '🎨', 'Music': '🎵', 'Музыка': '🎵',
+        'Physics': '⚛️', 'Физика': '⚛️', 'Chemistry': '🧪', 'Химия': '🧪', 'Biology': '🧬', 'Биология': '🧬',
+        'Literature': '📖', 'Литература': '📖', 'Economics': '💰', 'Экономика': '💰', 'Philosophy': '🤔', 'Философия': '🤔'
       };
       return icons[subjectStr] || '📖';
     },
 
-    // ✅ HELPER: Extract topic ID safely (same as MainPage)
     extractTopicId(topicId) {
       if (!topicId) return null;
-      
-      if (typeof topicId === 'string') {
-        return topicId;
-      }
-      
+      if (typeof topicId === 'string') return topicId;
       if (typeof topicId === 'object' && topicId !== null) {
-        return topicId._id || topicId.id || String(topicId);
+        return topicId._id || topicId.id;
       }
-      
       return String(topicId);
     },
 
-    // ✅ ENHANCED: Get topic name with fallbacks (same as MainPage)
     getTopicName(lesson) {
-      if (!lesson) return 'Без темы';
-      
+      if (!lesson) return 'Unnamed Topic';
       try {
-        // Try direct topic string
-        if (typeof lesson.topic === 'string' && lesson.topic.trim()) {
-          return lesson.topic.trim();
-        }
-        
-        // Try topic object with localization
+        if (typeof lesson.topic === 'string' && lesson.topic.trim()) return lesson.topic.trim();
         if (lesson.topic && typeof lesson.topic === 'object' && lesson.topic !== null) {
-          if (lesson.topic[this.lang] && typeof lesson.topic[this.lang] === 'string') {
-            return String(lesson.topic[this.lang]).trim();
-          }
-          if (lesson.topic.en && typeof lesson.topic.en === 'string') {
-            return String(lesson.topic.en).trim();
-          }
-          // Try any string value in topic object
-          const anyLangTopic = Object.values(lesson.topic).find(val => 
-            typeof val === 'string' && val.trim()
-          );
+          if (lesson.topic[this.lang] && typeof lesson.topic[this.lang] === 'string') return String(lesson.topic[this.lang]).trim();
+          if (lesson.topic.en && typeof lesson.topic.en === 'string') return String(lesson.topic.en).trim();
+          const anyLangTopic = Object.values(lesson.topic).find(val => typeof val === 'string' && val.trim());
           if (anyLangTopic) return anyLangTopic.trim();
         }
-        
-        // Try translations
-        if (lesson.translations && 
-            lesson.translations[this.lang] && 
-            lesson.translations[this.lang].topic &&
-            typeof lesson.translations[this.lang].topic === 'string') {
-          return String(lesson.translations[this.lang].topic).trim();
-        }
-        
-        // Fallback to lesson name
-        if (lesson.lessonName && typeof lesson.lessonName === 'string' && lesson.lessonName.trim()) {
-          return `Тема: ${lesson.lessonName.trim()}`;
-        }
-        if (lesson.title && typeof lesson.title === 'string' && lesson.title.trim()) {
-          return `Тема: ${lesson.title.trim()}`;
-        }
-        
-        return 'Без темы';
+        if (lesson.translations && lesson.translations[this.lang] && lesson.translations[this.lang].topic) return String(lesson.translations[this.lang].topic).trim();
+        if (lesson.lessonName) return `Topic: ${String(lesson.lessonName).trim()}`;
+        if (lesson.title) return `Topic: ${String(lesson.title).trim()}`;
+        return 'Unnamed Topic';
       } catch (error) {
-        console.error('❌ Catalogue: Error getting topic name:', error);
-        return 'Ошибка названия темы';
+        console.error('❌ Error getting topic name:', error);
+        return 'Topic Name Error';
       }
     },
 
     getLevelClass(level) {
-      const levelStr = String(level || '').toLowerCase();
-
-      const levelNum = parseInt(levelStr);
-      if (!isNaN(levelNum)) {
-        if (levelNum >= 1 && levelNum <= 3) return 'level-beginner';
-        if (levelNum >= 4 && levelNum <= 6) return 'level-intermediate';
-        if (levelNum >= 7 && levelNum <= 10) return 'level-advanced';
-      }
-
-      switch (levelStr) {
-        case 'beginner':
-        case 'начинающий':
-        case 'базовый':
-          return 'level-beginner';
-        case 'intermediate':
-        case 'средний':
-          return 'level-intermediate';
-        case 'advanced':
-        case 'продвинутый':
-          return 'level-advanced';
-        default:
-          return 'level-beginner';
-      }
+      const levelNum = parseInt(level);
+      if (isNaN(levelNum)) return 'level-beginner';
+      if (levelNum <= 3) return 'level-beginner';
+      if (levelNum <= 6) return 'level-intermediate';
+      return 'level-advanced';
     },
 
     getLevelIcon(level) {
       const levelNum = parseInt(level);
-      if (!isNaN(levelNum)) {
-        const icons = ['🌱', '🌿', '🍃', '🌳', '🌲', '🏔️', '⭐', '💎', '👑', '🏆'];
-        return icons[Math.min(levelNum - 1, icons.length - 1)] || '📚';
-      }
-
-      const icons = {
-        'beginner': '🌱', 'начинающий': '🌱', 'базовый': '🌱',
-        'intermediate': '🌿', 'средний': '🌿',
-        'advanced': '🌳', 'продвинутый': '🌳'
-      };
-      return icons[String(level).toLowerCase()] || '📚';
+      if (isNaN(levelNum)) return '📚';
+      const icons = ['🌱', '🌿', '🍃', '🌳', '🌲', '🏔️', '⭐', '💎', '👑', '🏆'];
+      return icons[Math.min(levelNum - 1, icons.length - 1)] || '📚';
     },
 
     getLevelDescription(level) {
       const levelNum = parseInt(level);
-      if (!isNaN(levelNum)) {
-        const descriptions = {
-          1: 'Базовый уровень - начальные понятия и основы',
-          2: 'Элементарный уровень - простые упражнения',
-          3: 'Начальный уровень - базовые навыки',
-          4: 'Ниже среднего - развитие основных умений',
-          5: 'Средний уровень - практическое применение',
-          6: 'Выше среднего - углубленное изучение',
-          7: 'Продвинутый уровень - сложные концепции',
-          8: 'Высокий уровень - экспертные навыки',
-          9: 'Профессиональный уровень - мастерство',
-          10: 'Экспертный уровень - полное владение предметом'
-        };
-        return descriptions[levelNum] || `Изучение предмета на уровне ${levelNum}`;
-      }
-
+      if (isNaN(levelNum)) return 'Basic Level';
       const descriptions = {
-        'beginner': 'Начальный уровень для новичков',
-        'начинающий': 'Начальный уровень для новичков',
-        'базовый': 'Базовые знания и навыки',
-        'intermediate': 'Средний уровень сложности',
-        'средний': 'Средний уровень сложности',
-        'advanced': 'Продвинутый уровень',
-        'продвинутый': 'Продвинутый уровень'
+        1: 'Beginner - Foundational concepts', 2: 'Elementary - Simple exercises', 3: 'Novice - Basic skills',
+        4: 'Intermediate - Developing abilities', 5: 'Skilled - Practical application', 6: 'Proficient - In-depth study',
+        7: 'Advanced - Complex concepts', 8: 'Expert - High-level skills', 9: 'Master - Professional mastery',
+        10: 'Virtuoso - Complete command'
       };
-      return descriptions[String(level).toLowerCase()] || 'Изучение предмета на данном уровне';
+      return descriptions[levelNum] || `Level ${levelNum}`;
     },
 
     getProgressClass(progress) {
@@ -1219,20 +558,6 @@ export default {
       return 'progress-none';
     },
 
-    getStatusClass(progress) {
-      const prog = Number(progress) || 0;
-      if (prog === 100) return 'completed';
-      if (prog > 0) return 'in-progress';
-      return 'not-started';
-    },
-
-    getStatusText(progress) {
-      const prog = Number(progress) || 0;
-      if (prog === 100) return '✅ Завершено';
-      if (prog > 0) return '🔄 В процессе';
-      return '⭕ Не начато';
-    },
-
     getButtonClass(progress) {
       const prog = Number(progress) || 0;
       if (prog === 100) return 'btn-completed';
@@ -1242,59 +567,32 @@ export default {
 
     getButtonText(progress) {
       const prog = Number(progress) || 0;
-      if (prog === 100) return '✅ Завершен';
-      if (prog > 0) return '▶️ Продолжить';
-      return '🚀 Начать';
+      if (prog === 100) return '✅ Completed';
+      if (prog > 0) return '▶️ Continue';
+      return '🚀 Start';
     },
 
-    // ✅ HELPER: Estimate lesson time
     estimateLessonTime(lesson) {
       if (lesson.estimatedTime) return parseInt(lesson.estimatedTime);
       if (lesson.duration) return parseInt(lesson.duration);
-      if (lesson.timeToComplete) return parseInt(lesson.timeToComplete);
-      
-      // Default estimate based on lesson content
-      if (lesson.steps && Array.isArray(lesson.steps)) {
-        return Math.max(5, lesson.steps.length * 2); // 2 min per step minimum
-      }
-      
-      return 10; // Default 10 minutes
+      if (lesson.steps && Array.isArray(lesson.steps)) return Math.max(5, lesson.steps.length * 2);
+      return 10;
     },
 
-    // ✅ HELPER: Show error message to user
     showErrorMessage(message) {
-      console.error('💬 Catalogue: Showing error:', message);
-      
-      // Try multiple notification methods
-      if (this.$toast) {
-        this.$toast.error(message, { duration: 5000 });
-      } else if (this.$message) {
-        this.$message.error(message);
-      } else {
-        // Fallback to alert
-        alert(message);
-      }
+      console.error('💬 Error:', message);
+      alert(message); // Replace with a proper toast/notification system
     },
-
-    // ===== ACTION METHODS =====
-    // ✅ ENHANCED: Better error handling for topic access
+    
+    // User Actions
     handleTopicAccess(topicId, type) {
-      if (!topicId) {
-        console.error('❌ Catalogue: No topic ID provided');
-        return;
-      }
-
-
-      // Check if premium access is required and user doesn't have it
+      if (!topicId) return;
       if ((type === 'premium' || type === 'pro') && !this.isPremiumUser) {
         this.requestedTopicId = topicId;
         this.showPaywall = true;
       } else {
-        this.$router.push({ 
-          name: 'TopicOverview', 
-          params: { id: topicId },
-          query: { source: 'catalogue-page' }
-        });
+        // this.$router.push({ name: 'TopicOverview', params: { id: topicId } });
+        alert(`Navigating to topic ID: ${topicId}`);
       }
     },
 
@@ -1305,285 +603,509 @@ export default {
     },
 
     async confirmAddToStudyPlan() {
-      if (!this.selectedTopic) {
+      if (!this.selectedTopic || !this.userId) {
+        this.showErrorMessage('You must be logged in to add topics.');
         this.showAddModal = false;
         return;
       }
-
-      if (!this.userId) {
-        alert('Пожалуйста, войдите в аккаунт, чтобы добавить темы в учебный план.');
-        this.showAddModal = false;
-        return;
-      }
-
       try {
-        
-        let topicId = this.selectedTopic.topicId;
-        if (typeof topicId === 'object' && topicId !== null) {
-          topicId = topicId._id || topicId.id || String(topicId);
-        } else if (topicId) {
-          topicId = String(topicId);
-        } else {
-          console.error('❌ No valid topicId found');
-          throw new Error('No valid topicId provided');
-        }
-
-        // ✅ FIXED: Use API function instead of direct axios
-        const studyListData = {
-          topicId: topicId,
-          topic: String(this.selectedTopic.name || ''),
-          topicName: String(this.selectedTopic.name || ''),
-          name: String(this.selectedTopic.name || ''),
-          subject: String(this.selectedTopic.subject || ''),
-          level: String(this.selectedTopic.level || ''),
-          lessonCount: Number(this.selectedTopic.lessonCount) || 0,
-          totalTime: Number(this.selectedTopic.totalTime) || 0,
-          type: this.selectedTopic.type || 'free',
-          description: `Курс по теме "${this.selectedTopic.name}" содержит ${this.selectedTopic.lessonCount} уроков`,
-          isActive: true,
-          addedAt: new Date().toISOString(),
-          lessons: this.selectedTopic.lessons || [],
-          source: 'catalogue-page'
-        };
-
+        const topicId = this.extractTopicId(this.selectedTopic.topicId);
+        const studyListData = { topicId, topicName: this.selectedTopic.name, subject: this.selectedTopic.subject, level: this.selectedTopic.level };
         const result = await addToStudyList(this.userId, studyListData);
 
         if (result?.success !== false) {
-          // Update local state
           this.selectedTopic.inStudyPlan = true;
-          
-          if (Array.isArray(this.studyPlanTopics) && !this.studyPlanTopics.includes(topicId)) {
-            this.studyPlanTopics.push(topicId);
-          }
-
-          if (Array.isArray(this.topics)) {
-            const topicIndex = this.topics.findIndex(t => t && t.topicId === topicId);
-            if (topicIndex !== -1) {
-              this.topics[topicIndex].inStudyPlan = true;
-            }
-          }
-
+          this.studyPlanTopics.push(topicId);
+          const topicIndex = this.topics.findIndex(t => t && t.topicId === topicId);
+          if (topicIndex !== -1) this.topics[topicIndex].inStudyPlan = true;
           this.showAddModal = false;
           this.showSuccessModal = true;
-          
         } else {
-          throw new Error(result?.error || 'Failed to add topic to study list');
+          throw new Error(result?.error || 'Failed to add to study plan.');
         }
-
       } catch (error) {
-        console.error('❌ Catalogue: Error adding to study plan:', error);
-
-        let errorMessage = '❌ Не удалось добавить тему';
-        
-        if (error.message?.includes('уже добавлен') || error.message?.includes('already exists')) {
-          errorMessage = '❌ Тема уже добавлена в учебный план.';
-          // Update local state to reflect this
-          this.selectedTopic.inStudyPlan = true;
-          if (Array.isArray(this.topics)) {
-            const topicIndex = this.topics.findIndex(t => t && t.topicId === this.selectedTopic.topicId);
-            if (topicIndex !== -1) {
-              this.topics[topicIndex].inStudyPlan = true;
-            }
-          }
-        } else if (error.message?.includes('authentication') || error.message?.includes('auth')) {
-          errorMessage = '❌ Необходимо войти в аккаунт заново.';
-        } else if (error.message?.includes('network') || error.message?.includes('Network')) {
-          errorMessage = '❌ Проблема с сетью. Проверьте подключение.';
-        } else if (error.message?.includes('server') || (error.response && error.response.status >= 500)) {
-          errorMessage = '❌ Ошибка сервера. Попробуйте позже.';
-        }
-
-        alert(errorMessage);
+        console.error('❌ Error adding to study plan:', error);
+        this.showErrorMessage('❌ Could not add topic to your study plan.');
         this.showAddModal = false;
       }
     },
-
-    // ✅ FIXED: Handle plan updates the same way UserSection does
-    handlePlanUpdate(newPlan) {
-      
-      // ✅ FIXED: Update store the same way UserSection does
-      const updatedUser = {
-        ...this.$store.state.user,
-        subscriptionPlan: newPlan
-      };
-      
-      // Use the same mutation UserSection uses
-      this.$store.commit('setUser', updatedUser);
-      
-      // ✅ FIXED: Also update localStorage for consistency
-      localStorage.setItem('userStatus', newPlan);
-      localStorage.setItem('plan', newPlan);
-      
-      // Trigger reactivity update
-      this.triggerReactivityUpdate();
-    },
-
-    // ✅ FIXED: Handle user status changes consistently
-    handleUserStatusChange(newStatus, oldStatus) {
-      if (!newStatus || newStatus === oldStatus) return;
-
-
-      // Update localStorage immediately
+    
+    // Event Handling & Reactivity
+    handleUserStatusChange(newStatus) {
+      if (this.userStatus === newStatus) return;
       localStorage.setItem('userStatus', newStatus);
-      localStorage.setItem('plan', newStatus);
-
-      // Trigger immediate reactivity update
       this.triggerReactivityUpdate();
-
-      // Show celebration for upgrades
-      if (newStatus && newStatus !== 'free' && oldStatus === 'free') {
-        const planLabel = newStatus === 'pro' ? 'Pro' : 'Start';
-        if (this.$toast) {
-          this.$toast.success(`🎉 ${planLabel} подписка активирована!`, { duration: 5000 });
-        }
-      }
-
     },
 
-    // ✅ FIXED: Setup comprehensive event listeners
     setupEventListeners() {
-
-      // ===== DOM EVENT LISTENERS =====
-      if (typeof window !== 'undefined') {
-        // Listen for user subscription changes
-        this.handleSubscriptionChange = (event) => {
-          const { plan, oldPlan } = event.detail;
-          this.handleUserStatusChange(plan, oldPlan);
-        };
-        
-        window.addEventListener('userSubscriptionChanged', this.handleSubscriptionChange);
-        this.eventCleanupFunctions.push(() => {
-          window.removeEventListener('userSubscriptionChanged', this.handleSubscriptionChange);
-        });
-
-        // Listen for localStorage changes (cross-tab sync)
-        this.handleStorageChange = (event) => {
-          if (event.key === 'userStatus' && event.newValue !== event.oldValue) {
-            this.handleUserStatusChange(event.newValue, event.oldValue);
-          }
-        };
-        
-        window.addEventListener('storage', this.handleStorageChange);
-        this.eventCleanupFunctions.push(() => {
-          window.removeEventListener('storage', this.handleStorageChange);
-        });
-      }
-
-      // ===== EVENT BUS LISTENERS =====
-      if (typeof window !== 'undefined' && window.eventBus) {
-        // User status change events
-        this.handleUserStatusEvent = (data) => {
-          this.handleUserStatusChange(data.newStatus, data.oldStatus);
-        };
-
-        // Promocode applied events
-        this.handlePromocodeEvent = (data) => {
-          this.handleUserStatusChange(data.newStatus, data.oldStatus);
-        };
-
-        // Force update events
-        this.handleForceUpdateEvent = () => {
-          this.triggerReactivityUpdate();
-        };
-
-        // Register event bus listeners
-        const eventTypes = [
-          'userStatusChanged',
-          'promocodeApplied',
-          'forceUpdate',
-          'globalForceUpdate',
-          'subscriptionUpdated',
-          'paymentCompleted'
-        ];
-
-        eventTypes.forEach(eventType => {
-          const handler = eventType.includes('Status') || eventType.includes('promocode') || 
-                         eventType.includes('payment') || eventType.includes('subscription') 
-                         ? this.handleUserStatusEvent : this.handleForceUpdateEvent;
-          
-          window.eventBus.on(eventType, handler);
-          this.eventCleanupFunctions.push(() => {
-            window.eventBus.off(eventType, handler);
-          });
-        });
-
-      }
-
-      // ===== STORE MUTATION LISTENER =====
-      if (this.$store) {
-        this.storeUnsubscribe = this.$store.subscribe((mutation) => {
-          if (this.isUserRelatedMutation(mutation)) {
-            this.triggerReactivityUpdate();
-          }
-        });
-      }
-
+      if (typeof window === 'undefined') return;
+      this.handleStorageChange = (event) => {
+        if (event.key === 'userStatus') this.handleUserStatusChange(event.newValue);
+      };
+      window.addEventListener('storage', this.handleStorageChange);
+      this.eventCleanupFunctions.push(() => window.removeEventListener('storage', this.handleStorageChange));
     },
 
-    // ✅ FIXED: Trigger comprehensive reactivity update
     triggerReactivityUpdate() {
       this.componentKey++;
-      this.forceUpdateCounter++;
-      this.lastUpdateTime = Date.now();
-
-      // Force Vue reactivity with multiple strategies
       this.$forceUpdate();
-
-      // Additional delayed updates for maximum compatibility
-      this.$nextTick(() => {
-        this.$forceUpdate();
-      });
-
-     
     },
 
-    // ✅ FIXED: Check if mutation is user-related
-    isUserRelatedMutation(mutation) {
-      const userMutations = [
-        'setUser',
-        'SET_USER',
-        'updateUser',
-        'UPDATE_USER',
-        'user/SET_USER_STATUS',
-        'user/UPDATE_SUBSCRIPTION',
-        'user/FORCE_UPDATE'
-      ];
-      
-      return userMutations.some(type => mutation.type.includes(type)) ||
-             mutation.type.includes('user/') ||
-             mutation.type.toLowerCase().includes('status') ||
-             mutation.type.toLowerCase().includes('subscription');
-    },
-
-    // ✅ FIXED: Enhanced cleanup method
     cleanup() {
-
-      // Clean up all event listeners
       this.eventCleanupFunctions.forEach(cleanup => {
-        try {
-          cleanup();
-        } catch (error) {
-          console.warn('⚠️ Cleanup function failed:', error);
-        }
+        try { cleanup(); } catch (error) { console.warn('⚠️ Cleanup failed:', error); }
       });
       this.eventCleanupFunctions = [];
-
-      // Clean up store subscription
-      if (this.storeUnsubscribe) {
-        try {
-          this.storeUnsubscribe();
-        } catch (error) {
-          console.warn('⚠️ Store unsubscribe failed:', error);
-        }
-        this.storeUnsubscribe = null;
-      }
-
     }
   }
 };
 </script>
-<style>
-@import "@/assets/css/CataloguePage.css";
 
+<style scoped>
+.catalogue-page {
+  min-height: 100vh;
+  background: #fafbfc;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Header */
+.page-header {
+  background: #ffffff;
+  border-bottom: 1px solid #e9ecef;
+  padding: 1.5rem 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  margin-bottom: 1rem;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.back-btn {
+  background: #f8f9fa;
+  border: 1px solid #e1e5e9;
+  color: #495057;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.875rem;
+}
+
+.back-btn:hover {
+  background: #e9ecef;
+  transform: translateX(-2px);
+}
+
+.breadcrumb-path {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.breadcrumb-item {
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: #6c757d;
+  transition: all 0.2s;
+}
+
+.breadcrumb-item.active {
+  background: #a855f7;
+  color: white;
+}
+
+.breadcrumb-separator {
+  color: #adb5bd;
+}
+
+.subscription-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.75rem;
+  border: 1px solid;
+  text-transform: uppercase;
+}
+
+.badge-premium {
+  background: linear-gradient(135deg, #a855f7, #9333ea);
+  color: white;
+  border-color: #9333ea;
+}
+
+.badge-free {
+  background: #f8f9fa;
+  color: #495057;
+  border-color: #e1e5e9;
+}
+
+.page-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #212529;
+  margin: 0;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+/* Main Content */
+.main-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+/* Filter Bar */
+.filter-bar {
+  background: #ffffff;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.search-input,
+.filter-select {
+  padding: 0.625rem 1rem;
+  border: 1px solid #e1e5e9;
+  border-radius: 8px;
+  background: #ffffff;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  color: #495057;
+  flex: 1 1 200px;
+}
+
+.search-input:focus,
+.filter-select:focus {
+  outline: none;
+  border-color: #a855f7;
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
+}
+
+.checkbox-group {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #495057;
+  cursor: pointer;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.checkbox-label:hover {
+  background: #f8f9fa;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.clear-btn {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  color: #6c757d;
+  padding: 0.625rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-left: auto;
+}
+
+.clear-btn:hover {
+  background: #e9ecef;
+  color: #495057;
+}
+
+/* Loading & Empty States */
+.loading-state, .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  gap: 1rem;
+  text-align: center;
+  color: #6c757d;
+  background: #f8f9fa;
+  border-radius: 12px;
+  border: 1px solid #e9ecef;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f1f3f4;
+  border-top: 3px solid #a855f7;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.empty-icon {
+  font-size: 4rem;
+  opacity: 0.6;
+}
+.empty-state h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #495057;
+  margin: 0.5rem 0;
+}
+.empty-state p {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+/* Grids */
+.subjects-grid, .levels-grid, .topics-grid {
+  display: grid;
+  gap: 1.5rem;
+}
+.subjects-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.levels-grid { grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); }
+.topics-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+
+/* Subject Cards */
+.subject-card {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 16px;
+  padding: 2rem 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  text-align: center;
+}
+.subject-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(168, 85, 247, 0.15);
+  border-color: #a855f7;
+}
+.card-icon {
+  font-size: 3rem;
+  margin: 0 auto;
+  height: 80px;
+  width: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  border-radius: 12px;
+}
+.card-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #212529;
+  margin: 0;
+}
+.card-stats {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.stat-badge {
+  background: #f8f9fa;
+  color: #495057;
+  padding: 0.375rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: 1px solid #e9ecef;
+}
+
+/* Level Cards */
+.level-card {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 16px;
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.level-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  border-color: #a855f7;
+}
+.level-header { display: flex; align-items: center; gap: 1rem; }
+.level-icon {
+  width: 50px; height: 50px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem; flex-shrink: 0; border: 1px solid #e9ecef;
+}
+.level-icon.level-beginner { background: #d4edda; color: #155724; }
+.level-icon.level-intermediate { background: #fff3cd; color: #856404; }
+.level-icon.level-advanced { background: #f8d7da; color: #721c24; }
+.level-info { flex: 1; }
+.level-title { font-size: 1.125rem; font-weight: 600; color: #212529; margin: 0 0 0.25rem 0; }
+.level-description { font-size: 0.875rem; color: #6c757d; margin: 0; }
+.level-stats { display: flex; gap: 1rem; flex-wrap: wrap; }
+.stat-item { display: flex; align-items: center; gap: 0.375rem; font-size: 0.875rem; color: #6c757d; }
+.stat-icon { font-size: 1rem; }
+
+/* Topic Cards */
+.topic-card {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 16px;
+  padding: 1.5rem;
+  transition: all 0.3s;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.topic-card:hover { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); }
+.topic-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+.topic-title { font-size: 1.125rem; font-weight: 600; color: #212529; margin: 0; flex: 1; line-height: 1.4; }
+.add-btn {
+  width: 32px; height: 32px;
+  border-radius: 8px; border: 2px solid #a855f7;
+  background: white; color: #a855f7; font-size: 1.25rem;
+  cursor: pointer; transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.add-btn:hover:not(:disabled) { background: #a855f7; color: white; transform: scale(1.05); }
+.add-btn:disabled { background: #d4edda; border-color: #c3e6cb; color: #155724; cursor: not-allowed; }
+.topic-meta { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.access-badge {
+  padding: 0.25rem 0.625rem; border-radius: 6px; font-size: 0.75rem;
+  font-weight: 500; border: 1px solid; text-transform: capitalize;
+}
+.access-badge.free { background: #d4edda; color: #155724; border-color: #c3e6cb; }
+.access-badge.premium, .access-badge.pro { background: #fcf8e3; color: #8a6d3b; border-color: #faebcc; }
+.topic-stats { display: flex; gap: 1rem; font-size: 0.875rem; }
+
+/* Progress */
+.progress-container { margin-top: auto; padding-top: 1rem; }
+.progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+.progress-label { font-size: 0.875rem; font-weight: 500; color: #495057; }
+.progress-value { font-size: 0.875rem; font-weight: 600; color: #212529; }
+.progress-bar { height: 8px; background: #e9ecef; border-radius: 4px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 4px; transition: width 0.3s ease; }
+.progress-fill.progress-completed { background: linear-gradient(90deg, #28a745, #20c997); }
+.progress-fill.progress-high { background: linear-gradient(90deg, #a855f7, #9333ea); }
+.progress-fill.progress-medium { background: linear-gradient(90deg, #fd7e14, #f59e0b); }
+.progress-fill.progress-low { background: linear-gradient(90deg, #dc3545, #e74c3c); }
+.progress-fill.progress-none { background: #e9ecef; }
+
+/* Action Button */
+.action-btn {
+  width: 100%; padding: 0.75rem; border: none; border-radius: 8px;
+  font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.2s; margin-top: 0.5rem;
+}
+.btn-start { background: linear-gradient(135deg, #a855f7, #9333ea); color: white; }
+.btn-start:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3); }
+.btn-continue { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; }
+.btn-continue:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
+.btn-completed { background: #f8f9fa; color: #6c757d; cursor: default; }
+
+/* Modal */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 10000; backdrop-filter: blur(4px); padding: 1rem;
+}
+.modal-content {
+  background: white; border-radius: 16px; max-width: 500px; width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); animation: modalSlide 0.3s ease-out; position: relative;
+}
+@keyframes modalSlide { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.modal-close {
+  position: absolute; top: 1rem; right: 1rem; width: 32px; height: 32px;
+  border-radius: 8px; background: #f8f9fa; border: 1px solid #e9ecef;
+  color: #6c757d; font-size: 1.5rem; cursor: pointer; transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center; line-height: 1;
+}
+.modal-close:hover { background: #e9ecef; }
+.modal-header { padding: 1.5rem 1.5rem 1rem; border-bottom: 1px solid #e9ecef; }
+.modal-header h3 { margin: 0; font-size: 1.25rem; font-weight: 600; color: #212529; padding-right: 2rem; }
+.modal-body { padding: 1.5rem; }
+.topic-preview { text-align: center; padding: 1.5rem; background: #f8f9fa; border-radius: 12px; border: 1px solid #e9ecef; }
+.topic-preview h4 { margin: 0 0 0.5rem; font-size: 1.125rem; font-weight: 600; color: #212529; }
+.topic-preview p { margin: 0 0 1rem; color: #6c757d; font-size: 0.875rem; }
+.topic-preview .topic-stats { justify-content: center; }
+.modal-footer { padding: 1rem 1.5rem 1.5rem; display: flex; gap: 0.75rem; justify-content: flex-end; }
+.btn-primary, .btn-secondary {
+  padding: 0.75rem 1.5rem; border: none; border-radius: 8px;
+  font-weight: 600; font-size: 0.875rem; cursor: pointer; transition: all 0.2s;
+}
+.btn-primary { background: linear-gradient(135deg, #a855f7, #9333ea); color: white; }
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3); }
+.btn-secondary { background: #f8f9fa; color: #6c757d; border: 1px solid #e9ecef; }
+.btn-secondary:hover { background: #e9ecef; }
+
+/* Success Modal */
+.success-modal .success-content { padding: 2rem; text-align: center; }
+.success-icon { font-size: 4rem; margin-bottom: 1rem; }
+.success-content h3 { font-size: 1.5rem; font-weight: 600; margin: 0 0 0.75rem; color: #28a745; }
+.success-content p { color: #6c757d; margin: 0 0 1.5rem; font-size: 0.875rem; }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .subjects-grid, .levels-grid, .topics-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+}
+@media (max-width: 768px) {
+  .main-content, .page-header { padding: 1.5rem; }
+  .header-content { flex-direction: column; align-items: flex-start; gap: 1rem; }
+  .page-title { font-size: 1.75rem; padding: 0; }
+  .filter-row { flex-direction: column; align-items: stretch; }
+  .clear-btn { margin-left: 0; }
+  .subjects-grid, .levels-grid, .topics-grid { grid-template-columns: 1fr; }
+  .modal-footer { flex-direction: column; }
+  .btn-primary, .btn-secondary { width: 100%; }
+}
 </style>
-
