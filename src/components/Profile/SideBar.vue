@@ -471,7 +471,7 @@ export default {
 
 /* Header */
 .sidebar-header {
-  padding: 24px;
+  padding: 24px 24px 32px;
   border-bottom: 1px solid #e9d5ff;
 }
 
@@ -720,16 +720,12 @@ export default {
 }
 
 .unlock-card {
-  position: relative;
   background: linear-gradient(135deg, #a855f7 0%, #9333ea 50%, #7e22ce 100%);
   border-radius: 12px;
   padding: 14px 16px;
-  box-shadow: 0 8px 20px rgba(168, 85, 247, 0.35);
 }
 
 .unlock-content {
-  position: relative;
-  z-index: 1;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -1107,4 +1103,4 @@ export default {
     font-size: 11px;
   }
 }
-</style> 
+</style>
