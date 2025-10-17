@@ -63,6 +63,29 @@
           </button>
         </nav>
 
+        <!-- Premium Unlock Card -->
+        <div v-if="currentUserStatus === 'free'" class="premium-unlock-section">
+          <div class="unlock-card">
+            <div class="shine-overlay"></div>
+            <div class="unlock-content">
+              <div class="unlock-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M2 20h20M4 16V8l4 4 4-6 4 6 4-4v8M4 16h16"/>
+                </svg>
+              </div>
+              <div class="unlock-text">
+                <h5>Разблокировать Премиум</h5>
+                <p>Получите все функции и возможности</p>
+              </div>
+              <button @click="goToUpgrade" class="unlock-arrow">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Premium CTA with metallic purple -->
         <div v-if="currentUserStatus === 'free'" class="premium-cta">
           <div class="cta-card">
@@ -449,7 +472,7 @@ export default {
 
 /* Header */
 .sidebar-header {
-  padding: 24px;
+  padding: 24px 24px 16px;
   border-bottom: 1px solid #e9d5ff;
   position: relative;
   overflow: hidden;
@@ -476,41 +499,8 @@ export default {
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   margin-bottom: 16px;
-}
-
-.logo-section {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.logo-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #a855f7 0%, #9333ea 50%, #7e22ce 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 14px rgba(168, 85, 247, 0.3);
-}
-
-.sparkle-icon {
-  width: 16px;
-  height: 16px;
-  color: white;
-}
-
-.logo-text {
-  font-size: 20px;
-  font-weight: 700;
-  background: linear-gradient(135deg, #9333ea 0%, #7e22ce 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin: 0;
 }
 
 .close-btn {
@@ -722,6 +712,90 @@ export default {
   }
 }
 
+/* Premium Unlock Card */
+.premium-unlock-section {
+  padding: 0 16px 16px;
+}
+
+.unlock-card {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #a855f7 0%, #9333ea 50%, #7e22ce 100%);
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: 0 8px 20px rgba(168, 85, 247, 0.35);
+}
+
+.unlock-content {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.unlock-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.unlock-icon svg {
+  width: 18px;
+  height: 18px;
+  color: white;
+}
+
+.unlock-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.unlock-text h5 {
+  font-size: 14px;
+  font-weight: 700;
+  color: white;
+  margin: 0 0 2px 0;
+  line-height: 1.2;
+}
+
+.unlock-text p {
+  font-size: 12px;
+  color: #e9d5ff;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.unlock-arrow {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.unlock-arrow:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
+}
+
+.unlock-arrow svg {
+  width: 16px;
+  height: 16px;
+  color: white;
+}
+
 /* Premium CTA */
 .premium-cta {
   padding: 16px;
@@ -753,6 +827,11 @@ export default {
   font-size: 16px;
   font-weight: 700;
   margin: 0;
+}
+
+.sparkle-icon {
+  width: 16px;
+  height: 16px;
 }
 
 .cta-text {
@@ -842,188 +921,5 @@ export default {
   from {
     opacity: 0;
     transform: scale(0.9) translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-/* Logout Modal */
-.logout-modal {
-  padding: 24px;
-  border: 1px solid #e9d5ff;
-}
-
-.modal-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: #1f2937;
-  margin: 0 0 8px 0;
-}
-
-.modal-text {
-  color: #6b7280;
-  margin: 0 0 24px 0;
-  line-height: 1.5;
-}
-
-.modal-actions {
-  display: flex;
-  gap: 12px;
-}
-
-.btn-secondary,
-.btn-danger,
-.btn-premium {
-  flex: 1;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-secondary {
-  background: #f3f4f6;
-  color: #374151;
-  border: 1px solid #e5e7eb;
-}
-
-.btn-secondary:hover {
-  background: #e5e7eb;
-}
-
-.btn-danger {
-  background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
-  color: white;
-  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
-}
-
-.btn-danger:hover {
-  background: linear-gradient(90deg, #dc2626 0%, #b91c1c 100%);
-}
-
-.btn-premium {
-  background: linear-gradient(90deg, #a855f7 0%, #9333ea 100%);
-  color: white;
-  box-shadow: 0 4px 14px rgba(168, 85, 247, 0.3);
-}
-
-.btn-premium:hover {
-  background: linear-gradient(90deg, #9333ea 0%, #7e22ce 100%);
-}
-
-/* Premium Modal */
-.premium-modal {
-  overflow: hidden;
-  border: 1px solid #e9d5ff;
-}
-
-.premium-header {
-  position: relative;
-  overflow: hidden;
-  background: linear-gradient(135deg, #a855f7 0%, #9333ea 50%, #7e22ce 100%);
-  padding: 32px 24px;
-  text-align: center;
-  color: white;
-}
-
-.premium-header-content {
-  position: relative;
-}
-
-.premium-icon-wrapper {
-  display: inline-flex;
-  padding: 12px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  margin-bottom: 12px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
-}
-
-.crown-icon-large {
-  width: 32px;
-  height: 32px;
-}
-
-.premium-title {
-  font-size: 24px;
-  font-weight: 700;
-  margin: 0 0 4px 0;
-}
-
-.premium-subtitle {
-  color: #e9d5ff;
-  font-size: 13px;
-  margin: 0;
-}
-
-.premium-body {
-  padding: 24px;
-}
-
-.benefits-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 24px;
-}
-
-.benefit-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  background: #faf5ff;
-  border: 1px solid #e9d5ff;
-  border-radius: 12px;
-}
-
-.benefit-emoji {
-  font-size: 18px;
-}
-
-.benefit-text {
-  font-size: 14px;
-  font-weight: 500;
-  color: #374151;
-}
-
-/* Desktop */
-@media (min-width: 769px) {
-  .sidebar {
-    transform: translateX(0) !important;
-  }
-  
-  .sidebar-overlay {
-    display: none !important;
-  }
-}
-
-/* Mobile */
-@media (max-width: 768px) {
-  .sidebar {
-    width: 100%;
-    max-width: 320px;
-  }
-  
-  .close-btn {
-    display: block;
-  }
-  
-  .nav-link {
-    padding: 10px 12px;
-  }
-  
-  .link-title {
-    font-size: 13px;
-  }
-  
-  .link-description {
-    font-size: 11px;
-  }
-}
+  }}
 </style>
