@@ -472,10 +472,8 @@ export default {
 
 /* Header */
 .sidebar-header {
-  padding: 24px 24px 16px;
+  padding: 24px;
   border-bottom: 1px solid #e9d5ff;
-  position: relative;
-  overflow: hidden;
 }
 
 .shine-overlay {
@@ -921,5 +919,188 @@ export default {
   from {
     opacity: 0;
     transform: scale(0.9) translateY(-20px);
-  }}
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Logout Modal */
+.logout-modal {
+  padding: 24px;
+  border: 1px solid #e9d5ff;
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 8px 0;
+}
+
+.modal-text {
+  color: #6b7280;
+  margin: 0 0 24px 0;
+  line-height: 1.5;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-secondary,
+.btn-danger,
+.btn-premium {
+  flex: 1;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+}
+
+.btn-secondary:hover {
+  background: #e5e7eb;
+}
+
+.btn-danger {
+  background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
+}
+
+.btn-danger:hover {
+  background: linear-gradient(90deg, #dc2626 0%, #b91c1c 100%);
+}
+
+.btn-premium {
+  background: linear-gradient(90deg, #a855f7 0%, #9333ea 100%);
+  color: white;
+  box-shadow: 0 4px 14px rgba(168, 85, 247, 0.3);
+}
+
+.btn-premium:hover {
+  background: linear-gradient(90deg, #9333ea 0%, #7e22ce 100%);
+}
+
+/* Premium Modal */
+.premium-modal {
+  overflow: hidden;
+  border: 1px solid #e9d5ff;
+}
+
+.premium-header {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #a855f7 0%, #9333ea 50%, #7e22ce 100%);
+  padding: 32px 24px;
+  text-align: center;
+  color: white;
+}
+
+.premium-header-content {
+  position: relative;
+}
+
+.premium-icon-wrapper {
+  display: inline-flex;
+  padding: 12px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  margin-bottom: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+}
+
+.crown-icon-large {
+  width: 32px;
+  height: 32px;
+}
+
+.premium-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+}
+
+.premium-subtitle {
+  color: #e9d5ff;
+  font-size: 13px;
+  margin: 0;
+}
+
+.premium-body {
+  padding: 24px;
+}
+
+.benefits-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.benefit-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #faf5ff;
+  border: 1px solid #e9d5ff;
+  border-radius: 12px;
+}
+
+.benefit-emoji {
+  font-size: 18px;
+}
+
+.benefit-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+
+/* Desktop */
+@media (min-width: 769px) {
+  .sidebar {
+    transform: translateX(0) !important;
+  }
+  
+  .sidebar-overlay {
+    display: none !important;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 100%;
+    max-width: 320px;
+  }
+  
+  .close-btn {
+    display: block;
+  }
+  
+  .nav-link {
+    padding: 10px 12px;
+  }
+  
+  .link-title {
+    font-size: 13px;
+  }
+  
+  .link-description {
+    font-size: 11px;
+  }
+}
 </style>
