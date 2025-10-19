@@ -34,11 +34,11 @@
       <div class="filters-content">
         <div class="search-box">
           <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          <input 
-            v-model="searchQuery" 
-            type="text" 
-            class="search-input" 
-            placeholder="Поиск курсов..."
+          <input
+            v-model="searchQuery"
+            type="text"
+            class="search-input"
+            placeholder="Поиск..."
           />
           <button v-if="searchQuery" @click="searchQuery = ''" class="clear-search-btn">
             <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -217,18 +217,18 @@ export default {
       userId: null,
       lang: localStorage.getItem('lang') || 'ru',
 
-      // Raw data from API
+      // Raw API data
       lessons: [],
       userProgress: {},
       studyPlanTopics: [],
 
       // UI State
       isLoading: true,
-      currentView: 'subjects', // 'subjects', 'levels', or 'topics'
+      currentView: 'subjects', // Can be 'subjects', 'levels', or 'topics'
       selectedSubject: null,
       selectedLevel: null,
 
-      // Processed & Filtered Data
+      // Processed Data for Views
       subjects: [],
       levels: [],
       topics: [],
@@ -241,7 +241,7 @@ export default {
       showInProgress: false,
       showCompleted: false,
 
-      // Modals
+      // Modal State
       showAddModal: false,
       showSuccessModal: false,
       showPaywall: false,
@@ -270,8 +270,7 @@ export default {
       return this.subjects.filter(s => s.name.toLowerCase().includes(query));
     },
     filteredLevels() {
-      // Search doesn't apply to levels view
-      return this.levels;
+      return this.levels; // Search doesn't apply to levels view
     },
     filteredTopics() {
       return this.topics.filter(topic => {
@@ -287,7 +286,7 @@ export default {
     },
     hasActiveFilters() {
       return !!(this.searchQuery || this.showFree || this.showPremium || this.showNotStarted || this.showInProgress || this.showCompleted);
-    }
+    },
   },
 
   async mounted() {
@@ -310,24 +309,20 @@ export default {
         const [lessonsResult, progressResult, studyListResult] = await Promise.all([
           getAllLessons(),
           getUserProgress(this.userId),
-          getUserStudyList(this.userId)
+          getUserStudyList(this.userId),
         ]);
         
         this.lessons = lessonsResult?.data || [];
         
-        // Process progress into a map for quick lookups
         if (progressResult?.success) {
           this.userProgress = this.processProgressData(progressResult.data);
         }
         
-        // Process study list into a simple array of topic IDs
         if (studyListResult?.success) {
           this.studyPlanTopics = studyListResult.data.map(item => this.extractTopicId(item.topicId)).filter(Boolean);
         }
         
-        // Process all raw data into structured subjects/levels/topics
         this.processSubjects();
-
       } catch (error) {
         console.error('Error loading catalogue data:', error);
       } finally {
@@ -339,25 +334,21 @@ export default {
     processProgressData(progressData) {
       const progressMap = {};
       const topicLessonCounts = {};
-      
       progressData.forEach(p => {
         const topicId = this.extractTopicId(p.topicId);
         if (topicId) {
           if (!progressMap[topicId]) progressMap[topicId] = 0;
           if (!topicLessonCounts[topicId]) topicLessonCounts[topicId] = new Set();
-          
           topicLessonCounts[topicId].add(p.lessonId);
           if (p.completed) progressMap[topicId]++;
         }
       });
-      
       const finalProgress = {};
       for (const topicId in progressMap) {
         const completedCount = progressMap[topicId];
         const totalLessons = topicLessonCounts[topicId].size;
         finalProgress[topicId] = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
       }
-      
       return finalProgress;
     },
     processSubjects() {
@@ -376,7 +367,7 @@ export default {
       this.subjects = Array.from(subjectsMap.values()).map(s => ({
         name: s.name,
         topicCount: s.topics.size,
-        levelCount: s.levels.size
+        levelCount: s.levels.size,
       }));
     },
     processLevels() {
@@ -392,7 +383,7 @@ export default {
       this.levels = Array.from(levelsMap.values()).map(level => ({
         name: level.name,
         topicCount: level.topics.size,
-        progress: this.calculateLevelProgress(level.name)
+        progress: this.calculateLevelProgress(level.name),
       })).sort((a, b) => Number(a.name) - Number(b.name));
     },
     processTopics() {
@@ -408,7 +399,7 @@ export default {
             subject: String(lesson.subject),
             lessonCount: 0,
             totalTime: 0,
-            type: 'free'
+            type: 'free',
           });
         }
         const topic = topicsMap.get(topicId);
@@ -421,7 +412,7 @@ export default {
       this.topics = Array.from(topicsMap.values()).map(topic => ({
         ...topic,
         progress: this.userProgress[topic.topicId] || 0,
-        inStudyPlan: this.studyPlanTopics.includes(topic.topicId)
+        inStudyPlan: this.studyPlanTopics.includes(topic.topicId),
       }));
     },
     calculateLevelProgress(levelName) {
@@ -584,8 +575,8 @@ export default {
       if (count % 10 === 1 && count % 100 !== 11) return 'урок';
       if (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 10 || count % 100 >= 20)) return 'урока';
       return 'уроков';
-    }
-  }
+    },
+  },
 };
 </script>
 
@@ -846,7 +837,7 @@ export default {
   .header-content, .filters-section, .main-content { padding: 0 1rem; }
   .page-title { font-size: 1.25rem; }
 }
-.back-btn:focus, .search-input:focus, .filter-chip:focus, .clear-all-btn:focus, .add-btn:focus, .action-btn:focus, .modal-close:focus, .modal-btn:focus {
+.back-btn:focus-visible, .search-input:focus-visible, .filter-chip:focus-visible, .clear-all-btn:focus-visible, .add-btn:focus-visible, .action-btn:focus-visible, .modal-close:focus-visible, .modal-btn:focus-visible {
   outline: 2px solid #a855f7; outline-offset: 2px;
 }
 @media (prefers-reduced-motion: reduce) { * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
@@ -872,5 +863,5 @@ export default {
   .modal-header { border-bottom-color: #374151; }
   .meta-badge { background: #111827; border-color: #374151; color: #9ca3af; }
 }
-</style>```
+</style>
 
