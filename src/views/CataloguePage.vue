@@ -485,23 +485,34 @@ export default {
     async confirmAddToStudyPlan() {
       if (!this.selectedCourse || !this.userId) return;
       try {
-        const topicId = this.extractTopicId(this.selectedCourse.topicId);
-        const result = await addToStudyList(this.userId, { topicId });
+        // Fix: Ensure we're sending the correct data structure
+        const topicData = {
+          topicId: this.selectedCourse.topicId,
+          topic: this.selectedCourse.name, // Required field
+          subject: this.selectedCourse.subject || 'General',
+          level: parseInt(this.selectedCourse.level) || 1, // Ensure it's a number
+          lessonCount: this.selectedCourse.lessonCount || 0,
+          totalTime: this.selectedCourse.totalTime || 10,
+          type: this.selectedCourse.type || 'free'
+        };
+        
+        const result = await addToStudyList(this.userId, topicData);
+        
         if (result?.success) {
           this.selectedCourse.inStudyPlan = true;
-          this.studyPlanTopics.push(topicId);
-          const courseIndex = this.courses.findIndex(c => c.topicId === topicId);
+          this.studyPlanTopics.push(this.selectedCourse.topicId);
+          const courseIndex = this.courses.findIndex(c => c.topicId === this.selectedCourse.topicId);
           if (courseIndex !== -1) {
             this.courses[courseIndex].inStudyPlan = true;
           }
           this.showAddModal = false;
           this.showSuccessModal = true;
         } else {
-          throw new Error('API returned failure on add to study plan');
+          throw new Error(result.error || 'Failed to add to study plan');
         }
       } catch (error) {
         console.error('Error adding to study plan:', error);
-        alert('Не удалось добавить курс в план обучения');
+        alert(error.message || 'Не удалось добавить курс в план обучения');
         this.showAddModal = false;
       }
     },
@@ -694,51 +705,49 @@ export default {
   width: 1rem; 
   height: 1rem; 
 }
-.filter-chips { 
-  display: flex; 
-  flex-direction: column; 
-  gap: 1rem; 
+
+/* NEWLY ADDED FILTER STYLES */
+.filters-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
 }
-.filter-group { 
-  display: flex; 
-  flex-direction: column; 
-  gap: 0.625rem; 
+.filter-dropdown {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  flex: 1;
+  min-width: 150px;
 }
-.filter-label { 
-  font-size: 0.8125rem; 
-  font-weight: 600; 
-  color: #6b7280; 
-  text-transform: uppercase; 
-  letter-spacing: 0.05em; 
+.dropdown-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
-.chips-row { 
-  display: flex; 
-  gap: 0.5rem; 
-  flex-wrap: wrap; 
-}
-.filter-chip {
-  padding: 0.5rem 1rem; 
-  border: 1.5px solid #e5e7eb; 
+.dropdown-select {
+  padding: 0.625rem 0.875rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
   background: white;
-  border-radius: 20px; 
-  font-size: 0.875rem; 
-  font-weight: 500;
-  color: #6b7280; 
-  cursor: pointer; 
+  font-size: 0.875rem;
+  color: #111827;
+  cursor: pointer;
   transition: all 0.2s;
 }
-.filter-chip:hover { 
-  border-color: #a855f7; 
-  color: #a855f7; 
-  background: #faf5ff; 
+.dropdown-select:hover {
+  border-color: #d1d5db;
 }
-.filter-chip.active { 
-  background: #a855f7; 
-  border-color: #a855f7; 
-  color: white; 
+.dropdown-select:focus {
+  outline: none;
+  border-color: #a855f7;
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
 }
+
 .clear-all-btn {
-  align-self: flex-start; 
+  align-self: flex-end; /* Align with other dropdowns */
   display: flex; 
   align-items: center; 
   gap: 0.5rem;
@@ -751,6 +760,8 @@ export default {
   color: #dc2626;
   cursor: pointer; 
   transition: all 0.2s;
+  height: 38px; /* Match height of select */
+  box-sizing: border-box;
 }
 .clear-all-btn:hover { 
   background: #fee2e2; 
@@ -1225,6 +1236,16 @@ export default {
   .filters-content { 
     padding: 1.25rem; 
   }
+  .filters-row {
+    flex-direction: column;
+    align-items: stretch; /* Make dropdowns full width */
+  }
+  .filter-dropdown {
+    width: 100%;
+  }
+  .clear-all-btn {
+    align-self: auto; /* Reset alignment */
+  }
   .courses-grid { 
     grid-template-columns: 1fr; 
   }
@@ -1251,7 +1272,7 @@ export default {
 
 /* ACCESSIBILITY */
 .search-input:focus-visible, 
-.filter-chip:focus-visible, 
+.dropdown-select:focus-visible,
 .clear-all-btn:focus-visible, 
 .add-btn:focus-visible, 
 .action-btn:focus-visible, 
