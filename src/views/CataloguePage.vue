@@ -1,7 +1,7 @@
 <template>
   <div class="catalogue-page">
-    <!-- Hero Header -->
-    <header class="hero-header">
+    <header class="hero-header" :style="{ backgroundImage: `url(${currentHeroImage})` }">
+      <div class="hero-overlay"></div>
       <div class="hero-content">
         <div class="hero-left">
           <div class="hero-badge">
@@ -27,7 +27,6 @@
       </div>
     </header>
 
-    <!-- Quick Stats -->
     <div class="stats-section">
       <div class="stats-grid">
         <div class="stat-card">
@@ -68,10 +67,8 @@
       </div>
     </div>
 
-    <!-- Search and Filters Bar -->
     <div class="control-section">
       <div class="control-content">
-        <!-- Search -->
         <div class="search-container">
           <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="8"/>
@@ -91,7 +88,6 @@
           </button>
         </div>
 
-        <!-- Filter Pills -->
         <div class="filters-pills">
           <div class="filter-pill">
             <label>Предмет</label>
@@ -154,7 +150,6 @@
       </div>
     </div>
 
-    <!-- Loading State -->
     <div v-if="isLoading" class="loading-container">
       <div class="loader">
         <div class="loader-ring"></div>
@@ -164,9 +159,7 @@
       <p>Загружаем курсы...</p>
     </div>
 
-    <!-- Main Content -->
     <main v-else class="main-section">
-      <!-- Empty State -->
       <div v-if="!paginatedCourses.length" class="empty-container">
         <div class="empty-illustration">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -180,11 +173,9 @@
         <p>Попробуйте изменить параметры фильтров или поиска</p>
       </div>
 
-      <!-- Courses Grid -->
       <div v-else class="courses-container">
         <div class="courses-grid">
           <article v-for="course in paginatedCourses" :key="course.topicId" class="course-card">
-            <!-- Card Header -->
             <div class="card-header">
               <span class="course-badge" :class="course.type">
                 {{ getTypeLabel(course.type) }}
@@ -201,7 +192,6 @@
               </button>
             </div>
 
-            <!-- Card Body -->
             <div class="card-body">
               <h3 class="course-name">{{ course.name }}</h3>
               
@@ -238,7 +228,6 @@
                 </div>
               </div>
 
-              <!-- Progress -->
               <div class="progress-container">
                 <div class="progress-info">
                   <span class="progress-text">Прогресс</span>
@@ -254,7 +243,6 @@
               </div>
             </div>
 
-            <!-- Card Footer -->
             <div class="card-footer">
               <button 
                 class="course-btn" 
@@ -271,7 +259,6 @@
           </article>
         </div>
 
-        <!-- Pagination -->
         <div class="pagination-section">
           <button @click="prevPage" :disabled="currentPage === 1" class="page-btn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -294,7 +281,6 @@
       </div>
     </main>
 
-    <!-- Add to Study Plan Modal -->
     <transition name="modal-fade">
       <div v-if="showAddModal" class="modal-backdrop" @click="showAddModal = false">
         <div class="modal-card" @click.stop>
@@ -324,7 +310,6 @@
       </div>
     </transition>
 
-    <!-- Success Modal -->
     <transition name="modal-fade">
       <div v-if="showSuccessModal" class="modal-backdrop" @click="showSuccessModal = false">
         <div class="modal-card success" @click.stop>
@@ -345,7 +330,6 @@
       </div>
     </transition>
 
-    <!-- Paywall Modal -->
     <PaymentModal 
       v-if="showPaywall" 
       :user-id="userId" 
@@ -388,13 +372,24 @@ export default {
       typeFilter: 'all',
       progressFilter: 'all',
       currentPage: 1,
-      coursesPerPage: 20,
+      coursesPerPage: 12, // Adjusted for a 3-4 column layout
       randomSeed: Math.random(),
       showAddModal: false,
       showSuccessModal: false,
       showPaywall: false,
       selectedCourse: null,
       requestedTopicId: null,
+      heroImages: [
+        'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=1600&h=400&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=1600&h=400&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=1600&h=400&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=1600&h=400&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=1600&h=400&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1600&h=400&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1513258496099-48168024aec0?w=1600&h=400&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=1600&h=400&fit=crop&q=80'
+      ],
+      currentHeroImage: '',
     };
   },
 
@@ -408,13 +403,11 @@ export default {
       return labels[this.userStatus] || 'Free';
     },
     availableSubjects() {
-      const subjects = new Set();
-      this.courses.forEach(course => subjects.add(course.subject));
+      const subjects = new Set(this.courses.map(course => course.subject));
       return Array.from(subjects).sort();
     },
     availableLevels() {
-      const levels = new Set();
-      this.courses.forEach(course => levels.add(course.level));
+      const levels = new Set(this.courses.map(course => course.level));
       return Array.from(levels).sort((a, b) => Number(a) - Number(b));
     },
     filteredCourses() {
@@ -430,14 +423,17 @@ export default {
         }
         if (this.typeFilter === 'free' && course.type !== 'free') return false;
         if (this.typeFilter === 'premium' && course.type === 'free') return false;
+        
         const progress = course.progress || 0;
         if (this.progressFilter === 'not-started' && progress !== 0) return false;
         if (this.progressFilter === 'in-progress' && (progress === 0 || progress === 100)) return false;
         if (this.progressFilter === 'completed' && progress !== 100) return false;
+        
         return true;
       });
     },
     totalPages() {
+      if (!this.filteredCourses.length) return 1;
       return Math.ceil(this.filteredCourses.length / this.coursesPerPage);
     },
     paginatedCourses() {
@@ -462,10 +458,16 @@ export default {
   },
 
   async mounted() {
+    this.selectRandomHeroImage();
     await this.initialize();
   },
 
   methods: {
+    // --- INITIALIZATION & DATA LOADING ---
+    selectRandomHeroImage() {
+      const randomIndex = Math.floor(Math.random() * this.heroImages.length);
+      this.currentHeroImage = this.heroImages[randomIndex];
+    },
     async initialize() {
       this.userId = this.$store?.state?.firebaseUserId || localStorage.getItem('firebaseUserId');
       if (!this.userId) {
@@ -500,22 +502,35 @@ export default {
         this.isLoading = false;
       }
     },
+
+    // --- DATA PROCESSING ---
     processProgressData(progressData) {
       const progressMap = {};
-      const topicLessonCounts = {};
-      progressData.forEach(p => {
-        const topicId = this.extractTopicId(p.topicId);
+      const lessonsByTopic = {};
+
+      // First, group all lessons by their topic
+      this.lessons.forEach(lesson => {
+        const topicId = this.extractTopicId(lesson.topicId);
         if (topicId) {
-          if (!progressMap[topicId]) progressMap[topicId] = 0;
-          if (!topicLessonCounts[topicId]) topicLessonCounts[topicId] = new Set();
-          topicLessonCounts[topicId].add(p.lessonId);
-          if (p.completed) progressMap[topicId]++;
+          if (!lessonsByTopic[topicId]) lessonsByTopic[topicId] = new Set();
+          lessonsByTopic[topicId].add(this.extractTopicId(lesson._id));
         }
       });
+      
+      // Then, calculate completed lessons per topic
+      progressData.forEach(p => {
+        const topicId = this.extractTopicId(p.topicId);
+        if (topicId && p.completed) {
+          if (!progressMap[topicId]) progressMap[topicId] = 0;
+          progressMap[topicId]++;
+        }
+      });
+
+      // Calculate percentage
       const finalProgress = {};
-      for (const topicId in progressMap) {
-        const completedCount = progressMap[topicId];
-        const totalLessons = topicLessonCounts[topicId].size;
+      for (const topicId in lessonsByTopic) {
+        const completedCount = progressMap[topicId] || 0;
+        const totalLessons = lessonsByTopic[topicId].size;
         finalProgress[topicId] = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
       }
       return finalProgress;
@@ -554,6 +569,8 @@ export default {
         inStudyPlan: this.studyPlanTopics.includes(course.topicId),
       }));
     },
+
+    // --- FILTER & PAGINATION HANDLERS ---
     clearFilters() {
       this.searchQuery = '';
       this.selectedSubjectFilter = null;
@@ -578,15 +595,8 @@ export default {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     },
-    hashString(str) {
-      let hash = 0;
-      for (let i = 0; i < str.length; i++) {
-        const char = str.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash;
-      }
-      return Math.abs(hash);
-    },
+
+    // --- USER ACTIONS ---
     handleCourseAccess(topicId, type) {
       if (!this.hasTopicAccess(type)) {
         this.requestedTopicId = topicId;
@@ -594,12 +604,6 @@ export default {
         return;
       }
       this.$router.push(`/topic/${topicId}/overview`);
-    },
-    hasTopicAccess(topicType) {
-      if (topicType === 'free') return true;
-      if (this.userStatus === 'pro') return true;
-      if (topicType === 'premium' && this.userStatus === 'start') return true;
-      return false;
     },
     addToStudyPlan(course) {
       if (course.inStudyPlan) return;
@@ -643,36 +647,41 @@ export default {
       this.showPaywall = false;
       this.$forceUpdate();
     },
+
+    // --- HELPER & FORMATTER METHODS ---
+    hashString(str) {
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+      }
+      return Math.abs(hash);
+    },
     extractTopicId(topicId) {
       if (!topicId) return null;
       if (typeof topicId === 'string') return topicId;
-      if (typeof topicId === 'object') return topicId._id || topicId.id;
+      if (typeof topicId === 'object' && topicId._id) return topicId._id;
       return String(topicId);
     },
     getTopicName(lesson) {
-      if (lesson?.topic && typeof lesson.topic === 'string' && lesson.topic.trim()) return lesson.topic.trim();
+      if (lesson?.topic && typeof lesson.topic === 'string' && lesson.topic.trim()) {
+        return lesson.topic.trim();
+      }
       return 'Тема без названия';
     },
     estimateLessonTime: (lesson) => lesson.estimatedTime || lesson.duration || 10,
     getLevelDescription(level) {
       const descriptions = { 
-        1: 'Начальный', 
-        2: 'Элементарный', 
-        3: 'Базовый', 
-        4: 'Средний', 
-        5: 'Продвинутый', 
-        6: 'Профессиональный', 
-        7: 'Экспертный', 
-        8: 'Мастерский', 
-        9: 'Виртуозный', 
-        10: 'Совершенный' 
+        1: 'Начальный', 2: 'Элементарный', 3: 'Базовый', 
+        4: 'Средний', 5: 'Продвинутый', 6: 'Профессиональный'
       };
       return descriptions[parseInt(level)] || `Уровень ${level}`;
     },
     getProgressColor(progress) {
       if (progress >= 80) return 'high';
-      if (progress >= 50) return 'medium';
-      if (progress >= 30) return 'low';
+      if (progress >= 40) return 'medium';
+      if (progress > 0) return 'low';
       return 'very-low';
     },
     getButtonClass(progress) {
@@ -686,12 +695,16 @@ export default {
       return 'Начать курс';
     },
     getTypeLabel(type) {
-      return { free: 'Free', premium: 'Premium', pro: 'Pro' }[type] || 'Free';
+      return { free: 'Free', premium: 'Premium' }[type] || 'Free';
     },
     getLessonWord(count) {
       if (count % 10 === 1 && count % 100 !== 11) return 'урок';
       if (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 10 || count % 100 >= 20)) return 'урока';
       return 'уроков';
+    },
+    hasTopicAccess(topicType) {
+      if (topicType === 'free') return true;
+      return this.userStatus === 'pro' || this.userStatus === 'start';
     },
   },
 };
@@ -709,19 +722,18 @@ export default {
 
 /* HERO HEADER */
 .hero-header {
-  background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-  padding: 3rem 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  padding: 2rem 0;
   position: relative;
   overflow: hidden;
+  transition: background-image 0.5s ease-in-out;
 }
-.hero-header::before {
-  content: '';
+.hero-overlay {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  inset: 0;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.85) 0%, rgba(168, 85, 247, 0.85) 100%);
 }
 .hero-content {
   max-width: 1400px;
@@ -741,28 +753,28 @@ export default {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem 1rem;
+  padding: 0.375rem 0.875rem;
   background: rgba(255, 255, 255, 0.2);
   backdrop-filter: blur(10px);
   border-radius: 50px;
   color: white;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 600;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 .hero-badge svg {
-  width: 1rem;
-  height: 1rem;
+  width: 0.875rem;
+  height: 0.875rem;
 }
 .hero-title {
-  font-size: 3rem;
+  font-size: 2.25rem;
   font-weight: 800;
   color: white;
-  margin: 0 0 1rem 0;
+  margin: 0 0 0.5rem 0;
   line-height: 1.1;
 }
 .hero-subtitle {
-  font-size: 1.125rem;
+  font-size: 1rem;
   color: rgba(255, 255, 255, 0.9);
   margin: 0;
 }
@@ -773,18 +785,18 @@ export default {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  border-radius: 12px;
-  font-size: 0.875rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: 10px;
+  font-size: 0.8125rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   background: white;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 .status-badge svg {
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 1.125rem;
+  height: 1.125rem;
 }
 .status-badge.status-free {
   color: #6b7280;
@@ -800,7 +812,7 @@ export default {
 
 /* STATS SECTION */
 .stats-section {
-  margin-top: -2rem;
+  margin-top: -1.5rem;
   position: relative;
   z-index: 10;
   max-width: 1400px;
@@ -810,35 +822,35 @@ export default {
 }
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
 }
 .stat-card {
   background: white;
-  border-radius: 16px;
-  padding: 1.5rem;
+  border-radius: 12px;
+  padding: 1.25rem;
   display: flex;
   align-items: center;
   gap: 1rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s;
 }
 .stat-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 .stat-icon {
-  width: 3.5rem;
-  height: 3.5rem;
-  border-radius: 12px;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 .stat-icon svg {
-  width: 1.75rem;
-  height: 1.75rem;
+  width: 1.5rem;
+  height: 1.5rem;
 }
 .stat-icon.blue {
   background: linear-gradient(135deg, #dbeafe, #bfdbfe);
@@ -858,13 +870,13 @@ export default {
   gap: 0.25rem;
 }
 .stat-value {
-  font-size: 2rem;
+  font-size: 1.75rem;
   font-weight: 800;
   color: #111827;
   line-height: 1;
 }
 .stat-label {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   color: #6b7280;
   font-weight: 500;
 }
@@ -872,13 +884,13 @@ export default {
 /* CONTROL SECTION */
 .control-section {
   max-width: 1400px;
-  margin: 3rem auto 2rem;
+  margin: 2rem auto 1.5rem;
   padding: 0 2rem;
 }
 .control-content {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 .search-container {
   position: relative;
@@ -886,34 +898,34 @@ export default {
 }
 .search-icon {
   position: absolute;
-  left: 1.25rem;
+  left: 1rem;
   top: 50%;
   transform: translateY(-50%);
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 1.125rem;
+  height: 1.125rem;
   color: #9ca3af;
 }
 .search-input {
   width: 100%;
-  padding: 1rem 3.5rem;
+  padding: 0.875rem 3rem;
   border: 2px solid #e5e7eb;
-  border-radius: 16px;
-  font-size: 1rem;
+  border-radius: 12px;
+  font-size: 0.9375rem;
   background: white;
   transition: all 0.2s;
 }
 .search-input:focus {
   outline: none;
   border-color: #6366f1;
-  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 .clear-btn {
   position: absolute;
-  right: 1rem;
+  right: 0.75rem;
   top: 50%;
   transform: translateY(-50%);
-  width: 2rem;
-  height: 2rem;
+  width: 1.875rem;
+  height: 1.875rem;
   border: none;
   background: #f3f4f6;
   border-radius: 50%;
@@ -929,14 +941,14 @@ export default {
   color: #111827;
 }
 .clear-btn svg {
-  width: 1rem;
-  height: 1rem;
+  width: 0.875rem;
+  height: 0.875rem;
 }
 
 /* FILTER PILLS */
 .filters-pills {
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
   flex-wrap: wrap;
   align-items: center;
 }
@@ -945,36 +957,36 @@ export default {
   align-items: center;
   gap: 0.5rem;
   background: white;
-  border: 2px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 0.5rem 1rem;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 0.5rem 0.875rem;
   transition: all 0.2s;
 }
 .filter-pill:hover {
   border-color: #d1d5db;
 }
 .filter-pill label {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   color: #6b7280;
   font-weight: 600;
 }
 .filter-pill select {
   border: none;
   background: transparent;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   color: #111827;
   font-weight: 600;
   cursor: pointer;
   outline: none;
-  padding: 0.25rem;
+  padding: 0.125rem;
 }
 .reset-btn, .shuffle-btn {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.25rem;
-  border-radius: 12px;
-  font-size: 0.875rem;
+  padding: 0.625rem 1rem;
+  border-radius: 10px;
+  font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
@@ -983,7 +995,7 @@ export default {
 .reset-btn {
   background: #fef2f2;
   color: #dc2626;
-  border: 2px solid #fca5a5;
+  border: 1.5px solid #fca5a5;
 }
 .reset-btn:hover {
   background: #fee2e2;
@@ -991,15 +1003,15 @@ export default {
 .shuffle-btn {
   background: linear-gradient(135deg, #fef3c7, #fde68a);
   color: #92400e;
-  border: 2px solid #fbbf24;
+  border: 1.5px solid #fbbf24;
 }
 .shuffle-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.25);
 }
 .reset-btn svg, .shuffle-btn svg {
-  width: 1rem;
-  height: 1rem;
+  width: 0.875rem;
+  height: 0.875rem;
 }
 
 /* LOADING */
