@@ -93,10 +93,22 @@
     <main v-else class="main-content">
       <div class="results-header">
         <p class="results-count">Найдено курсов: {{ filteredCourses.length }}</p>
+        <div class="results-actions">
+          <button @click="shuffleCourses" class="shuffle-btn" title="Показать другие случайные курсы">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="16 3 21 3 21 8"/>
+              <line x1="4" y1="20" x2="21" y2="3"/>
+              <polyline points="21 16 21 21 16 21"/>
+              <line x1="15" y1="15" x2="21" y2="21"/>
+              <line x1="4" y1="4" x2="9" y2="9"/>
+            </svg>
+            Перемешать
+          </button>
+        </div>
       </div>
 
-      <div v-if="filteredCourses.length" class="courses-grid">
-        <div v-for="course in filteredCourses" :key="course.topicId" class="course-card">
+      <div v-if="paginatedCourses.length" class="courses-grid">
+        <div v-for="course in paginatedCourses" :key="course.topicId" class="course-card">
           <div class="course-header">
             <span :class="['course-type', course.type]">{{ getTypeLabel(course.type) }}</span>
             <button class="add-btn" @click.stop="addToStudyPlan(course)" :disabled="course.inStudyPlan" :title="course.inStudyPlan ? 'Уже в вашем плане' : 'Добавить в план обучения'">
@@ -172,7 +184,24 @@
           </button>
         </div>
       </div>
-
+      <div v-if="paginatedCourses.length" class="pagination-container">
+        <button @click="prevPage" :disabled="currentPage === 1" class="pagination-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+          Назад
+        </button>
+        <div class="pagination-info">
+          <span class="page-numbers">Страница {{ currentPage }} из {{ totalPages }}</span>
+          <span class="showing-info">Показано {{ paginatedCourses.length }} из {{ filteredCourses.length }}</span>
+        </div>
+        <button @click="nextPage" :disabled="currentPage === totalPages" class="pagination-btn">
+          Вперед
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </button>
+      </div>
       <div v-else class="empty-state">
         <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="10"/>
@@ -268,25 +297,24 @@ export default {
     return {
       userId: null,
       lang: localStorage.getItem('lang') || 'ru',
-
       // Raw API data
       lessons: [],
       userProgress: {},
       studyPlanTopics: [],
-
       // UI State
       isLoading: true,
-
       // All courses (no view navigation needed)
       courses: [],
-
       // Filters
       searchQuery: '',
       selectedSubjectFilter: null,
       selectedLevelFilter: null,
       typeFilter: 'all',
       progressFilter: 'all',
-
+      // Pagination - ADD THESE 3 LINES
+      currentPage: 1,
+      coursesPerPage: 20,
+      randomSeed: Math.random(),
       // Modal State
       showAddModal: false,
       showSuccessModal: false,
@@ -321,29 +349,38 @@ export default {
         if (this.searchQuery && !course.name.toLowerCase().includes(this.searchQuery.toLowerCase())) {
           return false;
         }
-
         // Subject filter
         if (this.selectedSubjectFilter && course.subject !== this.selectedSubjectFilter) {
           return false;
         }
-
         // Level filter
         if (this.selectedLevelFilter && course.level !== this.selectedLevelFilter) {
           return false;
         }
-
         // Type filter
         if (this.typeFilter === 'free' && course.type !== 'free') return false;
         if (this.typeFilter === 'premium' && course.type === 'free') return false;
-
         // Progress filter
         const progress = course.progress || 0;
         if (this.progressFilter === 'not-started' && progress !== 0) return false;
         if (this.progressFilter === 'in-progress' && (progress === 0 || progress === 100)) return false;
         if (this.progressFilter === 'completed' && progress !== 100) return false;
-
         return true;
       });
+    },
+    // ADD THESE TWO NEW COMPUTED PROPERTIES
+    totalPages() {
+      return Math.ceil(this.filteredCourses.length / this.coursesPerPage);
+    },
+    paginatedCourses() {
+      const shuffled = [...this.filteredCourses].sort((a, b) => {
+        const hashA = this.hashString(a.topicId + this.randomSeed);
+        const hashB = this.hashString(b.topicId + this.randomSeed);
+        return hashA - hashB;
+      });
+      const start = (this.currentPage - 1) * this.coursesPerPage;
+      const end = start + this.coursesPerPage;
+      return shuffled.slice(start, end);
     },
     hasActiveFilters() {
       return !!(
@@ -460,6 +497,34 @@ export default {
       this.selectedLevelFilter = null;
       this.typeFilter = 'all';
       this.progressFilter = 'all';
+      this.currentPage = 1; // ADD THIS LINE
+    },
+
+    // --- PAGINATION METHODS ---
+    shuffleCourses() {
+      this.randomSeed = Math.random();
+      this.currentPage = 1;
+    },
+    nextPage() {
+      if (this.currentPage < this.totalPages) {
+        this.currentPage++;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    },
+    prevPage() {
+      if (this.currentPage > 1) {
+        this.currentPage--;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    },
+    hashString(str) {
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+      }
+      return Math.abs(hash);
     },
 
     // --- USER ACTIONS ---
@@ -828,12 +893,45 @@ export default {
 }
 .results-header {
   margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 .results-count {
   font-size: 0.875rem;
   color: #6b7280;
   font-weight: 500;
   margin: 0;
+}
+.results-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+.shuffle-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  border: 1.5px solid #d4af37;
+  background: linear-gradient(135deg, #fdfbf7, #faf7ed);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #92772f;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.shuffle-btn:hover {
+  background: linear-gradient(135deg, #faf7ed, #f5f0e0);
+  border-color: #c7a030;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(212, 175, 55, 0.2);
+}
+.shuffle-btn svg {
+  width: 1rem;
+  height: 1rem;
 }
 
 /* COURSES GRID */
@@ -1024,6 +1122,61 @@ export default {
   background: #f3f4f6; 
   color: #6b7280; 
   cursor: default; 
+}
+
+/* PAGINATION */
+.pagination-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 3rem;
+  padding: 1.5rem;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+}
+.pagination-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border: 1.5px solid #e5e7eb;
+  background: white;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #111827;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.pagination-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #fdfbf7, #faf7ed);
+  border-color: #d4af37;
+  color: #92772f;
+}
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.pagination-btn svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+.pagination-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+.page-numbers {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #111827;
+}
+.showing-info {
+  font-size: 0.8125rem;
+  color: #6b7280;
 }
 
 /* MODALS */
@@ -1255,6 +1408,18 @@ export default {
   .modal-btn { 
     width: 100%; 
   }
+  .results-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .pagination-container {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .pagination-btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
 @media (max-width: 640px) {
   .page-header { 
@@ -1274,6 +1439,8 @@ export default {
 .search-input:focus-visible, 
 .dropdown-select:focus-visible,
 .clear-all-btn:focus-visible, 
+.shuffle-btn:focus-visible,
+.pagination-btn:focus-visible,
 .add-btn:focus-visible, 
 .action-btn:focus-visible, 
 .modal-close:focus-visible, 
