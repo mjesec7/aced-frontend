@@ -1,456 +1,725 @@
 <template>
-  <div class="catalogue-page" :key="componentKey">
-    <header class="page-header">
+  <div class="catalogue-page">
+    <!-- Header -->
+    <div class="page-header">
       <div class="header-content">
-        <div class="breadcrumb">
+        <div class="header-left">
           <button v-if="currentView !== 'subjects'" @click="goBack" class="back-btn">
-            &larr; Back
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+            Назад
           </button>
-          <div class="breadcrumb-path">
-            <span class="breadcrumb-item" :class="{ active: currentView === 'subjects' }">
-              Subjects
-            </span>
-            <template v-if="selectedSubject">
-              <span class="breadcrumb-separator">&gt;</span>
-              <span class="breadcrumb-item" :class="{ active: currentView === 'levels' }">
-                {{ selectedSubject }}
+          <div>
+            <div class="breadcrumbs">
+              <span class="breadcrumb-item" :class="{ active: currentView === 'subjects' }">
+                Предметы
               </span>
-            </template>
-            <template v-if="selectedLevel">
-              <span class="breadcrumb-separator">&gt;</span>
-              <span class="breadcrumb-item" :class="{ active: currentView === 'topics' }">
-                Level {{ selectedLevel }}
-              </span>
-            </template>
-          </div>
-        </div>
-        <div class="subscription-badge" :class="`badge-${userStatus}`">
-          {{ userStatus }} Plan
-        </div>
-      </div>
-      <h1 class="page-title">{{ pageTitle }}</h1>
-    </header>
-
-    <main class="main-content">
-      <div class="filter-bar">
-        <div class="filter-row">
-          <input type="text" v-model="searchQuery" placeholder="🔍 Search catalogue..." class="search-input" />
-          <select v-model="filterSubject" class="filter-select" v-if="currentView === 'subjects'">
-            <option value="">All Subjects</option>
-            <option v-for="subject in uniqueSubjects" :key="subject" :value="subject">{{ subject }}</option>
-          </select>
-          <select v-model="filterLevel" class="filter-select" v-if="currentView !== 'subjects'">
-            <option value="">All Levels</option>
-            <option v-for="level in uniqueLevels" :key="level" :value="level">Level {{ level }}</option>
-          </select>
-          <button @click="clearFilters" class="clear-btn">Clear Filters</button>
-        </div>
-        <div class="filter-row" style="margin-top: 1rem; border-top: 1px solid #f1f3f4; padding-top: 1rem;">
-          <div class="checkbox-group">
-            <label class="checkbox-label"><input type="checkbox" v-model="showFree"> Free</label>
-            <label class="checkbox-label"><input type="checkbox" v-model="showPremium"> Premium</label>
-          </div>
-          <div class="checkbox-group" style="margin-left: 1rem; border-left: 1px solid #e9ecef; padding-left: 1rem;">
-            <label class="checkbox-label"><input type="checkbox" v-model="showNotStarted"> Not Started</label>
-            <label class="checkbox-label"><input type="checkbox" v-model="showInProgress"> In Progress</label>
-            <label class="checkbox-label"><input type="checkbox" v-model="showCompleted"> Completed</label>
-          </div>
-        </div>
-      </div>
-
-      <div v-if="isLoading" class="loading-state">
-        <div class="loading-spinner"></div>
-        <p>Loading catalogue...</p>
-      </div>
-
-      <div v-else>
-        <div v-if="currentView === 'subjects'">
-          <div v-if="filteredSubjects.length" class="subjects-grid">
-            <div v-for="subject in filteredSubjects" :key="subject.name" class="subject-card" @click="selectSubject(subject.name)">
-              <div class="card-icon">{{ getSubjectIcon(subject.name) }}</div>
-              <h2 class="card-title">{{ subject.name }}</h2>
-              <div class="card-stats">
-                <span class="stat-badge">{{ subject.topicCount }} topics</span>
-                <span class="stat-badge">{{ subject.levelCount }} levels</span>
-              </div>
+              <template v-if="selectedSubject">
+                <svg class="breadcrumb-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+                <span class="breadcrumb-item" :class="{ active: currentView === 'levels' }">
+                  {{ selectedSubject }}
+                </span>
+              </template>
+              <template v-if="selectedLevel">
+                <svg class="breadcrumb-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+                <span class="breadcrumb-item" :class="{ active: currentView === 'topics' }">
+                  Уровень {{ selectedLevel }}
+                </span>
+              </template>
             </div>
-          </div>
-          <div v-else class="empty-state">
-            <div class="empty-icon">🤷</div>
-            <h3>No Subjects Found</h3>
-            <p>Try adjusting your search or filter criteria.</p>
+            <h1 class="page-title">{{ pageTitle }}</h1>
           </div>
         </div>
+        <div class="status-badge" :class="`status-${userStatus}`">
+          {{ userStatusLabel }}
+        </div>
+      </div>
+    </div>
 
-        <div v-if="currentView === 'levels'">
-          <div v-if="filteredLevels.length" class="levels-grid">
-            <div v-for="level in filteredLevels" :key="level.name" class="level-card" @click="selectLevel(level.name)">
-              <div class="level-header">
-                <div class="level-icon" :class="getLevelClass(level.name)">{{ getLevelIcon(level.name) }}</div>
-                <div class="level-info">
-                  <h3 class="level-title">Level {{ level.name }}</h3>
-                  <p class="level-description">{{ getLevelDescription(level.name) }}</p>
-                </div>
-              </div>
-              <div class="level-stats"><span class="stat-item"><span class="stat-icon">📚</span>{{ level.topicCount }} topics</span></div>
-              <div class="progress-container">
-                <div class="progress-header">
-                  <span class="progress-label">Level Progress</span>
-                  <span class="progress-value">{{ level.progress }}%</span>
-                </div>
-                <div class="progress-bar">
-                  <div class="progress-fill" :class="getProgressClass(level.progress)" :style="{ width: level.progress + '%' }"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div v-else class="empty-state">
-            <div class="empty-icon">🤷</div>
-            <h3>No Levels Found</h3>
-            <p>No levels match your current filter settings.</p>
-          </div>
+    <!-- Search & Filters -->
+    <div class="filters-section">
+      <div class="filters-content">
+        <div class="search-box">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.35-4.35"/>
+          </svg>
+          <input 
+            v-model="searchQuery" 
+            type="text" 
+            class="search-input" 
+            placeholder="Поиск курсов..."
+          />
+          <button v-if="searchQuery" @click="searchQuery = ''" class="clear-search-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
         </div>
 
-        <div v-if="currentView === 'topics'">
-          <div v-if="filteredTopics.length" class="topics-grid">
-            <div v-for="topic in filteredTopics" :key="topic.topicId" class="topic-card">
-              <div class="topic-header">
-                <h3 class="topic-title">{{ topic.name }}</h3>
-                <button class="add-btn" @click="addToStudyPlan(topic)" :disabled="topic.inStudyPlan" :title="topic.inStudyPlan ? 'Already in your plan' : 'Add to study plan'">
-                  {{ topic.inStudyPlan ? '✓' : '+' }}
-                </button>
-              </div>
-              <div class="topic-meta">
-                <span class="access-badge" :class="topic.type">{{ topic.type }}</span>
-              </div>
-              <div class="topic-stats">
-                <span class="stat-item"><span class="stat-icon">📄</span>{{ topic.lessonCount }} lessons</span>
-                <span class="stat-item"><span class="stat-icon">🕒</span>{{ topic.totalTime }} min</span>
-              </div>
-              <div class="progress-container">
-                <div class="progress-header">
-                  <span class="progress-label">Your Progress</span>
-                  <span class="progress-value">{{ topic.progress }}%</span>
-                </div>
-                <div class="progress-bar">
-                  <div class="progress-fill" :class="getProgressClass(topic.progress)" :style="{ width: topic.progress + '%' }"></div>
-                </div>
-              </div>
-              <button class="action-btn" :class="getButtonClass(topic.progress)" @click="handleTopicAccess(topic.topicId, topic.type)">
-                {{ getButtonText(topic.progress) }}
+        <div class="filter-chips">
+          <div class="filter-group" v-if="currentView === 'topics'">
+            <label class="filter-label">Тип:</label>
+            <div class="chips-row">
+              <button 
+                :class="['filter-chip', { active: !showFree && !showPremium }]"
+                @click="showFree = false; showPremium = false"
+              >
+                Все
+              </button>
+              <button 
+                :class="['filter-chip', { active: showFree }]"
+                @click="showFree = !showFree; if(showFree) showPremium = false"
+              >
+                Free
+              </button>
+              <button 
+                :class="['filter-chip', { active: showPremium }]"
+                @click="showPremium = !showPremium; if(showPremium) showFree = false"
+              >
+                Premium
               </button>
             </div>
           </div>
-          <div v-else class="empty-state">
-            <div class="empty-icon">🤷</div>
-            <h3>No Topics Found</h3>
-            <p>No topics match your current filter settings.</p>
-          </div>
-        </div>
-      </div>
-    </main>
 
-    <div v-if="showAddModal" class="modal-overlay" @click.self="showAddModal = false">
-      <div class="modal-content">
-        <button @click="showAddModal = false" class="modal-close">&times;</button>
-        <div class="modal-header"><h3>Add to Study Plan?</h3></div>
-        <div class="modal-body">
-          <div class="topic-preview" v-if="selectedTopic">
-            <h4>{{ selectedTopic.name }}</h4>
-            <p>{{ getLevelDescription(selectedTopic.level) }}</p>
-            <div class="topic-stats">
-              <span class="stat-item">📄 {{ selectedTopic.lessonCount }} lessons</span>
-              <span class="stat-item">🕒 {{ selectedTopic.totalTime }} min</span>
+          <div class="filter-group" v-if="currentView === 'topics'">
+            <label class="filter-label">Прогресс:</label>
+            <div class="chips-row">
+              <button 
+                :class="['filter-chip', { active: !showNotStarted && !showInProgress && !showCompleted }]"
+                @click="showNotStarted = false; showInProgress = false; showCompleted = false"
+              >
+                Все
+              </button>
+              <button 
+                :class="['filter-chip', { active: showNotStarted }]"
+                @click="showNotStarted = !showNotStarted"
+              >
+                Не начаты
+              </button>
+              <button 
+                :class="['filter-chip', { active: showInProgress }]"
+                @click="showInProgress = !showInProgress"
+              >
+                В процессе
+              </button>
+              <button 
+                :class="['filter-chip', { active: showCompleted }]"
+                @click="showCompleted = !showCompleted"
+              >
+                Завершены
+              </button>
             </div>
           </div>
         </div>
-        <div class="modal-footer">
-          <button @click="showAddModal = false" class="btn-secondary">Cancel</button>
-          <button @click="confirmAddToStudyPlan" class="btn-primary">Confirm</button>
+
+        <button 
+          v-if="hasActiveFilters" 
+          @click="clearFilters" 
+          class="clear-all-btn"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+          Сбросить фильтры
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div v-if="isLoading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Загрузка каталога...</p>
+    </div>
+
+    <!-- Content -->
+    <div v-else class="main-content">
+      <!-- Subjects View -->
+      <div v-if="currentView === 'subjects'">
+        <div v-if="filteredSubjects.length" class="subjects-grid">
+          <div 
+            v-for="subject in filteredSubjects" 
+            :key="subject.name" 
+            class="subject-card"
+            @click="selectSubject(subject.name)"
+          >
+            <div class="subject-icon">{{ getSubjectIcon(subject.name) }}</div>
+            <h3 class="subject-title">{{ subject.name }}</h3>
+            <div class="subject-stats">
+              <span class="stat-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                </svg>
+                {{ subject.topicCount }} {{ getTopicWord(subject.topicCount) }}
+              </span>
+              <span class="stat-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+                {{ subject.levelCount }} {{ getLevelWord(subject.levelCount) }}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div v-else class="empty-state">
+          <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <h3 class="empty-title">Предметы не найдены</h3>
+          <p class="empty-text">Попробуйте изменить параметры поиска</p>
+        </div>
+      </div>
+
+      <!-- Levels View -->
+      <div v-if="currentView === 'levels'">
+        <div v-if="filteredLevels.length" class="levels-grid">
+          <div 
+            v-for="level in filteredLevels" 
+            :key="level.name" 
+            class="level-card"
+            @click="selectLevel(level.name)"
+          >
+            <div class="level-header">
+              <div class="level-icon" :class="getLevelClass(level.name)">
+                {{ getLevelIcon(level.name) }}
+              </div>
+              <div class="level-info">
+                <h3 class="level-title">Уровень {{ level.name }}</h3>
+                <p class="level-description">{{ getLevelDescription(level.name) }}</p>
+              </div>
+            </div>
+            <div class="level-meta">
+              <span class="meta-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                </svg>
+                {{ level.topicCount }} {{ getTopicWord(level.topicCount) }}
+              </span>
+            </div>
+            <div class="progress-section">
+              <div class="progress-header">
+                <span class="progress-label">Прогресс</span>
+                <span class="progress-value">{{ level.progress }}%</span>
+              </div>
+              <div class="progress-bar-wrapper">
+                <div 
+                  class="progress-bar"
+                  :class="getProgressColor(level.progress)"
+                  :style="{ width: level.progress + '%' }"
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div v-else class="empty-state">
+          <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <h3 class="empty-title">Уровни не найдены</h3>
+          <p class="empty-text">Нет доступных уровней для этого предмета</p>
+        </div>
+      </div>
+
+      <!-- Topics View -->
+      <div v-if="currentView === 'topics'">
+        <div v-if="filteredTopics.length" class="topics-grid">
+          <div 
+            v-for="topic in filteredTopics" 
+            :key="topic.topicId" 
+            class="topic-card"
+          >
+            <div class="topic-header">
+              <span :class="['topic-type', topic.type]">{{ getTypeLabel(topic.type) }}</span>
+              <button 
+                class="add-btn" 
+                @click.stop="addToStudyPlan(topic)" 
+                :disabled="topic.inStudyPlan"
+                :title="topic.inStudyPlan ? 'Уже в вашем плане' : 'Добавить в план обучения'"
+              >
+                <svg v-if="topic.inStudyPlan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="5" x2="12" y2="19"/>
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+              </button>
+            </div>
+
+            <h3 class="topic-title">{{ topic.name }}</h3>
+
+            <div class="topic-meta">
+              <span class="meta-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                </svg>
+                {{ topic.lessonCount }} {{ getLessonWord(topic.lessonCount) }}
+              </span>
+              <span class="meta-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+                {{ topic.totalTime }} мин
+              </span>
+            </div>
+
+            <div class="progress-section">
+              <div class="progress-header">
+                <span class="progress-label">Ваш прогресс</span>
+                <span class="progress-value">{{ topic.progress }}%</span>
+              </div>
+              <div class="progress-bar-wrapper">
+                <div 
+                  class="progress-bar"
+                  :class="getProgressColor(topic.progress)"
+                  :style="{ width: topic.progress + '%' }"
+                ></div>
+              </div>
+            </div>
+
+            <button 
+              class="action-btn"
+              :class="getButtonClass(topic.progress)"
+              @click="handleTopicAccess(topic.topicId, topic.type)"
+            >
+              {{ getButtonText(topic.progress) }}
+            </button>
+          </div>
+        </div>
+        <div v-else class="empty-state">
+          <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <h3 class="empty-title">Курсы не найдены</h3>
+          <p class="empty-text">Попробуйте изменить фильтры</p>
         </div>
       </div>
     </div>
 
-    <div v-if="showSuccessModal" class="modal-overlay" @click.self="showSuccessModal = false">
-      <div class="modal-content success-modal">
-        <div class="success-content">
-          <div class="success-icon">🎉</div>
-          <h3>Added to Plan!</h3>
-          <p>"{{ selectedTopic.name }}" is now in your study plan. Keep up the great work!</p>
-          <button @click="showSuccessModal = false" class="btn-primary">Got it!</button>
+    <!-- Add to Plan Modal -->
+    <transition name="modal">
+      <div v-if="showAddModal" class="modal-overlay" @click="showAddModal = false">
+        <div class="modal-container" @click.stop>
+          <div class="modal-header">
+            <h3 class="modal-title">Добавить в план обучения?</h3>
+            <button class="modal-close" @click="showAddModal = false">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+          <div class="modal-body" v-if="selectedTopic">
+            <div class="topic-preview">
+              <h4>{{ selectedTopic.name }}</h4>
+              <p class="topic-desc">{{ getLevelDescription(selectedTopic.level) }}</p>
+              <div class="topic-preview-stats">
+                <span class="preview-stat">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                  </svg>
+                  {{ selectedTopic.lessonCount }} уроков
+                </span>
+                <span class="preview-stat">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                  {{ selectedTopic.totalTime }} мин
+                </span>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button @click="showAddModal = false" class="modal-btn secondary">
+              Отмена
+            </button>
+            <button @click="confirmAddToStudyPlan" class="modal-btn primary">
+              Добавить
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-    
-    <div v-if="showPaywall" class="modal-overlay" @click.self="showPaywall = false">
-      <div class="modal-content">
-        <button @click="showPaywall = false" class="modal-close">&times;</button>
-        <div class="modal-header"><h3>Upgrade Required</h3></div>
-        <div class="modal-body" style="text-align: center;">
-          <p>This topic is part of our premium content. Please upgrade your plan to access it.</p>
-          <button @click="showPaywall = false" class="btn-primary" style="margin-top: 1rem;">View Plans</button>
+    </transition>
+
+    <!-- Success Modal -->
+    <transition name="modal">
+      <div v-if="showSuccessModal" class="modal-overlay" @click="showSuccessModal = false">
+        <div class="modal-container success" @click.stop>
+          <div class="success-content">
+            <div class="success-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+            </div>
+            <h3 class="success-title">Добавлено в план!</h3>
+            <p class="success-text">
+              Курс "{{ selectedTopic?.name }}" теперь в вашем плане обучения
+            </p>
+            <button @click="showSuccessModal = false" class="modal-btn primary">
+              Отлично!
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </transition>
+
+    <!-- Paywall Modal -->
+    <PaymentModal
+      v-if="showPaywall"
+      :user-id="userId"
+      :visible="showPaywall"
+      :requested-topic-id="requestedTopicId"
+      @close="showPaywall = false"
+      @unlocked="handlePaymentSuccess"
+    />
   </div>
 </template>
 
 <script>
-// Mock API functions - replace with your actual API calls
-const fetchLessonsFromAPI = () => Promise.resolve([]); 
-const fetchUserProgressFromAPI = () => Promise.resolve({});
-const fetchStudyPlanFromAPI = () => Promise.resolve([]);
-const addToStudyList = (userId, data) => Promise.resolve({ success: true, data });
+import { mapGetters } from 'vuex';
+import { userStatusMixin } from '@/composables/useUserStatus';
+import {
+  getAllLessons,
+  getUserProgress,
+  getUserStudyList,
+  addToStudyList
+} from '@/api';
+import PaymentModal from '@/components/Modals/PaymentModal.vue';
 
 export default {
   name: 'CataloguePage',
-  
-  // =======================
-  // Component State
-  // =======================
+
+  components: {
+    PaymentModal
+  },
+
+  mixins: [userStatusMixin],
+
   data() {
     return {
-      // Raw data from API
+      userId: null,
+      lang: localStorage.getItem('lang') || 'ru',
+
+      // Raw data
       lessons: [],
       userProgress: {},
       studyPlanTopics: [],
-      
-      // UI State
+
+      // UI state
       isLoading: true,
-      currentView: 'subjects', // 'subjects', 'levels', 'topics'
+      currentView: 'subjects',
       selectedSubject: null,
       selectedLevel: null,
-      
-      // Processed data for display
+
+      // Processed data
       subjects: [],
       levels: [],
       topics: [],
-      
+
       // Filters
       searchQuery: '',
-      filterSubject: '',
-      filterLevel: '',
       showFree: false,
       showPremium: false,
       showNotStarted: false,
       showInProgress: false,
       showCompleted: false,
 
-      // Modals and interactivity
+      // Modals
       showAddModal: false,
       showSuccessModal: false,
       showPaywall: false,
       selectedTopic: null,
-      requestedTopicId: null,
-
-      // Reactivity and event listeners
-      componentKey: 0,
-      eventCleanupFunctions: [],
-      storeUnsubscribe: null,
-      
-      // Mock user data (replace with actual Vuex/Pinia state)
-      userId: 'user123', 
-      lang: 'en', // 'en' or 'ru'
+      requestedTopicId: null
     };
   },
-  
-  // =======================
-  // Computed Properties
-  // =======================
+
   computed: {
-    isPremiumUser() {
-      // Replace with your actual state management (Vuex/Pinia)
-      const status = /* this.$store.getters.userStatus || */ localStorage.getItem('userStatus') || 'free';
-      return status === 'pro' || status === 'premium';
-    },
+    ...mapGetters('user', {
+      vuexUserStatus: 'userStatus'
+    }),
 
     userStatus() {
-      return this.isPremiumUser ? 'premium' : 'free';
+      return this.vuexUserStatus || localStorage.getItem('userStatus') || 'free';
+    },
+
+    userStatusLabel() {
+      const labels = { free: 'Free', start: 'Start', pro: 'Pro' };
+      return labels[this.userStatus] || 'Free';
     },
 
     pageTitle() {
-      if (this.currentView === 'topics') return `Topics for ${this.selectedSubject} - Level ${this.selectedLevel}`;
-      if (this.currentView === 'levels') return `Levels for ${this.selectedSubject}`;
-      return 'Course Catalogue';
-    },
-    
-    uniqueSubjects() {
-      return this.subjects.map(s => s.name).sort();
-    },
-    
-    uniqueLevels() {
-      const allLevels = this.lessons.filter(l => this.selectedSubject ? l.subject === this.selectedSubject : true)
-                                   .map(l => l.level);
-      return [...new Set(allLevels)].sort((a, b) => a - b);
+      if (this.currentView === 'topics') {
+        return `${this.selectedSubject} - Уровень ${this.selectedLevel}`;
+      }
+      if (this.currentView === 'levels') {
+        return this.selectedSubject;
+      }
+      return 'Каталог курсов';
     },
 
     filteredSubjects() {
       return this.subjects.filter(subject => {
-        const searchMatch = !this.searchQuery || subject.name.toLowerCase().includes(this.searchQuery.toLowerCase());
-        const premiumMatch = (!this.showFree && !this.showPremium) || (this.showFree && !subject.hasPremium) || (this.showPremium && subject.hasPremium);
-        return searchMatch && premiumMatch;
+        if (this.searchQuery) {
+          const query = this.searchQuery.toLowerCase();
+          if (!subject.name.toLowerCase().includes(query)) return false;
+        }
+        return true;
       });
     },
-    
+
     filteredLevels() {
-      return this.levels.filter(level => {
-        return !this.filterLevel || String(level.name) === String(this.filterLevel);
-      });
+      return this.levels;
     },
 
     filteredTopics() {
       return this.topics.filter(topic => {
-        const searchMatch = !this.searchQuery || topic.name.toLowerCase().includes(this.searchQuery.toLowerCase());
-        const levelMatch = !this.filterLevel || String(topic.level) === String(this.filterLevel);
-        const typeMatch = (!this.showFree && !this.showPremium) || (this.showFree && topic.type === 'free') || (this.showPremium && (topic.type === 'premium' || topic.type === 'pro'));
+        // Search
+        if (this.searchQuery) {
+          const query = this.searchQuery.toLowerCase();
+          if (!topic.name.toLowerCase().includes(query)) return false;
+        }
+
+        // Type filter
+        if (this.showFree && topic.type !== 'free') return false;
+        if (this.showPremium && topic.type === 'free') return false;
+
+        // Progress filter
         const progress = topic.progress || 0;
-        const progressMatch = (!this.showNotStarted && !this.showInProgress && !this.showCompleted) ||
-          (this.showNotStarted && progress === 0) ||
-          (this.showInProgress && progress > 0 && progress < 100) ||
-          (this.showCompleted && progress === 100);
+        if (this.showNotStarted && progress !== 0) return false;
+        if (this.showInProgress && (progress === 0 || progress === 100)) return false;
+        if (this.showCompleted && progress !== 100) return false;
 
-        return searchMatch && levelMatch && typeMatch && progressMatch;
+        return true;
       });
+    },
+
+    hasActiveFilters() {
+      return !!(
+        this.searchQuery ||
+        this.showFree ||
+        this.showPremium ||
+        this.showNotStarted ||
+        this.showInProgress ||
+        this.showCompleted
+      );
     }
   },
 
-  // =======================
-  // Lifecycle Hooks
-  // =======================
   async mounted() {
-    this.isLoading = true;
-    try {
-      const [lessonsData, progressData, planData] = await Promise.all([
-        fetchLessonsFromAPI(),
-        fetchUserProgressFromAPI(),
-        fetchStudyPlanFromAPI()
-      ]);
-      
-      this.lessons = lessonsData || [];
-      this.userProgress = progressData || {};
-      this.studyPlanTopics = (planData || []).map(item => this.extractTopicId(item.topicId));
-      this.processSubjects();
-    } catch (error) {
-      this.showErrorMessage("Failed to load course data.");
-      console.error("❌ Data fetching error:", error);
-    } finally {
-      this.isLoading = false;
-    }
-    this.setupEventListeners();
+    await this.initialize();
   },
 
-  beforeUnmount() {
-    this.cleanup();
-  },
-
-  // =======================
-  // Methods
-  // =======================
   methods: {
-    // Data Processing
+    async initialize() {
+      this.userId = this.$store?.state?.firebaseUserId || 
+                    localStorage.getItem('firebaseUserId');
+
+      if (!this.userId) {
+        this.$router.push('/');
+        return;
+      }
+
+      await this.loadData();
+    },
+
+    async loadData() {
+      try {
+        this.isLoading = true;
+
+        const [lessonsResult, progressResult, studyListResult] = await Promise.all([
+          getAllLessons(),
+          getUserProgress(this.userId),
+          getUserStudyList(this.userId)
+        ]);
+
+        this.lessons = lessonsResult?.data || [];
+        
+        // Process user progress
+        if (progressResult?.success && Array.isArray(progressResult.data)) {
+          const progressMap = {};
+          progressResult.data.forEach(p => {
+            const topicId = this.extractTopicId(p.topicId);
+            if (topicId) {
+              if (!progressMap[topicId]) {
+                progressMap[topicId] = { completed: 0, total: 0 };
+              }
+              progressMap[topicId].total++;
+              if (p.completed) progressMap[topicId].completed++;
+            }
+          });
+          
+          Object.keys(progressMap).forEach(topicId => {
+            const data = progressMap[topicId];
+            this.userProgress[topicId] = data.total > 0 
+              ? Math.round((data.completed / data.total) * 100)
+              : 0;
+          });
+        }
+
+        // Process study list
+        if (studyListResult?.success && Array.isArray(studyListResult.data)) {
+          this.studyPlanTopics = studyListResult.data
+            .map(item => this.extractTopicId(item.topicId))
+            .filter(Boolean);
+        }
+
+        this.processSubjects();
+      } catch (error) {
+        console.error('Error loading catalogue data:', error);
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
     processSubjects() {
-      if (!Array.isArray(this.lessons)) return;
       const subjectsMap = new Map();
+      
       this.lessons.forEach(lesson => {
-        if (!lesson || !lesson.subject) return;
+        if (!lesson?.subject) return;
+        
         const subjectName = String(lesson.subject);
+        
         if (!subjectsMap.has(subjectName)) {
           subjectsMap.set(subjectName, {
             name: subjectName,
-            topicCount: 0,
-            levelCount: 0,
-            hasPremium: false,
-            _topics: new Set(),
-            _levels: new Set()
+            topics: new Set(),
+            levels: new Set()
           });
         }
+        
         const subject = subjectsMap.get(subjectName);
-        if (lesson.topicId) subject._topics.add(this.extractTopicId(lesson.topicId));
-        if (lesson.level) subject._levels.add(String(lesson.level));
-        if (lesson.type === 'premium' || lesson.type === 'pro') subject.hasPremium = true;
+        const topicId = this.extractTopicId(lesson.topicId);
+        if (topicId) subject.topics.add(topicId);
+        if (lesson.level) subject.levels.add(String(lesson.level));
       });
+
       this.subjects = Array.from(subjectsMap.values()).map(s => ({
-        ...s,
-        topicCount: s._topics.size,
-        levelCount: s._levels.size,
+        name: s.name,
+        topicCount: s.topics.size,
+        levelCount: s.levels.size
       }));
     },
-    
+
     processLevels() {
-      if (!this.selectedSubject || !Array.isArray(this.lessons)) return;
       const levelsMap = new Map();
-      this.lessons.filter(l => l && String(l.subject) === this.selectedSubject).forEach(lesson => {
-        const levelName = String(lesson.level || '1');
-        if (!levelsMap.has(levelName)) {
-          levelsMap.set(levelName, { name: levelName, _topics: new Set() });
-        }
-        if (lesson.topicId) levelsMap.get(levelName)._topics.add(this.extractTopicId(lesson.topicId));
-      });
-      this.levels = Array.from(levelsMap.values()).map(level => ({
-        ...level,
-        topicCount: level._topics.size,
-        progress: this.calculateLevelProgress(level.name)
-      })).sort((a,b) => a.name - b.name);
+      
+      this.lessons
+        .filter(l => String(l.subject) === this.selectedSubject)
+        .forEach(lesson => {
+          const levelName = String(lesson.level || '1');
+          
+          if (!levelsMap.has(levelName)) {
+            levelsMap.set(levelName, {
+              name: levelName,
+              topics: new Set()
+            });
+          }
+          
+          const topicId = this.extractTopicId(lesson.topicId);
+          if (topicId) levelsMap.get(levelName).topics.add(topicId);
+        });
+
+      this.levels = Array.from(levelsMap.values())
+        .map(level => ({
+          name: level.name,
+          topicCount: level.topics.size,
+          progress: this.calculateLevelProgress(level.name)
+        }))
+        .sort((a, b) => Number(a.name) - Number(b.name));
     },
 
     processTopics() {
-      if (!this.selectedSubject || !this.selectedLevel || !Array.isArray(this.lessons)) return;
       const topicsMap = new Map();
-      const lessonsForLevel = this.lessons.filter(l => l && String(l.subject) === this.selectedSubject && String(l.level) === this.selectedLevel);
-      lessonsForLevel.forEach(lesson => {
-        if (!lesson || !lesson.topicId) return;
-        const topicId = this.extractTopicId(lesson.topicId);
-        if (!topicId) return;
-        if (!topicsMap.has(topicId)) {
-          topicsMap.set(topicId, {
-            topicId: topicId,
-            name: this.getTopicName(lesson),
-            level: String(lesson.level),
-            subject: String(lesson.subject),
-            lessonCount: 0, totalTime: 0, type: 'free', lessons: []
-          });
-        }
-        const entry = topicsMap.get(topicId);
-        entry.lessonCount++;
-        entry.totalTime += this.estimateLessonTime(lesson);
-        if (lesson.type === 'premium' || lesson.type === 'start' || lesson.type === 'pro') {
-          entry.type = 'premium';
-        }
-      });
+      
+      this.lessons
+        .filter(l => 
+          String(l.subject) === this.selectedSubject &&
+          String(l.level) === this.selectedLevel
+        )
+        .forEach(lesson => {
+          const topicId = this.extractTopicId(lesson.topicId);
+          if (!topicId) return;
+
+          if (!topicsMap.has(topicId)) {
+            topicsMap.set(topicId, {
+              topicId,
+              name: this.getTopicName(lesson),
+              level: String(lesson.level),
+              subject: String(lesson.subject),
+              lessonCount: 0,
+              totalTime: 0,
+              type: 'free'
+            });
+          }
+
+          const topic = topicsMap.get(topicId);
+          topic.lessonCount++;
+          topic.totalTime += this.estimateLessonTime(lesson);
+          
+          if (lesson.type === 'premium' || lesson.type === 'start' || lesson.type === 'pro') {
+            topic.type = 'premium';
+          }
+        });
+
       this.topics = Array.from(topicsMap.values()).map(topic => ({
         ...topic,
-        progress: Number(this.userProgress[topic.topicId]) || 0,
+        progress: this.userProgress[topic.topicId] || 0,
         inStudyPlan: this.studyPlanTopics.includes(topic.topicId)
       }));
     },
 
     calculateLevelProgress(levelName) {
-      if (!this.selectedSubject || !levelName || !Array.isArray(this.lessons)) return 0;
-      const levelTopics = this.lessons.filter(l => l && l.subject === this.selectedSubject && String(l.level) === String(levelName));
+      const levelTopics = this.lessons
+        .filter(l => 
+          l.subject === this.selectedSubject &&
+          String(l.level) === String(levelName)
+        );
+
       if (levelTopics.length === 0) return 0;
-      let totalProgress = 0;
-      const seenTopics = new Set();
-      levelTopics.forEach(lesson => {
-        const topicId = this.extractTopicId(lesson.topicId);
-        if (topicId && !seenTopics.has(topicId)) {
-          seenTopics.add(topicId);
-          totalProgress += Number(this.userProgress[topicId]) || 0;
-        }
+
+      const topicIds = new Set();
+      levelTopics.forEach(l => {
+        const id = this.extractTopicId(l.topicId);
+        if (id) topicIds.add(id);
       });
-      return seenTopics.size > 0 ? Math.round(totalProgress / seenTopics.size) : 0;
+
+      let totalProgress = 0;
+      topicIds.forEach(id => {
+        totalProgress += this.userProgress[id] || 0;
+      });
+
+      return topicIds.size > 0 ? Math.round(totalProgress / topicIds.size) : 0;
     },
 
-    // UI Navigation & Actions
     selectSubject(subjectName) {
-      this.selectedSubject = String(subjectName);
+      this.selectedSubject = subjectName;
       this.currentView = 'levels';
       this.processLevels();
-      this.searchQuery = '';
-      this.filterLevel = '';
+      this.clearFilters();
     },
 
     selectLevel(levelName) {
-      this.selectedLevel = String(levelName);
+      this.selectedLevel = levelName;
       this.currentView = 'topics';
       this.processTopics();
       this.searchQuery = '';
@@ -466,196 +735,209 @@ export default {
         this.selectedSubject = null;
         this.levels = [];
       }
-      this.searchQuery = '';
+      this.clearFilters();
     },
 
     clearFilters() {
       this.searchQuery = '';
-      this.filterSubject = '';
-      this.filterLevel = '';
       this.showFree = false;
       this.showPremium = false;
       this.showNotStarted = false;
       this.showInProgress = false;
       this.showCompleted = false;
     },
-    
-    // UI Helpers
-    getSubjectIcon(subject) {
-      const subjectStr = String(subject || '');
-      const icons = {
-        'Mathematics': '🔢', 'Math': '🔢', 'Математика': '🔢', 'English': '🇬🇧', 'Английский': '🇬🇧',
-        'Science': '🔬', 'Наука': '🔬', 'History': '📚', 'История': '📚', 'Geography': '🌍', 'География': '🌍',
-        'Programming': '💻', 'Программирование': '💻', 'Art': '🎨', 'Искусство': '🎨', 'Music': '🎵', 'Музыка': '🎵',
-        'Physics': '⚛️', 'Физика': '⚛️', 'Chemistry': '🧪', 'Химия': '🧪', 'Biology': '🧬', 'Биология': '🧬',
-        'Literature': '📖', 'Литература': '📖', 'Economics': '💰', 'Экономика': '💰', 'Philosophy': '🤔', 'Философия': '🤔'
-      };
-      return icons[subjectStr] || '📖';
+
+    handleTopicAccess(topicId, type) {
+      const hasAccess = this.hasTopicAccess(type);
+      
+      if (!hasAccess) {
+        this.requestedTopicId = topicId;
+        this.showPaywall = true;
+        return;
+      }
+
+      this.$router.push(`/topic/${topicId}/overview`);
     },
 
+    hasTopicAccess(topicType) {
+      if (topicType === 'free') return true;
+      if (this.userStatus === 'pro') return true;
+      if (topicType === 'premium' && this.userStatus === 'start') return true;
+      return false;
+    },
+
+    addToStudyPlan(topic) {
+      if (topic.inStudyPlan) return;
+      this.selectedTopic = topic;
+      this.showAddModal = true;
+    },
+
+    async confirmAddToStudyPlan() {
+      if (!this.selectedTopic || !this.userId) return;
+
+      try {
+        const topicId = this.extractTopicId(this.selectedTopic.topicId);
+        const studyListData = {
+          topicId,
+          topicName: this.selectedTopic.name,
+          subject: this.selectedTopic.subject,
+          level: this.selectedTopic.level
+        };
+
+        const result = await addToStudyList(this.userId, studyListData);
+
+        if (result?.success) {
+          this.selectedTopic.inStudyPlan = true;
+          this.studyPlanTopics.push(topicId);
+          
+          const topicIndex = this.topics.findIndex(t => t.topicId === topicId);
+          if (topicIndex !== -1) {
+            this.topics[topicIndex].inStudyPlan = true;
+          }
+
+          this.showAddModal = false;
+          this.showSuccessModal = true;
+        } else {
+          throw new Error('Failed to add to study plan');
+        }
+      } catch (error) {
+        console.error('Error adding to study plan:', error);
+        alert('Не удалось добавить курс в план обучения');
+        this.showAddModal = false;
+      }
+    },
+
+    handlePaymentSuccess() {
+      this.showPaywall = false;
+      this.$forceUpdate();
+    },
+
+    // Helper methods
     extractTopicId(topicId) {
       if (!topicId) return null;
       if (typeof topicId === 'string') return topicId;
-      if (typeof topicId === 'object' && topicId !== null) {
-        return topicId._id || topicId.id;
-      }
+      if (typeof topicId === 'object') return topicId._id || topicId.id;
       return String(topicId);
     },
 
     getTopicName(lesson) {
-      if (!lesson) return 'Unnamed Topic';
-      try {
-        if (typeof lesson.topic === 'string' && lesson.topic.trim()) return lesson.topic.trim();
-        if (lesson.topic && typeof lesson.topic === 'object' && lesson.topic !== null) {
-          if (lesson.topic[this.lang] && typeof lesson.topic[this.lang] === 'string') return String(lesson.topic[this.lang]).trim();
-          if (lesson.topic.en && typeof lesson.topic.en === 'string') return String(lesson.topic.en).trim();
-          const anyLangTopic = Object.values(lesson.topic).find(val => typeof val === 'string' && val.trim());
-          if (anyLangTopic) return anyLangTopic.trim();
-        }
-        if (lesson.translations && lesson.translations[this.lang] && lesson.translations[this.lang].topic) return String(lesson.translations[this.lang].topic).trim();
-        if (lesson.lessonName) return `Topic: ${String(lesson.lessonName).trim()}`;
-        if (lesson.title) return `Topic: ${String(lesson.title).trim()}`;
-        return 'Unnamed Topic';
-      } catch (error) {
-        console.error('❌ Error getting topic name:', error);
-        return 'Topic Name Error';
+      if (!lesson) return 'Без названия';
+      
+      if (typeof lesson.topic === 'string' && lesson.topic.trim()) {
+        return lesson.topic.trim();
       }
+      
+      if (lesson.topic && typeof lesson.topic === 'object') {
+        if (lesson.topic[this.lang]) return String(lesson.topic[this.lang]).trim();
+        if (lesson.topic.ru) return String(lesson.topic.ru).trim();
+        if (lesson.topic.en) return String(lesson.topic.en).trim();
+      }
+
+      if (lesson.lessonName) return `Тема: ${lesson.lessonName}`;
+      if (lesson.title) return `Тема: ${lesson.title}`;
+      
+      return 'Без названия';
+    },
+
+    estimateLessonTime(lesson) {
+      if (lesson.estimatedTime) return parseInt(lesson.estimatedTime);
+      if (lesson.duration) return parseInt(lesson.duration);
+      if (lesson.steps && Array.isArray(lesson.steps)) {
+        return Math.max(5, lesson.steps.length * 2);
+      }
+      return 10;
+    },
+
+    getSubjectIcon(subject) {
+      const icons = {
+        'Математика': '🔢',
+        'Английский': '🇬🇧',
+        'Русский': '📝',
+        'Наука': '🔬',
+        'История': '📚',
+        'География': '🌍',
+        'Программирование': '💻',
+        'Искусство': '🎨',
+        'Музыка': '🎵',
+        'Физика': '⚛️',
+        'Химия': '🧪',
+        'Биология': '🧬',
+        'Литература': '📖',
+        'Экономика': '💰',
+        'Философия': '🤔'
+      };
+      return icons[String(subject)] || '📖';
     },
 
     getLevelClass(level) {
       const levelNum = parseInt(level);
-      if (isNaN(levelNum)) return 'level-beginner';
       if (levelNum <= 3) return 'level-beginner';
       if (levelNum <= 6) return 'level-intermediate';
       return 'level-advanced';
     },
 
     getLevelIcon(level) {
-      const levelNum = parseInt(level);
-      if (isNaN(levelNum)) return '📚';
       const icons = ['🌱', '🌿', '🍃', '🌳', '🌲', '🏔️', '⭐', '💎', '👑', '🏆'];
-      return icons[Math.min(levelNum - 1, icons.length - 1)] || '📚';
+      const levelNum = parseInt(level) - 1;
+      return icons[Math.min(levelNum, icons.length - 1)] || '📚';
     },
 
     getLevelDescription(level) {
-      const levelNum = parseInt(level);
-      if (isNaN(levelNum)) return 'Basic Level';
       const descriptions = {
-        1: 'Beginner - Foundational concepts', 2: 'Elementary - Simple exercises', 3: 'Novice - Basic skills',
-        4: 'Intermediate - Developing abilities', 5: 'Skilled - Practical application', 6: 'Proficient - In-depth study',
-        7: 'Advanced - Complex concepts', 8: 'Expert - High-level skills', 9: 'Master - Professional mastery',
-        10: 'Virtuoso - Complete command'
+        1: 'Начальный - Основные концепции',
+        2: 'Элементарный - Простые упражнения',
+        3: 'Базовый - Основные навыки',
+        4: 'Средний - Развитие способностей',
+        5: 'Продвинутый - Практическое применение',
+        6: 'Профессиональный - Углубленное изучение',
+        7: 'Экспертный - Сложные концепции',
+        8: 'Мастерский - Высокий уровень навыков',
+        9: 'Виртуозный - Профессиональное мастерство',
+        10: 'Совершенный - Полное владение'
       };
-      return descriptions[levelNum] || `Level ${levelNum}`;
+      return descriptions[parseInt(level)] || `Уровень ${level}`;
     },
 
-    getProgressClass(progress) {
-      const prog = Number(progress) || 0;
-      if (prog === 100) return 'progress-completed';
-      if (prog >= 70) return 'progress-high';
-      if (prog >= 30) return 'progress-medium';
-      if (prog > 0) return 'progress-low';
-      return 'progress-none';
+    getProgressColor(progress) {
+      if (progress >= 80) return 'high';
+      if (progress >= 50) return 'medium';
+      if (progress >= 30) return 'low';
+      return 'very-low';
     },
 
     getButtonClass(progress) {
-      const prog = Number(progress) || 0;
-      if (prog === 100) return 'btn-completed';
-      if (prog > 0) return 'btn-continue';
-      return 'btn-start';
+      if (progress === 100) return 'completed';
+      if (progress > 0) return 'continue';
+      return 'start';
     },
 
     getButtonText(progress) {
-      const prog = Number(progress) || 0;
-      if (prog === 100) return '✅ Completed';
-      if (prog > 0) return '▶️ Continue';
-      return '🚀 Start';
+      if (progress === 100) return 'Завершено';
+      if (progress > 0) return 'Продолжить';
+      return 'Начать';
     },
 
-    estimateLessonTime(lesson) {
-      if (lesson.estimatedTime) return parseInt(lesson.estimatedTime);
-      if (lesson.duration) return parseInt(lesson.duration);
-      if (lesson.steps && Array.isArray(lesson.steps)) return Math.max(5, lesson.steps.length * 2);
-      return 10;
+    getTypeLabel(type) {
+      const labels = { free: 'Free', premium: 'Start', pro: 'Pro' };
+      return labels[type] || 'Free';
     },
 
-    showErrorMessage(message) {
-      console.error('💬 Error:', message);
-      alert(message); // Replace with a proper toast/notification system
-    },
-    
-    // User Actions
-    handleTopicAccess(topicId, type) {
-      if (!topicId) return;
-      if ((type === 'premium' || type === 'pro') && !this.isPremiumUser) {
-        this.requestedTopicId = topicId;
-        this.showPaywall = true;
-      } else {
-        // this.$router.push({ name: 'TopicOverview', params: { id: topicId } });
-        alert(`Navigating to topic ID: ${topicId}`);
-      }
+    getTopicWord(count) {
+      if (count % 10 === 1 && count % 100 !== 11) return 'тема';
+      if (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 10 || count % 100 >= 20)) return 'темы';
+      return 'тем';
     },
 
-    addToStudyPlan(topic) {
-      if (!topic || topic.inStudyPlan) return;
-      this.selectedTopic = topic;
-      this.showAddModal = true;
+    getLevelWord(count) {
+      if (count % 10 === 1 && count % 100 !== 11) return 'уровень';
+      if (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 10 || count % 100 >= 20)) return 'уровня';
+      return 'уровней';
     },
 
-    async confirmAddToStudyPlan() {
-      if (!this.selectedTopic || !this.userId) {
-        this.showErrorMessage('You must be logged in to add topics.');
-        this.showAddModal = false;
-        return;
-      }
-      try {
-        const topicId = this.extractTopicId(this.selectedTopic.topicId);
-        const studyListData = { topicId, topicName: this.selectedTopic.name, subject: this.selectedTopic.subject, level: this.selectedTopic.level };
-        const result = await addToStudyList(this.userId, studyListData);
-
-        if (result?.success !== false) {
-          this.selectedTopic.inStudyPlan = true;
-          this.studyPlanTopics.push(topicId);
-          const topicIndex = this.topics.findIndex(t => t && t.topicId === topicId);
-          if (topicIndex !== -1) this.topics[topicIndex].inStudyPlan = true;
-          this.showAddModal = false;
-          this.showSuccessModal = true;
-        } else {
-          throw new Error(result?.error || 'Failed to add to study plan.');
-        }
-      } catch (error) {
-        console.error('❌ Error adding to study plan:', error);
-        this.showErrorMessage('❌ Could not add topic to your study plan.');
-        this.showAddModal = false;
-      }
-    },
-    
-    // Event Handling & Reactivity
-    handleUserStatusChange(newStatus) {
-      if (this.userStatus === newStatus) return;
-      localStorage.setItem('userStatus', newStatus);
-      this.triggerReactivityUpdate();
-    },
-
-    setupEventListeners() {
-      if (typeof window === 'undefined') return;
-      this.handleStorageChange = (event) => {
-        if (event.key === 'userStatus') this.handleUserStatusChange(event.newValue);
-      };
-      window.addEventListener('storage', this.handleStorageChange);
-      this.eventCleanupFunctions.push(() => window.removeEventListener('storage', this.handleStorageChange));
-    },
-
-    triggerReactivityUpdate() {
-      this.componentKey++;
-      this.$forceUpdate();
-    },
-
-    cleanup() {
-      this.eventCleanupFunctions.forEach(cleanup => {
-        try { cleanup(); } catch (error) { console.warn('⚠️ Cleanup failed:', error); }
-      });
-      this.eventCleanupFunctions = [];
+    getLessonWord(count) {
+      if (count % 10 === 1 && count % 100 !== 11) return 'урок';
+      if (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 10 || count % 100 >= 20)) return 'урока';
+      return 'уроков';
     }
   }
 };
@@ -664,448 +946,1140 @@ export default {
 <style scoped>
 .catalogue-page {
   min-height: 100vh;
-  background: #fafbfc;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #fafafa;
+  padding-bottom: 2rem;
 }
 
 /* Header */
 .page-header {
-  background: #ffffff;
-  border-bottom: 1px solid #e9ecef;
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
   padding: 1.5rem 0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  margin-bottom: 2rem;
 }
 
 .header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   max-width: 1400px;
   margin: 0 auto;
   padding: 0 2rem;
-  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
 }
 
-.breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
+.header-left {
+  flex: 1;
+  min-width: 0;
 }
 
 .back-btn {
-  background: #f8f9fa;
-  border: 1px solid #e1e5e9;
-  color: #495057;
-  padding: 0.5rem 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
   border-radius: 8px;
+  color: #6b7280;
+  font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
-  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.back-btn svg {
+  width: 1rem;
+  height: 1rem;
 }
 
 .back-btn:hover {
-  background: #e9ecef;
-  transform: translateX(-2px);
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  color: #111827;
 }
 
-.breadcrumb-path {
+.breadcrumbs {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .breadcrumb-item {
-  padding: 0.5rem 0.75rem;
-  border-radius: 6px;
-  font-weight: 500;
-  font-size: 0.875rem;
-  color: #6c757d;
-  transition: all 0.2s;
+  font-size: 0.8125rem;
+  color: #9ca3af;
+  transition: color 0.2s;
 }
 
 .breadcrumb-item.active {
-  background: #a855f7;
-  color: white;
-}
-
-.breadcrumb-separator {
-  color: #adb5bd;
-}
-
-.subscription-badge {
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
+  color: #a855f7;
   font-weight: 600;
-  font-size: 0.75rem;
-  border: 1px solid;
-  text-transform: uppercase;
 }
 
-.badge-premium {
-  background: linear-gradient(135deg, #a855f7, #9333ea);
-  color: white;
-  border-color: #9333ea;
-}
-
-.badge-free {
-  background: #f8f9fa;
-  color: #495057;
-  border-color: #e1e5e9;
+.breadcrumb-arrow {
+  width: 0.875rem;
+  height: 0.875rem;
+  color: #d1d5db;
 }
 
 .page-title {
-  font-size: 2rem;
+  font-size: 1.875rem;
   font-weight: 700;
-  color: #212529;
+  color: #111827;
   margin: 0;
+}
+
+.status-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+.status-badge.status-free {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.status-badge.status-start {
+  background: #faf5ff;
+  color: #a855f7;
+}
+
+.status-badge.status-pro {
+  background: linear-gradient(135deg, #a855f7, #6366f1);
+  color: white;
+}
+
+/* Filters */
+.filters-section {
   max-width: 1400px;
-  margin: 0 auto;
+  margin: 0 auto 2rem;
   padding: 0 2rem;
 }
 
-/* Main Content */
-.main-content {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 2rem;
-}
-
-/* Filter Bar */
-.filter-bar {
-  background: #ffffff;
-  border: 1px solid #e9ecef;
+.filters-content {
+  background: white;
+  border: 1px solid #e5e7eb;
   border-radius: 12px;
   padding: 1.5rem;
-  margin-bottom: 2rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.search-box {
+  position: relative;
+  width: 100%;
+}
+
+.search-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.125rem;
+  height: 1.125rem;
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem 3rem 0.75rem 3rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 0.9375rem;
+  transition: all 0.2s;
+  background: #fafafa;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #a855f7;
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
+  background: white;
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.75rem;
+  height: 1.75rem;
+  border: none;
+  background: #e5e7eb;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #6b7280;
+}
+
+.clear-search-btn svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.clear-search-btn:hover {
+  background: #d1d5db;
+  color: #111827;
+}
+
+.filter-chips {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
-.filter-row {
+.filter-group {
   display: flex;
-  align-items: center;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.filter-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.chips-row {
+  display: flex;
+  gap: 0.5rem;
   flex-wrap: wrap;
 }
 
-.search-input,
-.filter-select {
-  padding: 0.625rem 1rem;
-  border: 1px solid #e1e5e9;
-  border-radius: 8px;
-  background: #ffffff;
+.filter-chip {
+  padding: 0.5rem 1rem;
+  border: 1.5px solid #e5e7eb;
+  background: white;
+  border-radius: 20px;
   font-size: 0.875rem;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
   transition: all 0.2s;
-  color: #495057;
-  flex: 1 1 200px;
+  white-space: nowrap;
 }
 
-.search-input:focus,
-.filter-select:focus {
-  outline: none;
+.filter-chip:hover {
   border-color: #a855f7;
-  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
+  color: #a855f7;
+  background: #faf5ff;
 }
 
-.checkbox-group {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-  flex-wrap: wrap;
+.filter-chip.active {
+  background: #a855f7;
+  border-color: #a855f7;
+  color: white;
 }
 
-.checkbox-label {
+.clear-all-btn {
+  align-self: flex-start;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.875rem;
-  color: #495057;
-  cursor: pointer;
-  padding: 0.5rem 0.75rem;
-  border-radius: 6px;
-  transition: all 0.2s;
-}
-
-.checkbox-label:hover {
-  background: #f8f9fa;
-}
-
-.checkbox-label input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-}
-
-.clear-btn {
-  background: #f8f9fa;
-  border: 1px solid #e9ecef;
-  color: #6c757d;
-  padding: 0.625rem 1rem;
+  padding: 0.625rem 1.125rem;
+  border: 1.5px solid #fca5a5;
+  background: #fef2f2;
   border-radius: 8px;
   font-size: 0.875rem;
   font-weight: 500;
+  color: #dc2626;
   cursor: pointer;
   transition: all 0.2s;
-  margin-left: auto;
 }
 
-.clear-btn:hover {
-  background: #e9ecef;
-  color: #495057;
+.clear-all-btn svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.clear-all-btn:hover {
+  background: #fee2e2;
+  border-color: #f87171;
 }
 
 /* Loading & Empty States */
-.loading-state, .empty-state {
+.loading-state,
+.empty-state {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 2rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 4rem 2rem;
-  gap: 1rem;
   text-align: center;
-  color: #6c757d;
-  background: #f8f9fa;
-  border-radius: 12px;
-  border: 1px solid #e9ecef;
+  min-height: 400px;
 }
 
-.loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid #f1f3f4;
-  border-top: 3px solid #a855f7;
+.spinner {
+  width: 3rem;
+  height: 3rem;
+  border: 3px solid #f3f4f6;
+  border-top-color: #a855f7;
   border-radius: 50%;
   animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
 }
 
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 
-.empty-icon {
-  font-size: 4rem;
-  opacity: 0.6;
-}
-.empty-state h3 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #495057;
-  margin: 0.5rem 0;
-}
-.empty-state p {
-  margin: 0;
+.loading-state p {
+  color: #6b7280;
   font-size: 0.875rem;
 }
 
-/* Grids */
-.subjects-grid, .levels-grid, .topics-grid {
-  display: grid;
-  gap: 1.5rem;
+.empty-icon {
+  width: 4rem;
+  height: 4rem;
+  color: #d1d5db;
+  margin-bottom: 1rem;
 }
-.subjects-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
-.levels-grid { grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); }
-.topics-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+
+.empty-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 0.5rem 0;
+}
+
+.empty-text {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+/* Main Content */
+.main-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
 
 /* Subject Cards */
+.subjects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
 .subject-card {
   background: white;
-  border: 1px solid #e9ecef;
-  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
   padding: 2rem 1.5rem;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  align-items: center;
   text-align: center;
+  gap: 1rem;
 }
+
 .subject-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(168, 85, 247, 0.15);
   border-color: #a855f7;
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.1);
+  transform: translateY(-2px);
 }
-.card-icon {
-  font-size: 3rem;
-  margin: 0 auto;
-  height: 80px;
-  width: 80px;
+
+.subject-icon {
+  width: 5rem;
+  height: 5rem;
+  background: linear-gradient(135deg, #f3e8ff, #e9d5ff);
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-  border-radius: 12px;
+  font-size: 2.5rem;
 }
-.card-title {
+
+.subject-title {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #212529;
+  color: #111827;
   margin: 0;
 }
-.card-stats {
+
+.subject-stats {
   display: flex;
-  gap: 0.5rem;
-  justify-content: center;
+  gap: 1rem;
   flex-wrap: wrap;
+  justify-content: center;
 }
-.stat-badge {
-  background: #f8f9fa;
-  color: #495057;
-  padding: 0.375rem 0.75rem;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  border: 1px solid #e9ecef;
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+  color: #6b7280;
+}
+
+.stat-item svg {
+  width: 0.875rem;
+  height: 0.875rem;
 }
 
 /* Level Cards */
+.levels-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1.5rem;
+}
+
 .level-card {
   background: white;
-  border: 1px solid #e9ecef;
-  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
   padding: 1.5rem;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.2s;
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
-.level-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-  border-color: #a855f7;
-}
-.level-header { display: flex; align-items: center; gap: 1rem; }
-.level-icon {
-  width: 50px; height: 50px;
-  border-radius: 12px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.5rem; flex-shrink: 0; border: 1px solid #e9ecef;
-}
-.level-icon.level-beginner { background: #d4edda; color: #155724; }
-.level-icon.level-intermediate { background: #fff3cd; color: #856404; }
-.level-icon.level-advanced { background: #f8d7da; color: #721c24; }
-.level-info { flex: 1; }
-.level-title { font-size: 1.125rem; font-weight: 600; color: #212529; margin: 0 0 0.25rem 0; }
-.level-description { font-size: 0.875rem; color: #6c757d; margin: 0; }
-.level-stats { display: flex; gap: 1rem; flex-wrap: wrap; }
-.stat-item { display: flex; align-items: center; gap: 0.375rem; font-size: 0.875rem; color: #6c757d; }
-.stat-icon { font-size: 1rem; }
 
-/* Topic Cards */
+.level-card:hover {
+  border-color: #a855f7;
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.1);
+  transform: translateY(-2px);
+}
+
+.level-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.level-icon {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  flex-shrink: 0;
+}
+
+.level-icon.level-beginner {
+  background: #dcfce7;
+  color: #10b981;
+}
+
+.level-icon.level-intermediate {
+  background: #fef3c7;
+  color: #f59e0b;
+}
+
+.level-icon.level-advanced {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+.level-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.level-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 0.25rem 0;
+}
+
+.level-description {
+  font-size: 0.8125rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.level-meta {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.meta-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  color: #6b7280;
+}
+
+.meta-badge svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+/* Topics Grid */
+.topics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
 .topic-card {
   background: white;
-  border: 1px solid #e9ecef;
-  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
   padding: 1.5rem;
-  transition: all 0.3s;
+  transition: all 0.2s;
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
-.topic-card:hover { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); }
-.topic-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
-.topic-title { font-size: 1.125rem; font-weight: 600; color: #212529; margin: 0; flex: 1; line-height: 1.4; }
+
+.topic-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.topic-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.topic-type {
+  padding: 0.25rem 0.625rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.topic-type.free {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.topic-type.premium {
+  background: #faf5ff;
+  color: #a855f7;
+}
+
+.topic-type.pro {
+  background: linear-gradient(to right, #faf5ff, #fce7f3);
+  color: #a855f7;
+}
+
 .add-btn {
-  width: 32px; height: 32px;
-  border-radius: 8px; border: 2px solid #a855f7;
-  background: white; color: #a855f7; font-size: 1.25rem;
-  cursor: pointer; transition: all 0.2s;
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  border: 1.5px solid #e5e7eb;
+  background: white;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #6b7280;
+  flex-shrink: 0;
 }
-.add-btn:hover:not(:disabled) { background: #a855f7; color: white; transform: scale(1.05); }
-.add-btn:disabled { background: #d4edda; border-color: #c3e6cb; color: #155724; cursor: not-allowed; }
-.topic-meta { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-.access-badge {
-  padding: 0.25rem 0.625rem; border-radius: 6px; font-size: 0.75rem;
-  font-weight: 500; border: 1px solid; text-transform: capitalize;
+
+.add-btn svg {
+  width: 1rem;
+  height: 1rem;
 }
-.access-badge.free { background: #d4edda; color: #155724; border-color: #c3e6cb; }
-.access-badge.premium, .access-badge.pro { background: #fcf8e3; color: #8a6d3b; border-color: #faebcc; }
-.topic-stats { display: flex; gap: 1rem; font-size: 0.875rem; }
+
+.add-btn:hover:not(:disabled) {
+  border-color: #a855f7;
+  background: #faf5ff;
+  color: #a855f7;
+}
+
+.add-btn:disabled {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #10b981;
+  cursor: not-allowed;
+}
+
+.topic-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.topic-meta {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+  color: #6b7280;
+}
+
+.meta-item svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}
 
 /* Progress */
-.progress-container { margin-top: auto; padding-top: 1rem; }
-.progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
-.progress-label { font-size: 0.875rem; font-weight: 500; color: #495057; }
-.progress-value { font-size: 0.875rem; font-weight: 600; color: #212529; }
-.progress-bar { height: 8px; background: #e9ecef; border-radius: 4px; overflow: hidden; }
-.progress-fill { height: 100%; border-radius: 4px; transition: width 0.3s ease; }
-.progress-fill.progress-completed { background: linear-gradient(90deg, #28a745, #20c997); }
-.progress-fill.progress-high { background: linear-gradient(90deg, #a855f7, #9333ea); }
-.progress-fill.progress-medium { background: linear-gradient(90deg, #fd7e14, #f59e0b); }
-.progress-fill.progress-low { background: linear-gradient(90deg, #dc3545, #e74c3c); }
-.progress-fill.progress-none { background: #e9ecef; }
+.progress-section {
+  margin-top: auto;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.8125rem;
+}
+
+.progress-label {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.progress-value {
+  color: #111827;
+  font-weight: 600;
+}
+
+.progress-bar-wrapper {
+  width: 100%;
+  height: 6px;
+  background: #f3f4f6;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.5s ease;
+}
+
+.progress-bar.high {
+  background: linear-gradient(to right, #10b981, #059669);
+}
+
+.progress-bar.medium {
+  background: linear-gradient(to right, #3b82f6, #2563eb);
+}
+
+.progress-bar.low {
+  background: linear-gradient(to right, #f59e0b, #d97706);
+}
+
+.progress-bar.very-low {
+  background: linear-gradient(to right, #ef4444, #dc2626);
+}
 
 /* Action Button */
 .action-btn {
-  width: 100%; padding: 0.75rem; border: none; border-radius: 8px;
-  font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.2s; margin-top: 0.5rem;
+  width: 100%;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
 }
-.btn-start { background: linear-gradient(135deg, #a855f7, #9333ea); color: white; }
-.btn-start:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3); }
-.btn-continue { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; }
-.btn-continue:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
-.btn-completed { background: #f8f9fa; color: #6c757d; cursor: default; }
+
+.action-btn.start {
+  background: linear-gradient(135deg, #a855f7, #9333ea);
+  color: white;
+}
+
+.action-btn.start:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
+}
+
+.action-btn.continue {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+}
+
+.action-btn.continue:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.action-btn.completed {
+  background: #f3f4f6;
+  color: #6b7280;
+  cursor: default;
+}
 
 /* Modal */
 .modal-overlay {
-  position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5);
-  display: flex; align-items: center; justify-content: center;
-  z-index: 10000; backdrop-filter: blur(4px); padding: 1rem;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
 }
-.modal-content {
-  background: white; border-radius: 16px; max-width: 500px; width: 100%;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); animation: modalSlide 0.3s ease-out; position: relative;
-}
-@keyframes modalSlide { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-.modal-close {
-  position: absolute; top: 1rem; right: 1rem; width: 32px; height: 32px;
-  border-radius: 8px; background: #f8f9fa; border: 1px solid #e9ecef;
-  color: #6c757d; font-size: 1.5rem; cursor: pointer; transition: all 0.2s;
-  display: flex; align-items: center; justify-content: center; line-height: 1;
-}
-.modal-close:hover { background: #e9ecef; }
-.modal-header { padding: 1.5rem 1.5rem 1rem; border-bottom: 1px solid #e9ecef; }
-.modal-header h3 { margin: 0; font-size: 1.25rem; font-weight: 600; color: #212529; padding-right: 2rem; }
-.modal-body { padding: 1.5rem; }
-.topic-preview { text-align: center; padding: 1.5rem; background: #f8f9fa; border-radius: 12px; border: 1px solid #e9ecef; }
-.topic-preview h4 { margin: 0 0 0.5rem; font-size: 1.125rem; font-weight: 600; color: #212529; }
-.topic-preview p { margin: 0 0 1rem; color: #6c757d; font-size: 0.875rem; }
-.topic-preview .topic-stats { justify-content: center; }
-.modal-footer { padding: 1rem 1.5rem 1.5rem; display: flex; gap: 0.75rem; justify-content: flex-end; }
-.btn-primary, .btn-secondary {
-  padding: 0.75rem 1.5rem; border: none; border-radius: 8px;
-  font-weight: 600; font-size: 0.875rem; cursor: pointer; transition: all 0.2s;
-}
-.btn-primary { background: linear-gradient(135deg, #a855f7, #9333ea); color: white; }
-.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3); }
-.btn-secondary { background: #f8f9fa; color: #6c757d; border: 1px solid #e9ecef; }
-.btn-secondary:hover { background: #e9ecef; }
 
-/* Success Modal */
-.success-modal .success-content { padding: 2rem; text-align: center; }
-.success-icon { font-size: 4rem; margin-bottom: 1rem; }
-.success-content h3 { font-size: 1.5rem; font-weight: 600; margin: 0 0 0.75rem; color: #28a745; }
-.success-content p { color: #6c757d; margin: 0 0 1.5rem; font-size: 0.875rem; }
+.modal-container {
+  background: white;
+  border-radius: 16px;
+  max-width: 28rem;
+  width: 100%;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  animation: modalSlide 0.3s ease-out;
+}
 
-/* Responsive */
-@media (max-width: 900px) {
-  .subjects-grid, .levels-grid, .topics-grid {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+@keyframes modalSlide {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
   }
 }
+
+.modal-header {
+  padding: 1.5rem 1.5rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.modal-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+  flex: 1;
+}
+
+.modal-close {
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  background: #f9fafb;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #9ca3af;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.modal-close svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.modal-close:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.topic-preview {
+  background: #fafafa;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.topic-preview h4 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 0.5rem 0;
+}
+
+.topic-desc {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0 0 1rem 0;
+}
+
+.topic-preview-stats {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.preview-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+  color: #6b7280;
+}
+
+.preview-stat svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.modal-footer {
+  padding: 1rem 1.5rem 1.5rem;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.modal-btn {
+  flex: 1;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.modal-btn.secondary {
+  background: white;
+  color: #6b7280;
+  border: 1.5px solid #e5e7eb;
+}
+
+.modal-btn.secondary:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.modal-btn.primary {
+  background: #a855f7;
+  color: white;
+}
+
+.modal-btn.primary:hover {
+  background: #9333ea;
+}
+
+/* Success Modal */
+.modal-container.success {
+  max-width: 24rem;
+}
+
+.success-content {
+  padding: 2rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.success-icon {
+  width: 4rem;
+  height: 4rem;
+  background: #dcfce7;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #10b981;
+}
+
+.success-icon svg {
+  width: 2rem;
+  height: 2rem;
+}
+
+.success-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #10b981;
+  margin: 0;
+}
+
+.success-text {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* Modal Transitions */
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.modal-enter-active .modal-container,
+.modal-leave-active .modal-container {
+  transition: all 0.3s ease;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+
+.modal-enter-from .modal-container,
+.modal-leave-to .modal-container {
+  transform: scale(0.95) translateY(-20px);
+  opacity: 0;
+}
+
+/* Responsive */
 @media (max-width: 768px) {
-  .main-content, .page-header { padding: 1.5rem; }
-  .header-content { flex-direction: column; align-items: flex-start; gap: 1rem; }
-  .page-title { font-size: 1.75rem; padding: 0; }
-  .filter-row { flex-direction: column; align-items: stretch; }
-  .clear-btn { margin-left: 0; }
-  .subjects-grid, .levels-grid, .topics-grid { grid-template-columns: 1fr; }
-  .modal-footer { flex-direction: column; }
-  .btn-primary, .btn-secondary { width: 100%; }
+  .page-header {
+    padding: 1rem 0;
+  }
+
+  .header-content {
+    padding: 0 1.5rem;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .page-title {
+    font-size: 1.5rem;
+  }
+
+  .filters-section,
+  .main-content {
+    padding: 0 1.5rem;
+  }
+
+  .filters-content {
+    padding: 1.25rem;
+  }
+
+  .filter-group {
+    gap: 0.5rem;
+  }
+
+  .filter-chip {
+    padding: 0.4375rem 0.875rem;
+    font-size: 0.8125rem;
+  }
+
+  .subjects-grid,
+  .levels-grid,
+  .topics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .subject-card {
+    padding: 1.5rem;
+  }
+
+  .subject-icon {
+    width: 4rem;
+    height: 4rem;
+    font-size: 2rem;
+  }
+
+  .modal-footer {
+    flex-direction: column;
+  }
+
+  .modal-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .catalogue-page {
+    padding-bottom: 1rem;
+  }
+
+  .page-header {
+    margin-bottom: 1.5rem;
+  }
+
+  .header-content {
+    padding: 0 1rem;
+  }
+
+  .page-title {
+    font-size: 1.25rem;
+  }
+
+  .filters-section,
+  .main-content {
+    padding: 0 1rem;
+  }
+
+  .back-btn {
+    padding: 0.5rem 0.875rem;
+    font-size: 0.8125rem;
+  }
+
+  .status-badge {
+    padding: 0.375rem 0.75rem;
+  }
+}
+
+/* Focus States */
+.back-btn:focus,
+.search-input:focus,
+.filter-chip:focus,
+.clear-all-btn:focus,
+.add-btn:focus,
+.action-btn:focus,
+.modal-close:focus,
+.modal-btn:focus {
+  outline: 2px solid #a855f7;
+  outline-offset: 2px;
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .catalogue-page {
+    background: #111827;
+  }
+
+  .page-header {
+    background: #1f2937;
+    border-bottom-color: #374151;
+  }
+
+  .back-btn {
+    background: #374151;
+    border-color: #4b5563;
+    color: #9ca3af;
+  }
+
+  .back-btn:hover {
+    background: #4b5563;
+    color: #f9fafb;
+  }
+
+  .page-title,
+  .breadcrumb-item.active {
+    color: #f9fafb;
+  }
+
+  .breadcrumb-item {
+    color: #6b7280;
+  }
+
+  .filters-content,
+  .subject-card,
+  .level-card,
+  .topic-card,
+  .modal-container {
+    background: #1f2937;
+    border-color: #374151;
+  }
+
+  .search-input {
+    background: #111827;
+    border-color: #374151;
+    color: #f9fafb;
+  }
+
+  .search-input:focus {
+    background: #1f2937;
+  }
+
+  .filter-chip {
+    background: #111827;
+    border-color: #374151;
+    color: #9ca3af;
+  }
+
+  .filter-chip:hover {
+    background: #1f2937;
+  }
+
+  .subject-title,
+  .level-title,
+  .topic-title,
+  .modal-title,
+  .empty-title {
+    color: #f9fafb;
+  }
+
+  .level-description,
+  .empty-text,
+  .stat-item,
+  .meta-item,
+  .progress-label,
+  .topic-desc {
+    color: #9ca3af;
+  }
+
+  .progress-value {
+    color: #f9fafb;
+  }
+
+  .progress-bar-wrapper {
+    background: #374151;
+  }
+
+  .topic-preview {
+    background: #111827;
+    border-color: #374151;
+  }
+
+  .modal-close {
+    background: #374151;
+    color: #9ca3af;
+  }
+
+  .modal-close:hover {
+    background: #4b5563;
+    color: #f9fafb;
+  }
+
+  .modal-header {
+    border-bottom-color: #374151;
+  }
+
+  .meta-badge {
+    background: #111827;
+    border-color: #374151;
+    color: #9ca3af;
+  }
 }
 </style>
