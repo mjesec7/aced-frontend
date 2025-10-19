@@ -1226,3 +1226,4 @@ export default {
     transition-duration: 0.01ms !important;
   }
 }
+</style>
