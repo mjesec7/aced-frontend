@@ -1,21 +1,78 @@
 <template>
   <div class="catalogue-page">
-    <header class="page-header">
-      <div class="header-content">
-        <div class="header-left">
-          <div>
-            <h1 class="page-title">Каталог курсов</h1>
+    <!-- Hero Header -->
+    <header class="hero-header">
+      <div class="hero-content">
+        <div class="hero-left">
+          <div class="hero-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+              <path d="M2 17l10 5 10-5"/>
+              <path d="M2 12l10 5 10-5"/>
+            </svg>
+            Обучение
           </div>
+          <h1 class="hero-title">Откройте мир знаний</h1>
+          <p class="hero-subtitle">{{ filteredCourses.length }} курсов доступно для изучения</p>
         </div>
-        <div class="status-badge" :class="`status-${userStatus}`">
-          {{ userStatusLabel }}
+        <div class="status-container">
+          <div class="status-badge" :class="`status-${userStatus}`">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2a10 10 0 1 0 0 20 10 10 0 1 0 0-20z"/>
+              <path d="M12 6v6l4 2"/>
+            </svg>
+            {{ userStatusLabel }}
+          </div>
         </div>
       </div>
     </header>
 
-    <div class="filters-section">
-      <div class="filters-content">
-        <div class="search-box">
+    <!-- Quick Stats -->
+    <div class="stats-section">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+            </svg>
+          </div>
+          <div class="stat-info">
+            <span class="stat-value">{{ courses.length }}</span>
+            <span class="stat-label">Всего курсов</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon purple">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+              <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+          </div>
+          <div class="stat-info">
+            <span class="stat-value">{{ studyPlanTopics.length }}</span>
+            <span class="stat-label">В вашем плане</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon gold">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+          </div>
+          <div class="stat-info">
+            <span class="stat-value">{{ availableSubjects.length }}</span>
+            <span class="stat-label">Предметов</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search and Filters Bar -->
+    <div class="control-section">
+      <div class="control-content">
+        <!-- Search -->
+        <div class="search-container">
           <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="8"/>
             <path d="m21 21-4.35-4.35"/>
@@ -24,9 +81,9 @@
             v-model="searchQuery"
             type="text"
             class="search-input"
-            placeholder="Поиск курсов..."
+            placeholder="Найти курс по названию..."
           />
-          <button v-if="searchQuery" @click="searchQuery = ''" class="clear-search-btn">
+          <button v-if="searchQuery" @click="searchQuery = ''" class="clear-btn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="18" y1="6" x2="6" y2="18"/>
               <line x1="6" y1="6" x2="18" y2="18"/>
@@ -34,39 +91,40 @@
           </button>
         </div>
 
-        <div class="filters-row">
-          <div class="filter-dropdown">
-            <label class="dropdown-label">Предмет:</label>
-            <select v-model="selectedSubjectFilter" class="dropdown-select">
-              <option :value="null">Все предметы</option>
+        <!-- Filter Pills -->
+        <div class="filters-pills">
+          <div class="filter-pill">
+            <label>Предмет</label>
+            <select v-model="selectedSubjectFilter">
+              <option :value="null">Все</option>
               <option v-for="subject in availableSubjects" :key="subject" :value="subject">
                 {{ subject }}
               </option>
             </select>
           </div>
 
-          <div class="filter-dropdown">
-            <label class="dropdown-label">Уровень:</label>
-            <select v-model="selectedLevelFilter" class="dropdown-select">
-              <option :value="null">Все уровни</option>
+          <div class="filter-pill">
+            <label>Уровень</label>
+            <select v-model="selectedLevelFilter">
+              <option :value="null">Все</option>
               <option v-for="level in availableLevels" :key="level" :value="level">
-                Уровень {{ level }}
+                {{ level }}
               </option>
             </select>
           </div>
 
-          <div class="filter-dropdown">
-            <label class="dropdown-label">Тип:</label>
-            <select v-model="typeFilter" class="dropdown-select">
-              <option value="all">Все типы</option>
+          <div class="filter-pill">
+            <label>Тип</label>
+            <select v-model="typeFilter">
+              <option value="all">Все</option>
               <option value="free">Free</option>
               <option value="premium">Premium</option>
             </select>
           </div>
 
-          <div class="filter-dropdown">
-            <label class="dropdown-label">Прогресс:</label>
-            <select v-model="progressFilter" class="dropdown-select">
+          <div class="filter-pill">
+            <label>Прогресс</label>
+            <select v-model="progressFilter">
               <option value="all">Все</option>
               <option value="not-started">Не начаты</option>
               <option value="in-progress">В процессе</option>
@@ -74,27 +132,15 @@
             </select>
           </div>
 
-          <button v-if="hasActiveFilters" @click="clearFilters" class="clear-all-btn">
+          <button v-if="hasActiveFilters" @click="clearFilters" class="reset-btn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
+              <polyline points="1 4 1 10 7 10"/>
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
             </svg>
             Сбросить
           </button>
-        </div>
-      </div>
-    </div>
 
-    <div v-if="isLoading" class="loading-state">
-      <div class="spinner"></div>
-      <p>Загрузка каталога...</p>
-    </div>
-
-    <main v-else class="main-content">
-      <div class="results-header">
-        <p class="results-count">Найдено курсов: {{ filteredCourses.length }}</p>
-        <div class="results-actions">
-          <button @click="shuffleCourses" class="shuffle-btn" title="Показать другие случайные курсы">
+          <button @click="shuffleCourses" class="shuffle-btn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="16 3 21 3 21 8"/>
               <line x1="4" y1="20" x2="21" y2="3"/>
@@ -106,148 +152,171 @@
           </button>
         </div>
       </div>
+    </div>
 
-      <div v-if="paginatedCourses.length" class="courses-grid">
-        <div v-for="course in paginatedCourses" :key="course.topicId" class="course-card">
-          <div class="course-header">
-            <span :class="['course-type', course.type]">{{ getTypeLabel(course.type) }}</span>
-            <button class="add-btn" @click.stop="addToStudyPlan(course)" :disabled="course.inStudyPlan" :title="course.inStudyPlan ? 'Уже в вашем плане' : 'Добавить в план обучения'">
-              <svg v-if="course.inStudyPlan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <polyline points="20 6 9 17 4 12"/>
-              </svg>
-              <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="12" y1="5" x2="12" y2="19"/>
-                <line x1="5" y1="12" x2="19" y2="12"/>
-              </svg>
-            </button>
-          </div>
-
-          <h3 class="course-title">{{ course.name }}</h3>
-
-          <div class="course-info">
-            <div class="info-row">
-              <span class="info-label">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-                </svg>
-                Предмет:
-              </span>
-              <span class="info-value">{{ course.subject }}</span>
-            </div>
-
-            <div class="info-row">
-              <span class="info-label">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-                </svg>
-                Уровень:
-              </span>
-              <span class="info-value">{{ getLevelDescription(course.level) }}</span>
-            </div>
-
-            <div class="info-row">
-              <span class="info-label">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                  <polyline points="14 2 14 8 20 8"/>
-                </svg>
-                Уроков:
-              </span>
-              <span class="info-value">{{ course.lessonCount }} {{ getLessonWord(course.lessonCount) }}</span>
-            </div>
-
-            <div class="info-row">
-              <span class="info-label">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="10"/>
-                  <polyline points="12 6 12 12 16 14"/>
-                </svg>
-                Время:
-              </span>
-              <span class="info-value">{{ course.totalTime }} мин</span>
-            </div>
-          </div>
-
-          <div class="progress-section">
-            <div class="progress-header">
-              <span class="progress-label">Ваш прогресс</span>
-              <span class="progress-value">{{ course.progress }}%</span>
-            </div>
-            <div class="progress-bar-wrapper">
-              <div class="progress-bar" :class="getProgressColor(course.progress)" :style="{ width: course.progress + '%' }"></div>
-            </div>
-          </div>
-
-          <button class="action-btn" :class="getButtonClass(course.progress)" @click="handleCourseAccess(course.topicId, course.type)">
-            {{ getButtonText(course.progress) }}
-          </button>
-        </div>
+    <!-- Loading State -->
+    <div v-if="isLoading" class="loading-container">
+      <div class="loader">
+        <div class="loader-ring"></div>
+        <div class="loader-ring"></div>
+        <div class="loader-ring"></div>
       </div>
-      <div v-if="paginatedCourses.length" class="pagination-container">
-        <button @click="prevPage" :disabled="currentPage === 1" class="pagination-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="15 18 9 12 15 6"/>
+      <p>Загружаем курсы...</p>
+    </div>
+
+    <!-- Main Content -->
+    <main v-else class="main-section">
+      <!-- Empty State -->
+      <div v-if="!paginatedCourses.length" class="empty-container">
+        <div class="empty-illustration">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M16 16s-1.5-2-4-2-4 2-4 2"/>
+            <line x1="9" y1="9" x2="9.01" y2="9"/>
+            <line x1="15" y1="9" x2="15.01" y2="9"/>
           </svg>
-          Назад
-        </button>
-        <div class="pagination-info">
-          <span class="page-numbers">Страница {{ currentPage }} из {{ totalPages }}</span>
-          <span class="showing-info">Показано {{ paginatedCourses.length }} из {{ filteredCourses.length }}</span>
         </div>
-        <button @click="nextPage" :disabled="currentPage === totalPages" class="pagination-btn">
-          Вперед
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="9 18 15 12 9 6"/>
-          </svg>
-        </button>
+        <h3>Курсы не найдены</h3>
+        <p>Попробуйте изменить параметры фильтров или поиска</p>
       </div>
-      <div v-else class="empty-state">
-        <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"/>
-          <line x1="12" y1="8" x2="12" y2="12"/>
-          <line x1="12" y1="16" x2="12.01" y2="16"/>
-        </svg>
-        <h3 class="empty-title">Курсы не найдены</h3>
-        <p class="empty-text">Попробуйте изменить параметры поиска или фильтры</p>
-      </div>
-    </main>
 
-    <transition name="modal">
-      <div v-if="showAddModal" class="modal-overlay" @click="showAddModal = false">
-        <div class="modal-container" @click.stop>
-          <div class="modal-header">
-            <h3 class="modal-title">Добавить в план обучения?</h3>
-            <button class="modal-close" @click="showAddModal = false">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="18" y1="6" x2="6" y2="18"/>
-                <line x1="6" y1="6" x2="18" y2="18"/>
-              </svg>
-            </button>
-          </div>
-          <div class="modal-body" v-if="selectedCourse">
-            <div class="course-preview">
-              <h4>{{ selectedCourse.name }}</h4>
-              <p class="course-desc">{{ selectedCourse.subject }} - {{ getLevelDescription(selectedCourse.level) }}</p>
-              <div class="course-preview-stats">
-                <span class="preview-stat">
+      <!-- Courses Grid -->
+      <div v-else class="courses-container">
+        <div class="courses-grid">
+          <article v-for="course in paginatedCourses" :key="course.topicId" class="course-card">
+            <!-- Card Header -->
+            <div class="card-header">
+              <span class="course-badge" :class="course.type">
+                {{ getTypeLabel(course.type) }}
+              </span>
+              <button 
+                class="bookmark-btn" 
+                :class="{ active: course.inStudyPlan }"
+                @click.stop="addToStudyPlan(course)" 
+                :disabled="course.inStudyPlan"
+              >
+                <svg viewBox="0 0 24 24" :fill="course.inStudyPlan ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2">
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Card Body -->
+            <div class="card-body">
+              <h3 class="course-name">{{ course.name }}</h3>
+              
+              <div class="course-meta">
+                <span class="meta-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                  </svg>
+                  {{ course.subject }}
+                </span>
+                <span class="meta-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                  </svg>
+                  {{ getLevelDescription(course.level) }}
+                </span>
+              </div>
+
+              <div class="course-stats">
+                <div class="stat-item">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                     <polyline points="14 2 14 8 20 8"/>
                   </svg>
-                  {{ selectedCourse.lessonCount }} уроков
-                </span>
-                <span class="preview-stat">
+                  {{ course.lessonCount }} {{ getLessonWord(course.lessonCount) }}
+                </div>
+                <div class="stat-item">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="10"/>
                     <polyline points="12 6 12 12 16 14"/>
                   </svg>
-                  {{ selectedCourse.totalTime }} мин
-                </span>
+                  {{ course.totalTime }} мин
+                </div>
+              </div>
+
+              <!-- Progress -->
+              <div class="progress-container">
+                <div class="progress-info">
+                  <span class="progress-text">Прогресс</span>
+                  <span class="progress-percent">{{ course.progress }}%</span>
+                </div>
+                <div class="progress-track">
+                  <div 
+                    class="progress-fill" 
+                    :class="getProgressColor(course.progress)"
+                    :style="{ width: course.progress + '%' }"
+                  ></div>
+                </div>
               </div>
             </div>
+
+            <!-- Card Footer -->
+            <div class="card-footer">
+              <button 
+                class="course-btn" 
+                :class="getButtonClass(course.progress)"
+                @click="handleCourseAccess(course.topicId, course.type)"
+              >
+                <span>{{ getButtonText(course.progress) }}</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                  <polyline points="12 5 19 12 12 19"/>
+                </svg>
+              </button>
+            </div>
+          </article>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination-section">
+          <button @click="prevPage" :disabled="currentPage === 1" class="page-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+          </button>
+          
+          <div class="page-info">
+            <span class="page-current">{{ currentPage }}</span>
+            <span class="page-separator">/</span>
+            <span class="page-total">{{ totalPages }}</span>
           </div>
-          <div class="modal-footer">
+          
+          <button @click="nextPage" :disabled="currentPage === totalPages" class="page-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <!-- Add to Study Plan Modal -->
+    <transition name="modal-fade">
+      <div v-if="showAddModal" class="modal-backdrop" @click="showAddModal = false">
+        <div class="modal-card" @click.stop>
+          <button class="modal-close" @click="showAddModal = false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+          
+          <div class="modal-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
+          
+          <h3 class="modal-title">Добавить в план обучения?</h3>
+          <p class="modal-text" v-if="selectedCourse">
+            Курс <strong>{{ selectedCourse.name }}</strong> будет добавлен в ваш личный план обучения
+          </p>
+          
+          <div class="modal-actions">
             <button @click="showAddModal = false" class="modal-btn secondary">Отмена</button>
             <button @click="confirmAddToStudyPlan" class="modal-btn primary">Добавить</button>
           </div>
@@ -255,25 +324,36 @@
       </div>
     </transition>
 
-    <transition name="modal">
-      <div v-if="showSuccessModal" class="modal-overlay" @click="showSuccessModal = false">
-        <div class="modal-container success" @click.stop>
-          <div class="success-content">
-            <div class="success-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                <polyline points="22 4 12 14.01 9 11.01"/>
-              </svg>
-            </div>
-            <h3 class="success-title">Добавлено в план!</h3>
-            <p class="success-text">Курс "{{ selectedCourse?.name }}" теперь в вашем плане обучения</p>
-            <button @click="showSuccessModal = false" class="modal-btn primary">Отлично!</button>
+    <!-- Success Modal -->
+    <transition name="modal-fade">
+      <div v-if="showSuccessModal" class="modal-backdrop" @click="showSuccessModal = false">
+        <div class="modal-card success" @click.stop>
+          <div class="success-animation">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+              <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
           </div>
+          
+          <h3 class="modal-title">Успешно добавлено!</h3>
+          <p class="modal-text" v-if="selectedCourse">
+            {{ selectedCourse.name }}
+          </p>
+          
+          <button @click="showSuccessModal = false" class="modal-btn primary full">Отлично</button>
         </div>
       </div>
     </transition>
 
-    <PaymentModal v-if="showPaywall" :user-id="userId" :visible="showPaywall" :requested-topic-id="requestedTopicId" @close="showPaywall = false" @unlocked="handlePaymentSuccess"/>
+    <!-- Paywall Modal -->
+    <PaymentModal 
+      v-if="showPaywall" 
+      :user-id="userId" 
+      :visible="showPaywall" 
+      :requested-topic-id="requestedTopicId" 
+      @close="showPaywall = false" 
+      @unlocked="handlePaymentSuccess"
+    />
   </div>
 </template>
 
@@ -297,25 +377,19 @@ export default {
     return {
       userId: null,
       lang: localStorage.getItem('lang') || 'ru',
-      // Raw API data
       lessons: [],
       userProgress: {},
       studyPlanTopics: [],
-      // UI State
       isLoading: true,
-      // All courses (no view navigation needed)
       courses: [],
-      // Filters
       searchQuery: '',
       selectedSubjectFilter: null,
       selectedLevelFilter: null,
       typeFilter: 'all',
       progressFilter: 'all',
-      // Pagination - ADD THESE 3 LINES
       currentPage: 1,
       coursesPerPage: 20,
       randomSeed: Math.random(),
-      // Modal State
       showAddModal: false,
       showSuccessModal: false,
       showPaywall: false,
@@ -345,22 +419,17 @@ export default {
     },
     filteredCourses() {
       return this.courses.filter(course => {
-        // Search filter
         if (this.searchQuery && !course.name.toLowerCase().includes(this.searchQuery.toLowerCase())) {
           return false;
         }
-        // Subject filter
         if (this.selectedSubjectFilter && course.subject !== this.selectedSubjectFilter) {
           return false;
         }
-        // Level filter
         if (this.selectedLevelFilter && course.level !== this.selectedLevelFilter) {
           return false;
         }
-        // Type filter
         if (this.typeFilter === 'free' && course.type !== 'free') return false;
         if (this.typeFilter === 'premium' && course.type === 'free') return false;
-        // Progress filter
         const progress = course.progress || 0;
         if (this.progressFilter === 'not-started' && progress !== 0) return false;
         if (this.progressFilter === 'in-progress' && (progress === 0 || progress === 100)) return false;
@@ -368,7 +437,6 @@ export default {
         return true;
       });
     },
-    // ADD THESE TWO NEW COMPUTED PROPERTIES
     totalPages() {
       return Math.ceil(this.filteredCourses.length / this.coursesPerPage);
     },
@@ -398,7 +466,6 @@ export default {
   },
 
   methods: {
-    // --- INITIALIZATION & DATA LOADING ---
     async initialize() {
       this.userId = this.$store?.state?.firebaseUserId || localStorage.getItem('firebaseUserId');
       if (!this.userId) {
@@ -433,8 +500,6 @@ export default {
         this.isLoading = false;
       }
     },
-
-    // --- DATA PROCESSING ---
     processProgressData(progressData) {
       const progressMap = {};
       const topicLessonCounts = {};
@@ -489,18 +554,14 @@ export default {
         inStudyPlan: this.studyPlanTopics.includes(course.topicId),
       }));
     },
-
-    // --- UI HANDLERS ---
     clearFilters() {
       this.searchQuery = '';
       this.selectedSubjectFilter = null;
       this.selectedLevelFilter = null;
       this.typeFilter = 'all';
       this.progressFilter = 'all';
-      this.currentPage = 1; // ADD THIS LINE
+      this.currentPage = 1;
     },
-
-    // --- PAGINATION METHODS ---
     shuffleCourses() {
       this.randomSeed = Math.random();
       this.currentPage = 1;
@@ -526,8 +587,6 @@ export default {
       }
       return Math.abs(hash);
     },
-
-    // --- USER ACTIONS ---
     handleCourseAccess(topicId, type) {
       if (!this.hasTopicAccess(type)) {
         this.requestedTopicId = topicId;
@@ -550,12 +609,11 @@ export default {
     async confirmAddToStudyPlan() {
       if (!this.selectedCourse || !this.userId) return;
       try {
-        // Fix: Ensure we're sending the correct data structure
         const topicData = {
           topicId: this.selectedCourse.topicId,
-          topic: this.selectedCourse.name, // Required field
+          topic: this.selectedCourse.name,
           subject: this.selectedCourse.subject || 'General',
-          level: parseInt(this.selectedCourse.level) || 1, // Ensure it's a number
+          level: parseInt(this.selectedCourse.level) || 1,
           lessonCount: this.selectedCourse.lessonCount || 0,
           totalTime: this.selectedCourse.totalTime || 10,
           type: this.selectedCourse.type || 'free'
@@ -585,8 +643,6 @@ export default {
       this.showPaywall = false;
       this.$forceUpdate();
     },
-
-    // --- HELPER METHODS ---
     extractTopicId(topicId) {
       if (!topicId) return null;
       if (typeof topicId === 'string') return topicId;
@@ -627,7 +683,7 @@ export default {
     getButtonText(progress) {
       if (progress === 100) return 'Завершено';
       if (progress > 0) return 'Продолжить';
-      return 'Начать';
+      return 'Начать курс';
     },
     getTypeLabel(type) {
       return { free: 'Free', premium: 'Premium', pro: 'Pro' }[type] || 'Free';
@@ -642,822 +698,859 @@ export default {
 </script>
 
 <style scoped>
-/* GENERAL STYLES */
-.catalogue-page {
-  min-height: 100vh;
-  background: #fafafa;
-  padding-bottom: 2rem;
-}
-
-/* HEADER */
-.page-header {
-  background: white;
-  border-bottom: 1px solid #e5e7eb;
-  padding: 1.5rem 0;
-  margin-bottom: 2rem;
-  position: sticky;
-  top: 0;
-  z-index: 900;
-  backdrop-filter: blur(8px);
-  background-color: rgba(255, 255, 255, 0.8);
-}
-.header-content {
-  max-width: 1400px; 
-  margin: 0 auto; 
-  padding: 0 2rem;
-  display: flex; 
-  justify-content: space-between; 
-  align-items: flex-start; 
-  gap: 1rem;
-}
-.header-left { 
-  flex: 1; 
-  min-width: 0; 
-}
-.page-title { 
-  font-size: 1.875rem; 
-  font-weight: 700; 
-  color: #111827; 
-  margin: 0; 
-}
-.status-badge {
-  padding: 0.5rem 1rem; 
-  border-radius: 8px; 
-  font-size: 0.75rem;
-  font-weight: 700; 
-  text-transform: uppercase; 
-  letter-spacing: 0.05em; 
-  flex-shrink: 0;
-}
-.status-badge.status-free { 
-  background: #f3f4f6; 
-  color: #6b7280; 
-}
-.status-badge.status-start { 
-  background: linear-gradient(135deg, #fef3c7, #fde68a);
-  color: #92400e;
-  border: 1.5px solid #d97706;
-}
-.status-badge.status-pro { 
-  background: linear-gradient(135deg, #a855f7, #7c3aed); 
-  color: white; 
-  box-shadow: 0 2px 8px rgba(168, 85, 247, 0.3);
-}
-
-/* FILTERS */
-.filters-section { 
-  max-width: 1400px; 
-  margin: 0 auto 2rem; 
-  padding: 0 2rem; 
-}
-.filters-content {
-  background: white; 
-  border: 1px solid #e5e7eb; 
-  border-radius: 12px;
-  padding: 1.5rem; 
-  display: flex; 
-  flex-direction: column; 
-  gap: 1.25rem;
-}
-.search-box { 
-  position: relative; 
-  width: 100%; 
-}
-.search-icon { 
-  position: absolute; 
-  left: 1rem; 
-  top: 50%; 
-  transform: translateY(-50%); 
-  width: 1.125rem; 
-  height: 1.125rem; 
-  color: #9ca3af; 
-}
-.search-input {
-  width: 100%; 
-  padding: 0.75rem 3rem; 
-  border: 1px solid #e5e7eb;
-  border-radius: 10px; 
-  font-size: 0.9375rem; 
-  transition: all 0.2s; 
-  background: #fafafa;
-}
-.search-input:focus { 
-  outline: none; 
-  border-color: #6366f1; 
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); 
-  background: white; 
-}
-.clear-search-btn {
-  position: absolute; 
-  right: 0.75rem; 
-  top: 50%; 
-  transform: translateY(-50%);
-  width: 1.75rem; 
-  height: 1.75rem; 
-  border: none; 
-  background: #e5e7eb;
-  border-radius: 50%; 
-  display: flex; 
-  align-items: center; 
-  justify-content: center;
-  cursor: pointer; 
-  transition: all 0.2s; 
-  color: #6b7280;
-}
-.clear-search-btn:hover { 
-  background: #d1d5db; 
-  color: #111827; 
-}
-.clear-search-btn svg { 
-  width: 1rem; 
-  height: 1rem; 
-}
-
-/* FILTER DROPDOWNS */
-.filters-row {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-  align-items: flex-end;
-}
-.filter-dropdown {
-  display: flex;
-  flex-direction: column;
-  gap: 0.375rem;
-  flex: 1;
-  min-width: 150px;
-}
-.dropdown-label {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-.dropdown-select {
-  padding: 0.625rem 0.875rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  background: white;
-  font-size: 0.875rem;
-  color: #111827;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.dropdown-select:hover {
-  border-color: #d1d5db;
-}
-.dropdown-select:focus {
-  outline: none;
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-}
-
-.clear-all-btn {
-  align-self: flex-end;
-  display: flex; 
-  align-items: center; 
-  gap: 0.5rem;
-  padding: 0.625rem 1.125rem; 
-  border: 1.5px solid #fca5a5; 
-  background: #fef2f2;
-  border-radius: 8px; 
-  font-size: 0.875rem; 
-  font-weight: 500; 
-  color: #dc2626;
-  cursor: pointer; 
-  transition: all 0.2s;
-  height: 38px;
+* {
   box-sizing: border-box;
 }
-.clear-all-btn:hover { 
-  background: #fee2e2; 
-  border-color: #f87171; 
-}
-.clear-all-btn svg { 
-  width: 1rem; 
-  height: 1rem; 
+
+.catalogue-page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #fafafa 0%, #ffffff 100%);
 }
 
-/* LOADING & EMPTY STATES */
-.loading-state, .empty-state {
-  max-width: 1400px; 
-  margin: 0 auto; 
-  padding: 4rem 2rem; 
-  display: flex;
-  flex-direction: column; 
-  align-items: center; 
-  justify-content: center;
-  text-align: center; 
-  min-height: 400px;
+/* HERO HEADER */
+.hero-header {
+  background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+  padding: 3rem 0;
+  position: relative;
+  overflow: hidden;
 }
-.spinner {
-  width: 3rem; 
-  height: 3rem; 
-  border: 3px solid #f3f4f6; 
-  border-top-color: #6366f1;
-  border-radius: 50%; 
-  animation: spin 1s linear infinite; 
-  margin-bottom: 1rem;
+.hero-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
 }
-@keyframes spin { 
-  to { 
-    transform: rotate(360deg); 
-  } 
-}
-.loading-state p { 
-  color: #6b7280; 
-  font-size: 0.875rem; 
-}
-.empty-icon { 
-  width: 4rem; 
-  height: 4rem; 
-  color: #d1d5db; 
-  margin-bottom: 1rem; 
-}
-.empty-title { 
-  font-size: 1.25rem; 
-  font-weight: 600; 
-  color: #111827; 
-  margin: 0 0 0.5rem 0; 
-}
-.empty-text { 
-  color: #6b7280; 
-  font-size: 0.875rem; 
-  margin: 0; 
-}
-
-/* MAIN CONTENT */
-.main-content { 
-  max-width: 1400px; 
-  margin: 0 auto; 
-  padding: 0 2rem; 
-}
-.results-header {
-  margin-bottom: 1.5rem;
+.hero-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 2rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
+  gap: 2rem;
+  position: relative;
+  z-index: 1;
 }
-.results-count {
+.hero-left {
+  flex: 1;
+}
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border-radius: 50px;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+.hero-badge svg {
+  width: 1rem;
+  height: 1rem;
+}
+.hero-title {
+  font-size: 3rem;
+  font-weight: 800;
+  color: white;
+  margin: 0 0 1rem 0;
+  line-height: 1.1;
+}
+.hero-subtitle {
+  font-size: 1.125rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0;
+}
+.status-container {
+  flex-shrink: 0;
+}
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+.status-badge svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+.status-badge.status-free {
+  color: #6b7280;
+}
+.status-badge.status-start {
+  color: #d97706;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+}
+.status-badge.status-pro {
+  color: white;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+}
+
+/* STATS SECTION */
+.stats-section {
+  margin-top: -2rem;
+  position: relative;
+  z-index: 10;
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0 2rem;
+}
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+.stat-card {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s;
+}
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+.stat-icon {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.stat-icon svg {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+.stat-icon.blue {
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  color: #3b82f6;
+}
+.stat-icon.purple {
+  background: linear-gradient(135deg, #f3e8ff, #e9d5ff);
+  color: #a855f7;
+}
+.stat-icon.gold {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #d97706;
+}
+.stat-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.stat-value {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #111827;
+  line-height: 1;
+}
+.stat-label {
   font-size: 0.875rem;
   color: #6b7280;
   font-weight: 500;
-  margin: 0;
 }
-.results-actions {
+
+/* CONTROL SECTION */
+.control-section {
+  max-width: 1400px;
+  margin: 3rem auto 2rem;
+  padding: 0 2rem;
+}
+.control-content {
   display: flex;
-  gap: 0.75rem;
+  flex-direction: column;
+  gap: 1.5rem;
 }
-.shuffle-btn {
+.search-container {
+  position: relative;
+  width: 100%;
+}
+.search-icon {
+  position: absolute;
+  left: 1.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #9ca3af;
+}
+.search-input {
+  width: 100%;
+  padding: 1rem 3.5rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 16px;
+  font-size: 1rem;
+  background: white;
+  transition: all 0.2s;
+}
+.search-input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+}
+.clear-btn {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  background: #f3f4f6;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #6b7280;
+  transition: all 0.2s;
+}
+.clear-btn:hover {
+  background: #e5e7eb;
+  color: #111827;
+}
+.clear-btn svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* FILTER PILLS */
+.filters-pills {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.filter-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 0.5rem 1rem;
+  transition: all 0.2s;
+}
+.filter-pill:hover {
+  border-color: #d1d5db;
+}
+.filter-pill label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 600;
+}
+.filter-pill select {
+  border: none;
+  background: transparent;
+  font-size: 0.875rem;
+  color: #111827;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  padding: 0.25rem;
+}
+.reset-btn, .shuffle-btn {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1.25rem;
-  border: 1.5px solid #d4af37;
-  background: linear-gradient(135deg, #fdfbf7, #fef3c7);
-  border-radius: 10px;
+  border-radius: 12px;
   font-size: 0.875rem;
   font-weight: 600;
-  color: #92400e;
   cursor: pointer;
   transition: all 0.2s;
+  border: none;
+}
+.reset-btn {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 2px solid #fca5a5;
+}
+.reset-btn:hover {
+  background: #fee2e2;
+}
+.shuffle-btn {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #92400e;
+  border: 2px solid #fbbf24;
 }
 .shuffle-btn:hover {
-  background: linear-gradient(135deg, #fef3c7, #fde68a);
-  border-color: #b8860b;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
 }
-.shuffle-btn svg {
-  width: 1.125rem;
-  height: 1.125rem;
+.reset-btn svg, .shuffle-btn svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* LOADING */
+.loading-container {
+  max-width: 1400px;
+  margin: 4rem auto;
+  padding: 4rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+}
+.loader {
+  position: relative;
+  width: 80px;
+  height: 80px;
+}
+.loader-ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border: 4px solid transparent;
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: spin 1.5s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
+}
+.loader-ring:nth-child(2) {
+  border-top-color: #a855f7;
+  animation-delay: 0.2s;
+  width: 90%;
+  height: 90%;
+  top: 5%;
+  left: 5%;
+}
+.loader-ring:nth-child(3) {
+  border-top-color: #fbbf24;
+  animation-delay: 0.4s;
+  width: 80%;
+  height: 80%;
+  top: 10%;
+  left: 10%;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.loading-container p {
+  font-size: 1.125rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* EMPTY STATE */
+.empty-container {
+  max-width: 600px;
+  margin: 4rem auto;
+  padding: 4rem 2rem;
+  text-align: center;
+}
+.empty-illustration {
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 2rem;
+  background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.empty-illustration svg {
+  width: 60px;
+  height: 60px;
+  color: #9ca3af;
+}
+.empty-container h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 0.5rem 0;
+}
+.empty-container p {
+  font-size: 1rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* MAIN SECTION */
+.main-section {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 2rem 4rem;
+}
+.courses-container {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
 }
 
 /* COURSES GRID */
-.courses-grid { 
-  display: grid; 
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); 
-  gap: 1.5rem; 
+.courses-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 2rem;
 }
 
-/* COURSE CARDS */
+/* COURSE CARD */
 .course-card {
-  background: white; 
-  border: 1px solid #e5e7eb; 
-  border-radius: 12px;
-  padding: 1.5rem; 
-  transition: all 0.2s; 
-  display: flex; 
-  flex-direction: column; 
-  gap: 1rem;
+  background: white;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  border: 2px solid transparent;
 }
 .course-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); 
-  border-color: #d1d5db;
-  transform: translateY(-2px);
+  transform: translateY(-8px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  border-color: #e5e7eb;
 }
-.course-header { 
-  display: flex; 
-  justify-content: space-between; 
-  align-items: flex-start; 
-  gap: 1rem; 
+.card-header {
+  padding: 1.5rem 1.5rem 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
-.course-type {
-  padding: 0.375rem 0.75rem; 
-  border-radius: 6px; 
+.course-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
   font-size: 0.75rem;
-  font-weight: 600; 
-  text-transform: uppercase; 
-  letter-spacing: 0.025em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
-.course-type.free { 
-  background: #f3f4f6; 
-  color: #6b7280; 
+.course-badge.free {
+  background: #f3f4f6;
+  color: #6b7280;
 }
-.course-type.premium, 
-.course-type.pro { 
+.course-badge.premium, .course-badge.pro {
   background: linear-gradient(135deg, #fef3c7, #fde68a);
   color: #92400e;
-  border: 1px solid #fbbf24;
 }
-.add-btn {
-  width: 2.25rem; 
-  height: 2.25rem; 
-  border: 1.5px solid #e5e7eb; 
+.bookmark-btn {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 2px solid #e5e7eb;
   background: white;
-  border-radius: 8px; 
-  display: flex; 
-  align-items: center; 
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
   justify-content: center;
-  cursor: pointer; 
-  transition: all 0.2s; 
-  color: #6b7280; 
-  flex-shrink: 0;
+  cursor: pointer;
+  color: #9ca3af;
+  transition: all 0.2s;
 }
-.add-btn:hover:not(:disabled) { 
-  border-color: #6366f1; 
+.bookmark-btn:hover:not(:disabled) {
+  border-color: #6366f1;
   background: #eef2ff;
   color: #6366f1;
   transform: scale(1.05);
 }
-.add-btn:disabled { 
-  background: #dcfce7;
-  border-color: #86efac; 
-  color: #10b981; 
-  cursor: not-allowed; 
+.bookmark-btn.active {
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  border-color: #3b82f6;
+  color: #3b82f6;
 }
-.add-btn svg { 
-  width: 1.125rem; 
-  height: 1.125rem; 
+.bookmark-btn:disabled {
+  cursor: not-allowed;
 }
-.course-title { 
-  font-size: 1.125rem; 
-  font-weight: 600; 
-  color: #111827; 
-  margin: 0; 
-  line-height: 1.4; 
+.bookmark-btn svg {
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
-/* COURSE INFO */
-.course-info {
+.card-body {
+  padding: 1.5rem;
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  padding: 1rem;
-  background: #fafafa;
-  border-radius: 8px;
+  gap: 1rem;
 }
-.info-row {
+.course-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+  line-height: 1.3;
+}
+.course-meta {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.meta-item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.375rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
 }
-.info-label {
+.meta-item svg {
+  width: 1rem;
+  height: 1rem;
+  color: #9ca3af;
+}
+.course-stats {
+  display: flex;
+  gap: 1.5rem;
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: 12px;
+}
+.stat-item {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #374151;
+  font-weight: 600;
+}
+.stat-item svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  color: #6b7280;
+}
+
+.progress-container {
+  margin-top: auto;
+}
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+.progress-text {
   font-size: 0.8125rem;
   color: #6b7280;
   font-weight: 500;
 }
-.info-label svg {
-  width: 0.875rem;
-  height: 0.875rem;
-  flex-shrink: 0;
-}
-.info-value {
-  font-size: 0.875rem;
+.progress-percent {
+  font-size: 0.8125rem;
   color: #111827;
-  font-weight: 600;
+  font-weight: 700;
 }
-
-/* PROGRESS & ACTION BUTTONS */
-.progress-section { 
-  margin-top: auto; 
-}
-.progress-header { 
-  display: flex; 
-  justify-content: space-between; 
-  margin-bottom: 0.5rem; 
-  font-size: 0.8125rem; 
-}
-.progress-label { 
-  color: #6b7280; 
-  font-weight: 500; 
-}
-.progress-value { 
-  color: #111827;
-  font-weight: 600; 
-}
-.progress-bar-wrapper { 
-  width: 100%; 
-  height: 6px; 
-  background: #f3f4f6; 
-  border-radius: 9999px; 
+.progress-track {
+  width: 100%;
+  height: 8px;
+  background: #f3f4f6;
+  border-radius: 100px;
   overflow: hidden;
 }
-.progress-bar { 
-  height: 100%; 
-  border-radius: 9999px; 
-  transition: width 0.5s ease; 
+.progress-fill {
+  height: 100%;
+  border-radius: 100px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.progress-bar.high { 
-  background: linear-gradient(to right, #10b981, #059669);
+.progress-fill.high {
+  background: linear-gradient(90deg, #10b981, #059669);
 }
-.progress-bar.medium { 
-  background: linear-gradient(to right, #3b82f6, #2563eb);
+.progress-fill.medium {
+  background: linear-gradient(90deg, #6366f1, #4f46e5);
 }
-.progress-bar.low { 
-  background: linear-gradient(to right, #f59e0b, #d97706);
+.progress-fill.low {
+  background: linear-gradient(90deg, #f59e0b, #d97706);
 }
-.progress-bar.very-low { 
-  background: linear-gradient(to right, #ef4444, #dc2626);
-}
-.action-btn { 
-  width: 100%; 
-  padding: 0.75rem; 
-  border: none; 
-  border-radius: 8px; 
-  font-size: 0.875rem; 
-  font-weight: 600; 
-  cursor: pointer; 
-  transition: all 0.2s; 
-}
-.action-btn.start { 
-  background: linear-gradient(135deg, #a855f7, #9333ea); 
-  color: white; 
-}
-.action-btn.start:hover { 
-  transform: translateY(-1px); 
-  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3); 
-}
-.action-btn.continue { 
-  background: linear-gradient(135deg, #3b82f6, #2563eb); 
-  color: white; 
-}
-.action-btn.continue:hover { 
-  transform: translateY(-1px); 
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); 
-}
-.action-btn.completed { 
-  background: #f3f4f6; 
-  color: #6b7280; 
-  cursor: default; 
+.progress-fill.very-low {
+  background: linear-gradient(90deg, #ef4444, #dc2626);
 }
 
-/* PAGINATION */
-.pagination-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1.5rem;
-  margin-top: 3rem;
-  padding: 1.5rem;
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
+.card-footer {
+  padding: 0 1.5rem 1.5rem;
 }
-.pagination-btn {
+.course-btn {
+  width: 100%;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.25rem;
-  border: 1.5px solid #e5e7eb;
-  background: white;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #111827;
+  padding: 1rem;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.9375rem;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
 }
-.pagination-btn:hover:not(:disabled) {
-  background: #f9fafb;
-  border-color: #6366f1;
-  color: #6366f1;
-}
-.pagination-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.pagination-btn svg {
+.course-btn svg {
   width: 1.125rem;
   height: 1.125rem;
 }
-.pagination-info {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.25rem;
+.course-btn.start {
+  background: linear-gradient(135deg, #a855f7, #9333ea);
+  color: white;
 }
-.page-numbers {
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: #111827;
+.course-btn.start:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(168, 85, 247, 0.3);
 }
-.showing-info {
-  font-size: 0.8125rem;
+.course-btn.continue {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+}
+.course-btn.continue:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
+}
+.course-btn.completed {
+  background: #f3f4f6;
   color: #6b7280;
+  cursor: default;
+}
+
+/* PAGINATION */
+.pagination-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+}
+.page-btn {
+  width: 3rem;
+  height: 3rem;
+  border: 2px solid #e5e7eb;
+  background: white;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #6b7280;
+  transition: all 0.2s;
+}
+.page-btn:hover:not(:disabled) {
+  border-color: #6366f1;
+  background: #eef2ff;
+  color: #6366f1;
+  transform: scale(1.05);
+}
+.page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.page-btn svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+.page-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+.page-current {
+  color: #6366f1;
+}
+.page-separator {
+  color: #d1d5db;
+}
+.page-total {
+  color: #9ca3af;
 }
 
 /* MODALS */
-.modal-overlay {
-  position: fixed; 
-  inset: 0; 
-  background: rgba(0, 0, 0, 0.5); 
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(4px);
-  display: flex; 
-  align-items: center; 
-  justify-content: center; 
-  z-index: 1000; 
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
   padding: 1rem;
 }
-.modal-container {
-  background: white; 
-  border-radius: 16px; 
-  max-width: 28rem; 
+.modal-card {
+  background: white;
+  border-radius: 24px;
+  max-width: 28rem;
   width: 100%;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); 
-  animation: modalSlide 0.3s ease-out;
+  padding: 2rem;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
-@keyframes modalSlide { 
-  from { 
-    opacity: 0; 
-    transform: scale(0.95) translateY(-20px); 
-  } 
-  to { 
-    opacity: 1; 
-    transform: scale(1) translateY(0); 
-  } 
-}
-.modal-header { 
-  padding: 1.5rem 1.5rem 1rem; 
-  display: flex; 
-  justify-content: space-between; 
-  align-items: flex-start; 
-  border-bottom: 1px solid #f3f4f6; 
-}
-.modal-title { 
-  font-size: 1.125rem; 
-  font-weight: 600; 
-  color: #111827; 
-  margin: 0; 
-  flex: 1; 
+.modal-card.success {
+  text-align: center;
 }
 .modal-close {
-  width: 2rem; 
-  height: 2rem; 
-  border: none; 
-  background: #f9fafb; 
-  border-radius: 6px;
-  display: flex; 
-  align-items: center; 
-  justify-content: center; 
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: none;
+  background: #f3f4f6;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  color: #9ca3af; 
-  transition: all 0.2s; 
-  flex-shrink: 0;
+  color: #6b7280;
+  transition: all 0.2s;
 }
-.modal-close:hover { 
-  background: #f3f4f6; 
-  color: #111827; 
+.modal-close:hover {
+  background: #e5e7eb;
+  color: #111827;
 }
-.modal-close svg { 
-  width: 1.125rem; 
-  height: 1.125rem; 
+.modal-close svg {
+  width: 1.125rem;
+  height: 1.125rem;
 }
-.modal-body { 
-  padding: 1.5rem; 
+.modal-icon {
+  width: 4rem;
+  height: 4rem;
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.5rem;
+  color: #3b82f6;
 }
-.course-preview { 
-  background: #fafafa;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px; 
-  padding: 1.5rem; 
-  text-align: center; 
+.modal-icon svg {
+  width: 2rem;
+  height: 2rem;
 }
-.course-preview h4 { 
-  font-size: 1.125rem; 
-  font-weight: 600; 
-  color: #111827; 
-  margin: 0 0 0.5rem 0; 
+.success-animation {
+  width: 5rem;
+  height: 5rem;
+  background: linear-gradient(135deg, #dcfce7, #d1fae5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.5rem;
+  color: #10b981;
+  animation: successPulse 0.6s ease-out;
 }
-.course-desc { 
-  font-size: 0.875rem; 
-  color: #6b7280; 
-  margin: 0 0 1rem 0; 
+@keyframes successPulse {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
 }
-.course-preview-stats { 
-  display: flex; 
-  gap: 1rem; 
-  justify-content: center; 
-  flex-wrap: wrap; 
+.success-animation svg {
+  width: 2.5rem;
+  height: 2.5rem;
 }
-.preview-stat { 
-  display: flex; 
-  align-items: center; 
-  gap: 0.375rem; 
-  font-size: 0.8125rem; 
-  color: #6b7280; 
+.modal-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 0.75rem 0;
 }
-.preview-stat svg { 
-  width: 0.875rem; 
-  height: 0.875rem; 
+.modal-text {
+  font-size: 1rem;
+  color: #6b7280;
+  line-height: 1.6;
+  margin: 0 0 2rem 0;
 }
-.modal-footer { 
-  padding: 1rem 1.5rem 1.5rem; 
-  display: flex; 
-  gap: 0.75rem; 
+.modal-text strong {
+  color: #111827;
+  font-weight: 600;
 }
-.modal-btn { 
-  flex: 1; 
-  padding: 0.75rem 1.5rem; 
-  border-radius: 8px; 
-  font-weight: 500; 
-  font-size: 0.9375rem; 
-  cursor: pointer; 
-  transition: all 0.2s; 
-  border: none; 
+.modal-actions {
+  display: flex;
+  gap: 1rem;
 }
-.modal-btn.secondary { 
-  background: white; 
-  color: #6b7280; 
-  border: 1.5px solid #e5e7eb; 
+.modal-btn {
+  flex: 1;
+  padding: 1rem 1.5rem;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
 }
-.modal-btn.secondary:hover { 
-  background: #f9fafb; 
-  border-color: #d1d5db; 
+.modal-btn.secondary {
+  background: #f3f4f6;
+  color: #6b7280;
 }
-.modal-btn.primary { 
-  background: #a855f7; 
-  color: white; 
+.modal-btn.secondary:hover {
+  background: #e5e7eb;
 }
-.modal-btn.primary:hover { 
-  background: #9333ea; 
+.modal-btn.primary {
+  background: linear-gradient(135deg, #a855f7, #9333ea);
+  color: white;
 }
-.modal-container.success { 
-  max-width: 24rem; 
+.modal-btn.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(168, 85, 247, 0.3);
 }
-.success-content { 
-  padding: 2rem; 
-  text-align: center; 
-  display: flex; 
-  flex-direction: column; 
-  align-items: center; 
-  gap: 1rem; 
+.modal-btn.full {
+  width: 100%;
 }
-.success-icon { 
-  width: 4rem; 
-  height: 4rem; 
-  background: #dcfce7;
-  border-radius: 50%; 
-  display: flex; 
-  align-items: center; 
-  justify-content: center; 
-  color: #10b981; 
+
+.modal-fade-enter-active, .modal-fade-leave-active {
+  transition: opacity 0.3s;
 }
-.success-icon svg { 
-  width: 2rem; 
-  height: 2rem; 
+.modal-fade-enter-from, .modal-fade-leave-to {
+  opacity: 0;
 }
-.success-title { 
-  font-size: 1.25rem; 
-  font-weight: 600; 
-  color: #10b981; 
-  margin: 0; 
+.modal-fade-enter-active .modal-card, 
+.modal-fade-leave-active .modal-card {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.success-text { 
-  color: #6b7280; 
-  font-size: 0.875rem; 
-  margin: 0; 
-  line-height: 1.6; 
-}
-.modal-enter-active, 
-.modal-leave-active { 
-  transition: opacity 0.3s ease; 
-}
-.modal-enter-active .modal-container, 
-.modal-leave-active .modal-container { 
-  transition: all 0.3s ease; 
-}
-.modal-enter-from, 
-.modal-leave-to { 
-  opacity: 0; 
-}
-.modal-enter-from .modal-container, 
-.modal-leave-to .modal-container { 
-  transform: scale(0.95) translateY(-20px); 
-  opacity: 0; 
+.modal-fade-enter-from .modal-card, 
+.modal-fade-leave-to .modal-card {
+  transform: scale(0.9) translateY(-20px);
 }
 
 /* RESPONSIVE */
 @media (max-width: 768px) {
-  .page-header { 
-    padding: 1rem 0; 
+  .hero-title {
+    font-size: 2rem;
   }
-  .header-content { 
-    padding: 0 1.5rem; 
-    flex-direction: column; 
-    align-items: flex-start; 
+  .hero-content {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0 1.5rem;
   }
-  .page-title { 
-    font-size: 1.5rem; 
+  .stats-section {
+    padding: 0 1.5rem;
   }
-  .filters-section, 
-  .main-content { 
-    padding: 0 1.5rem; 
+  .stats-grid {
+    grid-template-columns: 1fr;
   }
-  .filters-content { 
-    padding: 1.25rem; 
+  .control-section, .main-section {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
   }
-  .filters-row {
+  .filters-pills {
     flex-direction: column;
     align-items: stretch;
   }
-  .filter-dropdown {
+  .filter-pill {
     width: 100%;
   }
-  .clear-all-btn {
-    align-self: auto;
+  .courses-grid {
+    grid-template-columns: 1fr;
   }
-  .results-header {
+  .modal-actions {
     flex-direction: column;
-    align-items: flex-start;
-  }
-  .courses-grid { 
-    grid-template-columns: 1fr; 
-  }
-  .pagination-container {
-    flex-direction: column;
-    gap: 1rem;
-  }
-  .pagination-btn {
-    width: 100%;
-    justify-content: center;
-  }
-  .modal-footer { 
-    flex-direction: column; 
-  }
-  .modal-btn { 
-    width: 100%; 
-  }
-}
-@media (max-width: 640px) {
-  .page-header { 
-    margin-bottom: 1.5rem; 
-  }
-  .header-content, 
-  .filters-section, 
-  .main-content { 
-    padding: 0 1rem; 
-  }
-  .page-title { 
-    font-size: 1.25rem; 
   }
 }
 
-/* ACCESSIBILITY */
-.search-input:focus-visible, 
-.dropdown-select:focus-visible,
-.clear-all-btn:focus-visible, 
-.shuffle-btn:focus-visible,
-.pagination-btn:focus-visible,
-.add-btn:focus-visible, 
-.action-btn:focus-visible, 
-.modal-close:focus-visible, 
-.modal-btn:focus-visible {
-  outline: 2px solid #6366f1; 
-  outline-offset: 2px;
-}
-
-@media (prefers-reduced-motion: reduce) { 
-  * { 
-    animation-duration: 0.01ms !important; 
-    transition-duration: 0.01ms !important; 
-  } 
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 </style>
