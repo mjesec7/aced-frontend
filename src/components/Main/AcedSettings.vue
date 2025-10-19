@@ -1,232 +1,302 @@
 <template>
   <div class="settings-page">
-    <!-- User Profile Settings -->
-    <div class="settings-content">
-      <h2 class="section-title">⚙️ Настройки профиля</h2>
-
-      <label>Имя</label>
-      <input 
-        type="text" 
-        v-model="user.name" 
-        placeholder="Введите имя"
-        :disabled="loading" 
-      />
-
-      <label>Фамилия</label>
-      <input 
-        type="text" 
-        v-model="user.surname" 
-        placeholder="Введите фамилию"
-        :disabled="loading" 
-      />
-
-      <label>Email</label>
-      <input 
-        type="email" 
-        v-model="user.email" 
-        placeholder="Введите email"
-        :disabled="loading" 
-      />
-
-      <div v-if="!isGoogleUser">
-        <label>Текущий пароль</label>
-        <input 
-          type="password" 
-          v-model="oldPassword" 
-          placeholder="Введите текущий пароль"
-          :disabled="loading" 
-        />
-
-        <label>Новый пароль</label>
-        <input 
-          type="password" 
-          v-model="newPassword" 
-          placeholder="Введите новый пароль"
-          :disabled="loading" 
-        />
-
-        <label>Подтвердите новый пароль</label>
-        <input 
-          type="password" 
-          v-model="confirmPassword" 
-          placeholder="Повторите новый пароль"
-          :disabled="loading" 
-        />
-      </div>
-
-      <p class="forgot-password" @click="sendPasswordReset">
-        {{ isGoogleUser ? 'Создать пароль' : 'Забыли пароль?' }}
-      </p>
-
-      <div class="button-group">
-        <button 
-          class="save-button" 
-          @click="saveChanges"
-          :disabled="loading"
-        >
-          {{ loading ? '⏳ Сохранение...' : 'Сохранить' }}
+    <!-- Enhanced Header with more padding -->
+    <div class="settings-header">
+      <div class="header-content">
+        <div class="header-info">
+          <h1 class="header-title">⚙️ Настройки профиля</h1>
+          <p class="header-subtitle">Управление вашим аккаунтом и подпиской</p>
+        </div>
+        <button class="back-button" @click="goToProfile">
+          <span class="back-icon">←</span>
+          В профиль
         </button>
-        <button class="back-button" @click="goToProfile">В профиль</button>
       </div>
     </div>
 
-    <!-- Subscription and Payment Settings -->
-    <div class="settings-content">
-      <h2 class="section-title">💳 Подписка и оплата</h2>
+    <!-- Main Content Container -->
+    <div class="settings-container">
+      
+      <!-- Notification -->
+      <div v-if="notification" class="notification" :class="notificationClass">
+        <span class="notification-icon">{{ notificationIcon }}</span>
+        <span class="notification-text">{{ notification }}</span>
+      </div>
 
-      <!-- Current Plan Display -->
-      <div class="current-plan-section">
-        <div class="plan-info">
-          <h3>Текущий тариф</h3>
-          <div class="plan-display">
-            <span :class="['plan-badge', currentPlanClass]">
-              {{ currentPlanLabel }}
-            </span>
-            <div class="plan-details">
-              <p class="plan-description">{{ currentPlanDescription }}</p>
-              
-              <!-- Subscription expiry information -->
-              <div v-if="subscriptionExpiryInfo" class="expiry-section">
-                <div class="expiry-main" :class="{ 
-                  'expiry-warning': subscriptionExpiryInfo.isExpiring,
-                  'expiry-expired': subscriptionExpiryInfo.isExpired 
-                }">
-                  <div class="expiry-row">
-                    <span class="expiry-label">
-                      {{ subscriptionExpiryInfo.isExpired ? '❌ Срок действия истёк:' : '📅 Активен до:' }}
-                    </span>
-                    <span class="expiry-date">{{ subscriptionExpiryInfo.formattedDate }}</span>
-                  </div>
-                  
-                  <div v-if="!subscriptionExpiryInfo.isExpired" class="expiry-countdown">
-                    <span class="countdown-icon">⏰</span>
-                    <span class="countdown-text">
-                      Осталось: {{ subscriptionExpiryInfo.timeRemaining }}
-                      ({{ subscriptionExpiryInfo.daysRemaining }} дней)
-                    </span>
-                  </div>
-                  
-                  <div v-else class="expiry-expired-message">
-                    <span class="expired-icon">⚠️</span>
-                    <span class="expired-text">Подписка истекла. Продлите для продолжения доступа.</span>
-                  </div>
-                </div>
-                
-                <!-- Expiry warning alerts -->
-                <div v-if="subscriptionExpiryInfo.isExpiring && !subscriptionExpiryInfo.isExpired" class="expiry-warning-alert">
-                  <div class="warning-content">
-                    <span class="warning-icon">⚠️</span>
-                    <div class="warning-text">
-                      <strong>Внимание!</strong> Ваша подписка истекает через {{ subscriptionExpiryInfo.daysRemaining }} дней.
-                      <br>
-                      <small>Продлите подписку, чтобы не потерять доступ к премиум-функциям.</small>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Subscription source information -->
-              <div v-if="subscriptionSourceInfo" class="subscription-source">
-                <div class="source-info" :class="`source-${subscriptionSourceInfo.color}`">
-                  <span class="source-icon">{{ subscriptionSourceInfo.icon }}</span>
-                  <span class="source-text">{{ subscriptionSourceInfo.text }}</span>
-                </div>
-              </div>
-              
-              <!-- Subscription benefits -->
-              <div v-if="currentPlan !== 'free'" class="subscription-benefits">
-                <div class="benefits-header">
-                  <span class="benefits-icon">✨</span>
-                  <span class="benefits-title">Активные возможности:</span>
-                </div>
-                <ul class="benefits-list">
-                  <li v-if="currentPlan === 'start' || currentPlan === 'pro'">
-                    ✅ Безлимитные сообщения
-                  </li>
-                  <li v-if="currentPlan === 'start' || currentPlan === 'pro'">
-                    ✅ Доступ к премиум курсам
-                  </li>
-                  <li v-if="currentPlan === 'pro'">
-                    ✅ Безлимитные изображения
-                  </li>
-                  <li v-if="currentPlan === 'pro'">
-                    ✅ Персональная аналитика
-                  </li>
-                  <li v-if="currentPlan === 'pro'">
-                    ✅ Эксклюзивные материалы
-                  </li>
-                </ul>
-              </div>
-              
-              <!-- Free plan limitations -->
-              <div v-else class="free-plan-limitations">
-                <div class="limitations-header">
-                  <span class="limitations-icon">ℹ️</span>
-                  <span class="limitations-title">Ограничения бесплатного плана:</span>
-                </div>
-                <ul class="limitations-list">
-                  <li>⭕ Ограниченное количество сообщений</li>
-                  <li>⭕ Базовый доступ к курсам</li>
-                  <li>⭕ Ограниченная аналитика</li>
-                </ul>
-                <div class="upgrade-suggestion">
-                  <p>Хотите больше возможностей? Рассмотрите <strong>Start</strong> или <strong>Pro</strong> план!</p>
-                </div>
-              </div>
+      <!-- Personal Information Card -->
+      <div class="settings-card">
+        <div class="card-header">
+          <div class="card-header-left">
+            <h2 class="card-title">👤 Личная информация</h2>
+            <p class="card-subtitle">Ваши персональные данные</p>
+          </div>
+          <button 
+            v-if="!isEditingName" 
+            @click="startEditingName"
+            class="edit-button"
+            title="Редактировать"
+          >
+            <span class="edit-icon">✏️</span>
+          </button>
+          <div v-else class="edit-actions">
+            <button @click="saveNameChanges" class="save-button" title="Сохранить">
+              <span>✓</span>
+            </button>
+            <button @click="cancelEditingName" class="cancel-button" title="Отмена">
+              <span>✕</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Имя</label>
+            <input 
+              v-if="isEditingName"
+              type="text" 
+              v-model="tempUser.name" 
+              placeholder="Введите имя"
+              class="form-input editing"
+            />
+            <div v-else class="form-display">
+              {{ user.name || 'Не указано' }}
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Фамилия</label>
+            <input 
+              v-if="isEditingName"
+              type="text" 
+              v-model="tempUser.surname" 
+              placeholder="Введите фамилию"
+              class="form-input editing"
+            />
+            <div v-else class="form-display">
+              {{ user.surname || 'Не указано' }}
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Payment Options -->
-      <div class="payment-options">
-        <h3>Варианты оплаты</h3>
-        
-        <!-- Enhanced Promo Code Section -->
-        <div class="promo-section">
-          <h4>🎟️ Промокод</h4>
-          <div class="promo-input-group">
-            <div class="promo-code-input">
-              <input 
-                type="text" 
-                v-model="promoCode" 
-                placeholder="Введите промокод (например: ACED2024)"
-                :disabled="loading || isProcessingPromo"
-                @keyup.enter="applyPromo"
-                @input="handlePromoCodeInput"
-                maxlength="20"
-                class="promo-input"
-                :class="{ 
-                  'promo-valid': promoValidation && promoValidation.valid,
-                  'promo-invalid': promoValidation && !promoValidation.valid && promoCode.length > 3,
-                  'promo-loading': isValidatingPromo
-                }"
-              />
-              
-              <!-- Validation feedback -->
-              <div v-if="isValidatingPromo" class="promo-validation promo-loading-message">
-                <div class="spinner-small"></div>
-                Проверка промокода...
-              </div>
-              
-              <div v-else-if="promoValidation && promoCode.length > 3" class="promo-validation">
-                <div v-if="promoValidation.valid" class="promo-valid-message">
-                  ✅ Промокод действителен! 
-                  <br>
-                  <strong>Предоставляет: {{ promoValidation.data?.grantsPlan?.toUpperCase() }} план</strong>
-                  <br>
-                  <small>{{ promoValidation.data?.description }}</small>
-                </div>
-                <div v-else class="promo-invalid-message">
-                  ❌ {{ promoValidation.error }}
+      <!-- Security Settings Card -->
+      <div class="settings-card">
+        <div class="card-header">
+          <div class="card-header-left">
+            <h2 class="card-title">🔐 Безопасность</h2>
+            <p class="card-subtitle">Email и пароль</p>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Email адрес</label>
+          <input 
+            type="email" 
+            v-model="user.email" 
+            placeholder="your.email@example.com"
+            class="form-input"
+            :disabled="loading" 
+          />
+        </div>
+
+        <div v-if="!isGoogleUser" class="password-section">
+          <div class="form-group">
+            <label class="form-label">Текущий пароль</label>
+            <input 
+              type="password" 
+              v-model="oldPassword" 
+              placeholder="Введите текущий пароль"
+              class="form-input"
+              :disabled="loading" 
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Новый пароль</label>
+            <input 
+              type="password" 
+              v-model="newPassword" 
+              placeholder="Введите новый пароль"
+              class="form-input"
+              :disabled="loading" 
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Подтвердите новый пароль</label>
+            <input 
+              type="password" 
+              v-model="confirmPassword" 
+              placeholder="Повторите новый пароль"
+              class="form-input"
+              :disabled="loading" 
+            />
+          </div>
+        </div>
+
+        <button class="link-button" @click="sendPasswordReset">
+          {{ isGoogleUser ? '🔑 Создать пароль' : '🔑 Забыли пароль?' }}
+        </button>
+
+        <div class="action-buttons">
+          <button 
+            class="primary-button" 
+            @click="saveChanges"
+            :disabled="loading"
+          >
+            {{ loading ? '⏳ Сохранение...' : '💾 Сохранить изменения' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Subscription Card -->
+      <div class="settings-card subscription-card">
+        <div class="card-header">
+          <div class="card-header-left">
+            <h2 class="card-title">💎 Подписка и оплата</h2>
+            <p class="card-subtitle">Управление тарифом</p>
+          </div>
+        </div>
+
+        <!-- Current Plan Display -->
+        <div class="current-plan-display">
+          <div class="plan-badge-wrapper">
+            <span class="plan-label">Текущий тариф:</span>
+            <span :class="['plan-badge', currentPlanClass]">
+              {{ currentPlanLabel }}
+            </span>
+          </div>
+          
+          <p class="plan-description">{{ currentPlanDescription }}</p>
+          
+          <!-- Subscription Details -->
+          <div v-if="subscriptionExpiryInfo" class="subscription-details">
+            <div class="expiry-info" :class="{
+              'expiry-warning': subscriptionExpiryInfo.isExpiring,
+              'expiry-expired': subscriptionExpiryInfo.isExpired
+            }">
+              <div class="expiry-main">
+                <span class="expiry-icon">
+                  {{ subscriptionExpiryInfo.isExpired ? '❌' : '📅' }}
+                </span>
+                <div class="expiry-content">
+                  <div class="expiry-label">
+                    {{ subscriptionExpiryInfo.isExpired ? 'Срок действия истёк:' : 'Активен до:' }}
+                  </div>
+                  <div class="expiry-date">{{ subscriptionExpiryInfo.formattedDate }}</div>
+                  <div v-if="!subscriptionExpiryInfo.isExpired" class="expiry-countdown">
+                    ⏰ Осталось: {{ subscriptionExpiryInfo.timeRemaining }} ({{ subscriptionExpiryInfo.daysRemaining }} дней)
+                  </div>
                 </div>
               </div>
             </div>
+
+            <!-- Warning Alert -->
+            <div v-if="subscriptionExpiryInfo.isExpiring && !subscriptionExpiryInfo.isExpired" class="warning-alert">
+              <span class="warning-icon">⚠️</span>
+              <div class="warning-content">
+                <strong>Внимание!</strong> Ваша подписка истекает через {{ subscriptionExpiryInfo.daysRemaining }} дней.
+                <br>
+                <small>Продлите подписку, чтобы не потерять доступ к премиум-функциям.</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Subscription Benefits -->
+          <div v-if="currentPlan !== 'free'" class="benefits-section">
+            <div class="benefits-header">
+              <span class="benefits-icon">✨</span>
+              <span class="benefits-title">Активные возможности:</span>
+            </div>
+            <ul class="benefits-list">
+              <li v-if="currentPlan === 'start' || currentPlan === 'pro'">
+                ✅ Безлимитные сообщения
+              </li>
+              <li v-if="currentPlan === 'start' || currentPlan === 'pro'">
+                ✅ Доступ к премиум курсам
+              </li>
+              <li v-if="currentPlan === 'pro'">
+                ✅ Безлимитные изображения
+              </li>
+              <li v-if="currentPlan === 'pro'">
+                ✅ Персональная аналитика
+              </li>
+              <li v-if="currentPlan === 'pro'">
+                ✅ Эксклюзивные материалы
+              </li>
+            </ul>
+          </div>
+
+          <!-- Free Plan Info -->
+          <div v-else class="free-plan-info">
+            <div class="free-plan-header">
+              <span class="info-icon">ℹ️</span>
+              <span>Ограничения бесплатного плана:</span>
+            </div>
+            <ul class="limitations-list">
+              <li>⭕ Ограниченное количество сообщений</li>
+              <li>⭕ Базовый доступ к курсам</li>
+              <li>⭕ Ограниченная аналитика</li>
+            </ul>
+            <div class="upgrade-message">
+              Хотите больше возможностей? Рассмотрите <strong>Start</strong> или <strong>Pro</strong> план!
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Promo Code Card -->
+      <div class="settings-card promo-card">
+        <div class="card-header">
+          <div class="card-header-left">
+            <h2 class="card-title">🎟️ Промокод</h2>
+            <p class="card-subtitle">Активация специального предложения</p>
+          </div>
+        </div>
+
+        <div class="promo-input-section">
+          <div class="form-group">
+            <label class="form-label">Введите промокод</label>
+            <input 
+              type="text" 
+              v-model="promoCode" 
+              placeholder="Например: ACED2024"
+              :disabled="loading || isProcessingPromo"
+              @keyup.enter="applyPromo"
+              @input="handlePromoCodeInput"
+              maxlength="20"
+              class="form-input promo-input"
+              :class="{ 
+                'promo-valid': promoValidation && promoValidation.valid,
+                'promo-invalid': promoValidation && !promoValidation.valid && promoCode.length > 3,
+                'promo-loading': isValidatingPromo
+              }"
+            />
             
+            <!-- Validation Feedback -->
+            <div v-if="isValidatingPromo" class="validation-message loading">
+              <div class="spinner-small"></div>
+              Проверка промокода...
+            </div>
+            
+            <div v-else-if="promoValidation && promoCode.length > 3" class="validation-message">
+              <div v-if="promoValidation.valid" class="validation-success">
+                ✅ Промокод действителен! 
+                <br>
+                <strong>Предоставляет: {{ promoValidation.data?.grantsPlan?.toUpperCase() }} план</strong>
+              </div>
+              <div v-else class="validation-error">
+                ❌ {{ promoValidation.error }}
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Выберите тариф</label>
             <select 
               v-model="selectedPlan" 
               :disabled="loading || isProcessingPromo" 
-              class="plan-select"
+              class="form-select"
               @change="onPlanChange"
             >
               <option value="">Выберите тариф...</option>
@@ -238,19 +308,19 @@
               </option>
             </select>
           </div>
-          
-          <!-- Plan compatibility warning -->
+
+          <!-- Plan Warning -->
           <div v-if="planCompatibilityWarning" class="plan-warning">
             ⚠️ {{ planCompatibilityWarning }}
           </div>
-          
+
           <button 
             class="promo-button" 
             @click="applyPromo"
             :disabled="!canApplyPromo || isProcessingPromo"
             :class="{ 
-              'promo-button-ready': canApplyPromo && !isProcessingPromo,
-              'promo-button-loading': isProcessingPromo 
+              'promo-ready': canApplyPromo && !isProcessingPromo,
+              'promo-processing': isProcessingPromo 
             }"
           >
             {{ promoButtonText }}
@@ -258,167 +328,199 @@
         </div>
 
         <!-- Applied Promocodes History -->
-        <div v-if="appliedPromocodesCount > 0" class="applied-promocodes">
-          <h4>📋 История применённых промокодов</h4>
-          <div class="promocodes-list">
+        <div v-if="appliedPromocodesCount > 0" class="promocodes-history">
+          <h4 class="history-title">📋 История применённых промокодов</h4>
+          <div class="history-list">
             <div 
               v-for="promo in appliedPromocodesSlice" 
               :key="promo.id || (promo.code + promo.appliedAt)"
-              class="promocode-item"
+              class="history-item"
             >
-              <div class="promocode-info">
-                <span class="promocode-code">{{ promo.code || 'N/A' }}</span>
-                <span class="promocode-plan">{{ (promo.plan || 'unknown').toUpperCase() }}</span>
+              <div class="history-info">
+                <span class="history-code">{{ promo.code || 'N/A' }}</span>
+                <span class="history-plan">{{ (promo.plan || 'unknown').toUpperCase() }}</span>
               </div>
-              <div class="promocode-date">
+              <div class="history-date">
                 {{ formatDate(promo.appliedAt) }}
               </div>
             </div>
           </div>
         </div>
-
-        <!-- Payment Plans -->
-        <div class="plans-section" :class="{ 'plans-disabled': isPromocodeActive }">
-          <h4>💰 Выберите тариф для оплаты</h4>
-          
-          <div v-if="isPromocodeActive" class="promocode-notice">
-            <div class="notice-content">
-              🎉 У вас активна подписка по промокоду! 
-              <br>
-              <small>Вы можете продлить подписку через оплату или применить новый промокод</small>
-            </div>
-          </div>
-          
-          <div class="plans-grid">
-            <div 
-              class="plan-card" 
-              :class="{ 
-                active: paymentPlan === 'start', 
-                disabled: currentPlan === 'start' || currentPlan === 'pro',
-                'current-plan': currentPlan === 'start'
-              }"
-              @click="selectPaymentPlan('start')"
-            >
-              <div class="plan-header">
-                <h5>Start</h5>
-                <div class="plan-price">260,000 сум</div>
-              </div>
-              <ul class="plan-features">
-                <li>✅ Безлимитные сообщения</li>
-                <li>✅ Доступ к словарю</li>
-                <li>✅ Базовые курсы</li>
-                <li>✅ Домашние задания</li>
-                <li>✅ Основные тесты</li>
-                <li>✅ Приоритетная поддержка</li>
-              </ul>
-              <div v-if="currentPlan === 'start'" class="plan-status">
-                ✅ Активен
-              </div>
-            </div>
-            
-            <div 
-              class="plan-card recommended" 
-              :class="{ 
-                active: paymentPlan === 'pro', 
-                disabled: currentPlan === 'pro',
-                'current-plan': currentPlan === 'pro'
-              }"
-              @click="selectPaymentPlan('pro')"
-            >
-              <div class="plan-badge">Рекомендуем</div>
-              <div class="plan-header">
-                <h5>Pro</h5>
-                <div class="plan-price">455,000 сум</div>
-              </div>
-              <ul class="plan-features">
-                <li>✅ Все возможности Start</li>
-                <li>✅ Безлимитные изображения</li>
-                <li>✅ Продвинутые курсы</li>
-                <li>✅ Персональная аналитика</li>
-                <li>✅ Персональные курсы</li>
-                <li>✅ Эксклюзивные материалы</li>
-              </ul>
-              <div v-if="currentPlan === 'pro'" class="plan-status">
-                ✅ Активен
-              </div>
-            </div>
-          </div>
-          
-          <button 
-            class="payment-button" 
-            @click="goToPayment"
-            :disabled="loading || !paymentPlan || (currentPlan !== 'free' && paymentPlan === currentPlan)"
-          >
-            {{ getPaymentButtonText() }}
-          </button>
-        </div>
-
-        <!-- Payment History -->
-        <div v-if="paymentHistoryCount > 0" class="payment-history">
-          <h4>📊 История платежей</h4>
-          <div class="history-list">
-            <div 
-              v-for="payment in paymentHistorySlice" 
-              :key="payment.id || payment._id || payment.timestamp"
-              class="payment-item"
-            >
-              <div class="payment-info">
-                <span class="payment-id">{{ payment.id || payment._id || 'N/A' }}</span>
-                <span class="payment-amount">{{ formatAmount(payment.amount) }}</span>
-              </div>
-              <div class="payment-status">
-                <span :class="['status-badge', getStatusClass(payment.state || payment.status)]">
-                  {{ payment.stateText || payment.statusText || 'Unknown' }}
-                </span>
-                <span class="payment-date">{{ formatDate(payment.timestamp || payment.createdAt) }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
-    </div>
 
-    <!-- Usage Summary -->
-    <div v-if="!isFreeUser" class="settings-content">
-      <h2 class="section-title">📊 Использование</h2>
-      
-      <div class="usage-summary">
-        <div class="usage-item">
-          <div class="usage-header">
-            <span class="usage-label">Сообщения</span>
-            <span class="usage-value">
-              {{ currentUsageMessages }} / {{ usageLimitsMessages === -1 ? '∞' : usageLimitsMessages }}
-            </span>
+      <!-- Payment Plans Card -->
+      <div class="settings-card plans-card">
+        <div class="card-header">
+          <div class="card-header-left">
+            <h2 class="card-title">💰 Тарифные планы</h2>
+            <p class="card-subtitle">Выберите подходящий тариф</p>
           </div>
-          <div v-if="usageLimitsMessages !== -1" class="usage-bar">
-            <div class="usage-fill" :style="{ width: messageUsagePercentage + '%' }"></div>
+        </div>
+
+        <div v-if="isPromocodeActive" class="promocode-notice">
+          <span class="notice-icon">🎉</span>
+          У вас активна подписка по промокоду! 
+          <br>
+          <small>Вы можете продлить подписку через оплату или применить новый промокод</small>
+        </div>
+
+        <div class="plans-grid">
+          <!-- Start Plan -->
+          <div 
+            class="plan-card" 
+            :class="{ 
+              active: paymentPlan === 'start', 
+              disabled: currentPlan === 'start' || currentPlan === 'pro',
+              'current-plan': currentPlan === 'start'
+            }"
+            @click="selectPaymentPlan('start')"
+          >
+            <div class="plan-header">
+              <h3 class="plan-name">Start</h3>
+              <div class="plan-price">260,000 сум</div>
+              <div class="plan-period">/ месяц</div>
+            </div>
+            <ul class="plan-features">
+              <li><span class="feature-icon">✅</span> Безлимитные сообщения</li>
+              <li><span class="feature-icon">✅</span> Доступ к словарю</li>
+              <li><span class="feature-icon">✅</span> Базовые курсы</li>
+              <li><span class="feature-icon">✅</span> Домашние задания</li>
+              <li><span class="feature-icon">✅</span> Основные тесты</li>
+              <li><span class="feature-icon">✅</span> Приоритетная поддержка</li>
+            </ul>
+            <div v-if="currentPlan === 'start'" class="plan-status active-status">
+              ✅ Активен
+            </div>
+            <button 
+              v-else
+              class="plan-select-button"
+              :disabled="currentPlan === 'pro'"
+            >
+              Выбрать Start
+            </button>
+          </div>
+
+          <!-- Pro Plan -->
+          <div 
+            class="plan-card recommended" 
+            :class="{ 
+              active: paymentPlan === 'pro', 
+              disabled: currentPlan === 'pro',
+              'current-plan': currentPlan === 'pro'
+            }"
+            @click="selectPaymentPlan('pro')"
+          >
+            <div class="plan-badge">Рекомендуем</div>
+            <div class="plan-header">
+              <h3 class="plan-name">Pro</h3>
+              <div class="plan-price">455,000 сум</div>
+              <div class="plan-period">/ месяц</div>
+            </div>
+            <ul class="plan-features">
+              <li><span class="feature-icon">✅</span> Все возможности Start</li>
+              <li><span class="feature-icon">✅</span> Безлимитные изображения</li>
+              <li><span class="feature-icon">✅</span> Продвинутые курсы</li>
+              <li><span class="feature-icon">✅</span> Персональная аналитика</li>
+              <li><span class="feature-icon">✅</span> Персональные курсы</li>
+              <li><span class="feature-icon">✅</span> Эксклюзивные материалы</li>
+            </ul>
+            <div v-if="currentPlan === 'pro'" class="plan-status active-status">
+              ✅ Активен
+            </div>
+            <button 
+              v-else
+              class="plan-select-button"
+            >
+              Выбрать Pro
+            </button>
+          </div>
+        </div>
+
+        <button 
+          class="payment-button" 
+          @click="goToPayment"
+          :disabled="loading || !paymentPlan || (currentPlan !== 'free' && paymentPlan === currentPlan)"
+        >
+          {{ getPaymentButtonText() }}
+        </button>
+      </div>
+
+      <!-- Payment History -->
+      <div v-if="paymentHistoryCount > 0" class="settings-card">
+        <div class="card-header">
+          <div class="card-header-left">
+            <h2 class="card-title">📊 История платежей</h2>
+            <p class="card-subtitle">Последние транзакции</p>
           </div>
         </div>
         
-        <div class="usage-item">
-          <div class="usage-header">
-            <span class="usage-label">Изображения</span>
-            <span class="usage-value">
-              {{ currentUsageImages }} / {{ usageLimitsImages === -1 ? '∞' : usageLimitsImages }}
-            </span>
-          </div>
-          <div v-if="usageLimitsImages !== -1" class="usage-bar">
-            <div class="usage-fill" :style="{ width: imageUsagePercentage + '%' }"></div>
+        <div class="history-list">
+          <div 
+            v-for="payment in paymentHistorySlice" 
+            :key="payment.id || payment._id || payment.timestamp"
+            class="payment-item"
+          >
+            <div class="payment-info">
+              <span class="payment-id">{{ payment.id || payment._id || 'N/A' }}</span>
+              <span class="payment-amount">{{ formatAmount(payment.amount) }}</span>
+            </div>
+            <div class="payment-status-info">
+              <span :class="['status-badge', getStatusClass(payment.state || payment.status)]">
+                {{ payment.stateText || payment.statusText || 'Unknown' }}
+              </span>
+              <span class="payment-date">{{ formatDate(payment.timestamp || payment.createdAt) }}</span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Notification -->
-    <div v-if="notification" class="notification" :class="notificationClass">
-      <span class="notification-icon">{{ notificationIcon }}</span>
-      {{ notification }}
+      <!-- Usage Statistics -->
+      <div v-if="!isFreeUser" class="settings-card">
+        <div class="card-header">
+          <div class="card-header-left">
+            <h2 class="card-title">📈 Использование</h2>
+            <p class="card-subtitle">Статистика использования ресурсов</p>
+          </div>
+        </div>
+        
+        <div class="usage-stats">
+          <div class="usage-item">
+            <div class="usage-header">
+              <span class="usage-label">💬 Сообщения</span>
+              <span class="usage-value">
+                {{ currentUsageMessages }} / {{ usageLimitsMessages === -1 ? '∞' : usageLimitsMessages }}
+              </span>
+            </div>
+            <div v-if="usageLimitsMessages !== -1" class="usage-bar">
+              <div class="usage-fill" :style="{ width: messageUsagePercentage + '%' }"></div>
+            </div>
+            <div v-else class="unlimited-badge">
+              Безлимитно
+            </div>
+          </div>
+          
+          <div class="usage-item">
+            <div class="usage-header">
+              <span class="usage-label">🖼️ Изображения</span>
+              <span class="usage-value">
+                {{ currentUsageImages }} / {{ usageLimitsImages === -1 ? '∞' : usageLimitsImages }}
+              </span>
+            </div>
+            <div v-if="usageLimitsImages !== -1" class="usage-bar">
+              <div class="usage-fill" :style="{ width: imageUsagePercentage + '%' }"></div>
+            </div>
+            <div v-else class="unlimited-badge">
+              Безлимитно
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Loading Overlay -->
     <div v-if="loading" class="loading-overlay">
       <div class="spinner"></div>
-      <p>{{ loadingText }}</p>
+      <p class="loading-text">{{ loadingText }}</p>
     </div>
   </div>
 </template>
@@ -433,8 +535,6 @@ import {
   updatePassword,
   onAuthStateChanged,
   sendPasswordResetEmail,
-  GoogleAuthProvider,
-  signInWithPopup
 } from "firebase/auth";
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 
@@ -442,33 +542,30 @@ export default {
   name: 'AcedSettings',
   data() {
     return {
-      // User profile data
       user: { name: "", surname: "", email: "" },
+      tempUser: { name: "", surname: "" },
       oldPassword: "",
       newPassword: "",
       confirmPassword: "",
       currentUser: null,
       isGoogleUser: false,
+      isEditingName: false,
       
-      // Payment data
       promoCode: "",
       selectedPlan: "",
       paymentPlan: "",
       
-      // Promocode validation
       promoValidation: null,
       promoValidationTimeout: null,
       isValidatingPromo: false,
       isProcessingPromo: false,
       
-      // UI state
       loading: false,
       loadingText: "",
       notification: "",
       notificationClass: "",
       notificationIcon: "",
       
-      // Enhanced reactivity tracking
       reactivityKey: 0,
       lastUpdateTime: Date.now(),
       componentMounted: false,
@@ -478,7 +575,6 @@ export default {
   },
   
   computed: {
-    // Map user state and getters properly
     ...mapGetters('user', [
       'userStatus',
       'isPremiumUser', 
@@ -495,22 +591,17 @@ export default {
       'forceUpdateCounter'
     ]),
 
-    // Enhanced reactive getters with multiple data sources
     currentPlan() {
-      const reactKey = this.reactivityKey; // Force reactivity
-      const updateTime = this.lastUpdateTime; // Force reactivity
+      const reactKey = this.reactivityKey;
+      const updateTime = this.lastUpdateTime;
       
       try {
-        // Try multiple sources for the most up-to-date status
         const storeStatus = this.$store.state.user?.subscriptionPlan || this.$store.getters['user/userStatus'];
         const localStatus = localStorage.getItem('userStatus') || localStorage.getItem('plan');
         const userObjectStatus = this.getUser?.subscriptionPlan;
         
-        // Use the most recent non-free status or fallback
         const statuses = [storeStatus, localStatus, userObjectStatus].filter(s => s && s !== 'free');
         const status = statuses[0] || storeStatus || localStatus || userObjectStatus || 'free';
-        
-        
         
         return status;
       } catch (e) {
@@ -518,16 +609,14 @@ export default {
       }
     },
     
-    // Enhanced reactive subscription details with comprehensive info
     subscriptionDetails() {
-      const reactKey = this.reactivityKey; // Force reactivity
-      const updateTime = this.lastUpdateTime; // Force reactivity
+      const reactKey = this.reactivityKey;
+      const updateTime = this.lastUpdateTime;
       
       try {
         const storeDetails = this.$store.getters['user/subscriptionDetails'];
         const userObject = this.getUser || {};
         
-        // Merge multiple data sources for comprehensive details
         const details = {
           plan: this.currentPlan,
           status: this.currentPlan !== 'free' ? 'active' : 'inactive',
@@ -540,15 +629,13 @@ export default {
           ...userObject.subscription
         };
         
-        // Calculate expiry details if we have activation date
         if (details.activatedAt && !details.expiryDate) {
           const activationDate = new Date(details.activatedAt);
           const expiryDate = new Date(activationDate);
-          expiryDate.setDate(expiryDate.getDate() + 30); // Default 30 days
+          expiryDate.setDate(expiryDate.getDate() + 30);
           details.expiryDate = expiryDate.toISOString();
         }
         
-        // Calculate days remaining
         if (details.expiryDate) {
           const now = new Date();
           const expiry = new Date(details.expiryDate);
@@ -569,7 +656,6 @@ export default {
       }
     },
     
-    // More detailed subscription status display
     currentPlanDescription() {
       const plan = this.currentPlan;
       const details = this.subscriptionDetails;
@@ -582,7 +668,6 @@ export default {
       
       let description = baseDescriptions[plan] || 'Бесплатный доступ';
       
-      // Add expiry information if available
       if (plan !== 'free' && details.daysRemaining !== null) {
         if (details.daysRemaining > 0) {
           description += ` (осталось ${details.daysRemaining} дней)`;
@@ -594,7 +679,6 @@ export default {
       return description;
     },
     
-    // Detailed subscription expiry information
     subscriptionExpiryInfo() {
       const details = this.subscriptionDetails;
       
@@ -617,76 +701,12 @@ export default {
       };
     },
     
-    // Subscription source display
-    subscriptionSourceInfo() {
-      const details = this.subscriptionDetails;
-      const lastPromo = this.lastPromocode;
-      
-      if (details.source === 'promocode' && lastPromo) {
-        return {
-          type: 'promocode',
-          text: `🎟️ Активирован по промокоду: ${lastPromo.code}`,
-          icon: '🎟️',
-          color: 'success'
-        };
-      } else if (details.source === 'payment') {
-        return {
-          type: 'payment',
-          text: '💳 Приобретено через оплату',
-          icon: '💳',
-          color: 'primary'
-        };
-      } else if (details.source === 'gift') {
-        return {
-          type: 'gift',
-          text: '🎁 Подарочная подписка',
-          icon: '🎁',
-          color: 'warning'
-        };
-      } else if (this.currentPlan !== 'free') {
-        return {
-          type: 'unknown',
-          text: '📋 Активная подписка',
-          icon: '📋',
-          color: 'info'
-        };
-      }
-      
-      return null;
-    },
-    
-    // Enhanced reactive promocodes
-    appliedPromocodes() {
-      const reactKey = this.reactivityKey; // Force reactivity
-      const updateTime = this.lastUpdateTime; // Force reactivity
-      
-      try {
-        const promocodes = this.$store.getters['user/appliedPromocodes'];
-        return Array.isArray(promocodes) ? promocodes : [];
-      } catch (e) {
-        return [];
-      }
-    },
-    
     appliedPromocodesCount() {
       return this.appliedPromocodes.length;
     },
     
     appliedPromocodesSlice() {
       return this.appliedPromocodes.slice(0, 3);
-    },
-    
-    // Enhanced reactive payment history
-    paymentHistory() {
-      const reactKey = this.reactivityKey; // Force reactivity
-      const updateTime = this.lastUpdateTime; // Force reactivity
-      
-      try {
-        const history = this.$store.getters['user/paymentHistory'];
-        return Array.isArray(history) ? history : [];
-      } catch (e) {
-        return [];
-      }
     },
     
     paymentHistoryCount() {
@@ -697,37 +717,12 @@ export default {
       return this.paymentHistory.slice(0, 5);
     },
     
-    // Enhanced reactive usage data
-    currentUsage() {
-      const reactKey = this.reactivityKey; // Force reactivity
-      const updateTime = this.lastUpdateTime; // Force reactivity
-      
-      try {
-        const usage = this.$store.getters['user/currentUsage'];
-        return (usage && typeof usage === 'object') ? usage : { messages: 0, images: 0 };
-      } catch (e) {
-        return { messages: 0, images: 0 };
-      }
-    },
-    
     currentUsageMessages() {
       return this.currentUsage.messages || 0;
     },
     
     currentUsageImages() {
       return this.currentUsage.images || 0;
-    },
-    
-    usageLimits() {
-      const reactKey = this.reactivityKey; // Force reactivity
-      const updateTime = this.lastUpdateTime; // Force reactivity
-      
-      try {
-        const limits = this.$store.getters['user/usageLimits'];
-        return (limits && typeof limits === 'object') ? limits : { messages: 50, images: 5 };
-      } catch (e) {
-        return { messages: 50, images: 5 };
-      }
     },
     
     usageLimitsMessages() {
@@ -750,21 +745,8 @@ export default {
       return (limit === -1) ? 0 : Math.min(100, Math.round((images / limit) * 100));
     },
     
-    // Enhanced user status properties
-    isFreeUser() {
-      return this.currentPlan === 'free';
-    },
-    
     isPromocodeActive() {
       return this.subscriptionDetails.source === 'promocode';
-    },
-    
-    subscriptionExpiryDate() {
-      return this.subscriptionDetails.expiryDate;
-    },
-    
-    lastPromocode() {
-      return this.appliedPromocodes.length > 0 ? this.appliedPromocodes[0] : null;
     },
     
     currentPlanLabel() {
@@ -789,7 +771,6 @@ export default {
       return this.currentUser?.uid;
     },
     
-    // Enhanced promocode validation computed properties
     canApplyPromo() {
       return this.promoCode && 
              this.promoCode.trim().length > 3 && 
@@ -826,7 +807,6 @@ export default {
       return 'Применить промокод';
     },
     
-    // Plan compatibility checking
     planCompatibilityError() {
       if (!this.promoValidation || !this.promoValidation.valid || !this.selectedPlan) return false;
       
@@ -846,9 +826,7 @@ export default {
     }
   },
   
-  // Enhanced watchers
   watch: {
-    // Watch the user object from store
     '$store.state.user': {
       handler(newUser, oldUser) {
         const newPlan = newUser?.subscriptionPlan;
@@ -862,7 +840,6 @@ export default {
       immediate: true
     },
 
-    // Watch the getUser getter
     getUser: {
       handler(newUser, oldUser) {
         const newPlan = newUser?.subscriptionPlan;
@@ -876,7 +853,6 @@ export default {
       immediate: true
     },
 
-    // Watch current plan changes
     currentPlan: {
       handler(newPlan, oldPlan) {
         if (newPlan !== oldPlan) {
@@ -897,25 +873,16 @@ export default {
   },
   
   methods: {
-    // ============================================================================
-    // 🔄 STATUS CHANGE HANDLING
-    // ============================================================================
-    
-    // Handle user status changes
     handleUserStatusChange(newStatus, oldStatus) {
       if (!newStatus || newStatus === oldStatus) return;
 
-
       try {
-        // Update localStorage immediately
         localStorage.setItem('userStatus', newStatus);
         localStorage.setItem('plan', newStatus);
         localStorage.setItem('statusChangeTime', Date.now().toString());
 
-        // Trigger immediate reactivity update
         this.forceReactivityUpdate();
 
-        // Show celebration for upgrades
         if (newStatus && newStatus !== 'free' && (oldStatus === 'free' || !oldStatus)) {
           const planLabel = newStatus === 'pro' ? 'Pro' : 'Start';
           this.showNotification(`🎉 ${planLabel} подписка активирована!`, 'success', 5000);
@@ -923,19 +890,14 @@ export default {
 
       } catch (error) {
         console.error('❌ Error handling status change:', error);
-        this.$forceUpdate(); // Fallback
+        this.$forceUpdate();
       }
     },
 
-    // Setup comprehensive event listeners
     setupEnhancedEventListeners() {
-      
-      // Clear existing listeners
       this.cleanupEventListeners();
       
-      // DOM Event Listeners
       if (typeof window !== 'undefined') {
-        // Listen for user subscription changes
         this.handleSubscriptionChange = (event) => {
           const { plan, oldPlan, newStatus, oldStatus } = event.detail;
           const finalNewStatus = plan || newStatus;
@@ -951,7 +913,6 @@ export default {
           window.removeEventListener('userSubscriptionChanged', this.handleSubscriptionChange);
         });
 
-        // Listen for localStorage changes (cross-tab sync)
         this.handleStorageChange = (event) => {
           if ((event.key === 'userStatus' || event.key === 'plan') && event.newValue !== event.oldValue) {
             this.handleUserStatusChange(event.newValue, event.oldValue);
@@ -963,7 +924,6 @@ export default {
           window.removeEventListener('storage', this.handleStorageChange);
         });
 
-        // Additional comprehensive events
         const eventTypes = [
           'userStatusChanged',
           'subscriptionUpdated', 
@@ -974,7 +934,6 @@ export default {
         ];
 
         const handleGenericStatusChange = (event) => {
-          
           const detail = event.detail || {};
           const newStatus = detail.newStatus || detail.plan || detail.status;
           const oldStatus = detail.oldStatus || detail.oldPlan;
@@ -985,7 +944,6 @@ export default {
             this.forceReactivityUpdate();
           }
           
-          // Check localStorage for updates
           const currentStatus = localStorage.getItem('userStatus') || localStorage.getItem('plan');
           if (currentStatus && currentStatus !== this.currentPlan) {
             this.handleUserStatusChange(currentStatus, this.currentPlan);
@@ -1000,9 +958,7 @@ export default {
         });
       }
 
-      // Event Bus Listeners
       if (typeof window !== 'undefined' && window.eventBus) {
-        // User status change events
         this.handleUserStatusEvent = (data) => {
           const newStatus = data.newStatus || data.plan;
           const oldStatus = data.oldStatus || data.oldPlan;
@@ -1012,18 +968,15 @@ export default {
           }
         };
 
-        // Force update events
         this.handleForceUpdateEvent = () => {
           this.forceReactivityUpdate();
           
-          // Also check for status updates
           const currentStatus = localStorage.getItem('userStatus') || localStorage.getItem('plan');
           if (currentStatus && currentStatus !== this.currentPlan) {
             this.handleUserStatusChange(currentStatus, this.currentPlan);
           }
         };
 
-        // Register event bus listeners
         const eventBusEvents = [
           'userStatusChanged',
           'promocodeApplied',
@@ -1046,16 +999,13 @@ export default {
             });
           }
         });
-
       }
 
-      // Store Mutation Listener
       if (this.$store) {
         this.storeUnsubscribe = this.$store.subscribe((mutation) => {
           if (this.isUserRelatedMutation(mutation)) {
             this.forceReactivityUpdate();
             
-            // Check for status changes in mutation payload
             if (mutation.payload && mutation.payload.subscriptionPlan) {
               const newStatus = mutation.payload.subscriptionPlan;
               if (newStatus !== this.currentPlan) {
@@ -1072,10 +1022,8 @@ export default {
           }
         });
       }
-
     },
 
-    // Check if mutation is user-related
     isUserRelatedMutation(mutation) {
       const userMutations = [
         'setUser',
@@ -1096,13 +1044,11 @@ export default {
              mutation.type.toLowerCase().includes('plan');
     },
 
-    // Enhanced forceReactivityUpdate
     forceReactivityUpdate() {
       try {
         this.reactivityKey++;
         this.lastUpdateTime = Date.now();
         
-        // Multiple Vue reactivity triggers
         this.$forceUpdate();
         
         this.$nextTick(() => {
@@ -1116,13 +1062,11 @@ export default {
             this.$forceUpdate();
           }, 200);
         });
-        
-        
       } catch (error) {
+        console.error('Reactivity update error:', error);
       }
     },
 
-    // Helper method to get time remaining display
     getTimeRemaining(diffTime) {
       if (diffTime <= 0) return 'Истёк';
       
@@ -1139,12 +1083,12 @@ export default {
       }
     },
 
-    // Enhanced cleanup
     cleanupEventListeners() {
       this.statusEventListeners.forEach(cleanup => {
         try {
           cleanup();
         } catch (error) {
+          console.error('Cleanup error:', error);
         }
       });
       this.statusEventListeners = [];
@@ -1155,26 +1099,15 @@ export default {
       }
     },
 
-    // ============================================================================
-    // 🚀 INITIALIZATION METHODS
-    // ============================================================================
-    
-    // Enhanced initialization
     async initializeComponent() {
       this.loading = true;
       this.loadingText = 'Загрузка настроек...';
       
       try {
         await this.checkAuthState();
-        
-        // Setup event listeners BEFORE loading data
         this.setupEnhancedEventListeners();
-        
         await this.loadInitialData();
-        
-        // Force initial reactivity update
         this.forceReactivityUpdate();
-        
       } catch (error) {
         console.error('❌ AcedSettings initialization error:', error);
         this.showNotification('Ошибка загрузки настроек', 'error');
@@ -1189,6 +1122,7 @@ export default {
           await this.$store.dispatch('user/loadUserStatus');
         }
       } catch (error) {
+        console.error('Load initial data error:', error);
       }
     },
     
@@ -1214,6 +1148,7 @@ export default {
         
         if (userDoc.exists()) {
           this.user = userDoc.data();
+          this.tempUser = { name: this.user.name, surname: this.user.surname };
         } else {
           const newUserData = {
             name: "Новый пользователь",
@@ -1222,6 +1157,7 @@ export default {
           };
           await setDoc(userRef, newUserData);
           this.user = newUserData;
+          this.tempUser = { name: newUserData.name, surname: newUserData.surname };
         }
       } catch (error) {
         console.error('❌ User data fetch error:', error);
@@ -1236,11 +1172,46 @@ export default {
       this.cleanupEventListeners();
     },
 
-    // ============================================================================
-    // 🎟️ FIXED PROMOCODE METHODS
-    // ============================================================================
-    
-    // Enhanced promocode input handling
+    startEditingName() {
+      this.isEditingName = true;
+      this.tempUser = { name: this.user.name, surname: this.user.surname };
+    },
+
+    async saveNameChanges() {
+      this.loading = true;
+      this.loadingText = 'Сохранение изменений...';
+      
+      try {
+        if (!this.currentUser) {
+          this.showNotification('Пользователь не найден', 'error');
+          return;
+        }
+
+        const userRef = doc(db, "users", this.currentUser.uid);
+        await updateDoc(userRef, {
+          name: this.tempUser.name,
+          surname: this.tempUser.surname,
+          updatedAt: new Date().toISOString()
+        });
+
+        this.user.name = this.tempUser.name;
+        this.user.surname = this.tempUser.surname;
+        this.isEditingName = false;
+
+        this.showNotification('Имя и фамилия обновлены!', 'success');
+      } catch (error) {
+        console.error('❌ Save name error:', error);
+        this.showNotification('Ошибка сохранения имени', 'error');
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    cancelEditingName() {
+      this.isEditingName = false;
+      this.tempUser = { name: this.user.name, surname: this.user.surname };
+    },
+
     handlePromoCodeInput() {
       if (this.promoValidationTimeout) {
         clearTimeout(this.promoValidationTimeout);
@@ -1261,7 +1232,6 @@ export default {
       }, 800);
     },
     
-    // ✅ FIXED: Pure backend promocode validation
     async validatePromoCodeLocal() {
       if (!this.promoCode.trim() || this.promoCode.length <= 3) {
         this.promoValidation = null;
@@ -1270,19 +1240,15 @@ export default {
       }
       
       try {
-        
         const promocodeUpper = this.promoCode.trim().toUpperCase();
         
-        // Try store action first (uses backend API)
         try {
           if (this.$store && this.$store.dispatch) {
-            
             const storeResult = await this.$store.dispatch('user/validatePromocode', promocodeUpper);
             
             if (storeResult && typeof storeResult === 'object') {
               this.promoValidation = storeResult;
               
-              // Auto-select plan if valid
               if (storeResult.valid && storeResult.data?.grantsPlan && !this.selectedPlan) {
                 this.selectedPlan = storeResult.data.grantsPlan;
               }
@@ -1292,17 +1258,15 @@ export default {
             }
           }
         } catch (storeError) {
+          console.error('Store validation error:', storeError);
         }
         
-        // Direct API call fallback
         try {
           const baseUrl = import.meta.env.VITE_API_BASE_URL;
           if (!baseUrl) {
             throw new Error('API base URL not configured');
           }
           
-          
-          // Try multiple endpoints for validation
           const validationEndpoints = [
             `${baseUrl}/api/promocodes/validate/${promocodeUpper}`,
             `${baseUrl}/api/payments/validate-promo-code`,
@@ -1313,11 +1277,9 @@ export default {
           
           for (const endpoint of validationEndpoints) {
             try {
-              
               let response;
               
               if (endpoint.includes('validate-promo-code')) {
-                // POST endpoint
                 response = await Promise.race([
                   fetch(endpoint, {
                     method: 'POST',
@@ -1335,7 +1297,6 @@ export default {
                   )
                 ]);
               } else {
-                // GET endpoint
                 response = await Promise.race([
                   fetch(endpoint, {
                     method: 'GET',
@@ -1353,13 +1314,11 @@ export default {
               if (response.ok) {
                 const apiResult = await response.json();
                 
-                // Handle different response formats
                 if (apiResult && typeof apiResult === 'object') {
                   validationResult = this.normalizeValidationResponse(apiResult, promocodeUpper);
-                  break; // Success, stop trying other endpoints
+                  break;
                 }
               } else {
-                
                 if (response.status === 404) {
                   continue;
                 }
@@ -1375,6 +1334,7 @@ export default {
                     break;
                   }
                 } catch (jsonError) {
+                  console.error('JSON parse error:', jsonError);
                 }
               }
             } catch (endpointError) {
@@ -1385,7 +1345,6 @@ export default {
           if (validationResult) {
             this.promoValidation = validationResult;
             
-            // Auto-select plan if valid
             if (validationResult.valid && validationResult.data?.grantsPlan && !this.selectedPlan) {
               this.selectedPlan = validationResult.data.grantsPlan;
             }
@@ -1395,14 +1354,13 @@ export default {
           }
           
         } catch (apiError) {
+          console.error('API validation error:', apiError);
         }
         
-        // If all backend attempts fail, show appropriate error
         this.promoValidation = {
           valid: false,
           error: `Не удалось проверить промокод "${promocodeUpper}". Проверьте подключение к интернету или попробуйте позже.`
         };
-        
         
       } catch (error) {
         console.error('❌ Promocode validation error:', error);
@@ -1415,7 +1373,6 @@ export default {
       }
     },
     
-    // Helper method to normalize different API response formats
     normalizeValidationResponse(apiResult, promocodeUpper) {
       try {
         let isValid = false;
@@ -1423,35 +1380,29 @@ export default {
         let description = null;
         let errorMessage = null;
         
-        // Structure 1: { success: true, valid: true, data: {...} }
         if (apiResult.success === true && apiResult.valid === true) {
           isValid = true;
           grantsPlan = apiResult.data?.grantsPlan || apiResult.data?.plan;
           description = apiResult.data?.description || apiResult.message;
         }
-        // Structure 2: { valid: true, data: {...} }
         else if (apiResult.valid === true) {
           isValid = true;
           grantsPlan = apiResult.data?.grantsPlan || apiResult.data?.plan;
           description = apiResult.data?.description || apiResult.message;
         }
-        // Structure 3: { success: false, error: "..." }
         else if (apiResult.success === false) {
           isValid = false;
           errorMessage = apiResult.error || apiResult.message || 'Промокод недействителен';
         }
-        // Structure 4: Direct data object { grantsPlan: "start", description: "..." }
         else if (apiResult.grantsPlan || apiResult.plan) {
           isValid = true;
           grantsPlan = apiResult.grantsPlan || apiResult.plan;
           description = apiResult.description || 'Промокод действителен';
         }
-        // Structure 5: Error object { error: "..." }
         else if (apiResult.error) {
           isValid = false;
           errorMessage = apiResult.error;
         }
-        // Structure 6: Invalid response
         else {
           isValid = false;
           errorMessage = 'Неизвестный формат ответа сервера';
@@ -1484,7 +1435,6 @@ export default {
       }
     },
     
-    // Helper method to get authorization header
     async getAuthHeader() {
       try {
         if (this.currentUser) {
@@ -1517,9 +1467,7 @@ export default {
       }
     },
     
-    // ✅ MAIN FIX: Correct promocode application using the right Vuex action
     async applyPromo() {
-      
       if (!this.promoCode || !this.selectedPlan || !this.userId) {
         this.showNotification('Заполните все поля', 'error');
         return;
@@ -1530,33 +1478,23 @@ export default {
       try {
         const normalizedCode = this.promoCode.trim().toUpperCase();
         
-        
-        // ✅ CRITICAL FIX: Use the correct applyPromocode action instead of updateUserStatus
         const result = await this.$store.dispatch('user/applyPromocode', {
           code: normalizedCode,
           plan: this.selectedPlan,
           userId: this.userId
         });
         
-        
-        // Check if the result indicates success
         if (result && (result.success === true || result.status === 'success')) {
-          
-          // Success feedback
           const planLabel = this.selectedPlan === 'pro' ? 'Pro' : 'Start';
           this.showNotification(`🎉 Промокод применён! ${planLabel} подписка активирована!`, 'success');
           
-          // Reset form
           this.promoCode = '';
           this.selectedPlan = '';
           this.promoValidation = null;
           
-          // Force reactivity update
           this.forceReactivityUpdate();
           
-          // Trigger global events for component updates
           if (typeof window !== 'undefined') {
-            // Method 1: Custom DOM event
             try {
               const event = new CustomEvent('userSubscriptionChanged', {
                 detail: {
@@ -1570,9 +1508,9 @@ export default {
               });
               window.dispatchEvent(event);
             } catch (domEventError) {
+              console.error('DOM event error:', domEventError);
             }
             
-            // Method 2: Event bus
             try {
               if (window.eventBus?.emit) {
                 window.eventBus.emit('promocodeApplied', {
@@ -1583,42 +1521,33 @@ export default {
                 });
               }
             } catch (eventBusError) {
+              console.error('Event bus error:', eventBusError);
             }
           }
           
           return;
           
         } else {
-          // Handle store action failure
-          
           const errorMessage = result?.error || result?.message || 'Не удалось применить промокод';
           this.showNotification(errorMessage, 'error');
           
-          // If it's a validation error, don't try fallback
           if (result?.error?.includes('не найден') || result?.error?.includes('недействителен')) {
             return;
           }
           
-          // Try backend fallback for other errors
           await this.applyPromocodeFallback(normalizedCode);
         }
         
       } catch (storeError) {
         console.error('❌ Store applyPromocode action threw error:', storeError);
-        
-        // Try backend fallback
         await this.applyPromocodeFallback(normalizedCode);
-        
       } finally {
         this.isProcessingPromo = false;
       }
     },
     
-    // ✅ NEW: Backend fallback method for promocode application
     async applyPromocodeFallback(normalizedCode) {
       try {
-        
-        // Try multiple endpoints for applying promocode
         const applyEndpoints = [
           'https://api.aced.live/api/payments/promo-code',
           `${import.meta.env.VITE_API_BASE_URL}/api/payments/promo-code`
@@ -1629,7 +1558,6 @@ export default {
         
         for (const endpoint of applyEndpoints) {
           try {
-            
             const requestBody = {
               userId: this.userId,
               plan: this.selectedPlan,
@@ -1656,7 +1584,6 @@ export default {
               serverSuccess = true;
               break;
             } else {
-              
               if (response.status === 400 || response.status === 422) {
                 const errorMsg = serverResult?.error || serverResult?.message || 'Неверный промокод';
                 this.showNotification(errorMsg, 'error');
@@ -1673,13 +1600,9 @@ export default {
         }
         
         if (serverSuccess) {
-          // Backend success - update local state
-          
-          // Update localStorage
           localStorage.setItem('userStatus', this.selectedPlan);
           localStorage.setItem('plan', this.selectedPlan);
           
-          // Force store mutation
           this.$store.commit('user/SET_USER_STATUS', this.selectedPlan);
           this.$store.commit('user/UPDATE_SUBSCRIPTION', {
             plan: this.selectedPlan,
@@ -1692,19 +1615,14 @@ export default {
             appliedAt: new Date().toISOString()
           });
           
-          // Success feedback
           const planLabel = this.selectedPlan === 'pro' ? 'Pro' : 'Start';
           this.showNotification(`🎉 Промокод применён! ${planLabel} подписка активирована!`, 'success');
           
-          // Reset form
           this.promoCode = '';
           this.selectedPlan = '';
           this.promoValidation = null;
           
-          // Force reactivity update
           this.forceReactivityUpdate();
-          
-          // Trigger events
           this.triggerSubscriptionChangeEvents(normalizedCode);
           
         } else {
@@ -1729,10 +1647,8 @@ export default {
       }
     },
     
-    // ✅ NEW: Helper method to trigger subscription change events
     triggerSubscriptionChangeEvents(promocode) {
       if (typeof window !== 'undefined') {
-        // Method 1: Custom DOM event
         try {
           const event = new CustomEvent('userSubscriptionChanged', {
             detail: {
@@ -1746,9 +1662,9 @@ export default {
           });
           window.dispatchEvent(event);
         } catch (domEventError) {
+          console.error('DOM event error:', domEventError);
         }
         
-        // Method 2: Event bus
         try {
           if (window.eventBus?.emit) {
             window.eventBus.emit('promocodeApplied', {
@@ -1759,9 +1675,9 @@ export default {
             });
           }
         } catch (eventBusError) {
+          console.error('Event bus error:', eventBusError);
         }
         
-        // Method 3: Global trigger function
         try {
           if (window.triggerGlobalEvent) {
             window.triggerGlobalEvent('userStatusChanged', {
@@ -1772,17 +1688,14 @@ export default {
             });
           }
         } catch (globalTriggerError) {
+          console.error('Global trigger error:', globalTriggerError);
         }
       }
     },
 
-    // ============================================================================
-    // 💳 PAYMENT METHODS
-    // ============================================================================
-    
     selectPaymentPlan(plan) {
       if (this.currentPlan === plan || (this.currentPlan === 'pro' && plan === 'start')) {
-        return; // Don't allow selecting current plan or downgrade
+        return;
       }
       this.paymentPlan = plan;
     },
@@ -1794,13 +1707,9 @@ export default {
     getPaymentButtonText() {
       if (!this.paymentPlan) return 'Выберите тариф';
       if (this.currentPlan === this.paymentPlan) return 'Уже активен';
-      return `Оплатить ${this.paymentPlan.toUpperCase()}`;
+      return `💳 Оплатить ${this.paymentPlan.toUpperCase()}`;
     },
 
-    // ============================================================================
-    // 👤 USER PROFILE METHODS
-    // ============================================================================
-    
     async saveChanges() {
       this.loading = true;
       this.loadingText = 'Сохранение изменений...';
@@ -1811,7 +1720,6 @@ export default {
           return;
         }
 
-        // Update user profile
         const userRef = doc(db, "users", this.currentUser.uid);
         await updateDoc(userRef, {
           name: this.user.name,
@@ -1820,12 +1728,10 @@ export default {
           updatedAt: new Date().toISOString()
         });
 
-        // Update email if changed
         if (this.user.email !== this.currentUser.email) {
           await updateEmail(this.currentUser, this.user.email);
         }
 
-        // Update password if provided
         if (this.newPassword && this.oldPassword) {
           if (this.newPassword !== this.confirmPassword) {
             this.showNotification('Пароли не совпадают', 'error');
@@ -1840,7 +1746,6 @@ export default {
           await reauthenticateWithCredential(this.currentUser, credential);
           await updatePassword(this.currentUser, this.newPassword);
 
-          // Clear password fields
           this.oldPassword = '';
           this.newPassword = '';
           this.confirmPassword = '';
@@ -1897,10 +1802,6 @@ export default {
       this.$router.push('/profile');
     },
 
-    // ============================================================================
-    // 🛠️ UTILITY METHODS
-    // ============================================================================
-    
     formatDate(date) {
       if (!date) return '';
       try {
@@ -1957,5 +1858,1224 @@ export default {
 </script>
 
 <style scoped>
-@import "@/assets/css/AcedSettings.css";
+/* ============================================ */
+/* PROFESSIONAL PURPLE THEME SETTINGS STYLES */
+/* ============================================ */
+
+.settings-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 50%, #ddd6fe 100%);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+}
+
+/* ============================================ */
+/* HEADER SECTION - INCREASED PADDING */
+/* ============================================ */
+
+.settings-header {
+  background: white;
+  border-bottom: 1px solid #e9d5ff;
+  box-shadow: 0 1px 3px rgba(139, 92, 246, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: 2.5rem 0; /* Increased from 1.5rem to 2.5rem */
+}
+
+.header-content {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-info {
+  flex: 1;
+}
+
+.header-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #7c3aed;
+  margin: 0 0 0.5rem 0;
+  letter-spacing: -0.5px;
+}
+
+.header-subtitle {
+  font-size: 1rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.back-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.75rem;
+  background: white;
+  border: 2px solid #e9d5ff;
+  border-radius: 12px;
+  color: #7c3aed;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 1rem;
+}
+
+.back-button:hover {
+  background: #faf5ff;
+  border-color: #c4b5fd;
+  transform: translateY(-1px);
+}
+
+.back-icon {
+  font-size: 1.25rem;
+}
+
+/* ============================================ */
+/* MAIN CONTAINER - PROFESSIONAL WIDTH */
+/* ============================================ */
+
+.settings-container {
+  max-width: 1100px; /* Professional width, not too wide */
+  margin: 0 auto;
+  padding: 3rem 2rem; /* Increased top padding */
+}
+
+/* ============================================ */
+/* NOTIFICATION */
+/* ============================================ */
+
+.notification {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+  font-weight: 500;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.notification-success {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  border: 2px solid #6ee7b7;
+  color: #065f46;
+}
+
+.notification-error {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  border: 2px solid #fca5a5;
+  color: #991b1b;
+}
+
+.notification-warning {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 2px solid #fcd34d;
+  color: #92400e;
+}
+
+.notification-info {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border: 2px solid #93c5fd;
+  color: #1e40af;
+}
+
+.notification-icon {
+  font-size: 1.5rem;
+}
+
+.notification-text {
+  flex: 1;
+}
+
+/* ============================================ */
+/* SETTINGS CARDS */
+/* ============================================ */
+
+.settings-card {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  border: 1px solid #e9d5ff;
+  box-shadow: 0 4px 6px -1px rgba(139, 92, 246, 0.1), 0 2px 4px -1px rgba(139, 92, 246, 0.06);
+  transition: all 0.3s ease;
+}
+
+.settings-card:hover {
+  box-shadow: 0 10px 15px -3px rgba(139, 92, 246, 0.15), 0 4px 6px -2px rgba(139, 92, 246, 0.1);
+  transform: translateY(-2px);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid #f3f4f6;
+}
+
+.card-header-left {
+  flex: 1;
+}
+
+.card-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #7c3aed;
+  margin: 0 0 0.5rem 0;
+}
+
+.card-subtitle {
+  font-size: 0.95rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* ============================================ */
+/* EDIT BUTTONS */
+/* ============================================ */
+
+.edit-button {
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+  border: 2px solid #e9d5ff;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.edit-button:hover {
+  background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+  border-color: #c4b5fd;
+  transform: scale(1.05);
+}
+
+.edit-icon {
+  font-size: 1.25rem;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.save-button {
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  border: 2px solid #6ee7b7;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #065f46;
+  font-weight: 600;
+  font-size: 1.125rem;
+}
+
+.save-button:hover {
+  background: linear-gradient(135deg, #a7f3d0 0%, #6ee7b7 100%);
+  transform: scale(1.05);
+}
+
+.cancel-button {
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  border: 2px solid #fca5a5;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #991b1b;
+  font-weight: 600;
+  font-size: 1.125rem;
+}
+
+.cancel-button:hover {
+  background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+  transform: scale(1.05);
+}
+
+/* ============================================ */
+/* FORM ELEMENTS */
+/* ============================================ */
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.875rem 1.25rem;
+  border: 2px solid #e9d5ff;
+  border-radius: 10px;
+  font-size: 1rem;
+  color: #1f2937;
+  transition: all 0.2s ease;
+  background: white;
+  box-sizing: border-box;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #a78bfa;
+  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.1);
+}
+
+.form-input:disabled {
+  background: #f9fafb;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.form-input.editing {
+  border-color: #a78bfa;
+  background: #faf5ff;
+}
+
+.form-display {
+  width: 100%;
+  padding: 0.875rem 1.25rem;
+  background: #f9fafb;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 1rem;
+  color: #1f2937;
+  font-weight: 500;
+  box-sizing: border-box;
+}
+
+.form-select {
+  width: 100%;
+  padding: 0.875rem 1.25rem;
+  border: 2px solid #e9d5ff;
+  border-radius: 10px;
+  font-size: 1rem;
+  color: #1f2937;
+  transition: all 0.2s ease;
+  background: white;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: #a78bfa;
+  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.1);
+}
+
+/* ============================================ */
+/* PASSWORD SECTION */
+/* ============================================ */
+
+.password-section {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 2px solid #f3f4f6;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  color: #7c3aed;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.95rem;
+  padding: 0;
+  margin-top: 0.5rem;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+.link-button:hover {
+  color: #6d28d9;
+}
+
+.action-buttons {
+  margin-top: 2rem;
+  display: flex;
+  gap: 1rem;
+}
+
+.primary-button {
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 6px -1px rgba(124, 58, 237, 0.3);
+}
+
+.primary-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #6d28d9 0%, #5b21b6 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(124, 58, 237, 0.4);
+}
+
+.primary-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================================ */
+/* SUBSCRIPTION CARD */
+/* ============================================ */
+
+.subscription-card {
+  background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+  border: 2px solid #e9d5ff;
+}
+
+.current-plan-display {
+  margin-top: 1rem;
+}
+
+.plan-badge-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.plan-label {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.plan-badge {
+  display: inline-block;
+  padding: 0.5rem 1.5rem;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-pro {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  color: white;
+  box-shadow: 0 4px 6px -1px rgba(124, 58, 237, 0.3);
+}
+
+.badge-start {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+}
+
+.badge-free {
+  background: #e5e7eb;
+  color: #6b7280;
+}
+
+.plan-description {
+  font-size: 1rem;
+  color: #6b7280;
+  margin: 1rem 0;
+}
+
+/* ============================================ */
+/* SUBSCRIPTION DETAILS */
+/* ============================================ */
+
+.subscription-details {
+  margin-top: 1.5rem;
+}
+
+.expiry-info {
+  background: white;
+  border: 2px solid #e9d5ff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.expiry-warning {
+  border-color: #fbbf24;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+}
+
+.expiry-expired {
+  border-color: #ef4444;
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+}
+
+.expiry-main {
+  display: flex;
+  gap: 1rem;
+  align-items: start;
+}
+
+.expiry-icon {
+  font-size: 2rem;
+}
+
+.expiry-content {
+  flex: 1;
+}
+
+.expiry-label {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+}
+
+.expiry-date {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+}
+
+.expiry-countdown {
+  font-size: 0.95rem;
+  color: #7c3aed;
+  font-weight: 600;
+}
+
+.warning-alert {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border: 2px solid #fbbf24;
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  gap: 1rem;
+  align-items: start;
+}
+
+.warning-icon {
+  font-size: 1.5rem;
+}
+
+.warning-content {
+  flex: 1;
+  font-size: 0.95rem;
+  color: #92400e;
+}
+
+/* ============================================ */
+/* BENEFITS SECTION */
+/* ============================================ */
+
+.benefits-section {
+  margin-top: 1.5rem;
+  background: white;
+  border: 2px solid #e9d5ff;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.benefits-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.benefits-icon {
+  font-size: 1.5rem;
+}
+
+.benefits-title {
+  font-weight: 600;
+  color: #374151;
+  font-size: 1.05rem;
+}
+
+.benefits-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.benefits-list li {
+  padding: 0.5rem 0;
+  color: #059669;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+/* ============================================ */
+/* FREE PLAN INFO */
+/* ============================================ */
+
+.free-plan-info {
+  margin-top: 1.5rem;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.free-plan-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
+  color: #374151;
+  font-size: 1.05rem;
+}
+
+.info-icon {
+  font-size: 1.5rem;
+}
+
+.limitations-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem 0;
+}
+
+.limitations-list li {
+  padding: 0.5rem 0;
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
+.upgrade-message {
+  padding: 1rem;
+  background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+  border-radius: 8px;
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
+/* ============================================ */
+/* PROMO CODE SECTION */
+/* ============================================ */
+
+.promo-card {
+  background: linear-gradient(135deg, #ffffff 0%, #faf5ff 100%);
+}
+
+.promo-input-section {
+  margin-top: 1rem;
+}
+
+.promo-input {
+  font-family: 'Courier New', monospace;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+
+.promo-valid {
+  border-color: #10b981 !important;
+  background: #d1fae5 !important;
+}
+
+.promo-invalid {
+  border-color: #ef4444 !important;
+  background: #fee2e2 !important;
+}
+
+.promo-loading {
+  border-color: #3b82f6 !important;
+  background: #dbeafe !important;
+}
+
+.validation-message {
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.validation-message.loading {
+  background: #dbeafe;
+  border: 1px solid #93c5fd;
+  color: #1e40af;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.validation-success {
+  background: #d1fae5;
+  border: 1px solid #6ee7b7;
+  color: #065f46;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+}
+
+.validation-error {
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  color: #991b1b;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+}
+
+.spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #93c5fd;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.plan-warning {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 2px solid #fbbf24;
+  border-radius: 10px;
+  color: #92400e;
+  font-weight: 500;
+}
+
+.promo-button {
+  width: 100%;
+  padding: 1rem;
+  margin-top: 1.5rem;
+  background: linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 1.05rem;
+  cursor: not-allowed;
+  transition: all 0.2s ease;
+}
+
+.promo-button.promo-ready {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  cursor: pointer;
+  box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);
+}
+
+.promo-button.promo-ready:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.4);
+}
+
+.promo-button.promo-processing {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  cursor: wait;
+}
+
+/* ============================================ */
+/* HISTORY SECTIONS */
+/* ============================================ */
+
+.promocodes-history,
+.payment-history {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 2px solid #f3f4f6;
+}
+
+.history-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 1rem;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.history-item,
+.payment-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: white;
+  border: 1px solid #e9d5ff;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.history-item:hover,
+.payment-item:hover {
+  border-color: #c4b5fd;
+  box-shadow: 0 2px 4px rgba(139, 92, 246, 0.1);
+}
+
+.history-info,
+.payment-info {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.history-code,
+.payment-id {
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+  color: #7c3aed;
+  font-size: 0.95rem;
+}
+
+.history-plan {
+  padding: 0.25rem 0.75rem;
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  color: #1e40af;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.history-date,
+.payment-date {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.payment-amount {
+  font-weight: 700;
+  color: #1f2937;
+  font-size: 1.05rem;
+}
+
+.payment-status-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.status-success {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #065f46;
+}
+
+.status-warning {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+}
+
+.status-error {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #991b1b;
+}
+
+/* ============================================ */
+/* PLANS SECTION */
+/* ============================================ */
+
+.plans-card {
+  background: linear-gradient(135deg, #ffffff 0%, #faf5ff 100%);
+}
+
+.promocode-notice {
+  padding: 1rem;
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  border: 2px solid #6ee7b7;
+  border-radius: 10px;
+  color: #065f46;
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 500;
+}
+
+.notice-icon {
+  font-size: 1.5rem;
+}
+
+.plans-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.plan-card {
+  background: white;
+  border: 3px solid #e9d5ff;
+  border-radius: 16px;
+  padding: 2rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.plan-card:hover:not(.disabled) {
+  border-color: #a78bfa;
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(139, 92, 246, 0.2);
+}
+
+.plan-card.active {
+  border-color: #7c3aed;
+  box-shadow: 0 20px 25px -5px rgba(124, 58, 237, 0.3);
+}
+
+.plan-card.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.plan-card.current-plan {
+  background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+}
+
+.plan-card.recommended {
+  border-color: #7c3aed;
+}
+
+.plan-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  color: white;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  border-bottom-left-radius: 10px;
+}
+
+.plan-header {
+  text-align: center;
+  padding: 1rem 0 1.5rem 0;
+  border-bottom: 2px solid #f3f4f6;
+  margin-bottom: 1.5rem;
+}
+
+.plan-name {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 0.5rem 0;
+}
+
+.plan-price {
+  font-size: 2rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0;
+}
+
+.plan-period {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+.plan-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem 0;
+}
+
+.plan-features li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  color: #374151;
+  font-size: 0.95rem;
+}
+
+.feature-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.plan-status {
+  padding: 0.75rem;
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  border: 2px solid #6ee7b7;
+  border-radius: 10px;
+  color: #065f46;
+  font-weight: 700;
+  text-align: center;
+  font-size: 1.05rem;
+}
+
+.active-status {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+}
+
+.plan-select-button {
+  width: 100%;
+  padding: 0.875rem;
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.plan-select-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #6d28d9 0%, #5b21b6 100%);
+  transform: translateY(-1px);
+}
+
+.plan-select-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.payment-button {
+  width: 100%;
+  padding: 1.25rem;
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 1.15rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 6px -1px rgba(124, 58, 237, 0.3);
+}
+
+.payment-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #6d28d9 0%, #5b21b6 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(124, 58, 237, 0.4);
+}
+
+.payment-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================================ */
+/* USAGE STATISTICS */
+/* ============================================ */
+
+.usage-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.usage-item {
+  background: white;
+  padding: 1.5rem;
+  border: 2px solid #e9d5ff;
+  border-radius: 12px;
+}
+
+.usage-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.usage-label {
+  font-weight: 600;
+  color: #374151;
+  font-size: 1.05rem;
+}
+
+.usage-value {
+  font-weight: 700;
+  color: #7c3aed;
+  font-size: 1.15rem;
+}
+
+.usage-bar {
+  height: 12px;
+  background: #e9d5ff;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.usage-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #7c3aed 0%, #a78bfa 100%);
+  border-radius: 6px;
+  transition: width 0.3s ease;
+}
+
+.unlimited-badge {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #065f46;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+/* ============================================ */
+/* LOADING OVERLAY */
+/* ============================================ */
+
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.spinner {
+  width: 60px;
+  height: 60px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.loading-text {
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-top: 1rem;
+}
+
+/* ============================================ */
+/* RESPONSIVE DESIGN */
+/* ============================================ */
+
+@media (max-width: 768px) {
+  .settings-header {
+    padding: 1.5rem 0;
+  }
+
+  .header-content {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 0 1rem;
+  }
+
+  .header-title {
+    font-size: 1.5rem;
+  }
+
+  .header-subtitle {
+    font-size: 0.9rem;
+  }
+
+  .settings-container {
+    padding: 2rem 1rem;
+  }
+
+  .settings-card {
+    padding: 1.5rem;
+  }
+
+  .card-title {
+    font-size: 1.5rem;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .plans-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .card-header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .edit-button,
+  .edit-actions {
+    align-self: flex-start;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+
+  .primary-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-title {
+    font-size: 1.25rem;
+  }
+
+  .card-title {
+    font-size: 1.25rem;
+  }
+
+  .settings-card {
+    padding: 1rem;
+  }
+
+  .plan-card {
+    padding: 1.5rem;
+  }
+
+  .plan-name {
+    font-size: 1.5rem;
+  }
+
+  .plan-price {
+    font-size: 1.5rem;
+  }
+}
 </style>
