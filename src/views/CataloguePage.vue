@@ -694,12 +694,12 @@ export default {
   color: #6b7280; 
 }
 .status-badge.status-start { 
-  background: linear-gradient(135deg, #faf5ff, #fdfbf7);
-  color: #a855f7;
-  border: 1.5px solid #d4af37;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #92400e;
+  border: 1.5px solid #d97706;
 }
 .status-badge.status-pro { 
-  background: linear-gradient(135deg, #a855f7, #9333ea); 
+  background: linear-gradient(135deg, #a855f7, #7c3aed); 
   color: white; 
   box-shadow: 0 2px 8px rgba(168, 85, 247, 0.3);
 }
@@ -743,8 +743,8 @@ export default {
 }
 .search-input:focus { 
   outline: none; 
-  border-color: #a855f7; 
-  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1); 
+  border-color: #6366f1; 
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); 
   background: white; 
 }
 .clear-search-btn {
@@ -809,8 +809,8 @@ export default {
 }
 .dropdown-select:focus {
   outline: none;
-  border-color: #a855f7;
-  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
 .clear-all-btn {
@@ -855,7 +855,7 @@ export default {
   width: 3rem; 
   height: 3rem; 
   border: 3px solid #f3f4f6; 
-  border-top-color: #a855f7;
+  border-top-color: #6366f1;
   border-radius: 50%; 
   animation: spin 1s linear infinite; 
   margin-bottom: 1rem;
@@ -917,17 +917,17 @@ export default {
   gap: 0.5rem;
   padding: 0.75rem 1.25rem;
   border: 1.5px solid #d4af37;
-  background: linear-gradient(135deg, #fdfbf7, #faf7ed);
+  background: linear-gradient(135deg, #fdfbf7, #fef3c7);
   border-radius: 10px;
   font-size: 0.875rem;
   font-weight: 600;
-  color: #92772f;
+  color: #92400e;
   cursor: pointer;
   transition: all 0.2s;
 }
 .shuffle-btn:hover {
-  background: linear-gradient(135deg, #faf7ed, #f5f0e0);
-  border-color: #c7a030;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border-color: #b8860b;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(212, 175, 55, 0.25);
 }
@@ -949,31 +949,15 @@ export default {
   border: 1px solid #e5e7eb; 
   border-radius: 12px;
   padding: 1.5rem; 
-  transition: all 0.3s; 
+  transition: all 0.2s; 
   display: flex; 
   flex-direction: column; 
   gap: 1rem;
-  position: relative;
-  overflow: hidden;
-}
-.course-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #a855f7, #d4af37, #a855f7);
-  opacity: 0;
-  transition: opacity 0.3s;
 }
 .course-card:hover {
-  box-shadow: 0 8px 24px rgba(168, 85, 247, 0.12); 
-  border-color: #c4b5fd;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); 
+  border-color: #d1d5db;
   transform: translateY(-2px);
-}
-.course-card:hover::before {
-  opacity: 1;
 }
 .course-header { 
   display: flex; 
@@ -995,9 +979,9 @@ export default {
 }
 .course-type.premium, 
 .course-type.pro { 
-  background: linear-gradient(135deg, #faf5ff, #fdfbf7);
-  color: #a855f7;
-  border: 1px solid #e9d5ff;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #92400e;
+  border: 1px solid #fbbf24;
 }
 .add-btn {
   width: 2.25rem; 
@@ -1014,9 +998,9 @@ export default {
   flex-shrink: 0;
 }
 .add-btn:hover:not(:disabled) { 
-  border-color: #a855f7; 
-  background: #faf5ff;
-  color: #a855f7;
+  border-color: #6366f1; 
+  background: #eef2ff;
+  color: #6366f1;
   transform: scale(1.05);
 }
 .add-btn:disabled { 
@@ -1086,8 +1070,8 @@ export default {
   font-weight: 500; 
 }
 .progress-value { 
-  color: #a855f7;
-  font-weight: 700; 
+  color: #111827;
+  font-weight: 600; 
 }
 .progress-bar-wrapper { 
   width: 100%; 
@@ -1102,16 +1086,16 @@ export default {
   transition: width 0.5s ease; 
 }
 .progress-bar.high { 
-  background: linear-gradient(to right, #d4af37, #f4d03f);
+  background: linear-gradient(to right, #10b981, #059669);
 }
 .progress-bar.medium { 
-  background: linear-gradient(to right, #a855f7, #c084fc);
+  background: linear-gradient(to right, #3b82f6, #2563eb);
 }
 .progress-bar.low { 
-  background: linear-gradient(to right, #3b82f6, #60a5fa);
+  background: linear-gradient(to right, #f59e0b, #d97706);
 }
 .progress-bar.very-low { 
-  background: linear-gradient(to right, #ef4444, #f87171);
+  background: linear-gradient(to right, #ef4444, #dc2626);
 }
 .action-btn { 
   width: 100%; 
@@ -1172,9 +1156,9 @@ export default {
   transition: all 0.2s;
 }
 .pagination-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #faf5ff, #fdfbf7);
-  border-color: #a855f7;
-  color: #a855f7;
+  background: #f9fafb;
+  border-color: #6366f1;
+  color: #6366f1;
 }
 .pagination-btn:disabled {
   opacity: 0.5;
@@ -1270,8 +1254,8 @@ export default {
   padding: 1.5rem; 
 }
 .course-preview { 
-  background: linear-gradient(135deg, #faf5ff, #fdfbf7);
-  border: 1px solid #e9d5ff;
+  background: #fafafa;
+  border: 1px solid #e5e7eb;
   border-radius: 10px; 
   padding: 1.5rem; 
   text-align: center; 
@@ -1303,7 +1287,6 @@ export default {
 .preview-stat svg { 
   width: 0.875rem; 
   height: 0.875rem; 
-  color: #d4af37;
 }
 .modal-footer { 
   padding: 1rem 1.5rem 1.5rem; 
@@ -1350,13 +1333,12 @@ export default {
 .success-icon { 
   width: 4rem; 
   height: 4rem; 
-  background: linear-gradient(135deg, #faf5ff, #fdfbf7);
-  border: 2px solid #d4af37;
+  background: #dcfce7;
   border-radius: 50%; 
   display: flex; 
   align-items: center; 
   justify-content: center; 
-  color: #d4af37; 
+  color: #10b981; 
 }
 .success-icon svg { 
   width: 2rem; 
@@ -1365,7 +1347,7 @@ export default {
 .success-title { 
   font-size: 1.25rem; 
   font-weight: 600; 
-  color: #a855f7; 
+  color: #10b981; 
   margin: 0; 
 }
 .success-text { 
@@ -1468,7 +1450,7 @@ export default {
 .action-btn:focus-visible, 
 .modal-close:focus-visible, 
 .modal-btn:focus-visible {
-  outline: 2px solid #a855f7; 
+  outline: 2px solid #6366f1; 
   outline-offset: 2px;
 }
 
