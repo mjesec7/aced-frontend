@@ -3,25 +3,8 @@
     <header class="page-header">
       <div class="header-content">
         <div class="header-left">
-          <button v-if="currentView !== 'subjects'" @click="goBack" class="back-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="15 18 9 12 15 6"/>
-            </svg>
-            Назад
-          </button>
           <div>
-            <div class="breadcrumbs">
-              <span class="breadcrumb-item" :class="{ active: currentView === 'subjects' }">Предметы</span>
-              <template v-if="selectedSubject">
-                <svg class="breadcrumb-arrow" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-                <span class="breadcrumb-item" :class="{ active: currentView === 'levels' }">{{ selectedSubject }}</span>
-              </template>
-              <template v-if="selectedLevel">
-                <svg class="breadcrumb-arrow" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-                <span class="breadcrumb-item" :class="{ active: currentView === 'topics' }">Уровень {{ selectedLevel }}</span>
-              </template>
-            </div>
-            <h1 class="page-title">{{ pageTitle }}</h1>
+            <h1 class="page-title">Каталог курсов</h1>
           </div>
         </div>
         <div class="status-badge" :class="`status-${userStatus}`">
@@ -33,19 +16,55 @@
     <div class="filters-section">
       <div class="filters-content">
         <div class="search-box">
-          <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.35-4.35"/>
+          </svg>
           <input
             v-model="searchQuery"
             type="text"
             class="search-input"
-            placeholder="Поиск..."
+            placeholder="Поиск курсов..."
           />
           <button v-if="searchQuery" @click="searchQuery = ''" class="clear-search-btn">
-            <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
           </button>
         </div>
 
-        <div v-if="currentView === 'topics'" class="filter-chips">
+        <div class="filter-chips">
+          <div class="filter-group">
+            <label class="filter-label">Предмет:</label>
+            <div class="chips-row">
+              <button :class="['filter-chip', { active: selectedSubjectFilter === null }]" @click="selectedSubjectFilter = null">Все</button>
+              <button 
+                v-for="subject in availableSubjects" 
+                :key="subject"
+                :class="['filter-chip', { active: selectedSubjectFilter === subject }]" 
+                @click="selectedSubjectFilter = subject"
+              >
+                {{ subject }}
+              </button>
+            </div>
+          </div>
+
+          <div class="filter-group">
+            <label class="filter-label">Уровень:</label>
+            <div class="chips-row">
+              <button :class="['filter-chip', { active: selectedLevelFilter === null }]" @click="selectedLevelFilter = null">Все</button>
+              <button 
+                v-for="level in availableLevels" 
+                :key="level"
+                :class="['filter-chip', { active: selectedLevelFilter === level }]" 
+                @click="selectedLevelFilter = level"
+              >
+                Уровень {{ level }}
+              </button>
+            </div>
+          </div>
+
           <div class="filter-group">
             <label class="filter-label">Тип:</label>
             <div class="chips-row">
@@ -54,6 +73,7 @@
               <button :class="['filter-chip', { active: showPremium }]" @click="showPremium = !showPremium; if(showPremium) showFree = false">Premium</button>
             </div>
           </div>
+
           <div class="filter-group">
             <label class="filter-label">Прогресс:</label>
             <div class="chips-row">
@@ -66,7 +86,10 @@
         </div>
 
         <button v-if="hasActiveFilters" @click="clearFilters" class="clear-all-btn">
-          <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
           Сбросить фильтры
         </button>
       </div>
@@ -78,80 +101,97 @@
     </div>
 
     <main v-else class="main-content">
-      <section v-if="currentView === 'subjects'">
-        <div v-if="filteredSubjects.length" class="subjects-grid">
-          <div v-for="subject in filteredSubjects" :key="subject.name" class="subject-card" @click="selectSubject(subject.name)">
-            <div class="subject-icon">{{ getSubjectIcon(subject.name) }}</div>
-            <h3 class="subject-title">{{ subject.name }}</h3>
-            <div class="subject-stats">
-              <span class="stat-item"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>{{ subject.topicCount }} {{ getTopicWord(subject.topicCount) }}</span>
-              <span class="stat-item"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>{{ subject.levelCount }} {{ getLevelWord(subject.levelCount) }}</span>
-            </div>
-          </div>
-        </div>
-        <div v-else class="empty-state">
-          <svg class="empty-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <h3 class="empty-title">Предметы не найдены</h3>
-          <p class="empty-text">Попробуйте изменить параметры поиска</p>
-        </div>
-      </section>
+      <div class="results-header">
+        <p class="results-count">Найдено курсов: {{ filteredCourses.length }}</p>
+      </div>
 
-      <section v-if="currentView === 'levels'">
-        <div v-if="filteredLevels.length" class="levels-grid">
-          <div v-for="level in filteredLevels" :key="level.name" class="level-card" @click="selectLevel(level.name)">
-            <div class="level-header">
-              <div class="level-icon" :class="getLevelClass(level.name)">{{ getLevelIcon(level.name) }}</div>
-              <div class="level-info">
-                <h3 class="level-title">Уровень {{ level.name }}</h3>
-                <p class="level-description">{{ getLevelDescription(level.name) }}</p>
-              </div>
-            </div>
-            <div class="level-meta">
-              <span class="meta-badge"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>{{ level.topicCount }} {{ getTopicWord(level.topicCount) }}</span>
-            </div>
-            <div class="progress-section">
-              <div class="progress-header"><span class="progress-label">Прогресс</span><span class="progress-value">{{ level.progress }}%</span></div>
-              <div class="progress-bar-wrapper"><div class="progress-bar" :class="getProgressColor(level.progress)" :style="{ width: level.progress + '%' }"></div></div>
-            </div>
-          </div>
-        </div>
-        <div v-else class="empty-state">
-          <svg class="empty-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <h3 class="empty-title">Уровни не найдены</h3>
-          <p class="empty-text">Нет доступных уровней для этого предмета</p>
-        </div>
-      </section>
-
-      <section v-if="currentView === 'topics'">
-        <div v-if="filteredTopics.length" class="topics-grid">
-          <div v-for="topic in filteredTopics" :key="topic.topicId" class="topic-card">
-            <div class="topic-header">
-              <span :class="['topic-type', topic.type]">{{ getTypeLabel(topic.type) }}</span>
-              <button class="add-btn" @click.stop="addToStudyPlan(topic)" :disabled="topic.inStudyPlan" :title="topic.inStudyPlan ? 'Уже в вашем плане' : 'Добавить в план обучения'">
-                <svg v-if="topic.inStudyPlan" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                <svg v-else viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              </button>
-            </div>
-            <h3 class="topic-title">{{ topic.name }}</h3>
-            <div class="topic-meta">
-              <span class="meta-item"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>{{ topic.lessonCount }} {{ getLessonWord(topic.lessonCount) }}</span>
-              <span class="meta-item"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>{{ topic.totalTime }} мин</span>
-            </div>
-            <div class="progress-section">
-              <div class="progress-header"><span class="progress-label">Ваш прогресс</span><span class="progress-value">{{ topic.progress }}%</span></div>
-              <div class="progress-bar-wrapper"><div class="progress-bar" :class="getProgressColor(topic.progress)" :style="{ width: topic.progress + '%' }"></div></div>
-            </div>
-            <button class="action-btn" :class="getButtonClass(topic.progress)" @click="handleTopicAccess(topic.topicId, topic.type)">
-              {{ getButtonText(topic.progress) }}
+      <div v-if="filteredCourses.length" class="courses-grid">
+        <div v-for="course in filteredCourses" :key="course.topicId" class="course-card">
+          <div class="course-header">
+            <span :class="['course-type', course.type]">{{ getTypeLabel(course.type) }}</span>
+            <button class="add-btn" @click.stop="addToStudyPlan(course)" :disabled="course.inStudyPlan" :title="course.inStudyPlan ? 'Уже в вашем плане' : 'Добавить в план обучения'">
+              <svg v-if="course.inStudyPlan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
             </button>
           </div>
+
+          <h3 class="course-title">{{ course.name }}</h3>
+
+          <div class="course-info">
+            <div class="info-row">
+              <span class="info-label">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                </svg>
+                Предмет:
+              </span>
+              <span class="info-value">{{ course.subject }}</span>
+            </div>
+
+            <div class="info-row">
+              <span class="info-label">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+                Уровень:
+              </span>
+              <span class="info-value">{{ getLevelDescription(course.level) }}</span>
+            </div>
+
+            <div class="info-row">
+              <span class="info-label">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                </svg>
+                Уроков:
+              </span>
+              <span class="info-value">{{ course.lessonCount }} {{ getLessonWord(course.lessonCount) }}</span>
+            </div>
+
+            <div class="info-row">
+              <span class="info-label">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+                Время:
+              </span>
+              <span class="info-value">{{ course.totalTime }} мин</span>
+            </div>
+          </div>
+
+          <div class="progress-section">
+            <div class="progress-header">
+              <span class="progress-label">Ваш прогресс</span>
+              <span class="progress-value">{{ course.progress }}%</span>
+            </div>
+            <div class="progress-bar-wrapper">
+              <div class="progress-bar" :class="getProgressColor(course.progress)" :style="{ width: course.progress + '%' }"></div>
+            </div>
+          </div>
+
+          <button class="action-btn" :class="getButtonClass(course.progress)" @click="handleCourseAccess(course.topicId, course.type)">
+            {{ getButtonText(course.progress) }}
+          </button>
         </div>
-        <div v-else class="empty-state">
-          <svg class="empty-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <h3 class="empty-title">Курсы не найдены</h3>
-          <p class="empty-text">Попробуйте изменить фильтры</p>
-        </div>
-      </section>
+      </div>
+
+      <div v-else class="empty-state">
+        <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <h3 class="empty-title">Курсы не найдены</h3>
+        <p class="empty-text">Попробуйте изменить параметры поиска или фильтры</p>
+      </div>
     </main>
 
     <transition name="modal">
@@ -159,15 +199,32 @@
         <div class="modal-container" @click.stop>
           <div class="modal-header">
             <h3 class="modal-title">Добавить в план обучения?</h3>
-            <button class="modal-close" @click="showAddModal = false"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            <button class="modal-close" @click="showAddModal = false">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
           </div>
-          <div class="modal-body" v-if="selectedTopic">
-            <div class="topic-preview">
-              <h4>{{ selectedTopic.name }}</h4>
-              <p class="topic-desc">{{ getLevelDescription(selectedTopic.level) }}</p>
-              <div class="topic-preview-stats">
-                <span class="preview-stat"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>{{ selectedTopic.lessonCount }} уроков</span>
-                <span class="preview-stat"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>{{ selectedTopic.totalTime }} мин</span>
+          <div class="modal-body" v-if="selectedCourse">
+            <div class="course-preview">
+              <h4>{{ selectedCourse.name }}</h4>
+              <p class="course-desc">{{ selectedCourse.subject }} - {{ getLevelDescription(selectedCourse.level) }}</p>
+              <div class="course-preview-stats">
+                <span class="preview-stat">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                  </svg>
+                  {{ selectedCourse.lessonCount }} уроков
+                </span>
+                <span class="preview-stat">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                  {{ selectedCourse.totalTime }} мин
+                </span>
               </div>
             </div>
           </div>
@@ -183,9 +240,14 @@
       <div v-if="showSuccessModal" class="modal-overlay" @click="showSuccessModal = false">
         <div class="modal-container success" @click.stop>
           <div class="success-content">
-            <div class="success-icon"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+            <div class="success-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+            </div>
             <h3 class="success-title">Добавлено в план!</h3>
-            <p class="success-text">Курс "{{ selectedTopic?.name }}" теперь в вашем плане обучения</p>
+            <p class="success-text">Курс "{{ selectedCourse?.name }}" теперь в вашем плане обучения</p>
             <button @click="showSuccessModal = false" class="modal-btn primary">Отлично!</button>
           </div>
         </div>
@@ -224,17 +286,14 @@ export default {
 
       // UI State
       isLoading: true,
-      currentView: 'subjects', // Can be 'subjects', 'levels', or 'topics'
-      selectedSubject: null,
-      selectedLevel: null,
 
-      // Processed Data for Views
-      subjects: [],
-      levels: [],
-      topics: [],
+      // All courses
+      courses: [],
 
       // Filters
       searchQuery: '',
+      selectedSubjectFilter: null,
+      selectedLevelFilter: null,
       showFree: false,
       showPremium: false,
       showNotStarted: false,
@@ -245,7 +304,7 @@ export default {
       showAddModal: false,
       showSuccessModal: false,
       showPaywall: false,
-      selectedTopic: null,
+      selectedCourse: null,
       requestedTopicId: null,
     };
   },
@@ -259,33 +318,57 @@ export default {
       const labels = { free: 'Free', start: 'Start', pro: 'Pro' };
       return labels[this.userStatus] || 'Free';
     },
-    pageTitle() {
-      if (this.currentView === 'topics') return `${this.selectedSubject} - Уровень ${this.selectedLevel}`;
-      if (this.currentView === 'levels') return this.selectedSubject;
-      return 'Каталог курсов';
+    availableSubjects() {
+      const subjects = new Set();
+      this.courses.forEach(course => subjects.add(course.subject));
+      return Array.from(subjects).sort();
     },
-    filteredSubjects() {
-      if (!this.searchQuery) return this.subjects;
-      const query = this.searchQuery.toLowerCase();
-      return this.subjects.filter(s => s.name.toLowerCase().includes(query));
+    availableLevels() {
+      const levels = new Set();
+      this.courses.forEach(course => levels.add(course.level));
+      return Array.from(levels).sort((a, b) => Number(a) - Number(b));
     },
-    filteredLevels() {
-      return this.levels; // Search doesn't apply to levels view
-    },
-    filteredTopics() {
-      return this.topics.filter(topic => {
-        if (this.searchQuery && !topic.name.toLowerCase().includes(this.searchQuery.toLowerCase())) return false;
-        if (this.showFree && topic.type !== 'free') return false;
-        if (this.showPremium && topic.type === 'free') return false;
-        const progress = topic.progress || 0;
+    filteredCourses() {
+      return this.courses.filter(course => {
+        // Search filter
+        if (this.searchQuery && !course.name.toLowerCase().includes(this.searchQuery.toLowerCase())) {
+          return false;
+        }
+
+        // Subject filter
+        if (this.selectedSubjectFilter && course.subject !== this.selectedSubjectFilter) {
+          return false;
+        }
+
+        // Level filter
+        if (this.selectedLevelFilter && course.level !== this.selectedLevelFilter) {
+          return false;
+        }
+
+        // Type filter
+        if (this.showFree && course.type !== 'free') return false;
+        if (this.showPremium && course.type === 'free') return false;
+
+        // Progress filter
+        const progress = course.progress || 0;
         if (this.showNotStarted && progress !== 0) return false;
         if (this.showInProgress && (progress === 0 || progress === 100)) return false;
         if (this.showCompleted && progress !== 100) return false;
+
         return true;
       });
     },
     hasActiveFilters() {
-      return !!(this.searchQuery || this.showFree || this.showPremium || this.showNotStarted || this.showInProgress || this.showCompleted);
+      return !!(
+        this.searchQuery || 
+        this.selectedSubjectFilter || 
+        this.selectedLevelFilter ||
+        this.showFree || 
+        this.showPremium || 
+        this.showNotStarted || 
+        this.showInProgress || 
+        this.showCompleted
+      );
     },
   },
 
@@ -322,7 +405,7 @@ export default {
           this.studyPlanTopics = studyListResult.data.map(item => this.extractTopicId(item.topicId)).filter(Boolean);
         }
         
-        this.processSubjects();
+        this.processAllCourses();
       } catch (error) {
         console.error('Error loading catalogue data:', error);
       } finally {
@@ -351,111 +434,46 @@ export default {
       }
       return finalProgress;
     },
-    processSubjects() {
-      const subjectsMap = new Map();
+    processAllCourses() {
+      const coursesMap = new Map();
+      
       this.lessons.forEach(lesson => {
-        if (!lesson?.subject) return;
-        const subjectName = String(lesson.subject);
-        if (!subjectsMap.has(subjectName)) {
-          subjectsMap.set(subjectName, { name: subjectName, topics: new Set(), levels: new Set() });
-        }
-        const subject = subjectsMap.get(subjectName);
-        const topicId = this.extractTopicId(lesson.topicId);
-        if (topicId) subject.topics.add(topicId);
-        if (lesson.level) subject.levels.add(String(lesson.level));
-      });
-      this.subjects = Array.from(subjectsMap.values()).map(s => ({
-        name: s.name,
-        topicCount: s.topics.size,
-        levelCount: s.levels.size,
-      }));
-    },
-    processLevels() {
-      const levelsMap = new Map();
-      this.lessons.filter(l => String(l.subject) === this.selectedSubject).forEach(lesson => {
-        const levelName = String(lesson.level || '1');
-        if (!levelsMap.has(levelName)) {
-          levelsMap.set(levelName, { name: levelName, topics: new Set() });
-        }
-        const topicId = this.extractTopicId(lesson.topicId);
-        if (topicId) levelsMap.get(levelName).topics.add(topicId);
-      });
-      this.levels = Array.from(levelsMap.values()).map(level => ({
-        name: level.name,
-        topicCount: level.topics.size,
-        progress: this.calculateLevelProgress(level.name),
-      })).sort((a, b) => Number(a.name) - Number(b.name));
-    },
-    processTopics() {
-      const topicsMap = new Map();
-      this.lessons.filter(l => String(l.subject) === this.selectedSubject && String(l.level) === this.selectedLevel).forEach(lesson => {
         const topicId = this.extractTopicId(lesson.topicId);
         if (!topicId) return;
-        if (!topicsMap.has(topicId)) {
-          topicsMap.set(topicId, {
+        
+        if (!coursesMap.has(topicId)) {
+          coursesMap.set(topicId, {
             topicId,
             name: this.getTopicName(lesson),
-            level: String(lesson.level),
-            subject: String(lesson.subject),
+            level: String(lesson.level || '1'),
+            subject: String(lesson.subject || 'Без категории'),
             lessonCount: 0,
             totalTime: 0,
             type: 'free',
           });
         }
-        const topic = topicsMap.get(topicId);
-        topic.lessonCount++;
-        topic.totalTime += this.estimateLessonTime(lesson);
+        
+        const course = coursesMap.get(topicId);
+        course.lessonCount++;
+        course.totalTime += this.estimateLessonTime(lesson);
+        
         if (['premium', 'start', 'pro'].includes(lesson.type)) {
-          topic.type = 'premium';
+          course.type = 'premium';
         }
       });
-      this.topics = Array.from(topicsMap.values()).map(topic => ({
-        ...topic,
-        progress: this.userProgress[topic.topicId] || 0,
-        inStudyPlan: this.studyPlanTopics.includes(topic.topicId),
+      
+      this.courses = Array.from(coursesMap.values()).map(course => ({
+        ...course,
+        progress: this.userProgress[course.topicId] || 0,
+        inStudyPlan: this.studyPlanTopics.includes(course.topicId),
       }));
     },
-    calculateLevelProgress(levelName) {
-      const topicIds = new Set();
-      this.lessons.filter(l => String(l.subject) === this.selectedSubject && String(l.level) === String(levelName)).forEach(l => {
-        const id = this.extractTopicId(l.topicId);
-        if (id) topicIds.add(id);
-      });
-      if (topicIds.size === 0) return 0;
-      let totalProgress = 0;
-      topicIds.forEach(id => {
-        totalProgress += this.userProgress[id] || 0;
-      });
-      return Math.round(totalProgress / topicIds.size);
-    },
 
-    // --- NAVIGATION & UI HANDLERS ---
-    selectSubject(subjectName) {
-      this.selectedSubject = subjectName;
-      this.currentView = 'levels';
-      this.processLevels();
-      this.clearFilters();
-    },
-    selectLevel(levelName) {
-      this.selectedLevel = levelName;
-      this.currentView = 'topics';
-      this.processTopics();
-      this.searchQuery = ''; // Clear search when drilling down
-    },
-    goBack() {
-      this.clearFilters();
-      if (this.currentView === 'topics') {
-        this.currentView = 'levels';
-        this.selectedLevel = null;
-        this.topics = [];
-      } else if (this.currentView === 'levels') {
-        this.currentView = 'subjects';
-        this.selectedSubject = null;
-        this.levels = [];
-      }
-    },
+    // --- UI HANDLERS ---
     clearFilters() {
       this.searchQuery = '';
+      this.selectedSubjectFilter = null;
+      this.selectedLevelFilter = null;
       this.showFree = false;
       this.showPremium = false;
       this.showNotStarted = false;
@@ -464,7 +482,7 @@ export default {
     },
 
     // --- USER ACTIONS ---
-    handleTopicAccess(topicId, type) {
+    handleCourseAccess(topicId, type) {
       if (!this.hasTopicAccess(type)) {
         this.requestedTopicId = topicId;
         this.showPaywall = true;
@@ -478,22 +496,22 @@ export default {
       if (topicType === 'premium' && this.userStatus === 'start') return true;
       return false;
     },
-    addToStudyPlan(topic) {
-      if (topic.inStudyPlan) return;
-      this.selectedTopic = topic;
+    addToStudyPlan(course) {
+      if (course.inStudyPlan) return;
+      this.selectedCourse = course;
       this.showAddModal = true;
     },
     async confirmAddToStudyPlan() {
-      if (!this.selectedTopic || !this.userId) return;
+      if (!this.selectedCourse || !this.userId) return;
       try {
-        const topicId = this.extractTopicId(this.selectedTopic.topicId);
+        const topicId = this.extractTopicId(this.selectedCourse.topicId);
         const result = await addToStudyList(this.userId, { topicId });
         if (result?.success) {
-          this.selectedTopic.inStudyPlan = true;
+          this.selectedCourse.inStudyPlan = true;
           this.studyPlanTopics.push(topicId);
-          const topicIndex = this.topics.findIndex(t => t.topicId === topicId);
-          if (topicIndex !== -1) {
-            this.topics[topicIndex].inStudyPlan = true;
+          const courseIndex = this.courses.findIndex(c => c.topicId === topicId);
+          if (courseIndex !== -1) {
+            this.courses[courseIndex].inStudyPlan = true;
           }
           this.showAddModal = false;
           this.showSuccessModal = true;
@@ -523,23 +541,19 @@ export default {
       return 'Тема без названия';
     },
     estimateLessonTime: (lesson) => lesson.estimatedTime || lesson.duration || 10,
-    getSubjectIcon(subject) {
-      const icons = { 'Математика': '🔢', 'Английский': '🇬🇧', 'Русский': '📝', 'Наука': '🔬', 'История': '📚', 'География': '🌍', 'Программирование': '💻', 'Искусство': '🎨', 'Музыка': '🎵', 'Физика': '⚛️', 'Химия': '🧪', 'Биология': '🧬', 'Литература': '📖', 'Экономика': '💰', 'Философия': '🤔' };
-      return icons[String(subject)] || '📖';
-    },
-    getLevelClass(level) {
-      const levelNum = parseInt(level);
-      if (levelNum <= 3) return 'level-beginner';
-      if (levelNum <= 6) return 'level-intermediate';
-      return 'level-advanced';
-    },
-    getLevelIcon(level) {
-      const icons = ['🌱', '🌿', '🍃', '🌳', '🌲', '🏔️', '⭐', '💎', '👑', '🏆'];
-      const levelNum = parseInt(level) - 1;
-      return icons[levelNum] || '📚';
-    },
     getLevelDescription(level) {
-      const descriptions = { 1: 'Начальный', 2: 'Элементарный', 3: 'Базовый', 4: 'Средний', 5: 'Продвинутый', 6: 'Профессиональный', 7: 'Экспертный', 8: 'Мастерский', 9: 'Виртуозный', 10: 'Совершенный' };
+      const descriptions = { 
+        1: 'Начальный', 
+        2: 'Элементарный', 
+        3: 'Базовый', 
+        4: 'Средний', 
+        5: 'Продвинутый', 
+        6: 'Профессиональный', 
+        7: 'Экспертный', 
+        8: 'Мастерский', 
+        9: 'Виртуозный', 
+        10: 'Совершенный' 
+      };
       return descriptions[parseInt(level)] || `Уровень ${level}`;
     },
     getProgressColor(progress) {
@@ -560,16 +574,6 @@ export default {
     },
     getTypeLabel(type) {
       return { free: 'Free', premium: 'Premium', pro: 'Pro' }[type] || 'Free';
-    },
-    getTopicWord(count) {
-      if (count % 10 === 1 && count % 100 !== 11) return 'тема';
-      if (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 10 || count % 100 >= 20)) return 'темы';
-      return 'тем';
-    },
-    getLevelWord(count) {
-      if (count % 10 === 1 && count % 100 !== 11) return 'уровень';
-      if (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 10 || count % 100 >= 20)) return 'уровня';
-      return 'уровней';
     },
     getLessonWord(count) {
       if (count % 10 === 1 && count % 100 !== 11) return 'урок';
@@ -601,267 +605,685 @@ export default {
   background-color: rgba(255, 255, 255, 0.8);
 }
 .header-content {
-  max-width: 1400px; margin: 0 auto; padding: 0 2rem;
-  display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem;
+  max-width: 1400px; 
+  margin: 0 auto; 
+  padding: 0 2rem;
+  display: flex; 
+  justify-content: space-between; 
+  align-items: flex-start; 
+  gap: 1rem;
 }
-.header-left { flex: 1; min-width: 0; }
-.back-btn {
-  display: inline-flex; align-items: center; gap: 0.5rem;
-  padding: 0.625rem 1rem; background: #f9fafb; border: 1px solid #e5e7eb;
-  border-radius: 8px; color: #6b7280; font-size: 0.875rem; font-weight: 500;
-  cursor: pointer; transition: all 0.2s; margin-bottom: 1rem;
+.header-left { 
+  flex: 1; 
+  min-width: 0; 
 }
-.back-btn:hover { background: #f3f4f6; border-color: #d1d5db; color: #111827; }
-.back-btn svg { width: 1rem; height: 1rem; }
-.breadcrumbs { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; flex-wrap: wrap; }
-.breadcrumb-item { font-size: 0.8125rem; color: #9ca3af; transition: color 0.2s; }
-.breadcrumb-item.active { color: #a855f7; font-weight: 600; }
-.breadcrumb-arrow { width: 0.875rem; height: 0.875rem; color: #d1d5db; stroke-width: 2.5; }
-.page-title { font-size: 1.875rem; font-weight: 700; color: #111827; margin: 0; }
+.page-title { 
+  font-size: 1.875rem; 
+  font-weight: 700; 
+  color: #111827; 
+  margin: 0; 
+}
 .status-badge {
-  padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.75rem;
-  font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; flex-shrink: 0;
+  padding: 0.5rem 1rem; 
+  border-radius: 8px; 
+  font-size: 0.75rem;
+  font-weight: 700; 
+  text-transform: uppercase; 
+  letter-spacing: 0.05em; 
+  flex-shrink: 0;
 }
-.status-badge.status-free { background: #f3f4f6; color: #6b7280; }
-.status-badge.status-start { background: #faf5ff; color: #a855f7; }
-.status-badge.status-pro { background: linear-gradient(135deg, #a855f7, #6366f1); color: white; }
+.status-badge.status-free { 
+  background: #f3f4f6; 
+  color: #6b7280; 
+}
+.status-badge.status-start { 
+  background: #faf5ff; 
+  color: #a855f7; 
+}
+.status-badge.status-pro { 
+  background: linear-gradient(135deg, #a855f7, #6366f1); 
+  color: white; 
+}
 
 /* FILTERS */
-.filters-section { max-width: 1400px; margin: 0 auto 2rem; padding: 0 2rem; }
+.filters-section { 
+  max-width: 1400px; 
+  margin: 0 auto 2rem; 
+  padding: 0 2rem; 
+}
 .filters-content {
-  background: white; border: 1px solid #e5e7eb; border-radius: 12px;
-  padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem;
+  background: white; 
+  border: 1px solid #e5e7eb; 
+  border-radius: 12px;
+  padding: 1.5rem; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 1.25rem;
 }
-.search-box { position: relative; width: 100%; }
-.search-icon { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); width: 1.125rem; height: 1.125rem; color: #9ca3af; }
+.search-box { 
+  position: relative; 
+  width: 100%; 
+}
+.search-icon { 
+  position: absolute; 
+  left: 1rem; 
+  top: 50%; 
+  transform: translateY(-50%); 
+  width: 1.125rem; 
+  height: 1.125rem; 
+  color: #9ca3af; 
+}
 .search-input {
-  width: 100%; padding: 0.75rem 3rem; border: 1px solid #e5e7eb;
-  border-radius: 10px; font-size: 0.9375rem; transition: all 0.2s; background: #fafafa;
+  width: 100%; 
+  padding: 0.75rem 3rem; 
+  border: 1px solid #e5e7eb;
+  border-radius: 10px; 
+  font-size: 0.9375rem; 
+  transition: all 0.2s; 
+  background: #fafafa;
 }
-.search-input:focus { outline: none; border-color: #a855f7; box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1); background: white; }
+.search-input:focus { 
+  outline: none; 
+  border-color: #a855f7; 
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1); 
+  background: white; 
+}
 .clear-search-btn {
-  position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%);
-  width: 1.75rem; height: 1.75rem; border: none; background: #e5e7eb;
-  border-radius: 50%; display: flex; align-items: center; justify-content: center;
-  cursor: pointer; transition: all 0.2s; color: #6b7280;
+  position: absolute; 
+  right: 0.75rem; 
+  top: 50%; 
+  transform: translateY(-50%);
+  width: 1.75rem; 
+  height: 1.75rem; 
+  border: none; 
+  background: #e5e7eb;
+  border-radius: 50%; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center;
+  cursor: pointer; 
+  transition: all 0.2s; 
+  color: #6b7280;
 }
-.clear-search-btn:hover { background: #d1d5db; color: #111827; }
-.clear-search-btn svg { width: 1rem; height: 1rem; }
-.filter-chips { display: flex; flex-direction: column; gap: 1rem; }
-.filter-group { display: flex; flex-direction: column; gap: 0.625rem; }
-.filter-label { font-size: 0.8125rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; }
-.chips-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.clear-search-btn:hover { 
+  background: #d1d5db; 
+  color: #111827; 
+}
+.clear-search-btn svg { 
+  width: 1rem; 
+  height: 1rem; 
+}
+.filter-chips { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 1rem; 
+}
+.filter-group { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 0.625rem; 
+}
+.filter-label { 
+  font-size: 0.8125rem; 
+  font-weight: 600; 
+  color: #6b7280; 
+  text-transform: uppercase; 
+  letter-spacing: 0.05em; 
+}
+.chips-row { 
+  display: flex; 
+  gap: 0.5rem; 
+  flex-wrap: wrap; 
+}
 .filter-chip {
-  padding: 0.5rem 1rem; border: 1.5px solid #e5e7eb; background: white;
-  border-radius: 20px; font-size: 0.875rem; font-weight: 500;
-  color: #6b7280; cursor: pointer; transition: all 0.2s;
+  padding: 0.5rem 1rem; 
+  border: 1.5px solid #e5e7eb; 
+  background: white;
+  border-radius: 20px; 
+  font-size: 0.875rem; 
+  font-weight: 500;
+  color: #6b7280; 
+  cursor: pointer; 
+  transition: all 0.2s;
 }
-.filter-chip:hover { border-color: #a855f7; color: #a855f7; background: #faf5ff; }
-.filter-chip.active { background: #a855f7; border-color: #a855f7; color: white; }
+.filter-chip:hover { 
+  border-color: #a855f7; 
+  color: #a855f7; 
+  background: #faf5ff; 
+}
+.filter-chip.active { 
+  background: #a855f7; 
+  border-color: #a855f7; 
+  color: white; 
+}
 .clear-all-btn {
-  align-self: flex-start; display: flex; align-items: center; gap: 0.5rem;
-  padding: 0.625rem 1.125rem; border: 1.5px solid #fca5a5; background: #fef2f2;
-  border-radius: 8px; font-size: 0.875rem; font-weight: 500; color: #dc2626;
-  cursor: pointer; transition: all 0.2s;
+  align-self: flex-start; 
+  display: flex; 
+  align-items: center; 
+  gap: 0.5rem;
+  padding: 0.625rem 1.125rem; 
+  border: 1.5px solid #fca5a5; 
+  background: #fef2f2;
+  border-radius: 8px; 
+  font-size: 0.875rem; 
+  font-weight: 500; 
+  color: #dc2626;
+  cursor: pointer; 
+  transition: all 0.2s;
 }
-.clear-all-btn:hover { background: #fee2e2; border-color: #f87171; }
-.clear-all-btn svg { width: 1rem; height: 1rem; }
+.clear-all-btn:hover { 
+  background: #fee2e2; 
+  border-color: #f87171; 
+}
+.clear-all-btn svg { 
+  width: 1rem; 
+  height: 1rem; 
+}
 
 /* LOADING & EMPTY STATES */
 .loading-state, .empty-state {
-  max-width: 1400px; margin: 0 auto; padding: 4rem 2rem; display: flex;
-  flex-direction: column; align-items: center; justify-content: center;
-  text-align: center; min-height: 400px;
+  max-width: 1400px; 
+  margin: 0 auto; 
+  padding: 4rem 2rem; 
+  display: flex;
+  flex-direction: column; 
+  align-items: center; 
+  justify-content: center;
+  text-align: center; 
+  min-height: 400px;
 }
 .spinner {
-  width: 3rem; height: 3rem; border: 3px solid #f3f4f6; border-top-color: #a855f7;
-  border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 1rem;
+  width: 3rem; 
+  height: 3rem; 
+  border: 3px solid #f3f4f6; 
+  border-top-color: #a855f7;
+  border-radius: 50%; 
+  animation: spin 1s linear infinite; 
+  margin-bottom: 1rem;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
-.loading-state p { color: #6b7280; font-size: 0.875rem; }
-.empty-icon { width: 4rem; height: 4rem; color: #d1d5db; margin-bottom: 1rem; }
-.empty-title { font-size: 1.25rem; font-weight: 600; color: #111827; margin: 0 0 0.5rem 0; }
-.empty-text { color: #6b7280; font-size: 0.875rem; margin: 0; }
+@keyframes spin { 
+  to { 
+    transform: rotate(360deg); 
+  } 
+}
+.loading-state p { 
+  color: #6b7280; 
+  font-size: 0.875rem; 
+}
+.empty-icon { 
+  width: 4rem; 
+  height: 4rem; 
+  color: #d1d5db; 
+  margin-bottom: 1rem; 
+}
+.empty-title { 
+  font-size: 1.25rem; 
+  font-weight: 600; 
+  color: #111827; 
+  margin: 0 0 0.5rem 0; 
+}
+.empty-text { 
+  color: #6b7280; 
+  font-size: 0.875rem; 
+  margin: 0; 
+}
 
-/* MAIN CONTENT GRIDS */
-.main-content { max-width: 1400px; margin: 0 auto; padding: 0 2rem; }
-.subjects-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
-.levels-grid { grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); }
-.topics-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
-.subjects-grid, .levels-grid, .topics-grid { display: grid; gap: 1.5rem; }
+/* MAIN CONTENT */
+.main-content { 
+  max-width: 1400px; 
+  margin: 0 auto; 
+  padding: 0 2rem; 
+}
+.results-header {
+  margin-bottom: 1.5rem;
+}
+.results-count {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+  margin: 0;
+}
 
-/* SUBJECT CARDS */
-.subject-card {
-  background: white; border: 1px solid #e5e7eb; border-radius: 12px;
-  padding: 2rem 1.5rem; cursor: pointer; transition: all 0.2s;
-  display: flex; flex-direction: column; align-items: center; text-align: center; gap: 1rem;
+/* COURSES GRID */
+.courses-grid { 
+  display: grid; 
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); 
+  gap: 1.5rem; 
 }
-.subject-card:hover { border-color: #a855f7; box-shadow: 0 4px 12px rgba(168, 85, 247, 0.1); transform: translateY(-2px); }
-.subject-icon {
-  width: 5rem; height: 5rem; background: linear-gradient(135deg, #f3e8ff, #e9d5ff);
-  border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem;
-}
-.subject-title { font-size: 1.25rem; font-weight: 600; color: #111827; margin: 0; }
-.subject-stats { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
-.stat-item { display: flex; align-items: center; gap: 0.375rem; font-size: 0.8125rem; color: #6b7280; }
-.stat-item svg { width: 0.875rem; height: 0.875rem; }
 
-/* LEVEL CARDS */
-.level-card {
-  background: white; border: 1px solid #e5e7eb; border-radius: 12px;
-  padding: 1.5rem; cursor: pointer; transition: all 0.2s;
-  display: flex; flex-direction: column; gap: 1rem;
+/* COURSE CARDS */
+.course-card {
+  background: white; 
+  border: 1px solid #e5e7eb; 
+  border-radius: 12px;
+  padding: 1.5rem; 
+  transition: all 0.2s; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 1rem;
 }
-.level-card:hover { border-color: #a855f7; box-shadow: 0 4px 12px rgba(168, 85, 247, 0.1); transform: translateY(-2px); }
-.level-header { display: flex; align-items: center; gap: 1rem; }
-.level-icon {
-  width: 3.5rem; height: 3.5rem; border-radius: 12px; display: flex;
-  align-items: center; justify-content: center; font-size: 1.75rem; flex-shrink: 0;
+.course-card:hover { 
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); 
+  border-color: #d1d5db;
 }
-.level-icon.level-beginner { background: #dcfce7; color: #10b981; }
-.level-icon.level-intermediate { background: #fef3c7; color: #f59e0b; }
-.level-icon.level-advanced { background: #fee2e2; color: #ef4444; }
-.level-info { flex: 1; min-width: 0; }
-.level-title { font-size: 1.125rem; font-weight: 600; color: #111827; margin: 0 0 0.25rem 0; }
-.level-description { font-size: 0.8125rem; color: #6b7280; margin: 0; }
-.level-meta { display: flex; gap: 0.75rem; flex-wrap: wrap; }
-.meta-badge {
-  display: flex; align-items: center; gap: 0.375rem; padding: 0.375rem 0.75rem;
-  background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px;
-  font-size: 0.8125rem; color: #6b7280;
+.course-header { 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: flex-start; 
+  gap: 1rem; 
 }
-.meta-badge svg { width: 0.875rem; height: 0.875rem; }
-
-/* TOPIC CARDS */
-.topic-card {
-  background: white; border: 1px solid #e5e7eb; border-radius: 12px;
-  padding: 1.5rem; transition: all 0.2s; display: flex; flex-direction: column; gap: 1rem;
+.course-type {
+  padding: 0.25rem 0.625rem; 
+  border-radius: 6px; 
+  font-size: 0.75rem;
+  font-weight: 600; 
+  text-transform: uppercase; 
+  letter-spacing: 0.025em;
 }
-.topic-card:hover { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); }
-.topic-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
-.topic-type {
-  padding: 0.25rem 0.625rem; border-radius: 6px; font-size: 0.75rem;
-  font-weight: 600; text-transform: uppercase; letter-spacing: 0.025em;
+.course-type.free { 
+  background: #f3f4f6; 
+  color: #6b7280; 
 }
-.topic-type.free { background: #f3f4f6; color: #6b7280; }
-.topic-type.premium, .topic-type.pro { background: #faf5ff; color: #a855f7; }
+.course-type.premium, 
+.course-type.pro { 
+  background: #faf5ff; 
+  color: #a855f7; 
+}
 .add-btn {
-  width: 2rem; height: 2rem; border: 1.5px solid #e5e7eb; background: white;
-  border-radius: 8px; display: flex; align-items: center; justify-content: center;
-  cursor: pointer; transition: all 0.2s; color: #6b7280; flex-shrink: 0;
+  width: 2rem; 
+  height: 2rem; 
+  border: 1.5px solid #e5e7eb; 
+  background: white;
+  border-radius: 8px; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center;
+  cursor: pointer; 
+  transition: all 0.2s; 
+  color: #6b7280; 
+  flex-shrink: 0;
 }
-.add-btn:hover:not(:disabled) { border-color: #a855f7; background: #faf5ff; color: #a855f7; }
-.add-btn:disabled { background: #dcfce7; border-color: #86efac; color: #10b981; cursor: not-allowed; }
-.add-btn svg { width: 1rem; height: 1rem; }
-.topic-title { font-size: 1.125rem; font-weight: 600; color: #111827; margin: 0; line-height: 1.4; }
-.topic-meta { display: flex; gap: 1rem; flex-wrap: wrap; }
-.meta-item { display: flex; align-items: center; gap: 0.375rem; font-size: 0.8125rem; color: #6b7280; }
-.meta-item svg { width: 0.875rem; height: 0.875rem; }
+.add-btn:hover:not(:disabled) { 
+  border-color: #a855f7; 
+  background: #faf5ff; 
+  color: #a855f7; 
+}
+.add-btn:disabled { 
+  background: #dcfce7; 
+  border-color: #86efac; 
+  color: #10b981; 
+  cursor: not-allowed; 
+}
+.add-btn svg { 
+  width: 1rem; 
+  height: 1rem; 
+}
+.course-title { 
+  font-size: 1.125rem; 
+  font-weight: 600; 
+  color: #111827; 
+  margin: 0; 
+  line-height: 1.4; 
+}
+
+/* COURSE INFO */
+.course-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: #fafafa;
+  border-radius: 8px;
+}
+.info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.info-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+.info-label svg {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex-shrink: 0;
+}
+.info-value {
+  font-size: 0.875rem;
+  color: #111827;
+  font-weight: 600;
+}
 
 /* PROGRESS & ACTION BUTTONS */
-.progress-section { margin-top: auto; }
-.progress-header { display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.8125rem; }
-.progress-label { color: #6b7280; font-weight: 500; }
-.progress-value { color: #111827; font-weight: 600; }
-.progress-bar-wrapper { width: 100%; height: 6px; background: #f3f4f6; border-radius: 9999px; overflow: hidden; }
-.progress-bar { height: 100%; border-radius: 9999px; transition: width 0.5s ease; }
-.progress-bar.high { background: linear-gradient(to right, #10b981, #059669); }
-.progress-bar.medium { background: linear-gradient(to right, #3b82f6, #2563eb); }
-.progress-bar.low { background: linear-gradient(to right, #f59e0b, #d97706); }
-.progress-bar.very-low { background: linear-gradient(to right, #ef4444, #dc2626); }
-.action-btn { width: 100%; padding: 0.75rem; border: none; border-radius: 8px; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-.action-btn.start { background: linear-gradient(135deg, #a855f7, #9333ea); color: white; }
-.action-btn.start:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3); }
-.action-btn.continue { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; }
-.action-btn.continue:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
-.action-btn.completed { background: #f3f4f6; color: #6b7280; cursor: default; }
+.progress-section { 
+  margin-top: auto; 
+}
+.progress-header { 
+  display: flex; 
+  justify-content: space-between; 
+  margin-bottom: 0.5rem; 
+  font-size: 0.8125rem; 
+}
+.progress-label { 
+  color: #6b7280; 
+  font-weight: 500; 
+}
+.progress-value { 
+  color: #111827; 
+  font-weight: 600; 
+}
+.progress-bar-wrapper { 
+  width: 100%; 
+  height: 6px; 
+  background: #f3f4f6; 
+  border-radius: 9999px; 
+  overflow: hidden; 
+}
+.progress-bar { 
+  height: 100%; 
+  border-radius: 9999px; 
+  transition: width 0.5s ease; 
+}
+.progress-bar.high { 
+  background: linear-gradient(to right, #10b981, #059669); 
+}
+.progress-bar.medium { 
+  background: linear-gradient(to right, #3b82f6, #2563eb); 
+}
+.progress-bar.low { 
+  background: linear-gradient(to right, #f59e0b, #d97706); 
+}
+.progress-bar.very-low { 
+  background: linear-gradient(to right, #ef4444, #dc2626); 
+}
+.action-btn { 
+  width: 100%; 
+  padding: 0.75rem; 
+  border: none; 
+  border-radius: 8px; 
+  font-size: 0.875rem; 
+  font-weight: 600; 
+  cursor: pointer; 
+  transition: all 0.2s; 
+}
+.action-btn.start { 
+  background: linear-gradient(135deg, #a855f7, #9333ea); 
+  color: white; 
+}
+.action-btn.start:hover { 
+  transform: translateY(-1px); 
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3); 
+}
+.action-btn.continue { 
+  background: linear-gradient(135deg, #3b82f6, #2563eb); 
+  color: white; 
+}
+.action-btn.continue:hover { 
+  transform: translateY(-1px); 
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); 
+}
+.action-btn.completed { 
+  background: #f3f4f6; 
+  color: #6b7280; 
+  cursor: default; 
+}
 
 /* MODALS */
 .modal-overlay {
-  position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px);
-  display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem;
+  position: fixed; 
+  inset: 0; 
+  background: rgba(0, 0, 0, 0.5); 
+  backdrop-filter: blur(4px);
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  z-index: 1000; 
+  padding: 1rem;
 }
 .modal-container {
-  background: white; border-radius: 16px; max-width: 28rem; width: 100%;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); animation: modalSlide 0.3s ease-out;
+  background: white; 
+  border-radius: 16px; 
+  max-width: 28rem; 
+  width: 100%;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); 
+  animation: modalSlide 0.3s ease-out;
 }
-@keyframes modalSlide { from { opacity: 0; transform: scale(0.95) translateY(-20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
-.modal-header { padding: 1.5rem 1.5rem 1rem; display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #f3f4f6; }
-.modal-title { font-size: 1.125rem; font-weight: 600; color: #111827; margin: 0; flex: 1; }
+@keyframes modalSlide { 
+  from { 
+    opacity: 0; 
+    transform: scale(0.95) translateY(-20px); 
+  } 
+  to { 
+    opacity: 1; 
+    transform: scale(1) translateY(0); 
+  } 
+}
+.modal-header { 
+  padding: 1.5rem 1.5rem 1rem; 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: flex-start; 
+  border-bottom: 1px solid #f3f4f6; 
+}
+.modal-title { 
+  font-size: 1.125rem; 
+  font-weight: 600; 
+  color: #111827; 
+  margin: 0; 
+  flex: 1; 
+}
 .modal-close {
-  width: 2rem; height: 2rem; border: none; background: #f9fafb; border-radius: 6px;
-  display: flex; align-items: center; justify-content: center; cursor: pointer;
-  color: #9ca3af; transition: all 0.2s; flex-shrink: 0;
+  width: 2rem; 
+  height: 2rem; 
+  border: none; 
+  background: #f9fafb; 
+  border-radius: 6px;
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  cursor: pointer;
+  color: #9ca3af; 
+  transition: all 0.2s; 
+  flex-shrink: 0;
 }
-.modal-close:hover { background: #f3f4f6; color: #111827; }
-.modal-close svg { width: 1.125rem; height: 1.125rem; }
-.modal-body { padding: 1.5rem; }
-.topic-preview { background: #fafafa; border: 1px solid #e5e7eb; border-radius: 10px; padding: 1.5rem; text-align: center; }
-.topic-preview h4 { font-size: 1.125rem; font-weight: 600; color: #111827; margin: 0 0 0.5rem 0; }
-.topic-desc { font-size: 0.875rem; color: #6b7280; margin: 0 0 1rem 0; }
-.topic-preview-stats { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
-.preview-stat { display: flex; align-items: center; gap: 0.375rem; font-size: 0.8125rem; color: #6b7280; }
-.preview-stat svg { width: 0.875rem; height: 0.875rem; }
-.modal-footer { padding: 1rem 1.5rem 1.5rem; display: flex; gap: 0.75rem; }
-.modal-btn { flex: 1; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 500; font-size: 0.9375rem; cursor: pointer; transition: all 0.2s; border: none; }
-.modal-btn.secondary { background: white; color: #6b7280; border: 1.5px solid #e5e7eb; }
-.modal-btn.secondary:hover { background: #f9fafb; border-color: #d1d5db; }
-.modal-btn.primary { background: #a855f7; color: white; }
-.modal-btn.primary:hover { background: #9333ea; }
-.modal-container.success { max-width: 24rem; }
-.success-content { padding: 2rem; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 1rem; }
-.success-icon { width: 4rem; height: 4rem; background: #dcfce7; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #10b981; }
-.success-icon svg { width: 2rem; height: 2rem; }
-.success-title { font-size: 1.25rem; font-weight: 600; color: #10b981; margin: 0; }
-.success-text { color: #6b7280; font-size: 0.875rem; margin: 0; line-height: 1.6; }
-.modal-enter-active, .modal-leave-active { transition: opacity 0.3s ease; }
-.modal-enter-active .modal-container, .modal-leave-active .modal-container { transition: all 0.3s ease; }
-.modal-enter-from, .modal-leave-to { opacity: 0; }
-.modal-enter-from .modal-container, .modal-leave-to .modal-container { transform: scale(0.95) translateY(-20px); opacity: 0; }
+.modal-close:hover { 
+  background: #f3f4f6; 
+  color: #111827; 
+}
+.modal-close svg { 
+  width: 1.125rem; 
+  height: 1.125rem; 
+}
+.modal-body { 
+  padding: 1.5rem; 
+}
+.course-preview { 
+  background: #fafafa; 
+  border: 1px solid #e5e7eb; 
+  border-radius: 10px; 
+  padding: 1.5rem; 
+  text-align: center; 
+}
+.course-preview h4 { 
+  font-size: 1.125rem; 
+  font-weight: 600; 
+  color: #111827; 
+  margin: 0 0 0.5rem 0; 
+}
+.course-desc { 
+  font-size: 0.875rem; 
+  color: #6b7280; 
+  margin: 0 0 1rem 0; 
+}
+.course-preview-stats { 
+  display: flex; 
+  gap: 1rem; 
+  justify-content: center; 
+  flex-wrap: wrap; 
+}
+.preview-stat { 
+  display: flex; 
+  align-items: center; 
+  gap: 0.375rem; 
+  font-size: 0.8125rem; 
+  color: #6b7280; 
+}
+.preview-stat svg { 
+  width: 0.875rem; 
+  height: 0.875rem; 
+}
+.modal-footer { 
+  padding: 1rem 1.5rem 1.5rem; 
+  display: flex; 
+  gap: 0.75rem; 
+}
+.modal-btn { 
+  flex: 1; 
+  padding: 0.75rem 1.5rem; 
+  border-radius: 8px; 
+  font-weight: 500; 
+  font-size: 0.9375rem; 
+  cursor: pointer; 
+  transition: all 0.2s; 
+  border: none; 
+}
+.modal-btn.secondary { 
+  background: white; 
+  color: #6b7280; 
+  border: 1.5px solid #e5e7eb; 
+}
+.modal-btn.secondary:hover { 
+  background: #f9fafb; 
+  border-color: #d1d5db; 
+}
+.modal-btn.primary { 
+  background: #a855f7; 
+  color: white; 
+}
+.modal-btn.primary:hover { 
+  background: #9333ea; 
+}
+.modal-container.success { 
+  max-width: 24rem; 
+}
+.success-content { 
+  padding: 2rem; 
+  text-align: center; 
+  display: flex; 
+  flex-direction: column; 
+  align-items: center; 
+  gap: 1rem; 
+}
+.success-icon { 
+  width: 4rem; 
+  height: 4rem; 
+  background: #dcfce7; 
+  border-radius: 50%; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  color: #10b981; 
+}
+.success-icon svg { 
+  width: 2rem; 
+  height: 2rem; 
+}
+.success-title { 
+  font-size: 1.25rem; 
+  font-weight: 600; 
+  color: #10b981; 
+  margin: 0; 
+}
+.success-text { 
+  color: #6b7280; 
+  font-size: 0.875rem; 
+  margin: 0; 
+  line-height: 1.6; 
+}
+.modal-enter-active, 
+.modal-leave-active { 
+  transition: opacity 0.3s ease; 
+}
+.modal-enter-active .modal-container, 
+.modal-leave-active .modal-container { 
+  transition: all 0.3s ease; 
+}
+.modal-enter-from, 
+.modal-leave-to { 
+  opacity: 0; 
+}
+.modal-enter-from .modal-container, 
+.modal-leave-to .modal-container { 
+  transform: scale(0.95) translateY(-20px); 
+  opacity: 0; 
+}
 
-/* RESPONSIVE & ACCESSIBILITY */
+/* RESPONSIVE */
 @media (max-width: 768px) {
-  .page-header { padding: 1rem 0; }
-  .header-content { padding: 0 1.5rem; flex-direction: column; align-items: flex-start; }
-  .page-title { font-size: 1.5rem; }
-  .filters-section, .main-content { padding: 0 1.5rem; }
-  .filters-content { padding: 1.25rem; }
-  .subjects-grid, .levels-grid, .topics-grid { grid-template-columns: 1fr; }
-  .subject-card { padding: 1.5rem; }
-  .subject-icon { width: 4rem; height: 4rem; font-size: 2rem; }
-  .modal-footer { flex-direction: column; }
-  .modal-btn { width: 100%; }
+  .page-header { 
+    padding: 1rem 0; 
+  }
+  .header-content { 
+    padding: 0 1.5rem; 
+    flex-direction: column; 
+    align-items: flex-start; 
+  }
+  .page-title { 
+    font-size: 1.5rem; 
+  }
+  .filters-section, 
+  .main-content { 
+    padding: 0 1.5rem; 
+  }
+  .filters-content { 
+    padding: 1.25rem; 
+  }
+  .courses-grid { 
+    grid-template-columns: 1fr; 
+  }
+  .modal-footer { 
+    flex-direction: column; 
+  }
+  .modal-btn { 
+    width: 100%; 
+  }
 }
 @media (max-width: 640px) {
-  .page-header { margin-bottom: 1.5rem; }
-  .header-content, .filters-section, .main-content { padding: 0 1rem; }
-  .page-title { font-size: 1.25rem; }
+  .page-header { 
+    margin-bottom: 1.5rem; 
+  }
+  .header-content, 
+  .filters-section, 
+  .main-content { 
+    padding: 0 1rem; 
+  }
+  .page-title { 
+    font-size: 1.25rem; 
+  }
 }
-.back-btn:focus-visible, .search-input:focus-visible, .filter-chip:focus-visible, .clear-all-btn:focus-visible, .add-btn:focus-visible, .action-btn:focus-visible, .modal-close:focus-visible, .modal-btn:focus-visible {
-  outline: 2px solid #a855f7; outline-offset: 2px;
+
+/* ACCESSIBILITY */
+.search-input:focus-visible, 
+.filter-chip:focus-visible, 
+.clear-all-btn:focus-visible, 
+.add-btn:focus-visible, 
+.action-btn:focus-visible, 
+.modal-close:focus-visible, 
+.modal-btn:focus-visible {
+  outline: 2px solid #a855f7; 
+  outline-offset: 2px;
 }
-@media (prefers-reduced-motion: reduce) { * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
-@media (prefers-color-scheme: dark) {
-  .catalogue-page { background: #111827; }
-  .page-header { background: rgba(31, 41, 55, 0.8); border-bottom-color: #374151; }
-  .back-btn { background: #374151; border-color: #4b5563; color: #9ca3af; }
-  .back-btn:hover { background: #4b5563; color: #f9fafb; }
-  .page-title, .breadcrumb-item.active { color: #f9fafb; }
-  .breadcrumb-item { color: #6b7280; }
-  .filters-content, .subject-card, .level-card, .topic-card, .modal-container { background: #1f2937; border-color: #374151; }
-  .search-input { background: #111827; border-color: #374151; color: #f9fafb; }
-  .search-input:focus { background: #1f2937; }
-  .filter-chip { background: #111827; border-color: #374151; color: #9ca3af; }
-  .filter-chip:hover { background: #1f2937; }
-  .subject-title, .level-title, .topic-title, .modal-title, .empty-title { color: #f9fafb; }
-  .level-description, .empty-text, .stat-item, .meta-item, .progress-label, .topic-desc { color: #9ca3af; }
-  .progress-value { color: #f9fafb; }
-  .progress-bar-wrapper { background: #374151; }
-  .topic-preview { background: #111827; border-color: #374151; }
-  .modal-close { background: #374151; color: #9ca3af; }
-  .modal-close:hover { background: #4b5563; color: #f9fafb; }
-  .modal-header { border-bottom-color: #374151; }
-  .meta-badge { background: #111827; border-color: #374151; color: #9ca3af; }
+
+@media (prefers-reduced-motion: reduce) { 
+  * { 
+    animation-duration: 0.01ms !important; 
+    transition-duration: 0.01ms !important; 
+  } 
 }
 </style>
-
