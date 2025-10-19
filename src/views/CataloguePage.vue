@@ -677,7 +677,10 @@ export default {
 .page-title { 
   font-size: 1.875rem; 
   font-weight: 700; 
-  color: #111827; 
+  background: linear-gradient(135deg, #111827, #374151);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   margin: 0; 
 }
 .status-badge {
@@ -694,12 +697,14 @@ export default {
   color: #6b7280; 
 }
 .status-badge.status-start { 
-  background: #faf5ff; 
-  color: #a855f7; 
+  background: linear-gradient(135deg, #fdfbf7, #faf7ed);
+  color: #92772f;
+  border: 1.5px solid #d4af37;
 }
 .status-badge.status-pro { 
-  background: linear-gradient(135deg, #a855f7, #6366f1); 
+  background: linear-gradient(135deg, #d4af37, #c7a030); 
   color: white; 
+  box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3);
 }
 
 /* FILTERS */
@@ -741,8 +746,8 @@ export default {
 }
 .search-input:focus { 
   outline: none; 
-  border-color: #a855f7; 
-  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1); 
+  border-color: #d4af37; 
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15); 
   background: white; 
 }
 .clear-search-btn {
@@ -763,15 +768,15 @@ export default {
   color: #6b7280;
 }
 .clear-search-btn:hover { 
-  background: #d1d5db; 
-  color: #111827; 
+  background: #d4af37; 
+  color: white; 
 }
 .clear-search-btn svg { 
   width: 1rem; 
   height: 1rem; 
 }
 
-/* NEWLY ADDED FILTER STYLES */
+/* FILTER DROPDOWNS */
 .filters-row {
   display: flex;
   gap: 1rem;
@@ -803,16 +808,16 @@ export default {
   transition: all 0.2s;
 }
 .dropdown-select:hover {
-  border-color: #d1d5db;
+  border-color: #d4af37;
 }
 .dropdown-select:focus {
   outline: none;
-  border-color: #a855f7;
-  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
+  border-color: #d4af37;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
 }
 
 .clear-all-btn {
-  align-self: flex-end; /* Align with other dropdowns */
+  align-self: flex-end;
   display: flex; 
   align-items: center; 
   gap: 0.5rem;
@@ -825,7 +830,7 @@ export default {
   color: #dc2626;
   cursor: pointer; 
   transition: all 0.2s;
-  height: 38px; /* Match height of select */
+  height: 38px;
   box-sizing: border-box;
 }
 .clear-all-btn:hover { 
@@ -853,7 +858,7 @@ export default {
   width: 3rem; 
   height: 3rem; 
   border: 3px solid #f3f4f6; 
-  border-top-color: #a855f7;
+  border-top-color: #d4af37;
   border-radius: 50%; 
   animation: spin 1s linear infinite; 
   margin-bottom: 1rem;
@@ -913,25 +918,26 @@ export default {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.625rem 1rem;
-  border: 1.5px solid #d4af37;
+  padding: 0.75rem 1.25rem;
+  border: 2px solid #d4af37;
   background: linear-gradient(135deg, #fdfbf7, #faf7ed);
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
   color: #92772f;
   cursor: pointer;
   transition: all 0.2s;
+  box-shadow: 0 2px 6px rgba(212, 175, 55, 0.15);
 }
 .shuffle-btn:hover {
-  background: linear-gradient(135deg, #faf7ed, #f5f0e0);
-  border-color: #c7a030;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(212, 175, 55, 0.2);
+  background: linear-gradient(135deg, #d4af37, #c7a030);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
 }
 .shuffle-btn svg {
-  width: 1rem;
-  height: 1rem;
+  width: 1.125rem;
+  height: 1.125rem;
 }
 
 /* COURSES GRID */
@@ -947,14 +953,31 @@ export default {
   border: 1px solid #e5e7eb; 
   border-radius: 12px;
   padding: 1.5rem; 
-  transition: all 0.2s; 
+  transition: all 0.3s; 
   display: flex; 
   flex-direction: column; 
   gap: 1rem;
+  position: relative;
+  overflow: hidden;
 }
-.course-card:hover { 
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); 
-  border-color: #d1d5db;
+.course-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #d4af37, #f4d03f, #d4af37);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.course-card:hover {
+  box-shadow: 0 8px 24px rgba(212, 175, 55, 0.15); 
+  border-color: #d4af37;
+  transform: translateY(-4px);
+}
+.course-card:hover::before {
+  opacity: 1;
 }
 .course-header { 
   display: flex; 
@@ -963,7 +986,7 @@ export default {
   gap: 1rem; 
 }
 .course-type {
-  padding: 0.25rem 0.625rem; 
+  padding: 0.375rem 0.75rem; 
   border-radius: 6px; 
   font-size: 0.75rem;
   font-weight: 600; 
@@ -976,12 +999,13 @@ export default {
 }
 .course-type.premium, 
 .course-type.pro { 
-  background: #faf5ff; 
-  color: #a855f7; 
+  background: linear-gradient(135deg, #fdfbf7, #faf7ed);
+  color: #92772f;
+  border: 1.5px solid #d4af37;
 }
 .add-btn {
-  width: 2rem; 
-  height: 2rem; 
+  width: 2.25rem; 
+  height: 2.25rem; 
   border: 1.5px solid #e5e7eb; 
   background: white;
   border-radius: 8px; 
@@ -994,19 +1018,20 @@ export default {
   flex-shrink: 0;
 }
 .add-btn:hover:not(:disabled) { 
-  border-color: #a855f7; 
-  background: #faf5ff; 
-  color: #a855f7; 
+  border-color: #d4af37; 
+  background: linear-gradient(135deg, #fdfbf7, #faf7ed);
+  color: #92772f;
+  transform: scale(1.1);
 }
 .add-btn:disabled { 
-  background: #dcfce7; 
+  background: linear-gradient(135deg, #dcfce7, #d1fae5);
   border-color: #86efac; 
   color: #10b981; 
   cursor: not-allowed; 
 }
 .add-btn svg { 
-  width: 1rem; 
-  height: 1rem; 
+  width: 1.125rem; 
+  height: 1.125rem; 
 }
 .course-title { 
   font-size: 1.125rem; 
@@ -1043,6 +1068,7 @@ export default {
   width: 0.875rem;
   height: 0.875rem;
   flex-shrink: 0;
+  color: #d4af37;
 }
 .info-value {
   font-size: 0.875rem;
@@ -1065,63 +1091,83 @@ export default {
   font-weight: 500; 
 }
 .progress-value { 
-  color: #111827; 
-  font-weight: 600; 
+  color: #92772f;
+  font-weight: 700; 
 }
 .progress-bar-wrapper { 
   width: 100%; 
-  height: 6px; 
+  height: 8px; 
   background: #f3f4f6; 
   border-radius: 9999px; 
   overflow: hidden; 
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 .progress-bar { 
   height: 100%; 
   border-radius: 9999px; 
   transition: width 0.5s ease; 
+  position: relative;
+  overflow: hidden;
+}
+.progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  animation: shimmer 2s infinite;
+}
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 .progress-bar.high { 
-  background: linear-gradient(to right, #10b981, #059669); 
+  background: linear-gradient(90deg, #d4af37, #f4d03f, #d4af37);
+  box-shadow: 0 0 8px rgba(212, 175, 55, 0.4);
 }
 .progress-bar.medium { 
-  background: linear-gradient(to right, #3b82f6, #2563eb); 
+  background: linear-gradient(90deg, #f4d03f, #fbbf24);
 }
 .progress-bar.low { 
-  background: linear-gradient(to right, #f59e0b, #d97706); 
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
 }
 .progress-bar.very-low { 
-  background: linear-gradient(to right, #ef4444, #dc2626); 
+  background: linear-gradient(90deg, #f59e0b, #ef4444);
 }
 .action-btn { 
   width: 100%; 
-  padding: 0.75rem; 
+  padding: 0.875rem; 
   border: none; 
-  border-radius: 8px; 
+  border-radius: 10px; 
   font-size: 0.875rem; 
   font-weight: 600; 
   cursor: pointer; 
   transition: all 0.2s; 
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
 }
 .action-btn.start { 
-  background: linear-gradient(135deg, #a855f7, #9333ea); 
-  color: white; 
+  background: linear-gradient(135deg, #d4af37, #c7a030); 
+  color: white;
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
 }
 .action-btn.start:hover { 
-  transform: translateY(-1px); 
-  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3); 
+  transform: translateY(-2px); 
+  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4); 
 }
 .action-btn.continue { 
   background: linear-gradient(135deg, #3b82f6, #2563eb); 
   color: white; 
 }
 .action-btn.continue:hover { 
-  transform: translateY(-1px); 
+  transform: translateY(-2px); 
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); 
 }
 .action-btn.completed { 
-  background: #f3f4f6; 
-  color: #6b7280; 
-  cursor: default; 
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
 }
 
 /* PAGINATION */
@@ -1132,31 +1178,34 @@ export default {
   gap: 1.5rem;
   margin-top: 3rem;
   padding: 1.5rem;
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: linear-gradient(135deg, #fdfbf7, white);
+  border: 2px solid #d4af37;
   border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.1);
 }
 .pagination-btn {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.25rem;
-  border: 1.5px solid #e5e7eb;
+  padding: 0.75rem 1.5rem;
+  border: 2px solid #e5e7eb;
   background: white;
   border-radius: 8px;
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
   color: #111827;
   cursor: pointer;
   transition: all 0.2s;
 }
 .pagination-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #fdfbf7, #faf7ed);
+  background: linear-gradient(135deg, #d4af37, #c7a030);
   border-color: #d4af37;
-  color: #92772f;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
 }
 .pagination-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 .pagination-btn svg {
@@ -1170,9 +1219,12 @@ export default {
   gap: 0.25rem;
 }
 .page-numbers {
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: #111827;
+  font-size: 1rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #92772f, #d4af37);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 .showing-info {
   font-size: 0.8125rem;
@@ -1198,6 +1250,7 @@ export default {
   width: 100%;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); 
   animation: modalSlide 0.3s ease-out;
+  border: 2px solid #f3f4f6;
 }
 @keyframes modalSlide { 
   from { 
@@ -1214,7 +1267,7 @@ export default {
   display: flex; 
   justify-content: space-between; 
   align-items: flex-start; 
-  border-bottom: 1px solid #f3f4f6; 
+  border-bottom: 2px solid #fdfbf7;
 }
 .modal-title { 
   font-size: 1.125rem; 
@@ -1238,8 +1291,8 @@ export default {
   flex-shrink: 0;
 }
 .modal-close:hover { 
-  background: #f3f4f6; 
-  color: #111827; 
+  background: #d4af37;
+  color: white;
 }
 .modal-close svg { 
   width: 1.125rem; 
@@ -1249,8 +1302,8 @@ export default {
   padding: 1.5rem; 
 }
 .course-preview { 
-  background: #fafafa; 
-  border: 1px solid #e5e7eb; 
+  background: linear-gradient(135deg, #fdfbf7, #faf7ed);
+  border: 2px solid #d4af37;
   border-radius: 10px; 
   padding: 1.5rem; 
   text-align: center; 
@@ -1277,11 +1330,13 @@ export default {
   align-items: center; 
   gap: 0.375rem; 
   font-size: 0.8125rem; 
-  color: #6b7280; 
+  color: #92772f;
+  font-weight: 600;
 }
 .preview-stat svg { 
   width: 0.875rem; 
   height: 0.875rem; 
+  color: #d4af37;
 }
 .modal-footer { 
   padding: 1rem 1.5rem 1.5rem; 
@@ -1290,32 +1345,37 @@ export default {
 }
 .modal-btn { 
   flex: 1; 
-  padding: 0.75rem 1.5rem; 
+  padding: 0.875rem 1.5rem; 
   border-radius: 8px; 
-  font-weight: 500; 
+  font-weight: 600;
   font-size: 0.9375rem; 
   cursor: pointer; 
   transition: all 0.2s; 
-  border: none; 
+  border: none;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
 }
 .modal-btn.secondary { 
   background: white; 
   color: #6b7280; 
-  border: 1.5px solid #e5e7eb; 
+  border: 2px solid #e5e7eb; 
 }
 .modal-btn.secondary:hover { 
   background: #f9fafb; 
   border-color: #d1d5db; 
 }
 .modal-btn.primary { 
-  background: #a855f7; 
-  color: white; 
+  background: linear-gradient(135deg, #d4af37, #c7a030);
+  color: white;
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
 }
 .modal-btn.primary:hover { 
-  background: #9333ea; 
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(212, 175, 55, 0.4);
 }
 .modal-container.success { 
-  max-width: 24rem; 
+  max-width: 24rem;
+  border: 2px solid #d4af37;
 }
 .success-content { 
   padding: 2rem; 
@@ -1328,12 +1388,13 @@ export default {
 .success-icon { 
   width: 4rem; 
   height: 4rem; 
-  background: #dcfce7; 
+  background: linear-gradient(135deg, #fdfbf7, #faf7ed);
+  border: 3px solid #d4af37;
   border-radius: 50%; 
   display: flex; 
   align-items: center; 
   justify-content: center; 
-  color: #10b981; 
+  color: #d4af37;
 }
 .success-icon svg { 
   width: 2rem; 
@@ -1342,7 +1403,10 @@ export default {
 .success-title { 
   font-size: 1.25rem; 
   font-weight: 600; 
-  color: #10b981; 
+  background: linear-gradient(135deg, #92772f, #d4af37);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   margin: 0; 
 }
 .success-text { 
@@ -1391,26 +1455,20 @@ export default {
   }
   .filters-row {
     flex-direction: column;
-    align-items: stretch; /* Make dropdowns full width */
+    align-items: stretch;
   }
   .filter-dropdown {
     width: 100%;
   }
   .clear-all-btn {
-    align-self: auto; /* Reset alignment */
-  }
-  .courses-grid { 
-    grid-template-columns: 1fr; 
-  }
-  .modal-footer { 
-    flex-direction: column; 
-  }
-  .modal-btn { 
-    width: 100%; 
+    align-self: auto;
   }
   .results-header {
     flex-direction: column;
     align-items: flex-start;
+  }
+  .courses-grid { 
+    grid-template-columns: 1fr; 
   }
   .pagination-container {
     flex-direction: column;
@@ -1419,6 +1477,12 @@ export default {
   .pagination-btn {
     width: 100%;
     justify-content: center;
+  }
+  .modal-footer { 
+    flex-direction: column; 
+  }
+  .modal-btn { 
+    width: 100%; 
   }
 }
 @media (max-width: 640px) {
@@ -1445,7 +1509,7 @@ export default {
 .action-btn:focus-visible, 
 .modal-close:focus-visible, 
 .modal-btn:focus-visible {
-  outline: 2px solid #a855f7; 
+  outline: 3px solid #d4af37; 
   outline-offset: 2px;
 }
 
