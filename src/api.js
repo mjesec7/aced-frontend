@@ -226,8 +226,12 @@ api.interceptors.request.use(async (config) => {
     return config;
   } catch (error) {
     console.error('❌ Request interceptor error:', error);
-    return Promise.reject(error);
+    return Promise.reject(error); // ✅ FIX: Ensure we reject properly
   }
+}, (error) => {
+  // ✅ FIX: Add error handler for request interceptor
+  console.error('❌ Request interceptor setup error:', error);
+  return Promise.reject(error);
 });
 
 // ✅ COMPLETELY FIXED RESPONSE INTERCEPTOR
