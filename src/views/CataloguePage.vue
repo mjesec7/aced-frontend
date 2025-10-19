@@ -34,64 +34,54 @@
           </button>
         </div>
 
-        <div class="filter-chips">
-          <div class="filter-group">
-            <label class="filter-label">Предмет:</label>
-            <div class="chips-row">
-              <button :class="['filter-chip', { active: selectedSubjectFilter === null }]" @click="selectedSubjectFilter = null">Все</button>
-              <button 
-                v-for="subject in availableSubjects" 
-                :key="subject"
-                :class="['filter-chip', { active: selectedSubjectFilter === subject }]" 
-                @click="selectedSubjectFilter = subject"
-              >
+        <div class="filters-row">
+          <div class="filter-dropdown">
+            <label class="dropdown-label">Предмет:</label>
+            <select v-model="selectedSubjectFilter" class="dropdown-select">
+              <option :value="null">Все предметы</option>
+              <option v-for="subject in availableSubjects" :key="subject" :value="subject">
                 {{ subject }}
-              </button>
-            </div>
+              </option>
+            </select>
           </div>
 
-          <div class="filter-group">
-            <label class="filter-label">Уровень:</label>
-            <div class="chips-row">
-              <button :class="['filter-chip', { active: selectedLevelFilter === null }]" @click="selectedLevelFilter = null">Все</button>
-              <button 
-                v-for="level in availableLevels" 
-                :key="level"
-                :class="['filter-chip', { active: selectedLevelFilter === level }]" 
-                @click="selectedLevelFilter = level"
-              >
+          <div class="filter-dropdown">
+            <label class="dropdown-label">Уровень:</label>
+            <select v-model="selectedLevelFilter" class="dropdown-select">
+              <option :value="null">Все уровни</option>
+              <option v-for="level in availableLevels" :key="level" :value="level">
                 Уровень {{ level }}
-              </button>
-            </div>
+              </option>
+            </select>
           </div>
 
-          <div class="filter-group">
-            <label class="filter-label">Тип:</label>
-            <div class="chips-row">
-              <button :class="['filter-chip', { active: !showFree && !showPremium }]" @click="showFree = false; showPremium = false">Все</button>
-              <button :class="['filter-chip', { active: showFree }]" @click="showFree = !showFree; if(showFree) showPremium = false">Free</button>
-              <button :class="['filter-chip', { active: showPremium }]" @click="showPremium = !showPremium; if(showPremium) showFree = false">Premium</button>
-            </div>
+          <div class="filter-dropdown">
+            <label class="dropdown-label">Тип:</label>
+            <select v-model="typeFilter" class="dropdown-select">
+              <option value="all">Все типы</option>
+              <option value="free">Free</option>
+              <option value="premium">Premium</option>
+            </select>
           </div>
 
-          <div class="filter-group">
-            <label class="filter-label">Прогресс:</label>
-            <div class="chips-row">
-              <button :class="['filter-chip', { active: !showNotStarted && !showInProgress && !showCompleted }]" @click="showNotStarted = false; showInProgress = false; showCompleted = false">Все</button>
-              <button :class="['filter-chip', { active: showNotStarted }]" @click="showNotStarted = !showNotStarted">Не начаты</button>
-              <button :class="['filter-chip', { active: showInProgress }]" @click="showInProgress = !showInProgress">В процессе</button>
-              <button :class="['filter-chip', { active: showCompleted }]" @click="showCompleted = !showCompleted">Завершены</button>
-            </div>
+          <div class="filter-dropdown">
+            <label class="dropdown-label">Прогресс:</label>
+            <select v-model="progressFilter" class="dropdown-select">
+              <option value="all">Все</option>
+              <option value="not-started">Не начаты</option>
+              <option value="in-progress">В процессе</option>
+              <option value="completed">Завершены</option>
+            </select>
           </div>
+
+          <button v-if="hasActiveFilters" @click="clearFilters" class="clear-all-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+            Сбросить
+          </button>
         </div>
-
-        <button v-if="hasActiveFilters" @click="clearFilters" class="clear-all-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="18" y1="6" x2="6" y2="18"/>
-            <line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
-          Сбросить фильтры
-        </button>
       </div>
     </div>
 
@@ -287,18 +277,15 @@ export default {
       // UI State
       isLoading: true,
 
-      // All courses
+      // All courses (no view navigation needed)
       courses: [],
 
       // Filters
       searchQuery: '',
       selectedSubjectFilter: null,
       selectedLevelFilter: null,
-      showFree: false,
-      showPremium: false,
-      showNotStarted: false,
-      showInProgress: false,
-      showCompleted: false,
+      typeFilter: 'all',
+      progressFilter: 'all',
 
       // Modal State
       showAddModal: false,
@@ -346,14 +333,14 @@ export default {
         }
 
         // Type filter
-        if (this.showFree && course.type !== 'free') return false;
-        if (this.showPremium && course.type === 'free') return false;
+        if (this.typeFilter === 'free' && course.type !== 'free') return false;
+        if (this.typeFilter === 'premium' && course.type === 'free') return false;
 
         // Progress filter
         const progress = course.progress || 0;
-        if (this.showNotStarted && progress !== 0) return false;
-        if (this.showInProgress && (progress === 0 || progress === 100)) return false;
-        if (this.showCompleted && progress !== 100) return false;
+        if (this.progressFilter === 'not-started' && progress !== 0) return false;
+        if (this.progressFilter === 'in-progress' && (progress === 0 || progress === 100)) return false;
+        if (this.progressFilter === 'completed' && progress !== 100) return false;
 
         return true;
       });
@@ -363,11 +350,8 @@ export default {
         this.searchQuery || 
         this.selectedSubjectFilter || 
         this.selectedLevelFilter ||
-        this.showFree || 
-        this.showPremium || 
-        this.showNotStarted || 
-        this.showInProgress || 
-        this.showCompleted
+        this.typeFilter !== 'all' || 
+        this.progressFilter !== 'all'
       );
     },
   },
@@ -474,11 +458,8 @@ export default {
       this.searchQuery = '';
       this.selectedSubjectFilter = null;
       this.selectedLevelFilter = null;
-      this.showFree = false;
-      this.showPremium = false;
-      this.showNotStarted = false;
-      this.showInProgress = false;
-      this.showCompleted = false;
+      this.typeFilter = 'all';
+      this.progressFilter = 'all';
     },
 
     // --- USER ACTIONS ---
