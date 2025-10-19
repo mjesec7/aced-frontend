@@ -26,9 +26,10 @@
         </div>
       </div>
   
-      <!-- Filters Bar -->
+      <!-- UPDATED Filters Bar -->
       <div class="filters-section">
         <div class="filters-content">
+          <!-- Search -->
           <div class="search-box">
             <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="11" cy="11" r="8"/>
@@ -40,7 +41,7 @@
               class="search-input" 
               placeholder="Поиск курсов..."
             />
-            <button v-if="searchQuery" @click="searchQuery = ''" class="clear-btn">
+            <button v-if="searchQuery" @click="searchQuery = ''" class="clear-search-btn">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="18" y1="6" x2="6" y2="18"/>
                 <line x1="6" y1="6" x2="18" y2="18"/>
@@ -48,40 +49,95 @@
             </button>
           </div>
   
-          <div class="filter-controls">
-            <select v-model="filterProgress" class="filter-select">
-              <option value="">Все курсы</option>
-              <option value="not-started">Не начаты</option>
-              <option value="in-progress">В процессе</option>
-              <option value="completed">Завершены</option>
-            </select>
-  
-            <select v-model="filterSubject" class="filter-select">
-              <option value="">Все предметы</option>
-              <option v-for="subject in subjects" :key="subject" :value="subject">
-                {{ subject }}
-              </option>
-            </select>
-  
-            <select v-model="sortBy" class="filter-select">
-              <option value="recent">По дате</option>
-              <option value="progress">По прогрессу</option>
-              <option value="name">По названию</option>
-              <option value="level">По уровню</option>
-            </select>
-  
-            <button 
-              v-if="hasActiveFilters" 
-              @click="clearFilters" 
-              class="clear-filters-btn"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="18" y1="6" x2="6" y2="18"/>
-                <line x1="6" y1="6" x2="18" y2="18"/>
-              </svg>
-              Очистить
-            </button>
+          <!-- Filter Chips -->
+          <div class="filter-chips">
+            <div class="filter-group">
+              <label class="filter-label">Прогресс:</label>
+              <div class="chips-row">
+                <button 
+                  :class="['filter-chip', { active: filterProgress === '' }]"
+                  @click="filterProgress = ''"
+                >
+                  Все
+                </button>
+                <button 
+                  :class="['filter-chip', { active: filterProgress === 'not-started' }]"
+                  @click="filterProgress = 'not-started'"
+                >
+                  Не начаты
+                </button>
+                <button 
+                  :class="['filter-chip', { active: filterProgress === 'in-progress' }]"
+                  @click="filterProgress = 'in-progress'"
+                >
+                  В процессе
+                </button>
+                <button 
+                  :class="['filter-chip', { active: filterProgress === 'completed' }]"
+                  @click="filterProgress = 'completed'"
+                >
+                  Завершены
+                </button>
+              </div>
+            </div>
+
+            <div v-if="subjects.length > 0" class="filter-group">
+              <label class="filter-label">Предмет:</label>
+              <div class="chips-row">
+                <button 
+                  :class="['filter-chip', { active: filterSubject === '' }]"
+                  @click="filterSubject = ''"
+                >
+                  Все
+                </button>
+                <button 
+                  v-for="subject in subjects" 
+                  :key="subject"
+                  :class="['filter-chip', { active: filterSubject === subject }]"
+                  @click="filterSubject = subject"
+                >
+                  {{ subject }}
+                </button>
+              </div>
+            </div>
+
+            <div class="filter-group">
+              <label class="filter-label">Сортировка:</label>
+              <div class="chips-row">
+                <button 
+                  :class="['filter-chip', { active: sortBy === 'recent' }]"
+                  @click="sortBy = 'recent'"
+                >
+                  По дате
+                </button>
+                <button 
+                  :class="['filter-chip', { active: sortBy === 'progress' }]"
+                  @click="sortBy = 'progress'"
+                >
+                  По прогрессу
+                </button>
+                <button 
+                  :class="['filter-chip', { active: sortBy === 'name' }]"
+                  @click="sortBy = 'name'"
+                >
+                  По названию
+                </button>
+              </div>
+            </div>
           </div>
+
+          <!-- Clear Filters Button -->
+          <button 
+            v-if="hasActiveFilters" 
+            @click="clearFilters" 
+            class="clear-all-btn"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+            Сбросить фильтры
+          </button>
         </div>
       </div>
   
@@ -195,7 +251,7 @@
                   </svg>
                   Открыть курс
                 </button>
-                <button @click="removeCourse(course)" class="menu-item danger">
+                <button @click="showDeleteModal(course)" class="menu-item danger">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="3 6 5 6 21 6"/>
                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
@@ -265,6 +321,49 @@
           </div>
         </div>
       </div>
+
+      <!-- Delete Confirmation Modal -->
+      <transition name="modal">
+        <div v-if="deleteModal.show" class="modal-overlay" @click="closeDeleteModal">
+          <div class="modal-container" @click.stop>
+            <div class="modal-header">
+              <div class="modal-icon danger">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+              </div>
+              <button class="modal-close" @click="closeDeleteModal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+            <div class="modal-body">
+              <h3 class="modal-title">Удалить курс?</h3>
+              <p class="modal-text">
+                Вы уверены, что хотите удалить курс 
+                <strong>{{ deleteModal.course ? getCourseName(deleteModal.course) : '' }}</strong>?
+                Это действие нельзя отменить.
+              </p>
+            </div>
+            <div class="modal-footer">
+              <button @click="closeDeleteModal" class="modal-btn secondary">
+                Отмена
+              </button>
+              <button @click="confirmDelete" class="modal-btn danger" :disabled="deleteModal.deleting">
+                <span v-if="!deleteModal.deleting">Удалить</span>
+                <span v-else class="deleting-text">
+                  <span class="spinner-small"></span>
+                  Удаление...
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
   
       <!-- Payment Modal -->
       <PaymentModal
@@ -313,7 +412,13 @@
         
         activeMenu: null,
         showPaywall: false,
-        requestedTopicId: null
+        requestedTopicId: null,
+
+        deleteModal: {
+          show: false,
+          course: null,
+          deleting: false
+        }
       };
     },
     
@@ -337,7 +442,6 @@
       filteredCourses() {
         let courses = [...this.studyList];
         
-        // Search filter
         if (this.searchQuery.trim()) {
           const query = this.searchQuery.toLowerCase();
           courses = courses.filter(course => {
@@ -347,7 +451,6 @@
           });
         }
         
-        // Progress filter
         if (this.filterProgress) {
           courses = courses.filter(course => {
             const percent = course.progress?.percent || 0;
@@ -364,12 +467,10 @@
           });
         }
         
-        // Subject filter
         if (this.filterSubject) {
           courses = courses.filter(course => course.subject === this.filterSubject);
         }
         
-        // Sort
         courses.sort((a, b) => {
           switch (this.sortBy) {
             case 'progress':
@@ -406,14 +507,12 @@
       },
       
       hasActiveFilters() {
-        return !!(this.searchQuery || this.filterProgress || this.filterSubject);
+        return !!(this.searchQuery || this.filterProgress || this.filterSubject || this.sortBy !== 'recent');
       }
     },
     
     async mounted() {
       await this.initialize();
-      
-      // Close menu on outside click
       document.addEventListener('click', this.closeMenu);
     },
     
@@ -612,17 +711,31 @@
         
         return false;
       },
+
+      showDeleteModal(course) {
+        this.deleteModal.course = course;
+        this.deleteModal.show = true;
+        this.activeMenu = null;
+      },
+
+      closeDeleteModal() {
+        this.deleteModal.show = false;
+        this.deleteModal.course = null;
+        this.deleteModal.deleting = false;
+      },
       
-      async removeCourse(course) {
-        if (!confirm(`Удалить курс "${this.getCourseName(course)}"?`)) return;
-        
+      async confirmDelete() {
+        if (!this.deleteModal.course || this.deleteModal.deleting) return;
+
         try {
-          await removeFromStudyList(this.userId, course._id);
-          this.studyList = this.studyList.filter(c => c._id !== course._id);
-          this.activeMenu = null;
+          this.deleteModal.deleting = true;
+          await removeFromStudyList(this.userId, this.deleteModal.course._id);
+          this.studyList = this.studyList.filter(c => c._id !== this.deleteModal.course._id);
+          this.closeDeleteModal();
         } catch (error) {
           console.error('Error removing course:', error);
           alert('Не удалось удалить курс');
+          this.deleteModal.deleting = false;
         }
       },
       
@@ -734,7 +847,7 @@
     background: #9333ea;
   }
   
-  /* Filters */
+  /* UPDATED Filters */
   .filters-section {
     max-width: 1400px;
     margin: 0 auto 1.5rem;
@@ -744,28 +857,20 @@
     background: white;
     border-radius: 12px;
     border: 1px solid #e5e7eb;
-    padding: 1.25rem;
+    padding: 1.5rem;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
-  }
-  
-  @media (min-width: 768px) {
-    .filters-content {
-      flex-direction: row;
-      align-items: center;
-    }
+    gap: 1.25rem;
   }
   
   .search-box {
     position: relative;
-    flex: 1;
-    min-width: 0;
+    width: 100%;
   }
   
   .search-icon {
     position: absolute;
-    left: 0.875rem;
+    left: 1rem;
     top: 50%;
     transform: translateY(-50%);
     width: 1.125rem;
@@ -776,28 +881,30 @@
   
   .search-input {
     width: 100%;
-    padding: 0.625rem 2.75rem 0.625rem 2.625rem;
+    padding: 0.75rem 3rem 0.75rem 3rem;
     border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    font-size: 0.875rem;
+    border-radius: 10px;
+    font-size: 0.9375rem;
     transition: all 0.2s;
+    background: #fafafa;
   }
   
   .search-input:focus {
     outline: none;
     border-color: #a855f7;
     box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
+    background: white;
   }
   
-  .clear-btn {
+  .clear-search-btn {
     position: absolute;
-    right: 0.625rem;
+    right: 0.75rem;
     top: 50%;
     transform: translateY(-50%);
-    width: 1.5rem;
-    height: 1.5rem;
+    width: 1.75rem;
+    height: 1.75rem;
     border: none;
-    background: #f3f4f6;
+    background: #e5e7eb;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -807,63 +914,91 @@
     color: #6b7280;
   }
   
-  .clear-btn svg {
-    width: 0.875rem;
-    height: 0.875rem;
+  .clear-search-btn svg {
+    width: 1rem;
+    height: 1rem;
   }
   
-  .clear-btn:hover {
-    background: #e5e7eb;
+  .clear-search-btn:hover {
+    background: #d1d5db;
     color: #111827;
   }
-  
-  .filter-controls {
+
+  .filter-chips {
     display: flex;
-    gap: 0.75rem;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+  }
+
+  .filter-label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .chips-row {
+    display: flex;
+    gap: 0.5rem;
     flex-wrap: wrap;
   }
-  
-  .filter-select {
-    padding: 0.625rem 0.875rem;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    font-size: 0.875rem;
+
+  .filter-chip {
+    padding: 0.5rem 1rem;
+    border: 1.5px solid #e5e7eb;
     background: white;
-    color: #111827;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  
-  .filter-select:focus {
-    outline: none;
-    border-color: #a855f7;
-    box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
-  }
-  
-  .clear-filters-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    padding: 0.625rem 0.875rem;
-    border: 1px solid #e5e7eb;
-    background: white;
-    border-radius: 8px;
+    border-radius: 20px;
     font-size: 0.875rem;
     font-weight: 500;
     color: #6b7280;
     cursor: pointer;
     transition: all 0.2s;
+    white-space: nowrap;
   }
-  
-  .clear-filters-btn svg {
-    width: 0.875rem;
-    height: 0.875rem;
+
+  .filter-chip:hover {
+    border-color: #a855f7;
+    color: #a855f7;
+    background: #faf5ff;
   }
-  
-  .clear-filters-btn:hover {
-    background: #f9fafb;
-    border-color: #d1d5db;
-    color: #111827;
+
+  .filter-chip.active {
+    background: #a855f7;
+    border-color: #a855f7;
+    color: white;
+  }
+
+  .clear-all-btn {
+    align-self: flex-start;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.125rem;
+    border: 1.5px solid #fca5a5;
+    background: #fef2f2;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #dc2626;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .clear-all-btn svg {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .clear-all-btn:hover {
+    background: #fee2e2;
+    border-color: #f87171;
   }
   
   /* Stats Overview */
@@ -1336,6 +1471,200 @@
   .continue-btn:hover {
     background: #9333ea;
   }
+
+  /* Delete Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+  }
+
+  .modal-container {
+    background: white;
+    border-radius: 16px;
+    max-width: 28rem;
+    width: 100%;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    animation: modalSlideIn 0.3s ease-out;
+  }
+
+  @keyframes modalSlideIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95) translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  .modal-header {
+    position: relative;
+    padding: 1.5rem 1.5rem 1rem;
+    display: flex;
+    justify-content: center;
+  }
+
+  .modal-icon {
+    width: 4rem;
+    height: 4rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-icon.danger {
+    background: #fef2f2;
+    color: #ef4444;
+  }
+
+  .modal-icon svg {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 2rem;
+    height: 2rem;
+    border: none;
+    background: transparent;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #9ca3af;
+    transition: all 0.2s;
+  }
+
+  .modal-close svg {
+    width: 1.125rem;
+    height: 1.125rem;
+  }
+
+  .modal-close:hover {
+    background: #f3f4f6;
+    color: #111827;
+  }
+
+  .modal-body {
+    padding: 0 1.5rem 1.5rem;
+    text-align: center;
+  }
+
+  .modal-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #111827;
+    margin: 0 0 0.75rem 0;
+  }
+
+  .modal-text {
+    font-size: 0.9375rem;
+    color: #6b7280;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .modal-text strong {
+    color: #111827;
+    font-weight: 600;
+  }
+
+  .modal-footer {
+    padding: 1rem 1.5rem 1.5rem;
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  .modal-btn {
+    flex: 1;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 0.9375rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .modal-btn.secondary {
+    background: white;
+    color: #6b7280;
+    border: 1.5px solid #e5e7eb;
+  }
+
+  .modal-btn.secondary:hover {
+    background: #f9fafb;
+    border-color: #d1d5db;
+    color: #111827;
+  }
+
+  .modal-btn.danger {
+    background: #ef4444;
+    color: white;
+  }
+
+  .modal-btn.danger:hover:not(:disabled) {
+    background: #dc2626;
+  }
+
+  .modal-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .deleting-text {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .spinner-small {
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  /* Modal Transitions */
+  .modal-enter-active,
+  .modal-leave-active {
+    transition: opacity 0.3s ease;
+  }
+
+  .modal-enter-active .modal-container,
+  .modal-leave-active .modal-container {
+    transition: all 0.3s ease;
+  }
+
+  .modal-enter-from,
+  .modal-leave-to {
+    opacity: 0;
+  }
+
+  .modal-enter-from .modal-container,
+  .modal-leave-to .modal-container {
+    transform: scale(0.95) translateY(-20px);
+    opacity: 0;
+  }
   
   /* Responsive */
   @media (max-width: 640px) {
@@ -1352,15 +1681,16 @@
     }
   
     .filters-content {
-      padding: 1rem;
+      padding: 1.125rem;
     }
-  
-    .filter-controls {
-      width: 100%;
+
+    .filter-group {
+      gap: 0.5rem;
     }
-  
-    .filter-select {
-      flex: 1;
+
+    .filter-chip {
+      padding: 0.4375rem 0.875rem;
+      font-size: 0.8125rem;
     }
   
     .stats-overview {
@@ -1379,16 +1709,57 @@
     .course-title {
       font-size: 1rem;
     }
+
+    .modal-container {
+      margin: 1rem;
+    }
+
+    .modal-header {
+      padding: 1.25rem 1.25rem 0.75rem;
+    }
+
+    .modal-icon {
+      width: 3.5rem;
+      height: 3.5rem;
+    }
+
+    .modal-icon svg {
+      width: 1.75rem;
+      height: 1.75rem;
+    }
+
+    .modal-body {
+      padding: 0 1.25rem 1.25rem;
+    }
+
+    .modal-title {
+      font-size: 1.125rem;
+    }
+
+    .modal-text {
+      font-size: 0.875rem;
+    }
+
+    .modal-footer {
+      padding: 0.875rem 1.25rem 1.25rem;
+      flex-direction: column;
+    }
+
+    .modal-btn {
+      width: 100%;
+    }
   }
   
   /* Focus States */
   .back-btn:focus,
   .add-course-btn:focus,
   .search-input:focus,
-  .filter-select:focus,
-  .clear-filters-btn:focus,
+  .filter-chip:focus,
+  .clear-all-btn:focus,
   .continue-btn:focus,
-  .menu-btn:focus {
+  .menu-btn:focus,
+  .modal-close:focus,
+  .modal-btn:focus {
     outline: 2px solid #a855f7;
     outline-offset: 2px;
   }

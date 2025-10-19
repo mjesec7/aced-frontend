@@ -44,7 +44,7 @@
               <div class="stat-text">Всего курсов</div>
             </div>
           </div>
-          
+
           <div class="stat-card">
             <div class="stat-icon-wrapper green">
               <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -56,7 +56,7 @@
               <div class="stat-text">Завершено</div>
             </div>
           </div>
-          
+
           <div class="stat-card">
             <div class="stat-icon-wrapper blue">
               <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -69,7 +69,7 @@
               <div class="stat-text">Часов изучено</div>
             </div>
           </div>
-          
+
           <div class="stat-card">
             <div class="stat-icon-wrapper orange">
               <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -226,6 +226,7 @@
               </div>
               <svg class="action-icon" v-html="action.icon"></svg>
               <span class="action-title">{{ action.title }}</span>
+              <span class="action-description">{{ action.description }}</span>
             </router-link>
           </div>
         </div>
@@ -372,16 +373,61 @@ export default {
       
       currentDate: '',
       
-      // NOTE: Using v-html is generally safe for static, trusted SVG content like this.
-      // For dynamic or user-provided content, this would be an XSS risk.
-      // A better long-term solution is to use an SVG component library.
       quickActions: [
-        { id: 1, title: 'Мои курсы', icon: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>', path: '/profile/catalogue', color: 'purple', premium: false },
-        { id: 2, title: 'Аналитика', icon: '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>', path: '/profile/analytics', color: 'blue', premium: true },
-        { id: 3, title: 'Задания', icon: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>', path: '/profile/homeworks', color: 'green', premium: false },
-        { id: 4, title: 'Тесты', icon: '<polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>', path: '/profile/tests', color: 'orange', premium: true },
-        { id: 5, title: 'Цели', icon: '<circle cx="12" cy="12" r="10"/><path d="M22 12h-4l-3 9L9 3l-3 9H2"/>', path: '/profile/goal', color: 'pink', premium: true },
-        { id: 6, title: 'Словарь', icon: '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>', path: '/profile/vocabulary', color: 'indigo', premium: true }
+        { 
+          id: 1, 
+          title: 'Каталог курсов', 
+          description: 'Обзор всех доступных курсов',
+          icon: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>', 
+          path: '/profile/catalogue', 
+          color: 'purple',
+          premium: false 
+        },
+        { 
+          id: 2, 
+          title: 'Аналитика', 
+          description: 'Детальная статистика обучения',
+          icon: '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>', 
+          path: '/profile/analytics', 
+          color: 'blue',
+          premium: true 
+        },
+        { 
+          id: 3, 
+          title: 'Домашние задания', 
+          description: 'Практические задачи и упражнения',
+          icon: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>', 
+          path: '/profile/homeworks', 
+          color: 'green',
+          premium: false 
+        },
+        { 
+          id: 4, 
+          title: 'Тесты и проверки', 
+          description: 'Проверьте свои знания',
+          icon: '<polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>', 
+          path: '/profile/tests', 
+          color: 'orange',
+          premium: true 
+        },
+        { 
+          id: 5, 
+          title: 'Мои цели', 
+          description: 'Отслеживайте свой прогресс',
+          icon: '<circle cx="12" cy="12" r="10"/><path d="M22 12h-4l-3 9L9 3l-3 9H2"/>', 
+          path: '/profile/goal', 
+          color: 'pink',
+          premium: true 
+        },
+        { 
+          id: 6, 
+          title: 'Словарь', 
+          description: 'Изученные термины и понятия',
+          icon: '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>', 
+          path: '/profile/vocabulary', 
+          color: 'indigo',
+          premium: true 
+        }
       ],
       
       weeklyGoals: [
@@ -410,7 +456,7 @@ export default {
     },
     
     displayedCourses() {
-      return this.filteredStudyList.slice(0, 3); // Showing 3 courses is less cluttered
+      return this.filteredStudyList.slice(0, 3);
     },
     
     completedCourses() {
@@ -439,11 +485,8 @@ export default {
     },
     
     userStreak() {
-      // NOTE: This calculation can be intensive on the front-end.
-      // It's highly recommended to calculate and provide this value from the backend.
       if (this.userProgress.length === 0) return 0;
 
-      // Get unique, sorted completion dates
       const completionDates = [
         ...new Set(
           this.userProgress
@@ -457,10 +500,7 @@ export default {
       const today = startOfDay(new Date()).getTime();
       const yesterday = startOfDay(new Date(Date.now() - 86400000)).getTime();
 
-      // Check if the last activity was today or yesterday
-      if (completionDates[0] < yesterday) {
-        return 0; // Streak is broken
-      }
+      if (completionDates[0] < yesterday) return 0;
 
       let streak = 0;
       let expectedDate = completionDates[0] === today ? today : yesterday;
@@ -468,9 +508,9 @@ export default {
       for (const date of completionDates) {
         if (date === expectedDate) {
           streak++;
-          expectedDate -= 86400000; // Subtract one day
+          expectedDate -= 86400000;
         } else {
-          break; // Gap found, streak ends
+          break;
         }
       }
       
@@ -573,7 +613,7 @@ export default {
         });
       
       const enriched = await Promise.all(enrichedPromises);
-      return enriched.filter(Boolean); // Filter out any nulls from errors
+      return enriched.filter(Boolean);
     },
     
     calculateProgress(topic) {
@@ -617,15 +657,12 @@ export default {
         return sum + lessonTimes;
       }, 0) / 60;
 
-      // Update Lessons Goal
       this.weeklyGoals[0].current = Math.min(completedLessonsThisWeek, this.weeklyGoals[0].target);
       this.weeklyGoals[0].progress = Math.min((this.weeklyGoals[0].current / this.weeklyGoals[0].target) * 100, 100);
 
-      // Update Hours Goal
       this.weeklyGoals[1].current = parseFloat(Math.min(hoursThisWeek, this.weeklyGoals[1].target).toFixed(1));
       this.weeklyGoals[1].progress = Math.min((this.weeklyGoals[1].current / this.weeklyGoals[1].target) * 100, 100);
       
-      // Update Tests Goal
       this.weeklyGoals[2].current = Math.min(testsThisWeek, this.weeklyGoals[2].target);
       this.weeklyGoals[2].progress = Math.min((this.weeklyGoals[2].current / this.weeklyGoals[2].target) * 100, 100);
     },
@@ -763,14 +800,13 @@ export default {
     hasFeatureAccess(path) {
       const userStatus = this.currentUserStatus;
       if (userStatus === 'pro') return true;
-      // Allow access to all premium features for 'start' users except analytics
       if (userStatus === 'start' && !path.includes('analytics')) return true;
       return false;
     },
     
     handlePaymentSuccess() {
       this.showPaywall = false;
-      this.$forceUpdate(); // Re-render to reflect new user status
+      this.$forceUpdate();
     }
   }
 };
@@ -956,7 +992,7 @@ export default {
 .action-card {
   position: relative; display: flex; flex-direction: column; align-items: center;
   justify-content: center; gap: 0.5rem; padding: 1.25rem 1rem; border-radius: 10px;
-  text-decoration: none; color: white; font-weight: 500; font-size: 0.8125rem;
+  text-decoration: none; color: white; text-align: center;
   transition: all 0.2s; border: none;
 }
 .action-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12); }
@@ -975,8 +1011,20 @@ export default {
 .action-icon {
   width: 2rem; height: 2rem; color: white; stroke: currentColor; fill: none;
   stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+  margin-bottom: 0.25rem;
 }
-.action-title { text-align: center; line-height: 1.3; }
+.action-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  line-height: 1.3;
+}
+.action-description {
+  font-size: 0.75rem;
+  font-weight: 400;
+  opacity: 0.8;
+  line-height: 1.3;
+  margin-top: -0.25rem;
+}
 
 /* SIDEBAR */
 .sidebar-column { display: flex; flex-direction: column; gap: 1.5rem; }
