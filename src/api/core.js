@@ -1,4 +1,4 @@
-// src/api/core.js
+// src/api/core.js - Core API Setup and Configuration
 import axios from 'axios';
 import { auth } from '@/firebase';
 
@@ -8,6 +8,7 @@ if (!BASE_URL) {
   console.warn('⚠️ VITE_API_BASE_URL is not defined in your .env file!');
 }
 
+// Create axios instance
 const api = axios.create({
   baseURL: `${BASE_URL}/api`,
   headers: {
@@ -35,7 +36,28 @@ const createRequestKey = (config) => {
   return `${config.method}-${config.url}-${JSON.stringify(config.data || {})}`;
 };
 
-// ✅ ENHANCED TOKEN MANAGEMENT
+// Debounce function
+export const debounceRequest = (fn, delay = 500) => {
+  let timeoutId;
+  return (...args) => {
+    clearTimeout(timeoutId);
+    return new Promise((resolve, reject) => {
+      timeoutId = setTimeout(async () => {
+        try {
+          const result = await fn(...args);
+          resolve(result);
+        } catch (error) {
+          reject(error);
+        }
+      }, delay);
+    });
+  };
+};
+
+// ========================================
+// 🔑 TOKEN MANAGEMENT
+// ========================================
+
 let isRefreshing = false;
 let failedQueue = [];
 
@@ -50,7 +72,7 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
-const getValidToken = async () => {
+export const getValidToken = async () => {
   try {
     const currentUser = auth.currentUser;
     if (!currentUser) {
@@ -66,23 +88,25 @@ const getValidToken = async () => {
 };
 
 // ========================================
-// 🚨 INTERCEPTORS
+// 📡 REQUEST INTERCEPTOR
 // ========================================
 
-// REQUEST INTERCEPTOR
 api.interceptors.request.use(async (config) => {
   try {
     const requestKey = createRequestKey(config);
 
+    // Check if we recently made this request
     if (pendingRequests.has(requestKey)) {
       const lastRequestTime = pendingRequests.get(requestKey);
-      if (Date.now() - lastRequestTime < 1000) {
+      if (Date.now() - lastRequestTime < 1000) { // 1 second debounce
         config.headers = { ...config.headers, 'X-Debounced': 'true' };
       }
     }
 
+    // Track this request
     pendingRequests.set(requestKey, Date.now());
 
+    // Check cache for GET requests
     if (config.method && config.method.toLowerCase() === 'get') {
       const cached = requestCache.get(requestKey);
       if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
@@ -90,6 +114,7 @@ api.interceptors.request.use(async (config) => {
       }
     }
 
+    // Add auth token
     const token = await getValidToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -105,9 +130,13 @@ api.interceptors.request.use(async (config) => {
   return Promise.reject(error);
 });
 
-// RESPONSE INTERCEPTOR
+// ========================================
+// 📡 RESPONSE INTERCEPTOR
+// ========================================
+
 api.interceptors.response.use(
   (response) => {
+    // Clean up pending requests
     try {
       const requestKey = createRequestKey(response.config);
       if (requestKey && pendingRequests.has(requestKey)) {
@@ -117,6 +146,7 @@ api.interceptors.response.use(
       console.warn('⚠️ Cleanup error:', cleanupError);
     }
 
+    // Cache successful GET requests
     if (response.config?.method &&
         response.config.method.toLowerCase() === 'get' &&
         response.status === 200 &&
@@ -128,6 +158,7 @@ api.interceptors.response.use(
             response: response,
             timestamp: Date.now()
           });
+          // Clean old cache entries
           if (requestCache.size > 100) {
             const cutoff = Date.now() - CACHE_DURATION;
             for (const [key, value] of requestCache.entries()) {
@@ -145,6 +176,8 @@ api.interceptors.response.use(
   },
   async (error) => {
     const originalRequest = error.config;
+    
+    // Clean up on error
     if (originalRequest) {
       try {
         const requestKey = createRequestKey(originalRequest);
@@ -162,8 +195,10 @@ api.interceptors.response.use(
       status: error.response?.status || 'unknown',
       message: error.response?.data?.message || error.message || 'Unknown error'
     };
+
     console.error('API Error:', errorInfo);
 
+    // Handle 401 errors with token refresh
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
@@ -184,10 +219,12 @@ api.interceptors.response.use(
           isRefreshing = false;
           return Promise.reject(error);
         }
+
         const freshToken = await currentUser.getIdToken(true);
         originalRequest.headers.Authorization = `Bearer ${freshToken}`;
         processQueue(null, freshToken);
         isRefreshing = false;
+
         return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
@@ -196,6 +233,7 @@ api.interceptors.response.use(
       }
     }
 
+    // Handle rate limiting (429) with retry
     if (error.response?.status === 429 && originalRequest._retryCount < MAX_RETRY_ATTEMPTS) {
       originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
       const delay = RETRY_DELAY * originalRequest._retryCount;
@@ -207,5 +245,128 @@ api.interceptors.response.use(
   }
 );
 
-export { requestCache, pendingRequests, isRefreshing, failedQueue, BASE_URL };
+// ========================================
+// 🛠️ UTILITY FUNCTIONS
+// ========================================
+
+export const cleanupRequestCache = () => {
+  requestCache.clear();
+  pendingRequests.clear();
+};
+
+export const retryApiCall = async (apiCall, maxRetries = 3, delay = 1000) => {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await apiCall();
+    } catch (error) {
+      console.warn(`⚠️ API call attempt ${attempt} failed:`, error.message);
+
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        throw error;
+      }
+
+      if (attempt === maxRetries) {
+        throw error;
+      }
+
+      await new Promise(resolve => setTimeout(resolve, delay * attempt));
+    }
+  }
+};
+
+export const withErrorHandling = async (apiCall, context = 'API call') => {
+  try {
+    return await apiCall();
+  } catch (error) {
+    console.error(`❌ ${context} failed:`, error);
+
+    if (error.response?.status === 401) {
+      try {
+        if (auth.currentUser) {
+          await auth.currentUser.getIdToken(true);
+          return await apiCall();
+        }
+      } catch (refreshError) {
+        console.error('❌ Token refresh failed:', refreshError);
+        throw new Error('Authentication failed. Please log in again.');
+      }
+    } else if (error.response?.status === 404) {
+      throw new Error('Resource not found');
+    } else if (error.response?.status >= 500) {
+      throw new Error('Server error. Please try again later.');
+    } else if (error.code === 'NETWORK_ERROR') {
+      throw new Error('Network error. Please check your connection.');
+    }
+
+    throw error;
+  }
+};
+
+// ========================================
+// 🧪 DIAGNOSTIC TOOLS
+// ========================================
+
+export const healthCheck = async () => {
+  try {
+    const { data } = await api.get('health');
+    return data;
+  } catch (error) {
+    console.error('❌ Health check failed:', error);
+    throw error;
+  }
+};
+
+export const authTest = async () => {
+  try {
+    const { data } = await api.get('auth-test');
+    return data;
+  } catch (error) {
+    console.error('❌ Auth test failed:', error);
+    throw error;
+  }
+};
+
+export const checkApiHealth = async () => {
+  try {
+    const healthResponse = await fetch(`${BASE_URL}/health`);
+    const healthData = await healthResponse.json();
+
+    const apiHealthResponse = await fetch(`${BASE_URL}/api/health`);
+    const apiHealthData = await apiHealthResponse.json();
+
+    const routesResponse = await fetch(`${BASE_URL}/api/routes`);
+    const routesData = await routesResponse.json();
+
+    return {
+      success: true,
+      health: healthData,
+      apiHealth: apiHealthData,
+      routes: routesData
+    };
+  } catch (error) {
+    console.error('❌ Backend connectivity test failed:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
+
+export const getSystemStatus = () => {
+  return {
+    environment: import.meta.env.MODE,
+    baseUrl: BASE_URL,
+    cacheSize: requestCache.size,
+    pendingRequests: pendingRequests.size,
+    auth: {
+      hasUser: !!auth.currentUser,
+      isRefreshing: isRefreshing,
+      queueSize: failedQueue.length
+    },
+    timestamp: new Date().toISOString()
+  };
+};
+
+// Export the core API instance
 export default api;
+export { BASE_URL };

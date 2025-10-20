@@ -1,5 +1,5 @@
-// src/api/user.js
-import api from './core.js';
+// src/api/user.js - User Management API
+import api from './core';
 import { auth } from '@/firebase';
 
 // =============================================
@@ -7,15 +7,17 @@ import { auth } from '@/firebase';
 // =============================================
 
 /**
- * ✅ FIXED: Get user info with multiple endpoint support.
- * Fetches the main profile information for a user.
+ * Get user info with multiple endpoint support
  */
 export const getUserInfo = async (userId) => {
   try {
     const token = await auth.currentUser?.getIdToken();
-    if (!token) throw new Error('No authentication token available');
+    if (!token) {
+      throw new Error('No authentication token available');
+    }
 
     const headers = { Authorization: `Bearer ${token}` };
+
     const { data } = await api.get(`users/${userId}`, { headers });
     return data;
   } catch (error) {
@@ -25,47 +27,71 @@ export const getUserInfo = async (userId) => {
 };
 
 /**
- * ✅ FIXED: Get user status (subscription plan) with multiple endpoint support.
+ * Get user status with multiple endpoint support
  */
 export const getUserStatus = async (userId) => {
   try {
     const token = await auth.currentUser?.getIdToken();
-    if (!token) throw new Error('No authentication token');
+    if (!token) {
+      throw new Error('No authentication token');
+    }
 
     const headers = { Authorization: `Bearer ${token}` };
-    const endpoints = [`users/${userId}/status`, `users/${userId}`, `user/${userId}/status`, `user/${userId}`];
+
+    // Try multiple endpoints for user status
+    const endpoints = [
+      `users/${userId}/status`,
+      `users/${userId}`,
+      `user/${userId}/status`,
+      `user/${userId}`
+    ];
 
     for (const endpoint of endpoints) {
       try {
         const { data } = await api.get(endpoint, { headers });
-        if (data && data.success !== false) {
-          const statusData = data.data || data;
+
+        if (data && (data.success !== false)) {
           return {
             success: true,
-            data: statusData,
-            status: statusData.subscriptionPlan || statusData.userStatus || 'free'
+            data: data.data || data,
+            status: data.status || data.subscriptionPlan || data.data?.subscriptionPlan || 'free'
           };
         }
       } catch (endpointError) {
         console.warn(`⚠️ Status endpoint ${endpoint} failed:`, endpointError.message);
+        continue;
       }
     }
 
-    return { success: true, data: { subscriptionPlan: 'free' }, status: 'free' };
+    // If all fail, return default
+    return {
+      success: true,
+      data: { subscriptionPlan: 'free' },
+      status: 'free'
+    };
+
   } catch (error) {
     console.error('❌ Failed to get user status:', error);
-    return { success: false, data: { subscriptionPlan: 'free' }, status: 'free', error: error.message };
+    return {
+      success: false,
+      data: { subscriptionPlan: 'free' },
+      status: 'free',
+      error: error.message
+    };
   }
 };
 
 /**
- * ✅ FIXED: Save user data, often used during registration.
- * This uses an emergency/fallback route for reliability.
+ * Save user with enhanced error handling
  */
 export const saveUser = async (userData) => {
   try {
     const { data } = await api.post('users/save', userData);
-    return { success: true, data: data };
+
+    return {
+      success: true,
+      data: data
+    };
   } catch (error) {
     console.error('❌ Failed to save user:', error);
     throw error;
@@ -73,14 +99,17 @@ export const saveUser = async (userData) => {
 };
 
 /**
- * ✅ FIXED: Update a user's profile information.
+ * Update user profile
  */
 export const updateUserProfile = async (userId, profileData) => {
   try {
     const token = await auth.currentUser?.getIdToken();
-    if (!token) throw new Error('No authentication token available');
+    if (!token) {
+      throw new Error('No authentication token available');
+    }
 
     const headers = { Authorization: `Bearer ${token}` };
+
     const { data } = await api.put(`users/${userId}/profile`, profileData, { headers });
     return data;
   } catch (error) {
@@ -93,6 +122,9 @@ export const updateUserProfile = async (userId, profileData) => {
 // 📖 STUDY LIST MANAGEMENT
 // =============================================
 
+/**
+ * Get user study list
+ */
 export const getUserStudyList = async (userId) => {
   try {
     const token = await auth.currentUser?.getIdToken();
@@ -101,22 +133,40 @@ export const getUserStudyList = async (userId) => {
     const { data } = await api.get(`users/${userId}/study-list`, {
       headers: { Authorization: `Bearer ${token}` }
     });
-    return { success: true, data: data.data || data || [], message: data.message };
+
+    return {
+      success: true,
+      data: data.data || data || [],
+      message: data.message
+    };
   } catch (error) {
     console.error('❌ Failed to get study list:', error);
+
     if (error.response?.status === 404) {
-      return { success: true, data: [], message: 'Study list not found, returning empty list' };
+      return {
+        success: true,
+        data: [],
+        message: 'Study list not found, returning empty list'
+      };
     }
-    return { success: false, data: [], error: error.response?.data?.error || error.message };
+
+    return {
+      success: false,
+      data: [],
+      error: error.response?.data?.error || error.message
+    };
   }
 };
 
+/**
+ * Add to study list
+ */
 export const addToStudyList = async (userId, topicData) => {
   try {
     const token = await auth.currentUser?.getIdToken();
     if (!token) throw new Error('No token');
 
-    const payload = {
+    const data = {
       topicId: topicData.topicId || topicData._id,
       topic: topicData.topic || topicData.topicName || topicData.name,
       subject: topicData.subject || 'General',
@@ -126,176 +176,66 @@ export const addToStudyList = async (userId, topicData) => {
       type: topicData.type || 'free'
     };
 
-    const response = await api.post(`users/${userId}/study-list`, payload, {
+    const response = await api.post(`users/${userId}/study-list`, data, {
       headers: { Authorization: `Bearer ${token}` }
     });
-    return { success: true, data: response.data };
+
+    return {
+      success: true,
+      data: response.data
+    };
+
   } catch (error) {
-    return { success: false, error: error.response?.data?.error || error.message };
+    return {
+      success: false,
+      error: error.response?.data?.error || error.message
+    };
   }
 };
 
+/**
+ * Remove from study list
+ */
 export const removeFromStudyList = async (userId, topicId) => {
   try {
     const token = await auth.currentUser?.getIdToken();
-    if (!token) throw new Error('No token');
-
     await api.delete(`users/${userId}/study-list/${topicId}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
+
     return { success: true };
+
   } catch (error) {
-    return { success: false, error: error.response?.data?.error || error.message };
+    return {
+      success: false,
+      error: error.response?.data?.error || error.message
+    };
   }
 };
 
+/**
+ * Cleanup study list
+ */
 export const cleanupStudyList = async (userId) => {
-    try {
-        const token = await auth.currentUser?.getIdToken();
-        if (!token) throw new Error('No token');
-
-        const { data } = await api.post(`users/${userId}/study-list/cleanup`, {}, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
-        return data;
-    } catch (error) {
-        console.error('❌ Failed to cleanup study list:', error);
-        throw error;
-    }
-};
-
-
-// =============================================
-// 🎯 RECOMMENDATIONS AND ANALYTICS
-// =============================================
-
-export const getRecommendations = async (userId) => {
   try {
     const token = await auth.currentUser?.getIdToken();
-    if (!token) throw new Error('No authentication token');
-
-    const { data } = await api.get(`users/${userId}/recommendations`, {
+    const { data } = await api.post(`users/${userId}/study-list/cleanup`, {}, {
       headers: { Authorization: `Bearer ${token}` }
     });
     return data;
   } catch (error) {
-    console.error('❌ Failed to get recommendations:', error);
+    console.error('❌ Failed to cleanup study list:', error);
     throw error;
   }
-};
-
-export const getUserProgressStats = async (userId) => {
-  try {
-    const token = await auth.currentUser?.getIdToken();
-    if (!token) throw new Error('No authentication token');
-
-    const { data } = await api.get(`users/${userId}/progress`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    return data;
-  } catch (error) {
-    console.error('❌ Failed to get progress stats:', error);
-    throw error;
-  }
-};
-
-export const getLessonProgressStats = async (userId, lessonId) => {
-    try {
-        const token = await auth.currentUser?.getIdToken();
-        if (!token) throw new Error('No authentication token');
-
-        const { data } = await api.get(`users/${userId}/progress/lesson/${lessonId}`, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
-        return data;
-    } catch (error) {
-        console.error('❌ Failed to get lesson progress stats:', error);
-        throw error;
-    }
-};
-
-export const getTopicsProgress = async (userId) => {
-    try {
-        const token = await auth.currentUser?.getIdToken();
-        if (!token) throw new Error('No authentication token');
-
-        const { data } = await api.get(`users/${userId}/topics-progress`, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
-        return data;
-    } catch (error) {
-        console.error('❌ Failed to get topics progress:', error);
-        throw error;
-    }
-};
-
-export const getUserPoints = async (userId) => {
-  try {
-    const token = await auth.currentUser?.getIdToken();
-    if (!token) throw new Error('No authentication token');
-
-    const { data } = await api.get(`users/${userId}/points`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    return data;
-  } catch (error) {
-    console.error('❌ Failed to get user points:', error);
-    throw error;
-  }
-};
-
-export const getUserAnalytics = async (userId) => {
-    try {
-        const token = await auth.currentUser?.getIdToken();
-        if (!token) throw new Error('No authentication token');
-        const headers = { Authorization: `Bearer ${token}` };
-
-        try {
-            const { data } = await api.get(`users/${userId}/analytics`, { headers });
-            return data;
-        } catch (error) {
-            console.warn('⚠️ User analytics endpoint failed, trying fallback:', error.message);
-            const { data } = await api.get(`analytics/${userId}`, { headers });
-            return data;
-        }
-    } catch (error) {
-        console.error('❌ Failed to fetch user analytics:', error);
-        throw error;
-    }
-};
-
-export const getUserStats = async (userId) => {
-    try {
-        const token = await auth.currentUser?.getIdToken();
-        if (!token) throw new Error('No authentication token');
-        const { data } = await api.get(`users/${userId}/stats`, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
-        return data;
-    } catch (error) {
-        console.error('❌ Failed to get user stats:', error);
-        throw error;
-    }
-};
-
-export const getUserAchievements = async (userId) => {
-    try {
-        const token = await auth.currentUser?.getIdToken();
-        if (!token) throw new Error('No authentication token');
-        const { data } = await api.get(`users/${userId}/achievements`, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
-        return data;
-    } catch (error) {
-        console.error('❌ Failed to get user achievements:', error);
-        throw error;
-    }
 };
 
 // =============================================
 // 🎯 GOALS MANAGEMENT
 // =============================================
 
+/**
+ * Get user goals
+ */
 export const getUserGoals = async (userId) => {
   try {
     const token = await auth.currentUser?.getIdToken();
@@ -311,6 +251,9 @@ export const getUserGoals = async (userId) => {
   }
 };
 
+/**
+ * Create user goal
+ */
 export const createUserGoal = async (userId, goalData) => {
   try {
     const token = await auth.currentUser?.getIdToken();
@@ -326,6 +269,9 @@ export const createUserGoal = async (userId, goalData) => {
   }
 };
 
+/**
+ * Update user goal
+ */
 export const updateUserGoal = async (userId, goalId, goalData) => {
   try {
     const token = await auth.currentUser?.getIdToken();
@@ -341,6 +287,9 @@ export const updateUserGoal = async (userId, goalId, goalData) => {
   }
 };
 
+/**
+ * Delete user goal
+ */
 export const deleteUserGoal = async (userId, goalId) => {
   try {
     const token = await auth.currentUser?.getIdToken();
@@ -360,6 +309,9 @@ export const deleteUserGoal = async (userId, goalId) => {
 // 📔 DIARY MANAGEMENT
 // =============================================
 
+/**
+ * Save diary entry
+ */
 export const saveDiaryEntry = async (userId, diaryData) => {
   try {
     const token = await auth.currentUser?.getIdToken();
@@ -375,6 +327,9 @@ export const saveDiaryEntry = async (userId, diaryData) => {
   }
 };
 
+/**
+ * Get diary entries
+ */
 export const getDiaryEntries = async (userId) => {
   try {
     const token = await auth.currentUser?.getIdToken();

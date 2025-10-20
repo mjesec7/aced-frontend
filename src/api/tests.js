@@ -1,25 +1,25 @@
-// src/api/tests.js
-import api from './core.js';
+// src/api/tests.js - Tests Management API
+import api from './core';
 import { auth } from '@/firebase';
 
+// =============================================
+// 📝 TESTS API FUNCTIONS
+// =============================================
+
 /**
- * ✅ FIXED: Get available tests with fallback support
- * Fetches all tests available to a specific user.
+ * Get available tests with fallback support
  */
 export const getAvailableTests = async (userId) => {
   try {
     const token = await auth.currentUser?.getIdToken();
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-    // First, try the user-specific endpoint
     try {
       const { data } = await api.get(`users/${userId}/tests`, { headers });
       return data;
     } catch (error) {
-      console.warn('⚠️ User tests endpoint failed, trying direct /tests endpoint:', error.message);
-      // Fallback: get all general tests
+      console.warn('⚠️ User tests endpoint failed, trying direct:', error.message);
       const { data } = await api.get(`tests`, { headers });
-      // Ensure the response structure is consistent
       return { tests: Array.isArray(data) ? data.filter(test => test.isActive !== false) : [] };
     }
   } catch (error) {
@@ -29,22 +29,20 @@ export const getAvailableTests = async (userId) => {
 };
 
 /**
- * ✅ FIXED: Get a specific test by its ID with fallback support
+ * Get test by ID with fallback support
  */
 export const getTestById = async (userId, testId) => {
   try {
     const token = await auth.currentUser?.getIdToken();
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-    // Try the user-specific endpoint first
     try {
       const { data } = await api.get(`users/${userId}/tests/${testId}`, { headers });
       return data;
     } catch (error) {
-      console.warn('⚠️ User test endpoint failed, trying direct /tests/:id endpoint:', error.message);
-      // Fallback: get the test directly
+      console.warn('⚠️ User test endpoint failed, trying direct:', error.message);
       const { data } = await api.get(`tests/${testId}`, { headers });
-      return { test: data }; // Wrap in expected object structure
+      return { test: data };
     }
   } catch (error) {
     console.error('❌ Failed to fetch test by ID:', error);
@@ -53,20 +51,18 @@ export const getTestById = async (userId, testId) => {
 };
 
 /**
- * ✅ FIXED: Submit test results with fallback support
+ * Submit test result with fallback support
  */
 export const submitTestResult = async (userId, testId, answers) => {
   try {
     const token = await auth.currentUser?.getIdToken();
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-    // Try user-specific submission endpoint first
     try {
       const { data } = await api.post(`users/${userId}/tests/${testId}/submit`, { answers }, { headers });
       return data;
     } catch (error) {
-      console.warn('⚠️ User test submit endpoint failed, trying direct submit endpoint:', error.message);
-      // Fallback: use a general submission endpoint
+      console.warn('⚠️ User test submit endpoint failed, trying direct:', error.message);
       const { data } = await api.post(`tests/${testId}/submit`, { userId, answers }, { headers });
       return data;
     }
@@ -77,7 +73,7 @@ export const submitTestResult = async (userId, testId, answers) => {
 };
 
 /**
- * ✅ FIXED: Get the result of a previously taken test
+ * Get test result with enhanced error handling
  */
 export const getTestResult = async (userId, testId) => {
   try {
@@ -87,6 +83,7 @@ export const getTestResult = async (userId, testId) => {
     }
 
     const headers = { Authorization: `Bearer ${token}` };
+
     const { data } = await api.get(`users/${userId}/tests/${testId}/result`, { headers });
     return data;
   } catch (error) {
@@ -96,7 +93,7 @@ export const getTestResult = async (userId, testId) => {
 };
 
 /**
- * ✅ FIXED: Get all of a user's test results
+ * Get user test results
  */
 export const getUserTestResults = async (userId) => {
   try {
@@ -112,7 +109,6 @@ export const getUserTestResults = async (userId) => {
       return data;
     } catch (error) {
       console.warn('⚠️ User test results endpoint failed:', error.message);
-      // Return a consistent error/empty state format
       return { success: false, data: [] };
     }
   } catch (error) {

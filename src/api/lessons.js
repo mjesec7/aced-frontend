@@ -1,8 +1,13 @@
-// src/api/lessons.js
-import api from './core.js';
+// src/api/lessons.js - Lessons and Topics Management API
+import api from './core';
+import { processSteps } from './content-processors';
+
+// =============================================
+// 📚 TOPIC API FUNCTIONS
+// =============================================
 
 /**
- * ✅ FIXED: Get all topics with enhanced error handling
+ * Get all topics with enhanced error handling
  */
 export const getTopics = async (filters = {}) => {
   try {
@@ -18,7 +23,6 @@ export const getTopics = async (filters = {}) => {
 
     const { data } = await api.get(url);
 
-    // Handle different response structures from backend
     if (data && data.success) {
       return {
         success: true,
@@ -30,7 +34,6 @@ export const getTopics = async (filters = {}) => {
         data: data
       };
     } else {
-      // Fallback for unexpected but non-error responses
       return {
         success: true,
         data: []
@@ -47,54 +50,123 @@ export const getTopics = async (filters = {}) => {
 };
 
 /**
- * ✅ COMPLETELY FIXED: Get topic by ID with lessons fallback
+ * Get topic by ID with lessons fallback
  */
 export const getTopicById = async (topicId) => {
   try {
     if (!topicId || typeof topicId !== 'string') {
       console.error('❌ Invalid topicId:', topicId);
-      return { success: false, error: 'Invalid topic ID provided', code: 400 };
+      return {
+        success: false,
+        error: 'Invalid topic ID provided',
+        code: 400,
+        details: 'Topic ID must be a non-empty string'
+      };
     }
 
     // STRATEGY 1: Try the direct topics endpoint first
     try {
       const { data } = await api.get(`topics/${topicId}`);
-      if (data && (data.success === true || data.exists === true)) {
-        if (data.data) return { success: true, data: data.data, source: 'topics-endpoint' };
+
+      if (data && data.success === true) {
+        if (data.data) {
+          return {
+            success: true,
+            data: data.data,
+            message: data.message,
+            source: 'topics-endpoint'
+          };
+        }
       }
+
+      if (data && data.exists === true) {
+        if (data.data) {
+          return {
+            success: true,
+            exists: true,
+            data: data.data,
+            source: 'topics-endpoint'
+          };
+        }
+      }
+
       if (data && (data._id || data.name)) {
-        return { success: true, data: data, source: 'topics-endpoint' };
+        return {
+          success: true,
+          data: data,
+          source: 'topics-endpoint'
+        };
       }
+
     } catch (topicsError) {
       console.warn('⚠️ Topics endpoint failed:', topicsError.response?.status, topicsError.message);
-      if (topicsError.response?.status !== 404) throw topicsError;
+
+      if (topicsError.response?.status !== 404) {
+        throw topicsError;
+      }
     }
 
     // STRATEGY 2: Fallback - Build topic from lessons
     try {
       const { data } = await api.get('lessons');
       const allLessons = Array.isArray(data) ? data : [];
+
       const topicLessons = allLessons.filter(lesson => {
         if (!lesson) return false;
+
         const lessonTopicId = lesson.topicId;
-        if (typeof lessonTopicId === 'string') return lessonTopicId === topicId;
-        if (typeof lessonTopicId === 'object' && lessonTopicId !== null) return (lessonTopicId._id || lessonTopicId.id) === topicId;
+
+        if (typeof lessonTopicId === 'string') {
+          return lessonTopicId === topicId;
+        } else if (typeof lessonTopicId === 'object' && lessonTopicId !== null) {
+          return (lessonTopicId._id || lessonTopicId.id) === topicId;
+        }
+
         return false;
       });
 
       if (topicLessons.length === 0) {
-        return { success: false, error: 'Topic not found', code: 404, source: 'lessons-fallback' };
+        return {
+          success: false,
+          error: 'Topic not found',
+          code: 404,
+          details: `No lessons found for topic ID: ${topicId}`,
+          source: 'lessons-fallback'
+        };
       }
 
       const firstLesson = topicLessons[0];
+
       const getTopicName = (lesson) => {
         if (!lesson) return 'Без темы';
         const lang = localStorage.getItem('lang') || 'en';
-        if (typeof lesson.topic === 'string' && lesson.topic.trim()) return lesson.topic.trim();
-        if (lesson.translations?.[lang]?.topic) return lesson.translations[lang].topic.trim();
-        if (lesson.topic?.[lang]) return lesson.topic[lang].trim();
-        if (lesson.topic?.en) return lesson.topic.en.trim();
-        return `Тема: ${lesson.lessonName?.trim() || lesson.title?.trim() || 'Без названия'}`;
+
+        if (typeof lesson.topic === 'string' && lesson.topic.trim()) {
+          return lesson.topic.trim();
+        }
+
+        if (lesson.translations && lesson.translations[lang] && typeof lesson.translations[lang].topic === 'string' && lesson.translations[lang].topic.trim()) {
+          return lesson.translations[lang].topic.trim();
+        }
+
+        if (lesson.topic && typeof lesson.topic === 'object') {
+          if (typeof lesson.topic[lang] === 'string' && lesson.topic[lang].trim()) {
+            return lesson.topic[lang].trim();
+          }
+          if (typeof lesson.topic.en === 'string' && lesson.topic.en.trim()) {
+            return lesson.topic.en.trim();
+          }
+        }
+
+        if (typeof lesson.lessonName === 'string' && lesson.lessonName.trim()) {
+          return `Тема: ${lesson.lessonName.trim()}`;
+        }
+
+        if (typeof lesson.title === 'string' && lesson.title.trim()) {
+          return `Тема: ${lesson.title.trim()}`;
+        }
+
+        return 'Без темы';
       };
 
       const topicName = getTopicName(firstLesson);
@@ -107,80 +179,205 @@ export const getTopicById = async (topicId) => {
         name: topicName,
         topicName: topicName,
         description: `Курс по теме "${topicName}" содержит ${totalLessons} уроков`,
-        subject: firstLesson.subject || 'Общий',
-        level: firstLesson.level || 'Базовый',
+        topicDescription: `Курс по теме "${topicName}" содержит ${totalLessons} уроков`,
+        subject: (firstLesson.subject && typeof firstLesson.subject === 'string') ? firstLesson.subject : 'Общий',
+        level: (firstLesson.level && typeof firstLesson.level === 'string') ? firstLesson.level : 'Базовый',
         lessonCount: totalLessons,
         totalTime: estimatedTime,
         lessons: topicLessons,
-        type: firstLesson.type || 'free',
+        type: (firstLesson.type && typeof firstLesson.type === 'string') ? firstLesson.type : 'free',
         isActive: true,
-        metadata: { source: 'constructed-from-lessons', basedOnLessons: totalLessons }
+        createdAt: firstLesson.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        metadata: {
+          source: 'constructed-from-lessons',
+          constructedAt: new Date().toISOString(),
+          basedOnLessons: topicLessons.length,
+          firstLessonId: firstLesson._id || firstLesson.id
+        }
       };
 
-      return { success: true, data: constructedTopic, source: 'lessons-fallback' };
+      return {
+        success: true,
+        data: constructedTopic,
+        source: 'lessons-fallback',
+        message: `Topic constructed from ${totalLessons} lessons`
+      };
+
     } catch (lessonsError) {
       console.error('❌ Lessons fallback failed:', lessonsError);
-      return { success: false, error: 'Topic not found and lessons fallback failed', code: 404 };
+
+      return {
+        success: false,
+        error: 'Topic not found and lessons fallback failed',
+        code: 404,
+        details: `Could not find topic ${topicId} in topics or lessons`,
+        lessonsError: lessonsError.message,
+        source: 'fallback-failed'
+      };
     }
+
   } catch (error) {
     console.error('❌ API: Failed to fetch topic by ID:', error);
-    const status = error.response?.status;
-    if (status === 404) return { success: false, error: 'Topic not found', code: 404 };
-    if (status === 403) return { success: false, error: 'Access denied', code: 403 };
-    if (status >= 500) return { success: false, error: 'Server error', code: status };
-    return { success: false, error: error.message || 'Failed to fetch topic', code: status };
+
+    if (error.response?.status === 404) {
+      return {
+        success: false,
+        error: 'Topic not found',
+        code: 404,
+        details: 'The requested topic does not exist'
+      };
+    }
+
+    if (error.response?.status === 403) {
+      return {
+        success: false,
+        error: 'Access denied',
+        code: 403,
+        details: 'You do not have permission to access this topic'
+      };
+    }
+
+    if (error.code === 'NETWORK_ERROR' || error.message === 'Network Error') {
+      return {
+        success: false,
+        error: 'Network error',
+        details: 'Unable to connect to the server'
+      };
+    }
+
+    if (error.code === 'ECONNABORTED') {
+      return {
+        success: false,
+        error: 'Request timeout',
+        details: 'The request took too long to complete'
+      };
+    }
+
+    if (error.response?.status >= 500) {
+      return {
+        success: false,
+        error: 'Server error',
+        code: error.response.status,
+        details: 'Internal server error occurred'
+      };
+    }
+
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message || 'Failed to fetch topic',
+      code: error.response?.status,
+      details: error.response?.data || error
+    };
   }
 };
 
 /**
- * ✅ COMPLETELY FIXED: Get lessons by topic with comprehensive error handling
+ * Get lessons by topic with comprehensive error handling
  */
 export const getLessonsByTopic = async (topicId) => {
   try {
-    if (!topicId) throw new Error('Topic ID is required');
+    if (!topicId) {
+      throw new Error('Topic ID is required');
+    }
 
-    // Strategy 1: Enhanced lessons endpoint
+    // Strategy 1: Try the enhanced lessons endpoint first
     try {
       const { data } = await api.get(`lessons/topic/${topicId}?includeStats=true&sortBy=createdAt&order=asc`);
-      if (data && data.success) return { success: true, data: data.lessons || [], stats: data.stats, source: 'enhanced-endpoint' };
+
+      if (data && data.success) {
+        return {
+          success: true,
+          data: data.lessons || [],
+          stats: data.stats,
+          source: 'enhanced-endpoint'
+        };
+      }
     } catch (enhancedError) {
       console.warn('⚠️ Enhanced lessons endpoint failed:', enhancedError.response?.status, enhancedError.message);
     }
 
-    // Strategy 2: Legacy topic-specific lessons endpoint
+    // Strategy 2: Try legacy topic-specific lessons endpoint
     try {
       const { data } = await api.get(`topics/${topicId}/lessons`);
-      if (data && data.success) return { success: true, data: data.data || data.lessons || [], source: 'legacy-endpoint' };
-      if (Array.isArray(data)) return { success: true, data: data, source: 'legacy-direct' };
+
+      if (data && data.success) {
+        return {
+          success: true,
+          data: data.data || data.lessons || [],
+          source: 'legacy-endpoint'
+        };
+      } else if (Array.isArray(data)) {
+        return {
+          success: true,
+          data: data,
+          source: 'legacy-direct'
+        };
+      }
     } catch (legacyError) {
       console.warn('⚠️ Legacy topic lessons endpoint failed:', legacyError.response?.status, legacyError.message);
     }
 
-    // Strategy 3: Final fallback - get all lessons and filter
+    // Strategy 3: Final fallback - get all lessons and filter by topicId
     try {
       const { data } = await api.get('lessons');
+
       const allLessons = Array.isArray(data) ? data : [];
       const filteredLessons = allLessons.filter(lesson => {
         if (!lesson) return false;
+
         const lessonTopicId = lesson.topicId;
-        if (typeof lessonTopicId === 'string') return lessonTopicId === topicId;
-        if (typeof lessonTopicId === 'object' && lessonTopicId !== null) return (lessonTopicId._id || lessonTopicId.id) === topicId;
-        return lesson.topic === topicId;
+
+        if (typeof lessonTopicId === 'string') {
+          return lessonTopicId === topicId;
+        }
+
+        if (typeof lessonTopicId === 'object' && lessonTopicId !== null) {
+          return (lessonTopicId._id || lessonTopicId.id) === topicId;
+        }
+
+        if (lesson.topic === topicId) {
+          return true;
+        }
+
+        return false;
       });
-      return { success: true, data: filteredLessons, source: 'fallback-filter' };
+
+      return {
+        success: true,
+        data: filteredLessons,
+        source: 'fallback-filter'
+      };
+
     } catch (fallbackError) {
       console.error('❌ Final fallback failed:', fallbackError.message);
     }
 
-    return { success: true, data: [], message: 'No lessons found for this topic', source: 'empty-result' };
+    return {
+      success: true,
+      data: [],
+      message: 'No lessons found for this topic',
+      source: 'empty-result'
+    };
+
   } catch (error) {
     console.error('❌ API: Failed to fetch lessons by topic:', error);
-    return { success: false, data: [], error: error.message || 'Failed to fetch lessons for topic' };
+
+    return {
+      success: false,
+      data: [],
+      error: error.message || 'Failed to fetch lessons for topic',
+      details: error
+    };
   }
 };
 
+// =============================================
+// 📖 LESSON API FUNCTIONS
+// =============================================
+
 /**
- * ✅ FIXED: Get all lessons with enhanced filtering
+ * Get all lessons with enhanced filtering
  */
 export const getAllLessons = async (filters = {}) => {
   try {
@@ -190,45 +387,59 @@ export const getAllLessons = async (filters = {}) => {
         params.append(key, filters[key]);
       }
     });
+
     const queryString = params.toString();
     const url = queryString ? `lessons?${queryString}` : 'lessons';
+
     const { data } = await api.get(url);
-    return { success: true, data: Array.isArray(data) ? data : [] };
+
+    return {
+      success: true,
+      data: Array.isArray(data) ? data : []
+    };
   } catch (error) {
     console.error('❌ Failed to fetch all lessons:', error);
-    return { success: false, data: [], error: error.message };
+    return {
+      success: false,
+      data: [],
+      error: error.message
+    };
   }
 };
 
 /**
- * ✅ FIXED: Get lesson by ID with enhanced error handling
+ * Get lesson by ID with enhanced error handling
  */
 export const getLessonById = async (lessonId) => {
   try {
     const { data } = await api.get(`lessons/${lessonId}`);
+
     if (data && data.success) {
-      return { success: true, data: data.lesson, topic: data.topic, stats: data.stats };
+      return {
+        success: true,
+        data: data.lesson,
+        topic: data.topic,
+        stats: data.stats
+      };
     } else if (data && (data._id || data.lessonName)) {
-      return { success: true, data: data };
+      return {
+        success: true,
+        data: data
+      };
     } else {
       throw new Error('Invalid lesson data structure');
     }
   } catch (error) {
     console.error('❌ Failed to fetch lesson by ID:', error);
-    if (error.response?.status === 404) throw new Error('Lesson not found');
-    throw error;
-  }
-};
 
-/**
- * ✅ Get all available subjects
- */
-export const getSubjects = async () => {
-  try {
-    const { data } = await api.get('subjects');
-    return Array.isArray(data) ? data : [];
-  } catch (error) {
-    console.error('❌ Failed to fetch subjects:', error);
-    return [];
+    if (error.response?.status === 404) {
+      throw new Error('Lesson not found');
+    } else if (error.response?.status === 403) {
+      throw new Error('Access denied to this lesson');
+    } else if (error.response?.status === 401) {
+      throw new Error('Authentication required');
+    }
+
+    throw error;
   }
 };
