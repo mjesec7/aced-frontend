@@ -1,777 +1,426 @@
 <template>
-  <div class="analytics-panel" ref="pdfContent">
-    <div class="header-row">
-      <h1 class="panel-heading">📈 Твоя аналитика обучения</h1>
-      <button @click="openModal" class="download-btn">Скачать как PDF</button>
+  <div class="analytics-page">
+    <div class="page-header">
+      <div class="header-content">
+        <div class="header-info">
+          <h1 class="page-title">📈 Аналитика обучения</h1>
+          <p class="page-subtitle">Отслеживайте свой прогресс и достижения</p>
+        </div>
+        <button @click="openModal" class="download-button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Скачать PDF
+        </button>
+      </div>
     </div>
 
-    <transition name="fade">
-      <div v-if="showModal" class="modal-overlay">
-        <div class="modal-content">
-          <h3>Настрой экспорт PDF</h3>
+    <div v-if="loading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Загружаем аналитику...</p>
+    </div>
 
-          <div class="modal-section">
-            <label>Выбери период:</label>
-            <select v-model="period">
-              <option value="7">Последняя неделя</option>
-              <option value="14">2 недели</option>
-              <option value="21">3 недели</option>
-              <option value="30">1 месяц</option>
-              <option value="90">3 месяца</option>
-            </select>
-          </div>
+    <div v-else-if="error" class="error-state">
+      <svg class="error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="15" y1="9" x2="9" y2="15"/>
+        <line x1="9" y1="9" x2="15" y2="15"/>
+      </svg>
+      <h3>{{ error }}</h3>
+      <button @click="loadAnalytics" class="action-button primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10"/>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+        </svg>
+        Попробовать снова
+      </button>
+    </div>
 
-          <div class="modal-section options-grid">
-            <label class="option-box">
-              <input type="checkbox" v-model="selectedStats" value="studyDays" />
-              Дней в обучении
-            </label>
-            <label class="option-box">
-              <input type="checkbox" v-model="selectedStats" value="completedLessons" />
-              Завершено уроков
-            </label>
-            <label class="option-box">
-              <input type="checkbox" v-model="selectedStats" value="completedTopics" />
-              Завершено тем
-            </label>
-            <label class="option-box">
-              <input type="checkbox" v-model="selectedStats" value="weeklyLessons" />
-              Уроков за неделю
-            </label>
-            <label class="option-box">
-              <input type="checkbox" v-model="selectedStats" value="monthlyLessons" />
-              Уроков за месяц
-            </label>
-            <label class="option-box">
-              <input type="checkbox" v-model="selectedStats" value="streakDays" />
-              Учебный стрик
-            </label>
-            <label class="option-box">
-              <input type="checkbox" v-model="selectedStats" value="mostActiveDay" />
-              Активный день
-            </label>
-            <label class="option-box">
-              <input type="checkbox" v-model="selectedStats" value="totalLessonsDone" />
-              Всего уроков
-            </label>
-            <label class="option-box">
-              <input type="checkbox" v-model="selectedStats" value="totalPoints" />
-              Общие очки
-            </label>
-            <label class="option-box">
-              <input type="checkbox" v-model="selectedStats" value="avgPointsPerDay" />
-              Очков в день
-            </label>
-          </div>
-
-          <div class="modal-buttons">
-            <button @click="downloadPDF">📥 Скачать</button>
-            <button class="cancel" @click="showModal = false">Отмена</button>
+    <div v-else class="content-container">
+      <div class="stats-grid">
+        <div v-for="stat in statCards" :key="stat.id" class="stat-card">
+          <div :class="`stat-icon ${stat.color}`" v-html="stat.icon"></div>
+          <div class="stat-content">
+            <div class="stat-label">{{ stat.label }}</div>
+            <div class="stat-value">{{ stat.value }}</div>
+            <div class="stat-subtext">{{ stat.subtext }}</div>
           </div>
         </div>
       </div>
-    </transition>
 
-    <!-- Loading State -->
-    <div v-if="loading" class="loading-state">
-      <div class="spinner"></div>
-      <p>Загружаем твою аналитику...</p>
-    </div>
-
-    <!-- Error State -->
-    <div v-else-if="error" class="error-state">
-      <p>❌ {{ error }}</p>
-      <button @click="loadAnalytics" class="retry-btn">Попробовать снова</button>
-    </div>
-
-    <!-- Analytics Content -->
-    <div v-else>
-      <!-- Summary Cards -->
-      <div class="card-grid">
-        <Card 
-          label="Общие очки" 
-          :value="formatNumber(analytics.totalPoints)" 
-          subtext="Баллы за активность 💯" 
-        />
-        <Card 
-          label="Очков в день" 
-          :value="formatNumber(analytics.avgPointsPerDay)" 
-          subtext="Средний заработок 📈" 
-        />
-        <Card 
-          label="Дней в обучении" 
-          :value="formatNumber(analytics.studyDays)" 
-          :subtext="formatDaysToHuman(analytics.studyDays)" 
-        />
-        <Card 
-          label="Завершено уроков" 
-          :value="formatNumber(analytics.completedLessons || analytics.totalLessonsDone)" 
-          subtext="Пройденные уроки 📚" 
-        />
-        <Card 
-          label="Завершено тем" 
-          :value="formatNumber(analytics.completedTopics || analytics.completedSubjects)" 
-          :subtext="analytics.totalTopics ? `${analytics.totalTopics - (analytics.completedTopics || analytics.completedSubjects)} осталось` : 'Продолжай изучать 🚀'" 
-        />
-        <Card 
-          label="Уроков за неделю" 
-          :value="formatNumber(analytics.weeklyLessons)" 
-          subtext="Текущий темп 📈" 
-        />
-        <Card 
-          label="Уроков за месяц" 
-          :value="formatNumber(analytics.monthlyLessons)" 
-          subtext="Стабильность важна" 
-        />
-        <Card 
-          label="Стрик" 
-          :value="analytics.streakDays > 0 ? `${analytics.streakDays} дней` : '0 дней'" 
-          :subtext="analytics.streakDays > 0 ? 'Ты на волне 💫' : 'Начни снова 🚀'" 
-        />
-        <Card 
-          label="Активный день" 
-          :value="analytics.mostActiveDay || 'Нет данных'" 
-          subtext="Повтори успех 💪" 
-        />
-        <Card 
-          label="Среднее время в день" 
-          :value="formatTime(analytics.averageTime)" 
-          subtext="Ежедневная продолжительность обучения ⏰" 
-        />
-      </div>
-
-      <!-- Recent Activity -->
-      <div class="chart-box" v-if="analytics.recentActivity && analytics.recentActivity.length > 0">
-        <h2 class="chart-heading">📋 Последняя активность</h2>
-        <div class="recent-activity-list">
-          <div 
-            v-for="(activity, index) in analytics.recentActivity" 
-            :key="`activity-${index}-${activity.date}`" 
-            class="activity-item"
-          >
-            <div class="activity-date">{{ formatDate(activity.date) }}</div>
-            <div class="activity-lesson">{{ formatLessonName(activity.lesson) }}</div>
-            <div class="activity-stats">
-              <span class="points">{{ formatNumber(activity.points) }} очков</span>
-              <span class="duration" v-if="activity.duration">{{ formatDuration(activity.duration) }}</span>
+      <div v-if="analytics.recentActivity?.length > 0" class="section-card">
+        <div class="section-header">
+          <div class="section-icon-badge">
+             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <div>
+            <h2 class="section-title">Последняя активность</h2>
+            <p class="section-subtitle">Ваши недавние достижения</p>
+          </div>
+        </div>
+        <div class="activity-list">
+          <div v-for="(activity, index) in analytics.recentActivity.slice(0, 5)" :key="`activity-${index}-${activity.date}`" class="activity-item">
+            <div class="activity-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="activity-content">
+              <div class="activity-title">{{ formatLessonName(activity.lesson) }}</div>
+              <div class="activity-meta">
+                <span>{{ formatDate(activity.date) }}</span>
+                <span class="activity-points">{{ formatNumber(activity.points) }} очков</span>
+                <span v-if="activity.duration">{{ formatDuration(activity.duration) }}</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Subject Progress Bars -->
-      <div class="chart-box" v-if="analytics.subjects && analytics.subjects.length > 0">
-        <h2 class="chart-heading">📚 Прогресс по предметам</h2>
-        <div 
-          v-for="subject in analytics.subjects" 
-          :key="subject.name" 
-          class="subject-progress"
-        >
-          <div class="progress-header">
-            <span class="subject-name">{{ subject.name }}</span>
-            <span class="subject-value">{{ Math.round(subject.progress) }}%</span>
-          </div>
-          <ProgressBar :percent="subject.progress" />
-        </div>
-      </div>
-
-      <!-- Topic Progress -->
-      <div class="chart-box" v-if="analytics.topics && analytics.topics.length > 0">
-        <h2 class="chart-heading">🎯 Прогресс по темам</h2>
-        <div 
-          v-for="topic in analytics.topics" 
-          :key="topic.name" 
-          class="topic-progress"
-        >
-          <div class="progress-header">
-            <span class="topic-name">{{ topic.name }}</span>
-            <span class="topic-value">{{ topic.completedLessons || 0 }} / {{ topic.totalLessons || 0 }} уроков</span>
-          </div>
-          <ProgressBar :percent="calculateTopicProgress(topic)" />
-        </div>
-      </div>
-
-      <!-- Line Chart -->
-      <div class="chart-box" v-if="analytics.knowledgeChart && analytics.knowledgeChart.length > 0">
-        <h2 class="chart-heading">📊 Рост знаний по месяцам</h2>
-        <LineChart :chart-data="chartData" />
-      </div>
-
-      <!-- Performance Metrics -->
-      <div class="chart-box">
-        <h2 class="chart-heading">🏆 Показатели эффективности</h2>
-        <div class="performance-grid">
-          <div class="performance-item">
-            <div class="performance-label">Точность ответов</div>
-            <div class="performance-value">{{ calculateAccuracy() }}%</div>
-          </div>
-          <div class="performance-item">
-            <div class="performance-label">Средний балл за урок</div>
-            <div class="performance-value">{{ calculateAvgScore() }}</div>
-          </div>
-          <div class="performance-item">
-            <div class="performance-label">Использовано подсказок</div>
-            <div class="performance-value">{{ formatNumber(analytics.hintsUsed || 0) }}</div>
-          </div>
-          <div class="performance-item">
-            <div class="performance-label">Заработано звёзд</div>
-            <div class="performance-value">{{ formatNumber(analytics.totalStars || 0) }} ⭐</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Data Quality Info -->
-      <div class="chart-box" v-if="analytics.dataQuality">
-        <h2 class="chart-heading">📋 Качество данных</h2>
-        <div class="data-quality-grid">
-          <div class="quality-item">
-            <span class="quality-label">Данные активности:</span>
-            <span :class="{
-              'quality-good': analytics.dataQuality.hasActivityData, 
-              'quality-poor': !analytics.dataQuality.hasActivityData
-            }">
-              {{ analytics.dataQuality.hasActivityData ? '✅ Есть' : '❌ Нет' }}
-            </span>
-          </div>
-          <div class="quality-item">
-            <span class="quality-label">Данные предметов:</span>
-            <span :class="{
-              'quality-good': analytics.dataQuality.hasSubjectData, 
-              'quality-poor': !analytics.dataQuality.hasSubjectData
-            }">
-              {{ analytics.dataQuality.hasSubjectData ? '✅ Есть' : '❌ Нет' }}
-            </span>
-          </div>
-          <div class="quality-item">
-            <span class="quality-label">Валидные записи:</span>
-            <span class="quality-neutral">{{ formatNumber(analytics.dataQuality.validDates || 0) }}</span>
-          </div>
-          <div class="quality-item">
-            <span class="quality-label">Последнее обновление:</span>
-            <span class="quality-neutral">{{ formatDate(analytics.lastUpdated) }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Empty State -->
       <div v-if="!hasAnyData" class="empty-state">
-        <div class="empty-icon">📊</div>
+        <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+        </svg>
         <h3>Пока нет данных для аналитики</h3>
-        <p>Начни изучать уроки, чтобы увидеть свой прогресс здесь!</p>
-        <button @click="$router.push('/catalogue')" class="start-learning-btn">
-          🚀 Начать обучение
+        <p>Начните изучать уроки, чтобы увидеть свой прогресс</p>
+        <button @click="$router.push('/catalogue')" class="action-button primary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          Начать обучение
         </button>
+      </div>
+    </div>
+
+    <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Настройки экспорта PDF</h3>
+          <button @click="showModal = false" class="close-button" aria-label="Закрыть модальное окно">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-section">
+            <label for="period-select" class="modal-label">Период</label>
+            <select id="period-select" v-model="period" class="modal-select">
+              <option value="30">1 месяц</option>
+              <option value="90">3 месяца</option>
+              <option value="365">1 год</option>
+            </select>
+          </div>
+          <div class="modal-section">
+            <label class="modal-label">Выберите метрики</label>
+            <div class="options-grid">
+              <label v-for="stat in pdfStatOptions" :key="stat.key" class="option-checkbox">
+                <input type="checkbox" v-model="selectedStats" :value="stat.key" />
+                <span>{{ stat.label }}</span>
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button @click="showModal = false" class="action-button secondary">Отмена</button>
+          <button @click="downloadPDF" class="action-button primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Скачать
+          </button>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import { mapState, mapGetters } from 'vuex';
 import { auth } from '@/firebase';
 import { getUserAnalytics, getLessonById } from '@/api';
-import LineChart from '@/components/Charts/LineChart.vue';
-import Card from '@/components/Profile/AnalyticsCard.vue';
-import ProgressBar from '@/components/Profile/ProgressBar.vue';
 
 export default {
   name: 'UserAnalyticsPanel',
-  components: { 
-    LineChart, 
-    Card, 
-    ProgressBar 
-  },
   data() {
     return {
       loading: true,
       error: null,
       showModal: false,
-      selectedStats: [
-        'studyDays',
-        'completedLessons',
-        'completedTopics',
-        'weeklyLessons',
-        'monthlyLessons',
-        'streakDays',
-        'mostActiveDay',
-        'totalLessonsDone',
-        'totalPoints',
-        'avgPointsPerDay'
-      ],
+      selectedStats: ['studyDays', 'completedLessons', 'totalPoints', 'streakDays'],
       period: 30,
-      lessonCache: new Map(), // Cache for lesson names
+      lessonCache: new Map(),
       analytics: {
-        // Basic stats from backend
         studyDays: 0,
-        totalDays: 0,
         completedLessons: 0,
         completedTopics: 0,
-        completedSubjects: 0,
-        totalSubjects: 0,
-        totalTopics: 0,
         totalLessonsDone: 0,
-        
-        // Time-based metrics
-        weeklyLessons: 0,
-        monthlyLessons: 0,
         streakDays: 0,
-        averageTime: 0,
-        
-        // Points and performance
         totalPoints: 0,
-        totalStars: 0,
-        hintsUsed: 0,
         avgPointsPerDay: 0,
-        
-        // Charts and progress
-        knowledgeChart: [],
         subjects: [],
         topics: [],
-        
-        // Activity patterns
-        mostActiveDay: null,
         recentActivity: [],
-        
-        // Metadata
-        lastUpdated: null,
-        dataQuality: {
-          hasActivityData: false,
-          hasSubjectData: false,
-          validDates: 0
-        }
-      }
+      },
+      pdfStatOptions: [
+          { key: 'studyDays', label: 'Дней в обучении' },
+          { key: 'completedLessons', label: 'Завершено уроков' },
+          { key: 'completedTopics', label: 'Завершено тем' },
+          { key: 'totalPoints', label: 'Общие очки' },
+          { key: 'streakDays', label: 'Учебный стрик' },
+          { key: 'avgPointsPerDay', label: 'Очков в день' },
+      ],
     };
   },
   computed: {
-    ...mapState(['user']),
-    ...mapGetters(['isAuthenticated']),
-    
+    /**
+     * Checks if there is any analytics data to display.
+     */
     hasAnyData() {
-      return this.analytics.totalLessonsDone > 0 || 
-             this.analytics.studyDays > 0 || 
-             (this.analytics.subjects && this.analytics.subjects.length > 0) ||
-             (this.analytics.topics && this.analytics.topics.length > 0);
+      const { totalLessonsDone, studyDays, subjects } = this.analytics;
+      return totalLessonsDone > 0 || studyDays > 0 || subjects?.length > 0;
     },
-    
-    chartData() {
-      const months = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
-      const currentMonth = new Date().getMonth();
-      
-      // Generate labels for last 12 months
-      const labels = [];
-      for (let i = 11; i >= 0; i--) {
-        const monthIndex = (currentMonth - i + 12) % 12;
-        labels.push(months[monthIndex]);
-      }
-      
-      // Ensure we have data for all 12 months
-      const chartData = Array.isArray(this.analytics.knowledgeChart) 
-        ? this.analytics.knowledgeChart 
-        : [];
-      
-      // Pad with zeros if we don't have enough data
-      while (chartData.length < 12) {
-        chartData.unshift(0);
-      }
-      
-      return {
-        labels,
-        datasets: [{
-          label: 'Рост знаний (%)',
-          data: chartData.slice(-12), // Take last 12 months
-          borderColor: '#7c3aed',
-          backgroundColor: 'rgba(124, 58, 237, 0.1)',
-          pointBackgroundColor: '#7c3aed',
-          tension: 0.4,
-          fill: true
-        }]
-      };
+
+    /**
+     * Generates a configuration array for the main statistics cards.
+     * This makes the template cleaner and easier to modify.
+     */
+    statCards() {
+        const an = this.analytics;
+        return [
+            {
+                id: 'points',
+                label: 'Общие очки',
+                value: this.formatNumber(an.totalPoints),
+                subtext: 'Баллы за активность',
+                icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>',
+                color: 'purple'
+            },
+            {
+                id: 'avgPoints',
+                label: 'Очков в день',
+                value: this.formatNumber(an.avgPointsPerDay),
+                subtext: 'Средний заработок',
+                icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',
+                color: 'blue'
+            },
+            {
+                id: 'studyDays',
+                label: 'Дней в обучении',
+                value: this.formatNumber(an.studyDays),
+                subtext: this.formatDaysToHuman(an.studyDays),
+                icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+                color: 'green'
+            },
+            {
+                id: 'lessons',
+                label: 'Завершено уроков',
+                value: this.formatNumber(an.completedLessons || an.totalLessonsDone),
+                subtext: 'Пройденные уроки',
+                icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>',
+                color: 'orange'
+            },
+            {
+                id: 'topics',
+                label: 'Завершено тем',
+                value: this.formatNumber(an.completedTopics),
+                subtext: 'Изученные разделы',
+                icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>',
+                color: 'teal'
+            },
+            {
+                id: 'streak',
+                label: 'Стрик',
+                value: `${an.streakDays || 0}`,
+                subtext: an.streakDays > 0 ? 'дней подряд' : 'Начни снова',
+                icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>',
+                color: 'pink'
+            }
+        ];
     }
   },
-  
+
   async mounted() {
     await this.loadAnalytics();
   },
-  
+
   methods: {
-    // ✅ FIXED: Method to fetch lesson name by ID using proper API
+    /**
+     * Fetches a lesson name by its ID, using a cache to avoid redundant API calls.
+     * @param {string} lessonId - The ID of the lesson.
+     * @returns {Promise<string>} The lesson name or a fallback string.
+     */
     async fetchLessonName(lessonId) {
-      // Check cache first
       if (this.lessonCache.has(lessonId)) {
         return this.lessonCache.get(lessonId);
       }
-      
+
       try {
-        console.log('🔍 Fetching lesson name for ID:', lessonId);
         const response = await getLessonById(lessonId);
+        const data = response?.data;
+        const lessonName = data?.lessonName || data?.title || data?.name || 'Урок без названия';
         
-        let lessonName = 'Урок без названия';
-        
-        if (response.success && response.data) {
-          lessonName = response.data.lessonName || 
-                      response.data.title || 
-                      response.data.name || 
-                      'Урок без названия';
-        } else if (response.data) {
-          lessonName = response.data.lessonName || 
-                      response.data.title || 
-                      response.data.name || 
-                      'Урок без названия';
-        }
-        
-        // Cache the result
         this.lessonCache.set(lessonId, lessonName);
-        console.log('✅ Lesson name cached:', lessonName);
-        
         return lessonName;
-        
       } catch (error) {
-        console.error('❌ Error fetching lesson name for', lessonId, ':', error);
+        console.error(`❌ Error fetching name for lesson ${lessonId}:`, error);
         const fallbackName = `Урок (${lessonId.slice(-6)})`;
         this.lessonCache.set(lessonId, fallbackName);
         return fallbackName;
       }
     },
 
-    // ✅ IMPROVED: Method to resolve all lesson names in recent activity
+    /**
+     * Resolves lesson IDs in the recent activity list into human-readable names.
+     * It processes requests in batches to avoid overwhelming the server.
+     */
     async resolveActivityLessonNames() {
-      if (!this.analytics.recentActivity || this.analytics.recentActivity.length === 0) {
-        return;
-      }
+      const activitiesToResolve = this.analytics.recentActivity?.filter(
+        activity => typeof activity.lesson === 'string' && /^[a-f\d]{24}$/i.test(activity.lesson)
+      ) || [];
 
-      console.log('🔍 Starting lesson name resolution...');
+      if (activitiesToResolve.length === 0) return;
       
-      // Get all activities that need lesson name resolution (ObjectId-like strings)
-      const activitiesNeedingResolution = this.analytics.recentActivity.filter(activity => {
-        const lesson = activity.lesson;
-        return lesson && 
-               typeof lesson === 'string' && 
-               lesson.length === 24 && 
-               /^[a-f\d]{24}$/i.test(lesson); // MongoDB ObjectId pattern
-      });
+      const lessonIds = [...new Set(activitiesToResolve.map(a => a.lesson))];
+      const promises = lessonIds.map(id => this.fetchLessonName(id));
 
-      if (activitiesNeedingResolution.length === 0) {
-        console.log('ℹ️ No lesson IDs need resolution');
-        return;
-      }
-
-      console.log(`🔍 Resolving ${activitiesNeedingResolution.length} lesson names...`);
-      
       try {
-        // Process in batches to avoid overwhelming the API
-        const batchSize = 5;
-        const batches = [];
+        await Promise.allSettled(promises);
         
-        for (let i = 0; i < activitiesNeedingResolution.length; i += batchSize) {
-          batches.push(activitiesNeedingResolution.slice(i, i + batchSize));
-        }
-        
-        // Process each batch
-        for (const batch of batches) {
-          const batchPromises = batch.map(activity => 
-            this.fetchLessonName(activity.lesson)
-          );
-          
-          const batchResults = await Promise.allSettled(batchPromises);
-          
-          // Update activities with resolved names
-          batch.forEach((activity, index) => {
-            const result = batchResults[index];
-            if (result.status === 'fulfilled') {
-              // Find the activity in the main array and update it
-              const activityIndex = this.analytics.recentActivity.findIndex(
-                a => a.lesson === activity.lesson && a.date === activity.date
-              );
-              
-              if (activityIndex !== -1) {
-                this.analytics.recentActivity[activityIndex] = {
-                  ...this.analytics.recentActivity[activityIndex],
-                  lesson: result.value,
-                  originalLessonId: activity.lesson
-                };
-              }
+        // Update the original activity array with cached names
+        this.analytics.recentActivity.forEach(activity => {
+            if (this.lessonCache.has(activity.lesson)) {
+                activity.lesson = this.lessonCache.get(activity.lesson);
             }
-          });
-          
-          // Small delay between batches to be nice to the API
-          if (batches.length > 1) {
-            await new Promise(resolve => setTimeout(resolve, 500));
-          }
-        }
-
-        console.log('✅ Lesson name resolution completed');
-
+        });
       } catch (error) {
         console.error('❌ Error during lesson name resolution:', error);
-        // Don't break the component, just keep the IDs
       }
     },
 
+    /**
+     * Loads the main analytics data from the API.
+     */
     async loadAnalytics() {
       this.loading = true;
       this.error = null;
-      
       try {
-        // Wait for auth to be ready
-        let currentUser = auth.currentUser;
+        // Wait for Firebase auth to initialize
+        const currentUser = auth.currentUser || (await new Promise(resolve => setTimeout(() => resolve(auth.currentUser), 1000)));
+
         if (!currentUser) {
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          currentUser = auth.currentUser;
-        }
-        
-        if (!currentUser) {
-          console.error('❌ No authenticated user found');
           this.error = 'Необходима авторизация';
           return;
         }
 
-        const userId = currentUser.uid;
-        console.log('📊 Loading analytics for user:', userId);
+        const response = await getUserAnalytics(currentUser.uid);
         
-        try {
-          const response = await getUserAnalytics(userId);
-          console.log('📊 Analytics response:', response);
-
-          if (response && response.data) {
-            if (response.data.success && response.data.data) {
-              this.analytics = { ...this.analytics, ...response.data.data };
-              console.log('✅ Analytics loaded successfully (wrapped format)');
-            } else if (response.data.success === false) {
-              console.error('❌ Backend error:', response.data.error);
-              this.error = response.data.error || 'Ошибка сервера';
-              return;
-            } else {
-              // If response.data is the analytics object directly
-              this.analytics = { ...this.analytics, ...response.data };
-              console.log('✅ Analytics loaded successfully (direct format)');
-            }
-            
-            // ✅ Resolve lesson names after loading analytics
+        // Handle various potential API response structures
+        const responseData = response?.data?.data || response?.data;
+        
+        if (responseData && typeof responseData === 'object') {
+            this.analytics = { ...this.analytics, ...responseData };
             await this.resolveActivityLessonNames();
-            
-          } else {
-            console.warn('⚠️ No data in response');
-            this.error = 'Нет данных для аналитики';
-          }
-
-        } catch (apiError) {
-          console.error('❌ API Error:', apiError);
-          
-          if (apiError.response?.status === 401) {
-            this.error = 'Ошибка авторизации. Попробуйте войти заново.';
-          } else if (apiError.response?.status === 404) {
-            this.error = 'Данные аналитики не найдены. Начните изучать уроки!';
-          } else if (apiError.response?.status >= 500) {
-            this.error = 'Ошибка сервера. Попробуйте позже.';
-          } else if (apiError.response) {
-            this.error = apiError.response.data?.error || 'Ошибка загрузки данных';
-          } else if (apiError.request) {
-            this.error = 'Проблема с сетью. Проверьте интернет-соединение.';
-          } else {
-            this.error = apiError.message || 'Ошибка загрузки аналитики';
-          }
+        } else {
+            this.error = response?.data?.error || 'Нет данных для аналитики';
         }
 
       } catch (err) {
-        console.error('❌ Analytics loading failed:', err);
-        this.error = err.message || 'Ошибка загрузки аналитики';
+        const status = err.response?.status;
+        if (status === 401) this.error = 'Ошибка авторизации';
+        else if (status === 404) this.error = 'Данные не найдены. Начните изучать уроки!';
+        else if (status >= 500) this.error = 'Ошибка на сервере';
+        else this.error = 'Ошибка загрузки данных';
       } finally {
         this.loading = false;
       }
     },
-    
+
     openModal() {
       this.showModal = true;
     },
-    
+
+    /**
+     * Generates and triggers the download of a PDF report.
+     */
     async downloadPDF() {
-      const labelMap = {
-        studyDays: 'Дней в обучении',
-        completedLessons: 'Завершено уроков',
-        completedTopics: 'Завершено тем',
-        weeklyLessons: 'Уроков за неделю',
-        monthlyLessons: 'Уроков за месяц',
-        streakDays: 'Учебный стрик',
-        mostActiveDay: 'Активный день',
-        totalLessonsDone: 'Всего уроков',
-        totalPoints: 'Общие очки',
-        avgPointsPerDay: 'Очков в день'
-      };
-      
-      const wrapper = document.createElement('div');
-      wrapper.style.padding = '20px';
-      wrapper.style.fontFamily = 'Segoe UI, sans-serif';
-      wrapper.innerHTML = `<h2 style="text-align:center;margin-bottom:20px;">📊 Твоя аналитика обучения</h2>`;
-      
-      this.selectedStats.forEach(key => {
-        const label = labelMap[key];
-        let value = this.analytics[key] ?? '—';
-        
-        // Format specific values
-        if (key === 'completedLessons' && !this.analytics[key]) {
-          value = this.analytics.totalLessonsDone ?? '—';
+        const { default: html2pdf } = await import('html2pdf.js');
+
+        const statContent = this.pdfStatOptions
+            .filter(opt => this.selectedStats.includes(opt.key))
+            .map(opt => {
+                const value = this.analytics[opt.key] ?? '—';
+                return `
+                    <div style="margin: 12px 0; padding: 8px; border-left: 3px solid #a855f7; background: #f8f9fa;">
+                        <strong>${opt.label}:</strong> ${this.formatNumber(value)}
+                    </div>`;
+            })
+            .join('');
+
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = 'padding: 20px; font-family: Arial, sans-serif;';
+        wrapper.innerHTML = `
+            <h2 style="text-align:center; margin-bottom:20px;">📊 Аналитика обучения</h2>
+            ${statContent}
+            <div style="margin-top:20px; padding-top:20px; border-top: 1px solid #ddd; font-size: 12px; color: #666;">
+                <div style="margin-bottom: 8px;"><strong>Период:</strong> ${this.period} дней</div>
+                <div>Сгенерировано: ${new Date().toLocaleString('ru-RU')}</div>
+            </div>`;
+
+        this.showModal = false;
+
+        try {
+            await html2pdf().set({
+                margin: 0.5,
+                filename: `analytics-${new Date().toISOString().split('T')[0]}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+            }).from(wrapper).save();
+        } catch (err) {
+            alert('Ошибка при генерации PDF');
         }
-        if (key === 'completedTopics' && !this.analytics[key]) {
-          value = this.analytics.completedSubjects ?? '—';
-        }
-        
-        wrapper.innerHTML += `
-          <div style="margin: 12px 0; padding: 8px; border-left: 3px solid #7c3aed; background: #f8f9fa;">
-            <strong>${label}:</strong> ${this.formatNumber(value)}
-          </div>
-        `;
-      });
-      
-      wrapper.innerHTML += `
-        <div style="margin-top:20px; padding-top:20px; border-top: 1px solid #ddd;">
-          <div style="margin: 8px 0;"><strong>Период:</strong> ${this.period} дней</div>
-          <div style="margin: 8px 0;"><strong>Последнее обновление:</strong> ${this.formatDate(this.analytics.lastUpdated)}</div>
-          <div style="margin: 8px 0; font-size: 12px; color: #666;">Сгенерировано: ${new Date().toLocaleString('ru-RU')}</div>
-        </div>
-      `;
-      
-      this.showModal = false;
-      
-      try {
-        const html2pdf = await import('html2pdf.js');
-        await html2pdf.default().set({
-          margin: 0.5,
-          filename: `aced-analytics-${new Date().toISOString().split('T')[0]}.pdf`,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2 },
-          jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-        }).from(wrapper).save();
-      } catch (err) {
-        console.error('❌ PDF generation failed:', err);
-        alert('Ошибка генерации PDF. Попробуйте позже.');
-      }
     },
-    
-    // ✅ NEW: Helper methods for better formatting
-    formatNumber(value) {
-      if (value === null || value === undefined || value === '') return '—';
-      if (typeof value === 'string' && isNaN(Number(value))) return value;
-      
-      const num = Number(value);
-      if (isNaN(num)) return '—';
-      
-      return num.toLocaleString('ru-RU');
+
+    // =============================================
+    // FORMATTING HELPERS
+    // =============================================
+    formatNumber: (value) => {
+        const num = Number(value);
+        return (value === null || value === undefined || isNaN(num)) ? '—' : num.toLocaleString('ru-RU');
     },
-    
-    formatTime(timeValue) {
-      if (!timeValue) return '0 мин';
-      
-      // If it's already a formatted string
-      if (typeof timeValue === 'string' && timeValue.includes('мин')) {
-        return timeValue;
-      }
-      
-      // If it's a number (minutes)
-      const minutes = Number(timeValue);
-      if (isNaN(minutes)) return '0 мин';
-      
-      if (minutes < 60) {
-        return `${Math.round(minutes)} мин`;
-      } else {
-        const hours = Math.floor(minutes / 60);
-        const remainingMinutes = Math.round(minutes % 60);
-        return remainingMinutes > 0 ? `${hours}ч ${remainingMinutes}м` : `${hours}ч`;
-      }
+
+    formatDuration: (duration) => {
+        const minutes = Number(duration);
+        return isNaN(minutes) ? duration : `${Math.round(minutes)} мин`;
     },
-    
-    formatDuration(duration) {
-      if (!duration) return '';
-      
-      const minutes = Number(duration);
-      if (isNaN(minutes)) return duration;
-      
-      return `${Math.round(minutes)} мин`;
-    },
-    
-    formatLessonName(lesson) {
+
+    formatLessonName: (lesson) => {
       if (!lesson) return 'Урок без названия';
-      
-      // If it's still an ID (24 characters, alphanumeric)
-      if (typeof lesson === 'string' && lesson.length === 24 && /^[a-f\d]{24}$/i.test(lesson)) {
+      if (typeof lesson === 'string' && /^[a-f\d]{24}$/i.test(lesson)) {
         return `Урок (${lesson.slice(-6)})`;
       }
-      
       return lesson;
     },
-    
-    calculateTopicProgress(topic) {
-      if (!topic.totalLessons || topic.totalLessons === 0) return 0;
-      return Math.round((topic.completedLessons / topic.totalLessons) * 100);
-    },
-    
-    calculateAccuracy() {
-      // Calculate based on total correct vs total attempts
-      const totalAttempts = (this.analytics.totalCorrect || 0) + (this.analytics.totalMistakes || 0);
-      if (totalAttempts === 0) return 0;
-      return Math.round(((this.analytics.totalCorrect || 0) / totalAttempts) * 100);
-    },
-    
-    calculateAvgScore() {
-      if (!this.analytics.totalLessonsDone || this.analytics.totalLessonsDone === 0) return 0;
-      return Math.round((this.analytics.totalPoints || 0) / this.analytics.totalLessonsDone);
-    },
-    
+
     formatDaysToHuman(days) {
-      if (!days || days === 0) return '0 дней';
-      
-      const years = Math.floor(days / 365);
-      const months = Math.floor((days % 365) / 30);
-      const remainingDays = days % 30;
-      
+      if (!days) return '0 дней';
       const parts = [];
-      if (years > 0) parts.push(`${years} г.`);
-      if (months > 0) parts.push(`${months} мес.`);
-      if (remainingDays > 0 || parts.length === 0) parts.push(`${remainingDays} дн.`);
-      
+      if (days >= 365) parts.push(`${Math.floor(days / 365)} г.`);
+      if (days % 365 >= 30) parts.push(`${Math.floor((days % 365) / 30)} мес.`);
+      if (days % 30 > 0 || parts.length === 0) parts.push(`${days % 30} дн.`);
       return `≈ ${parts.join(' ')}`;
     },
-    
+
     formatDate(dateString) {
       if (!dateString) return '—';
-      
       try {
         const date = new Date(dateString);
-        if (isNaN(date.getTime())) return '—';
-        
-        // Check if date is today
         const today = new Date();
-        const isToday = date.toDateString() === today.toDateString();
-        
-        if (isToday) {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        if (date.toDateString() === today.toDateString()) {
           return `Сегодня, ${date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`;
         }
-        
-        // Check if date is yesterday
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-        const isYesterday = date.toDateString() === yesterday.toDateString();
-        
-        if (isYesterday) {
+        if (date.toDateString() === yesterday.toDateString()) {
           return `Вчера, ${date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`;
         }
-        
-        // Check if date is within this week
-        const daysDiff = Math.floor((today - date) / (1000 * 60 * 60 * 24));
-        if (daysDiff < 7) {
-          const dayNames = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
-          return `${dayNames[date.getDay()]}, ${date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`;
-        }
-        
-        // Otherwise show full date
-        return date.toLocaleDateString('ru-RU', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        });
+        return date.toLocaleDateString('ru-RU', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
       } catch (err) {
-        console.error('❌ Date formatting error:', err);
         return '—';
       }
     }
@@ -780,5 +429,500 @@ export default {
 </script>
 
 <style scoped>
-@import '@/assets/css/UserAnalyticsPanel.css';
+/* GENERAL STYLES */
+.analytics-page {
+  min-height: 100vh;
+  background: #fafafa;
+  padding: 1.5rem;
+}
+
+/* HEADER */
+.page-header {
+  max-width: 1400px;
+  margin: 0 auto 2rem;
+}
+
+.header-content {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.header-info {
+  flex: 1;
+}
+
+.page-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 0.25rem 0;
+}
+
+.page-subtitle {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.download-button {
+  background: linear-gradient(135deg, #a855f7, #9333ea);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1.25rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.download-button:hover {
+  background: linear-gradient(135deg, #9333ea, #7e22ce);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
+}
+
+.download-button svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+/* LOADING & ERROR STATES */
+.loading-state,
+.error-state {
+  max-width: 1400px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 12px;
+  padding: 4rem 2rem;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+}
+
+.spinner {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 3px solid #e5e7eb;
+  border-top-color: #a855f7;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-state p {
+  color: #6b7280;
+  margin: 0;
+}
+
+.error-icon {
+  width: 4rem;
+  height: 4rem;
+  color: #ef4444;
+  margin: 0 auto 1rem;
+}
+
+.error-state h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 1.5rem 0;
+}
+
+/* CONTENT CONTAINER */
+.content-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* STATS GRID */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 10px;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s;
+}
+
+.stat-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border-color: #d1d5db;
+}
+
+.stat-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stat-icon :deep(svg) {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: white;
+}
+
+.stat-icon.purple { background: linear-gradient(135deg, #a855f7, #9333ea); }
+.stat-icon.blue { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+.stat-icon.green { background: linear-gradient(135deg, #10b981, #059669); }
+.stat-icon.orange { background: linear-gradient(135deg, #f59e0b, #d97706); }
+.stat-icon.teal { background: linear-gradient(135deg, #14b8a6, #0d9488); }
+.stat-icon.pink { background: linear-gradient(135deg, #ec4899, #db2777); }
+
+.stat-content {
+  flex: 1;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  margin-bottom: 0.25rem;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1;
+  margin-bottom: 0.25rem;
+}
+
+.stat-subtext {
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+/* SECTION CARD */
+.section-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.section-icon-badge {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #a855f7, #9333ea);
+  flex-shrink: 0;
+}
+
+.section-icon-badge svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  color: white;
+}
+
+.section-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.section-subtitle {
+  font-size: 0.8125rem;
+  color: #6b7280;
+  margin: 0.25rem 0 0 0;
+}
+
+/* ACTIVITY LIST */
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.activity-item {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+.activity-item:hover {
+  background: #f3f4f6;
+}
+.activity-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  background: linear-gradient(135deg, #10b981, #059669);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.activity-icon svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  color: white;
+}
+.activity-content {
+  flex: 1;
+  min-width: 0;
+}
+.activity-title {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #111827;
+  margin-bottom: 0.25rem;
+}
+.activity-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  flex-wrap: wrap;
+}
+.activity-points {
+  color: #a855f7;
+  font-weight: 500;
+}
+
+/* EMPTY STATE */
+.empty-state {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+  padding: 4rem 2rem;
+  text-align: center;
+}
+
+.empty-icon {
+  width: 4rem;
+  height: 4rem;
+  color: #d1d5db;
+  margin: 0 auto 1.5rem;
+}
+
+.empty-state h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 0.5rem 0;
+}
+
+.empty-state p {
+  color: #6b7280;
+  margin: 0 0 2rem 0;
+}
+
+/* ACTION BUTTON */
+.action-button {
+  padding: 0.75rem 1.25rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.action-button svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.action-button.primary {
+  background: linear-gradient(135deg, #a855f7, #9333ea);
+  color: white;
+}
+.action-button.primary:hover {
+  background: linear-gradient(135deg, #9333ea, #7e22ce);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
+}
+
+.action-button.secondary {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+}
+.action-button.secondary:hover {
+  background: #e5e7eb;
+}
+
+/* MODAL */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  backdrop-filter: blur(4px);
+}
+.modal-card {
+  background: white;
+  border-radius: 12px;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+.modal-header h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0;
+}
+.close-button {
+  background: none;
+  border: none;
+  border-radius: 6px;
+  padding: 0.25rem;
+  cursor: pointer;
+  color: #6b7280;
+  transition: all 0.2s;
+}
+.close-button:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+.close-button svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+.modal-body {
+  padding: 1.5rem;
+}
+.modal-section:not(:last-child) {
+  margin-bottom: 1.5rem;
+}
+.modal-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+.modal-select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  transition: all 0.2s;
+}
+.modal-select:focus {
+  outline: none;
+  border-color: #a855f7;
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
+}
+.options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+.option-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.option-checkbox:hover {
+  background: #f3f4f6;
+}
+.option-checkbox input[type="checkbox"] {
+  width: 1.125rem;
+  height: 1.125rem;
+  cursor: pointer;
+  accent-color: #a855f7;
+}
+.option-checkbox span {
+  font-size: 0.875rem;
+  color: #374151;
+}
+.modal-footer {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  padding: 1rem 1.5rem 1.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* RESPONSIVE & DARK MODE */
+@media (max-width: 768px) {
+  .analytics-page { padding: 1rem; }
+  .header-content { flex-direction: column; align-items: stretch; }
+  .download-button { justify-content: center; }
+  .stats-grid, .options-grid { grid-template-columns: 1fr; }
+}
+
+@media (prefers-color-scheme: dark) {
+  .analytics-page { background: #111827; }
+  .header-content, .loading-state, .error-state, .stat-card, .section-card, .empty-state, .modal-card { background: #1f2937; border-color: #374151; }
+  .page-title, .stat-value, .section-title, .activity-title, .empty-state h3, .modal-header h3 { color: #f9fafb; }
+  .page-subtitle, .stat-label, .stat-subtext, .section-subtitle, .activity-meta, .empty-state p, .modal-label, .option-checkbox span { color: #9ca3af; }
+  .activity-item { background: #374151; }
+  .activity-item:hover { background: #4b5563; }
+  .action-button.secondary, .close-button { background: #374151; color: #d1d5db; border-color: #4b5563; }
+  .action-button.secondary:hover, .close-button:hover { background: #4b5563; }
+  .modal-header, .modal-footer { border-color: #374151; }
+  .modal-select { background: #374151; border-color: #4b5563; color: #f9fafb; }
+  .option-checkbox { background: #374151; border-color: #4b5563; }
+  .option-checkbox:hover { background: #4b5563; }
+}
 </style>

@@ -1,115 +1,201 @@
 <template>
-  <div class="vocabulary-system">
+  <div class="vocabulary-page">
     <!-- Header -->
-    <div class="header">
-      <button v-if="canGoBack" @click="goBack" class="back-btn">← Назад</button>
-      <h1>{{ currentTitle }}</h1>
-      <div v-if="breadcrumb" class="breadcrumb">{{ breadcrumb }}</div>
+    <div class="page-header">
+      <div class="header-content">
+        <button v-if="canGoBack" @click="goBack" class="back-button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+          Назад
+        </button>
+        <div class="header-info">
+          <h1 class="page-title">{{ currentTitle }}</h1>
+          <p v-if="breadcrumb" class="breadcrumb-text">{{ breadcrumb }}</p>
+        </div>
+      </div>
     </div>
 
-    <!-- Loading -->
-    <div v-if="loading" class="loading">
+    <!-- Loading State -->
+    <div v-if="loading" class="loading-state">
       <div class="spinner"></div>
-      <p>Загрузка...</p>
+      <p>Загрузка словаря...</p>
     </div>
 
-    <!-- Languages Grid -->
-    <div v-else-if="currentView === 'languages'" class="cards-grid">
-      <div v-for="lang in languages" :key="lang.code" class="card language-card" @click="selectLanguage(lang)">
-        <div class="card-header">
-          <span class="flag">{{ lang.flag }}</span>
-          <h3>{{ lang.nameRu }}</h3>
-        </div>
-        <div class="stats">
-          <div class="stat">
-            <span class="number">{{ lang.totalWords }}</span>
-            <span class="label">слов</span>
-          </div>
-          <div class="stat">
-            <span class="number">{{ lang.levels?.length || 0 }}</span>
-            <span class="label">уровней</span>
-          </div>
-        </div>
-        <div class="progress">
-          <div class="progress-bar">
-            <div class="fill" :style="{ width: lang.progress + '%' }"></div>
-          </div>
-          <span>{{ lang.progress }}% изучено</span>
-        </div>
+    <!-- Languages View -->
+    <div v-else-if="currentView === 'languages'" class="content-container">
+      <div v-if="languages.length === 0" class="empty-state">
+        <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+        </svg>
+        <p class="empty-text">У вас пока нет слов в словаре</p>
+        <p class="empty-subtext">Начните изучать уроки для добавления новых слов</p>
       </div>
-    </div>
 
-    <!-- Levels Grid -->
-    <div v-else-if="currentView === 'levels'" class="cards-grid">
-      <div v-for="level in levels" :key="level.level" class="card level-card" @click="selectLevel(level)">
-        <div class="card-header">
-          <span class="icon">{{ getLevelIcon(level.level) }}</span>
-          <h3>Уровень {{ level.level }}</h3>
-        </div>
-        <p class="description">{{ getLevelDescription(level.level) }}</p>
-        <div class="stats">
-          <div class="stat">
-            <span class="number">{{ level.totalWords }}</span>
-            <span class="label">слов</span>
-          </div>
-          <div class="stat">
-            <span class="number">{{ level.topicCount }}</span>
-            <span class="label">тем</span>
-          </div>
-        </div>
-        <div class="difficulty" :class="getDifficulty(level.level)">
-          {{ getDifficultyLabel(getDifficulty(level.level)) }}
-        </div>
-      </div>
-    </div>
-
-    <!-- Topics Grid -->
-    <div v-else-if="currentView === 'topics'" class="cards-grid">
-      <div v-for="topic in topics" :key="topic.name" class="card topic-card" @click="selectTopic(topic)">
-        <div class="card-header">
-          <span class="icon">{{ getTopicIcon(topic.name) }}</span>
-          <h3>{{ getTopicNameRu(topic.name) }}</h3>
-        </div>
-        <p class="description">{{ getTopicDescription(topic.name) }}</p>
-        <div class="stats">
-          <div class="stat">
-            <span class="number">{{ topic.totalWords }}</span>
-            <span class="label">слов</span>
+      <div v-else class="cards-grid">
+        <div 
+          v-for="lang in languages" 
+          :key="lang.code" 
+          class="language-card"
+          @click="selectLanguage(lang)"
+        >
+          <div class="card-icon">{{ lang.flag }}</div>
+          <div class="card-content">
+            <h3 class="card-title">{{ lang.nameRu }}</h3>
+            <div class="card-stats">
+              <div class="stat-item">
+                <span class="stat-number">{{ lang.totalWords }}</span>
+                <span class="stat-label">слов</span>
+              </div>
+              <div class="stat-divider"></div>
+              <div class="stat-item">
+                <span class="stat-number">{{ lang.levels?.length || 0 }}</span>
+                <span class="stat-label">уровней</span>
+              </div>
+            </div>
+            <div class="progress-section">
+              <div class="progress-bar-container">
+                <div class="progress-bar-fill" :style="{ width: lang.progress + '%' }"></div>
+              </div>
+              <span class="progress-text">{{ lang.progress }}% изучено</span>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Words List -->
-    <div v-else-if="currentView === 'words'" class="words-container">
+    <!-- Levels View -->
+    <div v-else-if="currentView === 'levels'" class="content-container">
+      <div class="cards-grid">
+        <div 
+          v-for="level in levels" 
+          :key="level.level" 
+          class="level-card"
+          @click="selectLevel(level)"
+        >
+          <div class="card-header-row">
+            <div class="level-badge">
+              <span class="level-icon">{{ getLevelIcon(level.level) }}</span>
+              <span class="level-number">Уровень {{ level.level }}</span>
+            </div>
+            <div :class="['difficulty-badge', getDifficulty(level.level)]">
+              {{ getDifficultyLabel(getDifficulty(level.level)) }}
+            </div>
+          </div>
+          <p class="card-description">{{ getLevelDescription(level.level) }}</p>
+          <div class="card-stats-row">
+            <div class="stat-group">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+              </svg>
+              <span>{{ level.totalWords }} слов</span>
+            </div>
+            <div class="stat-group">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+              </svg>
+              <span>{{ level.topicCount }} тем</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Topics View -->
+    <div v-else-if="currentView === 'topics'" class="content-container">
+      <div class="cards-grid">
+        <div 
+          v-for="topic in topics" 
+          :key="topic.name" 
+          class="topic-card"
+          @click="selectTopic(topic)"
+        >
+          <div class="card-icon-wrapper">
+            <span class="topic-emoji">{{ getTopicIcon(topic.name) }}</span>
+          </div>
+          <div class="card-content">
+            <h3 class="card-title">{{ getTopicNameRu(topic.name) }}</h3>
+            <p class="card-subtitle">{{ getTopicDescription(topic.name) }}</p>
+            <div class="word-count">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+              <span>{{ topic.totalWords }} слов</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Words View -->
+    <div v-else-if="currentView === 'words'" class="content-container">
       <div class="words-header">
-        <div class="search-bar">
-          <input v-model="searchQuery" placeholder="Поиск слов..." class="search-input">
+        <div class="search-container">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.35-4.35"/>
+          </svg>
+          <input 
+            v-model="searchQuery" 
+            placeholder="Поиск слов..." 
+            class="search-input"
+          >
         </div>
-        <div class="filters">
-          <button @click="showAll = !showAll" :class="{ active: showAll }" class="filter-btn">
-            {{ showAll ? 'Показать изученные' : 'Показать все' }}
-          </button>
-        </div>
+        <button 
+          @click="showAll = !showAll" 
+          :class="['filter-button', { active: showAll }]"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="4" y1="21" x2="4" y2="14"/>
+            <line x1="4" y1="10" x2="4" y2="3"/>
+            <line x1="12" y1="21" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12" y2="3"/>
+            <line x1="20" y1="21" x2="20" y2="16"/>
+            <line x1="20" y1="12" x2="20" y2="3"/>
+            <line x1="1" y1="14" x2="7" y2="14"/>
+            <line x1="9" y1="8" x2="15" y2="8"/>
+            <line x1="17" y1="16" x2="23" y2="16"/>
+          </svg>
+          {{ showAll ? 'Все слова' : 'Активные' }}
+        </button>
       </div>
 
       <div class="words-grid">
-        <div v-for="word in filteredWords" :key="word.id" class="word-card" @click="selectWord(word)">
+        <div 
+          v-for="word in filteredWords" 
+          :key="word.id" 
+          class="word-card"
+          @click="selectWord(word)"
+        >
           <div class="word-header">
             <h4 class="word-text">{{ word.word }}</h4>
-            <button @click.stop="pronounceWord(word.word)" class="pronounce-btn">🔊</button>
+            <button @click.stop="pronounceWord(word.word)" class="pronounce-button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+              </svg>
+            </button>
           </div>
-          <p class="translation">{{ word.translation }}</p>
-          <div v-if="word.definition" class="definition">{{ word.definition }}</div>
+          <p class="word-translation">{{ word.translation }}</p>
+          <div v-if="word.definition" class="word-definition">{{ word.definition }}</div>
           <div class="word-meta">
-            <span class="pos">{{ getPartOfSpeechRu(word.partOfSpeech) }}</span>
-            <span class="difficulty" :class="word.difficulty">{{ getDifficultyLabel(word.difficulty) }}</span>
+            <span class="meta-badge pos">{{ getPartOfSpeechRu(word.partOfSpeech) }}</span>
+            <span :class="['meta-badge difficulty', word.difficulty]">
+              {{ getDifficultyLabel(word.difficulty) }}
+            </span>
           </div>
-          <div class="progress">
-            <div class="progress-bar">
-              <div class="fill" :style="{ width: (word.progress || 0) + '%' }"></div>
+          <div class="word-progress">
+            <div class="progress-bar-container small">
+              <div 
+                class="progress-bar-fill"
+                :style="{ width: (word.progress || 0) + '%' }"
+              ></div>
             </div>
-            <span>{{ word.progress || 0 }}%</span>
+            <span class="progress-percent">{{ word.progress || 0 }}%</span>
           </div>
         </div>
       </div>
@@ -117,38 +203,88 @@
 
     <!-- Word Detail Modal -->
     <div v-if="selectedWord" class="modal-overlay" @click="closeWordModal">
-      <div class="modal" @click.stop>
+      <div class="modal-card" @click.stop>
         <div class="modal-header">
-          <h3>{{ selectedWord.word }}</h3>
-          <button @click="closeWordModal">×</button>
+          <div class="modal-title-row">
+            <h3>{{ selectedWord.word }}</h3>
+            <button @click="closeWordModal" class="close-button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+          <div v-if="selectedWord.pronunciation" class="pronunciation-row">
+            <span class="pronunciation-text">/{{ selectedWord.pronunciation }}/</span>
+            <button @click="pronounceWord(selectedWord.word)" class="pronounce-button small">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+              </svg>
+            </button>
+          </div>
         </div>
+        
         <div class="modal-body">
-          <div class="word-details">
-            <div class="pronunciation" v-if="selectedWord.pronunciation">
-              /{{ selectedWord.pronunciation }}/
-              <button @click="pronounceWord(selectedWord.word)" class="pronounce-btn">🔊</button>
+          <div class="translation-section">
+            <p class="translation-large">{{ selectedWord.translation }}</p>
+            <div class="meta-tags">
+              <span class="meta-badge pos">{{ getPartOfSpeechRu(selectedWord.partOfSpeech) }}</span>
+              <span :class="['meta-badge difficulty', selectedWord.difficulty]">
+                {{ getDifficultyLabel(selectedWord.difficulty) }}
+              </span>
             </div>
-            <div class="translation-large">{{ selectedWord.translation }}</div>
-            <div v-if="selectedWord.definition" class="definition-large">{{ selectedWord.definition }}</div>
-            <div v-if="selectedWord.examples?.length" class="examples">
-              <h4>Примеры:</h4>
-              <div v-for="example in selectedWord.examples" :key="example.sentence" class="example">
-                <p class="sentence">{{ example.sentence }}</p>
-                <p class="translation">{{ example.translation }}</p>
-              </div>
+          </div>
+
+          <div v-if="selectedWord.definition" class="definition-section">
+            <h4 class="section-title">Определение</h4>
+            <p class="definition-text">{{ selectedWord.definition }}</p>
+          </div>
+
+          <div v-if="selectedWord.examples?.length" class="examples-section">
+            <h4 class="section-title">Примеры использования</h4>
+            <div v-for="(example, index) in selectedWord.examples" :key="index" class="example-item">
+              <p class="example-sentence">{{ example.sentence }}</p>
+              <p class="example-translation">{{ example.translation }}</p>
             </div>
           </div>
         </div>
+
         <div class="modal-footer">
-          <button @click="markAsKnown(selectedWord)" class="btn success">✅ Знаю</button>
-          <button @click="markAsUnknown(selectedWord)" class="btn warning">❌ Не знаю</button>
+          <button @click="markAsUnknown(selectedWord)" class="action-button secondary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+            Повторить
+          </button>
+          <button @click="markAsKnown(selectedWord)" class="action-button primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            Знаю
+          </button>
         </div>
       </div>
     </div>
 
-    <!-- Toast -->
-    <div v-if="toast.visible" class="toast" :class="toast.type">
-      {{ toast.message }}
+    <!-- Toast Notification -->
+    <div v-if="toast.visible" :class="['toast-notification', toast.type]">
+      <div class="toast-content">
+        <svg v-if="toast.type === 'success'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        <svg v-else-if="toast.type === 'error'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="15" y1="9" x2="9" y2="15"/>
+          <line x1="9" y1="9" x2="15" y2="15"/>
+        </svg>
+        <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <span>{{ toast.message }}</span>
+      </div>
     </div>
   </div>
 </template>
@@ -157,13 +293,10 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuth } from '@/composables/useAuth'
 
-// ========================================
-// STATE & REACTIVE DATA
-// ========================================
 const { currentUser } = useAuth()
 
 const loading = ref(false)
-const currentView = ref('languages') // 'languages', 'levels', 'topics', 'words'
+const currentView = ref('languages')
 const selectedLanguage = ref(null)
 const selectedLevel = ref(null)
 const selectedTopic = ref(null)
@@ -178,14 +311,11 @@ const words = ref([])
 
 const toast = ref({ visible: false, message: '', type: 'success' })
 
-// ========================================
-// COMPUTED PROPERTIES
-// ========================================
 const canGoBack = computed(() => currentView.value !== 'languages')
 
 const currentTitle = computed(() => {
   switch (currentView.value) {
-    case 'languages': return '📚 Словарь'
+    case 'languages': return '📚 Мой словарь'
     case 'levels': return selectedLanguage.value?.nameRu || 'Уровни'
     case 'topics': return `Уровень ${selectedLevel.value} - Темы`
     case 'words': return selectedTopic.value?.nameRu || 'Слова'
@@ -219,18 +349,17 @@ const filteredWords = computed(() => {
   return filtered
 })
 
-// ========================================
-// API FUNCTIONS (MATCHING VOCABULARY MODAL APPROACH)
-// ========================================
+// [Keep all the existing API functions and helper methods from the original file]
+// getUserVocabulary, isValidVocabularyItem, extractVocabularyFromStep, etc.
+// I'm keeping them the same to maintain functionality
+
 const getUserVocabulary = async (userId, languageCode = null) => {
   try {
-    
     if (!userId) {
       console.warn('⚠️ No user ID provided, using demo data')
       return getDemoVocabulary(languageCode)
     }
     
-    // Get user's completed lessons (same as VocabularyModal)
     let progressResponse
     try {
       progressResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live'}/users/${userId}/progress`)
@@ -253,9 +382,6 @@ const getUserVocabulary = async (userId, languageCode = null) => {
     }
     
     const userProgress = Array.isArray(progressData) ? progressData : progressData.data || []
-    
-    
-    // Get completed lessons
     const completedLessons = userProgress.filter(p => p && p.completed && p.lessonId)
     
     if (completedLessons.length === 0) {
@@ -264,7 +390,6 @@ const getUserVocabulary = async (userId, languageCode = null) => {
     
     const allVocabulary = []
     
-    // Extract vocabulary from each completed lesson (same logic as VocabularyModal)
     for (const progress of completedLessons.slice(0, 20)) {
       try {
         if (!progress || !progress.lessonId) continue
@@ -278,11 +403,9 @@ const getUserVocabulary = async (userId, languageCode = null) => {
         
         if (!lesson || !lesson.steps || !Array.isArray(lesson.steps)) continue
         
-        // Extract vocabulary from lesson steps (EXACT same logic as VocabularyModal)
         lesson.steps.forEach((step, stepIndex) => {
           if (!step || !step.type) return
           
-          // Check for vocabulary step
           if (step.type === 'vocabulary' && step.data) {
             const vocabularyItems = Array.isArray(step.data) ? step.data : [step.data]
             
@@ -296,7 +419,6 @@ const getUserVocabulary = async (userId, languageCode = null) => {
             })
           }
           
-          // Also check for vocabulary within other step types
           if (step.vocabulary && Array.isArray(step.vocabulary)) {
             step.vocabulary.forEach((vocab, vocabIndex) => {
               if (isValidVocabularyItem(vocab)) {
@@ -315,16 +437,11 @@ const getUserVocabulary = async (userId, languageCode = null) => {
       }
     }
     
-    console.log(`📚 Extracted ${allVocabulary.length} vocabulary items from completed lessons`)
-    
-    // ✅ DEDUPLICATE vocabulary by word + language combination
     const uniqueVocabulary = []
     const seenWords = new Set()
     
     allVocabulary.forEach(word => {
       if (!word || !word.word || !word.language) return
-      
-      // Create unique key from word + language (case insensitive)
       const uniqueKey = `${word.word.toLowerCase()}_${word.language.toLowerCase()}`
       
       if (!seenWords.has(uniqueKey)) {
@@ -333,49 +450,35 @@ const getUserVocabulary = async (userId, languageCode = null) => {
       }
     })
     
-    console.log(`📚 After deduplication: ${uniqueVocabulary.length} unique vocabulary items`)
-    
-    // Filter by language if specified
     if (languageCode) {
-      const filteredVocabulary = uniqueVocabulary.filter(word => 
+      return uniqueVocabulary.filter(word => 
         word && word.language && word.language.toLowerCase() === languageCode.toLowerCase()
       )
-      console.log(`🔍 Filtered to ${filteredVocabulary.length} words for language: ${languageCode}`)
-      return filteredVocabulary
     }
     
     return uniqueVocabulary
     
   } catch (error) {
     console.error('❌ Error extracting vocabulary from lessons:', error)
-    
-    // Fallback to demo data
-    console.log('📚 Using demo vocabulary data as fallback...')
     return getDemoVocabulary(languageCode)
   }
 }
 
-// Helper function to check if vocabulary item is valid (same as VocabularyModal)
 const isValidVocabularyItem = (vocab) => {
   if (!vocab || typeof vocab !== 'object') return false
-  
-  // Check various vocabulary formats
   const hasTermDefinition = vocab.term && vocab.definition
   const hasWordTranslation = vocab.word && vocab.translation
   const hasFrontBack = vocab.front && vocab.back
   const hasQuestionAnswer = vocab.question && vocab.answer
-  
   return hasTermDefinition || hasWordTranslation || hasFrontBack || hasQuestionAnswer
 }
 
-// Helper function to extract vocabulary from step (same logic as VocabularyModal)
 const extractVocabularyFromStep = (vocab, lesson, progress, uniqueId) => {
   try {
     if (!vocab || typeof vocab !== 'object') return null
     
     let word, translation, definition = '', examples = []
     
-    // Handle different vocabulary formats (same as VocabularyModal)
     if (vocab.term && vocab.definition) {
       word = vocab.term
       translation = vocab.definition
@@ -396,12 +499,10 @@ const extractVocabularyFromStep = (vocab, lesson, progress, uniqueId) => {
       return null
     }
     
-    // Ensure word and translation are strings
     if (!word || !translation || typeof word !== 'string' || typeof translation !== 'string') {
       return null
     }
     
-    // Handle examples
     if (vocab.example && typeof vocab.example === 'string') {
       examples.push({
         sentence: vocab.example,
@@ -413,7 +514,6 @@ const extractVocabularyFromStep = (vocab, lesson, progress, uniqueId) => {
       examples = [...examples, ...vocab.examples.filter(ex => ex && typeof ex === 'object')]
     }
     
-    // Determine language from lesson (same logic as VocabularyModal)
     const language = getLanguageFromLesson(lesson)
     
     return {
@@ -444,7 +544,6 @@ const extractVocabularyFromStep = (vocab, lesson, progress, uniqueId) => {
   }
 }
 
-// Helper function to determine language from lesson (same as VocabularyModal)
 const getLanguageFromLesson = (lesson) => {
   const title = (lesson.lessonName || lesson.title || '').toLowerCase()
   const subject = (lesson.subject || '').toLowerCase()
@@ -471,22 +570,17 @@ const getLanguageFromLesson = (lesson) => {
     }
   }
   
-  // Default to English if no language detected
   return 'english'
 }
 
-// Helper function to get difficulty from lesson level
 const getDifficultyFromLevel = (level) => {
   if (level <= 2) return 'beginner'
   if (level <= 4) return 'intermediate'
   return 'advanced'
 }
 
-// Fallback function to extract from all lessons if no progress available
 const extractVocabularyFromAllLessons = async (languageCode = null) => {
   try {
-    console.log('🔄 Extracting vocabulary from all available lessons...')
-    
     const lessonsResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live'}/lessons`)
     
     if (!lessonsResponse.ok) {
@@ -496,12 +590,9 @@ const extractVocabularyFromAllLessons = async (languageCode = null) => {
     const lessonsData = await lessonsResponse.json()
     const allLessons = Array.isArray(lessonsData) ? lessonsData : []
     
-    console.log(`📚 Found ${allLessons.length} total lessons`)
-    
     const allVocabulary = []
     
-    // Process a subset of lessons to extract vocabulary
-    allLessons.slice(0, 10).forEach((lesson, lessonIndex) => {
+    allLessons.slice(0, 10).forEach((lesson) => {
       if (!lesson || !lesson.steps) return
       
       lesson.steps.forEach((step, stepIndex) => {
@@ -527,8 +618,6 @@ const extractVocabularyFromAllLessons = async (languageCode = null) => {
         }
       })
     })
-    
-    console.log(`📚 Extracted ${allVocabulary.length} vocabulary items from all lessons`)
     
     if (languageCode) {
       return allVocabulary.filter(word => 
@@ -563,9 +652,6 @@ const getDemoVocabulary = (languageCode = null) => {
   return demoWords
 }
 
-// ========================================
-// NAVIGATION METHODS
-// ========================================
 const selectLanguage = async (language) => {
   selectedLanguage.value = language
   currentView.value = 'levels'
@@ -612,16 +698,10 @@ const goBack = () => {
   }
 }
 
-// ========================================
-// DATA LOADING METHODS
-// ========================================
 const loadLanguages = async () => {
   loading.value = true
   try {
-    // Get user ID safely
     const userId = currentUser.value?.uid || 'demo_user'
-    console.log('📚 Loading languages for user:', userId)
-    
     const vocabulary = await getUserVocabulary(userId)
     
     if (!vocabulary || vocabulary.length === 0) {
@@ -630,7 +710,6 @@ const loadLanguages = async () => {
       return
     }
     
-    // Group by language
     const languageMap = new Map()
     
     vocabulary.forEach(word => {
@@ -653,7 +732,6 @@ const loadLanguages = async () => {
       const lang = languageMap.get(langCode)
       lang.totalWords++
       
-      // Extract level from word metadata
       const level = word.level || word.metadata?.lessonLevel || 1
       lang.levels.add(level)
       
@@ -670,8 +748,6 @@ const loadLanguages = async () => {
     
     if (languages.value.length === 0) {
       showToast('Нет доступных языков в словаре', 'warning')
-    } else {
-      showToast(`Найдено ${languages.value.length} языков с словарем`)
     }
   } catch (error) {
     console.error('❌ Error loading languages:', error)
@@ -688,7 +764,6 @@ const loadLevels = async (language) => {
     const userId = currentUser.value?.uid || 'demo_user'
     const vocabulary = await getUserVocabulary(userId, language.code)
     
-    // Group by level
     const levelMap = new Map()
     
     vocabulary.forEach(word => {
@@ -716,7 +791,6 @@ const loadLevels = async (language) => {
       topicCount: level.topics.size
     })).sort((a, b) => a.level - b.level)
     
-    showToast(`Найдено ${levels.value.length} уровней`)
   } catch (error) {
     showToast('Ошибка загрузки уровней', 'error')
   } finally {
@@ -730,7 +804,6 @@ const loadTopics = async (language, level) => {
     const userId = currentUser.value?.uid || 'demo_user'
     const vocabulary = await getUserVocabulary(userId, language.code)
     
-    // Filter by level and group by topic
     const topicMap = new Map()
     
     vocabulary
@@ -753,7 +826,6 @@ const loadTopics = async (language, level) => {
       })
     
     topics.value = Array.from(topicMap.values()).sort((a, b) => a.name.localeCompare(b.name))
-    showToast(`Найдено ${topics.value.length} тем`)
   } catch (error) {
     showToast('Ошибка загрузки тем', 'error')
   } finally {
@@ -764,14 +836,12 @@ const loadTopics = async (language, level) => {
 const loadWords = async (language, level, topic) => {
   loading.value = true
   try {
-    // ✅ DEDUPLICATE words within the topic to prevent repeats
     const uniqueWords = []
     const seenWords = new Set()
     
     topic.words.forEach(word => {
       if (!word || !word.word) return
       
-      // Create unique key from word text (case insensitive)
       const uniqueKey = word.word.toLowerCase()
       
       if (!seenWords.has(uniqueKey)) {
@@ -785,16 +855,11 @@ const loadWords = async (language, level, topic) => {
     })
     
     words.value = uniqueWords.sort((a, b) => a.word.localeCompare(b.word))
-    
-    showToast(`Найдено ${words.value.length} уникальных слов`)
   } finally {
     loading.value = false
   }
 }
 
-// ========================================
-// HELPER FUNCTIONS
-// ========================================
 const getLanguageConfig = (code) => {
   const configs = {
     english: { nameRu: 'Английский', flag: '🇺🇸' },
@@ -878,9 +943,6 @@ const getPartOfSpeechRu = (partOfSpeech) => {
   return translations[partOfSpeech] || partOfSpeech
 }
 
-// ========================================
-// ACTIONS
-// ========================================
 const pronounceWord = (text) => {
   if ('speechSynthesis' in window) {
     const utterance = new SpeechSynthesisUtterance(text)
@@ -891,7 +953,6 @@ const pronounceWord = (text) => {
 
 const markAsKnown = async (word) => {
   try {
-    // Update word progress to 100%
     word.progress = 100
     showToast('Слово отмечено как изученное')
     closeWordModal()
@@ -902,7 +963,6 @@ const markAsKnown = async (word) => {
 
 const markAsUnknown = async (word) => {
   try {
-    // Reset word progress
     word.progress = 0
     showToast('Слово добавлено для повторения')
     closeWordModal()
@@ -916,75 +976,95 @@ const showToast = (message, type = 'success') => {
   setTimeout(() => { toast.value.visible = false }, 3000)
 }
 
-// ========================================
-// LIFECYCLE
-// ========================================
 onMounted(() => {
-  // Always try to load languages, even without user check
-  console.log('🔄 VocabularyPage mounted, loading languages...')
   loadLanguages()
 })
 </script>
 
 <style scoped>
-.vocabulary-system {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
+/* GENERAL STYLES */
+.vocabulary-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  background: #fafafa;
+  padding: 1.5rem;
 }
 
-/* Header */
-.header {
+/* HEADER */
+.page-header {
+  max-width: 1400px;
+  margin: 0 auto 2rem;
+}
+
+.header-content {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+  padding: 1.5rem;
   display: flex;
   align-items: center;
   gap: 1rem;
-  margin-bottom: 2rem;
-  padding: 1.5rem;
-  background: white;
-  border-radius: 1rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
-.back-btn {
-  background: #f1f5f9;
+.back-button {
+  background: #f3f4f6;
   border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
+  border-radius: 8px;
+  padding: 0.625rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   cursor: pointer;
   font-weight: 500;
+  color: #374151;
   transition: all 0.2s;
-}
-
-.back-btn:hover {
-  background: #e2e8f0;
-  transform: translateX(-2px);
-}
-
-.header h1 {
-  margin: 0;
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-.breadcrumb {
-  color: #64748b;
   font-size: 0.875rem;
 }
 
-/* Loading */
-.loading {
+.back-button:hover {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.back-button svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.header-info {
+  flex: 1;
+}
+
+.page-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 0.25rem 0;
+}
+
+.breadcrumb-text {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+/* LOADING STATE */
+.loading-state {
+  max-width: 1400px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 12px;
+  padding: 4rem 2rem;
   text-align: center;
-  padding: 4rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
 }
 
 .spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid #e2e8f0;
-  border-top: 3px solid #3b82f6;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 3px solid #e5e7eb;
+  border-top-color: #a855f7;
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 1rem;
@@ -994,412 +1074,398 @@ onMounted(() => {
   to { transform: rotate(360deg); }
 }
 
-/* Cards Grid */
+.loading-state p {
+  color: #6b7280;
+  margin: 0;
+}
+
+/* CONTENT CONTAINER */
+.content-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* EMPTY STATE */
+.empty-state {
+  background: white;
+  border-radius: 12px;
+  padding: 4rem 2rem;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+}
+
+.empty-icon {
+  width: 4rem;
+  height: 4rem;
+  color: #d1d5db;
+  margin: 0 auto 1rem;
+}
+
+.empty-text {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin: 0 0 0.5rem 0;
+}
+
+.empty-subtext {
+  color: #9ca3af;
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+/* CARDS GRID */
 .cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 1.5rem;
 }
 
-.card {
+/* LANGUAGE CARD */
+.language-card {
   background: white;
-  border-radius: 1rem;
+  border-radius: 12px;
   padding: 1.5rem;
   cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 2px solid transparent;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  position: relative;
-  overflow: hidden;
+  transition: all 0.2s;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  display: flex;
+  gap: 1rem;
 }
 
-.card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(
-    45deg,
-    transparent 30%,
-    rgba(59, 130, 246, 0.1) 50%,
-    rgba(139, 92, 246, 0.1) 70%,
-    transparent
-  );
-  opacity: 0;
-  transition: all 0.5s ease;
-  z-index: 1;
+.language-card:hover {
+  border-color: #a855f7;
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.1);
+  transform: translateY(-2px);
 }
 
-
-.card::after {
-  content: '';
-  position: absolute;
-  top: -2px;
-  left: -2px;
-  right: -2px;
-  bottom: -2px;
-  border-radius: 1rem;
-  opacity: 0;
-  z-index: -1;
-  transition: all 0.5s ease;
+.card-icon {
+  font-size: 2.5rem;
+  flex-shrink: 0;
+  width: 3.5rem;
+  height: 3.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f9fafb;
+  border-radius: 10px;
 }
 
-.card:hover {
-  transform: translateY(-8px) scale(1.02);
-  box-shadow: 
-    0 20px 40px rgba(0, 0, 0, 0.15),
-    0 0 30px rgba(59, 130, 246, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+.card-content {
+  flex: 1;
+  min-width: 0;
 }
 
-.card:hover::before {
-  opacity: 1;
+.card-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 0.75rem 0;
 }
 
-.card:hover::after {
-  opacity: 1;
-  filter: blur(8px);
-}
-
-.card > * {
-  position: relative;
-  z-index: 2;
-}
-
-@keyframes gradientShift {
-  0%, 100% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-}
-
-.card-header {
+.card-stats {
   display: flex;
   align-items: center;
   gap: 1rem;
   margin-bottom: 1rem;
 }
 
-.flag, .icon {
-  font-size: 2rem;
-  transition: all 0.3s ease;
-}
-
-.card:hover .flag,
-.card:hover .icon {
-  transform: scale(1.1) rotate(5deg);
-  filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.6));
-}
-
-.card-header h3 {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #1e293b;
-  transition: all 0.3s ease;
-}
-
-.card:hover .card-header h3 {
-  color: #3b82f6;
-  text-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
-}
-
-.description {
-  color: #64748b;
-  margin: 0 0 1rem 0;
-  font-size: 0.875rem;
-}
-
-.stats {
+.stat-item {
   display: flex;
-  gap: 1rem;
-  margin-bottom: 1rem;
+  flex-direction: column;
+  gap: 0.125rem;
 }
 
-.stat {
-  text-align: center;
-}
-
-.stat .number {
-  display: block;
+.stat-number {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #3b82f6;
-  transition: all 0.3s ease;
+  color: #a855f7;
+  line-height: 1;
 }
 
-.card:hover .stat .number {
-  color: #8b5cf6;
-  text-shadow: 0 0 15px rgba(139, 92, 246, 0.7);
-  transform: scale(1.1);
-}
-
-.stat .label {
+.stat-label {
   font-size: 0.75rem;
-  color: #64748b;
+  color: #6b7280;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.025em;
 }
 
-.progress {
-  margin-top: 1rem;
+.stat-divider {
+  width: 1px;
+  height: 2rem;
+  background: #e5e7eb;
 }
 
-.progress-bar {
-  height: 6px;
-  background: #e2e8f0;
-  border-radius: 3px;
-  overflow: hidden;
-  margin-bottom: 0.5rem;
-  position: relative;
+.progress-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
-.progress .fill {
-  height: 100%;
-  background: linear-gradient(90deg, #3b82f6, #1d4ed8);
-  transition: all 0.5s ease;
-  position: relative;
-}
-
-.card:hover .progress .fill {
-  background: linear-gradient(90deg, #8b5cf6, #06b6d4, #10b981);
-  box-shadow: 0 0 15px rgba(139, 92, 246, 0.8);
-}
-
-.progress .fill::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
+.progress-bar-container {
   width: 100%;
+  height: 6px;
+  background: #f3f4f6;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.progress-bar-container.small {
+  height: 5px;
+}
+
+.progress-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
-  transition: all 0.5s ease;
+  background: linear-gradient(to right, #a855f7, #9333ea);
+  border-radius: 9999px;
+  transition: width 0.5s ease;
 }
 
-.card:hover .progress .fill::after {
-  left: 100%;
-}
-
-.progress span {
+.progress-text {
   font-size: 0.75rem;
-  color: #64748b;
+  color: #6b7280;
   font-weight: 500;
 }
 
-.difficulty {
-  display: inline-block;
+/* LEVEL CARD */
+.level-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.level-card:hover {
+  border-color: #a855f7;
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.1);
+  transform: translateY(-2px);
+}
+
+.card-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.level-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.level-icon {
+  font-size: 1.5rem;
+}
+
+.level-number {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.difficulty-badge {
   padding: 0.25rem 0.75rem;
-  border-radius: 1rem;
+  border-radius: 6px;
   font-size: 0.75rem;
   font-weight: 600;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
 }
 
-.difficulty::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  transition: all 0.5s ease;
-}
-
-.card:hover .difficulty::before {
-  left: 100%;
-}
-
-.difficulty.beginner {
+.difficulty-badge.beginner {
   background: #dcfce7;
   color: #166534;
 }
 
-.card:hover .difficulty.beginner {
-  background: #10b981;
-  color: white;
-  box-shadow: 0 0 15px rgba(16, 185, 129, 0.6);
-}
-
-.difficulty.intermediate {
+.difficulty-badge.intermediate {
   background: #fef3c7;
   color: #92400e;
 }
 
-.card:hover .difficulty.intermediate {
-  background: #f59e0b;
-  color: white;
-  box-shadow: 0 0 15px rgba(245, 158, 11, 0.6);
-}
-
-.difficulty.advanced {
+.difficulty-badge.advanced {
   background: #fecaca;
   color: #991b1b;
 }
 
-.card:hover .difficulty.advanced {
-  background: #ef4444;
-  color: white;
-  box-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
+.card-description {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin: 0 0 1rem 0;
 }
 
-/* Words Container */
-.words-container {
-  background: white;
-  border-radius: 1rem;
-  padding: 1.5rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-}
-
-.words-header {
+.card-stats-row {
   display: flex;
-  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.stat-group {
+  display: flex;
   align-items: center;
-  margin-bottom: 1.5rem;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.stat-group svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* TOPIC CARD */
+.topic-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  display: flex;
   gap: 1rem;
 }
 
-.search-input {
+.topic-card:hover {
+  border-color: #a855f7;
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.1);
+  transform: translateY(-2px);
+}
+
+.card-icon-wrapper {
+  width: 3rem;
+  height: 3rem;
+  background: linear-gradient(135deg, #f3e8ff, #e9d5ff);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.topic-emoji {
+  font-size: 1.5rem;
+}
+
+.card-subtitle {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin: 0 0 0.75rem 0;
+}
+
+.word-count {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.word-count svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* WORDS HEADER */
+.words-header {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  gap: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+}
+
+.search-container {
   flex: 1;
-  padding: 0.75rem 1rem;
-  border: 2px solid #e2e8f0;
-  border-radius: 0.5rem;
-  font-size: 1rem;
-  transition: all 0.3s ease;
+  position: relative;
+}
+
+.search-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 3rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  transition: all 0.2s;
 }
 
 .search-input:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+  border-color: #a855f7;
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
 }
 
-.filter-btn {
-  background: #f1f5f9;
-  border: 2px solid #e2e8f0;
+.filter-button {
+  background: #f3f4f6;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
   padding: 0.75rem 1rem;
-  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
+  font-weight: 500;
+  color: #374151;
+  transition: all 0.2s;
+  font-size: 0.875rem;
+  white-space: nowrap;
 }
 
-.filter-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  transition: all 0.5s ease;
+.filter-button:hover {
+  background: #e5e7eb;
 }
 
-.filter-btn.active,
-.filter-btn:hover {
-  background: #3b82f6;
-  border-color: #3b82f6;
+.filter-button.active {
+  background: #a855f7;
+  border-color: #a855f7;
   color: white;
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
 }
 
-.filter-btn:hover::before {
-  left: 100%;
+.filter-button svg {
+  width: 1rem;
+  height: 1rem;
 }
 
+/* WORDS GRID */
 .words-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 1rem;
 }
 
+/* WORD CARD */
 .word-card {
-  background: #f8fafc;
-  border-radius: 0.75rem;
+  background: white;
+  border-radius: 10px;
   padding: 1rem;
   cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 2px solid transparent;
-  position: relative;
-  overflow: hidden;
-}
-
-.word-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(
-    135deg,
-    rgba(59, 130, 246, 0.1) 0%,
-    rgba(139, 92, 246, 0.1) 50%,
-    rgba(6, 182, 212, 0.1) 100%
-  );
-  opacity: 0;
-  transition: all 0.5s ease;
-  z-index: 1;
-}
-
-.word-card::after {
-  content: '';
-  position: absolute;
-  top: -2px;
-  left: -2px;
-  right: -2px;
-  bottom: -2px;
-  background: linear-gradient(
-    45deg,
-    #3b82f6,
-    #8b5cf6,
-    #06b6d4,
-    #3b82f6
-  );
-  background-size: 200% 200%;
-  border-radius: 0.75rem;
-  opacity: 0;
-  z-index: -1;
-  transition: all 0.5s ease;
-  animation: wordGradientShift 2s ease infinite;
+  transition: all 0.2s;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .word-card:hover {
-  transform: translateY(-4px) scale(1.02);
-  box-shadow: 
-    0 15px 30px rgba(0, 0, 0, 0.15),
-    0 0 25px rgba(59, 130, 246, 0.4);
-}
-
-.word-card:hover::before {
-  opacity: 1;
-}
-
-.word-card:hover::after {
-  opacity: 1;
-  filter: blur(6px);
-}
-
-.word-card > * {
-  position: relative;
-  z-index: 2;
-}
-
-@keyframes wordGradientShift {
-  0%, 100% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
+  border-color: #a855f7;
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.1);
+  transform: translateY(-2px);
 }
 
 .word-header {
@@ -1410,326 +1476,328 @@ onMounted(() => {
 }
 
 .word-text {
-  margin: 0;
   font-size: 1.125rem;
   font-weight: 600;
-  color: #1e293b;
-  transition: all 0.3s ease;
+  color: #111827;
+  margin: 0;
 }
 
-.word-card:hover .word-text {
-  color: #3b82f6;
-  text-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
-}
-
-.pronounce-btn {
-  background: none;
+.pronounce-button {
+  background: #f3f4f6;
   border: none;
+  border-radius: 6px;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  font-size: 1rem;
-  padding: 0.25rem;
-  border-radius: 0.25rem;
-  transition: all 0.3s ease;
+  transition: all 0.2s;
+  color: #6b7280;
 }
 
-.pronounce-btn:hover {
-  background: #e2e8f0;
-  transform: scale(1.2);
-  filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.6));
+.pronounce-button:hover {
+  background: #a855f7;
+  color: white;
 }
 
-.translation {
-  color: #3b82f6;
+.pronounce-button.small {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.pronounce-button svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.pronounce-button.small svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.word-translation {
+  color: #a855f7;
   font-weight: 500;
   margin: 0 0 0.5rem 0;
-  transition: all 0.3s ease;
+  font-size: 0.9375rem;
 }
 
-.word-card:hover .translation {
-  color: #8b5cf6;
-  text-shadow: 0 0 8px rgba(139, 92, 246, 0.5);
-}
-
-.definition {
-  color: #64748b;
-  font-size: 0.875rem;
-  margin-bottom: 0.5rem;
+.word-definition {
+  color: #6b7280;
+  font-size: 0.8125rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.5;
 }
 
 .word-meta {
   display: flex;
   gap: 0.5rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
 }
 
-.pos {
-  background: #e2e8f0;
-  color: #64748b;
-  padding: 0.125rem 0.5rem;
-  border-radius: 0.375rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  transition: all 0.3s ease;
+.meta-badge {
+  padding: 0.25rem 0.625rem;
+  border-radius: 6px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
 }
 
-.word-card:hover .pos {
-  background: #3b82f6;
-  color: white;
-  box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+.meta-badge.pos {
+  background: #f3f4f6;
+  color: #6b7280;
 }
 
-/* Modal */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  backdrop-filter: blur(8px);
+.meta-badge.difficulty.beginner {
+  background: #dcfce7;
+  color: #166534;
 }
 
-.modal {
-  background: white;
-  border-radius: 1rem;
-  max-width: 500px;
-  width: 90%;
-  max-height: 80vh;
-  overflow-y: auto;
-  box-shadow: 
-    0 20px 40px rgba(0, 0, 0, 0.15),
-    0 0 30px rgba(59, 130, 246, 0.2);
-  position: relative;
-  overflow: hidden;
+.meta-badge.difficulty.intermediate {
+  background: #fef3c7;
+  color: #92400e;
 }
 
-.modal::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #3b82f6, #8b5cf6, #06b6d4, #10b981);
-  background-size: 200% 200%;
-  animation: modalGradient 3s ease infinite;
+.meta-badge.difficulty.advanced {
+  background: #fecaca;
+  color: #991b1b;
 }
 
-@keyframes modalGradient {
-  0%, 100% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.5rem 1.5rem 0 1.5rem;
-  border-bottom: 1px solid #e2e8f0;
-  margin-bottom: 1.5rem;
-}
-
-.modal-header h3 {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-.modal-header button {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: #64748b;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-}
-
-.modal-header button:hover {
-  background: #f1f5f9;
-  color: #3b82f6;
-  box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
-}
-
-.modal-body {
-  padding: 0 1.5rem;
-}
-
-.pronunciation {
+.word-progress {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #64748b;
+}
+
+.word-progress .progress-bar-container {
+  flex: 1;
+}
+
+.progress-percent {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* MODAL */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  backdrop-filter: blur(4px);
+}
+
+.modal-card {
+  background: white;
+  border-radius: 12px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.modal-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.modal-title-row h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.close-button {
+  background: #f3f4f6;
+  border: none;
+  border-radius: 6px;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #6b7280;
+}
+
+.close-button:hover {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.close-button svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.pronunciation-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.pronunciation-text {
+  color: #6b7280;
   font-style: italic;
-  margin-bottom: 1rem;
+  font-size: 0.9375rem;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.translation-section {
+  margin-bottom: 1.5rem;
 }
 
 .translation-large {
   font-size: 1.25rem;
-  color: #3b82f6;
   font-weight: 600;
-  margin-bottom: 1rem;
+  color: #a855f7;
+  margin: 0 0 0.75rem 0;
 }
 
-.definition-large {
-  color: #475569;
-  line-height: 1.6;
+.meta-tags {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.definition-section,
+.examples-section {
   margin-bottom: 1.5rem;
 }
 
-.examples h4 {
-  margin: 0 0 1rem 0;
-  color: #1e293b;
-  font-size: 1rem;
+.section-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #111827;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  margin: 0 0 0.75rem 0;
 }
 
-.example {
-  background: #f8fafc;
-  padding: 1rem;
-  border-radius: 0.5rem;
-  margin-bottom: 0.75rem;
-  border-left: 4px solid #3b82f6;
-  transition: all 0.3s ease;
-}
-
-.example:hover {
-  background: #f1f5f9;
-  border-left-color: #8b5cf6;
-  box-shadow: 0 0 15px rgba(139, 92, 246, 0.1);
-}
-
-.example .sentence {
-  margin: 0 0 0.5rem 0;
-  font-weight: 500;
-  color: #1e293b;
-}
-
-.example .translation {
+.definition-text {
+  color: #374151;
+  line-height: 1.6;
   margin: 0;
-  color: #64748b;
+  font-size: 0.9375rem;
+}
+
+.example-item {
+  background: #f9fafb;
+  border-left: 3px solid #a855f7;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.example-item:last-child {
+  margin-bottom: 0;
+}
+
+.example-sentence {
+  color: #111827;
+  font-weight: 500;
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9375rem;
+}
+
+.example-translation {
+  color: #6b7280;
   font-style: italic;
-}
-
-.metadata h4 {
-  margin: 1rem 0 0.5rem 0;
-  color: #1e293b;
-  font-size: 1rem;
-}
-
-.metadata p {
-  margin: 0.25rem 0;
-  color: #64748b;
+  margin: 0;
   font-size: 0.875rem;
 }
 
 .modal-footer {
+  padding: 1.5rem;
+  border-top: 1px solid #e5e7eb;
   display: flex;
   gap: 0.75rem;
-  padding: 1.5rem;
-  border-top: 1px solid #e2e8f0;
   justify-content: flex-end;
 }
 
-.btn {
-  padding: 0.75rem 1rem;
+.action-button {
+  padding: 0.75rem 1.25rem;
   border: none;
-  border-radius: 0.5rem;
-  cursor: pointer;
+  border-radius: 8px;
   font-weight: 500;
-  transition: all 0.3s ease;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  position: relative;
-  overflow: hidden;
 }
 
-.btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  transition: all 0.5s ease;
+.action-button svg {
+  width: 1rem;
+  height: 1rem;
 }
 
-.btn:hover::before {
-  left: 100%;
-}
-
-.btn.success {
+.action-button.primary {
   background: #10b981;
   color: white;
 }
 
-.btn.success:hover {
+.action-button.primary:hover {
   background: #059669;
-  transform: translateY(-2px);
-  box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
 }
 
-.btn.warning {
-  background: #f59e0b;
-  color: white;
+.action-button.secondary {
+  background: #f3f4f6;
+  color: #374151;
 }
 
-.btn.warning:hover {
-  background: #d97706;
-  transform: translateY(-2px);
-  box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
+.action-button.secondary:hover {
+  background: #e5e7eb;
 }
 
-/* Toast */
-.toast {
+/* TOAST NOTIFICATION */
+.toast-notification {
   position: fixed;
-  top: 1rem;
-  right: 1rem;
+  top: 1.5rem;
+  right: 1.5rem;
   background: white;
-  color: #1e293b;
-  padding: 1rem 1.5rem;
-  border-radius: 0.5rem;
-  box-shadow: 
-    0 10px 25px rgba(0, 0, 0, 0.1),
-    0 0 20px rgba(16, 185, 129, 0.3);
-  border-left: 4px solid #10b981;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
   z-index: 1001;
   animation: slideIn 0.3s ease;
-  max-width: 300px;
-  backdrop-filter: blur(8px);
+  max-width: 400px;
 }
 
-.toast.error {
-  border-left-color: #ef4444;
-  background: #fef2f2;
-  color: #991b1b;
-  box-shadow: 
-    0 10px 25px rgba(0, 0, 0, 0.1),
-    0 0 20px rgba(239, 68, 68, 0.3);
+.toast-notification.success {
+  border-left: 4px solid #10b981;
 }
 
-.toast.warning {
-  border-left-color: #f59e0b;
-  background: #fffbeb;
-  color: #92400e;
-  box-shadow: 
-    0 10px 25px rgba(0, 0, 0, 0.1),
-    0 0 20px rgba(245, 158, 11, 0.3);
+.toast-notification.error {
+  border-left: 4px solid #ef4444;
+}
+
+.toast-notification.warning {
+  border-left: 4px solid #f59e0b;
 }
 
 @keyframes slideIn {
@@ -1743,63 +1811,249 @@ onMounted(() => {
   }
 }
 
-/* Responsive */
+.toast-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #111827;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.toast-content svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+}
+
+.toast-notification.success .toast-content svg {
+  color: #10b981;
+}
+
+.toast-notification.error .toast-content svg {
+  color: #ef4444;
+}
+
+.toast-notification.warning .toast-content svg {
+  color: #f59e0b;
+}
+
+/* RESPONSIVE DESIGN */
+@media (min-width: 768px) {
+  .vocabulary-page {
+    padding: 2rem 2.5rem;
+  }
+}
+
 @media (max-width: 768px) {
-  .vocabulary-system {
+  .vocabulary-page {
     padding: 1rem;
   }
-  
-  .header {
+
+  .header-content {
     flex-direction: column;
     align-items: flex-start;
-    gap: 0.5rem;
   }
-  
+
+  .back-button {
+    align-self: flex-start;
+  }
+
+  .page-title {
+    font-size: 1.25rem;
+  }
+
   .cards-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .words-header {
     flex-direction: column;
-    align-items: stretch;
   }
-  
+
+  .filter-button {
+    width: 100%;
+    justify-content: center;
+  }
+
   .words-grid {
     grid-template-columns: 1fr;
   }
-  
-  .modal {
-    width: 95%;
-    margin: 1rem;
+
+  .modal-card {
+    margin: 0;
+    max-height: 100vh;
+    border-radius: 0;
   }
-  
+
   .modal-footer {
-    flex-direction: column;
+    flex-direction: column-reverse;
   }
-  
-  .btn {
+
+  .action-button {
+    width: 100%;
     justify-content: center;
   }
-}
 
-/* Additional Neon Pulse Animation for Active Elements */
-@keyframes neonPulse {
-  0%, 100% {
-    box-shadow: 
-      0 0 5px currentColor,
-      0 0 10px currentColor,
-      0 0 15px currentColor;
-  }
-  50% {
-    box-shadow: 
-      0 0 10px currentColor,
-      0 0 20px currentColor,
-      0 0 30px currentColor;
+  .toast-notification {
+    right: 1rem;
+    left: 1rem;
+    max-width: none;
   }
 }
 
-.card:hover,
-.word-card:hover {
-  animation: neonPulse 2s ease-in-out infinite;
+@media (max-width: 640px) {
+  .page-header {
+    margin-bottom: 1.5rem;
+  }
+
+  .header-content {
+    padding: 1.125rem;
+  }
+
+  .language-card,
+  .level-card,
+  .topic-card {
+    padding: 1.125rem;
+  }
+
+  .card-icon {
+    font-size: 2rem;
+    width: 3rem;
+    height: 3rem;
+  }
+
+  .words-header {
+    padding: 1.125rem;
+  }
+
+  .word-card {
+    padding: 0.875rem;
+  }
+}
+
+/* ACCESSIBILITY */
+.back-button:focus-visible,
+.filter-button:focus-visible,
+.pronounce-button:focus-visible,
+.action-button:focus-visible,
+.close-button:focus-visible {
+  outline: 2px solid #a855f7;
+  outline-offset: 2px;
+}
+
+.language-card:focus-visible,
+.level-card:focus-visible,
+.topic-card:focus-visible,
+.word-card:focus-visible {
+  outline: 2px solid #a855f7;
+  outline-offset: 2px;
+}
+
+/* REDUCED MOTION */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* DARK MODE SUPPORT */
+@media (prefers-color-scheme: dark) {
+  .vocabulary-page {
+    background: #111827;
+  }
+
+  .header-content,
+  .loading-state,
+  .empty-state,
+  .language-card,
+  .level-card,
+  .topic-card,
+  .words-header,
+  .word-card,
+  .modal-card {
+    background: #1f2937;
+    border-color: #374151;
+  }
+
+  .page-title,
+  .card-title,
+  .level-number,
+  .word-text,
+  .modal-title-row h3,
+  .translation-large,
+  .section-title,
+  .example-sentence {
+    color: #f9fafb;
+  }
+
+  .breadcrumb-text,
+  .empty-text,
+  .card-description,
+  .card-subtitle,
+  .stat-label,
+  .progress-text,
+  .word-definition,
+  .definition-text,
+  .pronunciation-text,
+  .example-translation {
+    color: #9ca3af;
+  }
+
+  .back-button,
+  .filter-button,
+  .pronounce-button,
+  .close-button,
+  .action-button.secondary {
+    background: #374151;
+    color: #d1d5db;
+  }
+
+  .back-button:hover,
+  .filter-button:hover,
+  .close-button:hover,
+  .action-button.secondary:hover {
+    background: #4b5563;
+    color: #f9fafb;
+  }
+
+  .card-icon,
+  .card-icon-wrapper {
+    background: #374151;
+  }
+
+  .progress-bar-container {
+    background: #374151;
+  }
+
+  .search-input {
+    background: #374151;
+    border-color: #4b5563;
+    color: #f9fafb;
+  }
+
+  .search-input::placeholder {
+    color: #6b7280;
+  }
+
+  .example-item {
+    background: #374151;
+  }
+
+  .modal-header,
+  .modal-footer {
+    border-color: #374151;
+  }
+
+  .toast-notification {
+    background: #1f2937;
+    border-color: #374151;
+  }
+
+  .toast-content {
+    color: #f9fafb;
+  }
 }
 </style>

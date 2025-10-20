@@ -1,148 +1,260 @@
 <template>
   <div class="homework-page">
-    <div class="back-button">
-      <router-link to="/profile/homeworks" class="back-link">← Назад к списку</router-link>
+    <!-- Header -->
+    <div class="page-header">
+      <div class="header-content">
+        <router-link to="/profile/homeworks" class="back-button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+          Назад
+        </router-link>
+        <div class="header-info">
+          <h1 class="page-title">{{ homeworkTitle }}</h1>
+          <p v-if="homeworkSubject" class="subject-text">{{ homeworkSubject }}</p>
+        </div>
+      </div>
     </div>
-    
-    <h1>{{ homeworkTitle }}</h1>
 
-    <!-- Debug Info (visible in development) -->
-    <div v-if="showDebug" class="debug-info">
-      <h4>🔧 Debug Info:</h4>
+    <!-- Debug Info (development only) -->
+    <div v-if="showDebug" class="debug-section">
+      <h4>🔧 Debug Info</h4>
       <div class="debug-grid">
         <div><strong>Route params:</strong> {{ JSON.stringify($route.params) }}</div>
         <div><strong>Query params:</strong> {{ JSON.stringify($route.query) }}</div>
         <div><strong>Detected ID:</strong> {{ primaryId }}</div>
         <div><strong>Detected Type:</strong> {{ computedHomeworkType }}</div>
         <div><strong>Is Standalone:</strong> {{ isStandalone }}</div>
-        <div><strong>Questions Count:</strong> {{ questions.length }}</div>
-        <div><strong>User Answers:</strong> {{ userAnswers.length }}</div>
+        <div><strong>Questions:</strong> {{ questions.length }}</div>
       </div>
     </div>
 
-    <div v-if="loading" class="loading">
+    <!-- Loading State -->
+    <div v-if="loading" class="loading-state">
       <div class="spinner"></div>
       <p>Загрузка задания...</p>
     </div>
 
-    <div v-else-if="error" class="error">
-      <div class="error-icon">⚠️</div>
+    <!-- Error State -->
+    <div v-else-if="error" class="error-state">
+      <svg class="error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
       <h3>{{ error }}</h3>
       <p v-if="errorDetails">{{ errorDetails }}</p>
       <div class="error-actions">
-        <button @click="retryFetch" class="retry-btn">🔄 Попробовать снова</button>
-        <router-link to="/profile/homeworks" class="error-button">Вернуться к списку</router-link>
+        <button @click="retryFetch" class="action-button secondary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 4 23 10 17 10"/>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+          </svg>
+          Попробовать снова
+        </button>
+        <router-link to="/profile/homeworks" class="action-button primary">
+          Вернуться к списку
+        </router-link>
       </div>
     </div>
 
-    <div v-else-if="!primaryId" class="error">
-      <div class="error-icon">⚠️</div>
-      <h3>Ошибка загрузки</h3>
-      <p>ID задания не найден. Пожалуйста, вернитесь к списку домашних заданий.</p>
-      <router-link to="/profile/homeworks" class="error-button">Вернуться к списку</router-link>
-    </div>
-
-    <div v-else-if="questions.length === 0 && !loading" class="empty">
-      <div class="empty-icon">📝</div>
+    <!-- Empty State -->
+    <div v-else-if="questions.length === 0 && !loading" class="empty-state">
+      <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="16" y1="13" x2="8" y2="13"/>
+        <line x1="16" y1="17" x2="8" y2="17"/>
+        <polyline points="10 9 9 9 8 9"/>
+      </svg>
       <h3>В этом задании нет вопросов</h3>
-      <p>Обратитесь к преподавателю для получения дополнительной информации.</p>
-      <router-link to="/profile/homeworks" class="empty-button">Вернуться к списку</router-link>
+      <p>Обратитесь к преподавателю для получения дополнительной информации</p>
+      <router-link to="/profile/homeworks" class="action-button primary">
+        Вернуться к списку
+      </router-link>
     </div>
 
-    <div v-else-if="questions.length > 0">
-      <!-- Instructions Section -->
-      <div v-if="instructions" class="instructions-section">
-        <h3>📋 Инструкции</h3>
-        <div class="instructions-content">{{ instructions }}</div>
+    <!-- Main Content -->
+    <div v-else class="content-container">
+      <!-- Instructions -->
+      <div v-if="instructions" class="instructions-card">
+        <div class="card-header">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+          <h3>Инструкции</h3>
+        </div>
+        <p class="instructions-text">{{ instructions }}</p>
       </div>
 
-      <!-- Homework Info -->
-      <div class="homework-info">
-        <div class="info-item">
-          <span class="info-label">📝 Тип:</span>
-          <span class="info-value">{{ isStandalone ? 'Отдельное задание' : 'Урок' }}</span>
+      <!-- Homework Info Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon purple">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+          </div>
+          <div class="stat-content">
+            <div class="stat-label">Тип задания</div>
+            <div class="stat-value">{{ isStandalone ? 'Отдельное' : 'Урок' }}</div>
+          </div>
         </div>
-        <div v-if="questions.length > 0" class="info-item">
-          <span class="info-label">❓ Вопросов:</span>
-          <span class="info-value">{{ questions.length }}</span>
+        <div class="stat-card">
+          <div class="stat-icon blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </div>
+          <div class="stat-content">
+            <div class="stat-label">Всего вопросов</div>
+            <div class="stat-value">{{ questions.length }}</div>
+          </div>
         </div>
-        <div v-if="homeworkSubject" class="info-item">
-          <span class="info-label">📚 Предмет:</span>
-          <span class="info-value">{{ homeworkSubject }}</span>
+        <div class="stat-card">
+          <div class="stat-icon green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </div>
+          <div class="stat-content">
+            <div class="stat-label">Отвечено</div>
+            <div class="stat-value">{{ answeredQuestions }}/{{ questions.length }}</div>
+          </div>
         </div>
       </div>
 
-      <form @submit.prevent="submitHomework">
-        <div v-for="(q, i) in questions" :key="getQuestionKey(q, i)" class="question-block">
+      <!-- Progress Bar -->
+      <div class="progress-card">
+        <div class="progress-header">
+          <span class="progress-label">Прогресс выполнения</span>
+          <span class="progress-percentage">{{ progressPercentage }}%</span>
+        </div>
+        <div class="progress-bar-container">
+          <div 
+            class="progress-bar-fill"
+            :style="{ width: progressPercentage + '%' }"
+            :class="{ complete: progressPercentage === 100 }"
+          ></div>
+        </div>
+      </div>
+
+      <!-- Questions Form -->
+      <form @submit.prevent="submitHomework" class="questions-form">
+        <div 
+          v-for="(q, i) in questions" 
+          :key="getQuestionKey(q, i)" 
+          class="question-card"
+        >
           <div class="question-header">
-            <span class="question-number">{{ i + 1 }}</span>
+            <div class="question-number">{{ i + 1 }}</div>
             <div class="question-content">
-              <p class="question-text"><strong>{{ getQuestionText(q) }}</strong></p>
-              <div v-if="getQuestionInstruction(q)" class="question-instruction">
-                <em>{{ getQuestionInstruction(q) }}</em>
-              </div>
+              <h4 class="question-text">{{ getQuestionText(q) }}</h4>
+              <p v-if="getQuestionInstruction(q)" class="question-instruction">
+                {{ getQuestionInstruction(q) }}
+              </p>
+            </div>
+            <div v-if="getQuestionPoints(q) > 1" class="points-badge">
+              {{ getQuestionPoints(q) }} {{ getPointsText(getQuestionPoints(q)) }}
             </div>
           </div>
 
           <!-- Multiple Choice Questions -->
-          <div v-if="isMultipleChoice(q)" class="options">
-            <label v-for="(opt, j) in getQuestionOptions(q)" :key="j" class="option">
+          <div v-if="isMultipleChoice(q)" class="options-list">
+            <label 
+              v-for="(opt, j) in getQuestionOptions(q)" 
+              :key="j" 
+              class="option-item"
+              :class="{ selected: userAnswers[i] === getOptionValue(opt) }"
+            >
               <input
                 type="radio"
                 :name="'q' + i"
                 :value="getOptionValue(opt)"
                 v-model="userAnswers[i]"
                 @change="onAnswerChange(i, getOptionValue(opt))"
+                class="option-radio"
               />
-              <span class="option-text">{{ getOptionText(opt) }}</span>
+              <div class="option-content">
+                <div class="option-indicator"></div>
+                <span class="option-text">{{ getOptionText(opt) }}</span>
+              </div>
             </label>
           </div>
 
           <!-- Text Input Questions -->
-          <div v-else class="text-input">
+          <div v-else class="text-answer">
             <textarea
               v-model="userAnswers[i]"
               @input="onAnswerChange(i, userAnswers[i])"
               :placeholder="'Введите ваш ответ на вопрос ' + (i + 1)"
-              rows="3"
+              rows="4"
               class="answer-textarea"
             ></textarea>
-          </div>
-
-          <!-- Points Display -->
-          <div v-if="getQuestionPoints(q)" class="question-points">
-            <span class="points-badge">{{ getQuestionPoints(q) }} {{ getPointsText(getQuestionPoints(q)) }}</span>
+            <div class="answer-meta">
+              <svg v-if="userAnswers[i]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              <span v-if="userAnswers[i]">Ответ добавлен</span>
+              <span v-else>Ожидает ответа</span>
+            </div>
           </div>
         </div>
 
-        <div class="actions">
-          <button type="button" @click="saveHomework" class="save-btn" :disabled="saving">
-            <span v-if="saving">
-              <div class="btn-spinner"></div>
+        <!-- Form Actions -->
+        <div class="form-actions">
+          <button 
+            type="button" 
+            @click="saveHomework" 
+            class="action-button secondary"
+            :disabled="saving || answeredQuestions === 0"
+          >
+            <span v-if="saving" class="button-content">
+              <div class="button-spinner"></div>
               Сохранение...
             </span>
-            <span v-else>💾 Сохранить</span>
+            <span v-else class="button-content">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                <polyline points="17 21 17 13 7 13 7 21"/>
+                <polyline points="7 3 7 8 15 8"/>
+              </svg>
+              Сохранить черновик
+            </span>
           </button>
-          <button type="submit" class="submit-btn" :disabled="submitting || !canSubmit">
-            <span v-if="submitting">
-              <div class="btn-spinner"></div>
+          <button 
+            type="submit" 
+            class="action-button primary"
+            :disabled="submitting || !canSubmit"
+          >
+            <span v-if="submitting" class="button-content">
+              <div class="button-spinner"></div>
               Отправка...
             </span>
-            <span v-else>✅ Завершить</span>
+            <span v-else class="button-content">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              Завершить задание
+            </span>
           </button>
         </div>
 
-        <!-- Progress Indicator -->
-        <div class="progress-indicator">
-          <div class="progress-text">
-            Отвечено: {{ answeredQuestions }}/{{ questions.length }}
-          </div>
-          <div class="progress-bar">
-            <div 
-              class="progress-fill" 
-              :style="{ width: progressPercentage + '%' }"
-            ></div>
-          </div>
+        <!-- Helper Text -->
+        <div class="helper-text">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span v-if="canSubmit">Все вопросы отвечены! Вы можете завершить задание.</span>
+          <span v-else>Ответьте на все вопросы, чтобы завершить задание.</span>
         </div>
       </form>
     </div>
@@ -211,7 +323,6 @@ export default {
   },
   
   computed: {
-    // ✅ FIXED: Enhanced ID extraction from route
     computedHomeworkId() {
       const sources = [
         { name: 'props.homeworkId', value: this.homeworkId },
@@ -271,7 +382,6 @@ export default {
       const lessonId = this.computedLessonId;
       const type = this.computedHomeworkType;
       
-      // Use type to determine priority
       if (type === 'standalone' && hwId) {
         return hwId;
       }
@@ -280,7 +390,6 @@ export default {
         return lessonId;
       }
       
-      // Prefer homework ID over lesson ID if type is unknown
       if (hwId) {
         return hwId;
       }
@@ -292,7 +401,6 @@ export default {
       return null;
     },
 
-    // ✅ NEW: Progress tracking
     answeredQuestions() {
       return this.userAnswers.filter(answer => answer && answer.toString().trim() !== '').length;
     },
@@ -308,19 +416,14 @@ export default {
   },
   
   methods: {
-    // ✅ NEW: Extract ID from URL path as fallback
     extractIdFromPath() {
       const path = this.$route.path || window.location.pathname;
       const pathParts = path.split('/');
-      
-      // Look for MongoDB ObjectId pattern (24 hex characters)
       const mongoIdPattern = /^[a-f0-9]{24}$/i;
       const possibleId = pathParts.find(part => mongoIdPattern.test(part));
-      
       return possibleId || null;
     },
     
-    // ✅ NEW: Extract type from URL path
     extractTypeFromPath() {
       const path = this.$route.path || window.location.pathname;
       
@@ -333,7 +436,6 @@ export default {
       return null;
     },
 
-    // ✅ ENHANCED: Question helper methods for different data structures
     getQuestionKey(q, index) {
       return q._id || q.id || `q-${index}`;
     },
@@ -371,27 +473,24 @@ export default {
     },
 
     onAnswerChange(index, value) {
-      // Auto-save when user answers (debounced)
       clearTimeout(this.autoSaveTimeout);
       this.autoSaveTimeout = setTimeout(() => {
         if (this.answeredQuestions > 0) {
           this.autoSave();
         }
-      }, 2000); // Auto-save after 2 seconds of inactivity
+      }, 2000);
     },
 
     async autoSave() {
       if (!this.saving && this.answeredQuestions > 0) {
         try {
-          await this.saveHomework(true); // Silent save
+          await this.saveHomework(true);
         } catch (error) {
-          // Silent auto-save, don't show error
           console.warn('Auto-save failed:', error.message);
         }
       }
     },
 
-    // ✅ ENHANCED: Homework fetching with comprehensive error handling
     async fetchHomework() {
       try {
         this.loading = true;
@@ -407,9 +506,7 @@ export default {
           homeworkId,
           lessonId,
           primaryId,
-          suggestedType,
-          routeParams: this.$route.params,
-          routeQuery: this.$route.query
+          suggestedType
         });
         
         if (!primaryId) {
@@ -426,7 +523,6 @@ export default {
         
         const userId = user.uid;
 
-        // ✅ STRATEGY 1: Try as standalone homework
         const shouldTryStandalone = suggestedType === 'standalone' || 
                                    !suggestedType || 
                                    suggestedType === 'unknown';
@@ -450,21 +546,18 @@ export default {
                 this.questions = homeworkData.exercises || [];
                 this.userAnswers = this.questions.map(() => '');
 
-                // Load existing progress if available
                 if (userProgress && userProgress.answers) {
                   this.loadUserAnswers(userProgress.answers);
                 }
                 
                 console.log('✅ Successfully loaded standalone homework');
-                return; // Success - exit early
+                return;
               }
             }
           } catch (homeworkError) {
             console.warn('⚠️ Standalone homework approach failed:', homeworkError.message);
             
-            // Check if it's a 404 (homework not found) vs server error
             if (homeworkError.response?.status !== 404 && homeworkError.response?.status >= 500) {
-              // For server errors, don't continue to lesson approach
               this.error = 'Ошибка сервера при загрузке задания';
               this.errorDetails = homeworkError.message;
               return;
@@ -472,7 +565,6 @@ export default {
           }
         }
 
-        // ✅ STRATEGY 2: Try as lesson homework
         try {
           console.log('🔄 Trying lesson homework approach...');
           
@@ -498,19 +590,17 @@ export default {
             this.questions = questions;
             this.userAnswers = this.questions.map(() => '');
 
-            // Load user's progress if available
             if (homework && homework.answers) {
               this.loadUserAnswers(homework.answers);
             }
 
             console.log('✅ Successfully loaded lesson homework');
-            return; // Success
+            return;
           }
           
         } catch (lessonError) {
           console.error('❌ Lesson homework approach also failed:', lessonError);
           
-          // Set appropriate error message
           if (lessonError.response?.status === 404) {
             if (suggestedType === 'standalone') {
               this.error = 'Домашнее задание не найдено';
@@ -539,12 +629,10 @@ export default {
       }
     },
 
-    // ✅ ENHANCED: Load user answers with better handling
     loadUserAnswers(answers) {
       console.log('📝 Loading user answers:', answers);
       
       if (Array.isArray(answers)) {
-        // Answers is an array of objects with questionIndex and answer
         for (const entry of answers) {
           if (entry.questionIndex !== undefined && 
               entry.questionIndex >= 0 && 
@@ -553,7 +641,6 @@ export default {
           }
         }
       } else if (typeof answers === 'object') {
-        // Answers is an object with questionIndex as keys
         Object.entries(answers).forEach(([index, answer]) => {
           const idx = parseInt(index);
           if (!isNaN(idx) && idx >= 0 && idx < this.userAnswers.length) {
@@ -565,7 +652,6 @@ export default {
       console.log('✅ Loaded answers:', this.userAnswers);
     },
 
-    // ✅ ENHANCED: Save homework with better error handling
     async saveHomework(silent = false) {
       try {
         this.saving = true;
@@ -591,10 +677,8 @@ export default {
         let result;
         
         if (this.isStandalone) {
-          // Save standalone homework
           result = await saveStandaloneHomework(userId, this.primaryId, answers);
         } else {
-          // Save lesson homework
           result = await saveHomeworkAPI(userId, this.primaryId, answers);
         }
 
@@ -621,18 +705,16 @@ export default {
           this.$toast?.error(errorMessage);
         }
         
-        throw err; // Re-throw for caller to handle
+        throw err;
       } finally {
         this.saving = false;
       }
     },
 
-    // ✅ ENHANCED: Submit homework with comprehensive validation and feedback
     async submitHomework() {
       try {
         this.submitting = true;
         
-        // Validate all questions are answered
         const unansweredQuestions = this.userAnswers.filter(ans => !ans || ans.toString().trim() === '');
         if (unansweredQuestions.length > 0) {
           this.$toast?.warning(`Пожалуйста, ответьте на все вопросы. Осталось: ${unansweredQuestions.length}`);
@@ -660,10 +742,8 @@ export default {
         let result;
         
         if (this.isStandalone) {
-          // Submit standalone homework
           result = await submitStandaloneHomework(userId, this.primaryId, answers);
         } else {
-          // Submit lesson homework
           result = await submitHomeworkAPI(userId, this.primaryId, answers);
         }
 
@@ -675,7 +755,6 @@ export default {
         const correctAnswers = responseData?.correctAnswers || 0;
         const totalQuestions = responseData?.totalQuestions || this.questions.length;
         
-        // Enhanced success message
         let successMessage = `🎉 Домашнее задание завершено!\n`;
         successMessage += `📊 Ваша оценка: ${score}%`;
         
@@ -687,10 +766,8 @@ export default {
           successMessage += `\n✅ Правильных ответов: ${correctAnswers}/${totalQuestions}`;
         }
         
-        // Show detailed results
         this.$toast?.success(successMessage);
         
-        // Wait a bit before redirecting to let user see the success message
         setTimeout(() => {
           this.$router.push('/profile/homeworks');
         }, 3000);
@@ -698,7 +775,6 @@ export default {
       } catch (err) {
         console.error('❌ Error submitting homework:', err);
         
-        // ✅ ENHANCED: Better error handling with specific messages
         let errorMessage = 'Ошибка отправки ответов';
         
         if (err.response?.status === 404) {
@@ -723,7 +799,6 @@ export default {
       }
     },
 
-    // ✅ NEW: Retry fetch functionality
     async retryFetch() {
       this.retryCount++;
       console.log(`🔄 Retrying fetch (attempt ${this.retryCount})`);
@@ -748,7 +823,6 @@ export default {
     });
     console.groupEnd();
     
-    // Enable debug mode in development or with debug query param
     this.showDebug = process.env.NODE_ENV === 'development' || this.$route.query.debug === 'true';
   },
 
@@ -764,7 +838,6 @@ export default {
   },
 
   beforeUnmount() {
-    // Clear auto-save timeout
     if (this.autoSaveTimeout) {
       clearTimeout(this.autoSaveTimeout);
     }
@@ -778,10 +851,8 @@ export default {
       }
     },
 
-    // Watch for answer changes and update progress
     userAnswers: {
       handler() {
-        // Update progress when answers change
         this.$nextTick(() => {
           // Force reactivity update
         });
@@ -793,52 +864,86 @@ export default {
 </script>
 
 <style scoped>
+/* GENERAL STYLES */
 .homework-page {
-  max-width: 800px;
-  margin: auto;
-  padding: 2rem;
-  background: linear-gradient(to bottom right, #f0f4ff, #ffffff);
-  border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  min-height: 100vh;
+  background: #fafafa;
+  padding: 1.5rem;
+}
+
+/* HEADER */
+.page-header {
+  max-width: 900px;
+  margin: 0 auto 2rem;
+}
+
+.header-content {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
 .back-button {
-  margin-bottom: 1.5rem;
-}
-
-.back-link {
-  color: #6a5acd;
-  text-decoration: none;
-  font-size: 0.95rem;
-  display: inline-flex;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 8px;
+  padding: 0.625rem 1rem;
+  display: flex;
   align-items: center;
-  gap: 0.25rem;
-  transition: color 0.2s ease;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-weight: 500;
+  color: #374151;
+  transition: all 0.2s;
+  text-decoration: none;
+  font-size: 0.875rem;
 }
 
-.back-link:hover {
-  color: #5848c2;
+.back-button:hover {
+  background: #e5e7eb;
+  color: #111827;
 }
 
-h1 {
-  color: #2d3748;
-  margin-bottom: 2rem;
-  font-size: 2rem;
-  font-weight: 700;
+.back-button svg {
+  width: 1rem;
+  height: 1rem;
 }
 
-/* ✅ ENHANCED DEBUG STYLES */
-.debug-info {
+.header-info {
+  flex: 1;
+}
+
+.page-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 0.25rem 0;
+}
+
+.subject-text {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+/* DEBUG SECTION */
+.debug-section {
+  max-width: 900px;
+  margin: 0 auto 2rem;
   background: #1f2937;
   color: #f9fafb;
   padding: 1rem;
-  border-radius: 8px;
-  margin-bottom: 2rem;
+  border-radius: 12px;
   font-family: 'Courier New', monospace;
-  font-size: 0.85rem;
+  font-size: 0.8125rem;
 }
 
-.debug-info h4 {
+.debug-section h4 {
   color: #60a5fa;
   margin: 0 0 0.75rem 0;
 }
@@ -851,470 +956,687 @@ h1 {
 .debug-grid > div {
   background: #374151;
   padding: 0.5rem;
-  border-radius: 4px;
+  border-radius: 6px;
 }
 
-/* ✅ NEW HOMEWORK INFO SECTION */
-.homework-info {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+/* LOADING STATE */
+.loading-state {
+  max-width: 900px;
+  margin: 0 auto;
+  background: white;
   border-radius: 12px;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-}
-
-.info-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.info-label {
-  font-weight: 600;
-  color: #4a5568;
-}
-
-.info-value {
-  color: #2d3748;
-  font-weight: 500;
-}
-
-.loading {
+  padding: 4rem 2rem;
   text-align: center;
-  padding: 3rem;
-  color: #6a5acd;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
 }
 
 .spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #f3f4f6;
-  border-top: 4px solid #6a5acd;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 3px solid #e5e7eb;
+  border-top-color: #a855f7;
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 1rem;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  to { transform: rotate(360deg); }
 }
 
-.empty,
-.error {
+.loading-state p {
+  color: #6b7280;
+  margin: 0;
+}
+
+/* ERROR & EMPTY STATES */
+.error-state,
+.empty-state {
+  max-width: 900px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 12px;
+  padding: 4rem 2rem;
   text-align: center;
-  font-size: 1.3rem;
-  color: #6a5acd;
-  margin-top: 3rem;
-}
-
-.error {
-  color: #ef4444;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
 }
 
 .error-icon,
 .empty-icon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
+  width: 4rem;
+  height: 4rem;
+  color: #ef4444;
+  margin: 0 auto 1rem;
 }
 
-.error h3,
-.empty h3 {
-  color: #374151;
-  margin-bottom: 0.5rem;
+.empty-icon {
+  color: #d1d5db;
 }
 
-.error p,
-.empty p {
+.error-state h3,
+.empty-state h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 0.5rem 0;
+}
+
+.error-state p,
+.empty-state p {
   color: #6b7280;
-  font-size: 1rem;
-  margin-bottom: 1.5rem;
+  margin: 0 0 1.5rem 0;
 }
 
 .error-actions {
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
   justify-content: center;
   flex-wrap: wrap;
 }
 
-.error-button,
-.empty-button,
-.retry-btn {
-  display: inline-block;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  text-decoration: none;
-  font-weight: 600;
-  transition: all 0.2s ease;
-  border: none;
-  cursor: pointer;
+/* CONTENT CONTAINER */
+.content-container {
+  max-width: 900px;
+  margin: 0 auto;
 }
 
-.error-button,
-.empty-button {
-  background: #6a5acd;
-  color: white;
-}
-
-.error-button:hover,
-.empty-button:hover {
-  background: #5848c2;
-}
-
-.retry-btn {
-  background: #10b981;
-  color: white;
-}
-
-.retry-btn:hover {
-  background: #059669;
-}
-
-.instructions-section {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-.instructions-section h3 {
-  color: #374151;
-  margin: 0 0 1rem 0;
-  font-size: 1.25rem;
-  font-weight: 600;
-}
-
-.instructions-content {
-  color: #4a5568;
-  line-height: 1.6;
-  font-size: 1rem;
-}
-
-.question-block {
+/* INSTRUCTIONS CARD */
+.instructions-card {
   background: white;
-  padding: 1.5rem;
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(106, 90, 205, 0.1);
-  margin-bottom: 2rem;
-  transition: transform 0.2s ease;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
 }
 
-.question-block:hover {
-  transform: scale(1.01);
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.card-header svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #a855f7;
+}
+
+.card-header h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.instructions-text {
+  color: #374151;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* STATS GRID */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 10px;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s;
+}
+
+.stat-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border-color: #d1d5db;
+}
+
+.stat-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stat-icon svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: white;
+}
+
+.stat-icon.purple {
+  background: linear-gradient(135deg, #a855f7, #9333ea);
+}
+
+.stat-icon.blue {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+.stat-icon.green {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.stat-content {
+  flex: 1;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  margin-bottom: 0.25rem;
+}
+
+.stat-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+/* PROGRESS CARD */
+.progress-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.progress-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.progress-percentage {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #a855f7;
+}
+
+.progress-bar-container {
+  width: 100%;
+  height: 8px;
+  background: #f3f4f6;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(to right, #a855f7, #9333ea);
+  border-radius: 9999px;
+  transition: width 0.5s ease;
+}
+
+.progress-bar-fill.complete {
+  background: linear-gradient(to right, #10b981, #059669);
+}
+
+/* QUESTIONS FORM */
+.questions-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* QUESTION CARD */
+.question-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s;
+}
+
+.question-card:hover {
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.08);
 }
 
 .question-header {
   display: flex;
   align-items: flex-start;
   gap: 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 .question-number {
-  background: #6a5acd;
+  width: 2rem;
+  height: 2rem;
+  background: linear-gradient(135deg, #a855f7, #9333ea);
   color: white;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: 0.9375rem;
   flex-shrink: 0;
 }
 
 .question-content {
   flex: 1;
+  min-width: 0;
 }
 
 .question-text {
-  font-size: 1.1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
   margin: 0 0 0.5rem 0;
-  color: #333;
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 .question-instruction {
   color: #6b7280;
-  font-size: 0.9rem;
-  margin-top: 0.5rem;
-}
-
-.options {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-}
-
-.option {
-  background: #f9f9ff;
-  padding: 0.8rem 1rem;
-  border: 2px solid #e2e8f0;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.option:hover {
-  background: #ececff;
-  border-color: #c7d2fe;
-}
-
-.option input[type="radio"]:checked + .option-text {
-  font-weight: 600;
-  color: #6a5acd;
-}
-
-.option input[type="radio"] {
+  font-size: 0.875rem;
+  font-style: italic;
   margin: 0;
-  cursor: pointer;
-}
-
-.option-text {
-  flex: 1;
-  font-size: 1rem;
-  color: #374151;
-}
-
-.text-input {
-  margin-bottom: 1rem;
-}
-
-.answer-textarea {
-  width: 100%;
-  padding: 1rem;
-  border: 2px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-family: inherit;
-  resize: vertical;
-  min-height: 80px;
-  transition: border-color 0.3s ease;
-}
-
-.answer-textarea:focus {
-  outline: none;
-  border-color: #6a5acd;
-  box-shadow: 0 0 0 3px rgba(106, 90, 205, 0.1);
-}
-
-.question-points {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 0.5rem;
 }
 
 .points-badge {
   background: #fef3c7;
   color: #92400e;
   padding: 0.25rem 0.75rem;
-  border-radius: 12px;
-  font-size: 0.8rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
   font-weight: 600;
+  flex-shrink: 0;
 }
 
-/* ✅ ENHANCED PROGRESS INDICATOR */
-.progress-indicator {
-  background: #f8fafc;
-  padding: 1rem;
-  border-radius: 8px;
-  margin-top: 1.5rem;
-}
-
-.progress-text {
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: 0.5rem;
-  text-align: center;
-}
-
-.progress-bar {
-  width: 100%;
-  height: 8px;
-  background: #e5e7eb;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #6a5acd, #5848c2);
-  border-radius: 4px;
-  transition: width 0.3s ease;
-}
-
-.actions {
+/* OPTIONS LIST */
+.options-list {
   display: flex;
-  gap: 1rem;
-  margin-top: 2.5rem;
-  justify-content: flex-end;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
-button {
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
+.option-item {
   cursor: pointer;
-  transition: all 0.25s ease-in-out;
-  min-width: 120px;
+  transition: all 0.2s;
+}
+
+.option-item input[type="radio"] {
+  display: none;
+}
+
+.option-content {
+  background: #f9fafb;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: all 0.2s;
+}
+
+.option-item:hover .option-content {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.option-item.selected .option-content {
+  background: #f3e8ff;
+  border-color: #a855f7;
+}
+
+.option-indicator {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid #d1d5db;
+  border-radius: 50%;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.2s;
+}
+
+.option-item.selected .option-indicator {
+  border-color: #a855f7;
+  background: #a855f7;
+}
+
+.option-item.selected .option-indicator::after {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  background: white;
+  border-radius: 50%;
+}
+
+.option-text {
+  flex: 1;
+  color: #374151;
+  font-size: 0.9375rem;
+}
+
+.option-item.selected .option-text {
+  color: #111827;
+  font-weight: 500;
+}
+
+/* TEXT ANSWER */
+.text-answer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.answer-textarea {
+  width: 100%;
+  padding: 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 100px;
+  transition: all 0.2s;
+}
+
+.answer-textarea:focus {
+  outline: none;
+  border-color: #a855f7;
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
+}
+
+.answer-meta {
+  display: flex;
+  align-items: center;
   gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: #6b7280;
 }
 
-button:disabled {
-  opacity: 0.6;
+.answer-meta svg {
+  width: 1rem;
+  height: 1rem;
+  color: #10b981;
+}
+
+/* FORM ACTIONS */
+.form-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  padding-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.action-button {
+  padding: 0.875rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-button:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
-  transform: none !important;
 }
 
-.save-btn {
-  background-color: #e2e8f0;
-  color: #4a5568;
-  border: 2px solid #cbd5e0;
-}
-
-.save-btn:hover:not(:disabled) {
-  background-color: #cbd5e0;
-  transform: translateY(-1px);
-}
-
-.submit-btn {
+.action-button.primary {
   background: linear-gradient(135deg, #10b981, #059669);
   color: white;
 }
 
-.submit-btn:hover:not(:disabled) {
+.action-button.primary:hover:not(:disabled) {
   background: linear-gradient(135deg, #059669, #047857);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
-.submit-btn:disabled {
-  background: #9ca3af;
-  cursor: not-allowed;
+.action-button.secondary {
+  background: #f3f4f6;
+  color: #374151;
+  border: 2px solid #e5e7eb;
 }
 
-/* ✅ BUTTON SPINNER */
-.btn-spinner {
-  width: 16px;
-  height: 16px;
+.action-button.secondary:hover:not(:disabled) {
+  background: #e5e7eb;
+  border-color: #d1d5db;
+}
+
+.button-content {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.button-content svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.button-spinner {
+  width: 1rem;
+  height: 1rem;
   border: 2px solid transparent;
-  border-top: 2px solid currentColor;
+  border-top-color: currentColor;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin-right: 0.5rem;
 }
 
-/* ✅ RESPONSIVE DESIGN */
+/* HELPER TEXT */
+.helper-text {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.helper-text svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  color: #a855f7;
+}
+
+/* RESPONSIVE DESIGN */
+@media (min-width: 768px) {
+  .homework-page {
+    padding: 2rem 2.5rem;
+  }
+}
+
 @media (max-width: 768px) {
   .homework-page {
     padding: 1rem;
   }
-  
-  .debug-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .homework-info {
-    grid-template-columns: 1fr;
-  }
-  
-  .question-header {
+
+  .header-content {
     flex-direction: column;
-    gap: 0.75rem;
+    align-items: flex-start;
   }
-  
-  .question-number {
+
+  .back-button {
     align-self: flex-start;
   }
-  
-  .actions {
-    justify-content: stretch;
-    flex-direction: column;
+
+  .page-title {
+    font-size: 1.25rem;
   }
-  
-  button {
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .question-header {
+    flex-wrap: wrap;
+  }
+
+  .form-actions {
+    flex-direction: column-reverse;
+  }
+
+  .action-button {
     width: 100%;
   }
 
   .error-actions {
     flex-direction: column;
-    align-items: center;
-  }
-
-  .error-button,
-  .empty-button,
-  .retry-btn {
     width: 100%;
-    max-width: 300px;
+  }
+
+  .error-actions .action-button {
+    width: 100%;
   }
 }
 
-/* ✅ ENHANCED ANIMATIONS */
-.question-block {
-  animation: slideInUp 0.3s ease-out;
+@media (max-width: 640px) {
+  .page-header {
+    margin-bottom: 1.5rem;
+  }
+
+  .header-content,
+  .instructions-card,
+  .progress-card,
+  .question-card {
+    padding: 1.125rem;
+  }
+
+  .stat-card {
+    padding: 0.875rem;
+  }
 }
 
-@keyframes slideInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* ✅ FOCUS STATES FOR ACCESSIBILITY */
-.option:focus-within {
-  outline: 2px solid #6a5acd;
+/* ACCESSIBILITY */
+.back-button:focus-visible,
+.action-button:focus-visible,
+.option-item:focus-visible {
+  outline: 2px solid #a855f7;
   outline-offset: 2px;
 }
 
-button:focus {
-  outline: 2px solid #6a5acd;
-  outline-offset: 2px;
+.answer-textarea:focus-visible {
+  outline: none;
+  border-color: #a855f7;
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
 }
 
-.answer-textarea:focus {
-  border-color: #6a5acd;
-  box-shadow: 0 0 0 3px rgba(106, 90, 205, 0.1);
+/* REDUCED MOTION */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
-/* ✅ ENHANCED VISUAL FEEDBACK */
-.option input[type="radio"]:checked {
-  accent-color: #6a5acd;
-}
+/* DARK MODE SUPPORT */
+@media (prefers-color-scheme: dark) {
+  .homework-page {
+    background: #111827;
+  }
 
-.option:has(input[type="radio"]:checked) {
-  background: #ede9fe;
-  border-color: #6a5acd;
-  box-shadow: 0 0 0 1px rgba(106, 90, 205, 0.2);
-}
+  .header-content,
+  .loading-state,
+  .error-state,
+  .empty-state,
+  .instructions-card,
+  .stat-card,
+  .progress-card,
+  .question-card,
+  .helper-text {
+    background: #1f2937;
+    border-color: #374151;
+  }
 
-/* ✅ LOADING STATES */
-.submit-btn.submitting {
-  background: linear-gradient(135deg, #9ca3af, #6b7280);
-}
+  .page-title,
+  .card-header h3,
+  .stat-value,
+  .question-text,
+  .option-text {
+    color: #f9fafb;
+  }
 
-.save-btn.saving {
-  background-color: #9ca3af;
-  color: #6b7280;
+  .subject-text,
+  .instructions-text,
+  .stat-label,
+  .question-instruction,
+  .answer-meta {
+    color: #9ca3af;
+  }
+
+  .back-button,
+  .action-button.secondary {
+    background: #374151;
+    color: #d1d5db;
+    border-color: #4b5563;
+  }
+
+  .back-button:hover,
+  .action-button.secondary:hover:not(:disabled) {
+    background: #4b5563;
+    color: #f9fafb;
+  }
+
+  .option-content {
+    background: #374151;
+    border-color: #4b5563;
+  }
+
+  .option-item:hover .option-content {
+    background: #4b5563;
+    border-color: #6b7280;
+  }
+
+  .option-item.selected .option-content {
+    background: #2f254a;
+    border-color: #a855f7;
+  }
+
+  .answer-textarea {
+    background: #374151;
+    border-color: #4b5563;
+    color: #f9fafb;
+  }
+
+  .answer-textarea::placeholder {
+    color: #6b7280;
+  }
+
+  .progress-bar-container {
+    background: #374151;
+  }
 }
 </style>
