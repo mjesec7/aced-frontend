@@ -259,39 +259,46 @@ const router = createRouter({
 // --- GLOBAL NAVIGATION GUARDS ---
 
 router.beforeEach(async (to, from, next) => {
-  console.log(`🔄 Navigating from ${from.name || 'Start'} to ${to.name}`);
-
-  // Wait for Firebase auth to be initialized on app start
+  // **FIX APPLIED**: Wrapped in try...catch for robust error handling
   try {
-    const { authInitPromise } = await import('@/main.js');
-    await authInitPromise;
-  } catch (err) {
-    console.warn('⚠️ Auth initialization is not yet complete. Proceeding anyway.');
-  }
+    console.log(`🔄 Navigating from ${from.name || 'Start'} to ${to.name}`);
 
-  const isLoggedIn = store.getters.isLoggedIn;
-  const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
-  
-  // Handle guest access for lessons and topics
-  if (['LessonPage', 'TopicOverview'].includes(to.name)) {
-    // These pages are public by default, no special checks needed here
-    return next();
-  }
+    // Wait for Firebase auth to be initialized on app start
+    try {
+      const { authInitPromise } = await import('@/main.js');
+      await authInitPromise;
+    } catch (err) {
+      console.warn('⚠️ Auth initialization is not yet complete. Proceeding anyway.');
+    }
 
-  // Handle protected routes
-  if (requiresAuth && !isLoggedIn) {
-    console.log('🔒 Auth required. Redirecting to HomePage.');
-    return next({
-      name: 'HomePage',
-      query: {
-        redirect: to.fullPath,
-        loginRequired: 'true',
-      },
-    });
-  }
+    const isLoggedIn = store.getters.isLoggedIn;
+    const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
+    
+    // Handle guest access for lessons and topics
+    if (['LessonPage', 'TopicOverview'].includes(to.name)) {
+      // These pages are public by default, no special checks needed here
+      return next();
+    }
 
-  console.log('✅ Navigation allowed.');
-  next();
+    // Handle protected routes
+    if (requiresAuth && !isLoggedIn) {
+      console.log('🔒 Auth required. Redirecting to HomePage.');
+      return next({
+        name: 'HomePage',
+        query: {
+          redirect: to.fullPath,
+          loginRequired: 'true',
+        },
+      });
+    }
+
+    console.log('✅ Navigation allowed.');
+    next();
+  } catch (error) {
+    console.error('❌ Global navigation guard error:', error);
+    // Prevent navigation if an unexpected error occurs
+    next(false);
+  }
 });
 
 router.afterEach((to, from) => {
@@ -313,12 +320,62 @@ router.afterEach((to, from) => {
 
 router.onError((err) => {
   console.error('❌ Router Error:', err);
-  // Automatically reload the page on chunk load errors
+
+  // **FIX APPLIED**: Silently ignore NavigationDuplicated errors
+  if (err.name === 'NavigationDuplicated') {
+    return;
+  }
+
+  // **EXISTING FIX RETAINED**: Automatically reload the page on chunk load errors
   if (err.message.includes('Failed to fetch dynamically imported module') || err.message.includes('Loading chunk')) {
     console.log('🔄 Chunk loading failed. Reloading the page...');
     window.location.reload();
   }
 });
+
+// --- NAVIGATION HELPERS (NEWLY ADDED) ---
+
+/**
+ * Safe navigation method to use in components.
+ * Prevents "NavigationDuplicated" errors from being thrown.
+ * @param {object} routerInstance - The Vue router instance (this.$router).
+ * @param {object|string} route - The route to navigate to.
+ * @returns {Promise}
+ */
+export function safeNavigate(routerInstance, route) {
+  return routerInstance.push(route).catch(err => {
+    // Only throw if it's not a navigation duplicated error
+    if (err.name !== 'NavigationDuplicated') {
+      console.error('Navigation error:', err);
+      // You could show a user-friendly error message here
+      return Promise.reject(err);
+    }
+    // Silently ignore navigation to the same route
+    return Promise.resolve();
+  });
+}
+
+/**
+ * Enhanced navigation with a loading state callback.
+ * @param {object} routerInstance - The Vue router instance (this.$router).
+ * @param {object|string} route - The route to navigate to.
+ * @param {Function} loadingCallback - A function to call with the loading state (e.g., loading => this.isLoading = loading).
+ * @returns {Promise}
+ */
+export function navigateWithLoading(routerInstance, route, loadingCallback) {
+  if (loadingCallback) loadingCallback(true);
+  
+  return routerInstance.push(route)
+    .catch(err => {
+      if (err.name !== 'NavigationDuplicated') {
+        console.error('Navigation failed:', err);
+        throw err;
+      }
+    })
+    .finally(() => {
+      if (loadingCallback) loadingCallback(false);
+    });
+}
 
 // --- DEBUG HELPERS ---
 

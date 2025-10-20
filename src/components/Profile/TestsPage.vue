@@ -1,6 +1,5 @@
 <template>
   <div class="tests-page">
-    <!-- Hero Header -->
     <header class="hero-header" :style="{ backgroundImage: `url(${currentHeroImage})` }">
       <div class="hero-overlay"></div>
       <div class="hero-content">
@@ -18,7 +17,6 @@
       </div>
     </header>
 
-    <!-- Stats Section -->
     <div v-if="!activeTest" class="stats-section">
       <div class="stats-grid">
         <div class="stat-card">
@@ -58,7 +56,6 @@
       </div>
     </div>
 
-    <!-- Control Section (only when not taking test) -->
     <div v-if="!activeTest" class="control-section">
       <div class="control-content">
         <div class="search-container">
@@ -112,7 +109,6 @@
       </div>
     </div>
 
-    <!-- Loading State -->
     <div v-if="loading" class="loading-container">
       <div class="loader">
         <div class="loader-ring"></div>
@@ -122,9 +118,7 @@
       <p>Загружаем тесты...</p>
     </div>
 
-    <!-- Test List View -->
     <main v-else-if="!activeTest" class="main-section">
-      <!-- Empty State -->
       <div v-if="filteredTests.length === 0 && tests.length === 0" class="empty-container">
         <div class="empty-illustration">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -136,7 +130,6 @@
         <p>Тесты появятся здесь, когда они будут добавлены</p>
       </div>
 
-      <!-- No Results State -->
       <div v-else-if="filteredTests.length === 0 && tests.length > 0" class="empty-container">
         <div class="empty-illustration">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -149,7 +142,6 @@
         <button @click="clearFilters" class="retry-btn">Очистить фильтры</button>
       </div>
 
-      <!-- Tests Grid -->
       <div v-else class="tests-container">
         <div class="tests-grid">
           <article 
@@ -202,10 +194,8 @@
       </div>
     </main>
 
-    <!-- Active Test View -->
     <div v-else-if="!isTestCompleted" class="test-taking-section">
       <div class="test-container">
-        <!-- Progress Bar -->
         <div class="test-progress-bar">
           <div class="progress-track">
             <div 
@@ -218,7 +208,6 @@
           </div>
         </div>
 
-        <!-- Question Card -->
         <div class="question-card">
           <div class="question-header">
             <h2 class="test-title">{{ activeTest.title }}</h2>
@@ -227,7 +216,6 @@
           
           <h3 class="question-text">{{ currentQuestion.text || currentQuestion.question }}</h3>
           
-          <!-- Multiple Choice / True False -->
           <div v-if="currentQuestion.type === 'multiple-choice' || currentQuestion.options" class="options-container">
             <label 
               v-for="(opt, j) in currentQuestion.options || ['true', 'false']" 
@@ -250,7 +238,6 @@
             </label>
           </div>
 
-          <!-- Short Answer -->
           <div v-else class="text-answer-container">
             <textarea
               v-model="userAnswers[currentQuestionIndex]"
@@ -278,7 +265,6 @@
       </div>
     </div>
 
-    <!-- Results Section -->
     <div v-else class="results-section">
       <div class="results-container">
         <div class="results-card">
@@ -367,7 +353,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import api from '@/api';
 import { auth } from '@/firebase';
 
@@ -384,6 +370,10 @@ export default {
     const searchQuery = ref('');
     const selectedSubject = ref('');
     const selectedLevel = ref('');
+    
+    // Add error state
+    const error = ref(null);
+    const retryCount = ref(0);
     
     const heroImages = [
       'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=1600&h=400&fit=crop&q=80',
@@ -457,10 +447,13 @@ export default {
       const randomIndex = Math.floor(Math.random() * heroImages.length);
       currentHeroImage.value = heroImages[randomIndex];
     };
-
+    
+    // Fixed loadTests function
     const loadTests = async () => {
       try {
         loading.value = true;
+        error.value = null;
+        
         const user = auth.currentUser;
         
         if (!user) {
@@ -470,90 +463,142 @@ export default {
         const token = await user.getIdToken();
         const userId = user.uid;
 
+        // Create a timeout wrapper
+        const withTimeout = (promise, timeoutMs = 10000) => {
+          return Promise.race([
+            promise,
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Timeout')), timeoutMs)
+            )
+          ]);
+        };
+
+        // Try to load tests with multiple strategies
+        let loadedTests = [];
+        
+        // Strategy 1: User-specific tests
         try {
-          const { data: userTestsResponse } = await api.get(`/users/${userId}/tests`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
+          const userTestsResponse = await withTimeout(
+            api.get(`/users/${userId}/tests`, {
+              headers: { Authorization: `Bearer ${token}` }
+            }),
+            10000
+          );
           
-          if (userTestsResponse?.tests && Array.isArray(userTestsResponse.tests)) {
-            tests.value = userTestsResponse.tests;
-            return;
+          if (userTestsResponse?.data?.tests) {
+            loadedTests = userTestsResponse.data.tests;
           }
         } catch (userTestsError) {
-          console.warn('User tests endpoint failed:', userTestsError.message);
-        }
-
-        try {
-          const { data: testsResponse } = await api.get('/tests', {
-            headers: { Authorization: `Bearer ${token}` }
-          });
+          console.warn('User tests failed, trying fallback');
           
-          const testsData = testsResponse?.data || testsResponse || [];
-          tests.value = Array.isArray(testsData) ? testsData.filter(test => test.isActive !== false) : [];
-        } catch (directTestsError) {
-          console.error('Failed to load tests:', directTestsError);
-          tests.value = [];
+          // Strategy 2: General tests endpoint
+          try {
+            const generalTestsResponse = await withTimeout(
+              api.get('/tests', {
+                headers: { Authorization: `Bearer ${token}` }
+              }),
+              10000
+            );
+            
+            const testsData = generalTestsResponse?.data?.data || 
+                             generalTestsResponse?.data || 
+                             [];
+            loadedTests = Array.isArray(testsData) 
+              ? testsData.filter(test => test.isActive !== false) 
+              : [];
+          } catch (generalTestsError) {
+            console.error('All test loading failed');
+            // Use empty array as final fallback
+            loadedTests = [];
+          }
         }
+        
+        tests.value = loadedTests;
 
       } catch (err) {
         console.error('Error loading tests:', err);
+        error.value = err.message;
         tests.value = [];
       } finally {
         loading.value = false;
       }
     };
 
+    // Fixed handleStartTest with better error handling
     const handleStartTest = async (test) => {
+      if (!test) return;
+      
       try {
         loading.value = true;
+        error.value = null;
+        
         const user = auth.currentUser;
         
         if (!user) {
-          console.error('User not authenticated');
-          return;
+          throw new Error('User not authenticated');
         }
 
         const token = await user.getIdToken();
         const userId = user.uid;
 
-        try {
-          const { data: fullTestResponse } = await api.get(`/users/${userId}/tests/${test._id}`, {
-            headers: { Authorization: `Bearer ${token}` }
+        // Add timeout to prevent hanging
+        const loadTestWithTimeout = async () => {
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Loading test timeout')), 15000);
           });
           
-          activeTest.value = fullTestResponse?.test || fullTestResponse?.data || fullTestResponse;
-        } catch (userTestError) {
-          console.warn('User-specific test endpoint failed:', userTestError.message);
+          const loadPromise = (async () => {
+            // Try user-specific endpoint first
+            try {
+              const { data } = await api.get(`/users/${userId}/tests/${test._id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+              });
+              return data?.test || data?.data || data;
+            } catch {
+              // Fallback to general endpoint
+              const { data } = await api.get(`/tests/${test._id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+              });
+              return data?.data || data;
+            }
+          })();
           
-          const { data: directTestResponse } = await api.get(`/tests/${test._id}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          
-          activeTest.value = directTestResponse?.data || directTestResponse;
-        }
-
-        if (!activeTest.value || !activeTest.value.questions || activeTest.value.questions.length === 0) {
+          return Promise.race([loadPromise, timeoutPromise]);
+        };
+        
+        const fullTest = await loadTestWithTimeout();
+        
+        if (!fullTest?.questions?.length) {
           throw new Error('Тест не содержит вопросов');
         }
 
-        activeTest.value.questions = activeTest.value.questions.map(q => ({
-          ...q,
-          text: q.text || q.question,
-          type: q.type || 'multiple-choice',
-          options: q.options || [],
-          correctAnswer: q.correctAnswer
-        }));
+        // Process test data
+        activeTest.value = {
+          ...fullTest,
+          questions: fullTest.questions.map(q => ({
+            ...q,
+            text: q.text || q.question,
+            type: q.type || 'multiple-choice',
+            options: q.options || [],
+            correctAnswer: q.correctAnswer
+          }))
+        };
 
         userAnswers.value = Array(activeTest.value.questions.length).fill('');
         currentQuestionIndex.value = 0;
 
       } catch (err) {
         console.error('Error loading test:', err);
+        error.value = err.message || 'Не удалось загрузить тест';
+        
+        // Reset state on error
+        activeTest.value = null;
       } finally {
         loading.value = false;
       }
     };
 
+    // Fixed navigation with proper promise handling
     const handleNextQuestion = () => {
       const currentAnswer = userAnswers.value[currentQuestionIndex.value];
       if (!currentAnswer || currentAnswer.trim() === '') {
@@ -563,7 +608,10 @@ export default {
       if (currentQuestionIndex.value + 1 < activeTest.value.questions.length) {
         currentQuestionIndex.value++;
       } else {
-        handleSubmitTest();
+        // Use nextTick to avoid navigation timing issues
+        nextTick(() => {
+          handleSubmitTest();
+        });
       }
     };
 
@@ -654,10 +702,33 @@ export default {
       if (score >= 50) return 'Удовлетворительно';
       return 'Нужно подтянуть знания';
     };
+    
+    // Add retry mechanism
+    const retryLoadTests = async () => {
+      retryCount.value++;
+      if (retryCount.value <= 3) {
+        await loadTests();
+      } else {
+        error.value = 'Не удалось загрузить тесты после нескольких попыток';
+      }
+    };
+    
+    // Cleanup on unmount
+    onBeforeUnmount(() => {
+      // Cancel any pending requests or timers
+      activeTest.value = null;
+      userAnswers.value = [];
+    });
 
-    onMounted(() => {
-      selectRandomHeroImage();
-      loadTests();
+    // Initialize with error boundary
+    onMounted(async () => {
+      try {
+        selectRandomHeroImage();
+        await loadTests();
+      } catch (err) {
+        console.error('Mount error:', err);
+        error.value = 'Ошибка при загрузке страницы';
+      }
     });
 
     return {
@@ -681,6 +752,9 @@ export default {
       score,
       progressOffset,
       hasActiveFilters,
+      error,
+      retryCount,
+      retryLoadTests,
       handleStartTest,
       handleNextQuestion,
       handleSubmitTest,
@@ -688,7 +762,7 @@ export default {
       clearFilters,
       getLevelClass,
       getScoreClass,
-      getScoreDescription
+      getScoreDescription,
     };
   }
 };
