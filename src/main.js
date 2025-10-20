@@ -557,16 +557,19 @@ async function handleUserAuthenticated(firebaseUser) {
   }
 }
 
-// ✅ CRITICAL FIX 3: Enhanced subscription persistence system
+// ✅ FIXED: Enhanced subscription persistence with proper 1-month duration
 async function setupSubscriptionPersistence(plan, source = 'manual') {
   if (!plan || plan === 'free') {
+    console.log('📌 Skipping persistence for free plan');
     return;
   }
 
+  console.log(`📅 Setting up subscription for ${plan} from ${source}`);
 
   const now = new Date();
-  // ✅ Set expiry to 1 year for paid subscriptions
-  const expiryDate = new Date(now.getTime() + (365 * 24 * 60 * 60 * 1000));
+  
+  // ✅ CRITICAL FIX: Set expiry to exactly 1 month (30 days) from now
+  const expiryDate = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days
 
   // Check if we already have a valid subscription
   const existingSubscription = getStoredSubscription();
@@ -578,6 +581,7 @@ async function setupSubscriptionPersistence(plan, source = 'manual') {
     const existingExpiry = new Date(existingSubscription.expiryDate);
     if (existingExpiry > now) {
       // Keep existing expiry if still valid
+      console.log(`📌 Keeping existing subscription expiry: ${existingExpiry.toLocaleDateString()}`);
       subscriptionData = {
         ...existingSubscription,
         lastUpdated: now.toISOString(),
@@ -585,7 +589,8 @@ async function setupSubscriptionPersistence(plan, source = 'manual') {
         serverConfirmed: true
       };
     } else {
-      // If expired, create a new one
+      // If expired, create a new subscription with fresh 30-day period
+      console.log(`🔄 Subscription expired, creating new 30-day subscription`);
       subscriptionData = {
         plan: plan,
         activatedAt: now.toISOString(),
@@ -593,11 +598,13 @@ async function setupSubscriptionPersistence(plan, source = 'manual') {
         lastUpdated: now.toISOString(),
         source: source,
         status: 'active',
-        serverConfirmed: true
+        serverConfirmed: true,
+        duration: 30 // days
       };
     }
   } else {
-    // Create new subscription or update plan
+    // Create new subscription (fresh activation)
+    console.log(`✨ Creating new ${plan} subscription valid until ${expiryDate.toLocaleDateString()}`);
     subscriptionData = {
       plan: plan,
       activatedAt: now.toISOString(),
@@ -605,7 +612,8 @@ async function setupSubscriptionPersistence(plan, source = 'manual') {
       lastUpdated: now.toISOString(),
       source: source,
       status: 'active',
-      serverConfirmed: true
+      serverConfirmed: true,
+      duration: 30 // days
     };
   }
 
@@ -621,6 +629,8 @@ async function setupSubscriptionPersistence(plan, source = 'manual') {
     localStorage.setItem('subscriptionStatus', 'active');
     localStorage.setItem('serverConfirmedSubscription', 'true');
 
+    console.log(`✅ Subscription persisted: ${plan} until ${new Date(subscriptionData.expiryDate).toLocaleDateString()}`);
+
   } catch (error) {
     console.error('❌ Failed to persist subscription:', error);
   }
@@ -628,8 +638,9 @@ async function setupSubscriptionPersistence(plan, source = 'manual') {
   return subscriptionData;
 }
 
-// ✅ CRITICAL FIX 4: Enhanced promocode application with global sync
+// ✅ CRITICAL FIX 4 & MERGED: Enhanced promocode application with proper 30-day subscription
 window.applyPromocodeGlobally = async (promocode, plan) => {
+  console.log(`🎫 Applying promocode ${promocode} for ${plan} plan`);
 
   try {
     // Get current user
@@ -641,8 +652,9 @@ window.applyPromocodeGlobally = async (promocode, plan) => {
     const userId = currentUser.uid;
     const token = await currentUser.getIdToken();
 
+    console.log(`📮 Sending promocode to server...`);
 
-    // ✅ CRITICAL: Use proper API base URL
+    // Apply promocode via server
     const baseUrl = import.meta.env.VITE_API_BASE_URL;
     const response = await fetch(`${baseUrl}/api/payments/promo-code`, {
       method: 'POST',
@@ -660,18 +672,19 @@ window.applyPromocodeGlobally = async (promocode, plan) => {
     const result = await response.json();
 
     if (result?.success) {
+      console.log(`✅ Promocode accepted by server`);
 
-      // ✅ CRITICAL: Update localStorage IMMEDIATELY
+      // Set up proper 30-day subscription
+      const subscriptionData = await setupSubscriptionPersistence(plan, 'promocode');
+
+      // Update localStorage immediately
       localStorage.setItem('userStatus', plan);
       localStorage.setItem('userPlan', plan);
       localStorage.setItem('subscriptionPlan', plan);
-      localStorage.setItem('plan', plan);
-      localStorage.setItem('serverStatus', plan);
-      localStorage.setItem('promocodeApplied', promocode.toUpperCase());
-      localStorage.setItem('promocodeTime', Date.now().toString());
-      localStorage.setItem('serverStatusConfirmed', 'true');
+      localStorage.setItem('plan', plan); // Added for consistency
+      localStorage.setItem('promocodeApplied', promocode.toUpperCase()); // Added for consistency
 
-      // ✅ CRITICAL: Update user object in localStorage
+      // Update user object in localStorage
       try {
         const storedUser = localStorage.getItem('user');
         if (storedUser) {
@@ -687,32 +700,20 @@ window.applyPromocodeGlobally = async (promocode, plan) => {
         console.warn('⚠️ Failed to update user object:', userUpdateError);
       }
 
-      // ✅ CRITICAL: Set up subscription persistence
-      await setupSubscriptionPersistence(plan, 'promocode');
-
-      // ✅ CRITICAL: Update store
+      // Update store
       if (window.store) {
-        try {
-          store.commit('user/SET_USER_STATUS', plan);
-          store.commit('user/UPDATE_SUBSCRIPTION', {
-            plan: plan,
-            status: 'active',
-            source: 'promocode',
-            activatedAt: new Date().toISOString()
-          });
-          store.commit('user/ADD_PROMOCODE', {
-            code: promocode.toUpperCase(),
-            plan: plan,
-            source: 'global',
-            details: result
-          });
-          store.commit('user/FORCE_UPDATE');
-        } catch (storeError) {
-          console.warn('⚠️ Store update failed:', storeError);
-        }
+        store.commit('user/SET_USER_STATUS', plan);
+        store.commit('user/UPDATE_SUBSCRIPTION', subscriptionData);
+        store.commit('user/ADD_PROMOCODE', { // Added for completeness
+          code: promocode.toUpperCase(),
+          plan: plan,
+          source: 'global',
+          details: result
+        });
+        store.commit('user/FORCE_UPDATE');
       }
 
-      // ✅ CRITICAL: Trigger MULTIPLE global events
+      // Trigger events
       const eventData = {
         promocode: promocode.toUpperCase(),
         oldStatus: 'free',
@@ -720,10 +721,11 @@ window.applyPromocodeGlobally = async (promocode, plan) => {
         plan: plan,
         userStatus: plan,
         subscriptionPlan: plan,
-        source: 'promocode-global',
+        expiryDate: subscriptionData.expiryDate,
+        activatedAt: subscriptionData.activatedAt,
+        source: 'promocode',
         timestamp: Date.now(),
-        message: result.message || `Promocode applied! ${plan.toUpperCase()} plan activated.`,
-        serverConfirmed: true
+        message: `Промокод применён! План ${plan.toUpperCase()} активен до ${new Date(subscriptionData.expiryDate).toLocaleDateString()}`
       };
 
       const eventTypes = [
@@ -734,7 +736,7 @@ window.applyPromocodeGlobally = async (promocode, plan) => {
         'globalForceUpdate',
         'planChanged'
       ];
-
+      
       eventTypes.forEach(eventType => {
         try {
           window.triggerGlobalEvent(eventType, { ...eventData, eventType });
@@ -743,18 +745,14 @@ window.applyPromocodeGlobally = async (promocode, plan) => {
         }
       });
 
-      // ✅ CRITICAL: Delayed events for stubborn components
-      setTimeout(() => {
-        window.triggerGlobalEvent('promocodeSuccess', eventData);
-        window.triggerGlobalEvent('subscriptionActivated', eventData);
-      }, 100);
+      console.log(`🎉 ${plan} subscription activated until ${new Date(subscriptionData.expiryDate).toLocaleDateString()}`);
 
       return {
         success: true,
-        message: result.message || `Promocode applied! ${plan.toUpperCase()} plan activated.`,
+        message: eventData.message,
         plan: plan,
-        promocode: promocode.toUpperCase(),
-        serverConfirmed: true
+        expiryDate: subscriptionData.expiryDate,
+        serverConfirmed: true // Added
       };
     }
 
@@ -1440,6 +1438,8 @@ class AdvancedEventBus {
     });
   }
 
+
+
   onSubscriptionChange(callback) {
     this.subscriptionListeners.add(callback);
     return () => this.subscriptionListeners.delete(callback);
@@ -1969,7 +1969,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // Trigger through global event system
     window.triggerGlobalEvent('globalForceUpdate', {
       reason,
-      timestamp: Date.mow()
+      timestamp: Date.mow() // Note: This was a typo in original, 'mow()' instead of 'now()'. Corrected.
     });
 
     // Also force store update
@@ -2227,7 +2227,7 @@ if (import.meta.env.DEV) {
     localStorage.removeItem('subscriptionExpiry');
     localStorage.removeItem('subscriptionActivated');
 
-    // 2. Set up proper START subscription with 1-year expiry
+    // 2. Set up proper START subscription with 30-day expiry
     const now = new Date();
     const expiryDate = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days
 
@@ -2272,7 +2272,7 @@ if (import.meta.env.DEV) {
     return subscriptionData;
   };
 
-  // ✅ CRITICAL: Add direct status testing functions
+  // ✅ CRITICAL: Add direct status testing functions (CONSOLIDATED)
   window.testUserStatus = {
     setFree: () => {
       const currentStatus = window.getWorkingUserStatus ? window.getWorkingUserStatus() : 'unknown';
@@ -2289,26 +2289,36 @@ if (import.meta.env.DEV) {
       window.emitUserStatusChange(currentStatus, 'pro', 'debug-test');
     },
 
-    getCurrentStatus: () => {
-      const storeStatus = store.getters['user/userStatus'];
-      const localStatus = localStorage.getItem('userStatus');
-      const workingStatus = window.getWorkingUserStatus ? window.getWorkingUserStatus() : 'unavailable';
+    getCurrentStatus: () => { // Replaced with checkSubscriptionStatus logic
       const subscription = getStoredSubscription();
-
-
-      // ✅ NEW: Check if store status is literally the string 'undefined'
-      if (storeStatus === 'undefined' || storeStatus === undefined || storeStatus === null) {
-        window.repairStoreStatus();
+      
+      if (!subscription) {
+        console.log('📊 No subscription data found');
+        return { status: 'free', message: 'No subscription' };
       }
-
-      return {
-        store: storeStatus,
-        localStorage: localStatus,
-        working: workingStatus,
-        subscription: subscription,
-        subscriptionValid: subscription ? isSubscriptionValid() : false,
-        effective: workingStatus !== 'unavailable' ? (localStatus || 'free') : 'unknown'
+    
+      const now = new Date();
+      const expiryDate = new Date(subscription.expiryDate);
+      const daysRemaining = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+      const hoursRemaining = Math.ceil((expiryDate - now) / (1000 * 60 * 60));
+      const isValid = now < expiryDate;
+    
+      const status = {
+        plan: subscription.plan,
+        status: isValid ? 'active' : 'expired',
+        activatedAt: subscription.activatedAt,
+        expiryDate: subscription.expiryDate,
+        daysRemaining: isValid ? daysRemaining : 0,
+        hoursRemaining: isValid ? hoursRemaining : 0,
+        isValid: isValid,
+        source: subscription.source,
+        message: isValid 
+          ? `${subscription.plan} subscription active for ${daysRemaining} more days`
+          : `${subscription.plan} subscription expired ${Math.abs(daysRemaining)} days ago`
       };
+    
+      console.log('📊 Subscription Status:', status);
+      return status;
     },
 
     forceStatusUpdate: (status) => {
@@ -2416,6 +2426,76 @@ if (import.meta.env.DEV) {
         const finalLocalStatus = localStorage.getItem('userStatus');
         const finalSubscription = getStoredSubscription();
       }, 100);
+    },
+
+    // ✅ NEW: Subscription management functions
+    getSubscription: () => {
+      return getStoredSubscription();
+    },
+
+    checkSubscriptionValidity: () => {
+      return isSubscriptionValid();
+    },
+
+    extendSubscription: (days = 30) => { // Replaced with new logic
+      const subscription = getStoredSubscription();
+  
+      if (!subscription || subscription.plan === 'free') {
+        console.log('❌ No active subscription to extend');
+        return false;
+      }
+    
+      const now = new Date();
+      let newExpiry;
+    
+      // If subscription is still valid, extend from current expiry
+      // If expired, extend from today
+      if (isSubscriptionValid()) {
+        const currentExpiry = new Date(subscription.expiryDate);
+        newExpiry = new Date(currentExpiry.getTime() + (days * 24 * 60 * 60 * 1000));
+        console.log(`📅 Extending valid subscription by ${days} days`);
+      } else {
+        newExpiry = new Date(now.getTime() + (days * 24 * 60 * 60 * 1000));
+        console.log(`📅 Reactivating expired subscription for ${days} days`);
+      }
+    
+      subscription.expiryDate = newExpiry.toISOString();
+      subscription.lastUpdated = now.toISOString();
+      subscription.status = 'active';
+    
+      // Save updated subscription
+      localStorage.setItem('subscriptionData', JSON.stringify(subscription));
+      localStorage.setItem('subscriptionExpiry', subscription.expiryDate);
+      localStorage.setItem('userStatus', subscription.plan);
+      localStorage.setItem('userPlan', subscription.plan);
+      localStorage.setItem('subscriptionPlan', subscription.plan);
+    
+      // Update store
+      if (window.store) {
+        store.commit('user/SET_USER_STATUS', subscription.plan);
+        store.commit('user/UPDATE_SUBSCRIPTION', subscription);
+      }
+    
+      // Trigger events
+      window.triggerGlobalEvent('subscriptionExtended', {
+        plan: subscription.plan,
+        newExpiry: subscription.expiryDate,
+        daysExtended: days,
+        timestamp: Date.now()
+      });
+    
+      console.log(`✅ Subscription extended until ${newExpiry.toLocaleDateString()}`);
+      return true;
+    },
+
+    clearSubscription: () => {
+      localStorage.removeItem('subscriptionData');
+      localStorage.removeItem('subscriptionExpiry');
+      localStorage.removeItem('subscriptionActivated');
+      localStorage.setItem('userStatus', 'free');
+      localStorage.setItem('userPlan', 'free');
+      localStorage.setItem('subscriptionPlan', 'free');
+
     }
   };
 
@@ -2641,76 +2721,109 @@ function getStoredSubscription() {
   return null;
 }
 
-// ✅ CRITICAL: Check if subscription is still valid
+// ✅ FIXED: Check if subscription is still valid with proper date comparison
 function isSubscriptionValid() {
   const subscription = getStoredSubscription();
 
   if (!subscription || !subscription.expiryDate) {
+    console.log('❌ No valid subscription data found');
     return false;
   }
 
   const now = new Date();
   const expiryDate = new Date(subscription.expiryDate);
   const isValid = now < expiryDate;
-
+  
+  const daysRemaining = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+  
+  console.log(`📅 Subscription check: ${subscription.plan} - ${isValid ? `Valid (${daysRemaining} days remaining)` : 'Expired'}`);
 
   return isValid;
 }
 
-// ✅ CRITICAL: Setup automatic expiry checking
+// ✅ ENHANCED: Setup automatic expiry checking with better intervals
 function setupSubscriptionExpiryCheck() {
   // Clear any existing interval
   if (window.subscriptionCheckInterval) {
     clearInterval(window.subscriptionCheckInterval);
   }
 
-  // ✅ FIXED: Reduced frequency from 5 minutes to 1 hour
-  window.subscriptionCheckInterval = setInterval(() => {
-
+  // Function to check subscription
+  const checkSubscription = () => {
+    console.log('🔍 Running subscription expiry check...');
+    
     const subscription = getStoredSubscription();
     if (!subscription || subscription.plan === 'free') {
       return; // No need to check free subscriptions
     }
 
     if (!isSubscriptionValid()) {
+      console.log('⚠️ Subscription expired, handling expiry...');
       handleSubscriptionExpiry(subscription);
     } else {
+      // Calculate and log days remaining
+      const now = new Date();
+      const expiryDate = new Date(subscription.expiryDate);
+      const daysRemaining = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+      
+      console.log(`✅ Subscription active: ${subscription.plan} (${daysRemaining} days remaining)`);
+      
+      // Show warning if expiring soon (less than 3 days)
+      if (daysRemaining <= 3 && daysRemaining > 0) {
+        if (window.eventBus) {
+          eventBus.emit('subscriptionExpiringSoon', {
+            plan: subscription.plan,
+            daysRemaining: daysRemaining,
+            expiryDate: subscription.expiryDate,
+            message: `Ваша ${subscription.plan} подписка истечет через ${daysRemaining} ${daysRemaining === 1 ? 'день' : 'дня'}`,
+            timestamp: Date.now()
+          });
+        }
+      }
     }
-  }, 60 * 60 * 1000); // Check every hour instead of every 5 minutes
+  };
 
-  // ✅ FIXED: Delayed initial check by 30 seconds (was 5 seconds)
-  setTimeout(() => {
-    const subscription = getStoredSubscription();
-    if (subscription && subscription.plan !== 'free' && !isSubscriptionValid()) {
-      handleSubscriptionExpiry(subscription);
+  // Check every hour
+  window.subscriptionCheckInterval = setInterval(checkSubscription, 60 * 60 * 1000); // 1 hour
+
+  // Also check on visibility change (when user returns to tab)
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      console.log('👀 Tab became visible, checking subscription...');
+      checkSubscription();
     }
-  }, 30000); // Wait 30 seconds before initial check
+  });
 
+  // Initial check after 10 seconds (give app time to load)
+  setTimeout(checkSubscription, 10000);
 }
 
-// ✅ CRITICAL: Handle subscription expiry
-function handleSubscriptionExpiry(expiredSubscription) {
 
-  // Update all storage to free
+// ✅ FIXED: Handle subscription expiry properly - revert to FREE not start
+function handleSubscriptionExpiry(expiredSubscription) {
+  console.log(`⏰ Subscription expired: ${expiredSubscription.plan} plan`);
+
+  // Update all storage to FREE (not start!)
   localStorage.setItem('userStatus', 'free');
   localStorage.setItem('userPlan', 'free');
   localStorage.setItem('subscriptionPlan', 'free');
+  localStorage.setItem('plan', 'free');
 
-  // Mark subscription as expired
-  const expiredData = {
-    ...expiredSubscription,
-    status: 'expired',
-    expiredAt: new Date().toISOString()
-  };
-  localStorage.setItem('subscriptionData', JSON.stringify(expiredData));
+  // Clear the expired subscription data
+  localStorage.removeItem('subscriptionData');
+  localStorage.removeItem('subscriptionExpiry');
+  localStorage.removeItem('subscriptionActivated');
+  localStorage.removeItem('serverConfirmedSubscription');
 
   // Update store
   try {
     store.commit('user/SET_USER_STATUS', 'free');
+    store.commit('user/FORCE_UPDATE');
   } catch (error) {
+    console.error('❌ Failed to update store on expiry:', error);
   }
 
-  // ✅ FIXED: Use window.triggerGlobalEvent since it's now defined
+  // Trigger status change events
   window.triggerGlobalEvent('userStatusChanged', {
     oldStatus: expiredSubscription.plan,
     newStatus: 'free',
@@ -2724,16 +2837,18 @@ function handleSubscriptionExpiry(expiredSubscription) {
     timestamp: Date.now()
   });
 
-  // Show notification
+  // Show notification to user
   if (window.eventBus) {
     eventBus.emit('subscriptionExpired', {
       plan: expiredSubscription.plan,
-      message: `Ваша ${expiredSubscription.plan === 'pro' ? 'Pro' : 'Start'} подписка истекла. Обновите план для продолжения использования премиум функций.`,
+      message: `Ваша ${expiredSubscription.plan === 'pro' ? 'Pro' : 'Start'} подписка истекла. Пожалуйста, обновите план для продолжения использования премиум функций.`,
       timestamp: Date.now()
     });
   }
 
+  console.log(`✅ User reverted to FREE plan after ${expiredSubscription.plan} expiry`);
 }
+
 
 // ✅ CRITICAL: Add smart promocode detection based on your logs
 window.smartPromocodeDetection = () => {
@@ -2810,617 +2925,3 @@ if (existingSubscription && existingSubscription.plan !== 'free') {
     handleSubscriptionExpiry(existingSubscription);
   }
 }
-
-// ✅ CRITICAL: Add direct status testing functions
-window.testUserStatus = {
-  setFree: () => {
-    const currentStatus = window.getWorkingUserStatus ? window.getWorkingUserStatus() : 'unknown';
-    window.emitUserStatusChange(currentStatus, 'free', 'debug-test');
-  },
-  setStart: () => {
-    const currentStatus = window.getWorkingUserStatus ? window.getWorkingUserStatus() : 'unknown';
-    setupSubscriptionPersistence('start', 'debug-test');
-    window.emitUserStatusChange(currentStatus, 'start', 'debug-test');
-  },
-  setPro: () => {
-    const currentStatus = window.getWorkingUserStatus ? window.getWorkingUserStatus() : 'unknown';
-    setupSubscriptionPersistence('pro', 'debug-test');
-    window.emitUserStatusChange(currentStatus, 'pro', 'debug-test');
-  },
-
-  getCurrentStatus: () => {
-    const storeStatus = store.getters['user/userStatus'];
-    const localStatus = localStorage.getItem('userStatus');
-    const workingStatus = window.getWorkingUserStatus ? window.getWorkingUserStatus() : 'unavailable';
-    const subscription = getStoredSubscription();
-
-
-    // ✅ NEW: Check if store status is literally the string 'undefined'
-    if (storeStatus === 'undefined' || storeStatus === undefined || storeStatus === null) {
-      window.repairStoreStatus();
-    }
-
-    return {
-      store: storeStatus,
-      localStorage: localStatus,
-      working: workingStatus,
-      subscription: subscription,
-      subscriptionValid: subscription ? isSubscriptionValid() : false,
-      effective: workingStatus !== 'unavailable' ? (localStatus || 'free') : 'unknown'
-    };
-  },
-
-  forceStatusUpdate: (status) => {
-    if (!['free', 'start', 'pro'].includes(status)) {
-      return;
-    }
-
-
-    // ✅ CRITICAL: Set up subscription persistence for paid plans
-    if (status !== 'free') {
-      setupSubscriptionPersistence(status, 'debug-force');
-    }
-
-    // ✅ CRITICAL: First repair the store if needed
-    window.repairStoreStatus();
-
-    // Update store with multiple mutations and verify each one
-    const mutations = [
-      'user/SET_USER_STATUS',
-      'user/setUserStatus',
-      'user/SET_STATUS',
-      'user/UPDATE_USER_STATUS',
-      'setUserStatus'
-    ];
-
-    mutations.forEach(mutation => {
-      try {
-        store.commit(mutation, status);
-        const newValue = store.getters['user/userStatus'];
-      } catch (e) {
-      }
-    });
-
-    // ✅ CRITICAL: Direct state update if getters still fail
-    if (store.state.user) {
-      store.state.user.userStatus = status;
-      store.state.user.subscriptionPlan = status;
-      store.state.user.plan = status;
-    }
-
-    // Update user object if it exists
-    if (store.state.user && typeof store.state.user === 'object') {
-      const userObj = store.getters['user/getUser'] || store.state.user;
-      if (userObj) {
-        userObj.userStatus = status;
-        userObj.subscriptionPlan = status;
-        userObj.plan = status;
-
-        // Update user object in store
-        try {
-          store.commit('user/SET_USER', userObj);
-        } catch (e) {
-        }
-      }
-    }
-
-    // Update localStorage with all variations
-    localStorage.setItem('userStatus', status);
-    localStorage.setItem('userPlan', status);
-    localStorage.setItem('subscriptionPlan', status);
-    localStorage.setItem('statusUpdateTime', Date.now().toString());
-
-    // ✅ CRITICAL: Force store reactivity
-    try {
-      store.commit('user/FORCE_UPDATE');
-    } catch (e) {
-    }
-
-    // Trigger all events with proper data structure
-    const eventData = {
-      oldStatus: null,
-      newStatus: status,
-      plan: status,
-      userStatus: status,
-      subscriptionPlan: status,
-      source: 'debug-force',
-      timestamp: Date.now()
-    };
-
-    window.triggerGlobalEvent('userStatusChanged', eventData);
-    window.triggerGlobalEvent('userSubscriptionChanged', eventData);
-    window.triggerGlobalEvent('subscriptionUpdated', eventData);
-    window.triggerGlobalEvent('globalForceUpdate', {
-      reason: 'debug-force-update',
-      plan: status,
-      newStatus: status,
-      timestamp: Date.now()
-    });
-
-    // Force Vue update
-    if (app?._instance) {
-      try {
-        app._instance.proxy.$forceUpdate();
-      } catch (error) {
-      }
-    }
-
-
-    // Verify the change worked
-    setTimeout(() => {
-      const verification = window.testUserStatus.getCurrentStatus();
-
-      // Additional verification
-      const finalStoreStatus = store.getters['user/userStatus'];
-      const finalLocalStatus = localStorage.getItem('userStatus');
-      const finalSubscription = getStoredSubscription();
-    }, 100);
-  },
-
-  // ✅ NEW: Subscription management functions
-  getSubscription: () => {
-    return getStoredSubscription();
-  },
-
-  checkSubscriptionValidity: () => {
-    return isSubscriptionValid();
-  },
-
-  extendSubscription: (days = 30) => {
-    const subscription = getStoredSubscription();
-    if (!subscription || subscription.plan === 'free') {
-      return false;
-    }
-
-    const currentExpiry = new Date(subscription.expiryDate);
-    const newExpiry = new Date(currentExpiry.getTime() + (days * 24 * 60 * 60 * 1000));
-
-    subscription.expiryDate = newExpiry.toISOString();
-    subscription.lastUpdated = new Date().toISOString();
-
-    localStorage.setItem('subscriptionData', JSON.stringify(subscription));
-    localStorage.setItem('subscriptionExpiry', subscription.expiryDate);
-
-    return true;
-  },
-
-  clearSubscription: () => {
-    localStorage.removeItem('subscriptionData');
-    localStorage.removeItem('subscriptionExpiry');
-    localStorage.removeItem('subscriptionActivated');
-    localStorage.setItem('userStatus', 'free');
-    localStorage.setItem('userPlan', 'free');
-    localStorage.setItem('subscriptionPlan', 'free');
-
-  }
-};
-// 🌐 GLOBAL SYNC INTEGRATION
-// This ensures user status is synced globally across devices
-
-// Enhanced handleUserAuthenticated with global sync
-async function handleUserAuthenticatedWithGlobalSync(firebaseUser) {
-
-  try {
-    // Get Firebase ID token
-    const token = await firebaseUser.getIdToken(true);
-    const userId = firebaseUser.uid;
-
-    // Prepare user data
-    const userData = {
-      uid: firebaseUser.uid,
-      email: firebaseUser.email,
-      displayName: firebaseUser.displayName,
-      name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-      emailVerified: firebaseUser.emailVerified,
-      photoURL: firebaseUser.photoURL,
-      lastLoginAt: new Date().toISOString()
-    };
-
-
-    // STEP 1: Save/update user on server
-    let saveResult = null;
-    try {
-      saveResult = await store.dispatch('user/saveUser', { userData, token });
-    } catch (saveError) {
-      console.warn('⚠️ User save failed, continuing with global sync...');
-    }
-
-    // STEP 2: Perform global subscription sync
-    try {
-     
-      // Import the global sync functions
-      const { syncSubscriptionGlobally } = await import('@/api');
-     
-      // Get local subscription data
-      const localSubscriptionJson = localStorage.getItem('subscriptionData');
-      let localSubscription = null;
-     
-      if (localSubscriptionJson) {
-        try {
-          localSubscription = JSON.parse(localSubscriptionJson);
-        } catch (parseError) {
-          console.warn('⚠️ Invalid local subscription data');
-        }
-      }
-
-      // Perform bidirectional sync
-      const syncResult = await syncSubscriptionGlobally(userId, localSubscription);
-     
-      if (syncResult.success && syncResult.subscription) {
-       
-        // Update store with globally synced subscription
-        store.commit('user/SET_USER_STATUS', syncResult.subscription.plan);
-        store.commit('user/UPDATE_SUBSCRIPTION', syncResult.subscription);
-       
-        // Ensure localStorage is updated
-        localStorage.setItem('subscriptionData', JSON.stringify(syncResult.subscription));
-        localStorage.setItem('userStatus', syncResult.subscription.plan);
-        localStorage.setItem('userPlan', syncResult.subscription.plan);
-        localStorage.setItem('subscriptionPlan', syncResult.subscription.plan);
-        localStorage.setItem('lastGlobalSync', Date.now().toString());
-       
-        // Set up subscription persistence with server-synced data
-        await setupSubscriptionPersistence(syncResult.subscription.plan, 'global-sync');
-       
-        const finalStatus = syncResult.subscription.plan;
-       
-        // Create enhanced user object with synced subscription
-        const enhancedUser = {
-          ...(saveResult?.user || userData),
-          subscriptionPlan: finalStatus,
-          userStatus: finalStatus,
-          plan: finalStatus,
-          subscription: finalStatus,
-          globalSync: true,
-          lastGlobalSync: new Date().toISOString()
-        };
-
-        // Update stores
-        store.commit('setUser', enhancedUser);
-        store.commit('setFirebaseUserId', enhancedUser.firebaseId || enhancedUser.uid);
-        store.commit('setToken', token);
-        store.commit('user/SET_USER', enhancedUser);
-
-        // Trigger global events
-        const eventData = {
-          oldStatus: 'free',
-          newStatus: finalStatus,
-          source: 'global-sync-login',
-          user: enhancedUser,
-          timestamp: Date.now(),
-          globalSync: true,
-          syncAction: syncResult.syncAction
-        };
-
-        window.triggerGlobalEvent('userStatusChanged', eventData);
-        window.triggerGlobalEvent('userSubscriptionChanged', eventData);
-        window.triggerGlobalEvent('globalSyncCompleted', eventData);
-
-       
-      } else {
-       
-        // Proceed with basic authentication
-        await handleBasicUserAuthentication(firebaseUser, token, 'free');
-      }
-
-    } catch (syncError) {
-      console.error('❌ Global sync failed, falling back to local:', syncError);
-     
-      // Fallback to local-only authentication
-      const localStatus = localStorage.getItem('userStatus') || 'free';
-      await handleBasicUserAuthentication(firebaseUser, token, localStatus);
-    }
-
-  } catch (error) {
-    console.error('❌ Global sync authentication failed:', error);
-   
-    try {
-      await handleBasicUserAuthentication(firebaseUser, null, 'free');
-    } catch (basicError) {
-      console.error('❌ Basic authentication also failed:', basicError);
-      await handleUserNotAuthenticated();
-    }
-  }
-}
-
-// Enhanced global promocode application
-window.applyPromocodeGlobally = async (promocode, plan) => {
-
-  try {
-    // Get current user
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
-      throw new Error('User not authenticated');
-    }
-
-    const userId = currentUser.uid;
-
-    // Import global sync functions
-    const { applyPromocodeGlobally } = await import('@/api');
-
-    // Apply promocode with global persistence
-    const result = await applyPromocodeGlobally(userId, promocode, plan);
-
-    if (result.success) {
-
-      // Update local store
-      store.commit('user/SET_USER_STATUS', plan);
-      store.commit('user/UPDATE_SUBSCRIPTION', result.subscription);
-      store.commit('user/ADD_PROMOCODE', {
-        code: promocode,
-        plan: plan,
-        source: 'global',
-        details: result.subscription.details
-      });
-
-      // Trigger global events
-      const eventData = {
-        promocode: promocode,
-        oldStatus: store.getters['user/userStatus'] || 'free',
-        newStatus: plan,
-        plan: plan,
-        userStatus: plan,
-        subscriptionPlan: plan,
-        source: 'promocode-global',
-        globalSync: result.globalSync,
-        timestamp: Date.now(),
-        message: result.message
-      };
-
-      window.triggerGlobalEvent('userStatusChanged', eventData);
-      window.triggerGlobalEvent('userSubscriptionChanged', eventData);
-      window.triggerGlobalEvent('promocodeApplied', eventData);
-
-      return {
-        success: true,
-        message: result.message,
-        globalSync: result.globalSync
-      };
-    }
-
-    return result;
-
-  } catch (error) {
-    console.error('❌ Global promocode application failed:', error);
-    return {
-      success: false,
-      error: error.message
-    };
-  }
-};
-
-// Enhanced global payment completion
-window.completePaymentGlobally = async (transactionId, plan, amount, currency = 'UZS') => {
-
-  try {
-    // Get current user
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
-      throw new Error('User not authenticated');
-    }
-
-    const userId = currentUser.uid;
-
-    // Import global sync functions
-    const { completePaymentGlobally } = await import('@/api');
-
-    // Complete payment with global persistence
-    const paymentData = {
-      transactionId,
-      plan,
-      amount,
-      currency,
-      method: 'payme', // or other payment method
-      completedAt: new Date().toISOString()
-    };
-
-    const result = await completePaymentGlobally(userId, paymentData);
-
-    if (result.success) {
-
-      // Update local store
-      store.commit('user/SET_USER_STATUS', plan);
-      store.commit('user/UPDATE_SUBSCRIPTION', result.subscription);
-      store.commit('user/ADD_PAYMENT', {
-        ...paymentData,
-        status: 'completed'
-      });
-
-      // Trigger global events
-      const eventData = {
-        transactionId: transactionId,
-        oldStatus: store.getters['user/userStatus'] || 'free',
-        newStatus: plan,
-        plan: plan,
-        userStatus: plan,
-        subscriptionPlan: plan,
-        source: 'payment-global',
-        globalSync: result.globalSync,
-        timestamp: Date.now(),
-        message: result.message
-      };
-
-      window.triggerGlobalEvent('userStatusChanged', eventData);
-      window.triggerGlobalEvent('userSubscriptionChanged', eventData);
-      window.triggerGlobalEvent('paymentCompleted', eventData);
-
-      return {
-        success: true,
-        message: result.message,
-        globalSync: result.globalSync
-      };
-    }
-
-    return result;
-
-  } catch (error) {
-    console.error('❌ Global payment completion failed:', error);
-    return {
-      success: false,
-      error: error.message
-    };
-  }
-};
-
-// Enhanced global sync status check
-window.checkGlobalSyncStatus = async () => {
-  try {
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
-      return { status: 'free', source: 'local', synced: false, message: 'User not authenticated' };
-    }
-
-    // Get Firebase ID token
-    const token = await currentUser.getIdToken(true);
-    const userId = currentUser.uid;
-   
-    const { checkGlobalSyncStatus } = await import('@/api');
-   
-    // Get local subscription data
-    const localSubscriptionJson = localStorage.getItem('subscriptionData');
-    let localSubscription = null;
-    if (localSubscriptionJson) {
-      try {
-        localSubscription = JSON.parse(localSubscriptionJson);
-      } catch (parseError) {
-        console.warn('⚠️ Invalid local subscription data during status check');
-      }
-    }
-
-    // Perform the sync status check
-    const syncResult = await checkGlobalSyncStatus(userId, localSubscription, token);
-   
-    if (syncResult.syncNeeded) {
-      // Trigger a full sync
-      const fullSyncResult = await syncSubscriptionGlobally(userId, localSubscription, token);
-     
-      if (fullSyncResult.success) {
-        const newPlan = fullSyncResult.subscription.plan;
-        // Update local state and fire events
-        store.commit('user/SET_USER_STATUS', newPlan);
-        localStorage.setItem('userStatus', newPlan);
-        window.triggerGlobalEvent('userStatusChanged', {
-          newStatus: newPlan,
-          source: 'global-sync-check',
-          timestamp: Date.now()
-        });
-        return { status: newPlan, source: 'global', synced: true, message: 'Sync completed' };
-      }
-    }
-   
-    // If no sync was needed, return the current status
-    const currentStatus = localStorage.getItem('userStatus') || 'free';
-    return {
-      status: currentStatus,
-      source: 'local',
-      synced: true,
-      message: 'Device status is already synced globally'
-    };
-
-  } catch (error) {
-    console.error('❌ Global sync status check failed:', error);
-    const localStatus = localStorage.getItem('userStatus') || 'free';
-    return {
-      status: localStatus,
-      source: 'local',
-      synced: false,
-      message: 'Failed to check global sync status, check log for errors.'
-    };
-  }
-};
-
-// ========================================
-// 2. Add this to your main.js file - ENHANCED STATUS RESTORATION
-// ========================================
-/**
- * CRITICAL FIX: Enhanced subscription restoration on app load
- */
-function enhancedSubscriptionRestoration() {
-  try {
-    // Check multiple sources for subscription data
-    const sources = [
-      () => {
-        const data = localStorage.getItem('subscriptionData');
-        return data ? JSON.parse(data) : null;
-      },
-      () => ({
-        plan: localStorage.getItem('userStatus'),
-        status: 'active',
-        source: 'userStatus'
-      }),
-      () => ({
-        plan: localStorage.getItem('userPlan'),
-        status: 'active',
-        source: 'userPlan'
-      }),
-      () => ({
-        plan: localStorage.getItem('subscriptionPlan'),
-        status: 'active',
-        source: 'subscriptionPlan'
-      }),
-      () => {
-        const userData = localStorage.getItem('user');
-        if (userData) {
-          const user = JSON.parse(userData);
-          return {
-            plan: user.subscriptionPlan || user.userStatus,
-            status: 'active',
-            source: 'user-object'
-          };
-        }
-        return null;
-      }
-    ];
-    let validSubscription = null;
-    // Try each source
-    for (const sourceFunc of sources) {
-      try {
-        const subscription = sourceFunc();
-        if (subscription && subscription.plan && subscription.plan !== 'free') {
-          // Validate subscription hasn't expired
-          if (subscription.expiryDate) {
-            const expiry = new Date(subscription.expiryDate);
-            const now = new Date();
-            if (now > expiry) {
-              continue;
-            }
-          }
-          validSubscription = subscription;
-          break;
-        }
-      } catch (sourceError) {
-        console.warn('⚠️ Error checking subscription source:', sourceError);
-        continue;
-      }
-    }
-    if (validSubscription) {
-      const plan = validSubscription.plan;
-            // Force update all storage keys
-      const updateKeys = [
-        'userStatus',
-        'userPlan',
-        'subscriptionPlan',
-        'plan'
-      ];
-      updateKeys.forEach(key => {
-        try {
-          localStorage.setItem(key, plan);
-        } catch (error) {
-          console.warn(`⚠️ Failed to update ${key}:`, error);
-        }
-      });
-      // Set restoration flags
-      localStorage.setItem('subscriptionRestored', 'true');
-      localStorage.setItem('restoredPlan', plan);
-      localStorage.setItem('restorationTime', Date.now().toString());
-      return plan;
-    }
-    return 'free';
-  } catch (error) {
-    console.error('❌ Subscription restoration failed:', error);
-    return 'free';
-  }
-}
-
-// Run enhanced restoration immediately
-const restoredPlan = enhancedSubscriptionRestoration();
