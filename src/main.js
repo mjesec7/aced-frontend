@@ -2912,7 +2912,7 @@ window.paymentCompleted = (transactionId, plan, amount) => {
 
 // Setup subscription expiry checking
 setupSubscriptionExpiryCheck();
-
+//smth here 
 // Check if user has a valid subscription on startup
 const existingSubscription = getStoredSubscription();
 if (existingSubscription && existingSubscription.plan !== 'free') {
