@@ -312,7 +312,9 @@ export const {
   generateSkillsList,
   generateModulesList,
   processLessonsEnhanced,
-  processCurriculumEnhanced
+  processCurriculumEnhanced,
+  processStepDataEnhanced,
+  processStepsEnhanced
 } = ContentProcessors;
 
 // =============================================
@@ -359,4 +361,63 @@ const response = await api.get('/custom-endpoint');
 // ✅ GROUPED: Import entire modules
 import * as CoursesAPI from '@/api/courses';
 import * as PaymentsAPI from '@/api/payments';
+
+// ✅ CONTENT PROCESSORS: Use utilities
+import { processImageUrl, formatDuration } from '@/api';
+const imageUrl = processImageUrl('/uploads/image.jpg');
+const duration = formatDuration(3600);
+*/
+
+// =============================================
+// 🎯 QUICK REFERENCE
+// =============================================
+
+/*
+COURSES:
+- getUpdatedCourses() - Fetch all courses
+- getCourseById(id) - Get single course
+- getCourseContent(id) - Get course lessons
+- toggleBookmark(userId, courseId, isBookmarked)
+
+LESSONS:
+- getTopics() - Get all topics
+- getTopicById(id) - Get topic with fallback
+- getLessonsByTopic(topicId) - Get lessons
+- getLessonById(id) - Get single lesson
+
+HOMEWORK:
+- getAllHomeworks(userId) - Get all homework
+- getHomeworkByLesson(userId, lessonId)
+- submitHomework(userId, lessonId, answers)
+
+PROGRESS:
+- submitProgress(userId, progressData)
+- getLessonProgress(userId, lessonId)
+- getUserAnalytics(userId)
+
+USER:
+- getUserInfo(userId)
+- getUserStatus(userId)
+- getUserStudyList(userId)
+- addToStudyList(userId, topicData)
+
+PAYMENTS:
+- initiatePaymePayment(userId, plan)
+- applyPromoCode(userId, plan, code)
+- initiateMulticardPayment(paymentData)
+
+SUBSCRIPTION:
+- syncSubscriptionGlobally(userId)
+- updateUserStatusWithPersistence(userId, status)
+
+VOCABULARY:
+- getVocabularyWords(language, topic, subtopic)
+- generateVocabularyQuiz(userId, params)
+- submitQuizResults(userId, results)
+
+UTILITIES:
+- formatCurrency(amount)
+- formatDate(date, format)
+- handleApiError(error, context)
+- diagnosticTool.testBackendConnectivity()
 */

@@ -131,6 +131,80 @@ export function processStepData(step, lessonIndex, stepIndex) {
 }
 
 /**
+ * Enhanced step data processing with metadata
+ */
+export function processStepDataEnhanced(step, lessonIndex, stepIndex) {
+  const baseData = step.data || {};
+
+  switch (step.type) {
+    case 'explanation':
+    case 'example':
+    case 'reading':
+      return {
+        ...baseData,
+        content: baseData.content || step.content || '',
+        images: processStepImages(baseData.images || step.images || []),
+        hasContent: !!(baseData.content || step.content)
+      };
+
+    case 'image':
+      return {
+        ...baseData,
+        images: processStepImages(baseData.images || step.images || []),
+        description: baseData.description || step.description || '',
+        caption: baseData.caption || step.caption || '',
+        imageCount: (baseData.images || step.images || []).length
+      };
+
+    case 'practice':
+      return {
+        ...baseData,
+        instructions: baseData.instructions || step.instructions || step.content || '',
+        type: baseData.type || 'guided',
+        images: processStepImages(baseData.images || step.images || []),
+        hasInstructions: !!(baseData.instructions || step.instructions || step.content)
+      };
+
+    case 'quiz':
+      let quizData = [];
+      if (Array.isArray(baseData) && baseData.length > 0) {
+        quizData = baseData.map(quiz => ({
+          ...quiz,
+          images: processStepImages(quiz.images || [])
+        }));
+      } else if (step.question || step.content) {
+        quizData = [{
+          question: step.question || step.content || '',
+          type: step.quizType || 'multiple-choice',
+          options: (step.options || []).map(opt => ({ text: opt.text || opt })),
+          correctAnswer: parseInt(step.correctAnswer) || 0,
+          explanation: step.explanation || '',
+          images: processStepImages(step.questionImages || [])
+        }];
+      } else if (step.quizzes && Array.isArray(step.quizzes)) {
+        quizData = step.quizzes.map(quiz => ({
+          ...quiz,
+          images: processStepImages(quiz.images || [])
+        }));
+      }
+      
+      return {
+        quizzes: quizData,
+        questionCount: quizData.length,
+        hasQuestions: quizData.length > 0
+      };
+
+    default:
+      return {
+        ...baseData,
+        content: baseData.content || step.content || '',
+        images: processStepImages(baseData.images || step.images || []),
+        hasContent: !!(baseData.content || step.content)
+      };
+  }
+}
+
+/**
  * Process lesson steps with images
  */
 export function processSteps(steps, lessonIndex) {
@@ -145,6 +219,33 @@ export function processSteps(steps, lessonIndex) {
     content: step.content || '',
     images: processStepImages(step.images || []),
     data: processStepData(step, lessonIndex, stepIndex)
+  }));
+}
+
+/**
+ * Enhanced step processing with metadata
+ */
+export function processStepsEnhanced(steps, lessonIndex) {
+  if (!Array.isArray(steps)) return [];
+  
+  return steps.map((step, stepIndex) => ({
+    ...step,
+    id: step.id || `step_${lessonIndex}_${stepIndex}`,
+    type: step.type || 'explanation',
+    title: step.title || '',
+    description: step.description || '',
+    content: step.content || '',
+    
+    // Enhanced image processing
+    images: processStepImages(step.images || []),
+    
+    // Enhanced data processing
+    data: processStepDataEnhanced(step, lessonIndex, stepIndex),
+    
+    // Computed properties
+    hasContent: !!(step.content || step.data?.content),
+    hasImages: (step.images || []).length > 0,
+    isInteractive: ['quiz', 'practice'].includes(step.type)
   }));
 }
 
@@ -244,6 +345,129 @@ export function isNewCourse(createdAt) {
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   return courseDate > weekAgo;
 }
+
+export function hasHomeworkContent(curriculum) {
+  if (!Array.isArray(curriculum)) return false;
+  return curriculum.some(lesson => 
+    lesson.steps?.some(step => step.type === 'quiz' || step.type === 'practice')
+  );
+}
+
+export function calculateTotalSteps(curriculum) {
+  if (!Array.isArray(curriculum)) return 0;
+  return curriculum.reduce((total, lesson) => total + (lesson.steps?.length || 0), 0);
+}
+
+export function hasQuizContent(curriculum) {
+  if (!Array.isArray(curriculum)) return false;
+  return curriculum.some(lesson => 
+    lesson.steps?.some(step => step.type === 'quiz')
+  );
+}
+
+export function hasImageContent(curriculum) {
+  if (!Array.isArray(curriculum)) return false;
+  return curriculum.some(lesson => 
+    lesson.steps?.some(step => (step.images || []).length > 0)
+  );
+}
+
+// =============================================
+// 🎯 CONTENT GENERATION
+// =============================================
+
+export function generateSkillsList(course) {
+  if (course.learningOutcomes && course.learningOutcomes.length > 0) {
+    return course.learningOutcomes;
+  }
+  
+  const categorySkills = {
+    'ИИ и автоматизация': [
+      'Основы искусственного интеллекта',
+      'Машинное обучение и нейронные сети',
+      'Автоматизация процессов',
+      'Работа с данными'
+    ],
+    'Web-разработка': [
+      'HTML, CSS и JavaScript',
+      'Современные фреймворки',
+      'Адаптивный дизайн',
+      'Работа с API'
+    ],
+    'Графический дизайн': [
+      'Принципы дизайна и композиции',
+      'Работа с цветом и типографикой',
+      'Создание визуальных концепций',
+      'Использование профессиональных инструментов'
+    ]
+  };
+  
+  return categorySkills[course.category] || [
+    'Практические навыки в выбранной области',
+    'Современные методы и технологии',
+    'Решение реальных задач',
+    'Создание портфолио проектов'
+  ];
+}
+
+export function generateModulesList(course) {
+  if (course.curriculum && course.curriculum.length > 0) {
+    return course.curriculum.map(lesson => lesson.title);
+  }
+  
+  return [
+    'Введение в курс',
+    'Основные концепции',
+    'Практические задания',
+    'Продвинутые темы',
+    'Итоговый проект'
+  ];
+}
+
+// =============================================
+// 📋 ENHANCED PROCESSORS
+// =============================================
+
+export function processLessonsEnhanced(lessons) {
+  if (!Array.isArray(lessons)) return [];
+  
+  return lessons.map((lesson, index) => ({
+    id: lesson._id?.toString() || `lesson_${index}`,
+    _id: lesson._id?.toString() || `lesson_${index}`,
+    title: lesson.title,
+    lessonName: lesson.title,
+    description: lesson.description,
+    duration: lesson.duration || '30 мин',
+    order: lesson.order || index,
+    steps: processStepsEnhanced(lesson.steps || [], index),
+    stepCount: (lesson.steps || []).length,
+    hasQuiz: (lesson.steps || []).some(step => step.type === 'quiz'),
+    hasImages: (lesson.steps || []).some(step => (step.images || []).length > 0),
+    estimatedMinutes: extractMinutes(lesson.duration)
+  }));
+}
+
+export function processCurriculumEnhanced(curriculum) {
+  if (!Array.isArray(curriculum)) return [];
+  
+  return curriculum.map((lesson, index) => ({
+    ...lesson,
+    id: lesson._id || lesson.id || `lesson_${index}`,
+    _id: lesson._id || lesson.id || `lesson_${index}`,
+    title: lesson.title || `Урок ${index + 1}`,
+    description: lesson.description || '',
+    duration: lesson.duration || '30 мин',
+    order: lesson.order !== undefined ? lesson.order : index,
+    steps: processStepsEnhanced(lesson.steps || [], index),
+    stepCount: (lesson.steps || []).length,
+    hasQuiz: (lesson.steps || []).some(step => step.type === 'quiz'),
+    hasImages: (lesson.steps || []).some(step => step.images?.length > 0),
+    estimatedMinutes: extractMinutes(lesson.duration)
+  }));
+} courseDate = new Date(createdAt);
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  return courseDate > weekAgo;
+
 
 export function hasHomeworkContent(curriculum) {
   if (!Array.isArray(curriculum)) return false;
