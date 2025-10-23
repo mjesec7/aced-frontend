@@ -13,7 +13,7 @@
         <!-- User Info While Loading -->
         <div class="user-info-loading" v-if="userName">
           <p><strong>Пользователь:</strong> {{ userName }}</p>
-          <p><strong>План:</strong> {{ planName }} ({{ formatAmount(amount) }})</p>
+          <p><strong>План:</strong> {{ planName }} ({{ formatAmount(finalAmount) }})</p>
         </div>
       </div>
 
@@ -21,9 +21,18 @@
       <div v-else-if="error" class="error-state">
         <div class="error-icon">❌</div>
         <h2>Ошибка инициации платежа</h2>
-        <p>{{ error }}</p>
-        <button @click="goBack" class="back-btn">Назад</button>
-        <button @click="retryPayment" class="retry-btn">Попробовать снова</button>
+        <p class="error-message">{{ error }}</p>
+        
+        <!-- Debug Info (only in development) -->
+        <div v-if="showDebugInfo" class="debug-info">
+          <h4>Отладочная информация:</h4>
+          <pre>{{ debugData }}</pre>
+        </div>
+        
+        <div class="error-actions">
+          <button @click="goBack" class="back-btn">← Назад</button>
+          <button @click="retryPayment" class="retry-btn">🔄 Попробовать снова</button>
+        </div>
       </div>
 
       <!-- Payment Method Selection (Before Payment) -->
@@ -44,7 +53,7 @@
             </div>
             <div class="user-row">
               <span class="label">ID пользователя:</span>
-              <span class="value user-id">{{ userId }}</span>
+              <span class="value user-id">{{ userId || 'Не указан' }}</span>
             </div>
             <div class="user-row">
               <span class="label">Email:</span>
@@ -54,13 +63,13 @@
               <span class="label">Текущий план:</span>
               <span class="value current-plan">{{ currentPlan || 'Free' }}</span>
             </div>
-            <div class="user-row upgrade-row" v-if="plan">
+            <div class="user-row upgrade-row" v-if="finalPlan">
               <span class="label">Переход на план:</span>
               <span class="value new-plan">{{ planName }}</span>
             </div>
-            <div class="user-row" v-if="amount">
+            <div class="user-row" v-if="finalAmount">
               <span class="label">Сумма к оплате:</span>
-              <span class="value amount">{{ formatAmount(amount) }}</span>
+              <span class="value amount">{{ formatAmount(finalAmount) }}</span>
             </div>
           </div>
         </div>
@@ -132,11 +141,15 @@
         <!-- Payment Button -->
         <button 
           @click="processPayment" 
-          :disabled="(!selectedPlan && !plan) || !providers[paymentProvider]?.enabled" 
+          :disabled="!canProceedToPayment" 
           class="payment-button"
+          :class="{ disabled: !canProceedToPayment }"
         >
-          <span v-if="providers[paymentProvider]?.enabled">
+          <span v-if="providers[paymentProvider]?.enabled && canProceedToPayment">
             💳 Оплатить через {{ providers[paymentProvider]?.name }}
+          </span>
+          <span v-else-if="!canProceedToPayment">
+            {{ validationMessage }}
           </span>
           <span v-else>
             Выберите доступный способ оплаты
@@ -155,6 +168,7 @@
 </template>
 
 <script>
+import { auth } from '@/firebase';
 import { 
   initiatePaymePayment, 
   initiateMulticardPayment 
@@ -162,6 +176,38 @@ import {
 
 export default {
   name: 'UniversalCheckout',
+  props: {
+    // Route props
+    plan: {
+      type: String,
+      default: ''
+    },
+    provider: {
+      type: String,
+      default: 'multicard'
+    },
+    userId: {
+      type: String,
+      default: ''
+    },
+    userName: {
+      type: String,
+      default: ''
+    },
+    userEmail: {
+      type: String,
+      default: ''
+    },
+    currentPlan: {
+      type: String,
+      default: 'free'
+    },
+    amount: {
+      type: [String, Number],
+      default: 0
+    }
+  },
+  
   data() {
     return {
       loading: false,
@@ -173,7 +219,7 @@ export default {
       loadingMessage: 'Подготовка к оплате...',
 
       // Provider selection with emoji icons
-      paymentProvider: 'multicard', // Default to Multicard based on your env
+      paymentProvider: 'multicard',
       providers: {
         multicard: { 
           enabled: true, 
@@ -201,14 +247,10 @@ export default {
         }
       },
       
-      // Payment data
-      transactionId: '',
-      userId: '',
-      amount: 0,
-      plan: '',
-      userName: '',
-      userEmail: '',
-      currentPlan: '',
+      // Internal state
+      internalUserId: '',
+      internalUserName: '',
+      internalUserEmail: '',
       
       // Debug mode
       showDebugInfo: process.env.NODE_ENV === 'development'
@@ -217,203 +259,311 @@ export default {
   
   computed: {
     finalPlan() {
-      return this.plan || this.selectedPlan || 'start';
+      return this.plan || this.selectedPlan || '';
     },
     
-    amountInTiyin() {
-      let amount = parseInt(this.amount) || 0;
+    finalUserId() {
+      // Try multiple sources for userId
+      return this.internalUserId || 
+             this.userId || 
+             this.$route.query.userId || 
+             auth.currentUser?.uid || 
+             '';
+    },
+    
+    finalUserName() {
+      return this.internalUserName || 
+             this.userName || 
+             this.$route.query.userName || 
+             auth.currentUser?.displayName || 
+             'Пользователь';
+    },
+    
+    finalUserEmail() {
+      return this.internalUserEmail || 
+             this.userEmail || 
+             this.$route.query.userEmail || 
+             auth.currentUser?.email || 
+             '';
+    },
+    
+    finalAmount() {
+      // Calculate amount in tiyin (smallest currency unit)
+      let amt = parseInt(this.amount) || 0;
       
-      // If amount seems to be in UZS (less than 10000), convert to tiyin
-      if (amount > 0 && amount < 10000) {
-        amount = amount * 100;
+      // If amount is provided and seems valid
+      if (amt > 0) {
+        // If amount is in UZS (less than 10000), convert to tiyin
+        if (amt < 10000) {
+          amt = amt * 100;
+        }
+        return amt;
       }
       
-      // If no amount specified, use default amounts
-      if (amount === 0) {
-        const amounts = {
-          start: 26000000,  // 260,000 UZS in tiyin
-          pro: 45500000     // 455,000 UZS in tiyin
-        };
-        amount = amounts[this.finalPlan] || 26000000;
-      }
+      // Use default amounts based on plan
+      const amounts = {
+        start: 26000000,  // 260,000 UZS in tiyin
+        pro: 45500000     // 455,000 UZS in tiyin
+      };
       
-      return amount;
+      return amounts[this.finalPlan] || amounts.start;
     },
     
     planName() {
-      const currentPlan = this.plan || this.selectedPlan;
-      return currentPlan === 'start'
-        ? 'Start Plan'
-        : currentPlan === 'pro'
-        ? 'Pro Plan'
-        : '';
+      const plan = this.finalPlan;
+      return plan === 'start' ? 'Start Plan' : plan === 'pro' ? 'Pro Plan' : '';
     },
     
-    accountObject() {
+    canProceedToPayment() {
+      return Boolean(
+        this.finalUserId && 
+        this.finalPlan && 
+        this.finalAmount > 0 &&
+        this.providers[this.paymentProvider]?.enabled
+      );
+    },
+    
+    validationMessage() {
+      if (!this.finalUserId) return 'Не указан ID пользователя';
+      if (!this.finalPlan) return 'Выберите план';
+      if (!this.finalAmount || this.finalAmount <= 0) return 'Неверная сумма платежа';
+      if (!this.providers[this.paymentProvider]?.enabled) return 'Выберите доступный способ оплаты';
+      return 'Заполните все поля';
+    },
+    
+    debugData() {
       return {
-        Login: this.userId,
-        user_id: String(this.userId),
-        plan: this.finalPlan,
-        email: this.userEmail || '',
-        name: this.userName || ''
+        props: {
+          plan: this.plan,
+          userId: this.userId,
+          userName: this.userName,
+          userEmail: this.userEmail,
+          amount: this.amount,
+          provider: this.provider
+        },
+        computed: {
+          finalPlan: this.finalPlan,
+          finalUserId: this.finalUserId,
+          finalUserName: this.finalUserName,
+          finalUserEmail: this.finalUserEmail,
+          finalAmount: this.finalAmount,
+          canProceed: this.canProceedToPayment
+        },
+        route: {
+          query: this.$route.query,
+          params: this.$route.params
+        },
+        auth: {
+          currentUser: auth.currentUser ? {
+            uid: auth.currentUser.uid,
+            email: auth.currentUser.email,
+            displayName: auth.currentUser.displayName
+          } : null
+        }
       };
     }
   },
   
   async mounted() {
-    this.loadPaymentData();
-    this.validatePaymentData();
-    
-    // Auto-initiation logic
-    if (this.userId && this.plan && this.$route.query.auto === 'true') {
-      const urlProvider = new URLSearchParams(window.location.search).get('provider');
-      if (urlProvider && this.providers[urlProvider]?.enabled) {
-        this.paymentProvider = urlProvider;
-      }
-      await this.processPayment();
-    }
+    await this.initializeCheckout();
   },
   
   methods: {
-    safeDisplayError(error) {
-      if (typeof error === 'string') {
-        return error;
+    async initializeCheckout() {
+      try {
+        // Load data from multiple sources
+        this.loadPaymentData();
+        
+        // Wait for auth if needed
+        if (!this.finalUserId && auth.currentUser === null) {
+          console.log('⏳ Waiting for auth...');
+          await new Promise((resolve) => {
+            const unsubscribe = auth.onAuthStateChanged((user) => {
+              if (user) {
+                console.log('✅ Auth ready:', user.uid);
+                this.internalUserId = user.uid;
+                this.internalUserName = user.displayName || 'Пользователь';
+                this.internalUserEmail = user.email || '';
+                unsubscribe();
+                resolve();
+              }
+            });
+            
+            // Timeout after 3 seconds
+            setTimeout(() => {
+              unsubscribe();
+              resolve();
+            }, 3000);
+          });
+        }
+        
+        // Validate after loading
+        this.validatePaymentData();
+        
+        // Auto-process if requested
+        if (this.$route.query.auto === 'true' && this.canProceedToPayment) {
+          console.log('🚀 Auto-processing payment...');
+          await this.processPayment();
+        }
+        
+      } catch (error) {
+        console.error('❌ Checkout initialization error:', error);
+        this.error = 'Ошибка инициализации платежа';
       }
-      
-      if (error && typeof error === 'object') {
-        if (error.message && typeof error.message === 'string') {
-          return error.message;
-        }
-        
-        if (error.error && typeof error.error === 'string') {
-          return error.error;
-        }
-        
-        if (error.details && typeof error.details === 'string') {
-          return error.details;
-        }
-        
-        if (error.response && error.response.data) {
-          if (typeof error.response.data.message === 'string') {
-            return error.response.data.message;
-          }
-          if (typeof error.response.data.error === 'string') {
-            return error.response.data.error;
-          }
-          if (typeof error.response.data === 'string') {
-            return error.response.data;
-          }
-        }
-        
-        try {
-          return JSON.stringify(error, null, 2);
-        } catch (stringifyError) {
-          return 'Произошла ошибка при обработке платежа';
-        }
-      }
-      
-      return error ? String(error) : 'Неизвестная ошибка';
     },
     
     loadPaymentData() {
-      const params = new URLSearchParams(window.location.search);
-      this.transactionId = params.get('transactionId') || '';
-      this.userId = params.get('userId') || '';
-      this.amount = parseInt(params.get('amount')) || 0;
-      this.plan = params.get('plan') || '';
-      this.userName = params.get('userName') || '';
-      this.userEmail = params.get('userEmail') || '';
-      this.currentPlan = params.get('currentPlan') || 'Free';
+      // Load from props first, then from route query
+      const query = this.$route.query;
       
-      this.selectedLanguage = params.get('lang') || 'ru';
-      this.selectedPlan = this.plan || params.get('selectedPlan') || '';
+      this.internalUserId = this.userId || query.userId || '';
+      this.internalUserName = this.userName || query.userName || '';
+      this.internalUserEmail = this.userEmail || query.userEmail || '';
       
-      const urlProvider = params.get('provider') || this.$route.params.provider;
-      if (urlProvider && this.providers[urlProvider]) {
-        this.paymentProvider = urlProvider;
+      // Set selected plan if provided
+      if (this.plan) {
+        this.selectedPlan = this.plan;
+      } else if (query.plan) {
+        this.selectedPlan = query.plan;
       }
+      
+      // Set language
+      this.selectedLanguage = query.lang || 'ru';
+      
+      // Set provider
+      if (this.provider && this.providers[this.provider]) {
+        this.paymentProvider = this.provider;
+      } else if (query.provider && this.providers[query.provider]) {
+        this.paymentProvider = query.provider;
+      }
+      
+      console.log('📊 Payment data loaded:', {
+        userId: this.finalUserId,
+        plan: this.finalPlan,
+        amount: this.finalAmount,
+        provider: this.paymentProvider
+      });
     },
 
     validatePaymentData() {
       const errors = [];
 
-      if (!this.userId) {
+      if (!this.finalUserId) {
         errors.push('User ID is required');
       }
 
-      if (!this.finalPlan && !this.selectedPlan) {
+      if (!this.finalPlan) {
         errors.push('Plan selection is required');
       }
 
-      if (!this.amountInTiyin || this.amountInTiyin <= 0) {
+      if (!this.finalAmount || this.finalAmount <= 0) {
         errors.push('Valid amount is required');
       }
 
       if (errors.length > 0) {
         console.warn('⚠️ Payment data validation issues:', errors);
-        this.error = errors.join(', ');
+        // Don't set error here - let user fix it through UI
       }
     },
 
-    handlePaymentError(error) {
-      console.error('❌ Payment initialization error:', error);
-      this.error = this.safeDisplayError(error);
-      this.loading = false;
-    },
-
     async processPayment() {
+      if (!this.canProceedToPayment) {
+        this.error = this.validationMessage;
+        return;
+      }
+      
       try {
         this.loading = true;
         this.error = '';
 
         const provider = this.paymentProvider;
         const planToUse = this.finalPlan;
+        const userIdToUse = this.finalUserId;
+        const amountToUse = this.finalAmount;
 
-        if (!this.userId || !planToUse) {
-          throw new Error('Missing user ID or plan information');
-        }
+        console.log('💳 Processing payment:', {
+          provider,
+          plan: planToUse,
+          userId: userIdToUse,
+          amount: amountToUse
+        });
         
         this.loadingMessage = `Перенаправление на ${this.providers[provider]?.name || 'оплату'}...`;
         
         if (provider === 'payme') {
           const result = await initiatePaymePayment(
-            this.userId, 
+            userIdToUse, 
             planToUse, 
-            { lang: this.selectedLanguage }
+            { 
+              lang: this.selectedLanguage,
+              amount: amountToUse
+            }
           );
+          
           if (result.paymentUrl) {
+            console.log('✅ PayMe URL received:', result.paymentUrl);
             window.location.href = result.paymentUrl;
           } else {
             throw new Error(result.error || 'Не удалось получить ссылку на оплату PayMe');
           }
+          
         } else if (provider === 'multicard') {
           const result = await initiateMulticardPayment({
-            userId: this.userId,
+            userId: userIdToUse,
             plan: planToUse,
-            amount: this.amountInTiyin,
-            lang: this.selectedLanguage
+            amount: amountToUse,
+            lang: this.selectedLanguage,
+            userName: this.finalUserName,
+            userEmail: this.finalUserEmail
           });
+          
           if (result.data?.checkoutUrl) {
+            console.log('✅ Multicard URL received:', result.data.checkoutUrl);
             window.location.href = result.data.checkoutUrl;
           } else {
             throw new Error(result.error || 'Не удалось получить ссылку на оплату Multicard');
           }
+          
         } else {
           throw new Error('Выбранный способ оплаты временно недоступен');
         }
 
       } catch (error) {
-        this.handlePaymentError(error);
+        console.error('❌ Payment processing error:', error);
+        this.error = this.formatError(error);
+        this.loading = false;
       }
+    },
+
+    formatError(error) {
+      if (typeof error === 'string') {
+        return error;
+      }
+      
+      if (error?.response?.data?.message) {
+        return error.response.data.message;
+      }
+      
+      if (error?.response?.data?.error) {
+        return error.response.data.error;
+      }
+      
+      if (error?.message) {
+        return error.message;
+      }
+      
+      return 'Произошла ошибка при обработке платежа. Попробуйте снова.';
     },
 
     async retryPayment() {
       this.error = '';
       this.loading = false;
       
+      // Reload data
+      this.loadPaymentData();
       this.validatePaymentData();
       
-      if (!this.error) {
+      if (this.canProceedToPayment) {
         await this.processPayment();
       }
     },
@@ -442,6 +592,7 @@ export default {
 </script>
 
 <style scoped>
+/* Keeping all the existing styles from before */
 .universal-checkout {
   min-height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -569,7 +720,6 @@ export default {
   font-weight: bold;
 }
 
-/* Provider Selection Styles */
 .provider-selection {
   margin-bottom: 25px;
 }
@@ -775,13 +925,14 @@ export default {
   margin-bottom: 15px;
 }
 
-.payment-button:hover:not(:disabled) {
+.payment-button:hover:not(:disabled):not(.disabled) {
   background: linear-gradient(135deg, #5568d3, #6a3f91);
   transform: translateY(-2px);
   box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
 }
 
-.payment-button:disabled {
+.payment-button:disabled,
+.payment-button.disabled {
   background: #ccc;
   cursor: not-allowed;
   transform: none;
@@ -824,19 +975,50 @@ export default {
   margin-bottom: 15px;
 }
 
-.error-state p {
+.error-message {
   color: #666;
   margin-bottom: 25px;
+  font-size: 1.05rem;
+}
+
+.debug-info {
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 15px;
+  margin: 20px 0;
+  text-align: left;
+}
+
+.debug-info h4 {
+  margin-top: 0;
+  color: #333;
+}
+
+.debug-info pre {
+  background: white;
+  padding: 10px;
+  border-radius: 4px;
+  overflow-x: auto;
+  font-size: 0.85rem;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.error-actions {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
 }
 
 .back-btn, .retry-btn {
   padding: 12px 24px;
-  margin: 10px;
   border: none;
   border-radius: 8px;
   cursor: pointer;
   font-weight: bold;
   transition: all 0.2s ease;
+  font-size: 1rem;
 }
 
 .back-btn {
@@ -877,6 +1059,14 @@ export default {
   
   .provider-icon {
     font-size: 2rem;
+  }
+  
+  .error-actions {
+    flex-direction: column;
+  }
+  
+  .back-btn, .retry-btn {
+    width: 100%;
   }
 }
 

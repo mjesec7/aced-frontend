@@ -1701,105 +1701,84 @@ export default {
       this.paymentPlan = plan;
     },
 
-    // ✅ UPDATED: Navigate to UniversalCheckout with proper params
     async goToPayment() {
-      if (!this.paymentPlan) {
-        this.showNotification('Выберите тариф для оплаты', 'warning');
-        return;
-      }
+  if (!this.paymentPlan) {
+    this.showNotification('Выберите тариф для оплаты', 'warning');
+    return;
+  }
 
-      try {
-        // Navigate to UniversalCheckout (PaymentSelection route)
-        await this.$router.push({
-          name: 'PaymentSelection',
-          params: { 
-            plan: this.paymentPlan 
-          },
-          query: {
-            // Pass user data as query params
-            userId: this.userId,
-            userName: this.user.name || 'Пользователь',
-            userEmail: this.user.email || '',
-            currentPlan: this.currentPlan,
-            // Default provider (can be changed in checkout)
-            provider: 'multicard'
-          }
-        });
-      } catch (error) {
-        console.error('❌ Navigation error:', error);
-        this.showNotification('Ошибка при переходе к оплате', 'error');
-      }
-    },
+  // Validate user data before navigation
+  if (!this.userId) {
+    this.showNotification('Ошибка: не найден ID пользователя. Попробуйте обновить страницу.', 'error');
+    return;
+  }
 
-    getPaymentButtonText() {
-      if (!this.paymentPlan) return 'Выберите тариф';
-      if (this.currentPlan === this.paymentPlan) return 'Уже активен';
-      return `💳 Оплатить ${this.paymentPlan.toUpperCase()}`;
-    },
+  try {
+    console.log('🚀 Navigating to payment with data:', {
+      plan: this.paymentPlan,
+      userId: this.userId,
+      userName: this.user.name,
+      userEmail: this.user.email,
+      currentPlan: this.currentPlan
+    });
 
-    async saveChanges() {
-      this.loading = true;
-      this.loadingText = 'Сохранение изменений...';
-      
-      try {
-        if (!this.currentUser) {
-          this.showNotification('Пользователь не найден', 'error');
-          return;
-        }
+    // Calculate amount based on plan
+    const amounts = {
+      start: 260000, // 260,000 UZS
+      pro: 455000    // 455,000 UZS
+    };
 
-        const userRef = doc(db, "users", this.currentUser.uid);
-        await updateDoc(userRef, {
-          name: this.user.name,
-          surname: this.user.surname,
-          email: this.user.email,
-          updatedAt: new Date().toISOString()
-        });
-
-        if (this.user.email !== this.currentUser.email) {
-          await updateEmail(this.currentUser, this.user.email);
-        }
-
-        if (this.newPassword && this.oldPassword) {
-          if (this.newPassword !== this.confirmPassword) {
-            this.showNotification('Пароли не совпадают', 'error');
-            return;
-          }
-
-          const credential = EmailAuthProvider.credential(
-            this.currentUser.email,
-            this.oldPassword
-          );
-
-          await reauthenticateWithCredential(this.currentUser, credential);
-          await updatePassword(this.currentUser, this.newPassword);
-
-          this.oldPassword = '';
-          this.newPassword = '';
-          this.confirmPassword = '';
-        }
-
-        this.showNotification('Изменения сохранены успешно!', 'success');
-
-      } catch (error) {
-        console.error('❌ Save changes error:', error);
+    // Navigate to UniversalCheckout (PaymentSelection route)
+    await this.$router.push({
+      name: 'PaymentSelection',
+      params: { 
+        plan: this.paymentPlan 
+      },
+      query: {
+        // Required fields
+        userId: this.userId,
+        plan: this.paymentPlan,
+        amount: amounts[this.paymentPlan] || amounts.start,
         
-        let errorMessage = 'Ошибка сохранения изменений';
+        // Optional but recommended fields
+        userName: this.user.name || 'Пользователь',
+        userEmail: this.user.email || '',
+        currentPlan: this.currentPlan || 'free',
         
-        if (error.code === 'auth/wrong-password') {
-          errorMessage = 'Неверный текущий пароль';
-        } else if (error.code === 'auth/weak-password') {
-          errorMessage = 'Пароль слишком слабый';
-        } else if (error.code === 'auth/email-already-in-use') {
-          errorMessage = 'Email уже используется';
-        } else if (error.code === 'auth/invalid-email') {
-          errorMessage = 'Неверный формат email';
-        }
+        // Default provider (can be changed in checkout)
+        provider: 'multicard',
         
-        this.showNotification(errorMessage, 'error');
-      } finally {
-        this.loading = false;
+        // Additional metadata
+        source: 'settings',
+        timestamp: Date.now()
       }
-    },
+    });
+  } catch (error) {
+    console.error('❌ Navigation error:', error);
+    
+    // Handle navigation error
+    if (error.name !== 'NavigationDuplicated') {
+      this.showNotification('Ошибка при переходе к оплате. Попробуйте снова.', 'error');
+    }
+  }
+},
+
+getPaymentButtonText() {
+  if (!this.paymentPlan) return 'Выберите тариф';
+  if (this.currentPlan === this.paymentPlan) return 'Уже активен';
+  
+  const planNames = {
+    start: 'START',
+    pro: 'PRO'
+  };
+  
+  return `💳 Оплатить ${planNames[this.paymentPlan] || this.paymentPlan.toUpperCase()}`;
+}
+
+
+
+
+
 
     async sendPasswordReset() {
       if (!this.user.email) {
