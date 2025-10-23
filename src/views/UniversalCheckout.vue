@@ -4,12 +4,12 @@
       <!-- Loading State -->
       <div v-if="loading" class="loading-state">
         <div class="payme-logo">
+          <!-- TODO: Update logo based on provider? -->
           <img src="../assets/icons/payme_white.png" alt="PayMe" class="logo" />
-          <h1>PayMe</h1>
+          <h1>{{ loadingMessage }}</h1>
         </div>
         <div class="spinner"></div>
-        <h2>{{ loadingMessage }}</h2>
-        <p>{{ getStateDescription() }}</p>
+        <p>Перенаправление на страницу оплаты...</p>
         
         <!-- User Info While Loading -->
         <div class="user-info-loading" v-if="userName">
@@ -28,10 +28,10 @@
       </div>
 
       <!-- Payment Method Selection (Before Payment) -->
-      <div v-else-if="!paymentUrl && !dynamicContent" class="method-selection-state">
+      <div v-else class="method-selection-state">
         <div class="payme-logo">
           <img src="../assets/icons/payme_white.png" alt="PayMe" class="logo" />
-          <h1>PayMe Checkout</h1>
+          <h1>Checkout</h1>
         </div>
 
         <!-- User Information -->
@@ -65,44 +65,20 @@
           </div>
         </div>
 
-        <!-- Payment Method Selection -->
-        <div class="payment-method-selection">
-          <h3>Выберите способ оплаты</h3>
-          <div class="method-options">
-            <label class="method-option" :class="{ active: selectedMethod === 'post' }">
-              <input type="radio" v-model="selectedMethod" value="post" />
-              <span class="method-icon">📝</span>
-              <div class="method-text">
-                <strong>{{ getMethodName('post') }}</strong>
-                <small>Автоматическая форма</small>
-              </div>
-            </label>
-            
-            <label class="method-option" :class="{ active: selectedMethod === 'get' }">
-              <input type="radio" v-model="selectedMethod" value="get" />
-              <span class="method-icon">🔗</span>
-              <div class="method-text">
-                <strong>{{ getMethodName('get') }}</strong>
-                <small>Прямая ссылка</small>
-              </div>
-            </label>
-            
-            <label class="method-option" :class="{ active: selectedMethod === 'button' }">
-              <input type="radio" v-model="selectedMethod" value="button" />
-              <span class="method-icon">🔘</span>
-              <div class="method-text">
-                <strong>{{ getMethodName('button') }}</strong>
-                <small>Интерактивная кнопка</small>
-              </div>
-            </label>
-            
-            <label class="method-option" :class="{ active: selectedMethod === 'qr' }">
-              <input type="radio" v-model="selectedMethod" value="qr" />
-              <span class="method-icon">📱</span>
-              <div class="method-text">
-                <strong>{{ getMethodName('qr') }}</strong>
-                <small>Сканировать с телефона</small>
-              </div>
+        <!-- NEW: Payment Provider Detection -->
+        <div class="provider-selection">
+          <h3>Выберите Платежную Систему</h3>
+          <div class="provider-options">
+            <label v-for="(provider, key) in providers"
+                   :key="key"
+                   :class="{ active: paymentProvider === key, disabled: !provider.enabled }">
+              <input type="radio"
+                     v-model="paymentProvider"
+                     :value="key"
+                     :disabled="!provider.enabled" />
+              <!-- Using placeholder images -->
+              <img :src="provider.icon.includes('...') ? `https://placehold.co/32x32/eee/aaa?text=${provider.name.charAt(0)}` : provider.icon" :alt="provider.name" />
+              <span>{{ provider.name }}</span>
             </label>
           </div>
         </div>
@@ -141,107 +117,48 @@
 
         <!-- Payment Button -->
         <button 
-          @click="initializePayment" 
-          :disabled="!selectedPlan && !plan" 
+          @click="processPayment" 
+          :disabled="(!selectedPlan && !plan) || !providers[paymentProvider]?.enabled" 
           class="payment-button"
         >
           💳 Перейти к оплате
         </button>
       </div>
 
-      <!-- Success/Payment Ready State -->
-      <div v-else class="payment-ready-state">
-        <div class="payme-logo">
-          <img src="../assets/icons/payme_white.png" alt="PayMe" class="logo" />
-          <h1>PayMe</h1>
-        </div>
-        
-        <h2>{{ getStateTitle() }}</h2>
-        <p>{{ getStateDescription() }}</p>
-
-        <!-- Transaction Info -->
-        <div class="transaction-info" v-if="transactionId">
-          <h4>Детали транзакции</h4>
-          <p><strong>ID:</strong> {{ transactionId }}</p>
-          <p><strong>Пользователь:</strong> {{ userName }}</p>
-          <p><strong>План:</strong> {{ planName }}</p>
-          <p><strong>Сумма:</strong> {{ formatAmount(amount) }}</p>
-        </div>
-
-        <!-- Dynamic Content Area -->
-        <div class="payment-content">
-          <!-- For POST method form -->
-          <div v-if="selectedMethod === 'post' && dynamicContent?.formHtml" 
-               v-html="dynamicContent.formHtml"
-               class="form-content">
-          </div>
-          
-          <!-- For GET method URL -->
-          <div v-if="selectedMethod === 'get' && paymentUrl" class="url-content">
-            <p>Переход к PayMe...</p>
-            <a :href="paymentUrl" target="_blank" class="payment-link">
-              Нажмите, если не перенаправились автоматически
-            </a>
-          </div>
-          
-          <!-- For Button method -->
-          <div v-if="selectedMethod === 'button' && dynamicContent?.buttonHtml"
-               v-html="dynamicContent.buttonHtml"
-               class="button-content">
-          </div>
-
-          <!-- For QR method -->
-          <div v-if="selectedMethod === 'qr' && dynamicContent?.qrHtml"
-               v-html="dynamicContent.qrHtml"
-               class="qr-content">
-          </div>
-
-          <!-- Manual redirect button for GET/POST methods -->
-          <div v-if="(selectedMethod === 'get' || selectedMethod === 'post') && paymentUrl">
-            <button @click="redirectToPayMe" class="payme-btn">
-              💳 Перейти к PayMe
-            </button>
-            
-            <div class="redirect-note" v-if="selectedMethod === 'get' || selectedMethod === 'post'">
-              <p><small>Автоматическое перенаправление через {{ countdown }} секунд...</small></p>
-            </div>
-          </div>
-        </div>
-
-        <!-- PayMe Info -->
-        <div class="payme-info">
-          <p>🔒 На сайте PayMe вы сможете:</p>
-          <ul>
-            <li>Безопасно ввести данные карты Humo или UzCard</li>
-            <li>Получить SMS код от вашего банка</li>
-            <li>Завершить платеж с полной защитой данных</li>
-          </ul>
-        </div>
-      </div>
     </div>
   </div>
 </template>
 
 <script>
 // ✅ Import from the main API file with safe error handling
-import { initiatePaymePayment, generatePaymeForm, safeErrorMessage } from '@/api';
+// Added initiateMulticardPayment
+import { 
+  initiatePaymePayment, 
+  safeErrorMessage, 
+  initiateMulticardPayment 
+} from '@/api';
 
 export default {
-  name: 'PaymeCheckout',
+  name: 'UniversalCheckout', // Renamed from PaymeCheckout
   data() {
     return {
       loading: false,
       error: '',
-      paymentUrl: '',
-      dynamicContent: null,
-      countdown: 5,
-      countdownInterval: null,
+      // paymentUrl and dynamicContent removed, as new flow redirects directly
       
       // Payment method selection
-      selectedMethod: 'post', // 'post', 'get', 'button', 'qr'
       selectedLanguage: 'ru',
       selectedPlan: '',
       loadingMessage: 'Подготовка к оплате...',
+
+      // NEW: Provider selection
+      paymentProvider: 'payme', // 'payme', 'multicard', 'click', 'uzum'
+      providers: {
+        payme: { enabled: true, name: 'PayMe', icon: '../assets/icons/payme_color.png' }, // Assuming you have a color icon
+        multicard: { enabled: true, name: 'Multicard', icon: '...' },
+        click: { enabled: false, name: 'Click', icon: '...' },
+        uzum: { enabled: false, name: 'Uzum', icon: '...' }
+      },
       
       // Payment data
       transactionId: '',
@@ -309,15 +226,14 @@ export default {
     this.loadPaymentData();
     this.validatePaymentData();
     
-    // Don't auto-initialize, let user choose method first unless URL has specific params
+    // Auto-initiation logic (if you still want it)
     if (this.userId && this.plan && this.$route.query.auto === 'true') {
-      await this.initializePayment();
-    }
-  },
-  
-  beforeUnmount() {
-    if (this.countdownInterval) {
-      clearInterval(this.countdownInterval);
+      // Check if a provider was also passed in the URL
+      const urlProvider = new URLSearchParams(window.location.search).get('provider');
+      if (urlProvider && this.providers[urlProvider]?.enabled) {
+        this.paymentProvider = urlProvider;
+      }
+      await this.processPayment();
     }
   },
   
@@ -393,12 +309,15 @@ export default {
       this.userEmail = params.get('userEmail') || '';
       this.currentPlan = params.get('currentPlan') || 'Free';
       
-      // Get preferred method and language from URL if available
-      this.selectedMethod = params.get('method') || 'post';
+      // Get preferred language from URL if available
       this.selectedLanguage = params.get('lang') || 'ru';
       this.selectedPlan = this.plan || params.get('selectedPlan') || '';
       
-    
+      // Check for provider in URL (this component now handles provider selection)
+      const urlProvider = params.get('provider') || this.$route.params.provider;
+      if (urlProvider && this.providers[urlProvider]) {
+        this.paymentProvider = urlProvider;
+      }
     },
 
     // ✅ FIXED: Validation for required PayMe parameters
@@ -423,233 +342,75 @@ export default {
       }
     },
 
-    // ✅ FIXED: Complete payment initialization with safe error handling
-    async initializePayment() {
+    // NEW: Error handler
+    handlePaymentError(error) {
+      console.error('❌ Payment initialization error:', error);
+      this.error = this.safeDisplayError(error);
+      this.loading = false;
+    },
+
+    // NEW: Simplified processPayment method from user snippet
+    async processPayment() {
       try {
+        this.loading = true;
+        this.error = '';
+
+        const provider = this.paymentProvider;
         const planToUse = this.finalPlan;
-        
+
         if (!this.userId || !planToUse) {
           throw new Error('Missing user ID or plan information');
         }
-
-        this.loading = true;
-        this.error = '';
-        this.paymentUrl = '';
-        this.dynamicContent = null;
-
-        this.loadingMessage = this.getLoadingMessage();
-
-        // Environment check
-        const merchantId = import.meta.env.VITE_PAYME_MERCHANT_ID;
         
-        if (!merchantId || merchantId === 'undefined') {
-          console.error('❌ VITE_PAYME_MERCHANT_ID not set');
-          throw new Error('PayMe configuration error. Check environment variables.');
-        }
-
-
-        // Prepare payment data
-        const paymentData = {
-          method: this.selectedMethod,
-          lang: this.selectedLanguage,
-          callback: `${window.location.origin}/payment/success`,
-          callback_timeout: 15000,
-          Login: this.userId,
-          style: 'colored',
-          qrWidth: 250
-        };
-
-
-        // Call the payment API
-        const result = await initiatePaymePayment(this.userId, planToUse, paymentData);
-
-
-        if (result && result.success) {
-          // Handle different response types
+        this.loadingMessage = `Перенаправление на ${this.providers[provider]?.name || 'оплату'}...`;
+        
+        if (provider === 'payme') {
+          // This WILL redirect to PayMe's external page
+          // NOTE: This now sends *minimal* data, not the complex form object.
+          // This assumes your `initiatePaymePayment` API is updated
+          // to handle a simple request and return a redirect URL.
+          const result = await initiatePaymePayment(
+            this.userId, 
+            planToUse, 
+            { lang: this.selectedLanguage } // Passing language
+          );
           if (result.paymentUrl) {
-            this.paymentUrl = result.paymentUrl;
-            
-            // Verify URL doesn't contain undefined
-            if (this.paymentUrl.includes('undefined')) {
-              throw new Error('Generated payment URL contains undefined values');
-            }
-            
-          }
-          
-          if (result.formHtml) {
-            this.dynamicContent = { formHtml: result.formHtml };
-          }
-          
-          if (result.buttonHtml) {
-            this.dynamicContent = { buttonHtml: result.buttonHtml };
-          }
-          
-          if (result.qrHtml) {
-            this.dynamicContent = { qrHtml: result.qrHtml };
-          }
-          
-          this.transactionId = result.transaction?.id || this.transactionId;
-          this.loading = false;
-
-          // Handle auto-redirect for GET method
-          if (this.selectedMethod === 'get' && this.paymentUrl) {
-            this.startCountdown();
-          }
-          
-        } else {
-          // ✅ FIXED: Safe error handling for failed results
-          const errorMsg = result?.error || result?.message || 'Failed to initialize payment';
-          throw new Error(this.safeDisplayError(errorMsg));
-        }
-
-      } catch (error) {
-        console.error('❌ Payment initialization error:', error);
-        
-        // ✅ FIXED: Safe error message assignment - NO MORE [object Object]
-        this.error = this.safeDisplayError(error);
-        this.loading = false;
-      }
-    },
-
-    async generateDynamicContent() {
-      try {
-        if (this.selectedMethod === 'post' || this.selectedMethod === 'button' || this.selectedMethod === 'qr') {
-          
-          // ✅ FIXED: Pass proper data structure for form generation
-          const formData = {
-            method: this.selectedMethod,
-            lang: this.selectedLanguage,
-            style: 'colored',
-            qrWidth: 250,
-            amount: this.amountInTiyin,
-            account: this.accountObject,
-            callback: `${window.location.origin}/payment/success`,
-            callback_timeout: 15000
-          };
-
-          const result = await generatePaymeForm(this.userId, this.finalPlan, formData);
-          
-          if (result && result.success) {
-            this.dynamicContent = result;
-            
-            // For POST method, auto-submit the form after a delay
-            if (this.selectedMethod === 'post' && result.formHtml) {
-              setTimeout(() => {
-                this.autoSubmitForm();
-              }, 2000);
-            }
+            window.location.href = result.paymentUrl; // External redirect!
           } else {
-            console.warn('⚠️ Dynamic content generation failed:', this.safeDisplayError(result?.error || result));
+            throw new Error(result.error || 'Не удалось получить ссылку на оплату PayMe');
           }
-        }
-      } catch (error) {
-        console.error('❌ Dynamic content generation error:', error);
-        // Don't fail the whole process, just continue with URL redirect
-      }
-    },
-
-    autoSubmitForm() {
-      try {
-        const form = document.querySelector('#payme-form') || document.querySelector('form');
-        if (form) {
-          form.submit();
-        } else {
-          console.warn('⚠️ Form not found, falling back to URL redirect');
-          if (this.paymentUrl) {
-            this.redirectToPayMe();
+        } else if (provider === 'multicard') {
+          // This WILL redirect to Multicard's external page
+          const result = await initiateMulticardPayment({
+            userId: this.userId,
+            plan: planToUse,
+            amount: this.amountInTiyin, // Sending amount in tiyin
+            lang: this.selectedLanguage
+          });
+          if (result.data?.checkoutUrl) {
+            window.location.href = result.data.checkoutUrl; // External redirect!
           } else {
-            this.error = 'Payment form not generated properly';
+            throw new Error(result.error || 'Не удалось получить ссылку на оплату Multicard');
           }
+        } else {
+          throw new Error('Выбранный способ оплаты не поддерживается.');
         }
+
       } catch (error) {
-        console.error('❌ Auto-submit failed:', error);
-        this.error = this.safeDisplayError(error);
-      }
-    },
-
-    startCountdown() {
-      this.countdown = 5;
-      this.countdownInterval = setInterval(() => {
-        this.countdown--;
-        if (this.countdown <= 0) {
-          this.redirectToPayMe();
-        }
-      }, 1000);
-    },
-
-    redirectToPayMe() {
-      if (this.countdownInterval) {
-        clearInterval(this.countdownInterval);
-      }
-
-      if (this.paymentUrl) {
-        
-        try {
-          // Validate URL format
-          new URL(this.paymentUrl);
-          window.location.href = this.paymentUrl;
-        } catch (urlError) {
-          console.error('❌ Invalid payment URL:', this.paymentUrl);
-          this.error = 'Invalid payment URL received';
-        }
-      } else {
-        this.error = 'Payment URL not available';
+        this.handlePaymentError(error);
       }
     },
 
     async retryPayment() {
       this.error = '';
       this.loading = false;
-      this.countdown = 5;
-      this.paymentUrl = '';
-      this.dynamicContent = null;
       
       // Re-validate data before retry
       this.validatePaymentData();
       
       if (!this.error) {
-        await this.initializePayment();
+        await this.processPayment(); // Changed to call new method
       }
-    },
-    
-    getMethodName(method) {
-      const names = {
-        'post': 'Форма оплаты',
-        'get': 'Прямая ссылка',
-        'button': 'Кнопка PayMe',
-        'qr': 'QR-код'
-      };
-      return names[method] || method;
-    },
-
-    getLoadingMessage() {
-      const messages = {
-        'post': 'Подготовка формы оплаты...',
-        'get': 'Генерация ссылки оплаты...',
-        'button': 'Создание кнопки PayMe...',
-        'qr': 'Генерация QR-кода...'
-      };
-      return messages[this.selectedMethod] || 'Подготовка к оплате...';
-    },
-
-    getStateTitle() {
-      const titles = {
-        'post': 'Форма готова',
-        'get': 'Переход к оплате',
-        'button': 'Кнопка PayMe',
-        'qr': 'QR-код для оплаты'
-      };
-      return titles[this.selectedMethod] || 'Переход к оплате';
-    },
-
-    getStateDescription() {
-      const descriptions = {
-        'post': 'Форма будет автоматически отправлена на сайт PayMe',
-        'get': 'Вы будете перенаправлены на официальную страницу PayMe',
-        'button': 'Нажмите на кнопку PayMe для продолжения',
-        'qr': 'Отсканируйте QR-код с помощью приложения PayMe'
-      };
-      return descriptions[this.selectedMethod] || 'Переход к PayMe';
     },
 
     formatAmount(amount) {
@@ -711,6 +472,11 @@ export default {
   margin: 0;
   font-size: 2.5rem;
   font-weight: bold;
+}
+
+.loading-state h1 {
+  font-size: 2rem;
+  color: #333;
 }
 
 .spinner {
@@ -793,22 +559,20 @@ export default {
   font-weight: bold;
 }
 
-.payment-method-selection {
+/* NEW styles for provider selection */
+.provider-selection {
   margin-bottom: 25px;
 }
-
-.payment-method-selection h3 {
+.provider-selection h3 {
   margin-bottom: 15px;
   color: #333;
 }
-
-.method-options {
+.provider-options {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
-
-.method-option {
+.provider-options label {
   display: flex;
   align-items: center;
   padding: 15px;
@@ -817,40 +581,39 @@ export default {
   cursor: pointer;
   transition: all 0.3s ease;
 }
-
-.method-option:hover {
+.provider-options label:hover {
   border-color: #4A90E2;
   background: #f8f9fa;
 }
-
-.method-option.active {
+.provider-options label.active {
   border-color: #4A90E2;
   background: #e3f2fd;
 }
-
-.method-option input[type="radio"] {
+.provider-options label.disabled {
+  border-color: #eee;
+  background: #fdfdfd;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.provider-options label.disabled:hover {
+  background: #fdfdfd;
+}
+.provider-options input[type="radio"] {
   display: none;
 }
-
-.method-icon {
-  font-size: 1.5rem;
+.provider-options img {
+  width: 32px;
+  height: 32px;
   margin-right: 12px;
+  object-fit: contain;
 }
-
-.method-text {
-  display: flex;
-  flex-direction: column;
-}
-
-.method-text strong {
+.provider-options span {
   color: #333;
-  margin-bottom: 4px;
+  font-weight: 600;
 }
 
-.method-text small {
-  color: #666;
-  font-size: 0.85rem;
-}
+
+/* PayMe method selection removed */
 
 .plan-selection {
   margin-bottom: 25px;
@@ -963,38 +726,7 @@ export default {
   color: white;
 }
 
-.transaction-info {
-  background: #f8f9fa;
-  padding: 20px;
-  border-radius: 12px;
-  margin-bottom: 20px;
-}
-
-.payment-content {
-  margin: 20px 0;
-}
-
-.redirect-note {
-  text-align: center;
-  margin-top: 15px;
-  color: #666;
-}
-
-.payme-info {
-  background: #e8f5e8;
-  padding: 20px;
-  border-radius: 12px;
-  margin-top: 20px;
-}
-
-.payme-info ul {
-  margin: 10px 0 0 20px;
-  color: #2e7d32;
-}
-
-.payme-info li {
-  margin-bottom: 5px;
-}
+/* Removed styles for payment-ready-state, transaction-info, payment-content, etc. */
 
 @media (max-width: 768px) {
   .checkout-container {
@@ -1002,9 +734,12 @@ export default {
     margin: 10px;
   }
   
-  .method-options {
+  /* Responsive adjustment for new provider options */
+  .provider-options {
     grid-template-columns: 1fr;
   }
+
+  /* method-options removed */
   
   .plan-options {
     flex-direction: column;

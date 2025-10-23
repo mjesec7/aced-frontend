@@ -32,7 +32,8 @@ const MyCourses = () => import('@/components/Profile/MyCourses.vue');
 const LessonPage = () => import('@/views/LessonPage.vue');
 const TopicFinished = () => import('@/views/TopicFinished.vue');
 const TopicOverview = () => import('@/views/TopicOverview.vue');
-const PaymeCheckout = () => import('@/views/PaymeCheckout.vue');
+// const PaymeCheckout = () => import('@/views/PaymeCheckout.vue'); // Changed from
+const UniversalCheckout = () => import('@/views/UniversalCheckout.vue'); // Changed to
 const AboutUsPage = () => import('@/components/Main/AboutUs.vue');
 
 // --- ACCESS CONTROL HELPERS ---
@@ -92,13 +93,15 @@ const createAccessGuard = (featureName, requiredPlans, message) => {
     const requiredPlan = requiredPlans.includes('pro') ? 'pro' : 'start';
 
     return next({
-      name: 'PaymePayment',
+      name: 'PaymentSelection', // Changed from PaymePayment
       params: { plan: requiredPlan },
       query: {
         feature: featureName,
         requiredPlan: requiredPlan,
         returnTo: to.path,
         message: message,
+        // Add default provider hint
+        suggestedProvider: 'multicard' // or 'payme' based on your preference
       }
     });
   };
@@ -197,13 +200,13 @@ const routes = [
     meta: { requiresAuth: true, title: 'Тема завершена' }
   },
 
-  // Payment Routes
+  // Payment Routes - UPDATED SECTION
   {
     path: '/pay/:plan',
-    name: 'PaymePayment',
-    component: PaymePayment,
+    name: 'PaymentSelection', // Changed from PaymePayment
+    component: PaymePayment,    // This can be your payment selection page
     props: true,
-    meta: { title: 'Оплата', requiresAuth: true },
+    meta: { title: 'Выбор способа оплаты', requiresAuth: true }, // Changed title
     beforeEnter: (to, from, next) => {
       const validPlans = ['start', 'pro'];
       if (!validPlans.includes(to.params.plan)) {
@@ -215,28 +218,52 @@ const routes = [
   },
   {
     path: '/payment/checkout',
-    name: 'PaymeCheckout',
-    component: PaymeCheckout,
-    meta: { title: 'PayMe Checkout' },
+    name: 'UniversalCheckout', // Changed from PaymeCheckout
+    component: UniversalCheckout, // Changed component
+    meta: { title: 'Оформление платежа' }, // Changed title
+    props: route => ({
+      // Pass all query params as props
+      ...route.query,
+      provider: route.query.provider || 'payme' // Default provider
+    })
   },
   {
-    path: '/payment-success',
-    name: 'PaymentSuccess',
+    path: '/payment/:provider/checkout', // NEW: Provider-specific route
+    name: 'ProviderCheckout',
+    component: UniversalCheckout,
+    props: route => ({
+      provider: route.params.provider,
+      ...route.query
+    }),
+    meta: { title: 'Оформление платежа' }
+  },
+  {
+    path: '/payment/success/:provider?', // Changed path
+    name: 'UniversalPaymentSuccess', // Changed name
     component: PaymentSuccess,
+    props: route => ({ // Added props
+      provider: route.params.provider || route.query.provider || 'unknown'
+    }),
     meta: { title: 'Платеж успешен' }
   },
   {
-    path: '/payment-failed',
-    name: 'PaymentFailed',
+    path: '/payment/failed/:provider?', // Changed path
+    name: 'UniversalPaymentFailed', // Changed name
     component: PaymentFailed,
+    props: route => ({ // Added props
+      provider: route.params.provider || route.query.provider || 'unknown',
+      error: route.query.error
+    }),
     meta: { title: 'Ошибка платежа' }
   },
   {
-    path: '/payment/return',
-    name: 'PaymentReturn',
+    path: '/payment/return/:provider', // Changed path
+    name: 'ProviderReturn', // Changed name
     component: PaymentReturn,
+    props: true, // Added props
     meta: { title: 'Обработка платежа' }
   },
+  // END UPDATED PAYMENT SECTION
 
   // Redirects and Catch-all
   { path: '/vocabulary/:language?', redirect: '/profile/vocabulary' },
@@ -358,6 +385,7 @@ export function safeNavigate(routerInstance, route) {
 /**
  * Enhanced navigation with a loading state callback.
  * @param {object} routerInstance - The Vue router instance (this.$router).
+ *img
  * @param {object|string} route - The route to navigate to.
  * @param {Function} loadingCallback - A function to call with the loading state (e.g., loading => this.isLoading = loading).
  * @returns {Promise}
@@ -392,3 +420,4 @@ if (process.env.NODE_ENV !== 'production') {
 
 
 export default router;
+
