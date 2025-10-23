@@ -1773,7 +1773,7 @@ getPaymentButtonText() {
   };
   
   return `💳 Оплатить ${planNames[this.paymentPlan] || this.paymentPlan.toUpperCase()}`;
-}
+},
 
 
 
