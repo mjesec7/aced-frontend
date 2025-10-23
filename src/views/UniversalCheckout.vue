@@ -1,11 +1,10 @@
 <template>
-  <div class="payme-checkout">
+  <div class="universal-checkout">
     <div class="checkout-container">
       <!-- Loading State -->
       <div v-if="loading" class="loading-state">
-        <div class="payme-logo">
-          <!-- TODO: Update logo based on provider? -->
-          <img src="../assets/icons/payme_white.png" alt="PayMe" class="logo" />
+        <div class="checkout-logo">
+          <div class="logo-icon">💳</div>
           <h1>{{ loadingMessage }}</h1>
         </div>
         <div class="spinner"></div>
@@ -29,9 +28,10 @@
 
       <!-- Payment Method Selection (Before Payment) -->
       <div v-else class="method-selection-state">
-        <div class="payme-logo">
-          <img src="../assets/icons/payme_white.png" alt="PayMe" class="logo" />
-          <h1>Checkout</h1>
+        <div class="checkout-logo">
+          <div class="logo-icon">💳</div>
+          <h1>Оформление платежа</h1>
+          <p class="subtitle">Безопасная оплата подписки ACED</p>
         </div>
 
         <!-- User Information -->
@@ -65,33 +65,46 @@
           </div>
         </div>
 
-        <!-- NEW: Payment Provider Detection -->
+        <!-- Payment Provider Selection -->
         <div class="provider-selection">
-          <h3>Выберите Платежную Систему</h3>
+          <h3>💳 Выберите способ оплаты</h3>
           <div class="provider-options">
-            <label v-for="(provider, key) in providers"
-                   :key="key"
-                   :class="{ active: paymentProvider === key, disabled: !provider.enabled }">
-              <input type="radio"
-                     v-model="paymentProvider"
-                     :value="key"
-                     :disabled="!provider.enabled" />
-              <!-- Using placeholder images -->
-              <img :src="provider.icon.includes('...') ? `https://placehold.co/32x32/eee/aaa?text=${provider.name.charAt(0)}` : provider.icon" :alt="provider.name" />
-              <span>{{ provider.name }}</span>
+            <label 
+              v-for="(provider, key) in providers"
+              :key="key"
+              :class="{ active: paymentProvider === key, disabled: !provider.enabled }"
+              @click="provider.enabled && (paymentProvider = key)"
+            >
+              <input 
+                type="radio"
+                v-model="paymentProvider"
+                :value="key"
+                :disabled="!provider.enabled" 
+              />
+              <div class="provider-content">
+                <div class="provider-icon">
+                  {{ provider.emoji }}
+                </div>
+                <div class="provider-info">
+                  <span class="provider-name">{{ provider.name }}</span>
+                  <span class="provider-description">{{ provider.description }}</span>
+                  <span v-if="!provider.enabled" class="coming-soon">Скоро</span>
+                </div>
+              </div>
             </label>
           </div>
         </div>
 
         <!-- Plan Selection (if not provided in URL) -->
         <div class="plan-selection" v-if="!plan">
-          <h3>Выберите план</h3>
+          <h3>📋 Выберите план</h3>
           <div class="plan-options">
             <label class="plan-option" :class="{ active: selectedPlan === 'start' }">
               <input type="radio" v-model="selectedPlan" value="start" />
               <div class="plan-details">
                 <strong>Start Plan</strong>
                 <span class="plan-price">260,000 UZS</span>
+                <span class="plan-features">Базовые возможности</span>
               </div>
             </label>
             
@@ -100,6 +113,7 @@
               <div class="plan-details">
                 <strong>Pro Plan</strong>
                 <span class="plan-price">455,000 UZS</span>
+                <span class="plan-features">Все возможности</span>
               </div>
             </label>
           </div>
@@ -107,7 +121,7 @@
 
         <!-- Language Selection -->
         <div class="language-selection">
-          <h3>Язык интерфейса</h3>
+          <h3>🌐 Язык интерфейса</h3>
           <select v-model="selectedLanguage" class="language-select">
             <option value="ru">🇷🇺 Русский</option>
             <option value="uz">🇺🇿 O'zbek</option>
@@ -121,8 +135,19 @@
           :disabled="(!selectedPlan && !plan) || !providers[paymentProvider]?.enabled" 
           class="payment-button"
         >
-          💳 Перейти к оплате
+          <span v-if="providers[paymentProvider]?.enabled">
+            💳 Оплатить через {{ providers[paymentProvider]?.name }}
+          </span>
+          <span v-else>
+            Выберите доступный способ оплаты
+          </span>
         </button>
+
+        <!-- Security Notice -->
+        <div class="security-notice">
+          <span class="security-icon">🔒</span>
+          <p>Ваши платежные данные защищены и передаются по безопасному протоколу</p>
+        </div>
       </div>
 
     </div>
@@ -130,34 +155,50 @@
 </template>
 
 <script>
-// ✅ Import from the main API file with safe error handling
-// Added initiateMulticardPayment
 import { 
   initiatePaymePayment, 
-  safeErrorMessage, 
   initiateMulticardPayment 
 } from '@/api';
 
 export default {
-  name: 'UniversalCheckout', // Renamed from PaymeCheckout
+  name: 'UniversalCheckout',
   data() {
     return {
       loading: false,
       error: '',
-      // paymentUrl and dynamicContent removed, as new flow redirects directly
       
       // Payment method selection
       selectedLanguage: 'ru',
       selectedPlan: '',
       loadingMessage: 'Подготовка к оплате...',
 
-      // NEW: Provider selection
-      paymentProvider: 'payme', // 'payme', 'multicard', 'click', 'uzum'
+      // Provider selection with emoji icons
+      paymentProvider: 'multicard', // Default to Multicard based on your env
       providers: {
-        payme: { enabled: true, name: 'PayMe', icon: '../assets/icons/payme_color.png' }, // Assuming you have a color icon
-        multicard: { enabled: true, name: 'Multicard', icon: '...' },
-        click: { enabled: false, name: 'Click', icon: '...' },
-        uzum: { enabled: false, name: 'Uzum', icon: '...' }
+        multicard: { 
+          enabled: true, 
+          name: 'Multicard', 
+          emoji: '💳',
+          description: 'Банковские карты Узбекистана'
+        },
+        payme: { 
+          enabled: true, 
+          name: 'PayMe', 
+          emoji: '📱',
+          description: 'Быстрая оплата'
+        },
+        click: { 
+          enabled: false, 
+          name: 'Click', 
+          emoji: '⚡',
+          description: 'Оплата через Click'
+        },
+        uzum: { 
+          enabled: false, 
+          name: 'Uzum Bank', 
+          emoji: '🟣',
+          description: 'Uzum Bank и кошелек'
+        }
       },
       
       // Payment data
@@ -175,12 +216,10 @@ export default {
   },
   
   computed: {
-    // ✅ FIXED: Ensure proper plan selection
     finalPlan() {
       return this.plan || this.selectedPlan || 'start';
     },
     
-    // ✅ FIXED: Ensure amount is properly formatted
     amountInTiyin() {
       let amount = parseInt(this.amount) || 0;
       
@@ -210,7 +249,6 @@ export default {
         : '';
     },
     
-    // ✅ FIXED: Generate proper account object with Login
     accountObject() {
       return {
         Login: this.userId,
@@ -226,9 +264,8 @@ export default {
     this.loadPaymentData();
     this.validatePaymentData();
     
-    // Auto-initiation logic (if you still want it)
+    // Auto-initiation logic
     if (this.userId && this.plan && this.$route.query.auto === 'true') {
-      // Check if a provider was also passed in the URL
       const urlProvider = new URLSearchParams(window.location.search).get('provider');
       if (urlProvider && this.providers[urlProvider]?.enabled) {
         this.paymentProvider = urlProvider;
@@ -238,14 +275,12 @@ export default {
   },
   
   methods: {
-    // ✅ FIXED: Safe error display method
     safeDisplayError(error) {
       if (typeof error === 'string') {
         return error;
       }
       
       if (error && typeof error === 'object') {
-        // Check for common error properties
         if (error.message && typeof error.message === 'string') {
           return error.message;
         }
@@ -258,7 +293,6 @@ export default {
           return error.details;
         }
         
-        // If it's a response object
         if (error.response && error.response.data) {
           if (typeof error.response.data.message === 'string') {
             return error.response.data.message;
@@ -271,7 +305,6 @@ export default {
           }
         }
         
-        // Last resort: stringify the object safely
         try {
           return JSON.stringify(error, null, 2);
         } catch (stringifyError) {
@@ -279,24 +312,7 @@ export default {
         }
       }
       
-      // Fallback for any other type
       return error ? String(error) : 'Неизвестная ошибка';
-    },
-    
-    // ✅ FIXED: Debug error information
-    debugErrorInfo(error) {
-      if (!this.showDebugInfo) return '';
-      
-      try {
-        return JSON.stringify({
-          type: typeof error,
-          message: error?.message,
-          response: error?.response?.data,
-          stack: error?.stack?.split('\n').slice(0, 5)
-        }, null, 2);
-      } catch (e) {
-        return 'Debug info not available';
-      }
     },
     
     loadPaymentData() {
@@ -309,18 +325,15 @@ export default {
       this.userEmail = params.get('userEmail') || '';
       this.currentPlan = params.get('currentPlan') || 'Free';
       
-      // Get preferred language from URL if available
       this.selectedLanguage = params.get('lang') || 'ru';
       this.selectedPlan = this.plan || params.get('selectedPlan') || '';
       
-      // Check for provider in URL (this component now handles provider selection)
       const urlProvider = params.get('provider') || this.$route.params.provider;
       if (urlProvider && this.providers[urlProvider]) {
         this.paymentProvider = urlProvider;
       }
     },
 
-    // ✅ FIXED: Validation for required PayMe parameters
     validatePaymentData() {
       const errors = [];
 
@@ -342,14 +355,12 @@ export default {
       }
     },
 
-    // NEW: Error handler
     handlePaymentError(error) {
       console.error('❌ Payment initialization error:', error);
       this.error = this.safeDisplayError(error);
       this.loading = false;
     },
 
-    // NEW: Simplified processPayment method from user snippet
     async processPayment() {
       try {
         this.loading = true;
@@ -365,35 +376,30 @@ export default {
         this.loadingMessage = `Перенаправление на ${this.providers[provider]?.name || 'оплату'}...`;
         
         if (provider === 'payme') {
-          // This WILL redirect to PayMe's external page
-          // NOTE: This now sends *minimal* data, not the complex form object.
-          // This assumes your `initiatePaymePayment` API is updated
-          // to handle a simple request and return a redirect URL.
           const result = await initiatePaymePayment(
             this.userId, 
             planToUse, 
-            { lang: this.selectedLanguage } // Passing language
+            { lang: this.selectedLanguage }
           );
           if (result.paymentUrl) {
-            window.location.href = result.paymentUrl; // External redirect!
+            window.location.href = result.paymentUrl;
           } else {
             throw new Error(result.error || 'Не удалось получить ссылку на оплату PayMe');
           }
         } else if (provider === 'multicard') {
-          // This WILL redirect to Multicard's external page
           const result = await initiateMulticardPayment({
             userId: this.userId,
             plan: planToUse,
-            amount: this.amountInTiyin, // Sending amount in tiyin
+            amount: this.amountInTiyin,
             lang: this.selectedLanguage
           });
           if (result.data?.checkoutUrl) {
-            window.location.href = result.data.checkoutUrl; // External redirect!
+            window.location.href = result.data.checkoutUrl;
           } else {
             throw new Error(result.error || 'Не удалось получить ссылку на оплату Multicard');
           }
         } else {
-          throw new Error('Выбранный способ оплаты не поддерживается.');
+          throw new Error('Выбранный способ оплаты временно недоступен');
         }
 
       } catch (error) {
@@ -405,18 +411,16 @@ export default {
       this.error = '';
       this.loading = false;
       
-      // Re-validate data before retry
       this.validatePaymentData();
       
       if (!this.error) {
-        await this.processPayment(); // Changed to call new method
+        await this.processPayment();
       }
     },
 
     formatAmount(amount) {
       if (!amount) return '';
       
-      // Convert from tiyin to UZS for display
       const uzs = amount > 10000 ? Math.floor(amount / 100) : amount;
       
       try {
@@ -438,7 +442,7 @@ export default {
 </script>
 
 <style scoped>
-.payme-checkout {
+.universal-checkout {
   min-height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   display: flex;
@@ -451,27 +455,32 @@ export default {
   background: white;
   border-radius: 20px;
   padding: 40px;
-  max-width: 600px;
+  max-width: 650px;
   width: 100%;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
 }
 
-.payme-logo {
+.checkout-logo {
   text-align: center;
   margin-bottom: 30px;
 }
 
-.payme-logo .logo {
-  width: 60px;
-  height: 60px;
+.logo-icon {
+  font-size: 3.5rem;
   margin-bottom: 10px;
 }
 
-.payme-logo h1 {
-  color: #4A90E2;
-  margin: 0;
-  font-size: 2.5rem;
+.checkout-logo h1 {
+  color: #333;
+  margin: 0 0 8px 0;
+  font-size: 2.2rem;
   font-weight: bold;
+}
+
+.subtitle {
+  color: #666;
+  font-size: 1rem;
+  margin: 0;
 }
 
 .loading-state h1 {
@@ -481,7 +490,7 @@ export default {
 
 .spinner {
   border: 4px solid #f3f3f3;
-  border-top: 4px solid #4A90E2;
+  border-top: 4px solid #667eea;
   border-radius: 50%;
   width: 40px;
   height: 40px;
@@ -505,6 +514,7 @@ export default {
   margin-top: 0;
   color: #333;
   font-size: 1.2rem;
+  margin-bottom: 15px;
 }
 
 .user-details {
@@ -559,68 +569,114 @@ export default {
   font-weight: bold;
 }
 
-/* NEW styles for provider selection */
+/* Provider Selection Styles */
 .provider-selection {
   margin-bottom: 25px;
 }
+
 .provider-selection h3 {
   margin-bottom: 15px;
   color: #333;
+  font-size: 1.2rem;
 }
+
 .provider-options {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 12px;
 }
+
 .provider-options label {
   display: flex;
   align-items: center;
-  padding: 15px;
+  padding: 18px;
   border: 2px solid #e0e0e0;
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.3s ease;
+  background: white;
 }
-.provider-options label:hover {
-  border-color: #4A90E2;
+
+.provider-options label:hover:not(.disabled) {
+  border-color: #667eea;
   background: #f8f9fa;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
 }
+
 .provider-options label.active {
-  border-color: #4A90E2;
-  background: #e3f2fd;
+  border-color: #667eea;
+  background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
 }
+
 .provider-options label.disabled {
   border-color: #eee;
-  background: #fdfdfd;
+  background: #fafafa;
   cursor: not-allowed;
   opacity: 0.6;
 }
+
 .provider-options label.disabled:hover {
-  background: #fdfdfd;
+  background: #fafafa;
+  transform: none;
+  box-shadow: none;
 }
+
 .provider-options input[type="radio"] {
   display: none;
 }
-.provider-options img {
-  width: 32px;
-  height: 32px;
-  margin-right: 12px;
-  object-fit: contain;
+
+.provider-content {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 15px;
 }
-.provider-options span {
+
+.provider-icon {
+  font-size: 2.5rem;
+  flex-shrink: 0;
+}
+
+.provider-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.provider-name {
   color: #333;
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 1.1rem;
 }
 
+.provider-description {
+  color: #666;
+  font-size: 0.9rem;
+}
 
-/* PayMe method selection removed */
+.coming-soon {
+  color: #f57c00;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-top: 4px;
+}
 
 .plan-selection {
   margin-bottom: 25px;
 }
 
+.plan-selection h3 {
+  margin-bottom: 15px;
+  color: #333;
+  font-size: 1.2rem;
+}
+
 .plan-options {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 15px;
 }
 
@@ -636,12 +692,15 @@ export default {
 }
 
 .plan-option:hover {
-  border-color: #4A90E2;
+  border-color: #667eea;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
 }
 
 .plan-option.active {
-  border-color: #4A90E2;
-  background: #e3f2fd;
+  border-color: #667eea;
+  background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
 }
 
 .plan-option input[type="radio"] {
@@ -652,31 +711,60 @@ export default {
   display: flex;
   flex-direction: column;
   width: 100%;
+  gap: 6px;
+}
+
+.plan-details strong {
+  font-size: 1.1rem;
+  color: #333;
 }
 
 .plan-price {
-  color: #4A90E2;
+  color: #667eea;
   font-weight: bold;
-  margin-top: 5px;
+  font-size: 1.05rem;
+}
+
+.plan-features {
+  color: #666;
+  font-size: 0.9rem;
 }
 
 .language-selection {
   margin-bottom: 25px;
 }
 
-.language-select {
-  width: 100%;
-  padding: 12px;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 1rem;
-  background: white;
+.language-selection h3 {
+  margin-bottom: 12px;
+  color: #333;
+  font-size: 1.2rem;
 }
 
-.payment-button, .payme-btn {
+.language-select {
   width: 100%;
-  padding: 15px;
-  background: linear-gradient(135deg, #4A90E2, #357ABD);
+  padding: 12px 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 1rem;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.language-select:hover {
+  border-color: #667eea;
+}
+
+.language-select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.payment-button {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
   color: white;
   border: none;
   border-radius: 12px;
@@ -687,24 +775,58 @@ export default {
   margin-bottom: 15px;
 }
 
-.payment-button:hover, .payme-btn:hover {
-  background: linear-gradient(135deg, #357ABD, #2E6DA4);
+.payment-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #5568d3, #6a3f91);
   transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
 }
 
 .payment-button:disabled {
   background: #ccc;
   cursor: not-allowed;
   transform: none;
+  opacity: 0.6;
+}
+
+.security-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: #f0f8ff;
+  border: 1px solid #d0e7ff;
+  border-radius: 8px;
+  margin-top: 15px;
+}
+
+.security-icon {
+  font-size: 1.5rem;
+}
+
+.security-notice p {
+  margin: 0;
+  color: #1976d2;
+  font-size: 0.9rem;
 }
 
 .error-state {
   text-align: center;
+  padding: 20px;
 }
 
 .error-icon {
   font-size: 4rem;
   margin-bottom: 20px;
+}
+
+.error-state h2 {
+  color: #d32f2f;
+  margin-bottom: 15px;
+}
+
+.error-state p {
+  color: #666;
+  margin-bottom: 25px;
 }
 
 .back-btn, .retry-btn {
@@ -714,6 +836,7 @@ export default {
   border-radius: 8px;
   cursor: pointer;
   font-weight: bold;
+  transition: all 0.2s ease;
 }
 
 .back-btn {
@@ -721,32 +844,55 @@ export default {
   color: #333;
 }
 
+.back-btn:hover {
+  background: #e0e0e0;
+}
+
 .retry-btn {
-  background: #4A90E2;
+  background: #667eea;
   color: white;
 }
 
-/* Removed styles for payment-ready-state, transaction-info, payment-content, etc. */
+.retry-btn:hover {
+  background: #5568d3;
+}
 
 @media (max-width: 768px) {
   .checkout-container {
-    padding: 20px;
+    padding: 25px 20px;
     margin: 10px;
   }
   
-  /* Responsive adjustment for new provider options */
   .provider-options {
     grid-template-columns: 1fr;
   }
-
-  /* method-options removed */
   
   .plan-options {
-    flex-direction: column;
+    grid-template-columns: 1fr;
   }
   
-  .payme-logo h1 {
+  .checkout-logo h1 {
+    font-size: 1.8rem;
+  }
+  
+  .provider-icon {
     font-size: 2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .checkout-container {
+    padding: 20px 15px;
+  }
+  
+  .checkout-logo h1 {
+    font-size: 1.5rem;
+  }
+  
+  .user-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
   }
 }
 </style>

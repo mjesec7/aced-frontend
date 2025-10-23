@@ -436,6 +436,7 @@
           </div>
         </div>
 
+        <!-- Updated Payment Button -->
         <button 
           class="payment-button" 
           @click="goToPayment"
@@ -1700,8 +1701,34 @@ export default {
       this.paymentPlan = plan;
     },
 
+    // ✅ UPDATED: Navigate to UniversalCheckout with proper params
     async goToPayment() {
-      this.$router.push(`/payment?plan=${this.paymentPlan}`);
+      if (!this.paymentPlan) {
+        this.showNotification('Выберите тариф для оплаты', 'warning');
+        return;
+      }
+
+      try {
+        // Navigate to UniversalCheckout (PaymentSelection route)
+        await this.$router.push({
+          name: 'PaymentSelection',
+          params: { 
+            plan: this.paymentPlan 
+          },
+          query: {
+            // Pass user data as query params
+            userId: this.userId,
+            userName: this.user.name || 'Пользователь',
+            userEmail: this.user.email || '',
+            currentPlan: this.currentPlan,
+            // Default provider (can be changed in checkout)
+            provider: 'multicard'
+          }
+        });
+      } catch (error) {
+        console.error('❌ Navigation error:', error);
+        this.showNotification('Ошибка при переходе к оплате', 'error');
+      }
     },
 
     getPaymentButtonText() {
@@ -1858,19 +1885,15 @@ export default {
 </script>
 
 <style scoped>
-/* ============================================ */
-/* PROFESSIONAL PURPLE THEME SETTINGS STYLES */
-/* ============================================ */
+/* Styles remain the same as in the original file */
+/* Copy all the CSS from the original AcedSettings.vue */
+/* I'm keeping the original CSS to maintain consistency */
 
 .settings-page {
   min-height: 100vh;
   background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 50%, #ddd6fe 100%);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
 }
-
-/* ============================================ */
-/* HEADER SECTION - INCREASED PADDING */
-/* ============================================ */
 
 .settings-header {
   background: white;
@@ -1879,7 +1902,7 @@ export default {
   position: sticky;
   top: 0;
   z-index: 100;
-  padding: 2.5rem 0; /* Increased from 1.5rem to 2.5rem */
+  padding: 2.5rem 0;
 }
 
 .header-content {
@@ -1934,19 +1957,11 @@ export default {
   font-size: 1.25rem;
 }
 
-/* ============================================ */
-/* MAIN CONTAINER - PROFESSIONAL WIDTH */
-/* ============================================ */
-
 .settings-container {
-  max-width: 1100px; /* Professional width, not too wide */
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 3rem 2rem; /* Increased top padding */
+  padding: 3rem 2rem;
 }
-
-/* ============================================ */
-/* NOTIFICATION */
-/* ============================================ */
 
 .notification {
   display: flex;
@@ -2002,10 +2017,6 @@ export default {
   flex: 1;
 }
 
-/* ============================================ */
-/* SETTINGS CARDS */
-/* ============================================ */
-
 .settings-card {
   background: white;
   border-radius: 16px;
@@ -2046,10 +2057,6 @@ export default {
   color: #6b7280;
   margin: 0;
 }
-
-/* ============================================ */
-/* EDIT BUTTONS */
-/* ============================================ */
 
 .edit-button {
   padding: 0.75rem 1rem;
@@ -2111,10 +2118,6 @@ export default {
   background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
   transform: scale(1.05);
 }
-
-/* ============================================ */
-/* FORM ELEMENTS */
-/* ============================================ */
 
 .form-grid {
   display: grid;
@@ -2194,10 +2197,6 @@ export default {
   box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.1);
 }
 
-/* ============================================ */
-/* PASSWORD SECTION */
-/* ============================================ */
-
 .password-section {
   margin-top: 2rem;
   padding-top: 2rem;
@@ -2250,10 +2249,6 @@ export default {
   opacity: 0.5;
   cursor: not-allowed;
 }
-
-/* ============================================ */
-/* SUBSCRIPTION CARD */
-/* ============================================ */
 
 .subscription-card {
   background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
@@ -2309,10 +2304,6 @@ export default {
   color: #6b7280;
   margin: 1rem 0;
 }
-
-/* ============================================ */
-/* SUBSCRIPTION DETAILS */
-/* ============================================ */
 
 .subscription-details {
   margin-top: 1.5rem;
@@ -2389,10 +2380,6 @@ export default {
   color: #92400e;
 }
 
-/* ============================================ */
-/* BENEFITS SECTION */
-/* ============================================ */
-
 .benefits-section {
   margin-top: 1.5rem;
   background: white;
@@ -2430,10 +2417,6 @@ export default {
   font-weight: 500;
   font-size: 0.95rem;
 }
-
-/* ============================================ */
-/* FREE PLAN INFO */
-/* ============================================ */
 
 .free-plan-info {
   margin-top: 1.5rem;
@@ -2476,10 +2459,6 @@ export default {
   color: #6b7280;
   font-size: 0.95rem;
 }
-
-/* ============================================ */
-/* PROMO CODE SECTION */
-/* ============================================ */
 
 .promo-card {
   background: linear-gradient(135deg, #ffffff 0%, #faf5ff 100%);
@@ -2597,10 +2576,6 @@ export default {
   cursor: wait;
 }
 
-/* ============================================ */
-/* HISTORY SECTIONS */
-/* ============================================ */
-
 .promocodes-history,
 .payment-history {
   margin-top: 2rem;
@@ -2703,10 +2678,6 @@ export default {
   background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
   color: #991b1b;
 }
-
-/* ============================================ */
-/* PLANS SECTION */
-/* ============================================ */
 
 .plans-card {
   background: linear-gradient(135deg, #ffffff 0%, #faf5ff 100%);
@@ -2896,10 +2867,6 @@ export default {
   cursor: not-allowed;
 }
 
-/* ============================================ */
-/* USAGE STATISTICS */
-/* ============================================ */
-
 .usage-stats {
   display: flex;
   flex-direction: column;
@@ -2956,10 +2923,6 @@ export default {
   font-size: 0.95rem;
 }
 
-/* ============================================ */
-/* LOADING OVERLAY */
-/* ============================================ */
-
 .loading-overlay {
   position: fixed;
   top: 0;
@@ -2990,10 +2953,6 @@ export default {
   font-weight: 600;
   margin-top: 1rem;
 }
-
-/* ============================================ */
-/* RESPONSIVE DESIGN */
-/* ============================================ */
 
 @media (max-width: 768px) {
   .settings-header {
