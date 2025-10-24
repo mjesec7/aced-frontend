@@ -1,7 +1,6 @@
 <template>
   <div class="universal-checkout">
     <div class="checkout-container">
-      <!-- Loading State -->
       <div v-if="loading" class="loading-state">
         <div class="checkout-logo">
           <div class="logo-icon">💳</div>
@@ -10,20 +9,17 @@
         <div class="spinner"></div>
         <p>Перенаправление на страницу оплаты...</p>
         
-        <!-- User Info While Loading -->
         <div class="user-info-loading" v-if="userName">
           <p><strong>Пользователь:</strong> {{ userName }}</p>
           <p><strong>План:</strong> {{ planName }} ({{ formatAmount(finalAmount) }})</p>
         </div>
       </div>
 
-      <!-- Error State -->
       <div v-else-if="error" class="error-state">
         <div class="error-icon">❌</div>
         <h2>Ошибка инициации платежа</h2>
         <p class="error-message">{{ error }}</p>
         
-        <!-- Debug Info (only in development) -->
         <div v-if="showDebugInfo" class="debug-info">
           <h4>Отладочная информация:</h4>
           <pre>{{ debugData }}</pre>
@@ -35,7 +31,6 @@
         </div>
       </div>
 
-      <!-- Payment Method Selection (Before Payment) -->
       <div v-else class="method-selection-state">
         <div class="checkout-logo">
           <div class="logo-icon">💳</div>
@@ -43,7 +38,6 @@
           <p class="subtitle">Безопасная оплата подписки ACED</p>
         </div>
 
-        <!-- User Information -->
         <div class="user-info-section">
           <h3>👤 Информация о платеже</h3>
           <div class="user-details">
@@ -74,7 +68,6 @@
           </div>
         </div>
 
-        <!-- Payment Provider Selection -->
         <div class="provider-selection">
           <h3>💳 Выберите способ оплаты</h3>
           <div class="provider-options">
@@ -104,7 +97,6 @@
           </div>
         </div>
 
-        <!-- Plan Selection (if not provided in URL) -->
         <div class="plan-selection" v-if="!plan">
           <h3>📋 Выберите план</h3>
           <div class="plan-options">
@@ -128,7 +120,6 @@
           </div>
         </div>
 
-        <!-- Language Selection -->
         <div class="language-selection">
           <h3>🌐 Язык интерфейса</h3>
           <select v-model="selectedLanguage" class="language-select">
@@ -138,7 +129,6 @@
           </select>
         </div>
 
-        <!-- Payment Button -->
         <button 
           @click="processPayment" 
           :disabled="!canProceedToPayment" 
@@ -156,7 +146,6 @@
           </span>
         </button>
 
-        <!-- Security Notice -->
         <div class="security-notice">
           <span class="security-icon">🔒</span>
           <p>Ваши платежные данные защищены и передаются по безопасному протоколу</p>
