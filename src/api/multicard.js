@@ -21,6 +21,15 @@ multicardApi.interceptors.request.use(async (config) => {
       const token = await currentUser.getIdToken();
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // ✅ Log request details for debugging
+    console.log('🔵 Multicard Request:', {
+      method: config.method?.toUpperCase(),
+      url: config.url,
+      fullUrl: `${config.baseURL}${config.url}`,
+      hasAuth: !!config.headers.Authorization
+    });
+    
     return config;
   } catch (error) {
     console.error('❌ Multicard auth token error:', error);
@@ -30,12 +39,21 @@ multicardApi.interceptors.request.use(async (config) => {
 
 // Response interceptor for error handling
 multicardApi.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log('✅ Multicard Response:', {
+      status: response.status,
+      url: response.config.url,
+      success: response.data?.success
+    });
+    return response;
+  },
   (error) => {
     console.error('❌ Multicard API Error:', {
       url: error.config?.url,
+      method: error.config?.method,
       status: error.response?.status,
-      message: error.response?.data?.error?.details || error.message
+      message: error.response?.data?.error?.details || error.response?.data?.error || error.message,
+      fullError: error.response?.data
     });
     return Promise.reject(error);
   }
@@ -59,7 +77,7 @@ export const testMulticardAuth = async () => {
 };
 
 // =============================================
-// 💳 PAYMENT INITIATION
+// 💳 PAYMENT INITIATION - FIXED VERSION
 // =============================================
 
 /**
@@ -70,62 +88,102 @@ export const testMulticardAuth = async () => {
  * @param {number} paymentData.amount - Amount in tiyin
  * @param {Array} paymentData.ofd - OFD data array
  * @param {string} paymentData.lang - Language (ru, uz, en)
- * @param {string} paymentData.sms - Optional SMS number
+ * @param {string} paymentData.userName - User name
+ * @param {string} paymentData.userEmail - User email
  */
 export const initiateMulticardPayment = async (paymentData) => {
- try {
-   console.log('💳 Initiating Multicard payment:', {
-     plan: paymentData.plan,
-     amount: paymentData.amount
-   });
+  try {
+    console.log('💳 Initiating Multicard payment:', {
+      plan: paymentData.plan,
+      amount: paymentData.amount,
+      userId: paymentData.userId
+    });
 
-   // ✅ FIX: Ensure amount is properly set
-   const finalAmount = paymentData.amount ||
-     (paymentData.plan === 'pro' ? 45500000 : 26000000);
+    // ✅ Validation
+    if (!paymentData.userId) {
+      throw new Error('userId is required');
+    }
 
-   // ✅ CRITICAL FIX: Add OFD data (required for Uzbekistan tax system)
-   const ofdData = paymentData.ofd || [{
-     qty: 1,
-     price: finalAmount, // in tiyin
-     total: finalAmount, // in tiyin
-     name: `ACED ${paymentData.plan?.toUpperCase() || 'SUBSCRIPTION'} Plan`,
-     mxik: '10899002001000000', // Classification code for digital services
-     package_code: '1873404', // Package code from tasnif.soliq.uz
-     vat: 0 // No VAT for digital services
-   }];
+    if (!paymentData.plan) {
+      throw new Error('plan is required');
+    }
 
-   // ✅ Build complete request payload
-   const requestPayload = {
-     userId: paymentData.userId,
-     plan: paymentData.plan,
-     amount: finalAmount,
-     ofd: ofdData, // ✅ THIS WAS MISSING!
-     lang: paymentData.lang || 'ru',
-     sms: paymentData.sms || null // Optional SMS notification
-   };
+    // ✅ Calculate final amount
+    const finalAmount = paymentData.amount ||
+      (paymentData.plan === 'pro' ? 45500000 : 26000000);
 
-   console.log('📤 Sending to backend:', requestPayload);
+    // ✅ Build OFD data (required for Uzbekistan tax system)
+    const ofdData = paymentData.ofd || [{
+      qty: 1,
+      price: finalAmount,
+      total: finalAmount,
+      name: `ACED ${paymentData.plan?.toUpperCase() || 'SUBSCRIPTION'} Plan`,
+      mxik: '10899002001000000', // Classification code for digital services
+      package_code: '1873404', // Package code from tasnif.soliq.uz
+      vat: 0 // No VAT for digital services
+    }];
 
-   const { data } = await multicardApi.post('/initiate', requestPayload);
+    // ✅ Build complete request payload
+    const requestPayload = {
+      userId: paymentData.userId,
+      plan: paymentData.plan,
+      amount: finalAmount,
+      ofd: ofdData,
+      lang: paymentData.lang || 'ru',
+      userName: paymentData.userName || '',
+      userEmail: paymentData.userEmail || ''
+    };
 
-   if (data.success) {
-     console.log('✅ Payment initiated:', data.data.uuid);
-     return {
-       success: true,
-       data: data.data
-     };
-   } else {
-     throw new Error(data.error?.details || 'Payment initiation failed');
-   }
- } catch (error) {
-   console.error('❌ Payment initiation error:', error);
-   return {
-     success: false,
-     error: error.response?.data?.error?.details || error.message
-   };
- }
+    console.log('📤 Sending to backend:', requestPayload);
+
+    // ✅ CRITICAL FIX: Explicitly use POST method
+    const { data } = await multicardApi({
+      method: 'POST',
+      url: '/initiate',
+      data: requestPayload
+    });
+
+    console.log('📥 Backend response:', data);
+
+    if (data.success) {
+      console.log('✅ Payment initiated successfully:', {
+        uuid: data.data?.uuid,
+        checkoutUrl: data.data?.checkoutUrl
+      });
+      
+      return {
+        success: true,
+        data: data.data
+      };
+    } else {
+      throw new Error(data.error?.details || data.error || 'Payment initiation failed');
+    }
+
+  } catch (error) {
+    console.error('❌ Payment initiation error:', error);
+    
+    // Enhanced error handling
+    const errorMessage = error.response?.data?.error?.details || 
+                        error.response?.data?.error || 
+                        error.response?.data?.message ||
+                        error.message;
+
+    const errorDetails = {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: errorMessage
+    };
+
+    console.error('❌ Error details:', errorDetails);
+
+    return {
+      success: false,
+      error: errorMessage,
+      details: errorDetails
+    };
+  }
 };
-
 
 // =============================================
 // 📋 INVOICE MANAGEMENT
@@ -282,7 +340,7 @@ export const createPaymentByToken = async (paymentData) => {
  * @param {string} paymentData.paymentSystem - Payment system (payme, click, uzum, etc.)
  * @param {number} paymentData.amount - Amount in tiyin
  * @param {string|number} paymentData.storeId - Store ID
- *V @param {string} paymentData.invoiceId - Invoice ID
+ * @param {string} paymentData.invoiceId - Invoice ID
  */
 export const createPaymentViaApp = async (paymentData) => {
   try {
