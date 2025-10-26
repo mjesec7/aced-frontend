@@ -148,15 +148,18 @@ export const initiateMulticardPayment = async (paymentData) => {
       throw new Error('plan must be "start" or "pro"');
     }
 
-    // Calculate amount
+    // ✅ CORRECT AMOUNT CALCULATION
+    // 1 UZS = 100 tiyin
+    // Pro: 455,000 UZS = 45,500,000 tiyin
+    // Start: 260,000 UZS = 26,000,000 tiyin
     const finalAmount = paymentData.amount || 
       (paymentData.plan === 'pro' ? 45500000 : 26000000);
 
-    // Build OFD data
+    // Build OFD data with correct amount
     const ofdData = paymentData.ofd || [{
       qty: 1,
-      price: finalAmount,
-      total: finalAmount,
+      price: finalAmount, // This should be 45500000 for pro plan
+      total: finalAmount, // This should be 45500000 for pro plan
       name: `ACED ${paymentData.plan.toUpperCase()} Plan Subscription`,
       mxik: '10899002001000000',
       package_code: '1873404',
@@ -167,7 +170,7 @@ export const initiateMulticardPayment = async (paymentData) => {
     const requestPayload = {
       userId: paymentData.userId,
       plan: paymentData.plan,
-      amount: finalAmount,
+      amount: finalAmount, // This should be 45500000 for pro plan
       ofd: ofdData,
       lang: paymentData.lang || 'ru',
       userName: paymentData.userName || '',
@@ -176,7 +179,7 @@ export const initiateMulticardPayment = async (paymentData) => {
 
     console.log('📤 Sending payment request:', {
       ...requestPayload,
-      amountUZS: finalAmount / 100
+      amountUZS: finalAmount / 100 // This should show 455000 UZS
     });
 
     // ✅ CRITICAL FIX: Use POST, not GET
@@ -449,7 +452,10 @@ export const createPaymentByToken = async (paymentData) => {
  * @param {number} paymentData.amount - Amount in tiyin
  * @param {string|number} paymentData.storeId - Store ID
  * @param {string} paymentData.invoiceId - Unique invoice ID
- *... 98 lines hidden ...
+ * @param {string} [paymentData.callbackUrl] - Optional callback URL
+ * @param {Array} paymentData.ofd - OFD fiscalization data
+ * @param {string} [paymentData.successUrl] - Redirect URL on success
+ * @param {string} [paymentData.declineUrl] - Redirect URL on decline
  * @returns {Promise<Object>} Payment app redirect URL
  */
 export const createPaymentViaApp = async (paymentData) => {
