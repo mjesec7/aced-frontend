@@ -448,8 +448,7 @@ export const createPaymentByToken = async (paymentData) => {
  * @param {number} paymentData.amount - Amount in tiyin
  * @param {string|number} paymentData.storeId - Store ID
  * @param {string} paymentData.invoiceId - Unique invoice ID
- * @param {string} [paymentData.callbackUrl] - Optional callback URL
- * @param {Array} paymentData.ofd - OFD fiscalization data
+ *... 98 lines hidden ...
  * @returns {Promise<Object>} Payment app redirect URL
  */
 export const createPaymentViaApp = async (paymentData) => {
