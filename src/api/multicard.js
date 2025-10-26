@@ -97,7 +97,7 @@ multicardApi.interceptors.response.use(
 export const testMulticardConnection = async () => {
   try {
     console.log('🧪 Testing Multicard connection...');
-    const { data } = await multicardApi.get('/test-connection');
+    const { data } = await multicardApi.post('/test-connection');
     console.log('✅ Connection test successful:', data);
     return data;
   } catch (error) {
@@ -258,7 +258,7 @@ export const initiateMulticardPayment = async (paymentData) => {
 export const getInvoiceInfo = async (invoiceId) => {
   try {
     console.log('📋 Getting invoice info:', invoiceId);
-    const { data } = await multicardApi.get(`/invoice/${invoiceId}`);
+    const { data } = await multicardApi.post(`/invoice/${invoiceId}`);
     return data;
   } catch (error) {
     console.error('❌ Get invoice error:', error);
@@ -346,7 +346,7 @@ export const createCardBindingSession = async (bindingData) => {
 export const checkCardBindingStatus = async (sessionId) => {
   try {
     console.log('🔍 Checking card binding status:', sessionId);
-    const { data } = await multicardApi.get(`/card/bind/${sessionId}`);
+    const { data } = await multicardApi.post(`/card/bind/${sessionId}`);
     return data;
   } catch (error) {
     console.error('❌ Check card binding status error:', error);
@@ -362,7 +362,7 @@ export const checkCardBindingStatus = async (sessionId) => {
 export const getCardInfo = async (cardToken) => {
   try {
     console.log('💳 Getting card info...');
-    const { data } = await multicardApi.get(`/card/${cardToken}`);
+    const { data } = await multicardApi.post(`/card/${cardToken}`);
     return data;
   } catch (error) {
     console.error('❌ Get card info error:', error);
@@ -562,7 +562,7 @@ export const refundPayment = async (paymentUuid) => {
 export const getPaymentInfo = async (paymentUuid) => {
   try {
     console.log('🔍 Getting payment info:', paymentUuid);
-    const { data } = await multicardApi.get(`/payment/${paymentUuid}`);
+    const { data } = await multicardApi.post(`/payment/${paymentUuid}`);
     return data;
   } catch (error) {
     console.error('❌ Get payment info error:', error);
@@ -588,7 +588,7 @@ export const getPaymentInfo = async (paymentUuid) => {
 export const getPaymentHistory = async (storeId, params) => {
   try {
     console.log('📊 Getting payment history for store:', storeId);
-    const { data } = await multicardApi.get(`/store/${storeId}/history`, { params });
+    const { data } = await multicardApi.post(`/store/${storeId}/history`, { params });
     return data;
   } catch (error) {
     console.error('❌ Get payment history error:', error);
@@ -606,7 +606,7 @@ export const getPaymentHistory = async (storeId, params) => {
 export const getPaymentStatistics = async (storeId, startDate, endDate) => {
   try {
     console.log('📈 Getting payment statistics...');
-    const { data } = await multicardApi.get(`/store/${storeId}/statistics`, {
+    const { data } = await multicardApi.post(`/store/${storeId}/statistics`, {
       params: { startDate, endDate }
     });
     return data;
@@ -623,7 +623,7 @@ export const getPaymentStatistics = async (storeId, startDate, endDate) => {
 export const getApplicationInfo = async () => {
   try {
     console.log('ℹ️ Getting application info...');
-    const { data } = await multicardApi.get('/application/info');
+    const { data } = await multicardApi.post('/application/info');
     return data;
   } catch (error) {
     console.error('❌ Get application info error:', error);

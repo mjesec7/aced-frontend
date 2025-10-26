@@ -456,72 +456,101 @@ export default {
     },
 
     async processPayment() {
-      if (!this.canProceedToPayment) {
-        this.error = this.validationMessage;
-        return;
-      }
-      
-      try {
-        this.loading = true;
-        this.error = '';
+      if (!this.canProceedToPayment) {
+        this.error = this.validationMessage;
+        return;
+      }
+      
+      try {
+        this.loading = true;
+        this.error = '';
 
-        const provider = this.paymentProvider;
-        const planToUse = this.finalPlan;
-        const userIdToUse = this.finalUserId;
-        const amountToUse = this.finalAmount;
+        const provider = this.paymentProvider;
+        const planToUse = this.finalPlan;
+        const userIdToUse = this.finalUserId;
+        const amountToUse = this.finalAmount;
 
-        console.log('💳 Processing payment:', {
-          provider,
-          plan: planToUse,
-          userId: userIdToUse,
-          amount: amountToUse
-        });
-        
-        this.loadingMessage = `Перенаправление на ${this.providers[provider]?.name || 'оплату'}...`;
-        
-        if (provider === 'payme') {
-          const result = await initiatePaymePayment(
-            userIdToUse, 
-            planToUse, 
-            { 
-              lang: this.selectedLanguage,
-              amount: amountToUse
-            }
-          );
-          
-          if (result.paymentUrl) {
-            console.log('✅ PayMe URL received:', result.paymentUrl);
-            window.location.href = result.paymentUrl;
-          } else {
-            throw new Error(result.error || 'Не удалось получить ссылку на оплату PayMe');
-          }
-          
-        } else if (provider === 'multicard') {
-          const result = await initiateMulticardPayment({
-            userId: userIdToUse,
-            plan: planToUse,
-            amount: amountToUse,
-            lang: this.selectedLanguage,
-            userName: this.finalUserName,
-            userEmail: this.finalUserEmail
-          });
-          
-          if (result.data?.checkoutUrl) {
-            console.log('✅ Multicard URL received:', result.data.checkoutUrl);
-            window.location.href = result.data.checkoutUrl;
-          } else {
-            throw new Error(result.error || 'Не удалось получить ссылку на оплату Multicard');
-          }
-          
-        } else {
-          throw new Error('Выбранный способ оплаты временно недоступен');
-        }
+        console.log('💳 Processing payment:', {
+          provider,
+          plan: planToUse,
+          userId: userIdToUse,
+          amount: amountToUse
+        });
+        
+        this.loadingMessage = `Перенаправление на ${this.providers[provider]?.name || 'оплату'}...`;
+        
+        if (provider === 'payme') {
+          // PayMe implementation
+          const result = await initiatePaymePayment(
+            userIdToUse, 
+            planToUse, 
+            { 
+              lang: this.selectedLanguage,
+              amount: amountToUse
+            }
+          );
+          
+          if (result.paymentUrl) {
+            console.log('✅ PayMe URL received:', result.paymentUrl);
+            window.location.href = result.paymentUrl;
+          } else {
+            throw new Error(result.error || 'Не удалось получить ссылку на оплату PayMe');
+          }
+          
+        } else if (provider === 'multicard') {
+          const result = await initiateMulticardPayment({
+            userId: userIdToUse,
+            plan: planToUse,
+            amount: amountToUse,
+            lang: this.selectedLanguage,
+            userName: this.finalUserName,
+            userEmail: this.finalUserEmail
+          });
+          
+          // Check if provider is temporarily disabled
+          if (result.error && result.error.includes('временно отключен')) {
+            // Automatically switch to PayMe
+            console.warn('⚠️ Multicard unavailable, switching to PayMe');
+            this.paymentProvider = 'payme';
+            this.error = 'Multicard временно недоступен. Переключаемся на PayMe...';
+            
+            // Retry with PayMe after a short delay
+            setTimeout(() => {
+              this.processPayment();
+            }, 1500);
+            return;
+          }
+          
+          if (result.data?.checkoutUrl) {
+            console.log('✅ Multicard URL received:', result.data.checkoutUrl);
+            window.location.href = result.data.checkoutUrl;
+          } else {
+            throw new Error(result.error || 'Не удалось получить ссылку на оплату Multicard');
+          }
+          
+        } else {
+          throw new Error('Выбранный способ оплаты временно недоступен');
+        }
 
-      } catch (error) {
-        console.error('❌ Payment processing error:', error);
-        this.error = this.formatError(error);
-        this.loading = false;
-      }
+      } catch (error) {
+        console.error('❌ Payment processing error:', error);
+        
+        // Check if it's a provider availability issue
+        if (error.message?.includes('временно отключен') || 
+            error.message?.includes('temporarily disabled')) {
+          this.error = 'Этот способ оплаты временно недоступен. Пожалуйста, выберите другой способ оплаты.';
+          
+          // If Multicard failed, suggest PayMe
+          if (this.paymentProvider === 'multicard') {
+            this.paymentProvider = 'payme';
+            this.error += ' Рекомендуем использовать PayMe.';
+          }
+        } else {
+          this.error = this.formatError(error);
+        }
+        
+        this.loading = false;
+      }
     },
 
     formatError(error) {
