@@ -560,7 +560,7 @@ export default {
     formatAmount(amount) {
       if (!amount) return '';
       
-      const uzs = amount > 10000 ? Math.floor(amount * 100) : amount;
+      const uzs = amount > 10000 ? Math.floor(amount) : amount;
       
       try {
         return new Intl.NumberFormat('uz-UZ', {
