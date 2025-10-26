@@ -135,7 +135,7 @@ export const initiateMulticardPayment = async (paymentData) => {
       hasAmount: !!paymentData.amount
     });
 
-    // ✅ VALIDATION
+    // Validation
     if (!paymentData.userId) {
       throw new Error('userId is required');
     }
@@ -148,22 +148,22 @@ export const initiateMulticardPayment = async (paymentData) => {
       throw new Error('plan must be "start" or "pro"');
     }
 
-    // ✅ CALCULATE AMOUNT (in tiyin: 1 UZS = 100 tiyin)
+    // Calculate amount
     const finalAmount = paymentData.amount || 
-      (paymentData.plan === 'pro' ? 45500000 : 26000000); // 455k or 260k UZS
+      (paymentData.plan === 'pro' ? 45500000 : 26000000);
 
-    // ✅ BUILD OFD DATA (required for Uzbekistan fiscalization)
+    // Build OFD data
     const ofdData = paymentData.ofd || [{
       qty: 1,
       price: finalAmount,
       total: finalAmount,
       name: `ACED ${paymentData.plan.toUpperCase()} Plan Subscription`,
-      mxik: '10899002001000000', // Digital services classification
-      package_code: '1873404', // Your package code from tasnif.soliq.uz
-      vat: 0 // No VAT for digital services
+      mxik: '10899002001000000',
+      package_code: '1873404',
+      vat: 0
     }];
 
-    // ✅ BUILD REQUEST PAYLOAD
+    // Build request payload
     const requestPayload = {
       userId: paymentData.userId,
       plan: paymentData.plan,
@@ -176,11 +176,12 @@ export const initiateMulticardPayment = async (paymentData) => {
 
     console.log('📤 Sending payment request:', {
       ...requestPayload,
-      amountUZS: finalAmount / 100 // Display in UZS for logging
+      amountUZS: finalAmount / 100
     });
 
-    // ✅ MAKE API REQUEST (explicitly use POST)
+    // ✅ CRITICAL FIX: Use POST, not GET
     const { data } = await multicardApi.post('/initiate', requestPayload);
+    // NOT: await multicardApi.get('/initiate', requestPayload);
 
     console.log('📥 Backend response received:', {
       success: data.success,
@@ -188,7 +189,7 @@ export const initiateMulticardPayment = async (paymentData) => {
       hasCheckoutUrl: !!data.data?.checkoutUrl
     });
 
-    // ✅ HANDLE SUCCESS
+    // Handle success
     if (data.success && data.data) {
       console.log('✅ Payment initiated successfully:', {
         uuid: data.data.uuid,
@@ -214,7 +215,7 @@ export const initiateMulticardPayment = async (paymentData) => {
   } catch (error) {
     console.error('❌ Payment initiation error:', error);
     
-    // Extract error message with priority order
+    // Extract error message
     const errorMessage = 
       error.multicardDetails?.message ||
       error.response?.data?.error?.details || 
