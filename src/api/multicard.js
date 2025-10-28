@@ -184,7 +184,6 @@ export const initiateMulticardPayment = async (paymentData) => {
 
     // ✅ CRITICAL FIX: Use POST, not GET
     const { data } = await multicardApi.post('/initiate', requestPayload);
-    // NOT: await multicardApi.get('/initiate', requestPayload);
 
     console.log('📥 Backend response received:', {
       success: data.success,
