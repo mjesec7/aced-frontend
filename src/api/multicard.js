@@ -14,6 +14,8 @@ const multicardApi = axios.create({
     'Content-Type': 'application/json',
   },
   timeout: 30000,
+  maxRedirects: 0, // ✅ ADD THIS LINE
+
   validateStatus: (status) => status < 500 // Don't throw on 4xx errors
 });
 
