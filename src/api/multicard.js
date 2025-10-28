@@ -184,9 +184,11 @@ export const initiateMulticardPayment = async (paymentData) => {
       ofdArray: Array.isArray(ofdData)
     });
 
-    // ✅ CRITICAL FIX: Use the correct endpoint path
-    const { data } = await multicardApi.post('/multicard/initiate', requestPayload);
-
+const { data } = await multicardApi({
+  method: 'POST',
+  url: '/multicard/initiate',
+  data: requestPayload
+});
     console.log('📥 Backend response received:', {
       success: data.success,
       hasData: !!data.data,
