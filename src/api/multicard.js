@@ -1,4 +1,4 @@
-// src/api/multicard.js - Multicard Payment Integration (FIXED)
+// src/api/multicard.js - Multicard Payment Integration (UPDATED & FIXED)
 import axios from 'axios';
 import { auth } from '@/firebase';
 
@@ -9,7 +9,7 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live';
 // =============================================
 
 const multicardApi = axios.create({
-  baseURL: `${BASE_URL}/api/payments/multicard`,
+  baseURL: `${BASE_URL}/api/payments`,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -97,7 +97,7 @@ multicardApi.interceptors.response.use(
 export const testMulticardConnection = async () => {
   try {
     console.log('🧪 Testing Multicard connection...');
-    const { data } = await multicardApi.post('/test-connection');
+    const { data } = await multicardApi.post('/multicard/test-connection');
     console.log('✅ Connection test successful:', data);
     return data;
   } catch (error) {
@@ -174,7 +174,8 @@ export const initiateMulticardPayment = async (paymentData) => {
       ofd: ofdData,
       lang: paymentData.lang || 'ru',
       userName: paymentData.userName || '',
-      userEmail: paymentData.userEmail || ''
+      userEmail: paymentData.userEmail || '',
+      provider: 'multicard' // ✅ Add provider field
     };
 
     console.log('📤 Sending payment request:', {
@@ -183,8 +184,8 @@ export const initiateMulticardPayment = async (paymentData) => {
       ofdArray: Array.isArray(ofdData)
     });
 
-    // ✅ CRITICAL FIX: Use POST method explicitly
-    const { data } = await multicardApi.post('/initiate', requestPayload);
+    // ✅ CRITICAL FIX: Use the correct endpoint path
+    const { data } = await multicardApi.post('/multicard/initiate', requestPayload);
 
     console.log('📥 Backend response received:', {
       success: data.success,
@@ -239,6 +240,14 @@ export const initiateMulticardPayment = async (paymentData) => {
       errorMessage = error.message;
     }
 
+    // Check for specific error scenarios
+    if (error.response?.status === 404) {
+      errorMessage = 'Multicard payment endpoint not found. Please contact support.';
+    } else if (errorMessage.includes('временно отключен') || 
+               errorMessage.includes('temporarily disabled')) {
+      errorMessage = 'Multicard payment is temporarily disabled. Please try PayMe or contact support.';
+    }
+
     // Build detailed error response
     const errorResponse = {
       success: false,
@@ -248,7 +257,8 @@ export const initiateMulticardPayment = async (paymentData) => {
         statusText: error.response?.statusText,
         code: error.response?.data?.error?.code,
         hint: error.response?.data?.hint,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        endpoint: error.config?.url
       }
     };
 
@@ -270,7 +280,7 @@ export const initiateMulticardPayment = async (paymentData) => {
 export const getInvoiceInfo = async (invoiceId) => {
   try {
     console.log('📋 Getting invoice info:', invoiceId);
-    const { data } = await multicardApi.post(`/invoice/${invoiceId}`);
+    const { data } = await multicardApi.post(`/multicard/invoice/${invoiceId}`);
     return data;
   } catch (error) {
     console.error('❌ Get invoice error:', error);
@@ -286,7 +296,7 @@ export const getInvoiceInfo = async (invoiceId) => {
 export const cancelInvoice = async (invoiceId) => {
   try {
     console.log('🗑️ Canceling invoice:', invoiceId);
-    const { data } = await multicardApi.delete(`/invoice/${invoiceId}`);
+    const { data } = await multicardApi.delete(`/multicard/invoice/${invoiceId}`);
     return data;
   } catch (error) {
     console.error('❌ Cancel invoice error:', error);
@@ -315,7 +325,7 @@ export const createCardBindingSession = async (bindingData) => {
       throw new Error('redirectDeclineUrl is required');
     }
 
-    const { data } = await multicardApi.post('/card/bind', bindingData);
+    const { data } = await multicardApi.post('/multicard/card/bind', bindingData);
 
     if (data.success) {
       console.log('✅ Card binding session created:', {
@@ -349,7 +359,7 @@ export const createCardBindingSession = async (bindingData) => {
 export const checkCardBindingStatus = async (sessionId) => {
   try {
     console.log('🔍 Checking card binding status:', sessionId);
-    const { data } = await multicardApi.post(`/card/bind/${sessionId}`);
+    const { data } = await multicardApi.post(`/multicard/card/bind/${sessionId}`);
     return data;
   } catch (error) {
     console.error('❌ Check card binding status error:', error);
@@ -363,7 +373,7 @@ export const checkCardBindingStatus = async (sessionId) => {
 export const getCardInfo = async (cardToken) => {
   try {
     console.log('💳 Getting card info...');
-    const { data } = await multicardApi.post(`/card/${cardToken}`);
+    const { data } = await multicardApi.post(`/multicard/card/${cardToken}`);
     return data;
   } catch (error) {
     console.error('❌ Get card info error:', error);
@@ -377,7 +387,7 @@ export const getCardInfo = async (cardToken) => {
 export const deleteCard = async (cardToken) => {
   try {
     console.log('🗑️ Deleting card token...');
-    const { data } = await multicardApi.delete(`/card/${cardToken}`);
+    const { data } = await multicardApi.delete(`/multicard/card/${cardToken}`);
     return data;
   } catch (error) {
     console.error('❌ Delete card error:', error);
@@ -409,7 +419,7 @@ export const createPaymentByToken = async (paymentData) => {
       throw new Error('Invoice ID is required');
     }
 
-    const { data } = await multicardApi.post('/payment', paymentData);
+    const { data } = await multicardApi.post('/multicard/payment', paymentData);
 
     if (data.success) {
       console.log('✅ Payment created:', {
@@ -446,7 +456,7 @@ export const createPaymentViaApp = async (paymentData) => {
       throw new Error(`Invalid payment system. Must be one of: ${validSystems.join(', ')}`);
     }
 
-    const { data } = await multicardApi.post('/payment/via-app', paymentData);
+    const { data } = await multicardApi.post('/multicard/payment/via-app', paymentData);
 
     if (data.success) {
       console.log('✅ Payment app link created:', {
@@ -484,7 +494,7 @@ export const confirmPayment = async (paymentUuid, otp, debitAvailable = false) =
       throw new Error('Valid 6-digit OTP is required');
     }
 
-    const { data } = await multicardApi.put(`/payment/${paymentUuid}`, {
+    const { data } = await multicardApi.put(`/multicard/payment/${paymentUuid}`, {
       otp,
       debit_available: debitAvailable
     });
@@ -519,7 +529,7 @@ export const confirmPayment = async (paymentUuid, otp, debitAvailable = false) =
 export const refundPayment = async (paymentUuid) => {
   try {
     console.log('🔄 Refunding payment:', paymentUuid);
-    const { data } = await multicardApi.delete(`/payment/${paymentUuid}`);
+    const { data } = await multicardApi.delete(`/multicard/payment/${paymentUuid}`);
     return data;
   } catch (error) {
     console.error('❌ Refund payment error:', error);
@@ -533,7 +543,7 @@ export const refundPayment = async (paymentUuid) => {
 export const getPaymentInfo = async (paymentUuid) => {
   try {
     console.log('🔍 Getting payment info:', paymentUuid);
-    const { data } = await multicardApi.post(`/payment/${paymentUuid}`);
+    const { data } = await multicardApi.post(`/multicard/payment/${paymentUuid}`);
     return data;
   } catch (error) {
     console.error('❌ Get payment info error:', error);
@@ -548,7 +558,7 @@ export const getPaymentInfo = async (paymentUuid) => {
 export const getPaymentHistory = async (storeId, params) => {
   try {
     console.log('📊 Getting payment history for store:', storeId);
-    const { data } = await multicardApi.post(`/store/${storeId}/history`, { params });
+    const { data } = await multicardApi.post(`/multicard/store/${storeId}/history`, { params });
     return data;
   } catch (error) {
     console.error('❌ Get payment history error:', error);
@@ -559,7 +569,7 @@ export const getPaymentHistory = async (storeId, params) => {
 export const getPaymentStatistics = async (storeId, startDate, endDate) => {
   try {
     console.log('📈 Getting payment statistics...');
-    const { data } = await multicardApi.post(`/store/${storeId}/statistics`, {
+    const { data } = await multicardApi.post(`/multicard/store/${storeId}/statistics`, {
       params: { startDate, endDate }
     });
     return data;
@@ -572,7 +582,7 @@ export const getPaymentStatistics = async (storeId, startDate, endDate) => {
 export const getApplicationInfo = async () => {
   try {
     console.log('ℹ️ Getting application info...');
-    const { data } = await multicardApi.post('/application/info');
+    const { data } = await multicardApi.post('/multicard/application/info');
     return data;
   } catch (error) {
     console.error('❌ Get application info error:', error);
