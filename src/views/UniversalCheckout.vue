@@ -642,18 +642,16 @@ export default {
     },
 
     createOfdData() {
-      // Create proper OFD (fiscal receipt) data
-      return {
-        items: [
-          {
-            name: `ACED ${this.finalPlan.toUpperCase()} Plan Subscription`,
-            price: this.finalAmount,
-            quantity: 1,
-            mxik: '10899002001000000', // Service MXIK code
-            packageCode: '1'
-          }
-        ]
-      };
+      // Create proper OFD (fiscal receipt) data - must be an array
+      return [
+        {
+          name: `ACED ${this.finalPlan.toUpperCase()} Plan Subscription`,
+          price: this.finalAmount,
+          quantity: 1,
+          mxik: '10899002001000000', // Service MXIK code
+          packageCode: '1'
+        }
+      ];
     },
 
     validatePaymentData() {
@@ -892,7 +890,8 @@ export default {
     formatAmount(amount) {
       if (!amount) return '';
       
-      const uzs = amount > 10000 ? Math.floor(amount / 100) : amount;
+      // Amount is already in tiyin, so we display it as-is
+      const uzs = Math.floor(amount);
       
       try {
         return new Intl.NumberFormat('uz-UZ', {
