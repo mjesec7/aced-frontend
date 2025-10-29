@@ -1092,3 +1092,4 @@
     transition: all 0.3s;
     margin-bottom: 1rem;
   }
+</style>

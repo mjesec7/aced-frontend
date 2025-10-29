@@ -427,25 +427,21 @@ export default {
     },
     
     finalAmount() {
-  let amt = parseInt(this.amount) || 0;
-  
-  if (amt > 0) {
-    // ✅ FIX: Check if already in tiyin or needs conversion
-    if (amt < 1000000) {
-      // Likely in UZS, convert to tiyin (1 UZS = 100 tiyin)
-      amt = amt * 100;
-    }
-    return amt;
-  }
-  
-  // Use default amounts based on plan
-  const amounts = {
-    start: 26000000,  // 260,000 UZS in tiyin
-    pro: 45500000     // 455,000 UZS in tiyin
-  };
-  
-  return amounts[this.finalPlan] || amounts.start;
-},
+      let amt = parseInt(this.amount) || 0;
+      
+      if (amt > 0) {
+        // Return the amount as-is without conversion
+        return amt;
+      }
+      
+      // Use default amounts based on plan (in tiyin)
+      const amounts = {
+        start: 26000000,  // 260,000 UZS in tiyin
+        pro: 45500000     // 455,000 UZS in tiyin
+      };
+      
+      return amounts[this.finalPlan] || amounts.start;
+    },
     
     planName() {
       const plan = this.finalPlan;
