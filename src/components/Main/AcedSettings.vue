@@ -1,528 +1,565 @@
+
 <template>
   <div class="settings-page">
-    <!-- Enhanced Header with more padding -->
-    <div class="settings-header">
-      <div class="header-content">
-        <div class="header-info">
-          <h1 class="header-title">⚙️ Настройки профиля</h1>
-          <p class="header-subtitle">Управление вашим аккаунтом и подпиской</p>
+    
+    <!-- SIDEBAR NAVIGATION -->
+    <aside class="settings-sidebar" :class="{ 'mobile-open': sidebarOpen }">
+      <div class="sidebar-header">
+        <div class="sidebar-brand">
+          <div class="brand-icon">A</div>
+          <div class="brand-text">
+            <h1>ACED</h1>
+            <p>Settings Panel</p>
+          </div>
         </div>
-        <button class="back-button" @click="goToProfile">
-          <span class="back-icon">←</span>
-          В профиль
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Account</div>
+          <a href="#profile" class="nav-item active">
+            <span class="nav-item-icon">👤</span>
+            <span>Profile</span>
+          </a>
+          <a href="#security" class="nav-item">
+            <span class="nav-item-icon">🔐</span>
+            <span>Security</span>
+          </a>
+          <a href="#notifications" class="nav-item">
+            <span class="nav-item-icon">🔔</span>
+            <span>Notifications</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">Billing</div>
+          <a href="#subscription" class="nav-item">
+            <span class="nav-item-icon">💳</span>
+            <span>Subscription</span>
+          </a>
+          <a href="#payment" class="nav-item">
+            <span class="nav-item-icon">💰</span>
+            <span>Payment History</span>
+          </a>
+          <a href="#promo" class="nav-item">
+            <span class="nav-item-icon">🎟️</span>
+            <span>Promo Codes</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">Usage</div>
+          <a href="#stats" class="nav-item">
+            <span class="nav-item-icon">📊</span>
+            <span>Statistics</span>
+          </a>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="btn btn-ghost btn-block btn-sm" @click="goToProfile">
+          ← Back to Profile
         </button>
       </div>
-    </div>
+    </aside>
 
-    <!-- Main Content Container -->
-    <div class="settings-container">
+    <!-- MAIN CONTENT -->
+    <main class="settings-main">
       
-      <!-- Notification -->
-      <div v-if="notification" class="notification" :class="notificationClass">
-        <span class="notification-icon">{{ notificationIcon }}</span>
-        <span class="notification-text">{{ notification }}</span>
-      </div>
-
-      <!-- Personal Information Card -->
-      <div class="settings-card">
-        <div class="card-header">
-          <div class="card-header-left">
-            <h2 class="card-title">👤 Личная информация</h2>
-            <p class="card-subtitle">Ваши персональные данные</p>
+      <!-- HEADER -->
+      <header class="settings-header">
+        <div class="header-left">
+          <h1 class="header-title">Account Settings</h1>
+          <div class="header-breadcrumb">
+            <span>Dashboard</span>
+            <span class="breadcrumb-separator">/</span>
+            <span>Settings</span>
+            <span class="breadcrumb-separator">/</span>
+            <span>Profile</span>
           </div>
-          <button 
-            v-if="!isEditingName" 
-            @click="startEditingName"
-            class="edit-button"
-            title="Редактировать"
-          >
-            <span class="edit-icon">✏️</span>
+        </div>
+        <div class="header-right">
+          <button class="header-action">
+            <span>💾</span>
+            <span>Save Changes</span>
           </button>
-          <div v-else class="edit-actions">
-            <button @click="saveNameChanges" class="save-button" title="Сохранить">
-              <span>✓</span>
-            </button>
-            <button @click="cancelEditingName" class="cancel-button" title="Отмена">
-              <span>✕</span>
-            </button>
+        </div>
+      </header>
+
+      <!-- CONTENT -->
+      <div class="settings-content">
+        
+        <!-- ALERTS -->
+        <div v-if="notification" :class="['alert', notificationClass]">
+          <div class="alert-icon">
+            <span>{{ notificationIcon }}</span>
+          </div>
+          <div class="alert-content">
+            <div class="alert-title">{{ notificationTitle }}</div>
+            <div class="alert-message">{{ notification }}</div>
           </div>
         </div>
 
-        <div class="form-grid">
-          <div class="form-group">
-            <label class="form-label">Имя</label>
-            <input 
-              v-if="isEditingName"
-              type="text" 
-              v-model="tempUser.name" 
-              placeholder="Введите имя"
-              class="form-input editing"
-            />
-            <div v-else class="form-display">
-              {{ user.name || 'Не указано' }}
+        <!-- STATS OVERVIEW -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-header">
+              <div>
+                <div class="stat-label">Current Plan</div>
+                <div class="stat-value">{{ currentPlanLabel }}</div>
+              </div>
+              <div class="stat-icon">💎</div>
+            </div>
+            <div class="stat-change positive">
+              <span>↗</span>
+              <span>Active</span>
             </div>
           </div>
 
-          <div class="form-group">
-            <label class="form-label">Фамилия</label>
-            <input 
-              v-if="isEditingName"
-              type="text" 
-              v-model="tempUser.surname" 
-              placeholder="Введите фамилию"
-              class="form-input editing"
-            />
-            <div v-else class="form-display">
-              {{ user.surname || 'Не указано' }}
+          <div class="stat-card">
+            <div class="stat-header">
+              <div>
+                <div class="stat-label">Messages</div>
+                <div class="stat-value">{{ currentUsageMessages }}</div>
+              </div>
+              <div class="stat-icon">💬</div>
+            </div>
+            <div class="progress">
+              <div class="progress-bar" :style="{ width: messageUsagePercentage + '%' }"></div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-header">
+              <div>
+                <div class="stat-label">Images</div>
+                <div class="stat-value">{{ currentUsageImages }}</div>
+              </div>
+              <div class="stat-icon">🖼️</div>
+            </div>
+            <div class="progress">
+              <div class="progress-bar" :style="{ width: imageUsagePercentage + '%' }"></div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-header">
+              <div>
+                <div class="stat-label">Days Left</div>
+                <div class="stat-value">{{ subscriptionExpiryInfo?.daysRemaining || 0 }}</div>
+              </div>
+              <div class="stat-icon">📅</div>
+            </div>
+            <div class="stat-change" :class="subscriptionExpiryInfo?.isExpiring ? 'negative' : 'positive'">
+              <span>{{ subscriptionExpiryInfo?.isExpiring ? '⚠' : '✓' }}</span>
+              <span>{{ subscriptionExpiryInfo?.isExpiring ? 'Expiring Soon' : 'Active' }}</span>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Security Settings Card -->
-      <div class="settings-card">
-        <div class="card-header">
-          <div class="card-header-left">
-            <h2 class="card-title">🔐 Безопасность</h2>
-            <p class="card-subtitle">Email и пароль</p>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Email адрес</label>
-          <input 
-            type="email" 
-            v-model="user.email" 
-            placeholder="your.email@example.com"
-            class="form-input"
-            :disabled="loading" 
-          />
-        </div>
-
-        <div v-if="!isGoogleUser" class="password-section">
-          <div class="form-group">
-            <label class="form-label">Текущий пароль</label>
-            <input 
-              type="password" 
-              v-model="oldPassword" 
-              placeholder="Введите текущий пароль"
-              class="form-input"
-              :disabled="loading" 
-            />
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Новый пароль</label>
-            <input 
-              type="password" 
-              v-model="newPassword" 
-              placeholder="Введите новый пароль"
-              class="form-input"
-              :disabled="loading" 
-            />
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Подтвердите новый пароль</label>
-            <input 
-              type="password" 
-              v-model="confirmPassword" 
-              placeholder="Повторите новый пароль"
-              class="form-input"
-              :disabled="loading" 
-            />
-          </div>
-        </div>
-
-        <button class="link-button" @click="sendPasswordReset">
-          {{ isGoogleUser ? '🔑 Создать пароль' : '🔑 Забыли пароль?' }}
-        </button>
-
-        <div class="action-buttons">
-          <button 
-            class="primary-button" 
-            @click="saveChanges"
-            :disabled="loading"
-          >
-            {{ loading ? '⏳ Сохранение...' : '💾 Сохранить изменения' }}
-          </button>
-        </div>
-      </div>
-
-      <!-- Subscription Card -->
-      <div class="settings-card subscription-card">
-        <div class="card-header">
-          <div class="card-header-left">
-            <h2 class="card-title">💎 Подписка и оплата</h2>
-            <p class="card-subtitle">Управление тарифом</p>
-          </div>
-        </div>
-
-        <!-- Current Plan Display -->
-        <div class="current-plan-display">
-          <div class="plan-badge-wrapper">
-            <span class="plan-label">Текущий тариф:</span>
-            <span :class="['plan-badge', currentPlanClass]">
-              {{ currentPlanLabel }}
-            </span>
-          </div>
+        <!-- MAIN GRID -->
+        <div class="content-grid">
           
-          <p class="plan-description">{{ currentPlanDescription }}</p>
-          
-          <!-- Subscription Details -->
-          <div v-if="subscriptionExpiryInfo" class="subscription-details">
-            <div class="expiry-info" :class="{
-              'expiry-warning': subscriptionExpiryInfo.isExpiring,
-              'expiry-expired': subscriptionExpiryInfo.isExpired
-            }">
-              <div class="expiry-main">
-                <span class="expiry-icon">
-                  {{ subscriptionExpiryInfo.isExpired ? '❌' : '📅' }}
-                </span>
-                <div class="expiry-content">
-                  <div class="expiry-label">
-                    {{ subscriptionExpiryInfo.isExpired ? 'Срок действия истёк:' : 'Активен до:' }}
+          <!-- LEFT COLUMN (8 cols) -->
+          <div class="grid-col-8">
+            
+            <!-- PROFILE CARD -->
+            <div class="modern-card mb-4">
+              <div class="card-header">
+                <div class="card-title-group">
+                  <div class="card-icon">👤</div>
+                  <h2 class="card-title">Personal Information</h2>
+                  <p class="card-subtitle">Update your personal details and email address</p>
+                </div>
+                <div class="card-actions">
+                  <button v-if="!isEditingName" @click="startEditingName" class="btn btn-sm btn-secondary">
+                    ✏️ Edit
+                  </button>
+                  <button v-else @click="saveNameChanges" class="btn btn-sm btn-success">
+                    ✓ Save
+                  </button>
+                  <button v-if="isEditingName" @click="cancelEditingName" class="btn btn-sm btn-secondary">
+                    ✕ Cancel
+                  </button>
+                </div>
+              </div>
+              
+              <div class="card-body">
+                <div class="content-grid">
+                  <div class="grid-col-6">
+                    <div class="form-group">
+                      <label class="form-label">First Name</label>
+                      <input 
+                        v-if="isEditingName"
+                        type="text" 
+                        v-model="tempUser.name" 
+                        class="form-input"
+                        placeholder="Enter your first name"
+                      />
+                      <div v-else class="form-input" style="background: var(--light); cursor: default;">
+                        {{ user.name || 'Not set' }}
+                      </div>
+                    </div>
                   </div>
-                  <div class="expiry-date">{{ subscriptionExpiryInfo.formattedDate }}</div>
-                  <div v-if="!subscriptionExpiryInfo.isExpired" class="expiry-countdown">
-                    ⏰ Осталось: {{ subscriptionExpiryInfo.timeRemaining }} ({{ subscriptionExpiryInfo.daysRemaining }} дней)
+                  
+                  <div class="grid-col-6">
+                    <div class="form-group">
+                      <label class="form-label">Last Name</label>
+                      <input 
+                        v-if="isEditingName"
+                        type="text" 
+                        v-model="tempUser.surname" 
+                        class="form-input"
+                        placeholder="Enter your last name"
+                      />
+                      <div v-else class="form-input" style="background: var(--light); cursor: default;">
+                        {{ user.surname || 'Not set' }}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="grid-col-12">
+                    <div class="form-group">
+                      <label class="form-label">
+                        Email Address
+                        <span class="label-badge">Verified</span>
+                      </label>
+                      <input 
+                        type="email" 
+                        v-model="user.email" 
+                        class="form-input"
+                        :disabled="loading"
+                      />
+                      <div class="form-hint">
+                        💡 We'll send updates and notifications to this email
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- Warning Alert -->
-            <div v-if="subscriptionExpiryInfo.isExpiring && !subscriptionExpiryInfo.isExpired" class="warning-alert">
-              <span class="warning-icon">⚠️</span>
-              <div class="warning-content">
-                <strong>Внимание!</strong> Ваша подписка истекает через {{ subscriptionExpiryInfo.daysRemaining }} дней.
-                <br>
-                <small>Продлите подписку, чтобы не потерять доступ к премиум-функциям.</small>
+            <!-- SECURITY CARD -->
+            <div class="modern-card mb-4" v-if="!isGoogleUser">
+              <div class="card-header">
+                <div class="card-title-group">
+                  <div class="card-icon">🔐</div>
+                  <h2 class="card-title">Security Settings</h2>
+                  <p class="card-subtitle">Change your password and manage security</p>
+                </div>
+              </div>
+              
+              <div class="card-body">
+                <div class="form-group">
+                  <label class="form-label">Current Password</label>
+                  <input 
+                    type="password" 
+                    v-model="oldPassword" 
+                    class="form-input"
+                    placeholder="Enter current password"
+                    :disabled="loading"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">New Password</label>
+                  <input 
+                    type="password" 
+                    v-model="newPassword" 
+                    class="form-input"
+                    placeholder="Enter new password"
+                    :disabled="loading"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Confirm New Password</label>
+                  <input 
+                    type="password" 
+                    v-model="confirmPassword" 
+                    class="form-input"
+                    placeholder="Re-enter new password"
+                    :disabled="loading"
+                  />
+                </div>
+              </div>
+              
+              <div class="card-footer">
+                <button @click="sendPasswordReset" class="btn btn-ghost">
+                  🔑 Forgot Password?
+                </button>
+                <button @click="saveChanges" class="btn btn-primary" :disabled="loading">
+                  {{ loading ? '⏳ Updating...' : '💾 Update Password' }}
+                </button>
               </div>
             </div>
-          </div>
 
-          <!-- Subscription Benefits -->
-          <div v-if="currentPlan !== 'free'" class="benefits-section">
-            <div class="benefits-header">
-              <span class="benefits-icon">✨</span>
-              <span class="benefits-title">Активные возможности:</span>
+            <!-- SUBSCRIPTION PLANS -->
+            <div class="modern-card mb-4">
+              <div class="card-header">
+                <div class="card-title-group">
+                  <div class="card-icon">💎</div>
+                  <h2 class="card-title">Subscription Plans</h2>
+                  <p class="card-subtitle">Choose the perfect plan for your needs</p>
+                </div>
+              </div>
+              
+              <div class="card-body">
+                <div class="pricing-grid">
+                  <!-- START PLAN -->
+                  <div 
+                    class="pricing-card" 
+                    :class="{ 'featured': currentPlan === 'start' }"
+                    @click="selectPaymentPlan('start')"
+                  >
+                    <div v-if="currentPlan === 'start'" class="pricing-badge">Current Plan</div>
+                    
+                    <div class="pricing-header">
+                      <h3 class="pricing-name">Start</h3>
+                      <div class="pricing-price">
+                        <span class="price-amount">260</span>
+                        <span class="price-currency">K</span>
+                        <span class="price-period">/ month</span>
+                      </div>
+                      <p class="pricing-description">Perfect for getting started</p>
+                    </div>
+
+                    <ul class="pricing-features">
+                      <li>
+                        <span class="feature-icon">✓</span>
+                        <span>Unlimited Messages</span>
+                      </li>
+                      <li>
+                        <span class="feature-icon">✓</span>
+                        <span>Dictionary Access</span>
+                      </li>
+                      <li>
+                        <span class="feature-icon">✓</span>
+                        <span>Basic Courses</span>
+                      </li>
+                      <li>
+                        <span class="feature-icon">✓</span>
+                        <span>Homework Support</span>
+                      </li>
+                      <li>
+                        <span class="feature-icon">✓</span>
+                        <span>Priority Support</span>
+                      </li>
+                      <li>
+                        <span class="feature-icon disabled">✕</span>
+                        <span style="color: var(--gray-light);">Unlimited Images</span>
+                      </li>
+                    </ul>
+
+                    <button 
+                      class="btn btn-outline btn-block"
+                      :disabled="currentPlan === 'start' || currentPlan === 'pro'"
+                    >
+                      {{ currentPlan === 'start' ? '✓ Current Plan' : 'Select Plan' }}
+                    </button>
+                  </div>
+
+                  <!-- PRO PLAN -->
+                  <div 
+                    class="pricing-card featured" 
+                    :class="{ 'featured': currentPlan === 'pro' || paymentPlan === 'pro' }"
+                    @click="selectPaymentPlan('pro')"
+                  >
+                    <div class="pricing-badge">{{ currentPlan === 'pro' ? 'Current Plan' : 'Recommended' }}</div>
+                    
+                    <div class="pricing-header">
+                      <h3 class="pricing-name">Pro</h3>
+                      <div class="pricing-price">
+                        <span class="price-amount">455</span>
+                        <span class="price-currency">K</span>
+                        <span class="price-period">/ month</span>
+                      </div>
+                      <p class="pricing-description">For power users and professionals</p>
+                    </div>
+
+                    <ul class="pricing-features">
+                      <li>
+                        <span class="feature-icon">✓</span>
+                        <span>Everything in Start</span>
+                      </li>
+                      <li>
+                        <span class="feature-icon">✓</span>
+                        <span>Unlimited Images</span>
+                      </li>
+                      <li>
+                        <span class="feature-icon">✓</span>
+                        <span>Advanced Courses</span>
+                      </li>
+                      <li>
+                        <span class="feature-icon">✓</span>
+                        <span>Personal Analytics</span>
+                      </li>
+                      <li>
+                        <span class="feature-icon">✓</span>
+                        <span>Custom Courses</span>
+                      </li>
+                      <li>
+                        <span class="feature-icon">✓</span>
+                        <span>Exclusive Content</span>
+                      </li>
+                    </ul>
+
+                    <button 
+                      class="btn btn-primary btn-block"
+                      :disabled="currentPlan === 'pro'"
+                    >
+                      {{ currentPlan === 'pro' ? '✓ Current Plan' : 'Upgrade to Pro' }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card-footer">
+                <button 
+                  class="btn btn-success btn-lg btn-block" 
+                  @click="goToPayment"
+                  :disabled="!paymentPlan || loading"
+                >
+                  {{ getPaymentButtonText() }}
+                </button>
+              </div>
             </div>
-            <ul class="benefits-list">
-              <li v-if="currentPlan === 'start' || currentPlan === 'pro'">
-                ✅ Безлимитные сообщения
-              </li>
-              <li v-if="currentPlan === 'start' || currentPlan === 'pro'">
-                ✅ Доступ к премиум курсам
-              </li>
-              <li v-if="currentPlan === 'pro'">
-                ✅ Безлимитные изображения
-              </li>
-              <li v-if="currentPlan === 'pro'">
-                ✅ Персональная аналитика
-              </li>
-              <li v-if="currentPlan === 'pro'">
-                ✅ Эксклюзивные материалы
-              </li>
-            </ul>
+
           </div>
 
-          <!-- Free Plan Info -->
-          <div v-else class="free-plan-info">
-            <div class="free-plan-header">
-              <span class="info-icon">ℹ️</span>
-              <span>Ограничения бесплатного плана:</span>
-            </div>
-            <ul class="limitations-list">
-              <li>⭕ Ограниченное количество сообщений</li>
-              <li>⭕ Базовый доступ к курсам</li>
-              <li>⭕ Ограниченная аналитика</li>
-            </ul>
-            <div class="upgrade-message">
-              Хотите больше возможностей? Рассмотрите <strong>Start</strong> или <strong>Pro</strong> план!
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Promo Code Card -->
-      <div class="settings-card promo-card">
-        <div class="card-header">
-          <div class="card-header-left">
-            <h2 class="card-title">🎟️ Промокод</h2>
-            <p class="card-subtitle">Активация специального предложения</p>
-          </div>
-        </div>
-
-        <div class="promo-input-section">
-          <div class="form-group">
-            <label class="form-label">Введите промокод</label>
-            <input 
-              type="text" 
-              v-model="promoCode" 
-              placeholder="Например: ACED2024"
-              :disabled="loading || isProcessingPromo"
-              @keyup.enter="applyPromo"
-              @input="handlePromoCodeInput"
-              maxlength="20"
-              class="form-input promo-input"
-              :class="{ 
-                'promo-valid': promoValidation && promoValidation.valid,
-                'promo-invalid': promoValidation && !promoValidation.valid && promoCode.length > 3,
-                'promo-loading': isValidatingPromo
-              }"
-            />
+          <!-- RIGHT COLUMN (4 cols) -->
+          <div class="grid-col-4">
             
-            <!-- Validation Feedback -->
-            <div v-if="isValidatingPromo" class="validation-message loading">
-              <div class="spinner-small"></div>
-              Проверка промокода...
-            </div>
-            
-            <div v-else-if="promoValidation && promoCode.length > 3" class="validation-message">
-              <div v-if="promoValidation.valid" class="validation-success">
-                ✅ Промокод действителен! 
-                <br>
-                <strong>Предоставляет: {{ promoValidation.data?.grantsPlan?.toUpperCase() }} план</strong>
+            <!-- PROMO CODE CARD -->
+            <div class="modern-card mb-4">
+              <div class="card-header">
+                <div class="card-title-group">
+                  <div class="card-icon">🎟️</div>
+                  <h2 class="card-title">Promo Code</h2>
+                  <p class="card-subtitle">Have a promo code? Apply it here</p>
+                </div>
               </div>
-              <div v-else class="validation-error">
-                ❌ {{ promoValidation.error }}
-              </div>
-            </div>
-          </div>
+              
+              <div class="card-body">
+                <div class="form-group">
+                  <label class="form-label">Promo Code</label>
+                  <input 
+                    type="text" 
+                    v-model="promoCode" 
+                    class="form-input"
+                    placeholder="ENTER CODE"
+                    :disabled="loading || isProcessingPromo"
+                    @input="handlePromoCodeInput"
+                    style="text-transform: uppercase; font-weight: 600; font-family: monospace;"
+                  />
+                  <div v-if="isValidatingPromo" class="form-hint">
+                    <div class="spinner-small"></div>
+                    Validating...
+                  </div>
+                  <div v-else-if="promoValidation && promoCode.length > 3">
+                    <div v-if="promoValidation.valid" class="form-hint" style="color: var(--success);">
+                      ✓ Valid! Grants {{ promoValidation.data?.grantsPlan?.toUpperCase() }} plan
+                    </div>
+                    <div v-else class="form-error">
+                      ✕ {{ promoValidation.error }}
+                    </div>
+                  </div>
+                </div>
 
-          <div class="form-group">
-            <label class="form-label">Выберите тариф</label>
-            <select 
-              v-model="selectedPlan" 
-              :disabled="loading || isProcessingPromo" 
-              class="form-select"
-              @change="onPlanChange"
-            >
-              <option value="">Выберите тариф...</option>
-              <option value="start" :disabled="currentPlan === 'start' || currentPlan === 'pro'">
-                Start (260,000 сум) {{ currentPlan === 'start' ? '- Уже активен' : '' }}
-              </option>
-              <option value="pro" :disabled="currentPlan === 'pro'">
-                Pro (455,000 сум) {{ currentPlan === 'pro' ? '- Уже активен' : '' }}
-              </option>
-            </select>
-          </div>
+                <div class="form-group">
+                  <label class="form-label">Select Plan</label>
+                  <select v-model="selectedPlan" class="form-select" :disabled="loading">
+                    <option value="">Choose plan...</option>
+                    <option value="start">Start Plan</option>
+                    <option value="pro">Pro Plan</option>
+                  </select>
+                </div>
 
-          <!-- Plan Warning -->
-          <div v-if="planCompatibilityWarning" class="plan-warning">
-            ⚠️ {{ planCompatibilityWarning }}
-          </div>
-
-          <button 
-            class="promo-button" 
-            @click="applyPromo"
-            :disabled="!canApplyPromo || isProcessingPromo"
-            :class="{ 
-              'promo-ready': canApplyPromo && !isProcessingPromo,
-              'promo-processing': isProcessingPromo 
-            }"
-          >
-            {{ promoButtonText }}
-          </button>
-        </div>
-
-        <!-- Applied Promocodes History -->
-        <div v-if="appliedPromocodesCount > 0" class="promocodes-history">
-          <h4 class="history-title">📋 История применённых промокодов</h4>
-          <div class="history-list">
-            <div 
-              v-for="promo in appliedPromocodesSlice" 
-              :key="promo.id || (promo.code + promo.appliedAt)"
-              class="history-item"
-            >
-              <div class="history-info">
-                <span class="history-code">{{ promo.code || 'N/A' }}</span>
-                <span class="history-plan">{{ (promo.plan || 'unknown').toUpperCase() }}</span>
-              </div>
-              <div class="history-date">
-                {{ formatDate(promo.appliedAt) }}
+                <button 
+                  class="btn btn-success btn-block"
+                  @click="applyPromo"
+                  :disabled="!canApplyPromo || isProcessingPromo"
+                >
+                  {{ promoButtonText }}
+                </button>
               </div>
             </div>
+
+            <!-- QUICK STATS -->
+            <div class="modern-card mb-4">
+              <div class="card-header">
+                <div class="card-title-group">
+                  <h2 class="card-title">Quick Stats</h2>
+                </div>
+              </div>
+              
+              <div class="card-body">
+                <div class="form-group">
+                  <div class="progress-label">
+                    <span class="progress-label-text">Messages Used</span>
+                    <span class="progress-label-value">
+                      {{ currentUsageMessages }} / {{ usageLimitsMessages === -1 ? '∞' : usageLimitsMessages }}
+                    </span>
+                  </div>
+                  <div class="progress">
+                    <div class="progress-bar" :style="{ width: messageUsagePercentage + '%' }"></div>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <div class="progress-label">
+                    <span class="progress-label-text">Images Generated</span>
+                    <span class="progress-label-value">
+                      {{ currentUsageImages }} / {{ usageLimitsImages === -1 ? '∞' : usageLimitsImages }}
+                    </span>
+                  </div>
+                  <div class="progress">
+                    <div class="progress-bar" :style="{ width: imageUsagePercentage + '%' }"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- SUBSCRIPTION INFO -->
+            <div class="modern-card" v-if="subscriptionExpiryInfo">
+              <div class="card-header">
+                <div class="card-title-group">
+                  <h2 class="card-title">Subscription</h2>
+                </div>
+              </div>
+              
+              <div class="card-body">
+                <div class="form-group mb-0">
+                  <div class="badge badge-primary" style="margin-bottom: var(--space-md);">
+                    {{ currentPlanLabel }} Plan
+                  </div>
+                  
+                  <div style="font-size: 0.875rem; color: var(--gray); margin-bottom: var(--space-sm);">
+                    Expires on
+                  </div>
+                  <div style="font-size: 1.25rem; font-weight: 700; color: var(--dark); margin-bottom: var(--space-md);">
+                    {{ subscriptionExpiryInfo.formattedDate }}
+                  </div>
+                  
+                  <div :class="['badge', subscriptionExpiryInfo.isExpiring ? 'badge-warning' : 'badge-success']">
+                    {{ subscriptionExpiryInfo.isExpiring ? '⚠ Expiring Soon' : '✓ Active' }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
+
       </div>
+    </main>
 
-      <!-- Payment Plans Card -->
-      <div class="settings-card plans-card">
-        <div class="card-header">
-          <div class="card-header-left">
-            <h2 class="card-title">💰 Тарифные планы</h2>
-            <p class="card-subtitle">Выберите подходящий тариф</p>
-          </div>
-        </div>
-
-        <div v-if="isPromocodeActive" class="promocode-notice">
-          <span class="notice-icon">🎉</span>
-          У вас активна подписка по промокоду! 
-          <br>
-          <small>Вы можете продлить подписку через оплату или применить новый промокод</small>
-        </div>
-
-        <div class="plans-grid">
-          <!-- Start Plan -->
-          <div 
-            class="plan-card" 
-            :class="{ 
-              active: paymentPlan === 'start', 
-              disabled: currentPlan === 'start' || currentPlan === 'pro',
-              'current-plan': currentPlan === 'start'
-            }"
-            @click="selectPaymentPlan('start')"
-          >
-            <div class="plan-header">
-              <h3 class="plan-name">Start</h3>
-              <div class="plan-price">260,000 сум</div>
-              <div class="plan-period">/ месяц</div>
-            </div>
-            <ul class="plan-features">
-              <li><span class="feature-icon">✅</span> Безлимитные сообщения</li>
-              <li><span class="feature-icon">✅</span> Доступ к словарю</li>
-              <li><span class="feature-icon">✅</span> Базовые курсы</li>
-              <li><span class="feature-icon">✅</span> Домашние задания</li>
-              <li><span class="feature-icon">✅</span> Основные тесты</li>
-              <li><span class="feature-icon">✅</span> Приоритетная поддержка</li>
-            </ul>
-            <div v-if="currentPlan === 'start'" class="plan-status active-status">
-              ✅ Активен
-            </div>
-            <button 
-              v-else
-              class="plan-select-button"
-              :disabled="currentPlan === 'pro'"
-            >
-              Выбрать Start
-            </button>
-          </div>
-
-          <!-- Pro Plan -->
-          <div 
-            class="plan-card recommended" 
-            :class="{ 
-              active: paymentPlan === 'pro', 
-              disabled: currentPlan === 'pro',
-              'current-plan': currentPlan === 'pro'
-            }"
-            @click="selectPaymentPlan('pro')"
-          >
-            <div class="plan-badge">Рекомендуем</div>
-            <div class="plan-header">
-              <h3 class="plan-name">Pro</h3>
-              <div class="plan-price">455,000 сум</div>
-              <div class="plan-period">/ месяц</div>
-            </div>
-            <ul class="plan-features">
-              <li><span class="feature-icon">✅</span> Все возможности Start</li>
-              <li><span class="feature-icon">✅</span> Безлимитные изображения</li>
-              <li><span class="feature-icon">✅</span> Продвинутые курсы</li>
-              <li><span class="feature-icon">✅</span> Персональная аналитика</li>
-              <li><span class="feature-icon">✅</span> Персональные курсы</li>
-              <li><span class="feature-icon">✅</span> Эксклюзивные материалы</li>
-            </ul>
-            <div v-if="currentPlan === 'pro'" class="plan-status active-status">
-              ✅ Активен
-            </div>
-            <button 
-              v-else
-              class="plan-select-button"
-            >
-              Выбрать Pro
-            </button>
-          </div>
-        </div>
-
-        <!-- Updated Payment Button -->
-        <button 
-          class="payment-button" 
-          @click="goToPayment"
-          :disabled="loading || !paymentPlan || (currentPlan !== 'free' && paymentPlan === currentPlan)"
-        >
-          {{ getPaymentButtonText() }}
-        </button>
-      </div>
-
-      <!-- Payment History -->
-      <div v-if="paymentHistoryCount > 0" class="settings-card">
-        <div class="card-header">
-          <div class="card-header-left">
-            <h2 class="card-title">📊 История платежей</h2>
-            <p class="card-subtitle">Последние транзакции</p>
-          </div>
-        </div>
-        
-        <div class="history-list">
-          <div 
-            v-for="payment in paymentHistorySlice" 
-            :key="payment.id || payment._id || payment.timestamp"
-            class="payment-item"
-          >
-            <div class="payment-info">
-              <span class="payment-id">{{ payment.id || payment._id || 'N/A' }}</span>
-              <span class="payment-amount">{{ formatAmount(payment.amount) }}</span>
-            </div>
-            <div class="payment-status-info">
-              <span :class="['status-badge', getStatusClass(payment.state || payment.status)]">
-                {{ payment.stateText || payment.statusText || 'Unknown' }}
-              </span>
-              <span class="payment-date">{{ formatDate(payment.timestamp || payment.createdAt) }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Usage Statistics -->
-      <div v-if="!isFreeUser" class="settings-card">
-        <div class="card-header">
-          <div class="card-header-left">
-            <h2 class="card-title">📈 Использование</h2>
-            <p class="card-subtitle">Статистика использования ресурсов</p>
-          </div>
-        </div>
-        
-        <div class="usage-stats">
-          <div class="usage-item">
-            <div class="usage-header">
-              <span class="usage-label">💬 Сообщения</span>
-              <span class="usage-value">
-                {{ currentUsageMessages }} / {{ usageLimitsMessages === -1 ? '∞' : usageLimitsMessages }}
-              </span>
-            </div>
-            <div v-if="usageLimitsMessages !== -1" class="usage-bar">
-              <div class="usage-fill" :style="{ width: messageUsagePercentage + '%' }"></div>
-            </div>
-            <div v-else class="unlimited-badge">
-              Безлимитно
-            </div>
-          </div>
-          
-          <div class="usage-item">
-            <div class="usage-header">
-              <span class="usage-label">🖼️ Изображения</span>
-              <span class="usage-value">
-                {{ currentUsageImages }} / {{ usageLimitsImages === -1 ? '∞' : usageLimitsImages }}
-              </span>
-            </div>
-            <div v-if="usageLimitsImages !== -1" class="usage-bar">
-              <div class="usage-fill" :style="{ width: imageUsagePercentage + '%' }"></div>
-            </div>
-            <div v-else class="unlimited-badge">
-              Безлимитно
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Loading Overlay -->
+    <!-- LOADING OVERLAY -->
     <div v-if="loading" class="loading-overlay">
       <div class="spinner"></div>
       <p class="loading-text">{{ loadingText }}</p>
     </div>
+
   </div>
 </template>
 
@@ -1864,1156 +1901,16 @@ getPaymentButtonText() {
 </script>
 
 <style scoped>
-/* Styles remain the same as in the original file */
-/* Copy all the CSS from the original AcedSettings.vue */
-/* I'm keeping the original CSS to maintain consistency */
+@import '@/assets/css/AcedSettings.css';
 
-.settings-page {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 50%, #ddd6fe 100%);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
-}
-
-.settings-header {
-  background: white;
-  border-bottom: 1px solid #e9d5ff;
-  box-shadow: 0 1px 3px rgba(139, 92, 246, 0.1);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  padding: 2.5rem 0;
-}
-
-.header-content {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 0 2rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.header-info {
-  flex: 1;
-}
-
-.header-title {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #7c3aed;
-  margin: 0 0 0.5rem 0;
-  letter-spacing: -0.5px;
-}
-
-.header-subtitle {
-  font-size: 1rem;
-  color: #6b7280;
-  margin: 0;
-}
-
-.back-button {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.875rem 1.75rem;
-  background: white;
-  border: 2px solid #e9d5ff;
-  border-radius: 12px;
-  color: #7c3aed;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 1rem;
-}
-
-.back-button:hover {
-  background: #faf5ff;
-  border-color: #c4b5fd;
-  transform: translateY(-1px);
-}
-
-.back-icon {
-  font-size: 1.25rem;
-}
-
-.settings-container {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 3rem 2rem;
-}
-
-.notification {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 1rem 1.5rem;
-  border-radius: 12px;
-  margin-bottom: 2rem;
-  font-weight: 500;
-  animation: slideDown 0.3s ease;
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.notification-success {
-  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-  border: 2px solid #6ee7b7;
-  color: #065f46;
-}
-
-.notification-error {
-  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-  border: 2px solid #fca5a5;
-  color: #991b1b;
-}
-
-.notification-warning {
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-  border: 2px solid #fcd34d;
-  color: #92400e;
-}
-
-.notification-info {
-  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-  border: 2px solid #93c5fd;
-  color: #1e40af;
-}
-
-.notification-icon {
-  font-size: 1.5rem;
-}
-
-.notification-text {
-  flex: 1;
-}
-
-.settings-card {
-  background: white;
-  border-radius: 16px;
-  padding: 2rem;
-  margin-bottom: 2rem;
-  border: 1px solid #e9d5ff;
-  box-shadow: 0 4px 6px -1px rgba(139, 92, 246, 0.1), 0 2px 4px -1px rgba(139, 92, 246, 0.06);
-  transition: all 0.3s ease;
-}
-
-.settings-card:hover {
-  box-shadow: 0 10px 15px -3px rgba(139, 92, 246, 0.15), 0 4px 6px -2px rgba(139, 92, 246, 0.1);
-  transform: translateY(-2px);
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 2rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 2px solid #f3f4f6;
-}
-
-.card-header-left {
-  flex: 1;
-}
-
-.card-title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #7c3aed;
-  margin: 0 0 0.5rem 0;
-}
-
-.card-subtitle {
-  font-size: 0.95rem;
-  color: #6b7280;
-  margin: 0;
-}
-
-.edit-button {
-  padding: 0.75rem 1rem;
-  background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
-  border: 2px solid #e9d5ff;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.edit-button:hover {
-  background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
-  border-color: #c4b5fd;
-  transform: scale(1.05);
-}
-
-.edit-icon {
-  font-size: 1.25rem;
-}
-
-.edit-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.save-button {
-  padding: 0.75rem 1rem;
-  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-  border: 2px solid #6ee7b7;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  color: #065f46;
-  font-weight: 600;
-  font-size: 1.125rem;
-}
-
-.save-button:hover {
-  background: linear-gradient(135deg, #a7f3d0 0%, #6ee7b7 100%);
-  transform: scale(1.05);
-}
-
-.cancel-button {
-  padding: 0.75rem 1rem;
-  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-  border: 2px solid #fca5a5;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  color: #991b1b;
-  font-weight: 600;
-  font-size: 1.125rem;
-}
-
-.cancel-button:hover {
-  background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
-  transform: scale(1.05);
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.5rem;
-}
-
-.form-group {
-  margin-bottom: 1.5rem;
-}
-
-.form-label {
-  display: block;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: 0.5rem;
-}
-
-.form-input {
-  width: 100%;
-  padding: 0.875rem 1.25rem;
-  border: 2px solid #e9d5ff;
-  border-radius: 10px;
-  font-size: 1rem;
-  color: #1f2937;
-  transition: all 0.2s ease;
-  background: white;
-  box-sizing: border-box;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: #a78bfa;
-  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.1);
-}
-
-.form-input:disabled {
-  background: #f9fafb;
-  color: #9ca3af;
-  cursor: not-allowed;
-}
-
-.form-input.editing {
-  border-color: #a78bfa;
-  background: #faf5ff;
-}
-
-.form-display {
-  width: 100%;
-  padding: 0.875rem 1.25rem;
-  background: #f9fafb;
-  border: 2px solid #e5e7eb;
-  border-radius: 10px;
-  font-size: 1rem;
-  color: #1f2937;
-  font-weight: 500;
-  box-sizing: border-box;
-}
-
-.form-select {
-  width: 100%;
-  padding: 0.875rem 1.25rem;
-  border: 2px solid #e9d5ff;
-  border-radius: 10px;
-  font-size: 1rem;
-  color: #1f2937;
-  transition: all 0.2s ease;
-  background: white;
-  cursor: pointer;
-  box-sizing: border-box;
-}
-
-.form-select:focus {
-  outline: none;
-  border-color: #a78bfa;
-  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.1);
-}
-
-.password-section {
-  margin-top: 2rem;
-  padding-top: 2rem;
-  border-top: 2px solid #f3f4f6;
-}
-
-.link-button {
-  background: none;
-  border: none;
-  color: #7c3aed;
-  font-weight: 600;
-  cursor: pointer;
-  font-size: 0.95rem;
-  padding: 0;
-  margin-top: 0.5rem;
-  text-decoration: underline;
-  transition: color 0.2s ease;
-}
-
-.link-button:hover {
-  color: #6d28d9;
-}
-
-.action-buttons {
-  margin-top: 2rem;
-  display: flex;
-  gap: 1rem;
-}
-
-.primary-button {
-  padding: 1rem 2rem;
-  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
-  color: white;
-  border: none;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 1.05rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 6px -1px rgba(124, 58, 237, 0.3);
-}
-
-.primary-button:hover:not(:disabled) {
-  background: linear-gradient(135deg, #6d28d9 0%, #5b21b6 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 10px 15px -3px rgba(124, 58, 237, 0.4);
-}
-
-.primary-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.subscription-card {
-  background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
-  border: 2px solid #e9d5ff;
-}
-
-.current-plan-display {
-  margin-top: 1rem;
-}
-
-.plan-badge-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.plan-label {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #374151;
-}
-
-.plan-badge {
-  display: inline-block;
-  padding: 0.5rem 1.5rem;
-  border-radius: 10px;
-  font-weight: 700;
-  font-size: 1.1rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.badge-pro {
-  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
-  color: white;
-  box-shadow: 0 4px 6px -1px rgba(124, 58, 237, 0.3);
-}
-
-.badge-start {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  color: white;
-  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
-}
-
-.badge-free {
-  background: #e5e7eb;
-  color: #6b7280;
-}
-
-.plan-description {
-  font-size: 1rem;
-  color: #6b7280;
-  margin: 1rem 0;
-}
-
-.subscription-details {
-  margin-top: 1.5rem;
-}
-
-.expiry-info {
-  background: white;
-  border: 2px solid #e9d5ff;
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-bottom: 1rem;
-}
-
-.expiry-warning {
-  border-color: #fbbf24;
-  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-}
-
-.expiry-expired {
-  border-color: #ef4444;
-  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-}
-
-.expiry-main {
-  display: flex;
-  gap: 1rem;
-  align-items: start;
-}
-
-.expiry-icon {
-  font-size: 2rem;
-}
-
-.expiry-content {
-  flex: 1;
-}
-
-.expiry-label {
-  font-size: 0.9rem;
-  color: #6b7280;
-  margin-bottom: 0.25rem;
-}
-
-.expiry-date {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #1f2937;
-  margin-bottom: 0.5rem;
-}
-
-.expiry-countdown {
-  font-size: 0.95rem;
-  color: #7c3aed;
-  font-weight: 600;
-}
-
-.warning-alert {
-  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-  border: 2px solid #fbbf24;
-  border-radius: 12px;
-  padding: 1rem;
-  display: flex;
-  gap: 1rem;
-  align-items: start;
-}
-
-.warning-icon {
-  font-size: 1.5rem;
-}
-
-.warning-content {
-  flex: 1;
-  font-size: 0.95rem;
-  color: #92400e;
-}
-
-.benefits-section {
-  margin-top: 1.5rem;
-  background: white;
-  border: 2px solid #e9d5ff;
-  border-radius: 12px;
-  padding: 1.5rem;
-}
-
-.benefits-header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.benefits-icon {
-  font-size: 1.5rem;
-}
-
-.benefits-title {
-  font-weight: 600;
-  color: #374151;
-  font-size: 1.05rem;
-}
-
-.benefits-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.benefits-list li {
-  padding: 0.5rem 0;
-  color: #059669;
-  font-weight: 500;
-  font-size: 0.95rem;
-}
-
-.free-plan-info {
-  margin-top: 1.5rem;
-  background: white;
-  border: 2px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 1.5rem;
-}
-
-.free-plan-header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-  font-weight: 600;
-  color: #374151;
-  font-size: 1.05rem;
-}
-
-.info-icon {
-  font-size: 1.5rem;
-}
-
-.limitations-list {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 1rem 0;
-}
-
-.limitations-list li {
-  padding: 0.5rem 0;
-  color: #6b7280;
-  font-size: 0.95rem;
-}
-
-.upgrade-message {
-  padding: 1rem;
-  background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
-  border-radius: 8px;
-  color: #6b7280;
-  font-size: 0.95rem;
-}
-
-.promo-card {
-  background: linear-gradient(135deg, #ffffff 0%, #faf5ff 100%);
-}
-
-.promo-input-section {
-  margin-top: 1rem;
-}
-
-.promo-input {
-  font-family: 'Courier New', monospace;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  font-weight: 600;
-}
-
-.promo-valid {
-  border-color: #10b981 !important;
-  background: #d1fae5 !important;
-}
-
-.promo-invalid {
-  border-color: #ef4444 !important;
-  background: #fee2e2 !important;
-}
-
-.promo-loading {
-  border-color: #3b82f6 !important;
-  background: #dbeafe !important;
-}
-
-.validation-message {
-  margin-top: 0.75rem;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  font-size: 0.9rem;
-}
-
-.validation-message.loading {
-  background: #dbeafe;
-  border: 1px solid #93c5fd;
-  color: #1e40af;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.validation-success {
-  background: #d1fae5;
-  border: 1px solid #6ee7b7;
-  color: #065f46;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-}
-
-.validation-error {
-  background: #fee2e2;
-  border: 1px solid #fca5a5;
-  color: #991b1b;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-}
-
+/* Add any component-specific styles here */
 .spinner-small {
   width: 16px;
   height: 16px;
-  border: 2px solid #93c5fd;
-  border-top-color: #3b82f6;
+  border: 2px solid var(--gray-lighter);
+  border-top-color: var(--primary);
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.plan-warning {
-  margin-top: 1rem;
-  padding: 1rem;
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-  border: 2px solid #fbbf24;
-  border-radius: 10px;
-  color: #92400e;
-  font-weight: 500;
-}
-
-.promo-button {
-  width: 100%;
-  padding: 1rem;
-  margin-top: 1.5rem;
-  background: linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%);
-  color: white;
-  border: none;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 1.05rem;
-  cursor: not-allowed;
-  transition: all 0.2s ease;
-}
-
-.promo-button.promo-ready {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  cursor: pointer;
-  box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);
-}
-
-.promo-button.promo-ready:hover {
-  background: linear-gradient(135deg, #059669 0%, #047857 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.4);
-}
-
-.promo-button.promo-processing {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  cursor: wait;
-}
-
-.promocodes-history,
-.payment-history {
-  margin-top: 2rem;
-  padding-top: 2rem;
-  border-top: 2px solid #f3f4f6;
-}
-
-.history-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: 1rem;
-}
-
-.history-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.history-item,
-.payment-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem;
-  background: white;
-  border: 1px solid #e9d5ff;
-  border-radius: 10px;
-  transition: all 0.2s ease;
-}
-
-.history-item:hover,
-.payment-item:hover {
-  border-color: #c4b5fd;
-  box-shadow: 0 2px 4px rgba(139, 92, 246, 0.1);
-}
-
-.history-info,
-.payment-info {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-.history-code,
-.payment-id {
-  font-family: 'Courier New', monospace;
-  font-weight: 600;
-  color: #7c3aed;
-  font-size: 0.95rem;
-}
-
-.history-plan {
-  padding: 0.25rem 0.75rem;
-  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-  color: #1e40af;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-
-.history-date,
-.payment-date {
-  color: #6b7280;
-  font-size: 0.9rem;
-}
-
-.payment-amount {
-  font-weight: 700;
-  color: #1f2937;
-  font-size: 1.05rem;
-}
-
-.payment-status-info {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.25rem;
-}
-
-.status-badge {
-  padding: 0.25rem 0.75rem;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-
-.status-success {
-  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-  color: #065f46;
-}
-
-.status-warning {
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-  color: #92400e;
-}
-
-.status-error {
-  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-  color: #991b1b;
-}
-
-.plans-card {
-  background: linear-gradient(135deg, #ffffff 0%, #faf5ff 100%);
-}
-
-.promocode-notice {
-  padding: 1rem;
-  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-  border: 2px solid #6ee7b7;
-  border-radius: 10px;
-  color: #065f46;
-  margin-bottom: 2rem;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-weight: 500;
-}
-
-.notice-icon {
-  font-size: 1.5rem;
-}
-
-.plans-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-.plan-card {
-  background: white;
-  border: 3px solid #e9d5ff;
-  border-radius: 16px;
-  padding: 2rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.plan-card:hover:not(.disabled) {
-  border-color: #a78bfa;
-  transform: translateY(-4px);
-  box-shadow: 0 20px 25px -5px rgba(139, 92, 246, 0.2);
-}
-
-.plan-card.active {
-  border-color: #7c3aed;
-  box-shadow: 0 20px 25px -5px rgba(124, 58, 237, 0.3);
-}
-
-.plan-card.disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.plan-card.current-plan {
-  background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
-}
-
-.plan-card.recommended {
-  border-color: #7c3aed;
-}
-
-.plan-badge {
-  position: absolute;
-  top: 0;
-  right: 0;
-  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
-  color: white;
-  padding: 0.5rem 1rem;
-  font-size: 0.85rem;
-  font-weight: 700;
-  border-bottom-left-radius: 10px;
-}
-
-.plan-header {
-  text-align: center;
-  padding: 1rem 0 1.5rem 0;
-  border-bottom: 2px solid #f3f4f6;
-  margin-bottom: 1.5rem;
-}
-
-.plan-name {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #1f2937;
-  margin: 0 0 0.5rem 0;
-}
-
-.plan-price {
-  font-size: 2rem;
-  font-weight: 800;
-  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin: 0;
-}
-
-.plan-period {
-  font-size: 0.9rem;
-  color: #6b7280;
-  margin-top: 0.25rem;
-}
-
-.plan-features {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 1.5rem 0;
-}
-
-.plan-features li {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 0;
-  color: #374151;
-  font-size: 0.95rem;
-}
-
-.feature-icon {
-  font-size: 1.25rem;
-  flex-shrink: 0;
-}
-
-.plan-status {
-  padding: 0.75rem;
-  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-  border: 2px solid #6ee7b7;
-  border-radius: 10px;
-  color: #065f46;
-  font-weight: 700;
-  text-align: center;
-  font-size: 1.05rem;
-}
-
-.active-status {
-  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-}
-
-.plan-select-button {
-  width: 100%;
-  padding: 0.875rem;
-  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  font-weight: 600;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.plan-select-button:hover:not(:disabled) {
-  background: linear-gradient(135deg, #6d28d9 0%, #5b21b6 100%);
-  transform: translateY(-1px);
-}
-
-.plan-select-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.payment-button {
-  width: 100%;
-  padding: 1.25rem;
-  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
-  color: white;
-  border: none;
-  border-radius: 12px;
-  font-weight: 700;
-  font-size: 1.15rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 6px -1px rgba(124, 58, 237, 0.3);
-}
-
-.payment-button:hover:not(:disabled) {
-  background: linear-gradient(135deg, #6d28d9 0%, #5b21b6 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 10px 15px -3px rgba(124, 58, 237, 0.4);
-}
-
-.payment-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.usage-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
-
-.usage-item {
-  background: white;
-  padding: 1.5rem;
-  border: 2px solid #e9d5ff;
-  border-radius: 12px;
-}
-
-.usage-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.usage-label {
-  font-weight: 600;
-  color: #374151;
-  font-size: 1.05rem;
-}
-
-.usage-value {
-  font-weight: 700;
-  color: #7c3aed;
-  font-size: 1.15rem;
-}
-
-.usage-bar {
-  height: 12px;
-  background: #e9d5ff;
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-.usage-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #7c3aed 0%, #a78bfa 100%);
-  border-radius: 6px;
-  transition: width 0.3s ease;
-}
-
-.unlimited-badge {
   display: inline-block;
-  padding: 0.5rem 1rem;
-  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-  color: #065f46;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 0.95rem;
-}
-
-.loading-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  backdrop-filter: blur(4px);
-}
-
-.spinner {
-  width: 60px;
-  height: 60px;
-  border: 4px solid rgba(255, 255, 255, 0.3);
-  border-top-color: white;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-.loading-text {
-  color: white;
-  font-size: 1.1rem;
-  font-weight: 600;
-  margin-top: 1rem;
-}
-
-@media (max-width: 768px) {
-  .settings-header {
-    padding: 1.5rem 0;
-  }
-
-  .header-content {
-    flex-direction: column;
-    gap: 1rem;
-    padding: 0 1rem;
-  }
-
-  .header-title {
-    font-size: 1.5rem;
-  }
-
-  .header-subtitle {
-    font-size: 0.9rem;
-  }
-
-  .settings-container {
-    padding: 2rem 1rem;
-  }
-
-  .settings-card {
-    padding: 1.5rem;
-  }
-
-  .card-title {
-    font-size: 1.5rem;
-  }
-
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .plans-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .card-header {
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .edit-button,
-  .edit-actions {
-    align-self: flex-start;
-  }
-
-  .action-buttons {
-    flex-direction: column;
-  }
-
-  .primary-button {
-    width: 100%;
-  }
-}
-
-@media (max-width: 480px) {
-  .header-title {
-    font-size: 1.25rem;
-  }
-
-  .card-title {
-    font-size: 1.25rem;
-  }
-
-  .settings-card {
-    padding: 1rem;
-  }
-
-  .plan-card {
-    padding: 1.5rem;
-  }
-
-  .plan-name {
-    font-size: 1.5rem;
-  }
-
-  .plan-price {
-    font-size: 1.5rem;
-  }
 }
 </style>
