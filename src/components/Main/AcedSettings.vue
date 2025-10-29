@@ -1901,7 +1901,7 @@ getPaymentButtonText() {
 </script>
 
 <style scoped>
-@import '@/assets/css/AcedSettings.css';
+@import '../../assets/css/AcedSettings.css';
 
 /* Add any component-specific styles here */
 .spinner-small {
