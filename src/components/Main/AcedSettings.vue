@@ -1,80 +1,21 @@
 <template>
   <div class="settings-page">
-    
-    <!-- SIDEBAR NAVIGATION -->
-    <aside class="settings-sidebar" :class="{ 'mobile-open': sidebarOpen }">
-      <div class="sidebar-header">
-        <div class="sidebar-brand">
-          <div class="brand-icon">A</div>
-          <div class="brand-text">
-            <h1>ACED</h1>
-            <p>Панель настроек</p>
-          </div>
-        </div>
-      </div>
-
-      <nav class="sidebar-nav">
-        <div class="nav-section">
-          <div class="nav-section-title">Аккаунт</div>
-          <a href="#profile" class="nav-item active">
-            <span class="nav-item-icon">👤</span>
-            <span>Профиль</span>
-          </a>
-          <a href="#security" class="nav-item">
-            <span class="nav-item-icon">🔐</span>
-            <span>Безопасность</span>
-          </a>
-          <a href="#notifications" class="nav-item">
-            <span class="nav-item-icon">🔔</span>
-            <span>Уведомления</span>
-          </a>
-        </div>
-
-        <div class="nav-section">
-          <div class="nav-section-title">Биллинг</div>
-          <a href="#subscription" class="nav-item">
-            <span class="nav-item-icon">💳</span>
-            <span>Подписка</span>
-          </a>
-          <a href="#payment" class="nav-item">
-            <span class="nav-item-icon">💰</span>
-            <span>История платежей</span>
-          </a>
-          <a href="#promo" class="nav-item">
-            <span class="nav-item-icon">🎟️</span>
-            <span>Промокоды</span>
-          </a>
-        </div>
-
-        <div class="nav-section">
-          <div class="nav-section-title">Использование</div>
-          <a href="#stats" class="nav-item">
-            <span class="nav-item-icon">📊</span>
-            <span>Статистика</span>
-          </a>
-        </div>
-      </nav>
-
-      <div class="sidebar-footer">
-        <button class="btn btn-ghost btn-block btn-sm" @click="goToProfile">
-          ← Вернуться в профиль
-        </button>
-      </div>
-    </aside>
-
     <!-- MAIN CONTENT -->
-    <main class="settings-main">
+    <main class="settings-main-full">
       
       <!-- HEADER -->
       <header class="settings-header">
         <div class="header-left">
-          <h1 class="header-title">Настройки аккаунта</h1>
-          <div class="header-breadcrumb">
-            <span>Главная</span>
-            <span class="breadcrumb-separator">/</span>
-            <span>Настройки</span>
-            <span class="breadcrumb-separator">/</span>
-            <span>Профиль</span>
+          <button class="back-button" @click="goToProfile">
+            ← Назад
+          </button>
+          <div>
+            <h1 class="header-title">Настройки аккаунта</h1>
+            <div class="header-breadcrumb">
+              <span>Главная</span>
+              <span class="breadcrumb-separator">/</span>
+              <span>Настройки</span>
+            </div>
           </div>
         </div>
         <div class="header-right">
@@ -603,6 +544,7 @@ export default {
       notification: "",
       notificationClass: "",
       notificationIcon: "",
+      notificationTitle: "",
       
       reactivityKey: 0,
       lastUpdateTime: Date.now(),
@@ -647,76 +589,6 @@ export default {
       }
     },
     
-    subscriptionDetails() {
-      const reactKey = this.reactivityKey;
-      const updateTime = this.lastUpdateTime;
-      
-      try {
-        const storeDetails = this.$store.getters['user/subscriptionDetails'];
-        const userObject = this.getUser || {};
-        
-        const details = {
-          plan: this.currentPlan,
-          status: this.currentPlan !== 'free' ? 'active' : 'inactive',
-          expiryDate: null,
-          source: null,
-          activatedAt: null,
-          daysRemaining: null,
-          autoRenew: false,
-          ...storeDetails,
-          ...userObject.subscription
-        };
-        
-        if (details.activatedAt && !details.expiryDate) {
-          const activationDate = new Date(details.activatedAt);
-          const expiryDate = new Date(activationDate);
-          expiryDate.setDate(expiryDate.getDate() + 30);
-          details.expiryDate = expiryDate.toISOString();
-        }
-        
-        if (details.expiryDate) {
-          const now = new Date();
-          const expiry = new Date(details.expiryDate);
-          const diffTime = expiry - now;
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          details.daysRemaining = Math.max(0, diffDays);
-        }
-        
-        return details;
-      } catch (e) {
-        return { 
-          plan: this.currentPlan,
-          status: this.currentPlan !== 'free' ? 'active' : 'inactive',
-          expiryDate: null,
-          source: null,
-          daysRemaining: null
-        };
-      }
-    },
-    
-    currentPlanDescription() {
-      const plan = this.currentPlan;
-      const details = this.subscriptionDetails;
-      
-      const baseDescriptions = {
-        pro: 'Полный доступ ко всем курсам и функциям',
-        start: 'Доступ к базовым курсам и безлимитным сообщениям',
-        free: 'Бесплатный доступ с ограниченным функционалом'
-      };
-      
-      let description = baseDescriptions[plan] || 'Бесплатный доступ';
-      
-      if (plan !== 'free' && details.daysRemaining !== null) {
-        if (details.daysRemaining > 0) {
-          description += ` (осталось ${details.daysRemaining} дней)`;
-        } else {
-          description += ' (срок действия истёк)';
-        }
-      }
-      
-      return description;
-    },
-    
     subscriptionExpiryInfo() {
       const details = this.subscriptionDetails;
       
@@ -741,18 +613,6 @@ export default {
     
     appliedPromocodesCount() {
       return this.appliedPromocodes.length;
-    },
-    
-    appliedPromocodesSlice() {
-      return this.appliedPromocodes.slice(0, 3);
-    },
-    
-    paymentHistoryCount() {
-      return this.paymentHistory.length;
-    },
-    
-    paymentHistorySlice() {
-      return this.paymentHistory.slice(0, 5);
     },
     
     currentUsageMessages() {
@@ -783,10 +643,6 @@ export default {
       return (limit === -1) ? 0 : Math.min(100, Math.round((images / limit) * 100));
     },
     
-    isPromocodeActive() {
-      return this.subscriptionDetails.source === 'promocode';
-    },
-    
     currentPlanLabel() {
       const labels = {
         pro: 'Pro',
@@ -794,15 +650,6 @@ export default {
         free: 'Free'
       };
       return labels[this.currentPlan] || 'Free';
-    },
-    
-    currentPlanClass() {
-      const classes = {
-        pro: 'badge-pro',
-        start: 'badge-start',
-        free: 'badge-free'
-      };
-      return classes[this.currentPlan] || 'badge-free';
     },
     
     userId() {
@@ -854,31 +701,11 @@ export default {
       }
       
       return false;
-    },
-    
-    planCompatibilityWarning() {
-      if (!this.planCompatibilityError) return null;
-      
-      const promoGrantsPlan = this.promoValidation.data?.grantsPlan?.toUpperCase();
-      return `Этот промокод предоставляет план "${promoGrantsPlan}", но вы выбрали "${this.selectedPlan.toUpperCase()}". Выберите правильный план.`;
     }
   },
   
   watch: {
     '$store.state.user': {
-      handler(newUser, oldUser) {
-        const newPlan = newUser?.subscriptionPlan;
-        const oldPlan = oldUser?.subscriptionPlan;
-        
-        if (newPlan !== oldPlan) {
-          this.handleUserStatusChange(newPlan, oldPlan);
-        }
-      },
-      deep: true,
-      immediate: true
-    },
-
-    getUser: {
       handler(newUser, oldUser) {
         const newPlan = newUser?.subscriptionPlan;
         const oldPlan = oldUser?.subscriptionPlan;
@@ -932,156 +759,6 @@ export default {
       }
     },
 
-    setupEnhancedEventListeners() {
-      this.cleanupEventListeners();
-      
-      if (typeof window !== 'undefined') {
-        this.handleSubscriptionChange = (event) => {
-          const { plan, oldPlan, newStatus, oldStatus } = event.detail;
-          const finalNewStatus = plan || newStatus;
-          const finalOldStatus = oldPlan || oldStatus;
-          
-          if (finalNewStatus) {
-            this.handleUserStatusChange(finalNewStatus, finalOldStatus);
-          }
-        };
-        
-        window.addEventListener('userSubscriptionChanged', this.handleSubscriptionChange);
-        this.statusEventListeners.push(() => {
-          window.removeEventListener('userSubscriptionChanged', this.handleSubscriptionChange);
-        });
-
-        this.handleStorageChange = (event) => {
-          if ((event.key === 'userStatus' || event.key === 'plan') && event.newValue !== event.oldValue) {
-            this.handleUserStatusChange(event.newValue, event.oldValue);
-          }
-        };
-        
-        window.addEventListener('storage', this.handleStorageChange);
-        this.statusEventListeners.push(() => {
-          window.removeEventListener('storage', this.handleStorageChange);
-        });
-
-        const eventTypes = [
-          'userStatusChanged',
-          'subscriptionUpdated', 
-          'promocodeApplied',
-          'paymentCompleted',
-          'globalForceUpdate',
-          'reactivityUpdate'
-        ];
-
-        const handleGenericStatusChange = (event) => {
-          const detail = event.detail || {};
-          const newStatus = detail.newStatus || detail.plan || detail.status;
-          const oldStatus = detail.oldStatus || detail.oldPlan;
-          
-          if (newStatus) {
-            this.handleUserStatusChange(newStatus, oldStatus);
-          } else {
-            this.forceReactivityUpdate();
-          }
-          
-          const currentStatus = localStorage.getItem('userStatus') || localStorage.getItem('plan');
-          if (currentStatus && currentStatus !== this.currentPlan) {
-            this.handleUserStatusChange(currentStatus, this.currentPlan);
-          }
-        };
-
-        eventTypes.forEach(eventType => {
-          window.addEventListener(eventType, handleGenericStatusChange);
-          this.statusEventListeners.push(() => {
-            window.removeEventListener(eventType, handleGenericStatusChange);
-          });
-        });
-      }
-
-      if (typeof window !== 'undefined' && window.eventBus) {
-        this.handleUserStatusEvent = (data) => {
-          const newStatus = data.newStatus || data.plan;
-          const oldStatus = data.oldStatus || data.oldPlan;
-          
-          if (newStatus) {
-            this.handleUserStatusChange(newStatus, oldStatus);
-          }
-        };
-
-        this.handleForceUpdateEvent = () => {
-          this.forceReactivityUpdate();
-          
-          const currentStatus = localStorage.getItem('userStatus') || localStorage.getItem('plan');
-          if (currentStatus && currentStatus !== this.currentPlan) {
-            this.handleUserStatusChange(currentStatus, this.currentPlan);
-          }
-        };
-
-        const eventBusEvents = [
-          'userStatusChanged',
-          'promocodeApplied',
-          'subscriptionUpdated',
-          'paymentCompleted', 
-          'forceUpdate',
-          'globalForceUpdate'
-        ];
-
-        eventBusEvents.forEach(eventType => {
-          if (eventType.includes('Status') || eventType.includes('promocode') || eventType.includes('payment') || eventType.includes('subscription')) {
-            window.eventBus.on(eventType, this.handleUserStatusEvent);
-            this.statusEventListeners.push(() => {
-              window.eventBus.off(eventType, this.handleUserStatusEvent);
-            });
-          } else {
-            window.eventBus.on(eventType, this.handleForceUpdateEvent);
-            this.statusEventListeners.push(() => {
-              window.eventBus.off(eventType, this.handleForceUpdateEvent);
-            });
-          }
-        });
-      }
-
-      if (this.$store) {
-        this.storeUnsubscribe = this.$store.subscribe((mutation) => {
-          if (this.isUserRelatedMutation(mutation)) {
-            this.forceReactivityUpdate();
-            
-            if (mutation.payload && mutation.payload.subscriptionPlan) {
-              const newStatus = mutation.payload.subscriptionPlan;
-              if (newStatus !== this.currentPlan) {
-                this.handleUserStatusChange(newStatus, this.currentPlan);
-              }
-            }
-          }
-        });
-        
-        this.statusEventListeners.push(() => {
-          if (this.storeUnsubscribe) {
-            this.storeUnsubscribe();
-            this.storeUnsubscribe = null;
-          }
-        });
-      }
-    },
-
-    isUserRelatedMutation(mutation) {
-      const userMutations = [
-        'setUser',
-        'SET_USER',
-        'updateUser', 
-        'UPDATE_USER',
-        'user/SET_USER_STATUS',
-        'user/setUserStatus',
-        'user/UPDATE_SUBSCRIPTION',
-        'user/FORCE_UPDATE',
-        'user/ADD_PROMOCODE'
-      ];
-      
-      return userMutations.some(type => mutation.type.includes(type)) ||
-             mutation.type.includes('user/') ||
-             mutation.type.toLowerCase().includes('status') ||
-             mutation.type.toLowerCase().includes('subscription') ||
-             mutation.type.toLowerCase().includes('plan');
-    },
-
     forceReactivityUpdate() {
       try {
         this.reactivityKey++;
@@ -1091,14 +768,6 @@ export default {
         
         this.$nextTick(() => {
           this.$forceUpdate();
-          
-          setTimeout(() => {
-            this.$forceUpdate();
-          }, 50);
-          
-          setTimeout(() => {
-            this.$forceUpdate();
-          }, 200);
         });
       } catch (error) {
         console.error('Reactivity update error:', error);
@@ -1121,19 +790,9 @@ export default {
       }
     },
 
-    cleanupEventListeners() {
-      this.statusEventListeners.forEach(cleanup => {
-        try {
-          cleanup();
-        } catch (error) {
-          console.error('Cleanup error:', error);
-        }
-      });
-      this.statusEventListeners = [];
-      
-      if (this.storeUnsubscribe) {
-        this.storeUnsubscribe();
-        this.storeUnsubscribe = null;
+    cleanup() {
+      if (this.promoValidationTimeout) {
+        clearTimeout(this.promoValidationTimeout);
       }
     },
 
@@ -1143,7 +802,6 @@ export default {
       
       try {
         await this.checkAuthState();
-        this.setupEnhancedEventListeners();
         await this.loadInitialData();
         this.forceReactivityUpdate();
       } catch (error) {
@@ -1201,13 +859,6 @@ export default {
         console.error('❌ User data fetch error:', error);
         this.showNotification("Ошибка загрузки данных пользователя", 'error');
       }
-    },
-
-    cleanup() {
-      if (this.promoValidationTimeout) {
-        clearTimeout(this.promoValidationTimeout);
-      }
-      this.cleanupEventListeners();
     },
 
     startEditingName() {
@@ -1280,228 +931,34 @@ export default {
       try {
         const promocodeUpper = this.promoCode.trim().toUpperCase();
         
-        try {
-          if (this.$store && this.$store.dispatch) {
-            const storeResult = await this.$store.dispatch('user/validatePromocode', promocodeUpper);
+        if (this.$store && this.$store.dispatch) {
+          const storeResult = await this.$store.dispatch('user/validatePromocode', promocodeUpper);
+          
+          if (storeResult && typeof storeResult === 'object') {
+            this.promoValidation = storeResult;
             
-            if (storeResult && typeof storeResult === 'object') {
-              this.promoValidation = storeResult;
-              
-              if (storeResult.valid && storeResult.data?.grantsPlan && !this.selectedPlan) {
-                this.selectedPlan = storeResult.data.grantsPlan;
-              }
-              
-              this.isValidatingPromo = false;
-              return;
-            }
-          }
-        } catch (storeError) {
-          console.error('Store validation error:', storeError);
-        }
-        
-        try {
-          const baseUrl = import.meta.env.VITE_API_BASE_URL;
-          if (!baseUrl) {
-            throw new Error('API base URL not configured');
-          }
-          
-          const validationEndpoints = [
-            `${baseUrl}/api/promocodes/validate/${promocodeUpper}`,
-            `${baseUrl}/api/payments/validate-promo-code`,
-            `${baseUrl}/promocodes/validate/${promocodeUpper}`
-          ];
-          
-          let validationResult = null;
-          
-          for (const endpoint of validationEndpoints) {
-            try {
-              let response;
-              
-              if (endpoint.includes('validate-promo-code')) {
-                response = await Promise.race([
-                  fetch(endpoint, {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': await this.getAuthHeader()
-                    },
-                    body: JSON.stringify({
-                      promoCode: promocodeUpper,
-                      userId: this.userId
-                    })
-                  }),
-                  new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('API timeout')), 8000)
-                  )
-                ]);
-              } else {
-                response = await Promise.race([
-                  fetch(endpoint, {
-                    method: 'GET',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': await this.getAuthHeader()
-                    }
-                  }),
-                  new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('API timeout')), 8000)
-                  )
-                ]);
-              }
-              
-              if (response.ok) {
-                const apiResult = await response.json();
-                
-                if (apiResult && typeof apiResult === 'object') {
-                  validationResult = this.normalizeValidationResponse(apiResult, promocodeUpper);
-                  break;
-                }
-              } else {
-                if (response.status === 404) {
-                  continue;
-                }
-                
-                try {
-                  const errorData = await response.json();
-                  
-                  if (response.status === 400 || response.status === 422) {
-                    validationResult = {
-                      valid: false,
-                      error: errorData.message || errorData.error || `Промокод "${promocodeUpper}" не найден`
-                    };
-                    break;
-                  }
-                } catch (jsonError) {
-                  console.error('JSON parse error:', jsonError);
-                }
-              }
-            } catch (endpointError) {
-              continue;
-            }
-          }
-          
-          if (validationResult) {
-            this.promoValidation = validationResult;
-            
-            if (validationResult.valid && validationResult.data?.grantsPlan && !this.selectedPlan) {
-              this.selectedPlan = validationResult.data.grantsPlan;
+            if (storeResult.valid && storeResult.data?.grantsPlan && !this.selectedPlan) {
+              this.selectedPlan = storeResult.data.grantsPlan;
             }
             
             this.isValidatingPromo = false;
             return;
           }
-          
-        } catch (apiError) {
-          console.error('API validation error:', apiError);
         }
         
         this.promoValidation = {
           valid: false,
-          error: `Не удалось проверить промокод "${promocodeUpper}". Проверьте подключение к интернету или попробуйте позже.`
+          error: `Не удалось проверить промокод "${promocodeUpper}".`
         };
         
       } catch (error) {
         console.error('❌ Promocode validation error:', error);
         this.promoValidation = {
           valid: false,
-          error: 'Ошибка проверки промокода. Попробуйте позже.'
+          error: 'Ошибка проверки промокода.'
         };
       } finally {
         this.isValidatingPromo = false;
-      }
-    },
-    
-    normalizeValidationResponse(apiResult, promocodeUpper) {
-      try {
-        let isValid = false;
-        let grantsPlan = null;
-        let description = null;
-        let errorMessage = null;
-        
-        if (apiResult.success === true && apiResult.valid === true) {
-          isValid = true;
-          grantsPlan = apiResult.data?.grantsPlan || apiResult.data?.plan;
-          description = apiResult.data?.description || apiResult.message;
-        }
-        else if (apiResult.valid === true) {
-          isValid = true;
-          grantsPlan = apiResult.data?.grantsPlan || apiResult.data?.plan;
-          description = apiResult.data?.description || apiResult.message;
-        }
-        else if (apiResult.success === false) {
-          isValid = false;
-          errorMessage = apiResult.error || apiResult.message || 'Промокод недействителен';
-        }
-        else if (apiResult.grantsPlan || apiResult.plan) {
-          isValid = true;
-          grantsPlan = apiResult.grantsPlan || apiResult.plan;
-          description = apiResult.description || 'Промокод действителен';
-        }
-        else if (apiResult.error) {
-          isValid = false;
-          errorMessage = apiResult.error;
-        }
-        else {
-          isValid = false;
-          errorMessage = 'Неизвестный формат ответа сервера';
-        }
-        
-        if (isValid) {
-          return {
-            valid: true,
-            data: {
-              code: promocodeUpper,
-              grantsPlan: grantsPlan,
-              description: description,
-              subscriptionDays: apiResult.data?.subscriptionDays || apiResult.subscriptionDays || 30
-            },
-            message: `Промокод действителен! Предоставляет: ${(grantsPlan || 'неизвестный').toUpperCase()} план`
-          };
-        } else {
-          return {
-            valid: false,
-            error: errorMessage || `Промокод "${promocodeUpper}" не найден или недействителен`
-          };
-        }
-        
-      } catch (normalizationError) {
-        console.error('❌ Failed to normalize API response:', normalizationError);
-        return {
-          valid: false,
-          error: 'Ошибка обработки ответа сервера'
-        };
-      }
-    },
-    
-    async getAuthHeader() {
-      try {
-        if (this.currentUser) {
-          const token = await this.currentUser.getIdToken();
-          if (token) {
-            return `Bearer ${token}`;
-          }
-        }
-        
-        const storedToken = localStorage.getItem('authToken') || localStorage.getItem('token');
-        if (storedToken) {
-          return `Bearer ${storedToken}`;
-        }
-        
-        return '';
-      } catch (error) {
-        return '';
-      }
-    },
-    
-    onPlanChange() {
-      if (this.promoValidation && this.promoValidation.valid && this.selectedPlan) {
-        const promoGrantsPlan = this.promoValidation.data?.grantsPlan;
-        if (promoGrantsPlan && promoGrantsPlan !== this.selectedPlan) {
-          this.showNotification(
-            `Промокод предоставляет план "${promoGrantsPlan.toUpperCase()}", но вы выбрали "${this.selectedPlan.toUpperCase()}"`, 
-            'warning'
-          );
-        }
       }
     },
     
@@ -1531,203 +988,16 @@ export default {
           this.promoValidation = null;
           
           this.forceReactivityUpdate();
-          
-          if (typeof window !== 'undefined') {
-            try {
-              const event = new CustomEvent('userSubscriptionChanged', {
-                detail: {
-                  plan: this.selectedPlan,
-                  oldPlan: result.oldStatus || 'free',
-                  source: 'promocode',
-                  promocode: normalizedCode,
-                  timestamp: Date.now()
-                },
-                bubbles: true
-              });
-              window.dispatchEvent(event);
-            } catch (domEventError) {
-              console.error('DOM event error:', domEventError);
-            }
-            
-            try {
-              if (window.eventBus?.emit) {
-                window.eventBus.emit('promocodeApplied', {
-                  newStatus: this.selectedPlan,
-                  oldStatus: result.oldStatus || 'free',
-                  code: normalizedCode,
-                  success: true
-                });
-              }
-            } catch (eventBusError) {
-              console.error('Event bus error:', eventBusError);
-            }
-          }
-          
-          return;
-          
         } else {
           const errorMessage = result?.error || result?.message || 'Не удалось применить промокод';
           this.showNotification(errorMessage, 'error');
-          
-          if (result?.error?.includes('не найден') || result?.error?.includes('недействителен')) {
-            return;
-          }
-          
-          await this.applyPromocodeFallback(normalizedCode);
         }
         
-      } catch (storeError) {
-        console.error('❌ Store applyPromocode action threw error:', storeError);
-        await this.applyPromocodeFallback(normalizedCode);
+      } catch (error) {
+        console.error('❌ Apply promo error:', error);
+        this.showNotification('Ошибка применения промокода', 'error');
       } finally {
         this.isProcessingPromo = false;
-      }
-    },
-    
-    async applyPromocodeFallback(normalizedCode) {
-      try {
-        const applyEndpoints = [
-          'https://api.aced.live/api/payments/promo-code',
-          `${import.meta.env.VITE_API_BASE_URL}/api/payments/promo-code`
-        ].filter(url => url && !url.includes('undefined'));
-        
-        let serverSuccess = false;
-        let serverResult = null;
-        
-        for (const endpoint of applyEndpoints) {
-          try {
-            const requestBody = {
-              userId: this.userId,
-              plan: this.selectedPlan,
-              promoCode: normalizedCode
-            };
-            
-            const response = await Promise.race([
-              fetch(endpoint, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': await this.getAuthHeader()
-                },
-                body: JSON.stringify(requestBody)
-              }),
-              new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Request timeout')), 10000)
-              )
-            ]);
-
-            serverResult = await response.json();
-
-            if (response.ok && serverResult?.success) {
-              serverSuccess = true;
-              break;
-            } else {
-              if (response.status === 400 || response.status === 422) {
-                const errorMsg = serverResult?.error || serverResult?.message || 'Неверный промокод';
-                this.showNotification(errorMsg, 'error');
-                return;
-              }
-              
-              if (response.status === 404) {
-                continue;
-              }
-            }
-          } catch (endpointError) {
-            continue;
-          }
-        }
-        
-        if (serverSuccess) {
-          localStorage.setItem('userStatus', this.selectedPlan);
-          localStorage.setItem('plan', this.selectedPlan);
-          
-          this.$store.commit('user/SET_USER_STATUS', this.selectedPlan);
-          this.$store.commit('user/UPDATE_SUBSCRIPTION', {
-            plan: this.selectedPlan,
-            status: 'active',
-            source: 'promocode'
-          });
-          this.$store.commit('user/ADD_PROMOCODE', {
-            code: normalizedCode,
-            plan: this.selectedPlan,
-            appliedAt: new Date().toISOString()
-          });
-          
-          const planLabel = this.selectedPlan === 'pro' ? 'Pro' : 'Start';
-          this.showNotification(`🎉 Промокод применён! ${planLabel} подписка активирована!`, 'success');
-          
-          this.promoCode = '';
-          this.selectedPlan = '';
-          this.promoValidation = null;
-          
-          this.forceReactivityUpdate();
-          this.triggerSubscriptionChangeEvents(normalizedCode);
-          
-        } else {
-          const errorMsg = serverResult?.error || 
-                          serverResult?.message || 
-                          'Не удалось применить промокод. Проверьте правильность кода или попробуйте позже.';
-          this.showNotification(errorMsg, 'error');
-        }
-        
-      } catch (fallbackError) {
-        console.error('❌ Backend fallback failed:', fallbackError);
-        
-        let userFriendlyError = 'Произошла ошибка при применении промокода';
-        
-        if (fallbackError.message === 'Request timeout') {
-          userFriendlyError = 'Истекло время ожидания. Попробуйте снова.';
-        } else if (fallbackError.name === 'TypeError' && fallbackError.message.includes('fetch')) {
-          userFriendlyError = 'Ошибка сети. Проверьте подключение к интернету.';
-        }
-        
-        this.showNotification(userFriendlyError, 'error');
-      }
-    },
-    
-    triggerSubscriptionChangeEvents(promocode) {
-      if (typeof window !== 'undefined') {
-        try {
-          const event = new CustomEvent('userSubscriptionChanged', {
-            detail: {
-              plan: this.selectedPlan,
-              oldPlan: 'free',
-              source: 'promocode',
-              promocode: promocode,
-              timestamp: Date.now()
-            },
-            bubbles: true
-          });
-          window.dispatchEvent(event);
-        } catch (domEventError) {
-          console.error('DOM event error:', domEventError);
-        }
-        
-        try {
-          if (window.eventBus?.emit) {
-            window.eventBus.emit('promocodeApplied', {
-              newStatus: this.selectedPlan,
-              oldStatus: 'free',
-              code: promocode,
-              success: true
-            });
-          }
-        } catch (eventBusError) {
-          console.error('Event bus error:', eventBusError);
-        }
-        
-        try {
-          if (window.triggerGlobalEvent) {
-            window.triggerGlobalEvent('userStatusChanged', {
-              oldStatus: 'free',
-              newStatus: this.selectedPlan,
-              source: 'promocode-applied',
-              timestamp: Date.now()
-            });
-          }
-        } catch (globalTriggerError) {
-          console.error('Global trigger error:', globalTriggerError);
-        }
       }
     },
 
@@ -1739,83 +1009,59 @@ export default {
     },
 
     async goToPayment() {
-  if (!this.paymentPlan) {
-    this.showNotification('Выберите тариф для оплаты', 'warning');
-    return;
-  }
-
-  // Validate user data before navigation
-  if (!this.userId) {
-    this.showNotification('Ошибка: не найден ID пользователя. Попробуйте обновить страницу.', 'error');
-    return;
-  }
-
-  try {
-    console.log('🚀 Navigating to payment with data:', {
-      plan: this.paymentPlan,
-      userId: this.userId,
-      userName: this.user.name,
-      userEmail: this.user.email,
-      currentPlan: this.currentPlan
-    });
-
-    // Calculate amount based on plan
-    const amounts = {
-      start: 260000, // 260,000 UZS
-      pro: 455000    // 455,000 UZS
-    };
-
-    // Navigate to UniversalCheckout (PaymentSelection route)
-    await this.$router.push({
-      name: 'PaymentSelection',
-      params: { 
-        plan: this.paymentPlan 
-      },
-      query: {
-        // Required fields
-        userId: this.userId,
-        plan: this.paymentPlan,
-        amount: amounts[this.paymentPlan] || amounts.start,
-        
-        // Optional but recommended fields
-        userName: this.user.name || 'Пользователь',
-        userEmail: this.user.email || '',
-        currentPlan: this.currentPlan || 'free',
-        
-        // Default provider (can be changed in checkout)
-        provider: 'multicard',
-        
-        // Additional metadata
-        source: 'settings',
-        timestamp: Date.now()
+      if (!this.paymentPlan) {
+        this.showNotification('Выберите тариф для оплаты', 'warning');
+        return;
       }
-    });
-  } catch (error) {
-    console.error('❌ Navigation error:', error);
-    
-    // Handle navigation error
-    if (error.name !== 'NavigationDuplicated') {
-      this.showNotification('Ошибка при переходе к оплате. Попробуйте снова.', 'error');
-    }
-  }
-},
 
-getPaymentButtonText() {
-  if (!this.paymentPlan) return 'Выберите тариф';
-  if (this.currentPlan === this.paymentPlan) return 'Уже активен';
-  
-  const planNames = {
-    start: 'START',
-    pro: 'PRO'
-  };
-  
-  return `💳 Оплатить ${planNames[this.paymentPlan] || this.paymentPlan.toUpperCase()}`;
-},
+      if (!this.userId) {
+        this.showNotification('Ошибка: не найден ID пользователя.', 'error');
+        return;
+      }
 
+      try {
+        const amounts = {
+          start: 260000,
+          pro: 455000
+        };
 
+        await this.$router.push({
+          name: 'PaymentSelection',
+          params: { 
+            plan: this.paymentPlan 
+          },
+          query: {
+            userId: this.userId,
+            plan: this.paymentPlan,
+            amount: amounts[this.paymentPlan] || amounts.start,
+            userName: this.user.name || 'Пользователь',
+            userEmail: this.user.email || '',
+            currentPlan: this.currentPlan || 'free',
+            provider: 'multicard',
+            source: 'settings',
+            timestamp: Date.now()
+          }
+        });
+      } catch (error) {
+        console.error('❌ Navigation error:', error);
+        
+        if (error.name !== 'NavigationDuplicated') {
+          this.showNotification('Ошибка при переходе к оплате.', 'error');
+        }
+      }
+    },
 
-
-
+    getPaymentButtonText() {
+      if (!this.paymentPlan) return 'Выберите тариф';
+      if (this.currentPlan === this.paymentPlan) return 'Уже активен';
+      
+      const planNames = {
+        start: 'START',
+        pro: 'PRO'
+      };
+      
+      return `💳 Оплатить ${planNames[this.paymentPlan] || this.paymentPlan.toUpperCase()}`;
+    },
 
     async sendPasswordReset() {
       if (!this.user.email) {
@@ -1841,6 +1087,11 @@ getPaymentButtonText() {
       }
     },
 
+    async saveChanges() {
+      // Password update logic would go here
+      this.showNotification('Функция обновления пароля', 'info');
+    },
+
     goToProfile() {
       this.$router.push('/profile');
     },
@@ -1854,29 +1105,6 @@ getPaymentButtonText() {
       }
     },
 
-    formatAmount(amount) {
-      try {
-        return new Intl.NumberFormat('ru-RU').format(amount) + ' сум';
-      } catch (error) {
-        return amount + ' сум';
-      }
-    },
-
-    getStatusClass(state) {
-      const classes = {
-        success: 'status-success',
-        pending: 'status-warning',
-        failed: 'status-error',
-        completed: 'status-success',
-        2: 'status-success',
-        1: 'status-warning',
-        0: 'status-warning',
-        '-1': 'status-error',
-        '-2': 'status-error'
-      };
-      return classes[state] || 'status-warning';
-    },
-
     showNotification(message, type = 'info', duration = 5000) {
       this.notification = message;
       this.notificationClass = `notification-${type}`;
@@ -1888,21 +1116,30 @@ getPaymentButtonText() {
         info: 'ℹ️'
       };
       
+      const titles = {
+        success: 'Успешно',
+        error: 'Ошибка',
+        warning: 'Внимание',
+        info: 'Информация'
+      };
+      
       this.notificationIcon = icons[type] || 'ℹ️';
+      this.notificationTitle = titles[type] || 'Уведомление';
       
       setTimeout(() => {
         this.notification = '';
         this.notificationClass = '';
         this.notificationIcon = '';
+        this.notificationTitle = '';
       }, duration);
     }
   }
 }
 </script>
 
-<style>
+<style scoped>
 /* ========================================
-   ULTRA MODERN SETTINGS - ALL STYLES
+   ULTRA MODERN SETTINGS - FULL WIDTH
    ======================================== */
 
 :root {
@@ -1954,120 +1191,11 @@ getPaymentButtonText() {
   min-height: 100vh;
   background: var(--lighter);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  display: flex;
 }
 
-/* SIDEBAR */
-.settings-sidebar {
-  width: 280px;
-  background: var(--white);
-  border-right: 1px solid var(--gray-lightest);
-  display: flex;
-  flex-direction: column;
-  position: fixed;
-  left: 0;
-  top: 0;
-  height: 100vh;
-  z-index: 100;
-  transition: var(--transition);
-}
-
-.sidebar-header {
-  padding: var(--space-xl);
-  border-bottom: 1px solid var(--gray-lightest);
-}
-
-.sidebar-brand {
-  display: flex;
-  align-items: center;
-  gap: var(--space-md);
-}
-
-.brand-icon {
-  width: 40px;
-  height: 40px;
-  background: var(--gradient-primary);
-  border-radius: var(--radius-lg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.25rem;
-  color: var(--white);
-  font-weight: 700;
-}
-
-.brand-text h1 {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--dark);
-  margin-bottom: 0.125rem;
-}
-
-.brand-text p {
-  font-size: 0.75rem;
-  color: var(--gray);
-}
-
-.sidebar-nav {
-  flex: 1;
-  padding: var(--space-lg);
-  overflow-y: auto;
-}
-
-.nav-section {
-  margin-bottom: var(--space-xl);
-}
-
-.nav-section-title {
-  font-size: 0.6875rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--gray);
-  margin-bottom: var(--space-md);
-  padding: 0 var(--space-md);
-}
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: var(--space-md);
-  padding: var(--space-md);
-  margin-bottom: var(--space-xs);
-  border-radius: var(--radius-md);
-  color: var(--gray-dark);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: var(--transition);
-  text-decoration: none;
-}
-
-.nav-item:hover {
-  background: var(--light);
-  color: var(--primary);
-}
-
-.nav-item.active {
-  background: var(--primary);
-  color: var(--white);
-}
-
-.nav-item-icon {
-  font-size: 1.125rem;
-  width: 1.25rem;
-  text-align: center;
-}
-
-.sidebar-footer {
-  padding: var(--space-lg);
-  border-top: 1px solid var(--gray-lightest);
-}
-
-/* MAIN CONTENT */
-.settings-main {
-  flex: 1;
-  margin-left: 280px;
+/* MAIN CONTENT - FULL WIDTH */
+.settings-main-full {
+  width: 100%;
   display: flex;
   flex-direction: column;
 }
@@ -2087,6 +1215,28 @@ getPaymentButtonText() {
 
 .header-left {
   flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+.back-button {
+  padding: 0.625rem 1.25rem;
+  background: var(--white);
+  border: 1px solid var(--gray-lightest);
+  border-radius: var(--radius-md);
+  color: var(--gray-dark);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  font-family: inherit;
+}
+
+.back-button:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: translateX(-2px);
 }
 
 .header-title {
@@ -2128,13 +1278,19 @@ getPaymentButtonText() {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
+  font-family: inherit;
 }
 
-.header-action:hover {
+.header-action:hover:not(:disabled) {
   border-color: var(--primary);
   color: var(--primary);
   transform: translateY(-1px);
   box-shadow: var(--shadow-sm);
+}
+
+.header-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .settings-content {
@@ -2173,6 +1329,10 @@ getPaymentButtonText() {
 
 .mb-4 {
   margin-bottom: var(--space-xl);
+}
+
+.mb-0 {
+  margin-bottom: 0;
 }
 
 .card-header {
@@ -2656,46 +1816,46 @@ getPaymentButtonText() {
   line-height: 1.6;
 }
 
-.alert-success {
+.notification-success {
   background: #f0fdf4;
   border-color: var(--success);
   color: #166534;
 }
 
-.alert-success .alert-icon {
+.notification-success .alert-icon {
   background: var(--success);
   color: var(--white);
 }
 
-.alert-warning {
+.notification-warning {
   background: #fffbeb;
   border-color: var(--warning);
   color: #92400e;
 }
 
-.alert-warning .alert-icon {
+.notification-warning .alert-icon {
   background: var(--warning);
   color: var(--white);
 }
 
-.alert-danger {
+.notification-error {
   background: #fef2f2;
   border-color: var(--danger);
   color: #991b1b;
 }
 
-.alert-danger .alert-icon {
+.notification-error .alert-icon {
   background: var(--danger);
   color: var(--white);
 }
 
-.alert-info {
+.notification-info {
   background: #eff6ff;
   border-color: var(--primary);
   color: #1e40af;
 }
 
-.alert-info .alert-icon {
+.notification-info .alert-icon {
   background: var(--primary);
   color: var(--white);
 }
@@ -2830,18 +1990,6 @@ getPaymentButtonText() {
   .grid-col-6 {
     grid-column: span 12;
   }
-  
-  .settings-sidebar {
-    transform: translateX(-100%);
-  }
-  
-  .settings-sidebar.mobile-open {
-    transform: translateX(0);
-  }
-  
-  .settings-main {
-    margin-left: 0;
-  }
 }
 
 @media (max-width: 768px) {
@@ -2851,6 +1999,23 @@ getPaymentButtonText() {
   
   .settings-header {
     padding: var(--space-lg);
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-md);
+  }
+
+  .header-left {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-md);
+  }
+
+  .header-right {
+    width: 100%;
+  }
+
+  .header-action {
+    width: 100%;
   }
   
   .header-title {
@@ -2871,6 +2036,10 @@ getPaymentButtonText() {
   }
   
   .card-footer .btn {
+    width: 100%;
+  }
+
+  .back-button {
     width: 100%;
   }
 }
