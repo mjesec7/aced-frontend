@@ -1,98 +1,107 @@
 <template>
   <div class="settings-page">
     <!-- MAIN CONTENT -->
-    <main class="settings-main-full">
+    <main class="settings-main">
       
       <!-- HEADER -->
       <header class="settings-header">
-        <div class="header-left">
+        <div class="header-content">
           <button class="back-button" @click="goToProfile">
-            ← Назад
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            <span>Назад</span>
           </button>
-          <div>
+          <div class="header-text">
             <h1 class="header-title">Настройки аккаунта</h1>
-            <div class="header-breadcrumb">
-              <span>Главная</span>
-              <span class="breadcrumb-separator">/</span>
-              <span>Настройки</span>
-            </div>
+            <p class="header-subtitle">Управляйте вашим профилем и подпиской</p>
           </div>
         </div>
-        <div class="header-right">
-          <button class="header-action" @click="saveChanges" :disabled="loading">
-            <span>💾</span>
-            <span>Сохранить изменения</span>
-          </button>
-        </div>
+        <button class="save-button" @click="saveChanges" :disabled="loading">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+            <polyline points="17 21 17 13 7 13 7 21"/>
+            <polyline points="7 3 7 8 15 8"/>
+          </svg>
+          <span>Сохранить</span>
+        </button>
       </header>
+
+      <!-- ALERTS -->
+      <div v-if="notification" :class="['alert-banner', notificationClass]">
+        <div class="alert-icon">{{ notificationIcon }}</div>
+        <div class="alert-content">
+          <strong>{{ notificationTitle }}</strong>
+          <p>{{ notification }}</p>
+        </div>
+        <button class="alert-close" @click="notification = ''">×</button>
+      </div>
 
       <!-- CONTENT -->
       <div class="settings-content">
         
-        <!-- ALERTS -->
-        <div v-if="notification" :class="['alert', notificationClass]">
-          <div class="alert-icon">
-            <span>{{ notificationIcon }}</span>
-          </div>
-          <div class="alert-content">
-            <div class="alert-title">{{ notificationTitle }}</div>
-            <div class="alert-message">{{ notification }}</div>
-          </div>
-        </div>
-
         <!-- STATS OVERVIEW -->
-        <div class="stats-grid">
+        <div class="stats-section">
           <div class="stat-card">
-            <div class="stat-header">
-              <div>
-                <div class="stat-label">Текущий план</div>
-                <div class="stat-value">{{ currentPlanLabel }}</div>
-              </div>
-              <div class="stat-icon">💎</div>
+            <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+              </svg>
             </div>
-            <div class="stat-change positive">
-              <span>↗</span>
-              <span>Активен</span>
+            <div class="stat-info">
+              <p class="stat-label">Текущий план</p>
+              <h3 class="stat-value">{{ currentPlanLabel }}</h3>
+              <span class="stat-badge active">Активен</span>
             </div>
           </div>
 
           <div class="stat-card">
-            <div class="stat-header">
-              <div>
-                <div class="stat-label">Сообщения</div>
-                <div class="stat-value">{{ currentUsageMessages }}</div>
-              </div>
-              <div class="stat-icon">💬</div>
+            <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
             </div>
-            <div class="progress">
-              <div class="progress-bar" :style="{ width: messageUsagePercentage + '%' }"></div>
+            <div class="stat-info">
+              <p class="stat-label">Сообщения</p>
+              <h3 class="stat-value">{{ currentUsageMessages }} <span class="stat-limit">/ {{ usageLimitsMessages === -1 ? '∞' : usageLimitsMessages }}</span></h3>
+              <div class="mini-progress">
+                <div class="mini-progress-bar" :style="{ width: messageUsagePercentage + '%' }"></div>
+              </div>
             </div>
           </div>
 
           <div class="stat-card">
-            <div class="stat-header">
-              <div>
-                <div class="stat-label">Изображения</div>
-                <div class="stat-value">{{ currentUsageImages }}</div>
-              </div>
-              <div class="stat-icon">🖼️</div>
+            <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
+              </svg>
             </div>
-            <div class="progress">
-              <div class="progress-bar" :style="{ width: imageUsagePercentage + '%' }"></div>
+            <div class="stat-info">
+              <p class="stat-label">Изображения</p>
+              <h3 class="stat-value">{{ currentUsageImages }} <span class="stat-limit">/ {{ usageLimitsImages === -1 ? '∞' : usageLimitsImages }}</span></h3>
+              <div class="mini-progress">
+                <div class="mini-progress-bar" :style="{ width: imageUsagePercentage + '%' }"></div>
+              </div>
             </div>
           </div>
 
           <div class="stat-card">
-            <div class="stat-header">
-              <div>
-                <div class="stat-label">Осталось дней</div>
-                <div class="stat-value">{{ subscriptionExpiryInfo?.daysRemaining || 0 }}</div>
-              </div>
-              <div class="stat-icon">📅</div>
+            <div class="stat-icon" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
             </div>
-            <div class="stat-change" :class="subscriptionExpiryInfo?.isExpiring ? 'negative' : 'positive'">
-              <span>{{ subscriptionExpiryInfo?.isExpiring ? '⚠' : '✓' }}</span>
-              <span>{{ subscriptionExpiryInfo?.isExpiring ? 'Истекает' : 'Активен' }}</span>
+            <div class="stat-info">
+              <p class="stat-label">Осталось дней</p>
+              <h3 class="stat-value">{{ subscriptionExpiryInfo?.daysRemaining || 0 }}</h3>
+              <span :class="['stat-badge', subscriptionExpiryInfo?.isExpiring ? 'warning' : 'active']">
+                {{ subscriptionExpiryInfo?.isExpiring ? 'Истекает' : 'Активен' }}
+              </span>
             </div>
           </div>
         </div>
@@ -100,92 +109,102 @@
         <!-- MAIN GRID -->
         <div class="content-grid">
           
-          <!-- LEFT COLUMN (8 cols) -->
-          <div class="grid-col-8">
+          <!-- LEFT COLUMN -->
+          <div class="left-column">
             
             <!-- PROFILE CARD -->
-            <div class="modern-card mb-4">
+            <div class="card">
               <div class="card-header">
-                <div class="card-title-group">
-                  <div class="card-icon">👤</div>
-                  <h2 class="card-title">Личная информация</h2>
-                  <p class="card-subtitle">Обновите ваши персональные данные и email адрес</p>
+                <div class="card-header-left">
+                  <div class="card-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                      <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 class="card-title">Личная информация</h2>
+                    <p class="card-description">Обновите ваши персональные данные</p>
+                  </div>
                 </div>
-                <div class="card-actions">
-                  <button v-if="!isEditingName" @click="startEditingName" class="btn btn-sm btn-secondary">
-                    ✏️ Изменить
-                  </button>
-                  <button v-else @click="saveNameChanges" class="btn btn-sm btn-success">
-                    ✓ Сохранить
-                  </button>
-                  <button v-if="isEditingName" @click="cancelEditingName" class="btn btn-sm btn-secondary">
-                    ✕ Отмена
-                  </button>
-                </div>
+                <button v-if="!isEditingName" @click="startEditingName" class="btn-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                </button>
               </div>
               
               <div class="card-body">
-                <div class="content-grid">
-                  <div class="grid-col-6">
-                    <div class="form-group">
-                      <label class="form-label">Имя</label>
-                      <input 
-                        v-if="isEditingName"
-                        type="text" 
-                        v-model="tempUser.name" 
-                        class="form-input"
-                        placeholder="Введите имя"
-                      />
-                      <div v-else class="form-input" style="background: var(--light); cursor: default;">
-                        {{ user.name || 'Не указано' }}
-                      </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label">Имя</label>
+                    <input 
+                      v-if="isEditingName"
+                      type="text" 
+                      v-model="tempUser.name" 
+                      class="form-input"
+                      placeholder="Введите имя"
+                    />
+                    <div v-else class="form-display">
+                      {{ user.name || 'Не указано' }}
                     </div>
                   </div>
                   
-                  <div class="grid-col-6">
-                    <div class="form-group">
-                      <label class="form-label">Фамилия</label>
-                      <input 
-                        v-if="isEditingName"
-                        type="text" 
-                        v-model="tempUser.surname" 
-                        class="form-input"
-                        placeholder="Введите фамилию"
-                      />
-                      <div v-else class="form-input" style="background: var(--light); cursor: default;">
-                        {{ user.surname || 'Не указано' }}
-                      </div>
+                  <div class="form-group">
+                    <label class="form-label">Фамилия</label>
+                    <input 
+                      v-if="isEditingName"
+                      type="text" 
+                      v-model="tempUser.surname" 
+                      class="form-input"
+                      placeholder="Введите фамилию"
+                    />
+                    <div v-else class="form-display">
+                      {{ user.surname || 'Не указано' }}
                     </div>
                   </div>
+                </div>
 
-                  <div class="grid-col-12">
-                    <div class="form-group">
-                      <label class="form-label">
-                        Email адрес
-                        <span class="label-badge">Подтвержден</span>
-                      </label>
-                      <input 
-                        type="email" 
-                        v-model="user.email" 
-                        class="form-input"
-                        :disabled="loading"
-                      />
-                      <div class="form-hint">
-                        💡 Мы будем отправлять обновления и уведомления на этот email
-                      </div>
-                    </div>
-                  </div>
+                <div class="form-group">
+                  <label class="form-label">
+                    Email адрес
+                    <span class="verified-badge">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      Подтвержден
+                    </span>
+                  </label>
+                  <input 
+                    type="email" 
+                    v-model="user.email" 
+                    class="form-input"
+                    :disabled="!isEditingName"
+                  />
+                </div>
+
+                <div v-if="isEditingName" class="form-actions">
+                  <button @click="cancelEditingName" class="btn btn-secondary">Отмена</button>
+                  <button @click="saveNameChanges" class="btn btn-primary">Сохранить изменения</button>
                 </div>
               </div>
             </div>
 
             <!-- SECURITY CARD -->
-            <div class="modern-card mb-4" v-if="!isGoogleUser">
+            <div class="card" v-if="!isGoogleUser">
               <div class="card-header">
-                <div class="card-title-group">
-                  <div class="card-icon">🔐</div>
-                  <h2 class="card-title">Настройки безопасности</h2>
-                  <p class="card-subtitle">Измените пароль и управляйте безопасностью</p>
+                <div class="card-header-left">
+                  <div class="card-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 class="card-title">Безопасность</h2>
+                    <p class="card-description">Управление паролем и безопасностью</p>
+                  </div>
                 </div>
               </div>
               
@@ -196,7 +215,7 @@
                     type="password" 
                     v-model="oldPassword" 
                     class="form-input"
-                    placeholder="Введите текущий пароль"
+                    placeholder="••••••••"
                     :disabled="loading"
                   />
                 </div>
@@ -207,7 +226,7 @@
                     type="password" 
                     v-model="newPassword" 
                     class="form-input"
-                    placeholder="Введите новый пароль"
+                    placeholder="••••••••"
                     :disabled="loading"
                   />
                 </div>
@@ -218,148 +237,179 @@
                     type="password" 
                     v-model="confirmPassword" 
                     class="form-input"
-                    placeholder="Повторите новый пароль"
+                    placeholder="••••••••"
                     :disabled="loading"
                   />
                 </div>
-              </div>
-              
-              <div class="card-footer">
-                <button @click="sendPasswordReset" class="btn btn-ghost">
-                  🔑 Забыли пароль?
-                </button>
-                <button @click="saveChanges" class="btn btn-primary" :disabled="loading">
-                  {{ loading ? '⏳ Обновление...' : '💾 Обновить пароль' }}
-                </button>
+
+                <div class="form-actions">
+                  <button @click="sendPasswordReset" class="btn btn-text">
+                    Забыли пароль?
+                  </button>
+                  <button @click="saveChanges" class="btn btn-primary" :disabled="loading">
+                    {{ loading ? 'Обновление...' : 'Обновить пароль' }}
+                  </button>
+                </div>
               </div>
             </div>
 
             <!-- SUBSCRIPTION PLANS -->
-            <div class="modern-card mb-4">
+            <div class="card">
               <div class="card-header">
-                <div class="card-title-group">
-                  <div class="card-icon">💎</div>
-                  <h2 class="card-title">Тарифные планы</h2>
-                  <p class="card-subtitle">Выберите идеальный план для ваших потребностей</p>
+                <div class="card-header-left">
+                  <div class="card-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 class="card-title">Тарифные планы</h2>
+                    <p class="card-description">Выберите подходящий план</p>
+                  </div>
                 </div>
               </div>
               
               <div class="card-body">
-                <div class="pricing-grid">
+                <div class="pricing-cards">
+                  
                   <!-- START PLAN -->
                   <div 
-                    class="pricing-card" 
-                    :class="{ 'featured': currentPlan === 'start' }"
+                    :class="['pricing-card', { selected: currentPlan === 'start' }]"
                     @click="selectPaymentPlan('start')"
                   >
-                    <div v-if="currentPlan === 'start'" class="pricing-badge">Текущий план</div>
+                    <div v-if="currentPlan === 'start'" class="current-badge">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      Текущий
+                    </div>
                     
                     <div class="pricing-header">
-                      <h3 class="pricing-name">Start</h3>
+                      <h3>Start</h3>
                       <div class="pricing-price">
-                        <span class="price-amount">260</span>
-                        <span class="price-currency">K</span>
-                        <span class="price-period">/ месяц</span>
+                        <span class="price-currency">UZS</span>
+                        <span class="price-amount">260K</span>
+                        <span class="price-period">/мес</span>
                       </div>
-                      <p class="pricing-description">Идеально для начала</p>
+                      <p class="pricing-tagline">Для начинающих</p>
                     </div>
 
-                    <ul class="pricing-features">
+                    <ul class="feature-list">
                       <li>
-                        <span class="feature-icon">✓</span>
-                        <span>Безлимитные сообщения</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        Безлимитные сообщения
                       </li>
                       <li>
-                        <span class="feature-icon">✓</span>
-                        <span>Доступ к словарю</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        Доступ к словарю
                       </li>
                       <li>
-                        <span class="feature-icon">✓</span>
-                        <span>Базовые курсы</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        Базовые курсы
                       </li>
                       <li>
-                        <span class="feature-icon">✓</span>
-                        <span>Поддержка домашних заданий</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        Поддержка домашних заданий
                       </li>
-                      <li>
-                        <span class="feature-icon">✓</span>
-                        <span>Приоритетная поддержка</span>
-                      </li>
-                      <li>
-                        <span class="feature-icon disabled">✕</span>
-                        <span style="color: var(--gray-light);">Безлимитные изображения</span>
+                      <li class="disabled">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18"/>
+                          <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                        Безлимитные изображения
                       </li>
                     </ul>
 
                     <button 
-                      class="btn btn-outline btn-block"
+                      class="pricing-button"
                       :disabled="currentPlan === 'start' || currentPlan === 'pro'"
                     >
-                      {{ currentPlan === 'start' ? '✓ Текущий план' : 'Выбрать план' }}
+                      {{ currentPlan === 'start' ? 'Текущий план' : 'Выбрать' }}
                     </button>
                   </div>
 
                   <!-- PRO PLAN -->
                   <div 
-                    class="pricing-card featured" 
-                    :class="{ 'featured': currentPlan === 'pro' || paymentPlan === 'pro' }"
+                    :class="['pricing-card', 'featured', { selected: currentPlan === 'pro' || paymentPlan === 'pro' }]"
                     @click="selectPaymentPlan('pro')"
                   >
-                    <div class="pricing-badge">{{ currentPlan === 'pro' ? 'Текущий план' : 'Рекомендуем' }}</div>
+                    <div class="popular-badge">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                      </svg>
+                      {{ currentPlan === 'pro' ? 'Текущий' : 'Популярный' }}
+                    </div>
                     
                     <div class="pricing-header">
-                      <h3 class="pricing-name">Pro</h3>
+                      <h3>Pro</h3>
                       <div class="pricing-price">
-                        <span class="price-amount">455</span>
-                        <span class="price-currency">K</span>
-                        <span class="price-period">/ месяц</span>
+                        <span class="price-currency">UZS</span>
+                        <span class="price-amount">455K</span>
+                        <span class="price-period">/мес</span>
                       </div>
-                      <p class="pricing-description">Для опытных пользователей и профессионалов</p>
+                      <p class="pricing-tagline">Для профессионалов</p>
                     </div>
 
-                    <ul class="pricing-features">
+                    <ul class="feature-list">
                       <li>
-                        <span class="feature-icon">✓</span>
-                        <span>Всё из Start</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        Всё из Start
                       </li>
                       <li>
-                        <span class="feature-icon">✓</span>
-                        <span>Безлимитные изображения</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        Безлимитные изображения
                       </li>
                       <li>
-                        <span class="feature-icon">✓</span>
-                        <span>Продвинутые курсы</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        Продвинутые курсы
                       </li>
                       <li>
-                        <span class="feature-icon">✓</span>
-                        <span>Персональная аналитика</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        Персональная аналитика
                       </li>
                       <li>
-                        <span class="feature-icon">✓</span>
-                        <span>Персональные курсы</span>
-                      </li>
-                      <li>
-                        <span class="feature-icon">✓</span>
-                        <span>Эксклюзивный контент</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        Эксклюзивный контент
                       </li>
                     </ul>
 
                     <button 
-                      class="btn btn-primary btn-block"
+                      class="pricing-button"
                       :disabled="currentPlan === 'pro'"
                     >
-                      {{ currentPlan === 'pro' ? '✓ Текущий план' : 'Перейти на Pro' }}
+                      {{ currentPlan === 'pro' ? 'Текущий план' : 'Перейти на Pro' }}
                     </button>
                   </div>
                 </div>
-              </div>
 
-              <div class="card-footer">
                 <button 
-                  class="btn btn-success btn-lg btn-block" 
+                  class="btn btn-large btn-primary"
                   @click="goToPayment"
                   :disabled="!paymentPlan || loading"
+                  style="margin-top: 24px;"
                 >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                    <line x1="1" y1="10" x2="23" y2="10"/>
+                  </svg>
                   {{ getPaymentButtonText() }}
                 </button>
               </div>
@@ -367,41 +417,59 @@
 
           </div>
 
-          <!-- RIGHT COLUMN (4 cols) -->
-          <div class="grid-col-4">
+          <!-- RIGHT COLUMN -->
+          <div class="right-column">
             
             <!-- PROMO CODE CARD -->
-            <div class="modern-card mb-4">
+            <div class="card">
               <div class="card-header">
-                <div class="card-title-group">
-                  <div class="card-icon">🎟️</div>
-                  <h2 class="card-title">Промокод</h2>
-                  <p class="card-subtitle">Есть промокод? Примените его здесь</p>
+                <div class="card-header-left">
+                  <div class="card-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                      <polyline points="7.5 4.21 12 6.81 16.5 4.21"/>
+                      <polyline points="7.5 19.79 7.5 14.6 3 12"/>
+                      <polyline points="21 12 16.5 14.6 16.5 19.79"/>
+                      <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                      <line x1="12" y1="22.08" x2="12" y2="12"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 class="card-title">Промокод</h2>
+                    <p class="card-description">Активируйте специальное предложение</p>
+                  </div>
                 </div>
               </div>
               
               <div class="card-body">
                 <div class="form-group">
-                  <label class="form-label">Промокод</label>
+                  <label class="form-label">Введите промокод</label>
                   <input 
                     type="text" 
                     v-model="promoCode" 
-                    class="form-input"
-                    placeholder="ВВЕДИТЕ КОД"
+                    class="form-input promo-input"
+                    placeholder="ПРОМОКОД2024"
                     :disabled="loading || isProcessingPromo"
                     @input="handlePromoCodeInput"
-                    style="text-transform: uppercase; font-weight: 600; font-family: monospace;"
                   />
                   <div v-if="isValidatingPromo" class="form-hint">
-                    <div class="spinner-small"></div>
-                    Проверка...
+                    <div class="spinner-mini"></div>
+                    Проверка промокода...
                   </div>
                   <div v-else-if="promoValidation && promoCode.length > 3">
-                    <div v-if="promoValidation.valid" class="form-hint" style="color: var(--success);">
-                      ✓ Действителен! Предоставляет {{ promoValidation.data?.grantsPlan?.toUpperCase() }} план
+                    <div v-if="promoValidation.valid" class="form-success">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      Действителен! План {{ promoValidation.data?.grantsPlan?.toUpperCase() }}
                     </div>
                     <div v-else class="form-error">
-                      ✕ {{ promoValidation.error }}
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="15" y1="9" x2="9" y2="15"/>
+                        <line x1="9" y1="9" x2="15" y2="15"/>
+                      </svg>
+                      {{ promoValidation.error }}
                     </div>
                   </div>
                 </div>
@@ -416,73 +484,98 @@
                 </div>
 
                 <button 
-                  class="btn btn-success btn-block"
+                  class="btn btn-primary"
                   @click="applyPromo"
                   :disabled="!canApplyPromo || isProcessingPromo"
                 >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                  </svg>
                   {{ promoButtonText }}
                 </button>
               </div>
             </div>
 
-            <!-- QUICK STATS -->
-            <div class="modern-card mb-4">
+            <!-- SUBSCRIPTION INFO -->
+            <div class="card" v-if="subscriptionExpiryInfo">
               <div class="card-header">
-                <div class="card-title-group">
-                  <h2 class="card-title">Быстрая статистика</h2>
+                <div class="card-header-left">
+                  <div class="card-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="10"/>
+                      <polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 class="card-title">Подписка</h2>
+                    <p class="card-description">Информация о вашей подписке</p>
+                  </div>
                 </div>
               </div>
               
               <div class="card-body">
-                <div class="form-group">
-                  <div class="progress-label">
-                    <span class="progress-label-text">Использовано сообщений</span>
-                    <span class="progress-label-value">
-                      {{ currentUsageMessages }} / {{ usageLimitsMessages === -1 ? '∞' : usageLimitsMessages }}
-                    </span>
+                <div class="subscription-info">
+                  <div class="subscription-plan">
+                    <span class="plan-badge">{{ currentPlanLabel }} План</span>
                   </div>
-                  <div class="progress">
-                    <div class="progress-bar" :style="{ width: messageUsagePercentage + '%' }"></div>
+                  
+                  <div class="subscription-expiry">
+                    <p class="expiry-label">Действует до</p>
+                    <h3 class="expiry-date">{{ subscriptionExpiryInfo.formattedDate }}</h3>
                   </div>
-                </div>
-
-                <div class="form-group">
-                  <div class="progress-label">
-                    <span class="progress-label-text">Создано изображений</span>
-                    <span class="progress-label-value">
-                      {{ currentUsageImages }} / {{ usageLimitsImages === -1 ? '∞' : usageLimitsImages }}
-                    </span>
-                  </div>
-                  <div class="progress">
-                    <div class="progress-bar" :style="{ width: imageUsagePercentage + '%' }"></div>
+                  
+                  <div :class="['subscription-status', subscriptionExpiryInfo.isExpiring ? 'expiring' : 'active']">
+                    <svg v-if="!subscriptionExpiryInfo.isExpiring" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                      <line x1="12" y1="9" x2="12" y2="13"/>
+                      <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                    {{ subscriptionExpiryInfo.isExpiring ? 'Истекает скоро' : 'Активна' }}
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- SUBSCRIPTION INFO -->
-            <div class="modern-card" v-if="subscriptionExpiryInfo">
+            <!-- USAGE STATS -->
+            <div class="card">
               <div class="card-header">
-                <div class="card-title-group">
-                  <h2 class="card-title">Подписка</h2>
+                <div class="card-header-left">
+                  <div class="card-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M18 20V10"/>
+                      <path d="M12 20V4"/>
+                      <path d="M6 20v-6"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 class="card-title">Использование</h2>
+                    <p class="card-description">Ваша статистика за месяц</p>
+                  </div>
                 </div>
               </div>
               
               <div class="card-body">
-                <div class="form-group mb-0">
-                  <div class="badge badge-primary" style="margin-bottom: var(--space-md);">
-                    {{ currentPlanLabel }} План
+                <div class="usage-item">
+                  <div class="usage-header">
+                    <span class="usage-label">Сообщения</span>
+                    <span class="usage-value">{{ currentUsageMessages }} / {{ usageLimitsMessages === -1 ? '∞' : usageLimitsMessages }}</span>
                   </div>
-                  
-                  <div style="font-size: 0.875rem; color: var(--gray); margin-bottom: var(--space-sm);">
-                    Истекает
+                  <div class="usage-progress">
+                    <div class="usage-progress-bar messages" :style="{ width: messageUsagePercentage + '%' }"></div>
                   </div>
-                  <div style="font-size: 1.25rem; font-weight: 700; color: var(--dark); margin-bottom: var(--space-md);">
-                    {{ subscriptionExpiryInfo.formattedDate }}
+                </div>
+
+                <div class="usage-item">
+                  <div class="usage-header">
+                    <span class="usage-label">Изображения</span>
+                    <span class="usage-value">{{ currentUsageImages }} / {{ usageLimitsImages === -1 ? '∞' : usageLimitsImages }}</span>
                   </div>
-                  
-                  <div :class="['badge', subscriptionExpiryInfo.isExpiring ? 'badge-warning' : 'badge-success']">
-                    {{ subscriptionExpiryInfo.isExpiring ? '⚠ Истекает скоро' : '✓ Активен' }}
+                  <div class="usage-progress">
+                    <div class="usage-progress-bar images" :style="{ width: imageUsagePercentage + '%' }"></div>
                   </div>
                 </div>
               </div>
@@ -496,13 +589,12 @@
 
     <!-- LOADING OVERLAY -->
     <div v-if="loading" class="loading-overlay">
-      <div class="spinner"></div>
+      <div class="loading-spinner"></div>
       <p class="loading-text">{{ loadingText }}</p>
     </div>
 
   </div>
 </template>
-
 
 <script>
 import { auth, db } from "@/firebase";
@@ -668,27 +760,13 @@ export default {
     },
     
     promoButtonText() {
-      if (this.isProcessingPromo) {
-        return '⏳ Применение...';
-      }
-      if (this.isValidatingPromo) {
-        return '🔄 Проверка...';
-      }
-      if (!this.promoCode.trim()) {
-        return 'Введите промокод';
-      }
-      if (!this.selectedPlan) {
-        return 'Выберите тариф';
-      }
-      if (this.promoValidation && !this.promoValidation.valid) {
-        return 'Неверный промокод';
-      }
-      if (this.planCompatibilityError) {
-        return 'Проверьте тариф';
-      }
-      if (this.canApplyPromo) {
-        return '🎉 Применить промокод';
-      }
+      if (this.isProcessingPromo) return 'Применение...';
+      if (this.isValidatingPromo) return 'Проверка...';
+      if (!this.promoCode.trim()) return 'Введите промокод';
+      if (!this.selectedPlan) return 'Выберите тариф';
+      if (this.promoValidation && !this.promoValidation.valid) return 'Неверный промокод';
+      if (this.planCompatibilityError) return 'Проверьте тариф';
+      if (this.canApplyPromo) return 'Применить промокод';
       return 'Применить промокод';
     },
     
@@ -750,7 +828,7 @@ export default {
 
         if (newStatus && newStatus !== 'free' && (oldStatus === 'free' || !oldStatus)) {
           const planLabel = newStatus === 'pro' ? 'Pro' : 'Start';
-          this.showNotification(`🎉 ${planLabel} подписка активирована!`, 'success', 5000);
+          this.showNotification(`${planLabel} подписка активирована!`, 'success', 5000);
         }
 
       } catch (error) {
@@ -981,7 +1059,7 @@ export default {
         
         if (result && (result.success === true || result.status === 'success')) {
           const planLabel = this.selectedPlan === 'pro' ? 'Pro' : 'Start';
-          this.showNotification(`🎉 Промокод применён! ${planLabel} подписка активирована!`, 'success');
+          this.showNotification(`Промокод применён! ${planLabel} подписка активирована!`, 'success');
           
           this.promoCode = '';
           this.selectedPlan = '';
@@ -1060,7 +1138,7 @@ export default {
         pro: 'PRO'
       };
       
-      return `💳 Оплатить ${planNames[this.paymentPlan] || this.paymentPlan.toUpperCase()}`;
+      return `Оплатить ${planNames[this.paymentPlan] || this.paymentPlan.toUpperCase()}`;
     },
 
     async sendPasswordReset() {
@@ -1088,7 +1166,6 @@ export default {
     },
 
     async saveChanges() {
-      // Password update logic would go here
       this.showNotification('Функция обновления пароля', 'info');
     },
 
@@ -1110,10 +1187,10 @@ export default {
       this.notificationClass = `notification-${type}`;
       
       const icons = {
-        success: '✅',
-        error: '❌',
-        warning: '⚠️',
-        info: 'ℹ️'
+        success: '✓',
+        error: '✕',
+        warning: '⚠',
+        info: 'ℹ'
       };
       
       const titles = {
@@ -1123,7 +1200,7 @@ export default {
         info: 'Информация'
       };
       
-      this.notificationIcon = icons[type] || 'ℹ️';
+      this.notificationIcon = icons[type] || 'ℹ';
       this.notificationTitle = titles[type] || 'Уведомление';
       
       setTimeout(() => {
@@ -1139,47 +1216,9 @@ export default {
 
 <style scoped>
 /* ========================================
-   ULTRA MODERN SETTINGS - FULL WIDTH
+   MODERN SETTINGS PAGE - REDESIGNED
+   Clean, Professional, Fun
    ======================================== */
-
-:root {
-  --primary: #6366f1;
-  --primary-dark: #4f46e5;
-  --primary-light: #818cf8;
-  --accent: #ec4899;
-  --success: #22c55e;
-  --warning: #f59e0b;
-  --danger: #ef4444;
-  --dark: #0f172a;
-  --dark-light: #1e293b;
-  --gray-dark: #334155;
-  --gray: #64748b;
-  --gray-light: #94a3b8;
-  --gray-lighter: #cbd5e1;
-  --gray-lightest: #e2e8f0;
-  --light: #f1f5f9;
-  --lighter: #f8fafc;
-  --white: #ffffff;
-  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.1);
-  --shadow-xl: 0 12px 24px rgba(0, 0, 0, 0.12);
-  --shadow-2xl: 0 24px 48px rgba(0, 0, 0, 0.16);
-  --space-xs: 0.25rem;
-  --space-sm: 0.5rem;
-  --space-md: 1rem;
-  --space-lg: 1.5rem;
-  --space-xl: 2rem;
-  --space-2xl: 3rem;
-  --radius-sm: 0.375rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
-  --radius-full: 9999px;
-  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
 
 * {
   margin: 0;
@@ -1189,396 +1228,557 @@ export default {
 
 .settings-page {
   min-height: 100vh;
-  background: var(--lighter);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
 }
 
-/* MAIN CONTENT - FULL WIDTH */
-.settings-main-full {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
+/* ==================== HEADER ==================== */
+
+.settings-main {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px;
 }
 
 .settings-header {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--gray-lightest);
-  padding: var(--space-lg) var(--space-2xl);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  position: sticky;
-  top: 0;
-  z-index: 50;
+  margin-bottom: 32px;
+  gap: 24px;
 }
 
-.header-left {
-  flex: 1;
+.header-content {
   display: flex;
   align-items: center;
-  gap: var(--space-lg);
+  gap: 20px;
 }
 
 .back-button {
-  padding: 0.625rem 1.25rem;
-  background: var(--white);
-  border: 1px solid var(--gray-lightest);
-  border-radius: var(--radius-md);
-  color: var(--gray-dark);
-  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  color: #374151;
+  font-size: 15px;
   font-weight: 500;
   cursor: pointer;
-  transition: var(--transition);
-  font-family: inherit;
+  transition: all 0.2s ease;
 }
 
 .back-button:hover {
-  border-color: var(--primary);
-  color: var(--primary);
-  transform: translateX(-2px);
+  border-color: #667eea;
+  color: #667eea;
+  transform: translateX(-4px);
+}
+
+.back-button svg {
+  stroke-width: 2.5;
+}
+
+.header-text {
+  flex: 1;
 }
 
 .header-title {
-  font-size: 1.75rem;
+  font-size: 32px;
   font-weight: 700;
-  color: var(--dark);
-  margin-bottom: 0.25rem;
+  color: #111827;
+  margin-bottom: 4px;
   letter-spacing: -0.02em;
 }
 
-.header-breadcrumb {
+.header-subtitle {
+  font-size: 15px;
+  color: #6b7280;
+  font-weight: 400;
+}
+
+.save-button {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
-  font-size: 0.875rem;
-  color: var(--gray);
-}
-
-.breadcrumb-separator {
-  color: var(--gray-light);
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: var(--space-md);
-}
-
-.header-action {
-  padding: 0.625rem 1.25rem;
-  background: var(--white);
-  border: 1px solid var(--gray-lightest);
-  border-radius: var(--radius-md);
-  color: var(--gray-dark);
-  font-size: 0.875rem;
-  font-weight: 500;
+  gap: 8px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 12px;
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
   cursor: pointer;
-  transition: var(--transition);
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  font-family: inherit;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
-.header-action:hover:not(:disabled) {
-  border-color: var(--primary);
-  color: var(--primary);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-sm);
+.save-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
 }
 
-.header-action:disabled {
-  opacity: 0.5;
+.save-button:disabled {
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
-.settings-content {
-  flex: 1;
-  padding: var(--space-2xl);
-  max-width: 1400px;
-  width: 100%;
-  margin: 0 auto;
-}
+/* ==================== ALERTS ==================== */
 
-/* GRID */
-.content-grid {
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  gap: var(--space-xl);
-}
-
-.grid-col-12 { grid-column: span 12; }
-.grid-col-8 { grid-column: span 8; }
-.grid-col-6 { grid-column: span 6; }
-.grid-col-4 { grid-column: span 4; }
-
-/* CARDS */
-.modern-card {
-  background: var(--white);
-  border-radius: var(--radius-xl);
-  border: 1px solid var(--gray-lightest);
-  overflow: hidden;
-  transition: var(--transition);
-}
-
-.modern-card:hover {
-  box-shadow: var(--shadow-lg);
-  border-color: var(--gray-lighter);
-}
-
-.mb-4 {
-  margin-bottom: var(--space-xl);
-}
-
-.mb-0 {
-  margin-bottom: 0;
-}
-
-.card-header {
-  padding: var(--space-xl);
-  border-bottom: 1px solid var(--gray-lightest);
+.alert-banner {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  animation: slideDown 0.3s ease;
 }
 
-.card-title-group {
-  flex: 1;
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.card-icon {
-  width: 48px;
-  height: 48px;
-  background: var(--gradient-primary);
-  border-radius: var(--radius-lg);
+.notification-success {
+  background: #ecfdf5;
+  border: 2px solid #10b981;
+}
+
+.notification-error {
+  background: #fef2f2;
+  border: 2px solid #ef4444;
+}
+
+.notification-warning {
+  background: #fffbeb;
+  border: 2px solid #f59e0b;
+}
+
+.notification-info {
+  background: #eff6ff;
+  border: 2px solid #3b82f6;
+}
+
+.alert-icon {
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
-  margin-bottom: var(--space-md);
-}
-
-.card-title {
-  font-size: 1.25rem;
+  border-radius: 8px;
+  font-size: 20px;
   font-weight: 700;
-  color: var(--dark);
-  margin-bottom: 0.25rem;
+  flex-shrink: 0;
 }
 
-.card-subtitle {
-  font-size: 0.875rem;
-  color: var(--gray);
-  line-height: 1.5;
+.notification-success .alert-icon {
+  background: #10b981;
+  color: white;
 }
 
-.card-actions {
-  display: flex;
-  gap: var(--space-sm);
+.notification-error .alert-icon {
+  background: #ef4444;
+  color: white;
 }
 
-.card-body {
-  padding: var(--space-xl);
+.notification-warning .alert-icon {
+  background: #f59e0b;
+  color: white;
 }
 
-.card-footer {
-  padding: var(--space-xl);
-  border-top: 1px solid var(--gray-lightest);
-  background: var(--lighter);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.notification-info .alert-icon {
+  background: #3b82f6;
+  color: white;
 }
 
-/* STAT CARDS */
-.stats-grid {
+.alert-content {
+  flex: 1;
+}
+
+.alert-content strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 2px;
+  color: #111827;
+}
+
+.alert-content p {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.alert-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 4px;
+  transition: all 0.2s;
+}
+
+.alert-close:hover {
+  color: #374151;
+}
+
+/* ==================== STATS SECTION ==================== */
+
+.settings-content {
+  animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.stats-section {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: var(--space-lg);
-  margin-bottom: var(--space-xl);
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+  margin-bottom: 32px;
 }
 
 .stat-card {
-  background: var(--white);
-  border-radius: var(--radius-lg);
-  padding: var(--space-xl);
-  border: 1px solid var(--gray-lightest);
-  transition: var(--transition);
-  position: relative;
-  overflow: hidden;
-}
-
-.stat-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 4px;
-  height: 100%;
-  background: var(--primary);
-  opacity: 0;
-  transition: var(--transition);
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
 }
 
 .stat-card:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
-}
-
-.stat-card:hover::before {
-  opacity: 1;
-}
-
-.stat-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: var(--space-md);
-}
-
-.stat-label {
-  font-size: 0.875rem;
-  color: var(--gray);
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border-color: #e5e7eb;
 }
 
 .stat-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.25rem;
-  background: var(--light);
-  color: var(--primary);
+  flex-shrink: 0;
+  color: white;
+}
+
+.stat-info {
+  flex: 1;
+}
+
+.stat-label {
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
 }
 
 .stat-value {
-  font-size: 2rem;
+  font-size: 28px;
   font-weight: 700;
-  color: var(--dark);
-  margin-bottom: var(--space-xs);
+  color: #111827;
   line-height: 1;
+  margin-bottom: 8px;
 }
 
-.stat-change {
-  font-size: 0.875rem;
+.stat-limit {
+  font-size: 16px;
   font-weight: 500;
+  color: #9ca3af;
+}
+
+.stat-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.stat-badge.active {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.stat-badge.warning {
+  background: #fed7aa;
+  color: #92400e;
+}
+
+.mini-progress {
+  height: 6px;
+  background: #f3f4f6;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.mini-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  border-radius: 999px;
+  transition: width 0.6s ease;
+}
+
+/* ==================== CONTENT GRID ==================== */
+
+.content-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+}
+
+.left-column,
+.right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ==================== CARDS ==================== */
+
+.card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  border-color: #f3f4f6;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px;
+  border-bottom: 2px solid #f3f4f6;
+}
+
+.card-header-left {
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
+  gap: 12px;
 }
 
-.stat-change.positive {
-  color: var(--success);
+.card-icon {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
 }
 
-.stat-change.negative {
-  color: var(--danger);
+.card-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 2px;
 }
 
-/* FORMS */
+.card-description {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.btn-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f9fafb;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-icon:hover {
+  background: #f3f4f6;
+  border-color: #667eea;
+  color: #667eea;
+}
+
+.card-body {
+  padding: 24px;
+}
+
+/* ==================== FORMS ==================== */
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
 .form-group {
-  margin-bottom: var(--space-lg);
+  margin-bottom: 20px;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
 }
 
 .form-label {
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
-  font-size: 0.875rem;
+  gap: 8px;
+  font-size: 14px;
   font-weight: 600;
-  color: var(--dark);
-  margin-bottom: var(--space-sm);
+  color: #374151;
+  margin-bottom: 8px;
 }
 
-.label-badge {
-  padding: 0.125rem 0.5rem;
-  background: var(--primary);
-  color: var(--white);
-  font-size: 0.6875rem;
+.verified-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: #d1fae5;
+  color: #065f46;
+  font-size: 11px;
   font-weight: 600;
-  border-radius: var(--radius-sm);
+  border-radius: 6px;
   text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .form-input,
 .form-select {
   width: 100%;
-  padding: 0.875rem 1rem;
-  background: var(--white);
-  border: 2px solid var(--gray-lightest);
-  border-radius: var(--radius-md);
-  font-size: 0.9375rem;
-  color: var(--dark);
+  padding: 12px 16px;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 15px;
+  color: #111827;
   font-family: inherit;
-  transition: var(--transition);
+  transition: all 0.2s ease;
 }
 
 .form-input:hover,
 .form-select:hover {
-  border-color: var(--gray-lighter);
+  border-color: #d1d5db;
 }
 
 .form-input:focus,
 .form-select:focus {
   outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+  border-color: #667eea;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
 }
 
 .form-input:disabled {
-  background: var(--light);
-  color: var(--gray);
+  background: #f9fafb;
+  color: #9ca3af;
   cursor: not-allowed;
-  border-color: var(--gray-lightest);
+}
+
+.form-display {
+  padding: 12px 16px;
+  background: #f9fafb;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 15px;
+  color: #111827;
 }
 
 .form-select {
   cursor: pointer;
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
-  background-position: right 0.5rem center;
+  background-position: right 12px center;
   background-repeat: no-repeat;
-  background-size: 1.5em 1.5em;
-  padding-right: 2.5rem;
+  background-size: 20px;
+  padding-right: 40px;
+}
+
+.promo-input {
+  text-transform: uppercase;
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.05em;
 }
 
 .form-hint {
-  font-size: 0.8125rem;
-  color: var(--gray);
-  margin-top: var(--space-sm);
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
+  gap: 6px;
+  font-size: 13px;
+  color: #6b7280;
+  margin-top: 6px;
+}
+
+.form-success {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #059669;
+  margin-top: 6px;
+  font-weight: 500;
 }
 
 .form-error {
-  font-size: 0.8125rem;
-  color: var(--danger);
-  margin-top: var(--space-sm);
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
+  gap: 6px;
+  font-size: 13px;
+  color: #dc2626;
+  margin-top: 6px;
+  font-weight: 500;
 }
 
-/* BUTTONS */
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+/* ==================== BUTTONS ==================== */
+
 .btn {
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: var(--radius-md);
-  font-size: 0.9375rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: var(--transition);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-sm);
-  text-decoration: none;
+  gap: 8px;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
   font-family: inherit;
 }
 
@@ -1588,363 +1788,334 @@ export default {
 }
 
 .btn-primary {
-  background: var(--primary);
-  color: var(--white);
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--primary-dark);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
-}
-
-.btn-success {
-  background: var(--success);
-  color: var(--white);
-}
-
-.btn-success:hover:not(:disabled) {
-  background: #16a34a;
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
-}
-
-.btn-secondary {
-  background: var(--gray-lightest);
-  color: var(--gray-dark);
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: var(--gray-lighter);
-  color: var(--dark);
-}
-
-.btn-outline {
-  background: transparent;
-  border: 2px solid var(--primary);
-  color: var(--primary);
-}
-
-.btn-outline:hover:not(:disabled) {
-  background: var(--primary);
-  color: var(--white);
-}
-
-.btn-ghost {
-  background: transparent;
-  color: var(--gray-dark);
-}
-
-.btn-ghost:hover:not(:disabled) {
-  background: var(--light);
-}
-
-.btn-sm {
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
-}
-
-.btn-lg {
-  padding: 1rem 2rem;
-  font-size: 1rem;
-}
-
-.btn-block {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
   width: 100%;
 }
 
-/* PRICING CARDS */
-.pricing-grid {
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+  background: #f3f4f6;
+  color: #374151;
+  border: 2px solid #e5e7eb;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #e5e7eb;
+  border-color: #d1d5db;
+}
+
+.btn-text {
+  background: transparent;
+  color: #667eea;
+  padding: 8px 16px;
+}
+
+.btn-text:hover:not(:disabled) {
+  background: #f3f4f6;
+}
+
+.btn-large {
+  padding: 16px 32px;
+  font-size: 16px;
+  width: 100%;
+}
+
+/* ==================== PRICING CARDS ==================== */
+
+.pricing-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: var(--space-xl);
-  margin-top: var(--space-xl);
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 16px;
 }
 
 .pricing-card {
-  background: var(--white);
-  border: 2px solid var(--gray-lightest);
-  border-radius: var(--radius-xl);
-  padding: var(--space-2xl);
+  background: white;
+  border: 3px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 28px;
   position: relative;
-  transition: var(--transition);
   cursor: pointer;
+  transition: all 0.3s ease;
 }
 
 .pricing-card:hover {
-  border-color: var(--primary);
+  border-color: #667eea;
   transform: translateY(-4px);
-  box-shadow: var(--shadow-2xl);
+  box-shadow: 0 12px 32px rgba(102, 126, 234, 0.2);
+}
+
+.pricing-card.selected {
+  border-color: #667eea;
+  background: linear-gradient(180deg, rgba(102, 126, 234, 0.05) 0%, white 100%);
 }
 
 .pricing-card.featured {
-  border-color: var(--primary);
-  background: linear-gradient(180deg, rgba(99, 102, 241, 0.05) 0%, var(--white) 100%);
+  border-color: #667eea;
+  background: linear-gradient(180deg, rgba(102, 126, 234, 0.08) 0%, white 100%);
 }
 
-.pricing-badge {
+.current-badge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: #d1fae5;
+  color: #065f46;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.popular-badge {
   position: absolute;
   top: -12px;
-  right: var(--space-xl);
-  background: var(--gradient-primary);
-  color: var(--white);
-  padding: 0.375rem 1rem;
-  border-radius: var(--radius-full);
-  font-size: 0.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-size: 11px;
   font-weight: 700;
+  border-radius: 999px;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.03em;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
 .pricing-header {
   text-align: center;
-  margin-bottom: var(--space-xl);
-  padding-bottom: var(--space-xl);
-  border-bottom: 2px solid var(--gray-lightest);
+  padding-bottom: 24px;
+  border-bottom: 2px solid #f3f4f6;
+  margin-bottom: 24px;
 }
 
-.pricing-name {
-  font-size: 1.5rem;
+.pricing-header h3 {
+  font-size: 24px;
   font-weight: 700;
-  color: var(--dark);
-  margin-bottom: var(--space-sm);
+  color: #111827;
+  margin-bottom: 12px;
 }
 
 .pricing-price {
   display: flex;
   align-items: baseline;
   justify-content: center;
-  gap: var(--space-sm);
-  margin-bottom: var(--space-sm);
-}
-
-.price-amount {
-  font-size: 3rem;
-  font-weight: 800;
-  color: var(--primary);
-  line-height: 1;
+  gap: 4px;
+  margin-bottom: 8px;
 }
 
 .price-currency {
-  font-size: 1.5rem;
+  font-size: 14px;
   font-weight: 600;
-  color: var(--gray);
+  color: #6b7280;
+}
+
+.price-amount {
+  font-size: 36px;
+  font-weight: 800;
+  color: #667eea;
+  line-height: 1;
 }
 
 .price-period {
-  font-size: 1rem;
-  color: var(--gray);
+  font-size: 14px;
+  color: #9ca3af;
 }
 
-.pricing-description {
-  font-size: 0.9375rem;
-  color: var(--gray);
-  text-align: center;
+.pricing-tagline {
+  font-size: 13px;
+  color: #6b7280;
 }
 
-.pricing-features {
+.feature-list {
   list-style: none;
-  margin-bottom: var(--space-xl);
+  margin-bottom: 24px;
 }
 
-.pricing-features li {
-  padding: var(--space-md) 0;
+.feature-list li {
   display: flex;
   align-items: center;
-  gap: var(--space-md);
-  font-size: 0.9375rem;
-  color: var(--gray-dark);
-  border-bottom: 1px solid var(--gray-lightest);
+  gap: 10px;
+  padding: 10px 0;
+  font-size: 14px;
+  color: #374151;
+  border-bottom: 1px solid #f3f4f6;
 }
 
-.pricing-features li:last-child {
+.feature-list li:last-child {
   border-bottom: none;
 }
 
-.feature-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: var(--radius-full);
-  background: var(--success);
-  color: var(--white);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.75rem;
+.feature-list li.disabled {
+  color: #9ca3af;
+}
+
+.feature-list li svg {
   flex-shrink: 0;
+  color: #10b981;
 }
 
-.feature-icon.disabled {
-  background: var(--gray-lighter);
-  color: var(--gray);
+.feature-list li.disabled svg {
+  color: #d1d5db;
 }
 
-/* ALERTS */
-.alert {
-  padding: var(--space-lg);
-  border-radius: var(--radius-lg);
-  border: 2px solid;
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-md);
-  margin-bottom: var(--space-lg);
-}
-
-.alert-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.25rem;
-  flex-shrink: 0;
-}
-
-.alert-content {
-  flex: 1;
-}
-
-.alert-title {
-  font-size: 1rem;
+.pricing-button {
+  width: 100%;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 10px;
+  color: white;
+  font-size: 15px;
   font-weight: 600;
-  margin-bottom: var(--space-xs);
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.alert-message {
-  font-size: 0.875rem;
-  line-height: 1.6;
+.pricing-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
-.notification-success {
-  background: #f0fdf4;
-  border-color: var(--success);
-  color: #166534;
+.pricing-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
-.notification-success .alert-icon {
-  background: var(--success);
-  color: var(--white);
+/* ==================== SUBSCRIPTION INFO ==================== */
+
+.subscription-info {
+  text-align: center;
 }
 
-.notification-warning {
-  background: #fffbeb;
-  border-color: var(--warning);
-  color: #92400e;
+.subscription-plan {
+  margin-bottom: 20px;
 }
 
-.notification-warning .alert-icon {
-  background: var(--warning);
-  color: var(--white);
-}
-
-.notification-error {
-  background: #fef2f2;
-  border-color: var(--danger);
-  color: #991b1b;
-}
-
-.notification-error .alert-icon {
-  background: var(--danger);
-  color: var(--white);
-}
-
-.notification-info {
-  background: #eff6ff;
-  border-color: var(--primary);
-  color: #1e40af;
-}
-
-.notification-info .alert-icon {
-  background: var(--primary);
-  color: var(--white);
-}
-
-/* PROGRESS */
-.progress {
-  height: 12px;
-  background: var(--gray-lightest);
-  border-radius: var(--radius-full);
-  overflow: hidden;
-  margin-bottom: var(--space-md);
-}
-
-.progress-bar {
-  height: 100%;
-  background: var(--gradient-primary);
-  border-radius: var(--radius-full);
-  transition: width 0.6s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.progress-bar::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  right: 0;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  animation: shimmer 2s infinite;
-}
-
-@keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-
-.progress-label {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.875rem;
-  margin-bottom: var(--space-sm);
-}
-
-.progress-label-text {
-  font-weight: 500;
-  color: var(--dark);
-}
-
-.progress-label-value {
+.plan-badge {
+  display: inline-block;
+  padding: 8px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-size: 14px;
   font-weight: 700;
-  color: var(--primary);
-}
-
-/* BADGES */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-xs);
-  padding: 0.375rem 0.75rem;
-  border-radius: var(--radius-full);
-  font-size: 0.75rem;
-  font-weight: 600;
+  border-radius: 999px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
-.badge-primary {
-  background: rgba(99, 102, 241, 0.1);
-  color: var(--primary);
+.subscription-expiry {
+  margin-bottom: 20px;
 }
 
-.badge-success {
-  background: rgba(34, 197, 94, 0.1);
-  color: var(--success);
+.expiry-label {
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
 }
 
-.badge-warning {
-  background: rgba(245, 158, 11, 0.1);
-  color: var(--warning);
+.expiry-date {
+  font-size: 28px;
+  font-weight: 700;
+  color: #111827;
 }
 
-/* LOADING */
+.subscription-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.subscription-status.active {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.subscription-status.expiring {
+  background: #fed7aa;
+  color: #92400e;
+}
+
+/* ==================== USAGE STATS ==================== */
+
+.usage-item {
+  margin-bottom: 20px;
+}
+
+.usage-item:last-child {
+  margin-bottom: 0;
+}
+
+.usage-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.usage-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.usage-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #667eea;
+}
+
+.usage-progress {
+  height: 8px;
+  background: #f3f4f6;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.usage-progress-bar {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.6s ease;
+}
+
+.usage-progress-bar.messages {
+  background: linear-gradient(90deg, #f093fb 0%, #f5576c 100%);
+}
+
+.usage-progress-bar.images {
+  background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+}
+
+/* ==================== LOADING ==================== */
+
 .loading-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(8px);
   display: flex;
   flex-direction: column;
@@ -1953,20 +2124,20 @@ export default {
   z-index: 9999;
 }
 
-.spinner {
+.loading-spinner {
   width: 64px;
   height: 64px;
   border: 4px solid rgba(255, 255, 255, 0.2);
-  border-top-color: var(--white);
+  border-top-color: white;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
 
-.spinner-small {
+.spinner-mini {
   width: 16px;
   height: 16px;
-  border: 2px solid var(--gray-lighter);
-  border-top-color: var(--primary);
+  border: 2px solid #e5e7eb;
+  border-top-color: #667eea;
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
   display: inline-block;
@@ -1977,69 +2148,61 @@ export default {
 }
 
 .loading-text {
-  color: var(--white);
-  font-size: 1rem;
+  color: white;
+  font-size: 16px;
   font-weight: 500;
-  margin-top: var(--space-lg);
+  margin-top: 20px;
 }
 
-/* RESPONSIVE */
+/* ==================== RESPONSIVE ==================== */
+
 @media (max-width: 1024px) {
-  .grid-col-8,
-  .grid-col-4,
-  .grid-col-6 {
-    grid-column: span 12;
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pricing-cards {
+    grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 768px) {
-  .settings-content {
-    padding: var(--space-lg);
+  .settings-main {
+    padding: 20px;
   }
-  
+
   .settings-header {
-    padding: var(--space-lg);
     flex-direction: column;
-    align-items: flex-start;
-    gap: var(--space-md);
+    align-items: stretch;
   }
 
-  .header-left {
+  .header-content {
     flex-direction: column;
     align-items: flex-start;
-    gap: var(--space-md);
   }
 
-  .header-right {
+  .back-button,
+  .save-button {
     width: 100%;
   }
 
-  .header-action {
-    width: 100%;
-  }
-  
   .header-title {
-    font-size: 1.5rem;
-  }
-  
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .pricing-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .card-footer {
-    flex-direction: column;
-    gap: var(--space-md);
-  }
-  
-  .card-footer .btn {
-    width: 100%;
+    font-size: 24px;
   }
 
-  .back-button {
+  .stats-section {
+    grid-template-columns: 1fr;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .form-actions .btn {
     width: 100%;
   }
 }
