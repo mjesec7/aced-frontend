@@ -1900,7 +1900,7 @@ getPaymentButtonText() {
 }
 </script>
 
-<style scoped>
+<style >
 @import '../../assets/css/AcedSettings.css';
 
 /* Add any component-specific styles here */
