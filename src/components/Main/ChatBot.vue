@@ -6,14 +6,14 @@
 
     <div class="chatbot-container" :class="{ open: isOpen }">
       <div class="chat-header" @click="toggleChat">
-        <span>AI Помощник</span>
+        <span>AI Assistant</span>
         <button class="close-btn" @click.stop="toggleChat">−</button>
       </div>
       
       <div class="chat-body">
         <div v-if="!isLoggedIn" class="login-prompt">
-          <p>Чтобы начать разговор, войдите в систему.</p>
-          <button @click="login">Войти</button>
+          <p>Please log in to start a conversation.</p>
+          <button @click="login">Log In</button>
         </div>
         
         <div v-else class="chat-content">
@@ -23,7 +23,7 @@
             </div>
           </div>
           <div class="input-area">
-            <input v-model="userInput" @keyup.enter="sendMessage" placeholder="Спросите что-нибудь..." />
+            <input v-model="userInput" @keyup.enter="sendMessage" placeholder="Ask me anything..." />
             <button @click="sendMessage">➤</button>
           </div>
         </div>

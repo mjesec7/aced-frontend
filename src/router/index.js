@@ -115,19 +115,19 @@ const routes = [
     path: '/', 
     name: 'HomePage', 
     component: HomePage, 
-    meta: { title: 'Главная' } 
+    meta: { title: 'Home' } 
   },
   { 
     path: '/about-us', 
     name: 'AboutUsPage', 
     component: AboutUsPage, 
-    meta: { title: 'О нас' } 
+    meta: { title: 'About Us' } 
   },
   { 
     path: '/settings', 
     name: 'SettingsPage', 
     component: AcedSettings, 
-    meta: { title: 'Настройки', requiresAuth: true } 
+    meta: { title: 'Settings', requiresAuth: true } 
   },
 
   // ============================================
@@ -143,37 +143,37 @@ const routes = [
         path: 'main', 
         name: 'MainPage', 
         component: MainPage, 
-        meta: { title: 'Главная' } 
+        meta: { title: 'Home' } 
       },
       { 
         path: 'catalogue', 
         name: 'CataloguePage', 
         component: CataloguePage, 
-        meta: { title: 'Каталог' } 
+        meta: { title: 'Catalogue' } 
       },
       { 
         path: 'my-courses', 
         name: 'MyCourses', 
         component: MyCourses, 
-        meta: { title: 'Мои курсы' } 
+        meta: { title: 'My Courses' } 
       },
       { 
         path: 'updated-courses', 
         name: 'UpdatedCourses', 
         component: UpdatedCourses, 
-        meta: { title: 'Актуальные курсы' } 
+        meta: { title: 'Current Courses' } 
       },
       { 
         path: 'diary', 
         name: 'DiaryPage', 
         component: DiaryPage, 
-        meta: { title: 'Дневник' } 
+        meta: { title: 'Diary' } 
       },
       { 
         path: 'homeworks', 
         name: 'HomeworkList', 
         component: HomeworkList, 
-        meta: { title: 'Домашние задания' } 
+        meta: { title: 'Homework' } 
       },
       
       // Premium Feature Routes using Access Guard
@@ -181,36 +181,36 @@ const routes = [
         path: 'analytics',
         name: 'UserAnalyticsPanel',
         component: UserAnalyticsPanel,
-        meta: { title: 'Аналитика' },
-        beforeEnter: createAccessGuard('analytics', ['pro'], 'Продвинутая аналитика доступна с подпиской Pro')
+        meta: { title: 'Analytics' },
+        beforeEnter: createAccessGuard('analytics', ['pro'], 'Advanced analytics available with Pro subscription')
       },
       {
         path: 'goal',
         name: 'StudyGoal',
         component: StudyGoal,
-        meta: { title: 'Учебные цели' },
-        beforeEnter: createAccessGuard('goals', ['start', 'pro'], 'Цели доступны с подпиской Start')
+        meta: { title: 'Study Goals' },
+        beforeEnter: createAccessGuard('goals', ['start', 'pro'], 'Goals available with Start subscription')
       },
       {
         path: 'homework',
         name: 'HomeworkHelp',
         component: HomeworkHelp,
-        meta: { title: 'Помощь с домашкой' },
-        beforeEnter: createAccessGuard('homework_help', ['start', 'pro'], 'Помощь с ДЗ доступна с подпиской Start')
+        meta: { title: 'Homework Help' },
+        beforeEnter: createAccessGuard('homework_help', ['start', 'pro'], 'Homework help available with Start subscription')
       },
       {
         path: 'tests',
         name: 'ProfileTestsPage',
         component: TestsPage,
-        meta: { title: 'Тесты' },
-        beforeEnter: createAccessGuard('tests', ['start', 'pro'], 'Тесты доступны с подпиской Start')
+        meta: { title: 'Tests' },
+        beforeEnter: createAccessGuard('tests', ['start', 'pro'], 'Tests available with Start subscription')
       },
       {
         path: 'vocabulary',
         name: 'ProfileVocabularyPage',
         component: VocabularyPage,
-        meta: { title: 'Словарь' },
-        beforeEnter: createAccessGuard('vocabulary', ['start', 'pro'], 'Словарь доступен с подпиской Start')
+        meta: { title: 'Vocabulary' },
+        beforeEnter: createAccessGuard('vocabulary', ['start', 'pro'], 'Vocabulary available with Start subscription')
       },
 
       // Dynamic Homework Routes
@@ -219,7 +219,7 @@ const routes = [
         name: 'HomeworkPage',
         component: HomeworkPage,
         props: route => ({ homeworkId: route.params.id, ...route.query }),
-        meta: { title: 'Выполнение домашнего задания' },
+        meta: { title: 'Complete Homework' },
       },
     ],
   },
@@ -232,20 +232,20 @@ const routes = [
     name: 'LessonPage',
     component: LessonPage,
     props: true,
-    meta: { title: 'Урок' }
+    meta: { title: 'Lesson' }
   },
   {
     path: '/topic/:id/overview',
     name: 'TopicOverview',
     component: TopicOverview,
     props: true,
-    meta: { title: 'Обзор темы' }
+    meta: { title: 'Topic Overview' }
   },
   {
     path: '/finished',
     name: 'TopicFinished',
     component: TopicFinished,
-    meta: { requiresAuth: true, title: 'Тема завершена' }
+    meta: { requiresAuth: true, title: 'Topic Completed' }
   },
 
   // ============================================
@@ -267,7 +267,7 @@ const routes = [
       ...route.query
     }),
     meta: { 
-      title: 'Выбор способа оплаты', 
+      title: 'Payment Method Selection', 
       requiresAuth: true 
     },
     beforeEnter: (to, from, next) => {
@@ -289,7 +289,7 @@ const routes = [
     name: 'UniversalCheckout',
     component: UniversalCheckout,
     meta: { 
-      title: 'Оформление платежа',
+      title: 'Payment Checkout',
       requiresAuth: true 
     },
     props: route => ({
@@ -320,7 +320,7 @@ const routes = [
       ...route.query
     }),
     meta: { 
-      title: 'Оформление платежа',
+      title: 'Payment Checkout',
       requiresAuth: true 
     },
     beforeEnter: (to, from, next) => {
@@ -348,7 +348,7 @@ const routes = [
       amount: route.query.amount,
       ...route.query
     }),
-    meta: { title: 'Платеж успешен' }
+    meta: { title: 'Payment Successful' }
   },
 
   // Payment Failed - Universal for all providers
@@ -362,7 +362,7 @@ const routes = [
       transactionId: route.query.transactionId || route.query.transaction_id,
       ...route.query
     }),
-    meta: { title: 'Ошибка платежа' }
+    meta: { title: 'Payment Failed' }
   },
 
   // Payment Return - Handler for provider callbacks
@@ -375,7 +375,7 @@ const routes = [
       ...route.query,
       ...route.params
     }),
-    meta: { title: 'Обработка платежа' },
+    meta: { title: 'Processing Payment' },
     beforeEnter: (to, from, next) => {
       const validProviders = ['payme', 'multicard', 'click', 'uzum'];
       if (!validProviders.includes(to.params.provider)) {
@@ -397,11 +397,11 @@ const routes = [
     component: PaymentFailed,
     props: route => ({
       provider: route.params.provider || 'unknown',
-      error: 'Платеж был отменён пользователем',
+      error: 'Payment was cancelled by user',
       cancelled: true,
       ...route.query
     }),
-    meta: { title: 'Платеж отменён' }
+    meta: { title: 'Payment Cancelled' }
   },
 
   // ============================================
@@ -520,7 +520,7 @@ router.beforeEach(async (to, from, next) => {
 
 router.afterEach((to, from) => {
   // Update page title
-  const baseTitle = 'ACED - Образовательная платформа';
+  const baseTitle = 'ACED - Educational Platform';
   document.title = to.meta.title ? `${to.meta.title} - ACED` : baseTitle;
   
   // Periodically check for pending payments

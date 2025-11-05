@@ -2,25 +2,25 @@
   <section class="pricing-section">
     <div class="container">
       <div class="header">
-        <h2 class="title">Простые и прозрачные тарифы</h2>
-        <p class="subtitle">Выберите план, который подходит именно вам</p>
+        <h2 class="title">Simple and Transparent Pricing</h2>
+        <p class="subtitle">Choose the plan that's right for you</p>
       </div>
 
       <div class="plans">
         <!-- Basic Plan -->
         <div class="plan-card">
           <div class="plan-top">
-            <h3 class="plan-name">Базовый</h3>
-            <p class="plan-description">Идеально для старта</p>
+            <h3 class="plan-name">Basic</h3>
+            <p class="plan-description">Perfect to get started</p>
           </div>
 
           <div class="plan-price">
             <div class="price-main">
               <span class="amount">260,000</span>
-              <span class="currency">сум</span>
+              <span class="currency">sum</span>
             </div>
             <div class="price-note">
-              <span class="original">520,000 сум</span>
+              <span class="original">520,000 sum</span>
               <span class="save">-50%</span>
             </div>
           </div>
@@ -30,43 +30,43 @@
               <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-              <span>Доступ ко всем предметам</span>
+              <span>Access to all subjects</span>
             </div>
             <div class="feature">
               <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-              <span>Помощь ИИ с домашкой</span>
+              <span>AI homework help</span>
             </div>
             <div class="feature">
               <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-              <span>Прогресс и статистика</span>
+              <span>Progress and statistics</span>
             </div>
           </div>
 
           <button class="plan-button" @click="handleClick('start')">
-            Начать обучение
+            Start Learning
           </button>
         </div>
 
         <!-- Pro Plan -->
         <div class="plan-card premium">
-          <div class="badge">Рекомендуем</div>
+          <div class="badge">Recommended</div>
           
           <div class="plan-top">
-            <h3 class="plan-name">Профессионал</h3>
-            <p class="plan-description">Максимум возможностей</p>
+            <h3 class="plan-name">Professional</h3>
+            <p class="plan-description">Maximum capabilities</p>
           </div>
 
           <div class="plan-price">
             <div class="price-main">
               <span class="amount">450,000</span>
-              <span class="currency">сум</span>
+              <span class="currency">sum</span>
             </div>
             <div class="price-note">
-              <span class="original">900,000 сум</span>
+              <span class="original">900,000 sum</span>
               <span class="save premium">-50%</span>
             </div>
           </div>
@@ -76,30 +76,30 @@
               <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-              <span>Всё из Базового</span>
+              <span>Everything in Basic</span>
             </div>
             <div class="feature">
               <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-              <span>Персональный ИИ-наставник</span>
+              <span>Personal AI tutor</span>
             </div>
             <div class="feature">
               <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-              <span>Продвинутая аналитика</span>
+              <span>Advanced analytics</span>
             </div>
             <div class="feature">
               <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-              <span>Индивидуальная карта обучения</span>
+              <span>Personalized learning path</span>
             </div>
           </div>
 
           <button class="plan-button premium" @click="handleClick('pro')">
-            Начать сейчас
+            Start Now
           </button>
         </div>
       </div>

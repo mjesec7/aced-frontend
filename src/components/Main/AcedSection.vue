@@ -2,9 +2,9 @@
   <section class="aced-section" id="aced">
     <div class="section-header">
       <div class="header-content">
-        <div class="label-badge">🚀 Начни обучение</div>
-        <h1 class="headline">Начни своё обучение уже сегодня</h1>
-        <p class="context-text">Выбери курс и начни изучать прямо сейчас</p>
+        <div class="label-badge">🚀 Start Learning</div>
+        <h1 class="headline">Start your learning journey today</h1>
+        <p class="context-text">Choose a course and start learning right now</p>
       </div>
     </div>
 
@@ -40,7 +40,7 @@
                 <span class="badge-text">{{ getTopicTypeLabel(course) }}</span>
               </div>
               <div class="course-level">
-                <span class="level-label">Уровень</span>
+                <span class="level-label">Level</span>
                 <span class="level-number">{{ course.level || 1 }}</span>
               </div>
             </div>
@@ -60,7 +60,7 @@
                   <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
                   <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
                 </svg>
-                <span class="meta-text">{{ course.lessons?.length || 0 }} уроков</span>
+                <span class="meta-text">{{ course.lessons?.length || 0 }} lessons</span>
               </div>
               <div class="meta-divider"></div>
               <div class="meta-item">
@@ -68,7 +68,7 @@
                   <circle cx="12" cy="12" r="10"></circle>
                   <polyline points="12 6 12 12 16 14"></polyline>
                 </svg>
-                <span class="meta-text">{{ Math.round((course.totalTime || 0) / 60) || 1 }} часов</span>
+                <span class="meta-text">{{ Math.round((course.totalTime || 0) / 60) || 1 }} hours</span>
               </div>
             </div>
           </div>
@@ -99,11 +99,11 @@
       
       <div v-else class="empty-courses glass-card">
         <div class="empty-icon">🔍</div>
-        <h3>Курсы не найдены</h3>
-        <p>Загружаем актуальные курсы...</p>
+        <h3>No Courses Found</h3>
+        <p>Loading available courses...</p>
         <button v-if="!loadingCourses" @click="refreshCourses" class="retry-btn">
           <span>🔄</span>
-          <span>Попробовать снова</span>
+          <span>Try Again</span>
         </button>
       </div>
     </div>
@@ -117,26 +117,26 @@
         
         <div class="modal-header">
           <div class="modal-icon">🎓</div>
-          <h2>Премиум доступ</h2>
-          <p>Для доступа к этому курсу необходимо зарегистрироваться</p>
+          <h2>Premium Access</h2>
+          <p>Registration is required to access this course</p>
         </div>
         
         <div class="course-preview" v-if="selectedCourse">
           <div class="course-info">
             <h3>{{ getTopicName(selectedCourse) }}</h3>
-            <p class="course-type">{{ getTopicTypeLabel(selectedCourse) }} курс</p>
+            <p class="course-type">{{ getTopicTypeLabel(selectedCourse) }} course</p>
             <div class="course-benefits">
               <div class="benefit-item">
                 <span class="benefit-icon">📚</span>
-                <span>{{ selectedCourse.lessons?.length || 0 }} уроков</span>
+                <span>{{ selectedCourse.lessons?.length || 0 }} lessons</span>
               </div>
               <div class="benefit-item">
                 <span class="benefit-icon">🎯</span>
-                <span>Практические задания</span>
+                <span>Practical exercises</span>
               </div>
               <div class="benefit-item">
                 <span class="benefit-icon">🏆</span>
-                <span>Сертификат по завершении</span>
+                <span>Certificate upon completion</span>
               </div>
             </div>
           </div>
@@ -145,11 +145,11 @@
         <div class="modal-actions">
           <button class="register-btn" @click="triggerRegistration">
             <span class="btn-icon">🚀</span>
-            <span>Зарегистрироваться и начать</span>
+            <span>Register and Start</span>
             <span class="btn-glow"></span>
           </button>
           <button class="cancel-btn" @click="closeRegistrationModal">
-            Пока не готов
+            Not Ready Yet
           </button>
         </div>
       </div>
@@ -161,7 +161,7 @@
       <span class="error-text">{{ errorMessage }}</span>
       <button class="retry-error-btn" @click="refreshCourses">
         <span>🔄</span>
-        <span>Повторить</span>
+        <span>Retry</span>
       </button>
     </div>
   </section>
@@ -189,7 +189,7 @@ export default {
       errorMessage: null,
       retryCount: 0,
       maxRetries: 3,
-      lang: localStorage.getItem('lang') || 'ru',
+      lang: localStorage.getItem('lang') || 'en',
       navigationInProgress: false
     };
   },
@@ -317,8 +317,8 @@ export default {
             _id: topicId,
             name: topicName,
             topicName: topicName,
-            description: `Курс по теме "${topicName}"`,
-            subject: lesson.subject || 'Общий',
+            description: `Course on "${topicName}"`,
+            subject: lesson.subject || 'General',
             level: lesson.level || 1,
             type: lesson.type || 'free',
             lessons: [lesson],
@@ -379,7 +379,7 @@ export default {
 
     async refreshCourses() {
       if (this.retryCount >= this.maxRetries) {
-        this.errorMessage = 'Превышено максимальное количество попыток';
+        this.errorMessage = 'Maximum number of retry attempts exceeded';
         return;
       }
       
@@ -425,7 +425,7 @@ export default {
             
             if (!lessonId || lessonId === 'null' || lessonId === 'undefined' || lessonId === '') {
               console.error('❌ Invalid lesson ID:', firstLesson._id);
-              this.errorMessage = 'Недействительный ID урока';
+              this.errorMessage = 'Invalid lesson ID';
               return;
             }
             
@@ -467,7 +467,7 @@ export default {
               });
             } catch (topicError) {
               console.error('❌ Topic overview navigation failed:', topicError);
-              this.errorMessage = 'Не удалось открыть тему';
+              this.errorMessage = 'Unable to open topic';
             }
           }
         } else {
@@ -502,7 +502,7 @@ export default {
         
       } catch (error) {
         console.error('❌ Error starting course:', error);
-        this.errorMessage = 'Не удалось открыть курс';
+        this.errorMessage = 'Unable to open course';
       } finally {
         // Reset processing flags with delay
         setTimeout(() => {
@@ -539,24 +539,24 @@ export default {
     },
 
     handleError(error) {
-      let errorMessage = 'Произошла ошибка при загрузке курсов';
+      let errorMessage = 'An error occurred while loading courses';
       
       if (error?.response) {
         const status = error.response.status;
         switch (status) {
           case 404:
-            errorMessage = 'Курсы не найдены';
+            errorMessage = 'Courses not found';
             break;
           case 500:
           case 502:
           case 503:
-            errorMessage = 'Ошибка сервера. Попробуйте позже.';
+            errorMessage = 'Server error. Please try again later.';
             break;
           default:
-            errorMessage = `Ошибка сервера (${status})`;
+            errorMessage = `Server error (${status})`;
         }
       } else if (error?.request) {
-        errorMessage = 'Ошибка сети. Проверьте подключение.';
+        errorMessage = 'Network error. Check your connection.';
       }
       
       this.errorMessage = errorMessage;
@@ -564,18 +564,18 @@ export default {
     },
 
     getTopicName(course) {
-      if (!course) return 'Без названия';
-      return course.name || course.topicName || course.topic || course.title || 'Без названия';
+      if (!course) return 'Untitled';
+      return course.name || course.topicName || course.topic || course.title || 'Untitled';
     },
 
     getTopicDescription(course) {
-      if (!course) return 'Изучайте новые навыки';
+      if (!course) return 'Learn new skills';
       
       const description = course.description || course.topicDescription;
       if (description && description.length > 85) {
         return description.substring(0, 85) + '...';
       }
-      return description || `Изучите ${this.getTopicName(course)} с практическими заданиями`;
+      return description || `Learn ${this.getTopicName(course)} with practical exercises`;
     },
 
     getTopicType(course) {
@@ -601,8 +601,8 @@ export default {
 
     getTopicTypeLabel(course) {
       const type = this.getTopicType(course);
-      const labels = { free: 'Бесплатно', premium: 'Премиум', pro: 'Pro' };
-      return labels[type] || 'Бесплатно';
+      const labels = { free: 'Free', premium: 'Premium', pro: 'Pro' };
+      return labels[type] || 'Free';
     },
 
     getStartButtonClass(course) {
@@ -613,17 +613,17 @@ export default {
     },
 
     getStartButtonText(course) {
-      if (this.processingCourse === course._id) return 'Открытие...';
+      if (this.processingCourse === course._id) return 'Opening...';
       
       const type = this.getTopicType(course);
       const isAuthenticated = this.checkUserAuthentication();
       
       // ✅ UPDATED: Better button text for guests
       if (type === 'free') {
-        return isAuthenticated ? 'Начать обучение' : 'Попробовать бесплатно';
+        return isAuthenticated ? 'Start Learning' : 'Try Free';
       }
-      if (type === 'premium') return isAuthenticated ? 'Начать курс' : 'Получить доступ';
-      return isAuthenticated ? 'Открыть Pro' : 'Получить Pro доступ';
+      if (type === 'premium') return isAuthenticated ? 'Start Course' : 'Get Access';
+      return isAuthenticated ? 'Open Pro' : 'Get Pro Access';
     },
 
     isFeaturedCourse(course) {
@@ -639,8 +639,8 @@ export default {
     },
 
     getTopicNameFromLesson(lesson) {
-      if (!lesson) return 'Без темы';
-      return lesson.topic || lesson.lessonName || lesson.title || 'Без темы';
+      if (!lesson) return 'No Topic';
+      return lesson.topic || lesson.lessonName || lesson.title || 'No Topic';
     },
 
     calculateLessonTime(lesson) {

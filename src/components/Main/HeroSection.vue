@@ -14,13 +14,13 @@
         <!-- Left Side - Enhanced Message -->
         <div class="hero-left">
           <div class="hero-message">
-            <div class="label-badge">🎓 Проверенное качество образования</div>
+            <div class="label-badge">🎓 Proven Quality Education</div>
             <h1 class="hero-title">
-              Твой путь к знаниям<br />
-              начинается здесь
+              Your path to knowledge<br />
+              starts here
             </h1>
             <p class="hero-subtitle">
-              Более 2,800 студентов уже учатся на ACED. Присоединяйся и получи доступ к урокам прямо сейчас — это займет 30 секунд
+              Over 2,800 students are already learning on ACED. Join and get access to lessons right now — it takes 30 seconds
             </p>
           </div>
 
@@ -33,8 +33,8 @@
               <div class="avatar-more">+2.8K</div>
             </div>
             <div class="proof-text">
-              <div class="proof-number">2,844 студентов</div>
-              <div class="proof-label">уже учатся и достигают результатов</div>
+              <div class="proof-number">2,844 students</div>
+              <div class="proof-label">already learning and achieving results</div>
             </div>
           </div>
 
@@ -42,15 +42,15 @@
           <div class="trust-badges">
             <div class="badge-item">
               <span class="badge-icon">✓</span>
-              <span>Бесплатный старт</span>
+              <span>Free to start</span>
             </div>
             <div class="badge-item">
               <span class="badge-icon">✓</span>
-              <span>Без кредитной карты</span>
+              <span>No credit card required</span>
             </div>
             <div class="badge-item">
               <span class="badge-icon">✓</span>
-              <span>Отменить в любое время</span>
+              <span>Cancel anytime</span>
             </div>
           </div>
         </div>
@@ -61,12 +61,12 @@
             <!-- Free Card -->
             <div class="glass-card" @click="handleStartFree">
               <div class="card-inner">
-                <h3 class="card-title">Попробуй бесплатно</h3>
+                <h3 class="card-title">Try it free</h3>
                 <p class="card-description">
-                  Начни учиться прямо сейчас. Никаких карт, никаких обязательств.
+                  Start learning right now. No cards, no commitments.
                 </p>
                 <div class="card-footer">
-                  <span class="card-link">Начать учиться →</span>
+                  <span class="card-link">Start learning →</span>
                 </div>
               </div>
               <div class="glass-shine"></div>
@@ -75,12 +75,12 @@
             <!-- Premium Card -->
             <div class="glass-card premium" @click="handleRegister">
               <div class="card-inner">
-                <h3 class="card-title">Зарегистрируйся и сохрани прогресс</h3>
+                <h3 class="card-title">Sign up and save your progress</h3>
                 <p class="card-description">
-                  Отслеживай достижения, получай сертификаты, учись где угодно.
+                  Track achievements, earn certificates, learn anywhere.
                 </p>
                 <div class="card-footer">
-                  <span class="card-link">Создать аккаунт →</span>
+                  <span class="card-link">Create account →</span>
                 </div>
               </div>
               <div class="glass-shine"></div>

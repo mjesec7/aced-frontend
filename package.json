@@ -11,6 +11,8 @@
   "dependencies": {
     "@firebasegen/default-connector": "file:dataconnect-generated/js/default-connector",
     "@splinetool/viewer": "^1.9.29",
+    "@translate-tools/core": "^2.1.0",
+    "@vitalets/google-translate-api": "^9.2.1",
     "@vitejs/plugin-vue": "^5.2.3",
     "axios": "^1.8.4",
     "canvas-confetti": "^1.9.3",

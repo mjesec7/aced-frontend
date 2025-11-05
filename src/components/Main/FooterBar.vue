@@ -8,7 +8,7 @@
             <span class="logo-text">ACED</span>
           </div>
           <p class="brand-description">
-            Образование нового поколения. Мы рядом, чтобы помочь тебе расти и достигать целей.
+            Next generation education. We're here to help you grow and achieve your goals.
           </p>
           <div class="social-links">
             <a href="#" class="social-link">
@@ -24,17 +24,17 @@
         </div>
 
         <div class="footer-section">
-          <h4 class="section-title">Навигация</h4>
+          <h4 class="section-title">Navigation</h4>
           <ul class="link-list">
-            <li><a href="#about-us" class="footer-link">О Нас</a></li>
-            <li><a href="#aced" class="footer-link">Направления</a></li>
-            <li><a href="#tariffs" class="footer-link">Тарифы</a></li>
-            <li><a href="#" @click.prevent="showAIHelperModal" class="footer-link">AI Помощник</a></li>
+            <li><a href="#about-us" class="footer-link">About Us</a></li>
+            <li><a href="#aced" class="footer-link">Courses</a></li>
+            <li><a href="#tariffs" class="footer-link">Pricing</a></li>
+            <li><a href="#" @click.prevent="showAIHelperModal" class="footer-link">AI Assistant</a></li>
           </ul>
         </div>
 
         <div class="footer-section">
-          <h4 class="section-title">Контакты</h4>
+          <h4 class="section-title">Contact</h4>
           <ul class="link-list">
             <li class="contact-item">
               <span class="contact-icon">📱</span>
@@ -43,7 +43,7 @@
             <li>
               <a href="#" @click.prevent="showContactModal" class="contact-link">
                 <span class="link-icon">✉️</span>
-                <span>Написать нам</span>
+                <span>Contact Us</span>
               </a>
             </li>
           </ul>
@@ -51,11 +51,11 @@
       </div>
       
       <div class="footer-bottom">
-        <p class="copyright">© 2025 ACED. Все права защищены.</p>
+        <p class="copyright">© 2025 ACED. All rights reserved.</p>
         <div class="footer-links">
-          <a href="#" class="bottom-link">Политика конфиденциальности</a>
+          <a href="#" class="bottom-link">Privacy Policy</a>
           <span class="divider">•</span>
-          <a href="#" class="bottom-link">Условия использования</a>
+          <a href="#" class="bottom-link">Terms of Service</a>
         </div>
       </div>
     </div>
@@ -66,12 +66,12 @@
           <span>×</span>
         </button>
         <div class="modal-icon">🤖</div>
-        <h3 class="modal-title">Где найти AI помощника?</h3>
+        <h3 class="modal-title">Where to find AI Assistant?</h3>
         <p class="modal-text">
-          Наш AI помощник находится в правом нижнем углу экрана. Просто кликните по иконке робота, и он будет рад помочь вам!
+          Our AI assistant is located in the bottom right corner of the screen. Just click on the robot icon and it will be happy to help you!
         </p>
         <button class="modal-button" @click="showAIModal = false">
-          <span>Понятно!</span>
+          <span>Got it!</span>
           <span class="button-glow"></span>
         </button>
       </div>

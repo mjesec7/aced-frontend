@@ -3,18 +3,18 @@
     <div class="content-wrapper">
       <div class="about-content">
         <div class="title-section">
-          <div class="label-badge">✨ Новое поколение образования</div>
-          <h2 class="title">О платформе ACED</h2>
+          <div class="label-badge">✨ New Generation Education</div>
+          <h2 class="title">About ACED Platform</h2>
           <div class="title-accent"></div>
         </div>
         
         <div class="description-wrapper">
           <p class="description">
-            ACED — это платформа нового поколения для обучения, которая делает процесс 
-            <span class="highlight-text" data-highlight="interactive">интерактивным</span>, 
-            <span class="highlight-text" data-highlight="personalized">персонализированным</span> и 
-            <span class="highlight-text" data-highlight="measurable">измеримым</span>. 
-            Наш главный фокус — современное и общее образование, где студенты получают не только знания по языкам, но и по другим важным дисциплинам.
+            ACED is a next-generation learning platform that makes the process 
+            <span class="highlight-text" data-highlight="interactive">interactive</span>, 
+            <span class="highlight-text" data-highlight="personalized">personalized</span> and 
+            <span class="highlight-text" data-highlight="measurable">measurable</span>. 
+            Our main focus is modern and comprehensive education, where students gain not only language skills but also knowledge in other important disciplines.
           </p>
         </div>
 
@@ -22,10 +22,10 @@
           <div class="mission-card glass-card">
             <div class="card-header">
               <div class="card-icon">🎯</div>
-              <h4 class="card-title">Наша миссия</h4>
+              <h4 class="card-title">Our Mission</h4>
             </div>
             <p class="card-text">
-              Трансформировать образование через технологии, делая качественное обучение доступным каждому студенту.
+              Transform education through technology, making quality learning accessible to every student.
             </p>
             <div class="card-shine"></div>
           </div>
@@ -33,10 +33,10 @@
           <div class="vision-card glass-card">
             <div class="card-header">
               <div class="card-icon">🌟</div>
-              <h4 class="card-title">Наше видение</h4>
+              <h4 class="card-title">Our Vision</h4>
             </div>
             <p class="card-text">
-              Создание экосистемы персонализированного обучения, где каждый студент может раскрыть свой потенциал с помощью современных AI-технологий.
+              Creating a personalized learning ecosystem where every student can unlock their potential with modern AI technologies.
             </p>
             <div class="card-shine"></div>
           </div>
@@ -44,21 +44,21 @@
       </div>
 
       <div class="features-section">
-        <h3 class="section-subtitle">Возможности платформы</h3>
+        <h3 class="section-subtitle">Platform Features</h3>
         
         <div class="main-feature-display glass-card">
           <div class="feature-preview">
             <div class="preview-header">
               <div class="preview-indicator"></div>
-              <span class="preview-title" id="previewTitle">Структурированное обучение</span>
+              <span class="preview-title" id="previewTitle">Structured Learning</span>
             </div>
             <div class="preview-content" id="previewContent">
               <div class="content-section active" data-content="lessons">
                 <div class="lesson-steps">
-                  <div class="step active" data-step="explanation">Объяснение</div>
-                  <div class="step" data-step="examples">Примеры</div>
-                  <div class="step" data-step="practice">Практика</div>
-                  <div class="step" data-step="test">Тест</div>
+                  <div class="step active" data-step="explanation">Explanation</div>
+                  <div class="step" data-step="examples">Examples</div>
+                  <div class="step" data-step="practice">Practice</div>
+                  <div class="step" data-step="test">Test</div>
                 </div>
                 <div class="progress-bar">
                   <div class="progress-fill" id="progressFill"></div>
@@ -68,16 +68,16 @@
               <div class="content-section" data-content="analytics">
                 <div class="analytics-display">
                   <div class="metric-row">
-                    <span class="metric-label">Успеваемость:</span>
+                    <span class="metric-label">Performance:</span>
                     <span class="metric-value">87%</span>
                   </div>
                   <div class="metric-row">
-                    <span class="metric-label">Сильные стороны:</span>
-                    <span class="metric-value">Грамматика, Чтение</span>
+                    <span class="metric-label">Strengths:</span>
+                    <span class="metric-value">Grammar, Reading</span>
                   </div>
                   <div class="metric-row">
-                    <span class="metric-label">Требует внимания:</span>
-                    <span class="metric-value">Аудирование</span>
+                    <span class="metric-label">Needs Attention:</span>
+                    <span class="metric-value">Listening</span>
                   </div>
                 </div>
                 <div class="progress-bar">
@@ -87,8 +87,8 @@
               
               <div class="content-section" data-content="ai">
                 <div class="ai-chat">
-                  <div class="chat-message user">Не понимаю эту тему...</div>
-                  <div class="chat-message ai">Давайте разберем пошагово! Начнем с основ...</div>
+                  <div class="chat-message user">I don't understand this topic...</div>
+                  <div class="chat-message ai">Let's break it down step by step! Starting with the basics...</div>
                 </div>
                 <div class="progress-bar">
                   <div class="progress-fill ai-progress"></div>
@@ -115,22 +115,22 @@
         <div class="features-nav">
           <div class="feature-nav-item glass-card active" data-feature="lessons">
             <div class="nav-icon">📚</div>
-            <span>Уроки</span>
+            <span>Lessons</span>
             <div class="nav-shine"></div>
           </div>
           <div class="feature-nav-item glass-card" data-feature="analytics">
             <div class="nav-icon">📊</div>
-            <span>Аналитика</span>
+            <span>Analytics</span>
             <div class="nav-shine"></div>
           </div>
           <div class="feature-nav-item glass-card" data-feature="ai">
             <div class="nav-icon">🤖</div>
-            <span>AI-помощник</span>
+            <span>AI Assistant</span>
             <div class="nav-shine"></div>
           </div>
           <div class="feature-nav-item glass-card" data-feature="sync">
             <div class="nav-icon">🔄</div>
-            <span>Синхронизация</span>
+            <span>Sync</span>
             <div class="nav-shine"></div>
           </div>
         </div>
@@ -138,17 +138,17 @@
         <div class="benefits-grid">
           <div class="benefit-card glass-card">
             <div class="benefit-number">95%</div>
-            <div class="benefit-label">Улучшение результатов</div>
+            <div class="benefit-label">Results Improvement</div>
             <div class="card-shine"></div>
           </div>
           <div class="benefit-card glass-card">
             <div class="benefit-number">24/7</div>
-            <div class="benefit-label">Доступность</div>
+            <div class="benefit-label">Availability</div>
             <div class="card-shine"></div>
           </div>
           <div class="benefit-card glass-card">
             <div class="benefit-number">∞</div>
-            <div class="benefit-label">Попыток сдачи</div>
+            <div class="benefit-label">Unlimited Attempts</div>
             <div class="card-shine"></div>
           </div>
         </div>
@@ -172,10 +172,10 @@ export default {
       const highlightTexts = document.querySelectorAll('.highlight-text');
       
       const featureTitles = {
-        lessons: 'Структурированное обучение',
-        analytics: 'Детальная аналитика успеваемости',
-        ai: 'Персональный AI-помощник',
-        sync: 'Синхронизация между устройствами'
+        lessons: 'Structured Learning',
+        analytics: 'Detailed Performance Analytics',
+        ai: 'Personal AI Assistant',
+        sync: 'Cross-Device Sync'
       };
       
       const stepProgress = {

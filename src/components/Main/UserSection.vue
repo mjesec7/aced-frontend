@@ -2,11 +2,11 @@
   <div>
     <div v-if="!currentUser" class="auth-buttons">
       <button class="auth-btn login-btn" @click="openModal('Login')">
-        <span class="btn-text">Вход</span>
+        <span class="btn-text">Login</span>
         <span class="btn-icon">→</span>
       </button>
       <button class="auth-btn register-btn" @click="openModal('register')">
-        <span class="btn-text">Регистрация</span>
+        <span class="btn-text">Register</span>
         <span class="btn-glow"></span>
       </button>
     </div>
@@ -14,7 +14,7 @@
     <div v-else class="user-section">
       <button class="auth-btn profile-btn" @click="$router.push('/profile')">
         <span class="profile-icon">👤</span>
-        <span>Профиль</span>
+        <span>Profile</span>
       </button>
       
       <div class="user-menu">
@@ -23,7 +23,7 @@
           :class="{ active: dropdownOpen }"
           @click="toggleDropdown"
         >
-          <span class="user-greeting">Привет, {{ currentUser.name }}</span>
+          <span class="user-greeting">Hello, {{ currentUser.name }}</span>
           <span class="badge" :class="planClass">
             {{ displayPlan }}
           </span>
@@ -37,11 +37,11 @@
           <ul>
             <li @click="$router.push('/settings')">
               <span class="menu-icon">⚙️</span>
-              <span>Настройки</span>
+              <span>Settings</span>
             </li>
             <li @click="logout">
               <span class="menu-icon">🚪</span>
-              <span>Выйти</span>
+              <span>Logout</span>
             </li>
           </ul>
         </div>
@@ -61,33 +61,33 @@
 
         <div v-else-if="authMode === 'register'" class="auth-form">
           <div class="modal-header">
-            <h2>Создайте аккаунт</h2>
-            <p class="modal-subtitle">Начните свой путь обучения</p>
+            <h2>Create an Account</h2>
+            <p class="modal-subtitle">Start your learning journey</p>
           </div>
 
           <div class="form-group">
-            <input v-model="user.name" placeholder="Имя" :disabled="isLoading" class="form-input" />
+            <input v-model="user.name" placeholder="First Name" :disabled="isLoading" class="form-input" />
           </div>
           <div class="form-group">
-            <input v-model="user.surname" placeholder="Фамилия" :disabled="isLoading" class="form-input" />
+            <input v-model="user.surname" placeholder="Last Name" :disabled="isLoading" class="form-input" />
           </div>
           <div class="form-group">
             <input v-model="user.email" type="email" placeholder="Email" :disabled="isLoading" class="form-input" />
           </div>
           <div class="form-group">
-            <input v-model="user.password" type="password" placeholder="Пароль" :disabled="isLoading" class="form-input" />
+            <input v-model="user.password" type="password" placeholder="Password" :disabled="isLoading" class="form-input" />
           </div>
           <div class="form-group">
-            <input v-model="user.confirmPassword" type="password" placeholder="Повторите пароль" :disabled="isLoading" class="form-input" />
+            <input v-model="user.confirmPassword" type="password" placeholder="Confirm Password" :disabled="isLoading" class="form-input" />
           </div>
 
           <button class="auth-submit" @click="register" :disabled="isLoading">
-            <span>{{ isLoading ? 'Регистрация...' : 'Зарегистрироваться' }}</span>
+            <span>{{ isLoading ? 'Registering...' : 'Sign Up' }}</span>
             <span class="submit-glow"></span>
           </button>
 
           <div class="divider">
-            <span>или</span>
+            <span>or</span>
           </div>
 
           <button class="google-auth" @click="LoginWithGoogle" :disabled="isLoading">
@@ -97,35 +97,35 @@
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
-            <span>{{ isLoading ? 'Загрузка...' : 'Продолжить с Google' }}</span>
+            <span>{{ isLoading ? 'Loading...' : 'Continue with Google' }}</span>
           </button>
 
           <p class="switch-text">
-            Уже есть аккаунт? 
-            <span class="switch-link" @click="switchAuth('Login')">Войти</span>
+            Already have an account? 
+            <span class="switch-link" @click="switchAuth('Login')">Sign In</span>
           </p>
         </div>
 
         <div v-else class="auth-form">
           <div class="modal-header">
-            <h2>С возвращением!</h2>
-            <p class="modal-subtitle">Продолжите обучение</p>
+            <h2>Welcome Back!</h2>
+            <p class="modal-subtitle">Continue your learning</p>
           </div>
 
           <div class="form-group">
             <input v-model="Login.email" type="email" placeholder="Email" :disabled="isLoading" class="form-input" />
           </div>
           <div class="form-group">
-            <input v-model="Login.password" type="password" placeholder="Пароль" :disabled="isLoading" class="form-input" />
+            <input v-model="Login.password" type="password" placeholder="Password" :disabled="isLoading" class="form-input" />
           </div>
 
           <button class="auth-submit" @click="handleEmailLogin" :disabled="isLoading">
-            <span>{{ isLoading ? 'Вход...' : 'Войти' }}</span>
+            <span>{{ isLoading ? 'Signing in...' : 'Sign In' }}</span>
             <span class="submit-glow"></span>
           </button>
 
           <div class="divider">
-            <span>или</span>
+            <span>or</span>
           </div>
 
           <button class="google-auth" @click="LoginWithGoogle" :disabled="isLoading">
@@ -135,12 +135,12 @@
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
-            <span>{{ isLoading ? 'Загрузка...' : 'Продолжить с Google' }}</span>
+            <span>{{ isLoading ? 'Loading...' : 'Continue with Google' }}</span>
           </button>
 
           <p class="switch-text">
-            Нет аккаунта? 
-            <span class="switch-link" @click="switchAuth('register')">Зарегистрироваться</span>
+            Don't have an account? 
+            <span class="switch-link" @click="switchAuth('register')">Sign Up</span>
           </p>
         </div>
 
@@ -185,7 +185,7 @@ export default {
       isLoading: false,
       errorMessage: '',
       successMessage: '',
-      loadingMessage: 'Загрузка...',
+      loadingMessage: 'Loading...',
       user: { name: "", surname: "", email: "", password: "", confirmPassword: "" },
       Login: { email: "", password: "" },
     };
@@ -320,7 +320,7 @@ export default {
 
     async handleAuthStateChange(firebaseUser) {
       try {
-        this.loadingMessage = 'Настройка аккаунта...';
+        this.loadingMessage = 'Setting up account...';
         const token = await firebaseUser.getIdToken(true);
         const saveResult = await this.saveUserToBackend(firebaseUser, token);
 
@@ -349,41 +349,41 @@ export default {
           this.setUserData(fallbackUserData, firebaseUser.uid, token);
         } catch (fallbackError) {
           console.error('❌ Complete auth failure:', fallbackError);
-          this.showError('Ошибка входа в систему');
+          this.showError('Login system error');
         }
       }
     },
 
     async handleEmailLogin() {
       if (!this.Login.email || !this.Login.password) {
-        this.showError("Введите email и пароль");
+        this.showError("Please enter email and password");
         return;
       }
       this.isLoading = true;
       this.clearMessages();
-      this.loadingMessage = 'Вход в систему...';
+      this.loadingMessage = 'Signing in...';
       try {
         const result = await signInWithEmailAndPassword(auth, this.Login.email, this.Login.password);
-        this.loadingMessage = 'Настройка профиля...';
+        this.loadingMessage = 'Setting up profile...';
         await this.handleAuthStateChange(result.user);
-        this.showSuccess('Вход выполнен успешно!');
+        this.showSuccess('Successfully signed in!');
         setTimeout(() => {
           this.closeModal();
         }, 1000);
       } catch (error) {
-        let errorMsg = "Ошибка входа";
+        let errorMsg = "Login error";
         if (error.code === 'auth/user-not-found') {
-          errorMsg = "Пользователь не найден";
+          errorMsg = "User not found";
         } else if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-          errorMsg = "Неверный пароль или email";
+          errorMsg = "Invalid password or email";
         } else if (error.code === 'auth/invalid-email') {
-          errorMsg = "Неверный формат email";
+          errorMsg = "Invalid email format";
         } else if (error.code === 'auth/too-many-requests') {
-          errorMsg = "Слишком много попыток. Попробуйте позже";
+          errorMsg = "Too many attempts. Please try later";
         } else if (error.code === 'auth/user-disabled') {
-          errorMsg = "Аккаунт заблокирован";
+          errorMsg = "Account disabled";
         } else if (error.code === 'auth/network-request-failed') {
-          errorMsg = "Проблема с интернет-соединением";
+          errorMsg = "Internet connection problem";
         }
         this.showError(errorMsg);
       } finally {
@@ -395,25 +395,25 @@ export default {
       if (this.isLoading) return;
       this.isLoading = true;
       this.clearMessages();
-      this.loadingMessage = 'Подключение к Google...';
+      this.loadingMessage = 'Connecting to Google...';
       try {
         const provider = new GoogleAuthProvider();
         const result = await signInWithPopup(auth, provider);
-        this.loadingMessage = 'Настройка профиля...';
+        this.loadingMessage = 'Setting up profile...';
         await this.handleAuthStateChange(result.user);
-        this.showSuccess('Вход через Google выполнен успешно!');
+        this.showSuccess('Successfully signed in with Google!');
         setTimeout(() => {
           this.closeModal();
           this.$router.push("/profile");
         }, 1000);
       } catch (error) {
-        let errorMsg = "Ошибка входа через Google";
+        let errorMsg = "Google sign-in error";
         if (error.code === 'auth/popup-closed-by-user') {
-          errorMsg = "Окно входа было закрыто";
+          errorMsg = "Sign-in window was closed";
         } else if (error.code === 'auth/popup-blocked') {
-          errorMsg = "Всплывающее окно заблокировано";
+          errorMsg = "Popup window blocked";
         } else if (error.code === 'auth/network-request-failed') {
-          errorMsg = "Проблема с интернет-соединением";
+          errorMsg = "Internet connection problem";
         }
         this.showError(errorMsg);
       } finally {
@@ -423,24 +423,24 @@ export default {
 
     async register() {
       if (!this.user.name || !this.user.email || !this.user.password) {
-        this.showError("Заполните все обязательные поля");
+        this.showError("Please fill all required fields");
         return;
       }
       if (this.user.password !== this.user.confirmPassword) {
-        this.showError("Пароли не совпадают");
+        this.showError("Passwords don't match");
         return;
       }
       if (this.user.password.length < 6) {
-        this.showError("Пароль должен содержать минимум 6 символов");
+        this.showError("Password must be at least 6 characters");
         return;
       }
       this.isLoading = true;
       this.clearMessages();
-      this.loadingMessage = 'Создание аккаунта...';
+      this.loadingMessage = 'Creating account...';
       try {
         const result = await createUserWithEmailAndPassword(auth, this.user.email, this.user.password);
         const firebaseUser = result.user;
-        this.loadingMessage = 'Настройка профиля...';
+        this.loadingMessage = 'Setting up profile...';
         const registrationData = {
           name: this.user.name,
           surname: this.user.surname,
@@ -456,20 +456,20 @@ export default {
           ...saveResult.user
         };
         this.setUserData(userData, firebaseUser.uid, token);
-        this.showSuccess("Вы успешно зарегистрированы!");
+        this.showSuccess("Registration successful!");
         setTimeout(() => {
           this.closeModal();
         }, 1500);
       } catch (error) {
-        let errorMsg = "Ошибка регистрации";
+        let errorMsg = "Registration error";
         if (error.code === 'auth/email-already-in-use') {
-          errorMsg = "Email уже используется";
+          errorMsg = "Email already in use";
         } else if (error.code === 'auth/invalid-email') {
-          errorMsg = "Неверный формат email";
+          errorMsg = "Invalid email format";
         } else if (error.code === 'auth/weak-password') {
-          errorMsg = "Слишком слабый пароль";
+          errorMsg = "Password too weak";
         } else if (error.code === 'auth/network-request-failed') {
-          errorMsg = "Проблема с интернет-соединением";
+          errorMsg = "Internet connection problem";
         }
         this.showError(errorMsg);
       } finally {
