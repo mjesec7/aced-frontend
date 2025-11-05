@@ -9,10 +9,10 @@
               <polyline points="9 11 12 14 22 4"/>
               <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
             </svg>
-            Тесты и проверки
+            Tests and Assessments
           </div>
-          <h1 class="hero-title">Проверьте свои знания</h1>
-          <p class="hero-subtitle">{{ filteredTests.length }} тестов доступно</p>
+          <h1 class="hero-title">Test Your Knowledge</h1>
+          <p class="hero-subtitle">{{ filteredTests.length }} tests available</p>
         </div>
       </div>
     </header>
@@ -28,7 +28,7 @@
           </div>
           <div class="stat-info">
             <span class="stat-value">{{ tests.length }}</span>
-            <span class="stat-label">Всего тестов</span>
+            <span class="stat-label">Total Tests</span>
           </div>
         </div>
         <div class="stat-card">
@@ -39,7 +39,7 @@
           </div>
           <div class="stat-info">
             <span class="stat-value">{{ uniqueSubjects.length }}</span>
-            <span class="stat-label">Предметов</span>
+            <span class="stat-label">Subjects</span>
           </div>
         </div>
         <div class="stat-card">
@@ -50,7 +50,7 @@
           </div>
           <div class="stat-info">
             <span class="stat-value">{{ uniqueLevels.length }}</span>
-            <span class="stat-label">Уровней</span>
+            <span class="stat-label">Levels</span>
           </div>
         </div>
       </div>
@@ -67,7 +67,7 @@
             v-model="searchQuery"
             type="text"
             class="search-input"
-            placeholder="Поиск тестов..."
+            placeholder="Search tests..."
           />
           <button v-if="searchQuery" @click="searchQuery = ''" class="clear-btn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -79,9 +79,9 @@
 
         <div class="filters-pills">
           <div class="filter-pill">
-            <label>Предмет</label>
+            <label>Subject</label>
             <select v-model="selectedSubject">
-              <option value="">Все</option>
+              <option value="">All</option>
               <option v-for="subject in uniqueSubjects" :key="subject" :value="subject">
                 {{ subject }}
               </option>
@@ -89,11 +89,11 @@
           </div>
 
           <div class="filter-pill">
-            <label>Уровень</label>
+            <label>Level</label>
             <select v-model="selectedLevel">
-              <option value="">Все</option>
+              <option value="">All</option>
               <option v-for="level in uniqueLevels" :key="level" :value="level">
-                Уровень {{ level }}
+                Level {{ level }}
               </option>
             </select>
           </div>
@@ -103,7 +103,7 @@
               <polyline points="1 4 1 10 7 10"/>
               <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
             </svg>
-            Сбросить
+            Reset
           </button>
         </div>
       </div>
@@ -115,7 +115,7 @@
         <div class="loader-ring"></div>
         <div class="loader-ring"></div>
       </div>
-      <p>Загружаем тесты...</p>
+      <p>Loading tests...</p>
     </div>
 
     <main v-else-if="!activeTest" class="main-section">
@@ -126,8 +126,8 @@
             <polyline points="14 2 14 8 20 8"/>
           </svg>
         </div>
-        <h3>Тестов пока нет</h3>
-        <p>Тесты появятся здесь, когда они будут добавлены</p>
+        <h3>No Tests Yet</h3>
+        <p>Tests will appear here when they are added</p>
       </div>
 
       <div v-else-if="filteredTests.length === 0 && tests.length > 0" class="empty-container">
@@ -137,9 +137,9 @@
             <path d="m21 21-4.35-4.35"/>
           </svg>
         </div>
-        <h3>Ничего не найдено</h3>
-        <p>Попробуйте изменить параметры поиска</p>
-        <button @click="clearFilters" class="retry-btn">Очистить фильтры</button>
+        <h3>Nothing Found</h3>
+        <p>Try changing your search parameters</p>
+        <button @click="clearFilters" class="retry-btn">Clear Filters</button>
       </div>
 
       <div v-else class="tests-container">
@@ -152,10 +152,10 @@
           >
             <div class="card-header">
               <span class="test-badge questions">
-                {{ test.questions?.length || 0 }} вопросов
+                {{ test.questions?.length || 0 }} questions
               </span>
               <span v-if="test.duration" class="test-badge duration">
-                {{ test.duration }}м
+                {{ test.duration }}m
               </span>
             </div>
 
@@ -169,20 +169,20 @@
                     <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
                     <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
                   </svg>
-                  {{ test.subject || 'Общий' }}
+                  {{ test.subject || 'General' }}
                 </span>
                 <span class="meta-item level" :class="getLevelClass(test.level || 1)">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
                   </svg>
-                  Уровень {{ test.level || 1 }}
+                  Level {{ test.level || 1 }}
                 </span>
               </div>
             </div>
 
             <div class="card-footer">
               <button class="test-btn">
-                <span>Начать тест</span>
+                <span>Start Test</span>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <line x1="5" y1="12" x2="19" y2="12"/>
                   <polyline points="12 5 19 12 12 19"/>
@@ -204,7 +204,7 @@
             ></div>
           </div>
           <div class="progress-label">
-            Вопрос {{ currentQuestionIndex + 1 }} из {{ activeTest.questions.length }}
+            Question {{ currentQuestionIndex + 1 }} of {{ activeTest.questions.length }}
           </div>
         </div>
 
@@ -242,7 +242,7 @@
             <textarea
               v-model="userAnswers[currentQuestionIndex]"
               class="text-answer-input"
-              placeholder="Введите ваш ответ..."
+              placeholder="Enter your answer..."
               rows="4"
             ></textarea>
           </div>
@@ -253,8 +253,8 @@
               @click="handleNextQuestion"
               :disabled="!userAnswers[currentQuestionIndex] || userAnswers[currentQuestionIndex].trim() === ''"
             >
-              <span v-if="isLastQuestion">Завершить тест</span>
-              <span v-else>Следующий вопрос</span>
+              <span v-if="isLastQuestion">Finish Test</span>
+              <span v-else>Next Question</span>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="5" y1="12" x2="19" y2="12"/>
                 <polyline points="12 5 19 12 12 19"/>
@@ -275,7 +275,7 @@
             </svg>
           </div>
           
-          <h2 class="results-title">Тест завершен!</h2>
+          <h2 class="results-title">Test Completed!</h2>
           
           <div class="results-stats">
             <div class="stat-circle-card">
@@ -305,7 +305,7 @@
                   <div class="score-value">{{ score }}%</div>
                 </div>
               </div>
-              <div class="score-label">Ваш результат</div>
+              <div class="score-label">Your Score</div>
               <div class="score-description" :class="getScoreClass(score)">
                 {{ getScoreDescription(score) }}
               </div>
@@ -320,7 +320,7 @@
                 </div>
                 <div class="summary-content">
                   <div class="summary-value">{{ correctCount }}</div>
-                  <div class="summary-label">Правильных</div>
+                  <div class="summary-label">Correct</div>
                 </div>
               </div>
               
@@ -333,7 +333,7 @@
                 </div>
                 <div class="summary-content">
                   <div class="summary-value">{{ activeTest.questions.length }}</div>
-                  <div class="summary-label">Всего вопросов</div>
+                  <div class="summary-label">Total Questions</div>
                 </div>
               </div>
             </div>
@@ -344,7 +344,7 @@
               <line x1="19" y1="12" x2="5" y2="12"/>
               <polyline points="12 19 5 12 12 5"/>
             </svg>
-            <span>Вернуться к тестам</span>
+            <span>Back to Tests</span>
           </button>
         </div>
       </div>
@@ -457,7 +457,7 @@ export default {
         const user = auth.currentUser;
         
         if (!user) {
-          throw new Error('Пользователь не авторизован');
+          throw new Error('User not authenticated');
         }
 
         const token = await user.getIdToken();
@@ -569,7 +569,7 @@ export default {
         const fullTest = await loadTestWithTimeout();
         
         if (!fullTest?.questions?.length) {
-          throw new Error('Тест не содержит вопросов');
+          throw new Error('Test contains no questions');
         }
 
         // Process test data
@@ -589,7 +589,7 @@ export default {
 
       } catch (err) {
         console.error('Error loading test:', err);
-        error.value = err.message || 'Не удалось загрузить тест';
+        error.value = err.message || 'Failed to load test';
         
         // Reset state on error
         activeTest.value = null;
@@ -697,10 +697,10 @@ export default {
     };
 
     const getScoreDescription = (score) => {
-      if (score >= 90) return 'Отлично!';
-      if (score >= 70) return 'Хорошо!';
-      if (score >= 50) return 'Удовлетворительно';
-      return 'Нужно подтянуть знания';
+      if (score >= 90) return 'Excellent!';
+      if (score >= 70) return 'Good!';
+      if (score >= 50) return 'Satisfactory';
+      return 'Need to improve';
     };
     
     // Add retry mechanism
@@ -709,7 +709,7 @@ export default {
       if (retryCount.value <= 3) {
         await loadTests();
       } else {
-        error.value = 'Не удалось загрузить тесты после нескольких попыток';
+        error.value = 'Failed to load tests after multiple attempts';
       }
     };
     
@@ -727,7 +727,7 @@ export default {
         await loadTests();
       } catch (err) {
         console.error('Mount error:', err);
-        error.value = 'Ошибка при загрузке страницы';
+        error.value = 'Error loading page';
       }
     });
 

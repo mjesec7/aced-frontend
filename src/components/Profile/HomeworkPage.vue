@@ -7,7 +7,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="15 18 9 12 15 6"/>
           </svg>
-          Назад
+          Back
         </router-link>
         <div class="header-info">
           <h1 class="page-title">{{ homeworkTitle }}</h1>
@@ -32,7 +32,7 @@
     <!-- Loading State -->
     <div v-if="loading" class="loading-state">
       <div class="spinner"></div>
-      <p>Загрузка задания...</p>
+      <p>Loading assignment...</p>
     </div>
 
     <!-- Error State -->
@@ -50,10 +50,10 @@
             <polyline points="23 4 23 10 17 10"/>
             <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
           </svg>
-          Попробовать снова
+          Try Again
         </button>
         <router-link to="/profile/homeworks" class="action-button primary">
-          Вернуться к списку
+          Back to List
         </router-link>
       </div>
     </div>
@@ -67,10 +67,10 @@
         <line x1="16" y1="17" x2="8" y2="17"/>
         <polyline points="10 9 9 9 8 9"/>
       </svg>
-      <h3>В этом задании нет вопросов</h3>
-      <p>Обратитесь к преподавателю для получения дополнительной информации</p>
+      <h3>No questions in this assignment</h3>
+      <p>Contact your teacher for more information</p>
       <router-link to="/profile/homeworks" class="action-button primary">
-        Вернуться к списку
+        Back to List
       </router-link>
     </div>
 
@@ -85,7 +85,7 @@
             <line x1="16" y1="13" x2="8" y2="13"/>
             <line x1="16" y1="17" x2="8" y2="17"/>
           </svg>
-          <h3>Инструкции</h3>
+          <h3>Instructions</h3>
         </div>
         <p class="instructions-text">{{ instructions }}</p>
       </div>
@@ -100,8 +100,8 @@
             </svg>
           </div>
           <div class="stat-content">
-            <div class="stat-label">Тип задания</div>
-            <div class="stat-value">{{ isStandalone ? 'Отдельное' : 'Урок' }}</div>
+            <div class="stat-label">Assignment Type</div>
+            <div class="stat-value">{{ isStandalone ? 'Standalone' : 'Lesson' }}</div>
           </div>
         </div>
         <div class="stat-card">
@@ -113,7 +113,7 @@
             </svg>
           </div>
           <div class="stat-content">
-            <div class="stat-label">Всего вопросов</div>
+            <div class="stat-label">Total Questions</div>
             <div class="stat-value">{{ questions.length }}</div>
           </div>
         </div>
@@ -124,7 +124,7 @@
             </svg>
           </div>
           <div class="stat-content">
-            <div class="stat-label">Отвечено</div>
+            <div class="stat-label">Answered</div>
             <div class="stat-value">{{ answeredQuestions }}/{{ questions.length }}</div>
           </div>
         </div>
@@ -133,7 +133,7 @@
       <!-- Progress Bar -->
       <div class="progress-card">
         <div class="progress-header">
-          <span class="progress-label">Прогресс выполнения</span>
+          <span class="progress-label">Completion Progress</span>
           <span class="progress-percentage">{{ progressPercentage }}%</span>
         </div>
         <div class="progress-bar-container">
@@ -193,7 +193,7 @@
             <textarea
               v-model="userAnswers[i]"
               @input="onAnswerChange(i, userAnswers[i])"
-              :placeholder="'Введите ваш ответ на вопрос ' + (i + 1)"
+              :placeholder="'Enter your answer to question ' + (i + 1)"
               rows="4"
               class="answer-textarea"
             ></textarea>
@@ -201,8 +201,8 @@
               <svg v-if="userAnswers[i]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="20 6 9 17 4 12"/>
               </svg>
-              <span v-if="userAnswers[i]">Ответ добавлен</span>
-              <span v-else>Ожидает ответа</span>
+              <span v-if="userAnswers[i]">Answer added</span>
+              <span v-else>Awaiting answer</span>
             </div>
           </div>
         </div>
@@ -217,7 +217,7 @@
           >
             <span v-if="saving" class="button-content">
               <div class="button-spinner"></div>
-              Сохранение...
+              Saving...
             </span>
             <span v-else class="button-content">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -225,7 +225,7 @@
                 <polyline points="17 21 17 13 7 13 7 21"/>
                 <polyline points="7 3 7 8 15 8"/>
               </svg>
-              Сохранить черновик
+              Save Draft
             </span>
           </button>
           <button 
@@ -235,13 +235,13 @@
           >
             <span v-if="submitting" class="button-content">
               <div class="button-spinner"></div>
-              Отправка...
+              Submitting...
             </span>
             <span v-else class="button-content">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="20 6 9 17 4 12"/>
               </svg>
-              Завершить задание
+              Complete Assignment
             </span>
           </button>
         </div>
@@ -253,8 +253,8 @@
             <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
             <line x1="12" y1="17" x2="12.01" y2="17"/>
           </svg>
-          <span v-if="canSubmit">Все вопросы отвечены! Вы можете завершить задание.</span>
-          <span v-else>Ответьте на все вопросы, чтобы завершить задание.</span>
+          <span v-if="canSubmit">All questions answered! You can complete the assignment.</span>
+          <span v-else>Answer all questions to complete the assignment.</span>
         </div>
       </form>
     </div>
@@ -306,7 +306,7 @@ export default {
   data() {
     return {
       questions: [],
-      homeworkTitle: 'Домашнее задание',
+      homeworkTitle: 'Homework',
       homeworkSubject: '',
       instructions: '',
       userAnswers: [],
@@ -441,7 +441,7 @@ export default {
     },
 
     getQuestionText(q) {
-      return q.question || q.text || q.title || 'Вопрос не найден';
+      return q.question || q.text || q.title || 'Question not found';
     },
 
     getQuestionInstruction(q) {
@@ -464,7 +464,7 @@ export default {
 
     getOptionText(opt) {
       if (typeof opt === 'string') return opt;
-      return opt.text || opt.label || opt.value || 'Вариант';
+      return opt.text || opt.label || opt.value || 'Option';
     },
 
     getOptionValue(opt) {
@@ -511,14 +511,14 @@ export default {
         
         if (!primaryId) {
           console.error('❌ No homework or lesson ID available');
-          this.error = 'ID задания не найден';
-          this.errorDetails = 'Проверьте ссылку и попробуйте снова';
+          this.error = 'Assignment ID not found';
+          this.errorDetails = 'Check the link and try again';
           return;
         }
         
         const user = auth.currentUser;
         if (!user) {
-          throw new Error('Пользователь не авторизован');
+          throw new Error('User not authenticated');
         }
         
         const userId = user.uid;
@@ -540,7 +540,7 @@ export default {
               if (homeworkData && (homeworkData.exercises || homeworkData.title)) {
                 this.isStandalone = true;
                 this.detectedHomeworkType = 'standalone';
-                this.homeworkTitle = homeworkData.title || this.title || 'Домашнее задание';
+                this.homeworkTitle = homeworkData.title || this.title || 'Homework';
                 this.homeworkSubject = homeworkData.subject || this.subject || '';
                 this.instructions = homeworkData.instructions || '';
                 this.questions = homeworkData.exercises || [];
@@ -558,7 +558,7 @@ export default {
             console.warn('⚠️ Standalone homework approach failed:', homeworkError.message);
             
             if (homeworkError.response?.status !== 404 && homeworkError.response?.status >= 500) {
-              this.error = 'Ошибка сервера при загрузке задания';
+              this.error = 'Server error loading assignment';
               this.errorDetails = homeworkError.message;
               return;
             }
@@ -577,14 +577,14 @@ export default {
             
             if (!questions || !Array.isArray(questions) || questions.length === 0) {
               console.warn('⚠️ No homework questions found in lesson');
-              this.error = 'В этом уроке нет домашнего задания';
-              this.errorDetails = 'Возможно, задание еще не было создано';
+              this.error = 'No homework in this lesson';
+              this.errorDetails = 'The assignment may not have been created yet';
               return;
             }
             
             this.isStandalone = false;
             this.detectedHomeworkType = 'lesson';
-            this.homeworkTitle = lessonInfo?.name || `Домашнее задание: ${this.title || 'Урок'}`;
+            this.homeworkTitle = lessonInfo?.name || `Homework: ${this.title || 'Lesson'}`;
             this.homeworkSubject = lessonInfo?.subject || this.subject || '';
             this.instructions = lessonInfo?.instructions || '';
             this.questions = questions;
@@ -603,27 +603,27 @@ export default {
           
           if (lessonError.response?.status === 404) {
             if (suggestedType === 'standalone') {
-              this.error = 'Домашнее задание не найдено';
-              this.errorDetails = 'Возможно, оно было удалено или еще не создано';
+              this.error = 'Homework not found';
+              this.errorDetails = 'It may have been deleted or not yet created';
             } else {
-              this.error = 'Урок или домашнее задание не найдено';
-              this.errorDetails = 'Проверьте правильность ссылки';
+              this.error = 'Lesson or homework not found';
+              this.errorDetails = 'Check that the link is correct';
             }
           } else if (lessonError.response?.status >= 500) {
-            this.error = 'Ошибка сервера при загрузке урока';
-            this.errorDetails = 'Попробуйте обновить страницу через несколько минут';
+            this.error = 'Server error loading lesson';
+            this.errorDetails = 'Try refreshing the page in a few minutes';
           } else {
-            this.error = 'Ошибка загрузки домашнего задания';
-            this.errorDetails = lessonError.message || 'Неизвестная ошибка';
+            this.error = 'Error loading homework';
+            this.errorDetails = lessonError.message || 'Unknown error';
           }
         }
 
       } catch (err) {
         console.error('❌ General error loading homework:', err);
-        this.error = 'Ошибка загрузки домашнего задания';
-        this.errorDetails = err.message || 'Попробуйте обновить страницу';
+        this.error = 'Error loading homework';
+        this.errorDetails = err.message || 'Try refreshing the page';
         
-        this.$toast?.error('Ошибка загрузки домашнего задания');
+        this.$toast?.error('Error loading homework');
       } finally {
         this.loading = false;
       }
@@ -657,7 +657,7 @@ export default {
         this.saving = true;
         
         const user = auth.currentUser;
-        if (!user) throw new Error('Пользователь не авторизован');
+        if (!user) throw new Error('User not authenticated');
         
         const userId = user.uid;
 
@@ -683,7 +683,7 @@ export default {
         }
 
         if (!silent) {
-          this.$toast?.success('Ответы сохранены!');
+          this.$toast?.success('Answers saved!');
         }
         
         console.log('✅ Homework saved successfully');
@@ -692,7 +692,7 @@ export default {
         console.error('❌ Error saving homework:', err);
         
         if (!silent) {
-          let errorMessage = 'Не удалось сохранить ответы';
+          let errorMessage = 'Failed to save answers';
           
           if (err.response?.data?.error) {
             errorMessage = err.response.data.error;
@@ -717,12 +717,12 @@ export default {
         
         const unansweredQuestions = this.userAnswers.filter(ans => !ans || ans.toString().trim() === '');
         if (unansweredQuestions.length > 0) {
-          this.$toast?.warning(`Пожалуйста, ответьте на все вопросы. Осталось: ${unansweredQuestions.length}`);
+          this.$toast?.warning(`Please answer all questions. Remaining: ${unansweredQuestions.length}`);
           return;
         }
 
         const user = auth.currentUser;
-        if (!user) throw new Error('Пользователь не авторизован');
+        if (!user) throw new Error('User not authenticated');
         
         const userId = user.uid;
 
@@ -755,15 +755,15 @@ export default {
         const correctAnswers = responseData?.correctAnswers || 0;
         const totalQuestions = responseData?.totalQuestions || this.questions.length;
         
-        let successMessage = `🎉 Домашнее задание завершено!\n`;
-        successMessage += `📊 Ваша оценка: ${score}%`;
+        let successMessage = `🎉 Homework completed!\n`;
+        successMessage += `📊 Your score: ${score}%`;
         
         if (stars > 0) {
-          successMessage += `\n⭐ Звёзды: ${'⭐'.repeat(stars)}`;
+          successMessage += `\n⭐ Stars: ${'⭐'.repeat(stars)}`;
         }
         
         if (correctAnswers > 0) {
-          successMessage += `\n✅ Правильных ответов: ${correctAnswers}/${totalQuestions}`;
+          successMessage += `\n✅ Correct answers: ${correctAnswers}/${totalQuestions}`;
         }
         
         this.$toast?.success(successMessage);
@@ -775,18 +775,18 @@ export default {
       } catch (err) {
         console.error('❌ Error submitting homework:', err);
         
-        let errorMessage = 'Ошибка отправки ответов';
+        let errorMessage = 'Error submitting answers';
         
         if (err.response?.status === 404) {
-          errorMessage = 'Задание не найдено. Возможно, оно было удалено.';
+          errorMessage = 'Assignment not found. It may have been deleted.';
         } else if (err.response?.status === 403) {
-          errorMessage = 'Доступ запрещен. Проверьте права доступа.';
+          errorMessage = 'Access denied. Check your permissions.';
         } else if (err.response?.status === 400) {
-          errorMessage = 'Некорректные данные. Проверьте ответы.';
+          errorMessage = 'Invalid data. Check your answers.';
         } else if (err.response?.status >= 500) {
-          errorMessage = 'Ошибка сервера. Попробуйте позже.';
+          errorMessage = 'Server error. Try again later.';
         } else if (err.response?.data?.details) {
-          errorMessage = `Ошибка: ${err.response.data.details}`;
+          errorMessage = `Error: ${err.response.data.details}`;
         } else if (err.response?.data?.error) {
           errorMessage = err.response.data.error;
         } else if (err.message) {
@@ -806,9 +806,8 @@ export default {
     },
 
     getPointsText(points) {
-      if (points === 1) return 'балл';
-      if (points >= 2 && points <= 4) return 'балла';
-      return 'баллов';
+      if (points === 1) return 'point';
+      return 'points';
     }
   },
   
@@ -832,8 +831,8 @@ export default {
     } else {
       console.error('❌ No homework or lesson ID available on mount');
       this.loading = false;
-      this.error = 'ID задания не найден';
-      this.errorDetails = 'Проверьте правильность ссылки';
+      this.error = 'Assignment ID not found';
+      this.errorDetails = 'Check that the link is correct';
     }
   },
 
@@ -864,6 +863,7 @@ export default {
 </script>
 
 <style scoped>
+/* Same styles as original - no translation needed for CSS */
 /* GENERAL STYLES */
 .homework-page {
   min-height: 100vh;

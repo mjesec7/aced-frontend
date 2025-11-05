@@ -3,7 +3,7 @@
     <div class="dashboard-header">
       <div class="header-content">
         <div class="welcome-section">
-          <h1 class="main-title">Панель управления</h1>
+          <h1 class="main-title">Dashboard</h1>
           <p class="date-text">{{ currentDate }}</p>
         </div>
         <div class="header-stats">
@@ -12,8 +12,8 @@
               <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
             </svg>
             <div class="stat-info">
-              <div class="stat-label">Серия</div>
-              <div class="stat-value">{{ userStreak }} дн.</div>
+              <div class="stat-label">Streak</div>
+              <div class="stat-value">{{ userStreak }} days</div>
             </div>
           </div>
           <div class="stat-badge points">
@@ -21,7 +21,7 @@
               <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
             </svg>
             <div class="stat-info">
-              <div class="stat-label">Баллы</div>
+              <div class="stat-label">Points</div>
               <div class="stat-value">{{ totalPoints }}</div>
             </div>
           </div>
@@ -41,7 +41,7 @@
             </div>
             <div class="stat-data">
               <div class="stat-number">{{ studyList.length }}</div>
-              <div class="stat-text">Всего курсов</div>
+              <div class="stat-text">Total Courses</div>
             </div>
           </div>
 
@@ -53,7 +53,7 @@
             </div>
             <div class="stat-data">
               <div class="stat-number">{{ completedCourses }}</div>
-              <div class="stat-text">Завершено</div>
+              <div class="stat-text">Completed</div>
             </div>
           </div>
 
@@ -66,7 +66,7 @@
             </div>
             <div class="stat-data">
               <div class="stat-number">{{ totalHoursStudied }}</div>
-              <div class="stat-text">Часов изучено</div>
+              <div class="stat-text">Hours Studied</div>
             </div>
           </div>
 
@@ -79,7 +79,7 @@
             </div>
             <div class="stat-data">
               <div class="stat-number">{{ weekProgress }}%</div>
-              <div class="stat-text">Недельный прогресс</div>
+              <div class="stat-text">Weekly Progress</div>
             </div>
           </div>
         </div>
@@ -95,12 +95,12 @@
                 </svg>
               </div>
               <div>
-                <h2 class="section-title">Активные курсы</h2>
-                <p class="section-subtitle">{{ inProgressCourses }} в процессе изучения</p>
+                <h2 class="section-title">Active Courses</h2>
+                <p class="section-subtitle">{{ inProgressCourses }} in progress</p>
               </div>
             </div>
             <router-link to="/profile/my-courses" class="view-all-link">
-              Все курсы
+              All Courses
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="9 18 15 12 9 6"/>
               </svg>
@@ -109,7 +109,7 @@
 
           <div v-if="loadingStudyList" class="loading-state">
             <div class="spinner"></div>
-            <p>Загрузка курсов...</p>
+            <p>Loading courses...</p>
           </div>
 
           <div v-else-if="filteredStudyList.length === 0" class="empty-state">
@@ -117,9 +117,9 @@
               <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
               <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
             </svg>
-            <p class="empty-text">У вас пока нет активных курсов</p>
+            <p class="empty-text">You don't have any active courses yet</p>
             <router-link to="/profile/catalogue" class="add-course-btn">
-              Добавить курс
+              Add Course
             </router-link>
           </div>
 
@@ -144,7 +144,7 @@
                         <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
                         <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
                       </svg>
-                      Уровень {{ course.level || 1 }}
+                      Level {{ course.level || 1 }}
                     </span>
                     <span class="meta-item">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -174,7 +174,7 @@
               <div class="course-progress-section">
                 <div class="progress-header">
                   <span class="next-lesson">
-                    Следующий урок: {{ getNextLesson(course) }}
+                    Next lesson: {{ getNextLesson(course) }}
                   </span>
                   <span class="lessons-count">
                     {{ course.progress?.completedLessons || 0 }}/{{ course.lessons?.length || 0 }}
@@ -191,10 +191,10 @@
 
               <div class="course-footer">
                 <span class="progress-percent">
-                  {{ course.progress?.percent || 0 }}% завершено
+                  {{ course.progress?.percent || 0 }}% complete
                 </span>
                 <button class="continue-btn" @click.stop="startCourse(course)">
-                  Продолжить
+                  Continue
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="9 18 15 12 9 6"/>
                   </svg>
@@ -209,7 +209,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
             </svg>
-            Быстрый доступ
+            Quick Access
           </h2>
           <div class="quick-actions-grid">
             <router-link
@@ -242,8 +242,8 @@
               </svg>
             </div>
             <div>
-              <h3 class="section-title small">Цели недели</h3>
-              <p class="section-subtitle">{{ completedGoals }}/{{ weeklyGoals.length }} завершено</p>
+              <h3 class="section-title small">Weekly Goals</h3>
+              <p class="section-subtitle">{{ completedGoals }}/{{ weeklyGoals.length }} completed</p>
             </div>
           </div>
           <div class="goals-list">
@@ -269,10 +269,10 @@
                 <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
               </svg>
             </div>
-            <h3 class="section-title small">Последняя активность</h3>
+            <h3 class="section-title small">Recent Activity</h3>
           </div>
           <div v-if="recentActivity.length === 0" class="empty-activity">
-            <p>Нет недавней активности</p>
+            <p>No recent activity</p>
           </div>
           <div v-else class="activity-list">
             <div 
@@ -297,12 +297,12 @@
               <path d="M21.21 15.89A10 10 0 1 1 8 2.83"/>
               <path d="M22 12A10 10 0 0 0 12 2v10z"/>
             </svg>
-            <h3 class="insights-title">Статистика обучения</h3>
+            <h3 class="insights-title">Learning Statistics</h3>
           </div>
           <div class="insights-content">
             <div class="insight-item">
               <div class="insight-header">
-                <span class="insight-label">Прогресс за неделю</span>
+                <span class="insight-label">Weekly Progress</span>
                 <span class="insight-value">{{ weekProgress }}%</span>
               </div>
               <div class="progress-bar-container">
@@ -314,7 +314,7 @@
             </div>
             <div class="insight-divider"></div>
             <div class="insight-stat">
-              <div class="insight-stat-label">Средняя оценка тестов</div>
+              <div class="insight-stat-label">Average Test Score</div>
               <div class="insight-stat-value">{{ averageTestScore }}%</div>
             </div>
           </div>
@@ -362,7 +362,7 @@ export default {
   data() {
     return {
       userId: null,
-      lang: localStorage.getItem('lang') || 'ru',
+      lang: localStorage.getItem('lang') || 'en',
       
       studyList: [],
       userProgress: [],
@@ -376,8 +376,8 @@ export default {
       quickActions: [
         { 
           id: 1, 
-          title: 'Каталог курсов', 
-          description: 'Обзор всех доступных курсов',
+          title: 'Course Catalog', 
+          description: 'Browse all available courses',
           icon: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>', 
           path: '/profile/catalogue', 
           color: 'purple',
@@ -385,8 +385,8 @@ export default {
         },
         { 
           id: 2, 
-          title: 'Аналитика', 
-          description: 'Детальная статистика обучения',
+          title: 'Analytics', 
+          description: 'Detailed learning statistics',
           icon: '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>', 
           path: '/profile/analytics', 
           color: 'blue',
@@ -394,8 +394,8 @@ export default {
         },
         { 
           id: 3, 
-          title: 'Домашние задания', 
-          description: 'Практические задачи и упражнения',
+          title: 'Homework', 
+          description: 'Practice problems and exercises',
           icon: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>', 
           path: '/profile/homeworks', 
           color: 'green',
@@ -403,8 +403,8 @@ export default {
         },
         { 
           id: 4, 
-          title: 'Тесты и проверки', 
-          description: 'Проверьте свои знания',
+          title: 'Tests & Quizzes', 
+          description: 'Test your knowledge',
           icon: '<polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>', 
           path: '/profile/tests', 
           color: 'orange',
@@ -412,8 +412,8 @@ export default {
         },
         { 
           id: 5, 
-          title: 'Мои цели', 
-          description: 'Отслеживайте свой прогресс',
+          title: 'My Goals', 
+          description: 'Track your progress',
           icon: '<circle cx="12" cy="12" r="10"/><path d="M22 12h-4l-3 9L9 3l-3 9H2"/>', 
           path: '/profile/goal', 
           color: 'pink',
@@ -421,8 +421,8 @@ export default {
         },
         { 
           id: 6, 
-          title: 'Словарь', 
-          description: 'Изученные термины и понятия',
+          title: 'Vocabulary', 
+          description: 'Learned terms and concepts',
           icon: '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>', 
           path: '/profile/vocabulary', 
           color: 'indigo',
@@ -431,9 +431,9 @@ export default {
       ],
       
       weeklyGoals: [
-        { id: 1, title: 'Завершить 5 уроков', current: 0, target: 5, progress: 0 },
-        { id: 2, title: 'Изучать 2 часа', current: 0, target: 2, progress: 0 },
-        { id: 3, title: 'Решить 3 теста', current: 0, target: 3, progress: 0 }
+        { id: 1, title: 'Complete 5 lessons', current: 0, target: 5, progress: 0 },
+        { id: 2, title: 'Study 2 hours', current: 0, target: 2, progress: 0 },
+        { id: 3, title: 'Pass 3 tests', current: 0, target: 3, progress: 0 }
       ],
       
       recentActivity: []
@@ -560,7 +560,7 @@ export default {
     
     updateCurrentDate() {
       const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-      this.currentDate = new Date().toLocaleDateString('ru-RU', options);
+      this.currentDate = new Date().toLocaleDateString('en-US', options);
     },
     
     async loadData() {
@@ -676,7 +676,7 @@ export default {
         if (p.testScore != null) {
           return {
             id: `test-${p._id}`,
-            title: `Результат теста: ${p.testScore}%`,
+            title: `Test result: ${p.testScore}%`,
             time: this.getTimeAgo(p.completedAt),
             iconPath: '<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>',
             color: 'blue'
@@ -685,7 +685,7 @@ export default {
         if (p.completed) {
           return {
             id: `lesson-${p._id}`,
-            title: `Завершен урок: ${p.lessonId?.lessonName || 'Урок'}`,
+            title: `Completed lesson: ${p.lessonId?.lessonName || 'Lesson'}`,
             time: this.getTimeAgo(p.completedAt),
             iconPath: '<polyline points="20 6 9 17 4 12"/>',
             color: 'green'
@@ -713,21 +713,21 @@ export default {
     },
 
     getTimeAgo(date) {
-      if (!date) return 'недавно';
+      if (!date) return 'recently';
       const diff = new Date() - new Date(date);
       const minutes = Math.floor(diff / 60000);
       const hours = Math.floor(minutes / 60);
       const days = Math.floor(hours / 24);
       
-      if (minutes < 1) return 'только что';
-      if (hours < 1) return `${minutes} ${this.pluralize(minutes, 'минуту', 'минуты', 'минут')} назад`;
-      if (days < 1) return `${hours} ${this.pluralize(hours, 'час', 'часа', 'часов')} назад`;
-      if (days < 7) return `${days} ${this.pluralize(days, 'день', 'дня', 'дней')} назад`;
-      return 'более недели назад';
+      if (minutes < 1) return 'just now';
+      if (hours < 1) return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`;
+      if (days < 1) return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`;
+      if (days < 7) return `${days} ${days === 1 ? 'day' : 'days'} ago`;
+      return 'over a week ago';
     },
     
     getCourseName(course) {
-      return course.name || course.topicName || course.topic || course.title || 'Курс без названия';
+      return course.name || course.topicName || course.topic || course.title || 'Untitled Course';
     },
     
     getTypeClass(course) {
@@ -740,13 +740,13 @@ export default {
     },
     
     formatTime(minutes) {
-      if (!minutes) return '0 ч';
+      if (!minutes) return '0 h';
       const hours = Math.floor(minutes / 60);
       const mins = minutes % 60;
       if (hours > 0) {
-        return `${hours} ч ${mins > 0 ? `${mins} м` : ''}`.trim();
+        return `${hours} h ${mins > 0 ? `${mins} m` : ''}`.trim();
       }
-      return `${mins} м`;
+      return `${mins} m`;
     },
     
     getLastAccessed(course) {
@@ -754,11 +754,11 @@ export default {
     },
     
     getNextLesson(course) {
-      if (!course.lessons?.length) return 'Нет уроков';
+      if (!course.lessons?.length) return 'No lessons';
       const completed = course.progress?.completedLessons || 0;
-      if (completed >= course.lessons.length) return 'Все завершены';
+      if (completed >= course.lessons.length) return 'All completed';
       const nextLesson = course.lessons[completed];
-      return nextLesson?.lessonName || nextLesson?.title || `Урок ${completed + 1}`;
+      return nextLesson?.lessonName || nextLesson?.title || `Lesson ${completed + 1}`;
     },
     
     getProgressColorClass(percent) {
@@ -813,6 +813,7 @@ export default {
 </script>
 
 <style scoped>
+/* Same CSS as original - no translation needed */
 /* GENERAL STYLES */
 .professional-dashboard {
   min-height: 100vh;

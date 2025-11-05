@@ -73,8 +73,8 @@
                 </svg>
               </div>
               <div class="unlock-text">
-                <h5>{{ currentUserStatus === 'free' ? 'Разблокировать Премиум' : 'Разблокировать Pro' }}</h5>
-                <p>{{ currentUserStatus === 'free' ? 'Получите все функции и возможности' : 'Перейдите на Pro план' }}</p>
+                <h5>{{ currentUserStatus === 'free' ? 'Unlock Premium' : 'Unlock Pro' }}</h5>
+                <p>{{ currentUserStatus === 'free' ? 'Get all features and capabilities' : 'Upgrade to Pro plan' }}</p>
               </div>
               <button @click="goToUpgrade" class="unlock-arrow">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -94,11 +94,11 @@
                 <svg class="sparkle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M12 3v18M3 12h18M6.5 6.5l11 11M6.5 17.5l11-11"/>
                 </svg>
-                <h4>Разблокировать Премиум</h4>
+                <h4>Unlock Premium</h4>
               </div>
-              <p class="cta-text">Получите тесты, аналитику и многое другое! ✨</p>
+              <p class="cta-text">Get tests, analytics and much more! ✨</p>
               <button @click="goToUpgrade" class="cta-button">
-                Посмотреть планы
+                View Plans
               </button>
             </div>
           </div>
@@ -110,7 +110,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
             </svg>
-            Выйти
+            Log Out
           </button>
         </div>
       </div>
@@ -126,14 +126,14 @@
     <!-- Logout Modal -->
     <div v-if="showLogoutModal" class="modal-overlay" @click="showLogoutModal = false">
       <div class="modal-content logout-modal" @click.stop>
-        <h3 class="modal-title">Выход</h3>
-        <p class="modal-text">Вы уверены, что хотите выйти?</p>
+        <h3 class="modal-title">Log Out</h3>
+        <p class="modal-text">Are you sure you want to log out?</p>
         <div class="modal-actions">
           <button class="btn-secondary" @click="showLogoutModal = false">
-            Отмена
+            Cancel
           </button>
           <button class="btn-danger" @click="logout">
-            Выйти
+            Log Out
           </button>
         </div>
       </div>
@@ -150,35 +150,35 @@
                 <path d="M2 20h20M4 16V8l4 4 4-6 4 6 4-4v8M4 16h16"/>
               </svg>
             </div>
-            <h3 class="premium-title">Премиум функция</h3>
-            <p class="premium-subtitle">Доступно в тарифах Start и Pro</p>
+            <h3 class="premium-title">Premium Feature</h3>
+            <p class="premium-subtitle">Available in Start and Pro plans</p>
           </div>
         </div>
         <div class="premium-body">
           <div class="benefits-list">
             <div class="benefit-item">
               <span class="benefit-emoji">🎯</span>
-              <span class="benefit-text">Неограниченные тесты</span>
+              <span class="benefit-text">Unlimited tests</span>
             </div>
             <div class="benefit-item">
               <span class="benefit-emoji">📊</span>
-              <span class="benefit-text">Подробная аналитика</span>
+              <span class="benefit-text">Detailed analytics</span>
             </div>
             <div class="benefit-item">
               <span class="benefit-emoji">💡</span>
-              <span class="benefit-text">Помощь с домашними заданиями</span>
+              <span class="benefit-text">Homework help</span>
             </div>
             <div class="benefit-item">
               <span class="benefit-emoji">📖</span>
-              <span class="benefit-text">Личный словарь</span>
+              <span class="benefit-text">Personal vocabulary</span>
             </div>
           </div>
           <div class="modal-actions">
             <button class="btn-secondary" @click="showPremiumModal = false">
-              Может быть позже
+              Maybe Later
             </button>
             <button class="btn-premium" @click="goToUpgrade">
-              Улучшить сейчас ✨
+              Upgrade Now ✨
             </button>
           </div>
         </div>
@@ -244,42 +244,42 @@ export default {
       navigationLinks: [
         {
           name: 'main',
-          label: 'Главная',
+          label: 'Home',
           icon: 'HomeIcon',
-          description: 'Ваш прогресс и статистика',
+          description: 'Your progress and stats',
           path: '/profile/main',
           premium: false
         },
         {
           name: 'catalogue',
-          label: 'Мои курсы',
+          label: 'My Courses',
           icon: 'BookOpenIcon',
-          description: 'Все доступные уроки',
+          description: 'All available lessons',
           path: '/profile/catalogue',
           premium: false
         },
         {
           name: 'homeworks',
-          label: 'Задания',
+          label: 'Assignments',
           icon: 'FileTextIcon',
-          description: 'Практика и домашние работы',
+          description: 'Practice and homework',
           path: '/profile/homeworks',
           premium: false
         },
         {
           name: 'tests',
-          label: 'Тесты',
+          label: 'Tests',
           icon: 'ClipboardCheckIcon',
-          description: 'Проверка знаний',
+          description: 'Knowledge assessment',
           path: '/profile/tests',
           premium: true,
           requiredPlans: ['start', 'pro']
         },
         {
           name: 'settings',
-          label: 'Настройки',
+          label: 'Settings',
           icon: 'SettingsIcon',
-          description: 'Профиль и подписка',
+          description: 'Profile and subscription',
           path: '/settings',
           premium: false
         }
@@ -309,11 +309,11 @@ export default {
     },
     
     userDisplayName() {
-      if (!this.user) return 'Пользователь';
+      if (!this.user) return 'User';
       return this.user.name || 
              this.user.displayName || 
              this.user.email?.split('@')[0] || 
-             'Пользователь';
+             'User';
     },
     
     getUserInitials() {

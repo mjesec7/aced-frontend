@@ -10,10 +10,10 @@
               <path d="M2 17l10 5 10-5"/>
               <path d="M2 12l10 5 10-5"/>
             </svg>
-            Обучение
+            Learning
           </div>
-          <h1 class="hero-title">Откройте мир знаний</h1>
-          <p class="hero-subtitle">{{ filteredCourses.length }} курсов доступно для изучения</p>
+          <h1 class="hero-title">Discover the World of Knowledge</h1>
+          <p class="hero-subtitle">{{ filteredCourses.length }} courses available</p>
         </div>
         <div class="status-container">
           <div class="status-badge" :class="`status-${userStatus}`">
@@ -38,7 +38,7 @@
           </div>
           <div class="stat-info">
             <span class="stat-value">{{ courses.length }}</span>
-            <span class="stat-label">Всего курсов</span>
+            <span class="stat-label">Total Courses</span>
           </div>
         </div>
         <div class="stat-card">
@@ -50,7 +50,7 @@
           </div>
           <div class="stat-info">
             <span class="stat-value">{{ studyPlanTopics.length }}</span>
-            <span class="stat-label">В вашем плане</span>
+            <span class="stat-label">In Your Plan</span>
           </div>
         </div>
         <div class="stat-card">
@@ -61,7 +61,7 @@
           </div>
           <div class="stat-info">
             <span class="stat-value">{{ availableSubjects.length }}</span>
-            <span class="stat-label">Предметов</span>
+            <span class="stat-label">Subjects</span>
           </div>
         </div>
       </div>
@@ -78,7 +78,7 @@
             v-model="searchQuery"
             type="text"
             class="search-input"
-            placeholder="Найти курс по названию..."
+            placeholder="Find course by name..."
           />
           <button v-if="searchQuery" @click="searchQuery = ''" class="clear-btn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -90,9 +90,9 @@
 
         <div class="filters-pills">
           <div class="filter-pill">
-            <label>Предмет</label>
+            <label>Subject</label>
             <select v-model="selectedSubjectFilter">
-              <option :value="null">Все</option>
+              <option :value="null">All</option>
               <option v-for="subject in availableSubjects" :key="subject" :value="subject">
                 {{ subject }}
               </option>
@@ -100,9 +100,9 @@
           </div>
 
           <div class="filter-pill">
-            <label>Уровень</label>
+            <label>Level</label>
             <select v-model="selectedLevelFilter">
-              <option :value="null">Все</option>
+              <option :value="null">All</option>
               <option v-for="level in availableLevels" :key="level" :value="level">
                 {{ level }}
               </option>
@@ -110,21 +110,21 @@
           </div>
 
           <div class="filter-pill">
-            <label>Тип</label>
+            <label>Type</label>
             <select v-model="typeFilter">
-              <option value="all">Все</option>
+              <option value="all">All</option>
               <option value="free">Free</option>
               <option value="premium">Premium</option>
             </select>
           </div>
 
           <div class="filter-pill">
-            <label>Прогресс</label>
+            <label>Progress</label>
             <select v-model="progressFilter">
-              <option value="all">Все</option>
-              <option value="not-started">Не начаты</option>
-              <option value="in-progress">В процессе</option>
-              <option value="completed">Завершены</option>
+              <option value="all">All</option>
+              <option value="not-started">Not Started</option>
+              <option value="in-progress">In Progress</option>
+              <option value="completed">Completed</option>
             </select>
           </div>
 
@@ -133,7 +133,7 @@
               <polyline points="1 4 1 10 7 10"/>
               <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
             </svg>
-            Сбросить
+            Reset
           </button>
 
           <button @click="shuffleCourses" class="shuffle-btn">
@@ -144,7 +144,7 @@
               <line x1="15" y1="15" x2="21" y2="21"/>
               <line x1="4" y1="4" x2="9" y2="9"/>
             </svg>
-            Перемешать
+            Shuffle
           </button>
         </div>
       </div>
@@ -156,7 +156,7 @@
         <div class="loader-ring"></div>
         <div class="loader-ring"></div>
       </div>
-      <p>Загружаем курсы...</p>
+      <p>Loading courses...</p>
     </div>
 
     <main v-else class="main-section">
@@ -169,8 +169,8 @@
             <line x1="15" y1="9" x2="15.01" y2="9"/>
           </svg>
         </div>
-        <h3>Курсы не найдены</h3>
-        <p>Попробуйте изменить параметры фильтров или поиска</p>
+        <h3>No Courses Found</h3>
+        <p>Try changing your filter or search parameters</p>
       </div>
 
       <div v-else class="courses-container">
@@ -224,13 +224,13 @@
                     <circle cx="12" cy="12" r="10"/>
                     <polyline points="12 6 12 12 16 14"/>
                   </svg>
-                  {{ course.totalTime }} мин
+                  {{ course.totalTime }} min
                 </div>
               </div>
 
               <div class="progress-container">
                 <div class="progress-info">
-                  <span class="progress-text">Прогресс</span>
+                  <span class="progress-text">Progress</span>
                   <span class="progress-percent">{{ course.progress }}%</span>
                 </div>
                 <div class="progress-track">
@@ -297,14 +297,14 @@
             </svg>
           </div>
           
-          <h3 class="modal-title">Добавить в план обучения?</h3>
+          <h3 class="modal-title">Add to Study Plan?</h3>
           <p class="modal-text" v-if="selectedCourse">
-            Курс <strong>{{ selectedCourse.name }}</strong> будет добавлен в ваш личный план обучения
+            The course <strong>{{ selectedCourse.name }}</strong> will be added to your personal study plan
           </p>
           
           <div class="modal-actions">
-            <button @click="showAddModal = false" class="modal-btn secondary">Отмена</button>
-            <button @click="confirmAddToStudyPlan" class="modal-btn primary">Добавить</button>
+            <button @click="showAddModal = false" class="modal-btn secondary">Cancel</button>
+            <button @click="confirmAddToStudyPlan" class="modal-btn primary">Add</button>
           </div>
         </div>
       </div>
@@ -320,12 +320,12 @@
             </svg>
           </div>
           
-          <h3 class="modal-title">Успешно добавлено!</h3>
+          <h3 class="modal-title">Successfully Added!</h3>
           <p class="modal-text" v-if="selectedCourse">
             {{ selectedCourse.name }}
           </p>
           
-          <button @click="showSuccessModal = false" class="modal-btn primary full">Отлично</button>
+          <button @click="showSuccessModal = false" class="modal-btn primary full">Great</button>
         </div>
       </div>
     </transition>
@@ -360,7 +360,7 @@ export default {
   data() {
     return {
       userId: null,
-      lang: localStorage.getItem('lang') || 'ru',
+      lang: localStorage.getItem('lang') || 'en',
       lessons: [],
       userProgress: {},
       studyPlanTopics: [],
@@ -547,7 +547,7 @@ export default {
             topicId,
             name: this.getTopicName(lesson),
             level: String(lesson.level || '1'),
-            subject: String(lesson.subject || 'Без категории'),
+            subject: String(lesson.subject || 'Uncategorized'),
             lessonCount: 0,
             totalTime: 0,
             type: 'free',
@@ -639,7 +639,7 @@ export default {
         }
       } catch (error) {
         console.error('Error adding to study plan:', error);
-        alert(error.message || 'Не удалось добавить курс в план обучения');
+        alert(error.message || 'Failed to add course to study plan');
         this.showAddModal = false;
       }
     },
@@ -668,15 +668,15 @@ export default {
       if (lesson?.topic && typeof lesson.topic === 'string' && lesson.topic.trim()) {
         return lesson.topic.trim();
       }
-      return 'Тема без названия';
+      return 'Untitled Topic';
     },
     estimateLessonTime: (lesson) => lesson.estimatedTime || lesson.duration || 10,
     getLevelDescription(level) {
       const descriptions = { 
-        1: 'Начальный', 2: 'Элементарный', 3: 'Базовый', 
-        4: 'Средний', 5: 'Продвинутый', 6: 'Профессиональный'
+        1: 'Beginner', 2: 'Elementary', 3: 'Basic', 
+        4: 'Intermediate', 5: 'Advanced', 6: 'Professional'
       };
-      return descriptions[parseInt(level)] || `Уровень ${level}`;
+      return descriptions[parseInt(level)] || `Level ${level}`;
     },
     getProgressColor(progress) {
       if (progress >= 80) return 'high';
@@ -690,17 +690,15 @@ export default {
       return 'start';
     },
     getButtonText(progress) {
-      if (progress === 100) return 'Завершено';
-      if (progress > 0) return 'Продолжить';
-      return 'Начать курс';
+      if (progress === 100) return 'Completed';
+      if (progress > 0) return 'Continue';
+      return 'Start Course';
     },
     getTypeLabel(type) {
       return { free: 'Free', premium: 'Premium' }[type] || 'Free';
     },
     getLessonWord(count) {
-      if (count % 10 === 1 && count % 100 !== 11) return 'урок';
-      if (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 10 || count % 100 >= 20)) return 'урока';
-      return 'уроков';
+      return count === 1 ? 'lesson' : 'lessons';
     },
     hasTopicAccess(topicType) {
       if (topicType === 'free') return true;
