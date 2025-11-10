@@ -677,119 +677,183 @@ export default {
         
         return status;
       } catch (e) {
+        console.error('Error getting current plan:', e);
         return localStorage.getItem('userStatus') || 'free';
       }
     },
     
     subscriptionExpiryInfo() {
-      const details = this.subscriptionDetails;
-      
-      if (!details.expiryDate || this.currentPlan === 'free') {
+      try {
+        const details = this.subscriptionDetails || {};
+        
+        if (!details || !details.expiryDate || this.currentPlan === 'free') {
+          return null;
+        }
+        
+        const expiryDate = new Date(details.expiryDate);
+        const now = new Date();
+        const diffTime = expiryDate - now;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        return {
+          expiryDate: expiryDate,
+          daysRemaining: Math.max(0, diffDays),
+          isExpiring: diffDays <= 7 && diffDays > 0,
+          isExpired: diffDays <= 0,
+          formattedDate: this.formatDate(details.expiryDate),
+          timeRemaining: this.getTimeRemaining(diffTime)
+        };
+      } catch (e) {
+        console.error('Error getting subscription expiry info:', e);
         return null;
       }
-      
-      const expiryDate = new Date(details.expiryDate);
-      const now = new Date();
-      const diffTime = expiryDate - now;
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      
-      return {
-        expiryDate: expiryDate,
-        daysRemaining: Math.max(0, diffDays),
-        isExpiring: diffDays <= 7 && diffDays > 0,
-        isExpired: diffDays <= 0,
-        formattedDate: this.formatDate(details.expiryDate),
-        timeRemaining: this.getTimeRemaining(diffTime)
-      };
     },
     
     appliedPromocodesCount() {
-      return this.appliedPromocodes.length;
+      try {
+        return this.appliedPromocodes?.length || 0;
+      } catch (e) {
+        return 0;
+      }
     },
     
     currentUsageMessages() {
-      return this.currentUsage.messages || 0;
+      try {
+        return this.currentUsage?.messages || 0;
+      } catch (e) {
+        console.error('Error getting current usage messages:', e);
+        return 0;
+      }
     },
     
     currentUsageImages() {
-      return this.currentUsage.images || 0;
+      try {
+        return this.currentUsage?.images || 0;
+      } catch (e) {
+        console.error('Error getting current usage images:', e);
+        return 0;
+      }
     },
     
     usageLimitsMessages() {
-      return this.usageLimits.messages || 50;
+      try {
+        return this.usageLimits?.messages || 50;
+      } catch (e) {
+        console.error('Error getting usage limits messages:', e);
+        return 50;
+      }
     },
     
     usageLimitsImages() {
-      return this.usageLimits.images || 5;
+      try {
+        return this.usageLimits?.images || 5;
+      } catch (e) {
+        console.error('Error getting usage limits images:', e);
+        return 5;
+      }
     },
     
     messageUsagePercentage() {
-      const messages = this.currentUsageMessages;
-      const limit = this.usageLimitsMessages;
-      return (limit === -1) ? 0 : Math.min(100, Math.round((messages / limit) * 100));
+      try {
+        const messages = this.currentUsageMessages;
+        const limit = this.usageLimitsMessages;
+        return (limit === -1) ? 0 : Math.min(100, Math.round((messages / limit) * 100));
+      } catch (e) {
+        console.error('Error calculating message usage percentage:', e);
+        return 0;
+      }
     },
     
     imageUsagePercentage() {
-      const images = this.currentUsageImages;
-      const limit = this.usageLimitsImages;
-      return (limit === -1) ? 0 : Math.min(100, Math.round((images / limit) * 100));
+      try {
+        const images = this.currentUsageImages;
+        const limit = this.usageLimitsImages;
+        return (limit === -1) ? 0 : Math.min(100, Math.round((images / limit) * 100));
+      } catch (e) {
+        console.error('Error calculating image usage percentage:', e);
+        return 0;
+      }
     },
     
     currentPlanLabel() {
-      const labels = {
-        pro: 'Pro',
-        start: 'Start', 
-        free: 'Free'
-      };
-      return labels[this.currentPlan] || 'Free';
+      try {
+        const labels = {
+          pro: 'Pro',
+          start: 'Start', 
+          free: 'Free'
+        };
+        return labels[this.currentPlan] || 'Free';
+      } catch (e) {
+        return 'Free';
+      }
     },
     
     userId() {
-      return this.currentUser?.uid;
+      try {
+        return this.currentUser?.uid || null;
+      } catch (e) {
+        return null;
+      }
     },
     
     canApplyPromo() {
-      return this.promoCode && 
-             this.promoCode.trim().length > 3 && 
-             this.selectedPlan && 
-             this.promoValidation &&
-             this.promoValidation.valid === true &&
-             !this.loading &&
-             !this.isProcessingPromo &&
-             !this.planCompatibilityError;
+      try {
+        return this.promoCode && 
+               this.promoCode.trim().length > 3 && 
+               this.selectedPlan && 
+               this.promoValidation &&
+               this.promoValidation.valid === true &&
+               !this.loading &&
+               !this.isProcessingPromo &&
+               !this.planCompatibilityError;
+      } catch (e) {
+        return false;
+      }
     },
     
     promoButtonText() {
-      if (this.isProcessingPromo) return 'Применение...';
-      if (this.isValidatingPromo) return 'Проверка...';
-      if (!this.promoCode.trim()) return 'Введите промокод';
-      if (!this.selectedPlan) return 'Выберите тариф';
-      if (this.promoValidation && !this.promoValidation.valid) return 'Неверный промокод';
-      if (this.planCompatibilityError) return 'Проверьте тариф';
-      if (this.canApplyPromo) return 'Применить промокод';
-      return 'Применить промокод';
+      try {
+        if (this.isProcessingPromo) return 'Применение...';
+        if (this.isValidatingPromo) return 'Проверка...';
+        if (!this.promoCode.trim()) return 'Введите промокод';
+        if (!this.selectedPlan) return 'Выберите тариф';
+        if (this.promoValidation && !this.promoValidation.valid) return 'Неверный промокод';
+        if (this.planCompatibilityError) return 'Проверьте тариф';
+        if (this.canApplyPromo) return 'Применить промокод';
+        return 'Применить промокод';
+      } catch (e) {
+        return 'Применить промокод';
+      }
     },
     
     planCompatibilityError() {
-      if (!this.promoValidation || !this.promoValidation.valid || !this.selectedPlan) return false;
-      
-      const promoGrantsPlan = this.promoValidation.data?.grantsPlan;
-      if (promoGrantsPlan && promoGrantsPlan !== this.selectedPlan) {
-        return true;
+      try {
+        if (!this.promoValidation || !this.promoValidation.valid || !this.selectedPlan) return false;
+        
+        const promoGrantsPlan = this.promoValidation.data?.grantsPlan;
+        if (promoGrantsPlan && promoGrantsPlan !== this.selectedPlan) {
+          return true;
+        }
+        
+        return false;
+      } catch (e) {
+        return false;
       }
-      
-      return false;
     }
   },
   
   watch: {
     '$store.state.user': {
       handler(newUser, oldUser) {
-        const newPlan = newUser?.subscriptionPlan;
-        const oldPlan = oldUser?.subscriptionPlan;
-        
-        if (newPlan !== oldPlan) {
-          this.handleUserStatusChange(newPlan, oldPlan);
+        try {
+          const newPlan = newUser?.subscriptionPlan;
+          const oldPlan = oldUser?.subscriptionPlan;
+          
+          if (newPlan !== oldPlan) {
+            this.handleUserStatusChange(newPlan, oldPlan);
+          }
+        } catch (e) {
+          console.error('Error watching store user:', e);
         }
       },
       deep: true,
@@ -798,8 +862,12 @@ export default {
 
     currentPlan: {
       handler(newPlan, oldPlan) {
-        if (newPlan !== oldPlan) {
-          this.forceReactivityUpdate();
+        try {
+          if (newPlan !== oldPlan) {
+            this.forceReactivityUpdate();
+          }
+        } catch (e) {
+          console.error('Error watching current plan:', e);
         }
       },
       immediate: true
@@ -807,11 +875,13 @@ export default {
   },
   
   async mounted() {
+    console.log('🔧 AcedSettings component mounted');
     await this.initializeComponent();
     this.componentMounted = true;
   },
   
   beforeUnmount() {
+    console.log('🔧 AcedSettings component unmounting');
     this.cleanup();
   },
   
@@ -879,9 +949,11 @@ export default {
       this.loadingText = 'Загрузка настроек...';
       
       try {
+        console.log('📥 Loading component data...');
         await this.checkAuthState();
         await this.loadInitialData();
         this.forceReactivityUpdate();
+        console.log('✅ Component initialized successfully');
       } catch (error) {
         console.error('❌ AcedSettings initialization error:', error);
         this.showNotification('Ошибка загрузки настроек', 'error');
@@ -892,11 +964,19 @@ export default {
 
     async loadInitialData() {
       try {
+        console.log('📦 Loading initial user data...');
+        
         if (this.$store && this.$store.dispatch) {
           await this.$store.dispatch('user/loadUserStatus');
+          console.log('✅ User status loaded');
+          
+          // Force reactivity update after data loads
+          this.$nextTick(() => {
+            this.forceReactivityUpdate();
+          });
         }
       } catch (error) {
-        console.error('Load initial data error:', error);
+        console.error('❌ Load initial data error:', error);
       }
     },
     
@@ -905,8 +985,11 @@ export default {
         onAuthStateChanged(auth, async (user) => {
           this.currentUser = user;
           if (user) {
+            console.log('👤 User authenticated:', user.uid);
             this.isGoogleUser = user.providerData[0]?.providerId === "google.com";
             await this.fetchUserData();
+          } else {
+            console.log('❌ No authenticated user');
           }
           resolve();
         });
@@ -917,13 +1000,16 @@ export default {
       try {
         if (!this.currentUser) return;
         
+        console.log('📄 Fetching user document...');
         const userRef = doc(db, "users", this.currentUser.uid);
         const userDoc = await getDoc(userRef);
         
         if (userDoc.exists()) {
           this.user = userDoc.data();
           this.tempUser = { name: this.user.name, surname: this.user.surname };
+          console.log('✅ User data fetched');
         } else {
+          console.log('📝 Creating new user document');
           const newUserData = {
             name: "Новый пользователь",
             surname: "",
@@ -1008,12 +1094,14 @@ export default {
       
       try {
         const promocodeUpper = this.promoCode.trim().toUpperCase();
+        console.log('🔍 Validating promocode:', promocodeUpper);
         
         if (this.$store && this.$store.dispatch) {
           const storeResult = await this.$store.dispatch('user/validatePromocode', promocodeUpper);
           
           if (storeResult && typeof storeResult === 'object') {
             this.promoValidation = storeResult;
+            console.log('✅ Promocode validation result:', storeResult);
             
             if (storeResult.valid && storeResult.data?.grantsPlan && !this.selectedPlan) {
               this.selectedPlan = storeResult.data.grantsPlan;
@@ -1050,6 +1138,7 @@ export default {
       
       try {
         const normalizedCode = this.promoCode.trim().toUpperCase();
+        console.log('💳 Applying promocode:', normalizedCode, 'for plan:', this.selectedPlan);
         
         const result = await this.$store.dispatch('user/applyPromocode', {
           code: normalizedCode,
@@ -1084,6 +1173,7 @@ export default {
         return;
       }
       this.paymentPlan = plan;
+      console.log('📌 Payment plan selected:', plan);
     },
 
     async goToPayment() {
@@ -1103,6 +1193,8 @@ export default {
           pro: 455000
         };
 
+        console.log('🔄 Navigating to payment page...');
+        
         await this.$router.push({
           name: 'PaymentSelection',
           params: { 
