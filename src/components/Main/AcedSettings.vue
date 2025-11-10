@@ -10,11 +10,11 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M19 12H5M12 19l-7-7 7-7"/>
             </svg>
-            <span>Назад</span>
+            <span>Back</span>
           </button>
           <div class="header-text">
-            <h1 class="header-title">Настройки аккаунта</h1>
-            <p class="header-subtitle">Управляйте вашим профилем и подпиской</p>
+            <h1 class="header-title">Account Settings</h1>
+            <p class="header-subtitle">Manage your profile and subscription</p>
           </div>
         </div>
         <button class="save-button" @click="saveChanges" :disabled="loading">
@@ -23,7 +23,7 @@
             <polyline points="17 21 17 13 7 13 7 21"/>
             <polyline points="7 3 7 8 15 8"/>
           </svg>
-          <span>Сохранить</span>
+          <span>Save</span>
         </button>
       </header>
 
@@ -49,9 +49,9 @@
               </svg>
             </div>
             <div class="stat-info">
-              <p class="stat-label">Текущий план</p>
+              <p class="stat-label">Current Plan</p>
               <h3 class="stat-value">{{ currentPlanLabel }}</h3>
-              <span class="stat-badge active">Активен</span>
+              <span class="stat-badge active">Active</span>
             </div>
           </div>
 
@@ -62,7 +62,7 @@
               </svg>
             </div>
             <div class="stat-info">
-              <p class="stat-label">Сообщения</p>
+              <p class="stat-label">Messages</p>
               <h3 class="stat-value">{{ currentUsageMessages }} <span class="stat-limit">/ {{ usageLimitsMessages === -1 ? '∞' : usageLimitsMessages }}</span></h3>
               <div class="mini-progress">
                 <div class="mini-progress-bar" :style="{ width: messageUsagePercentage + '%' }"></div>
@@ -79,7 +79,7 @@
               </svg>
             </div>
             <div class="stat-info">
-              <p class="stat-label">Изображения</p>
+              <p class="stat-label">Images</p>
               <h3 class="stat-value">{{ currentUsageImages }} <span class="stat-limit">/ {{ usageLimitsImages === -1 ? '∞' : usageLimitsImages }}</span></h3>
               <div class="mini-progress">
                 <div class="mini-progress-bar" :style="{ width: imageUsagePercentage + '%' }"></div>
@@ -97,10 +97,10 @@
               </svg>
             </div>
             <div class="stat-info">
-              <p class="stat-label">Осталось дней</p>
+              <p class="stat-label">Days Remaining</p>
               <h3 class="stat-value">{{ subscriptionExpiryInfo?.daysRemaining || 0 }}</h3>
               <span :class="['stat-badge', subscriptionExpiryInfo?.isExpiring ? 'warning' : 'active']">
-                {{ subscriptionExpiryInfo?.isExpiring ? 'Истекает' : 'Активен' }}
+                {{ subscriptionExpiryInfo?.isExpiring ? 'Expiring Soon' : 'Active' }}
               </span>
             </div>
           </div>
@@ -123,8 +123,8 @@
                     </svg>
                   </div>
                   <div>
-                    <h2 class="card-title">Личная информация</h2>
-                    <p class="card-description">Обновите ваши персональные данные</p>
+                    <h2 class="card-title">Personal Information</h2>
+                    <p class="card-description">Update your personal details</p>
                   </div>
                 </div>
                 <button v-if="!isEditingName" @click="startEditingName" class="btn-icon">
@@ -138,42 +138,42 @@
               <div class="card-body">
                 <div class="form-row">
                   <div class="form-group">
-                    <label class="form-label">Имя</label>
+                    <label class="form-label">First Name</label>
                     <input 
                       v-if="isEditingName"
                       type="text" 
                       v-model="tempUser.name" 
                       class="form-input"
-                      placeholder="Введите имя"
+                      placeholder="Enter first name"
                     />
                     <div v-else class="form-display">
-                      {{ user.name || 'Не указано' }}
+                      {{ user.name || 'Not specified' }}
                     </div>
                   </div>
                   
                   <div class="form-group">
-                    <label class="form-label">Фамилия</label>
+                    <label class="form-label">Last Name</label>
                     <input 
                       v-if="isEditingName"
                       type="text" 
                       v-model="tempUser.surname" 
                       class="form-input"
-                      placeholder="Введите фамилию"
+                      placeholder="Enter last name"
                     />
                     <div v-else class="form-display">
-                      {{ user.surname || 'Не указано' }}
+                      {{ user.surname || 'Not specified' }}
                     </div>
                   </div>
                 </div>
 
                 <div class="form-group">
                   <label class="form-label">
-                    Email адрес
+                    Email Address
                     <span class="verified-badge">
                       <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="20 6 9 17 4 12"/>
                       </svg>
-                      Подтвержден
+                      Verified
                     </span>
                   </label>
                   <input 
@@ -185,8 +185,8 @@
                 </div>
 
                 <div v-if="isEditingName" class="form-actions">
-                  <button @click="cancelEditingName" class="btn btn-secondary">Отмена</button>
-                  <button @click="saveNameChanges" class="btn btn-primary">Сохранить изменения</button>
+                  <button @click="cancelEditingName" class="btn btn-secondary">Cancel</button>
+                  <button @click="saveNameChanges" class="btn btn-primary">Save Changes</button>
                 </div>
               </div>
             </div>
@@ -202,15 +202,15 @@
                     </svg>
                   </div>
                   <div>
-                    <h2 class="card-title">Безопасность</h2>
-                    <p class="card-description">Управление паролем и безопасностью</p>
+                    <h2 class="card-title">Security</h2>
+                    <p class="card-description">Manage password and security</p>
                   </div>
                 </div>
               </div>
               
               <div class="card-body">
                 <div class="form-group">
-                  <label class="form-label">Текущий пароль</label>
+                  <label class="form-label">Current Password</label>
                   <input 
                     type="password" 
                     v-model="oldPassword" 
@@ -221,7 +221,7 @@
                 </div>
 
                 <div class="form-group">
-                  <label class="form-label">Новый пароль</label>
+                  <label class="form-label">New Password</label>
                   <input 
                     type="password" 
                     v-model="newPassword" 
@@ -232,7 +232,7 @@
                 </div>
 
                 <div class="form-group">
-                  <label class="form-label">Подтвердите новый пароль</label>
+                  <label class="form-label">Confirm New Password</label>
                   <input 
                     type="password" 
                     v-model="confirmPassword" 
@@ -244,10 +244,10 @@
 
                 <div class="form-actions">
                   <button @click="sendPasswordReset" class="btn btn-text">
-                    Забыли пароль?
+                    Forgot Password?
                   </button>
                   <button @click="saveChanges" class="btn btn-primary" :disabled="loading">
-                    {{ loading ? 'Обновление...' : 'Обновить пароль' }}
+                    {{ loading ? 'Updating...' : 'Update Password' }}
                   </button>
                 </div>
               </div>
@@ -263,8 +263,8 @@
                     </svg>
                   </div>
                   <div>
-                    <h2 class="card-title">Тарифные планы</h2>
-                    <p class="card-description">Выберите подходящий план</p>
+                    <h2 class="card-title">Subscription Plans</h2>
+                    <p class="card-description">Choose the right plan for you</p>
                   </div>
                 </div>
               </div>
@@ -281,7 +281,7 @@
                       <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="20 6 9 17 4 12"/>
                       </svg>
-                      Текущий
+                      Current
                     </div>
                     
                     <div class="pricing-header">
@@ -289,9 +289,9 @@
                       <div class="pricing-price">
                         <span class="price-currency">UZS</span>
                         <span class="price-amount">260K</span>
-                        <span class="price-period">/мес</span>
+                        <span class="price-period">/month</span>
                       </div>
-                      <p class="pricing-tagline">Для начинающих</p>
+                      <p class="pricing-tagline">For beginners</p>
                     </div>
 
                     <ul class="feature-list">
@@ -299,32 +299,32 @@
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                           <polyline points="20 6 9 17 4 12"/>
                         </svg>
-                        Безлимитные сообщения
+                        Unlimited messages
                       </li>
                       <li>
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                           <polyline points="20 6 9 17 4 12"/>
                         </svg>
-                        Доступ к словарю
+                        Dictionary access
                       </li>
                       <li>
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                           <polyline points="20 6 9 17 4 12"/>
                         </svg>
-                        Базовые курсы
+                        Basic courses
                       </li>
                       <li>
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                           <polyline points="20 6 9 17 4 12"/>
                         </svg>
-                        Поддержка домашних заданий
+                        Homework support
                       </li>
                       <li class="disabled">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                           <line x1="18" y1="6" x2="6" y2="18"/>
                           <line x1="6" y1="6" x2="18" y2="18"/>
                         </svg>
-                        Безлимитные изображения
+                        Unlimited images
                       </li>
                     </ul>
 
@@ -332,7 +332,7 @@
                       class="pricing-button"
                       :disabled="currentPlan === 'start' || currentPlan === 'pro'"
                     >
-                      {{ currentPlan === 'start' ? 'Текущий план' : 'Выбрать' }}
+                      {{ currentPlan === 'start' ? 'Current Plan' : 'Select' }}
                     </button>
                   </div>
 
@@ -345,7 +345,7 @@
                       <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                       </svg>
-                      {{ currentPlan === 'pro' ? 'Текущий' : 'Популярный' }}
+                      {{ currentPlan === 'pro' ? 'Current' : 'Popular' }}
                     </div>
                     
                     <div class="pricing-header">
@@ -353,9 +353,9 @@
                       <div class="pricing-price">
                         <span class="price-currency">UZS</span>
                         <span class="price-amount">455K</span>
-                        <span class="price-period">/мес</span>
+                        <span class="price-period">/month</span>
                       </div>
-                      <p class="pricing-tagline">Для профессионалов</p>
+                      <p class="pricing-tagline">For professionals</p>
                     </div>
 
                     <ul class="feature-list">
@@ -363,31 +363,31 @@
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                           <polyline points="20 6 9 17 4 12"/>
                         </svg>
-                        Всё из Start
+                        Everything in Start
                       </li>
                       <li>
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                           <polyline points="20 6 9 17 4 12"/>
                         </svg>
-                        Безлимитные изображения
+                        Unlimited images
                       </li>
                       <li>
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                           <polyline points="20 6 9 17 4 12"/>
                         </svg>
-                        Продвинутые курсы
+                        Advanced courses
                       </li>
                       <li>
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                           <polyline points="20 6 9 17 4 12"/>
                         </svg>
-                        Персональная аналитика
+                        Personal analytics
                       </li>
                       <li>
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                           <polyline points="20 6 9 17 4 12"/>
                         </svg>
-                        Эксклюзивный контент
+                        Exclusive content
                       </li>
                     </ul>
 
@@ -395,7 +395,7 @@
                       class="pricing-button"
                       :disabled="currentPlan === 'pro'"
                     >
-                      {{ currentPlan === 'pro' ? 'Текущий план' : 'Перейти на Pro' }}
+                      {{ currentPlan === 'pro' ? 'Current Plan' : 'Upgrade to Pro' }}
                     </button>
                   </div>
                 </div>
@@ -435,33 +435,33 @@
                     </svg>
                   </div>
                   <div>
-                    <h2 class="card-title">Промокод</h2>
-                    <p class="card-description">Активируйте специальное предложение</p>
+                    <h2 class="card-title">Promo Code</h2>
+                    <p class="card-description">Activate special offer</p>
                   </div>
                 </div>
               </div>
               
               <div class="card-body">
                 <div class="form-group">
-                  <label class="form-label">Введите промокод</label>
+                  <label class="form-label">Enter promo code</label>
                   <input 
                     type="text" 
                     v-model="promoCode" 
                     class="form-input promo-input"
-                    placeholder="ПРОМОКОД2024"
+                    placeholder="PROMO2024"
                     :disabled="loading || isProcessingPromo"
                     @input="handlePromoCodeInput"
                   />
                   <div v-if="isValidatingPromo" class="form-hint">
                     <div class="spinner-mini"></div>
-                    Проверка промокода...
+                    Checking promo code...
                   </div>
                   <div v-else-if="promoValidation && promoCode.length > 3">
                     <div v-if="promoValidation.valid" class="form-success">
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="20 6 9 17 4 12"/>
                       </svg>
-                      Действителен! План {{ promoValidation.data?.grantsPlan?.toUpperCase() }}
+                      Valid! {{ promoValidation.data?.grantsPlan?.toUpperCase() }} Plan
                     </div>
                     <div v-else class="form-error">
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -475,11 +475,11 @@
                 </div>
 
                 <div class="form-group">
-                  <label class="form-label">Выберите план</label>
+                  <label class="form-label">Select plan</label>
                   <select v-model="selectedPlan" class="form-select" :disabled="loading">
-                    <option value="">Выберите план...</option>
-                    <option value="start">Start план</option>
-                    <option value="pro">Pro план</option>
+                    <option value="">Choose plan...</option>
+                    <option value="start">Start plan</option>
+                    <option value="pro">Pro plan</option>
                   </select>
                 </div>
 
@@ -508,8 +508,8 @@
                     </svg>
                   </div>
                   <div>
-                    <h2 class="card-title">Подписка</h2>
-                    <p class="card-description">Информация о вашей подписке</p>
+                    <h2 class="card-title">Subscription</h2>
+                    <p class="card-description">Your subscription information</p>
                   </div>
                 </div>
               </div>
@@ -517,11 +517,11 @@
               <div class="card-body">
                 <div class="subscription-info">
                   <div class="subscription-plan">
-                    <span class="plan-badge">{{ currentPlanLabel }} План</span>
+                    <span class="plan-badge">{{ currentPlanLabel }} Plan</span>
                   </div>
                   
                   <div class="subscription-expiry">
-                    <p class="expiry-label">Действует до</p>
+                    <p class="expiry-label">Valid until</p>
                     <h3 class="expiry-date">{{ subscriptionExpiryInfo.formattedDate }}</h3>
                   </div>
                   
@@ -534,7 +534,7 @@
                       <line x1="12" y1="9" x2="12" y2="13"/>
                       <line x1="12" y1="17" x2="12.01" y2="17"/>
                     </svg>
-                    {{ subscriptionExpiryInfo.isExpiring ? 'Истекает скоро' : 'Активна' }}
+                    {{ subscriptionExpiryInfo.isExpiring ? 'Expiring Soon' : 'Active' }}
                   </div>
                 </div>
               </div>
@@ -552,8 +552,8 @@
                     </svg>
                   </div>
                   <div>
-                    <h2 class="card-title">Использование</h2>
-                    <p class="card-description">Ваша статистика за месяц</p>
+                    <h2 class="card-title">Usage</h2>
+                    <p class="card-description">Your monthly statistics</p>
                   </div>
                 </div>
               </div>
@@ -561,7 +561,7 @@
               <div class="card-body">
                 <div class="usage-item">
                   <div class="usage-header">
-                    <span class="usage-label">Сообщения</span>
+                    <span class="usage-label">Messages</span>
                     <span class="usage-value">{{ currentUsageMessages }} / {{ usageLimitsMessages === -1 ? '∞' : usageLimitsMessages }}</span>
                   </div>
                   <div class="usage-progress">
@@ -571,7 +571,7 @@
 
                 <div class="usage-item">
                   <div class="usage-header">
-                    <span class="usage-label">Изображения</span>
+                    <span class="usage-label">Images</span>
                     <span class="usage-value">{{ currentUsageImages }} / {{ usageLimitsImages === -1 ? '∞' : usageLimitsImages }}</span>
                   </div>
                   <div class="usage-progress">
@@ -813,16 +813,16 @@ export default {
     
     promoButtonText() {
       try {
-        if (this.isProcessingPromo) return 'Применение...';
-        if (this.isValidatingPromo) return 'Проверка...';
-        if (!this.promoCode.trim()) return 'Введите промокод';
-        if (!this.selectedPlan) return 'Выберите тариф';
-        if (this.promoValidation && !this.promoValidation.valid) return 'Неверный промокод';
-        if (this.planCompatibilityError) return 'Проверьте тариф';
-        if (this.canApplyPromo) return 'Применить промокод';
-        return 'Применить промокод';
+        if (this.isProcessingPromo) return 'Applying...';
+        if (this.isValidatingPromo) return 'Checking...';
+        if (!this.promoCode.trim()) return 'Enter promo code';
+        if (!this.selectedPlan) return 'Select plan';
+        if (this.promoValidation && !this.promoValidation.valid) return 'Invalid promo code';
+        if (this.planCompatibilityError) return 'Check plan';
+        if (this.canApplyPromo) return 'Apply promo code';
+        return 'Apply promo code';
       } catch (e) {
-        return 'Применить промокод';
+        return 'Apply promo code';
       }
     },
     
@@ -898,7 +898,7 @@ export default {
 
         if (newStatus && newStatus !== 'free' && (oldStatus === 'free' || !oldStatus)) {
           const planLabel = newStatus === 'pro' ? 'Pro' : 'Start';
-          this.showNotification(`${planLabel} подписка активирована!`, 'success', 5000);
+          this.showNotification(`${planLabel} subscription activated!`, 'success', 5000);
         }
 
       } catch (error) {
@@ -923,18 +923,18 @@ export default {
     },
 
     getTimeRemaining(diffTime) {
-      if (diffTime <= 0) return 'Истёк';
+      if (diffTime <= 0) return 'Expired';
       
       const days = Math.floor(diffTime / (1000 * 60 * 60 * 24));
       const hours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
       
       if (days > 0) {
-        return `${days} дн. ${hours} ч.`;
+        return `${days} days ${hours} hrs`;
       } else if (hours > 0) {
-        return `${hours} ч.`;
+        return `${hours} hrs`;
       } else {
         const minutes = Math.floor((diffTime % (1000 * 60 * 60)) / (1000 * 60));
-        return `${minutes} мин.`;
+        return `${minutes} min`;
       }
     },
 
@@ -946,7 +946,7 @@ export default {
 
     async initializeComponent() {
       this.loading = true;
-      this.loadingText = 'Загрузка настроек...';
+      this.loadingText = 'Loading settings...';
       
       try {
         console.log('📥 Loading component data...');
@@ -956,7 +956,7 @@ export default {
         console.log('✅ Component initialized successfully');
       } catch (error) {
         console.error('❌ AcedSettings initialization error:', error);
-        this.showNotification('Ошибка загрузки настроек', 'error');
+        this.showNotification('Error loading settings', 'error');
       } finally {
         this.loading = false;
       }
@@ -1011,7 +1011,7 @@ export default {
         } else {
           console.log('📝 Creating new user document');
           const newUserData = {
-            name: "Новый пользователь",
+            name: "New User",
             surname: "",
             email: this.currentUser.email,
           };
@@ -1021,7 +1021,7 @@ export default {
         }
       } catch (error) {
         console.error('❌ User data fetch error:', error);
-        this.showNotification("Ошибка загрузки данных пользователя", 'error');
+        this.showNotification("Error loading user data", 'error');
       }
     },
 
@@ -1032,11 +1032,11 @@ export default {
 
     async saveNameChanges() {
       this.loading = true;
-      this.loadingText = 'Сохранение изменений...';
+      this.loadingText = 'Saving changes...';
       
       try {
         if (!this.currentUser) {
-          this.showNotification('Пользователь не найден', 'error');
+          this.showNotification('User not found', 'error');
           return;
         }
 
@@ -1051,10 +1051,10 @@ export default {
         this.user.surname = this.tempUser.surname;
         this.isEditingName = false;
 
-        this.showNotification('Имя и фамилия обновлены!', 'success');
+        this.showNotification('Name updated successfully!', 'success');
       } catch (error) {
         console.error('❌ Save name error:', error);
-        this.showNotification('Ошибка сохранения имени', 'error');
+        this.showNotification('Error saving name', 'error');
       } finally {
         this.loading = false;
       }
@@ -1114,14 +1114,14 @@ export default {
         
         this.promoValidation = {
           valid: false,
-          error: `Не удалось проверить промокод "${promocodeUpper}".`
+          error: `Unable to verify promo code "${promocodeUpper}".`
         };
         
       } catch (error) {
         console.error('❌ Promocode validation error:', error);
         this.promoValidation = {
           valid: false,
-          error: 'Ошибка проверки промокода.'
+          error: 'Error checking promo code.'
         };
       } finally {
         this.isValidatingPromo = false;
@@ -1130,7 +1130,7 @@ export default {
     
     async applyPromo() {
       if (!this.promoCode || !this.selectedPlan || !this.userId) {
-        this.showNotification('Заполните все поля', 'error');
+        this.showNotification('Please fill in all fields', 'error');
         return;
       }
       
@@ -1148,7 +1148,7 @@ export default {
         
         if (result && (result.success === true || result.status === 'success')) {
           const planLabel = this.selectedPlan === 'pro' ? 'Pro' : 'Start';
-          this.showNotification(`Промокод применён! ${planLabel} подписка активирована!`, 'success');
+          this.showNotification(`Promo code applied! ${planLabel} subscription activated!`, 'success');
           
           this.promoCode = '';
           this.selectedPlan = '';
@@ -1156,13 +1156,13 @@ export default {
           
           this.forceReactivityUpdate();
         } else {
-          const errorMessage = result?.error || result?.message || 'Не удалось применить промокод';
+          const errorMessage = result?.error || result?.message || 'Unable to apply promo code';
           this.showNotification(errorMessage, 'error');
         }
         
       } catch (error) {
         console.error('❌ Apply promo error:', error);
-        this.showNotification('Ошибка применения промокода', 'error');
+        this.showNotification('Error applying promo code', 'error');
       } finally {
         this.isProcessingPromo = false;
       }
@@ -1178,12 +1178,12 @@ export default {
 
     async goToPayment() {
       if (!this.paymentPlan) {
-        this.showNotification('Выберите тариф для оплаты', 'warning');
+        this.showNotification('Please select a plan for payment', 'warning');
         return;
       }
 
       if (!this.userId) {
-        this.showNotification('Ошибка: не найден ID пользователя.', 'error');
+        this.showNotification('Error: User ID not found.', 'error');
         return;
       }
 
@@ -1204,7 +1204,7 @@ export default {
             userId: this.userId,
             plan: this.paymentPlan,
             amount: amounts[this.paymentPlan] || amounts.start,
-            userName: this.user.name || 'Пользователь',
+            userName: this.user.name || 'User',
             userEmail: this.user.email || '',
             currentPlan: this.currentPlan || 'free',
             provider: 'multicard',
@@ -1216,41 +1216,41 @@ export default {
         console.error('❌ Navigation error:', error);
         
         if (error.name !== 'NavigationDuplicated') {
-          this.showNotification('Ошибка при переходе к оплате.', 'error');
+          this.showNotification('Error navigating to payment.', 'error');
         }
       }
     },
 
     getPaymentButtonText() {
-      if (!this.paymentPlan) return 'Выберите тариф';
-      if (this.currentPlan === this.paymentPlan) return 'Уже активен';
+      if (!this.paymentPlan) return 'Select a plan';
+      if (this.currentPlan === this.paymentPlan) return 'Already active';
       
       const planNames = {
         start: 'START',
         pro: 'PRO'
       };
       
-      return `Оплатить ${planNames[this.paymentPlan] || this.paymentPlan.toUpperCase()}`;
+      return `Pay for ${planNames[this.paymentPlan] || this.paymentPlan.toUpperCase()}`;
     },
 
     async sendPasswordReset() {
       if (!this.user.email) {
-        this.showNotification('Введите email адрес', 'error');
+        this.showNotification('Please enter email address', 'error');
         return;
       }
 
       try {
         await sendPasswordResetEmail(auth, this.user.email);
-        this.showNotification('Письмо для сброса пароля отправлено!', 'success');
+        this.showNotification('Password reset email sent!', 'success');
       } catch (error) {
         console.error('❌ Password reset error:', error);
         
-        let errorMessage = 'Ошибка отправки письма';
+        let errorMessage = 'Error sending email';
         
         if (error.code === 'auth/user-not-found') {
-          errorMessage = 'Пользователь с таким email не найден';
+          errorMessage = 'User with this email not found';
         } else if (error.code === 'auth/invalid-email') {
-          errorMessage = 'Неверный формат email';
+          errorMessage = 'Invalid email format';
         }
         
         this.showNotification(errorMessage, 'error');
@@ -1258,7 +1258,7 @@ export default {
     },
 
     async saveChanges() {
-      this.showNotification('Функция обновления пароля', 'info');
+      this.showNotification('Password update function', 'info');
     },
 
     goToProfile() {
@@ -1268,7 +1268,7 @@ export default {
     formatDate(date) {
       if (!date) return '';
       try {
-        return new Date(date).toLocaleDateString('ru-RU');
+        return new Date(date).toLocaleDateString('en-US');
       } catch (error) {
         return '';
       }
@@ -1286,14 +1286,14 @@ export default {
       };
       
       const titles = {
-        success: 'Успешно',
-        error: 'Ошибка',
-        warning: 'Внимание',
-        info: 'Информация'
+        success: 'Success',
+        error: 'Error',
+        warning: 'Warning',
+        info: 'Information'
       };
       
       this.notificationIcon = icons[type] || 'ℹ';
-      this.notificationTitle = titles[type] || 'Уведомление';
+      this.notificationTitle = titles[type] || 'Notification';
       
       setTimeout(() => {
         this.notification = '';
