@@ -346,7 +346,7 @@ export const getDiaryEntries = async (userId) => {
 };
 
 // =============================================
-// 🧬 LEARNING PROFILE (NEW & PATHS FIXED)
+// 🧬 LEARNING PROFILE (UPDATED PATHS)
 // =============================================
 
 /**
@@ -360,8 +360,8 @@ export const getLearningProfile = async (userId) => {
     }
 
     const headers = { Authorization: `Bearer ${token}` };
-    // ✅ FIXED: Use relative path
-    const { data } = await api.get(`learning-profile/${userId}`, { headers });
+    // ✅ FIXED: Add 'progress/' prefix
+    const { data } = await api.get(`progress/learning-profile/${userId}`, { headers });
     
     return data;
   } catch (error) {
@@ -381,8 +381,8 @@ export const updateLearningProfile = async (userId, performanceData) => {
     }
 
     const headers = { Authorization: `Bearer ${token}` };
-    // ✅ FIXED: Use relative path
-    const { data } = await api.post(`learning-profile/${userId}/update`, performanceData, { headers });
+    // ✅ FIXED: Add 'progress/' prefix
+    const { data } = await api.post(`progress/learning-profile/${userId}/update`, performanceData, { headers });
     
     return data;
   } catch (error) {
@@ -402,8 +402,8 @@ export const getPersonalizedRecommendations = async (userId) => {
     }
 
     const headers = { Authorization: `Bearer ${token}` };
-    // ✅ FIXED: Use relative path
-    const { data } = await api.get(`learning-profile/${userId}/recommendation`, { headers });
+    // ✅ FIXED: Add 'progress/' prefix
+    const { data } = await api.get(`progress/learning-profile/${userId}/recommendation`, { headers });
     
     return data;
   } catch (error) {
@@ -413,7 +413,7 @@ export const getPersonalizedRecommendations = async (userId) => {
 };
 
 // =============================================
-// 🎮 REWARD SYSTEM (UPDATED)
+// 🎮 REWARD SYSTEM (UPDATED PATHS)
 // =============================================
 
 /**
@@ -427,8 +427,8 @@ export const getUserRewards = async (userId) => {
     }
 
     const headers = { Authorization: `Bearer ${token}` };
-    // ✅ UPDATED: Use relative path
-    const { data } = await api.get(`rewards/${userId}`, { headers });
+    // ✅ FIXED: Add 'progress/' prefix
+    const { data } = await api.get(`progress/rewards/${userId}`, { headers });
     
     return data;
   } catch (error) {
@@ -448,8 +448,8 @@ export const checkReward = async (userId, currentStep) => {
     }
 
     const headers = { Authorization: `Bearer ${token}` };
-    // ✅ UPDATED: Use relative path
-    const { data } = await api.post(`rewards/${userId}/check`, { currentStep }, { headers });
+    // ✅ FIXED: Add 'progress/' prefix
+    const { data } = await api.post(`progress/rewards/${userId}/check`, { currentStep }, { headers });
     
     return data;
   } catch (error) {
@@ -469,8 +469,8 @@ export const updateStreak = async (userId) => {
     }
 
     const headers = { Authorization: `Bearer ${token}` };
-    // ✅ UPDATED: Use relative path
-    const { data } = await api.post(`rewards/${userId}/streak`, {}, { headers });
+    // ✅ FIXED: Add 'progress/' prefix
+    const { data } = await api.post(`progress/rewards/${userId}/streak`, {}, { headers });
     
     return data;
   } catch (error) {
