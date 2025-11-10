@@ -4,19 +4,19 @@
       <!-- Payment Success View -->
       <div v-if="paymentStatus === 'success'" class="payment-result success">
         <div class="result-icon">✅</div>
-        <h1 class="result-title">Оплата успешна!</h1>
-        <p class="result-message">Ваша подписка {{ planName }} активирована</p>
+        <h1 class="result-title">Payment Successful!</h1>
+        <p class="result-message">Your {{ planName }} subscription has been activated</p>
         <div class="transaction-info">
-          <p><strong>План:</strong> {{ planName }}</p>
-          <p><strong>Сумма:</strong> {{ formatAmount(finalAmount) }}</p>
-          <p v-if="transactionId"><strong>ID транзакции:</strong> {{ transactionId }}</p>
+          <p><strong>Plan:</strong> {{ planName }}</p>
+          <p><strong>Amount:</strong> {{ formatAmount(finalAmount) }}</p>
+          <p v-if="transactionId"><strong>Transaction ID:</strong> {{ transactionId }}</p>
         </div>
         <div class="result-actions">
           <button @click="goToDashboard" class="btn-primary btn-large">
-            Перейти к курсам
+            Go to Courses
           </button>
           <button @click="goHome" class="btn-secondary">
-            На главную
+            Home
           </button>
         </div>
       </div>
@@ -24,14 +24,14 @@
       <!-- Payment Failed View -->
       <div v-else-if="paymentStatus === 'failed'" class="payment-result failed">
         <div class="result-icon error">❌</div>
-        <h1 class="result-title">Оплата не прошла</h1>
-        <p class="result-message">{{ failureReason || 'Произошла ошибка при обработке платежа' }}</p>
+        <h1 class="result-title">Payment Failed</h1>
+        <p class="result-message">{{ failureReason || 'An error occurred while processing payment' }}</p>
         <div class="result-actions">
           <button @click="retryPayment" class="btn-primary btn-large">
-            Попробовать снова
+            Try Again
           </button>
           <button @click="goBack" class="btn-secondary">
-            Изменить способ оплаты
+            Change Payment Method
           </button>
         </div>
       </div>
@@ -39,14 +39,14 @@
       <!-- Payment Cancelled View -->
       <div v-else-if="paymentStatus === 'cancelled'" class="payment-result cancelled">
         <div class="result-icon warning">⚠️</div>
-        <h1 class="result-title">Оплата отменена</h1>
-        <p class="result-message">Вы отменили процесс оплаты</p>
+        <h1 class="result-title">Payment Cancelled</h1>
+        <p class="result-message">You cancelled the payment process</p>
         <div class="result-actions">
           <button @click="retryPayment" class="btn-primary btn-large">
-            Вернуться к оплате
+            Return to Payment
           </button>
           <button @click="goHome" class="btn-secondary">
-            На главную
+            Home
           </button>
         </div>
       </div>
@@ -58,28 +58,28 @@
           <h1>{{ loadingMessage }}</h1>
         </div>
         <div class="spinner"></div>
-        <p>Перенаправление на страницу оплаты...</p>
+        <p>Redirecting to payment page...</p>
         
         <div class="user-info-loading" v-if="userName">
-          <p><strong>Пользователь:</strong> {{ finalUserName }}</p>
-          <p><strong>План:</strong> {{ planName }} ({{ formatAmount(finalAmount) }})</p>
+          <p><strong>User:</strong> {{ finalUserName }}</p>
+          <p><strong>Plan:</strong> {{ planName }} ({{ formatAmount(finalAmount) }})</p>
         </div>
       </div>
 
       <!-- Error State -->
       <div v-else-if="error" class="error-state">
         <div class="error-icon">❌</div>
-        <h2>Ошибка инициации платежа</h2>
+        <h2>Payment Initialization Error</h2>
         <p class="error-message">{{ error }}</p>
         
         <div v-if="showDebugInfo" class="debug-info">
-          <h4>Отладочная информация:</h4>
+          <h4>Debug Information:</h4>
           <pre>{{ debugData }}</pre>
         </div>
         
         <div class="error-actions">
-          <button @click="goBack" class="back-btn">← Назад</button>
-          <button @click="retryPayment" class="retry-btn">🔄 Попробовать снова</button>
+          <button @click="goBack" class="back-btn">← Back</button>
+          <button @click="retryPayment" class="retry-btn">🔄 Try Again</button>
         </div>
       </div>
 
@@ -87,42 +87,42 @@
       <div v-else class="method-selection-state">
         <div class="checkout-logo">
           <div class="logo-icon">💳</div>
-          <h1>Оформление платежа</h1>
-          <p class="subtitle">Безопасная оплата подписки ACED</p>
+          <h1>Payment Checkout</h1>
+          <p class="subtitle">Secure ACED subscription payment</p>
         </div>
 
         <div class="user-info-section">
-          <h3>👤 Информация о платеже</h3>
+          <h3>👤 Payment Information</h3>
           <div class="user-details">
             <div class="user-row">
-              <span class="label">Имя:</span>
-              <span class="value">{{ finalUserName || 'Не указано' }}</span>
+              <span class="label">Name:</span>
+              <span class="value">{{ finalUserName || 'Not specified' }}</span>
             </div>
             <div class="user-row">
-              <span class="label">ID пользователя:</span>
-              <span class="value user-id">{{ finalUserId || 'Не указан' }}</span>
+              <span class="label">User ID:</span>
+              <span class="value user-id">{{ finalUserId || 'Not specified' }}</span>
             </div>
             <div class="user-row">
               <span class="label">Email:</span>
-              <span class="value">{{ finalUserEmail || 'Не указан' }}</span>
+              <span class="value">{{ finalUserEmail || 'Not specified' }}</span>
             </div>
             <div class="user-row">
-              <span class="label">Текущий план:</span>
+              <span class="label">Current Plan:</span>
               <span class="value current-plan">{{ currentPlan || 'Free' }}</span>
             </div>
             <div class="user-row upgrade-row" v-if="finalPlan">
-              <span class="label">Переход на план:</span>
+              <span class="label">Upgrading to:</span>
               <span class="value new-plan">{{ planName }}</span>
             </div>
             <div class="user-row" v-if="finalAmount">
-              <span class="label">Сумма к оплате:</span>
+              <span class="label">Amount to Pay:</span>
               <span class="value amount">{{ formatAmount(finalAmount) }}</span>
             </div>
           </div>
         </div>
 
         <div class="provider-selection">
-          <h3>💳 Выберите способ оплаты</h3>
+          <h3>💳 Choose Payment Method</h3>
           <div class="provider-options">
             <label 
               v-for="(provider, key) in providers"
@@ -143,7 +143,7 @@
                 <div class="provider-info">
                   <span class="provider-name">{{ provider.name }}</span>
                   <span class="provider-description">{{ provider.description }}</span>
-                  <span v-if="!provider.enabled" class="coming-soon">Скоро</span>
+                  <span v-if="!provider.enabled" class="coming-soon">Coming Soon</span>
                 </div>
               </div>
             </label>
@@ -152,7 +152,7 @@
 
         <!-- Saved Cards Section (for Multicard only) -->
         <div v-if="paymentProvider === 'multicard' && savedCards.length > 0" class="saved-cards-section">
-          <h3>💳 Сохраненные карты</h3>
+          <h3>💳 Saved Cards</h3>
           <div class="saved-cards">
             <label 
               v-for="card in savedCards" 
@@ -185,8 +185,8 @@
               <div class="card-info">
                 <div class="card-icon">➕</div>
                 <div class="card-details">
-                  <p class="card-number">Новая карта</p>
-                  <p class="card-type">Добавить другую карту</p>
+                  <p class="card-number">New Card</p>
+                  <p class="card-type">Add another card</p>
                 </div>
               </div>
               <div class="card-radio">
@@ -197,14 +197,14 @@
         </div>
 
         <div class="plan-selection" v-if="!plan">
-          <h3>📋 Выберите план</h3>
+          <h3>📋 Choose Plan</h3>
           <div class="plan-options">
             <label class="plan-option" :class="{ active: selectedPlan === 'start' }">
               <input type="radio" v-model="selectedPlan" value="start" />
               <div class="plan-details">
                 <strong>Start Plan</strong>
                 <span class="plan-price">260,000 UZS</span>
-                <span class="plan-features">Базовые возможности</span>
+                <span class="plan-features">Basic features</span>
               </div>
             </label>
             
@@ -213,16 +213,16 @@
               <div class="plan-details">
                 <strong>Pro Plan</strong>
                 <span class="plan-price">455,000 UZS</span>
-                <span class="plan-features">Все возможности</span>
+                <span class="plan-features">All features</span>
               </div>
             </label>
           </div>
         </div>
 
         <div class="language-selection">
-          <h3>🌐 Язык интерфейса</h3>
+          <h3>🌐 Interface Language</h3>
           <select v-model="selectedLanguage" class="language-select">
-            <option value="ru">🇷🇺 Русский</option>
+            <option value="ru">🇷🇺 Russian</option>
             <option value="uz">🇺🇿 O'zbek</option>
             <option value="en">🇺🇸 English</option>
           </select>
@@ -236,27 +236,27 @@
         >
           <span v-if="processing" class="button-spinner"></span>
           <span v-else-if="providers[paymentProvider]?.enabled && canProceedToPayment">
-            💳 Оплатить {{ formatAmount(finalAmount) }}
+            💳 Pay {{ formatAmount(finalAmount) }}
           </span>
           <span v-else-if="!canProceedToPayment">
             {{ validationMessage }}
           </span>
           <span v-else>
-            Выберите доступный способ оплаты
+            Choose available payment method
           </span>
         </button>
 
         <div class="security-notice">
           <span class="security-icon">🔒</span>
-          <p>Ваши платежные данные защищены и передаются по безопасному протоколу</p>
+          <p>Your payment data is protected and transmitted via secure protocol</p>
         </div>
       </div>
 
       <!-- OTP Modal -->
       <div v-if="showOtpModal" class="modal-overlay" @click.self="closeOtpModal">
         <div class="modal-content otp-modal">
-          <h3>Введите код подтверждения</h3>
-          <p>Код отправлен на номер телефона, привязанный к карте</p>
+          <h3>Enter Verification Code</h3>
+          <p>Code sent to the phone number linked to your card</p>
           
           <div class="otp-input-container">
             <input 
@@ -276,10 +276,10 @@
 
           <div class="modal-actions">
             <button @click="closeOtpModal" class="btn-secondary" :disabled="processing">
-              Отмена
+              Cancel
             </button>
             <button @click="submitOtp" class="btn-primary" :disabled="processing || otp.length < 6">
-              {{ processing ? 'Проверка...' : 'Подтвердить' }}
+              {{ processing ? 'Verifying...' : 'Confirm' }}
             </button>
           </div>
         </div>
@@ -343,9 +343,9 @@ export default {
       failureReason: '',
       
       // Payment method selection
-      selectedLanguage: 'ru',
+      selectedLanguage: 'en',
       selectedPlan: '',
-      loadingMessage: 'Подготовка к оплате...',
+      loadingMessage: 'Preparing payment...',
 
       // Provider selection with emoji icons
       paymentProvider: 'multicard',
@@ -354,25 +354,25 @@ export default {
           enabled: true, 
           name: 'Multicard', 
           emoji: '💳',
-          description: 'Банковские карты Узбекистана'
+          description: 'Uzbekistan bank cards'
         },
         payme: { 
           enabled: true, 
           name: 'PayMe', 
           emoji: '📱',
-          description: 'Быстрая оплата'
+          description: 'Fast payment'
         },
         click: { 
           enabled: false, 
           name: 'Click', 
           emoji: '⚡',
-          description: 'Оплата через Click'
+          description: 'Click payment'
         },
         uzum: { 
           enabled: false, 
           name: 'Uzum Bank', 
           emoji: '🟣',
-          description: 'Uzum Bank и кошелек'
+          description: 'Uzum Bank and wallet'
         }
       },
       
@@ -415,7 +415,7 @@ export default {
              this.userName || 
              this.$route.query.userName || 
              auth.currentUser?.displayName || 
-             'Пользователь';
+             'User';
     },
     
     finalUserEmail() {
@@ -458,11 +458,11 @@ export default {
     },
     
     validationMessage() {
-      if (!this.finalUserId) return 'Не указан ID пользователя';
-      if (!this.finalPlan) return 'Выберите план';
-      if (!this.finalAmount || this.finalAmount <= 0) return 'Неверная сумма платежа';
-      if (!this.providers[this.paymentProvider]?.enabled) return 'Выберите доступный способ оплаты';
-      return 'Заполните все поля';
+      if (!this.finalUserId) return 'User ID not specified';
+      if (!this.finalPlan) return 'Choose plan';
+      if (!this.finalAmount || this.finalAmount <= 0) return 'Invalid payment amount';
+      if (!this.providers[this.paymentProvider]?.enabled) return 'Choose available payment method';
+      return 'Fill in all fields';
     },
     
     otp() {
@@ -526,7 +526,7 @@ export default {
               if (user) {
                 console.log('✅ Auth ready:', user.uid);
                 this.internalUserId = user.uid;
-                this.internalUserName = user.displayName || 'Пользователь';
+                this.internalUserName = user.displayName || 'User';
                 this.internalUserEmail = user.email || '';
                 unsubscribe();
                 resolve();
@@ -551,7 +551,7 @@ export default {
         
       } catch (error) {
         console.error('❌ Checkout initialization error:', error);
-        this.error = 'Ошибка инициализации платежа';
+        this.error = 'Payment initialization error';
       }
     },
     
@@ -582,7 +582,7 @@ export default {
         this.selectedPlan = query.plan;
       }
       
-      this.selectedLanguage = query.lang || 'ru';
+      this.selectedLanguage = query.lang || 'en';
       
       if (this.provider && this.providers[this.provider]) {
         this.paymentProvider = this.provider;
@@ -692,7 +692,7 @@ export default {
           cardToken: this.selectedCardToken
         });
         
-        this.loadingMessage = `Перенаправление на ${this.providers[provider]?.name || 'оплату'}...`;
+        this.loadingMessage = `Redirecting to ${this.providers[provider]?.name || 'payment'}...`;
         
         if (provider === 'payme') {
           await this.processPaymePayment();
@@ -703,15 +703,15 @@ export default {
             await this.processMulticardNewCardPayment();
           }
         } else {
-          throw new Error('Выбранный способ оплаты временно недоступен');
+          throw new Error('Selected payment method is temporarily unavailable');
         }
 
       } catch (error) {
         console.error('❌ Payment processing error:', error);
         
-        if (error.message?.includes('временно отключен') || 
-            error.message?.includes('temporarily disabled')) {
-          this.error = 'Этот способ оплаты временно недоступен. Пожалуйста, выберите другой способ оплаты.';
+        if (error.message?.includes('temporarily disabled') || 
+            error.message?.includes('temporarily unavailable')) {
+          this.error = 'This payment method is temporarily unavailable. Please choose another payment method.';
         } else {
           this.error = this.formatError(error);
         }
@@ -735,7 +735,7 @@ export default {
         console.log('✅ PayMe URL received:', result.paymentUrl);
         window.location.href = result.paymentUrl;
       } else {
-        throw new Error(result.error || 'Не удалось получить ссылку на оплату PayMe');
+        throw new Error(result.error || 'Failed to get PayMe payment link');
       }
     },
 
@@ -756,7 +756,7 @@ export default {
         console.log('✅ Multicard URL received:', result.data.checkoutUrl);
         window.location.href = result.data.checkoutUrl;
       } else {
-        throw new Error(result.error || 'Не удалось получить ссылку на оплату Multicard');
+        throw new Error(result.error || 'Failed to get Multicard payment link');
       }
     },
 
@@ -822,14 +822,14 @@ export default {
             this.closeOtpModal();
             this.handlePaymentSuccess(result.data);
           } else {
-            throw new Error('Платеж не подтвержден');
+            throw new Error('Payment not confirmed');
           }
         } else {
           throw new Error(result.error);
         }
       } catch (err) {
         console.error('❌ OTP error:', err);
-        this.otpError = err.message || 'Неверный код подтверждения';
+        this.otpError = err.message || 'Invalid verification code';
       } finally {
         this.processing = false;
       }
@@ -867,7 +867,7 @@ export default {
         return error.message;
       }
       
-      return 'Произошла ошибка при обработке платежа. Попробуйте снова.';
+      return 'An error occurred while processing payment. Please try again.';
     },
 
     async retryPayment() {
@@ -891,13 +891,13 @@ export default {
       const uzs = Math.floor(amount);
       
       try {
-        return new Intl.NumberFormat('uz-UZ', {
+        return new Intl.NumberFormat('en-US', {
           style: 'decimal',
           minimumFractionDigits: 0,
           maximumFractionDigits: 0
-        }).format(uzs) + ' сум';
+        }).format(uzs) + ' sum';
       } catch (formatError) {
-        return `${uzs.toLocaleString()} сум`;
+        return `${uzs.toLocaleString()} sum`;
       }
     },
 

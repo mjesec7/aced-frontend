@@ -2,19 +2,19 @@
   <div class="topic-overview">
     <div v-if="loading" class="loading-container">
       <div class="loading-spinner"></div>
-      <p class="loading-text">Загрузка информации о курсе...</p>
+      <p class="loading-text">Loading course information...</p>
     </div>
 
     <div v-else-if="!topic || error" class="error-container">
       <div class="error-icon">❌</div>
       <h3 class="error-title">
-        {{ topic ? 'Произошла ошибка' : 'Тема не найдена' }}
+        {{ topic ? 'An error occurred' : 'Topic not found' }}
       </h3>
       <p class="error-message">
-        {{ topic ? error : 'Возможно, тема была удалена или у вас нет к ней доступа' }}
+        {{ topic ? error : 'The topic may have been deleted or you do not have access to it' }}
       </p>
       <button @click="navigateToProfile" class="btn btn-back">
-        ⬅️ Назад к каталогу
+        ⬅️ Back to catalog
       </button>
       <div v-if="isDevelopment && debugInfo" class="debug-info">
         <h4>Debug Info (Dev Mode Only):</h4>
@@ -28,7 +28,7 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M19 12H5M12 19l-7-7 7-7"/>
           </svg>
-          Назад к каталогу
+          Back to catalog
         </button>
       </div>
 
@@ -44,19 +44,19 @@
         <div class="topic-stats">
           <div class="stat-card">
             <div class="stat-number">{{ lessons.length }}</div>
-            <div class="stat-label">Всего уроков</div>
+            <div class="stat-label">Total lessons</div>
           </div>
           <div class="stat-card">
             <div class="stat-number">{{ freeCount }}</div>
-            <div class="stat-label">Бесплатных</div>
+            <div class="stat-label">Free</div>
           </div>
           <div class="stat-card">
             <div class="stat-number">{{ premiumCount }}</div>
-            <div class="stat-label">Премиум</div>
+            <div class="stat-label">Premium</div>
           </div>
           <div class="stat-card">
             <div class="stat-number">{{ Math.round(overallProgress) }}%</div>
-            <div class="stat-label">Прогресс</div>
+            <div class="stat-label">Progress</div>
           </div>
         </div>
       </div>
@@ -65,41 +65,41 @@
         <div class="section-header">
           <h2 class="section-title">
             <span class="section-icon">📚</span>
-            Уроки курса
+            Course lessons
           </h2>
           <div class="lesson-filters">
             <button 
               :class="['filter-btn', { active: filter === 'all' }]"
               @click="filter = 'all'"
             >
-              Все ({{ lessons.length }})
+              All ({{ lessons.length }})
             </button>
             <button 
               :class="['filter-btn', { active: filter === 'free' }]"
               @click="filter = 'free'"
             >
-              Бесплатные ({{ freeCount }})
+              Free ({{ freeCount }})
             </button>
             <button 
               :class="['filter-btn', { active: filter === 'premium' }]"
               @click="filter = 'premium'"
             >
-              Премиум ({{ premiumCount }})
+              Premium ({{ premiumCount }})
             </button>
             <button 
               :class="['filter-btn', { active: filter === 'completed' }]"
               @click="filter = 'completed'"
             >
-              Завершённые ({{ completedCount }})
+              Completed ({{ completedCount }})
             </button>
           </div>
         </div>
 
         <div v-if="filteredLessons.length === 0" class="no-lessons">
           <div class="no-lessons-icon">📭</div>
-          <h3 class="no-lessons-title">Уроки не найдены</h3>
+          <h3 class="no-lessons-title">No lessons found</h3>
           <p class="no-lessons-text">
-            {{ filter !== 'all' ? 'Попробуйте изменить фильтр' : 'В этой теме пока нет уроков' }}
+            {{ filter !== 'all' ? 'Try changing the filter' : 'There are no lessons in this topic yet' }}
           </p>
         </div>
 
@@ -154,13 +154,13 @@
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M6 10V8C6 5.79086 7.79086 4 10 4H14C16.2091 4 18 5.79086 18 8V10H20V20H4V10H6ZM8 10H16V8C16 6.89543 15.1046 6 14 6H10C8.89543 6 8 6.89543 8 8V10Z"/>
                 </svg>
-                Премиум
+                Premium
               </span>
               <span v-else>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"/>
                 </svg>
-                Бесплатно
+                Free
               </span>
             </div>
 
@@ -172,8 +172,8 @@
               <div v-if="lesson.progress || currentUser" class="lesson-progress">
                 <div class="progress-info">
                   <span class="progress-label">
-                    {{ lesson.progress?.completed ? 'Завершено' : 
-                       lesson.progress?.progressPercent > 0 ? 'В процессе' : 'Не начато' }}
+                    {{ lesson.progress?.completed ? 'Completed' : 
+                       lesson.progress?.progressPercent > 0 ? 'In progress' : 'Not started' }}
                   </span>
                   <span class="progress-percentage">
                     {{ Math.round(lesson.progress?.progressPercent || 0) }}%
@@ -201,14 +201,14 @@
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M9 11H15M9 15H15M17 21H7C5.89543 21 5 20.1046 5 19V5C5 3.89543 5.89543 3 7 3H12.5858C12.851 3 13.1054 3.10536 13.2929 3.29289L19.7071 9.70711C19.8946 9.89464 20 10.149 20 10.4142V19C20 20.1046 19.1046 21 18 21H17Z"/>
                   </svg>
-                  {{ lesson.steps.length }} шагов
+                  {{ lesson.steps.length }} steps
                 </span>
                 <span v-if="lesson.metadata?.estimatedDuration" class="meta-item">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="10"/>
                     <polyline points="12,6 12,12 16,14"/>
                   </svg>
-                  {{ lesson.metadata.estimatedDuration }} мин
+                  {{ lesson.metadata.estimatedDuration }} min
                 </span>
                 <span v-if="lesson.homework?.totalExercises > 0" class="meta-item">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -218,14 +218,14 @@
                     <line x1="16" y1="17" x2="8" y2="17"/>
                     <polyline points="10,9 9,9 8,9"/>
                   </svg>
-                  {{ lesson.homework.totalExercises }} заданий
+                  {{ lesson.homework.totalExercises }} exercises
                 </span>
                 <span v-if="lesson.progress?.duration" class="meta-item time-spent">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="10"/>
                     <polyline points="12,6 12,12 16,14"/>
                   </svg>
-                  {{ formatDuration(lesson.progress.duration) }} потрачено
+                  {{ formatDuration(lesson.progress.duration) }} spent
                 </span>
               </div>
             </div>
@@ -243,16 +243,16 @@
                 @click.stop="startLesson(lesson)"
               >
                 <span v-if="lesson.type === 'premium' && !isPremiumUser">
-                  🔒 Требуется подписка
+                  🔒 Subscription required
                 </span>
                 <span v-else-if="lesson.progress?.completed">
-                  ✅ Пройти ещё раз
+                  ✅ Take again
                 </span>
                 <span v-else-if="lesson.progress?.progressPercent > 0">
-                  ▶️ Продолжить урок
+                  ▶️ Continue lesson
                 </span>
                 <span v-else>
-                  🚀 Начать урок
+                  🚀 Start lesson
                 </span>
               </button>
             </div>
@@ -270,11 +270,11 @@
 
       <div class="action-section">
         <div class="action-content">
-          <h3 class="action-title">Готовы начать обучение?</h3>
+          <h3 class="action-title">Ready to start learning?</h3>
           <p class="action-description">
             {{ reactiveAvailableCount > 0 
-              ? `У вас есть доступ к ${reactiveAvailableCount} урокам из ${lessons.length}` 
-              : 'Оформите подписку для доступа ко всем урокам'
+              ? `You have access to ${reactiveAvailableCount} out of ${lessons.length} lessons` 
+              : 'Subscribe to access all lessons'
             }}
           </p>
           <div class="action-buttons">
@@ -283,20 +283,20 @@
               @click="startFirstLesson" 
               class="btn btn-primary btn-start"
             >
-              🚀 Начать первый урок
+              🚀 Start first lesson
             </button>
             <button 
               v-else
               @click="handleSubscription" 
               class="btn btn-premium btn-start"
             >
-              ⭐ Оформить подписку
+              ⭐ Subscribe
             </button>
             <button 
               @click="navigateToProfile" 
               class="btn btn-secondary"
             >
-              📚 Другие курсы
+              📚 Other courses
             </button>
           </div>
         </div>
@@ -399,8 +399,6 @@ export default {
 
       const finalPlan = overridePlan || storePlan || localPlan || componentPlan || 'free';
       
-   
-      
       return finalPlan;
     },
     
@@ -408,7 +406,6 @@ export default {
       const plan = this.enhancedUserPlan;
       const premiumPlans = ['premium', 'start', 'pro'];
       const isPremium = premiumPlans.includes(plan);
-      
       
       return isPremium;
     },
@@ -465,13 +462,10 @@ export default {
   },
   
   async mounted() {
-    
     try {
       await this.initializeComponent();
       this.setupEventListeners();
       this.setupPeriodicChecks();
-      
-      
     } catch (error) {
       console.error('❌ TopicOverview: Mount error:', error);
       this.loading = false; 
@@ -498,7 +492,6 @@ export default {
         this.topic = null;
         this.lessons = [];
 
-        
         await this.waitForAuth();
         await this.loadUserPlan();
         await this.loadTopicData();
@@ -507,11 +500,9 @@ export default {
         if (this.currentUser && this.lessons.length > 0) {
           await this.loadUserProgressForLessons();
         }
-        
-        
       } catch (error) {
         console.error('❌ Component initialization failed:', error);
-        this.error = this.handleError(error, 'инициализация компонента');
+        this.error = this.handleError(error, 'component initialization');
         this.loading = false;
         this.topic = null;
         this.lessons = [];
@@ -538,7 +529,6 @@ export default {
       try {
         this.progressLoading = true;
         const userId = this.currentUser.uid;
-        
 
         // Method 1: Try to get all user progress at once
         try {
@@ -549,6 +539,7 @@ export default {
             return;
           }
         } catch (bulkError) {
+          // Fallback to individual loading
         }
 
         // Method 2: Load progress for each lesson individually
@@ -577,7 +568,6 @@ export default {
           }
         });
 
-
       } catch (error) {
         console.error('❌ Error loading user progress:', error);
       } finally {
@@ -602,7 +592,6 @@ export default {
           lesson.progress = this.normalizeProgressData(progressRecord);
         }
       });
-
     },
 
     // Normalize progress data structure
@@ -634,17 +623,17 @@ export default {
     // Format duration in minutes and seconds
     formatDuration(seconds) {
       if (!seconds || seconds < 60) {
-        return `${seconds || 0}с`;
+        return `${seconds || 0}s`;
       }
       
       const minutes = Math.floor(seconds / 60);
       const remainingSeconds = seconds % 60;
       
       if (remainingSeconds === 0) {
-        return `${minutes}м`;
+        return `${minutes}m`;
       }
       
-      return `${minutes}м ${remainingSeconds}с`;
+      return `${minutes}m ${remainingSeconds}s`;
     },
 
     // Trigger reactivity update
@@ -655,7 +644,6 @@ export default {
 
     // Setup event listeners for external changes
     setupEventListeners() {
-      
       // Listen for subscription changes
       if (typeof window !== 'undefined') {
         this.globalEventHandlers.subscriptionChange = (event) => {
@@ -679,7 +667,6 @@ export default {
 
     // Setup periodic checks
     setupPeriodicChecks() {
-      
       // Check payment status every 30 seconds
       this.paymentCheckInterval = setInterval(() => {
         this.checkPaymentStatus();
@@ -697,13 +684,9 @@ export default {
         return;
       }
       
-      
       return new Promise((resolve) => {
         const unsubscribe = auth.onAuthStateChanged((user) => {
           unsubscribe();
-          if (user) {
-          } else {
-          }
           resolve();
         });
         
@@ -719,7 +702,7 @@ export default {
       const topicId = this.$route.params.id;
 
       if (!topicId) {
-        this.error = 'ID темы не указан в URL';
+        this.error = 'Topic ID not specified in URL';
         this.loading = false;
         return;
       }
@@ -727,7 +710,6 @@ export default {
       try {
         this.loading = true;
         this.error = null;
-        
         
         const topicResult = await getTopicById(topicId);
         
@@ -775,14 +757,13 @@ export default {
         }
         
         this.topic = this.normalizeTopicData(topicData);
-        
 
         await this.loadLessonsForTopic(this.topic._id || this.topic.id);
         
       } catch (err) {
         console.error('❌ Error loading topic data:', err);
         
-        this.error = this.handleError(err, 'загрузка темы');
+        this.error = this.handleError(err, 'loading topic');
         this.topic = null;
         this.lessons = [];
         
@@ -838,16 +819,13 @@ export default {
           }
         }
         
-        
         this.lessons = lessonsData
           .map((lesson, index) => this.normalizeLessonData(lesson, topicId, index))
           .filter(lesson => lesson !== null);
         
-        
       } catch (lessonError) {
         console.error('❌ Error loading lessons:', lessonError);
         this.lessons = [];
-        
         
         if (this.isDevelopment) {
           this.debugInfo = {
@@ -896,8 +874,8 @@ export default {
           console.error('Normalization: Topic data missing a valid ID:', rawData);
           return null;
       }
-      if (!normalized.name || normalized.name === 'Без названия') {
-          normalized.name = `Тема ${normalized._id?.substring(0, 8) || ''}`;
+      if (!normalized.name || normalized.name === 'Untitled') {
+          normalized.name = `Topic ${normalized._id?.substring(0, 8) || ''}`;
       }
 
       return normalized;
@@ -938,8 +916,8 @@ export default {
         _raw: this.isDevelopment ? rawLesson : undefined
       };
 
-      if (!normalized.lessonName || normalized.lessonName === 'Без названия') {
-          normalized.lessonName = `Урок ${index + 1} (${normalized._id.substring(0, 8)})`;
+      if (!normalized.lessonName || normalized.lessonName === 'Untitled') {
+          normalized.lessonName = `Lesson ${index + 1} (${normalized._id.substring(0, 8)})`;
       }
 
       return normalized;
@@ -948,7 +926,6 @@ export default {
     // Enhanced user plan loading from multiple reliable sources
     async loadUserPlan() {
       try {
-        
         const storeStatus = this.$store?.getters?.['user/userStatus'];
         if (storeStatus && ['premium', 'start', 'pro', 'free'].includes(storeStatus)) {
           this.userPlan = storeStatus;
@@ -976,9 +953,9 @@ export default {
               localStorage.setItem('userStatus', apiPlan);
               this.$store.commit('user/SET_USER_STATUS', apiPlan);
               return;
-            } else {
             }
           } catch (apiError) {
+            // Fallback to free
           }
         }
         
@@ -993,7 +970,7 @@ export default {
 
     // Enhanced name extraction with fallbacks
     extractName(data) {
-      if (!data) return 'Без названия';
+      if (!data) return 'Untitled';
       
       if (typeof data.name === 'string' && data.name.trim()) {
         return data.name.trim();
@@ -1026,12 +1003,12 @@ export default {
         }
       }
       
-      return 'Без названия';
+      return 'Untitled';
     },
     
     // Enhanced description extraction with fallbacks
     extractDescription(data) {
-      if (!data) return 'Нет описания';
+      if (!data) return 'No description';
       
       if (typeof data.description === 'string' && data.description.trim()) {
         return data.description.trim();
@@ -1064,12 +1041,12 @@ export default {
         }
       }
       
-      return 'Нет описания для этой темы.';
+      return 'No description for this topic.';
     },
     
     // Enhanced lesson name extraction with more robust checks
     extractLessonName(lesson) {
-      if (!lesson) return 'Без названия';
+      if (!lesson) return 'Untitled';
       
       const nameFields = ['lessonName', 'title', 'name'];
       
@@ -1095,7 +1072,7 @@ export default {
           }
       }
       
-      return 'Без названия';
+      return 'Untitled';
     },
     
     // Enhanced lesson description extraction with more robust checks
@@ -1125,32 +1102,32 @@ export default {
     },
     
     // Comprehensive error handling utility
-    handleError(error, context = 'операция') {
-      console.error(`❌ Ошибка в ${context}:`, error);
+    handleError(error, context = 'operation') {
+      console.error(`❌ Error in ${context}:`, error);
       
-      let errorMessage = `Произошла ошибка при ${context}. Пожалуйста, попробуйте еще раз.`;
+      let errorMessage = `An error occurred during ${context}. Please try again.`;
 
       if (error.response) {
         switch (error.response.status) {
-          case 400: errorMessage = `Неверный запрос: ${error.response.data?.message || 'проверьте данные.'}`; break;
-          case 401: errorMessage = 'Необходимо войти в систему. Пожалуйста, обновите страницу или войдите снова.'; break;
-          case 403: errorMessage = 'Доступ запрещен. У вас нет прав для этой операции.'; break;
-          case 404: errorMessage = 'Ресурс не найден. Возможно, он был удален или перемещен.'; break;
-          case 429: errorMessage = 'Слишком много запросов. Пожалуйста, подождите немного и повторите попытку.'; break;
+          case 400: errorMessage = `Bad request: ${error.response.data?.message || 'check your data.'}`; break;
+          case 401: errorMessage = 'You need to log in. Please refresh the page or log in again.'; break;
+          case 403: errorMessage = 'Access denied. You do not have permission for this operation.'; break;
+          case 404: errorMessage = 'Resource not found. It may have been deleted or moved.'; break;
+          case 429: errorMessage = 'Too many requests. Please wait a moment and try again.'; break;
           case 500: case 502: case 503: case 504:
-            errorMessage = 'Ошибка сервера. Мы уже работаем над устранением проблемы. Пожалуйста, попробуйте позже.'; break;
+            errorMessage = 'Server error. We are already working to fix the problem. Please try again later.'; break;
           default:
-            errorMessage = `Ошибка сервера (${error.response.status}): ${error.response.data?.message || 'неизвестная ошибка.'}`; break;
+            errorMessage = `Server error (${error.response.status}): ${error.response.data?.message || 'unknown error.'}`; break;
         }
       } else if (error.request) {
-        errorMessage = 'Ошибка сети. Проверьте подключение к интернету.';
+        errorMessage = 'Network error. Check your internet connection.';
       } else if (error.message) {
         if (error.message.includes('timeout')) {
-          errorMessage = 'Превышено время ожидания запроса. Пожалуйста, попробуйте позже.';
-        } else if (error.message.includes('ID темы не указан')) {
-          errorMessage = 'ID темы не предоставлен. Проверьте адрес страницы.';
+          errorMessage = 'Request timeout exceeded. Please try again later.';
+        } else if (error.message.includes('Topic ID not specified')) {
+          errorMessage = 'Topic ID not provided. Check the page URL.';
         } else if (error.message.includes('Invalid topic data received')) {
-          errorMessage = 'Получены неверные данные темы от сервера. Обратитесь в поддержку.';
+          errorMessage = 'Invalid topic data received from server. Contact support.';
         } else {
           errorMessage = error.message;
         }
@@ -1168,13 +1145,12 @@ export default {
       this.retryCount++;
       
       if (this.retryCount > 3) {
-        this.error = 'Превышено максимальное количество попыток. Пожалуйста, перезагрузите страницу.';
+        this.error = 'Maximum number of retries exceeded. Please refresh the page.';
         this.loading = false;
         return;
       }
       
       const delay = Math.pow(2, this.retryCount - 1) * 1000; 
-      
       
       await new Promise(resolve => setTimeout(resolve, delay));
       
@@ -1183,19 +1159,19 @@ export default {
     
     // Better topic name getter
     getTopicName(topic) {
-      if (!topic) return 'Без названия';
+      if (!topic) return 'Untitled';
       return this.extractName(topic);
     },
     
     // Better topic description getter
     getTopicDescription(topic) {
-      if (!topic) return 'Нет описания для этой темы.';
+      if (!topic) return 'No description for this topic.';
       return this.extractDescription(topic);
     },
     
     // Better lesson name getter
     getLessonName(lesson) {
-      if (!lesson) return 'Без названия';
+      if (!lesson) return 'Untitled';
       return this.extractLessonName(lesson);
     },
     
@@ -1210,7 +1186,7 @@ export default {
       try {
         if (!lesson || !lesson._id && !lesson.id) {
           console.error('❌ Cannot start lesson: invalid lesson object or missing ID', lesson);
-          this.error = 'Ошибка: недействительный урок или отсутствует ID.';
+          this.error = 'Error: invalid lesson or missing ID.';
           return;
         }
         
@@ -1225,7 +1201,7 @@ export default {
         
       } catch (error) {
         console.error('❌ Error starting lesson:', error);
-        this.error = 'Ошибка при запуске урока';
+        this.error = 'Error starting lesson';
       }
     },
     
@@ -1243,14 +1219,13 @@ export default {
         }
       } catch (error) {
         console.error('❌ Error starting first lesson:', error);
-        this.error = 'Ошибка при запуске первого урока';
+        this.error = 'Error starting first lesson';
       }
     },
     
     // Handle subscription redirect
     handleSubscription() {
       try {
-        
         this.$router.push({
           name: 'PaymePayment',
           params: { plan: 'start' },
@@ -1280,10 +1255,10 @@ export default {
         
         if (typeof this.$store.dispatch === 'function') {
           await this.$store.dispatch('user/checkPendingPayments');
-        } else {
         }
         
       } catch (error) {
+        // Silent fail
       }
     },
 
@@ -1309,7 +1284,6 @@ export default {
 
     // Cleanup method for all event listeners and intervals
     cleanup() {
-      
       if (this.statusChangeTimeout) {
         clearTimeout(this.statusChangeTimeout);
         this.statusChangeTimeout = null;
@@ -1338,6 +1312,7 @@ export default {
         try {
           cleanupFn();
         } catch (error) {
+          // Silent fail
         }
       });
       this.eventCleanupFunctions = [];
@@ -1348,7 +1323,6 @@ export default {
       }
       
       this.globalEventHandlers = {};
-      
     }
   },
   
@@ -1357,6 +1331,7 @@ export default {
     try {
       await this.checkPaymentStatus();
     } catch (error) {
+      // Silent fail
     }
   },
   
@@ -1383,13 +1358,15 @@ export default {
   }
 };
 </script>
-<style scoped>/* ========================================
+
+<style scoped>
+/* ========================================
 TOPIC OVERVIEW - CLEAN REDESIGN
 ======================================== */
 
 .topic-overview {
-min-height: 100vh;
-background: #fafafa;
+  min-height: 100vh;
+  background: #fafafa;
 }
 
 /* ========================================
@@ -1398,77 +1375,77 @@ LOADING & ERROR STATES
 
 .loading-container,
 .error-container {
-display: flex;
-flex-direction: column;
-align-items: center;
-justify-content: center;
-min-height: 60vh;
-padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 2rem;
 }
 
 .loading-spinner {
-width: 2.5rem;
-height: 2.5rem;
-border: 3px solid #f3f4f6;
-border-left-color: #6366f1;
-border-radius: 50%;
-animation: spin 1s linear infinite;
-margin-bottom: 1rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 3px solid #f3f4f6;
+  border-left-color: #6366f1;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
 }
 
 @keyframes spin {
-to { transform: rotate(360deg); }
+  to { transform: rotate(360deg); }
 }
 
 .loading-text {
-font-size: 0.875rem;
-color: #6b7280;
-font-weight: 500;
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
 }
 
 .error-icon {
-font-size: 3rem;
-margin-bottom: 1rem;
+  font-size: 3rem;
+  margin-bottom: 1rem;
 }
 
 .error-title {
-font-size: 1.25rem;
-font-weight: 700;
-color: #111827;
-margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 0.5rem 0;
 }
 
 .error-message {
-font-size: 0.875rem;
-color: #6b7280;
-margin: 0 0 1.5rem 0;
-text-align: center;
-max-width: 500px;
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0 0 1.5rem 0;
+  text-align: center;
+  max-width: 500px;
 }
 
 .debug-info {
-margin-top: 2rem;
-padding: 1rem;
-background: #f3f4f6;
-border-radius: 8px;
-text-align: left;
-max-width: 600px;
-width: 100%;
+  margin-top: 2rem;
+  padding: 1rem;
+  background: #f3f4f6;
+  border-radius: 8px;
+  text-align: left;
+  max-width: 600px;
+  width: 100%;
 }
 
 .debug-info h4 {
-font-size: 0.8125rem;
-color: #dc2626;
-margin: 0 0 0.5rem 0;
+  font-size: 0.8125rem;
+  color: #dc2626;
+  margin: 0 0 0.5rem 0;
 }
 
 .debug-info pre {
-background: white;
-padding: 0.75rem;
-border-radius: 6px;
-font-size: 0.75rem;
-overflow-x: auto;
-color: #374151;
+  background: white;
+  padding: 0.75rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  overflow-x: auto;
+  color: #374151;
 }
 
 /* ========================================
@@ -1476,37 +1453,37 @@ NAVIGATION
 ======================================== */
 
 .nav-header {
-background: white;
-border-bottom: 1px solid #e5e7eb;
-padding: 1rem 2rem;
-position: sticky;
-top: 0;
-z-index: 100;
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 1rem 2rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .back-button {
-display: inline-flex;
-align-items: center;
-gap: 0.5rem;
-background: transparent;
-color: #6b7280;
-border: 1.5px solid #e5e7eb;
-padding: 0.625rem 1rem;
-border-radius: 8px;
-font-size: 0.875rem;
-font-weight: 500;
-cursor: pointer;
-transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  color: #6b7280;
+  border: 1.5px solid #e5e7eb;
+  padding: 0.625rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
 .back-button:hover {
-background: #f9fafb;
-border-color: #d1d5db;
-color: #111827;
+  background: #f9fafb;
+  border-color: #d1d5db;
+  color: #111827;
 }
 
 .back-button svg {
-flex-shrink: 0;
+  flex-shrink: 0;
 }
 
 /* ========================================
@@ -1514,9 +1491,9 @@ TOPIC CONTENT
 ======================================== */
 
 .topic-content {
-max-width: 1200px;
-margin: 0 auto;
-padding: 0 2rem 3rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem 3rem;
 }
 
 /* ========================================
@@ -1524,38 +1501,38 @@ TOPIC HEADER
 ======================================== */
 
 .topic-header {
-padding: 2rem 0;
+  padding: 2rem 0;
 }
 
 .topic-hero {
-display: flex;
-align-items: flex-start;
-gap: 1.25rem;
-margin-bottom: 1.5rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
 }
 
 .topic-icon {
-font-size: 2.5rem;
-flex-shrink: 0;
+  font-size: 2.5rem;
+  flex-shrink: 0;
 }
 
 .topic-info {
-flex: 1;
+  flex: 1;
 }
 
 .topic-title {
-font-size: 1.875rem;
-font-weight: 700;
-color: #111827;
-margin: 0 0 0.5rem 0;
-line-height: 1.2;
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 0.5rem 0;
+  line-height: 1.2;
 }
 
 .topic-description {
-font-size: 0.9375rem;
-color: #6b7280;
-line-height: 1.6;
-margin: 0;
+  font-size: 0.9375rem;
+  color: #6b7280;
+  line-height: 1.6;
+  margin: 0;
 }
 
 /* ========================================
@@ -1563,31 +1540,31 @@ TOPIC STATS
 ======================================== */
 
 .topic-stats {
-display: grid;
-grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-gap: 1rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
 }
 
 .stat-card {
-background: white;
-border: 1px solid #e5e7eb;
-border-radius: 10px;
-padding: 1.25rem;
-text-align: center;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 1.25rem;
+  text-align: center;
 }
 
 .stat-number {
-font-size: 1.75rem;
-font-weight: 800;
-color: #111827;
-line-height: 1;
-margin-bottom: 0.375rem;
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #111827;
+  line-height: 1;
+  margin-bottom: 0.375rem;
 }
 
 .stat-label {
-font-size: 0.8125rem;
-color: #6b7280;
-font-weight: 500;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  font-weight: 500;
 }
 
 /* ========================================
@@ -1595,34 +1572,34 @@ LESSONS SECTION
 ======================================== */
 
 .lessons-section {
-background: white;
-border-radius: 12px;
-padding: 1.5rem;
-margin-bottom: 2rem;
-border: 1px solid #e5e7eb;
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  border: 1px solid #e5e7eb;
 }
 
 .section-header {
-display: flex;
-justify-content: space-between;
-align-items: center;
-margin-bottom: 1.5rem;
-flex-wrap: wrap;
-gap: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .section-title {
-display: flex;
-align-items: center;
-gap: 0.625rem;
-font-size: 1.125rem;
-font-weight: 700;
-color: #111827;
-margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
 }
 
 .section-icon {
-font-size: 1.125rem;
+  font-size: 1.125rem;
 }
 
 /* ========================================
@@ -1630,36 +1607,36 @@ LESSON FILTERS
 ======================================== */
 
 .lesson-filters {
-display: flex;
-gap: 0.5rem;
-background: #f9fafb;
-padding: 0.375rem;
-border-radius: 8px;
-flex-wrap: wrap;
+  display: flex;
+  gap: 0.5rem;
+  background: #f9fafb;
+  padding: 0.375rem;
+  border-radius: 8px;
+  flex-wrap: wrap;
 }
 
 .filter-btn {
-padding: 0.5rem 0.875rem;
-border: none;
-background: transparent;
-border-radius: 6px;
-font-weight: 500;
-font-size: 0.8125rem;
-color: #6b7280;
-cursor: pointer;
-transition: all 0.2s;
-white-space: nowrap;
+  padding: 0.5rem 0.875rem;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .filter-btn.active {
-background: white;
-color: #6366f1;
-box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: white;
+  color: #6366f1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .filter-btn:hover:not(.active) {
-color: #111827;
-background: rgba(255, 255, 255, 0.5);
+  color: #111827;
+  background: rgba(255, 255, 255, 0.5);
 }
 
 /* ========================================
@@ -1667,26 +1644,26 @@ NO LESSONS STATE
 ======================================== */
 
 .no-lessons {
-text-align: center;
-padding: 3rem 2rem;
-color: #6b7280;
+  text-align: center;
+  padding: 3rem 2rem;
+  color: #6b7280;
 }
 
 .no-lessons-icon {
-font-size: 3rem;
-margin-bottom: 1rem;
+  font-size: 3rem;
+  margin-bottom: 1rem;
 }
 
 .no-lessons-title {
-font-size: 1.125rem;
-font-weight: 600;
-color: #111827;
-margin: 0 0 0.5rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 0.5rem 0;
 }
 
 .no-lessons-text {
-font-size: 0.875rem;
-margin: 0;
+  font-size: 0.875rem;
+  margin: 0;
 }
 
 /* ========================================
@@ -1694,9 +1671,9 @@ LESSONS GRID
 ======================================== */
 
 .lessons-grid {
-display: grid;
-grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-gap: 1.25rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.25rem;
 }
 
 /* ========================================
@@ -1704,73 +1681,73 @@ LESSON CARD
 ======================================== */
 
 .lesson-card {
-position: relative;
-background: #fafafa;
-border: 1.5px solid #e5e7eb;
-border-radius: 12px;
-padding: 1.25rem;
-cursor: pointer;
-transition: all 0.2s;
-display: flex;
-flex-direction: column;
-gap: 1rem;
+  position: relative;
+  background: #fafafa;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.25rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .lesson-card:hover {
-border-color: #d1d5db;
-transform: translateY(-2px);
-box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-color: #d1d5db;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .lesson-card.locked {
-opacity: 0.6;
-cursor: not-allowed;
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .lesson-card.locked:hover {
-transform: none;
-border-color: #e5e7eb;
-box-shadow: none;
+  transform: none;
+  border-color: #e5e7eb;
+  box-shadow: none;
 }
 
 .lesson-card.premium {
-border-color: #fbbf24;
-background: linear-gradient(135deg, #fffbeb, #fef3c7);
+  border-color: #fbbf24;
+  background: linear-gradient(135deg, #fffbeb, #fef3c7);
 }
 
 .lesson-card.completed {
-border-color: #10b981;
-background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+  border-color: #10b981;
+  background: linear-gradient(135deg, #f0fdf4, #dcfce7);
 }
 
 .lesson-card.in-progress {
-border-color: #6366f1;
-background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+  border-color: #6366f1;
+  background: linear-gradient(135deg, #eef2ff, #e0e7ff);
 }
 
 .lesson-number {
-position: absolute;
-top: 1rem;
-right: 1rem;
-width: 2rem;
-height: 2rem;
-background: #6366f1;
-color: white;
-border-radius: 50%;
-display: flex;
-align-items: center;
-justify-content: center;
-font-weight: 700;
-font-size: 0.8125rem;
-z-index: 2;
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 2rem;
+  height: 2rem;
+  background: #6366f1;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.8125rem;
+  z-index: 2;
 }
 
 .lesson-card.premium .lesson-number {
-background: #f59e0b;
+  background: #f59e0b;
 }
 
 .lesson-card.completed .lesson-number {
-background: #10b981;
+  background: #10b981;
 }
 
 /* ========================================
@@ -1778,39 +1755,39 @@ PROGRESS INDICATOR
 ======================================== */
 
 .lesson-progress-indicator {
-position: absolute;
-top: 0.75rem;
-left: 1rem;
-z-index: 3;
+  position: absolute;
+  top: 0.75rem;
+  left: 1rem;
+  z-index: 3;
 }
 
 .progress-circle {
-position: relative;
-width: 36px;
-height: 36px;
+  position: relative;
+  width: 36px;
+  height: 36px;
 }
 
 .progress-ring {
-transform: rotate(-90deg);
+  transform: rotate(-90deg);
 }
 
 .progress-ring-circle {
-transition: stroke-dashoffset 0.5s ease;
+  transition: stroke-dashoffset 0.5s ease;
 }
 
 .progress-text {
-position: absolute;
-top: 50%;
-left: 50%;
-transform: translate(-50%, -50%);
-font-size: 0.6875rem;
-font-weight: 700;
-color: #6366f1;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: #6366f1;
 }
 
 .progress-circle.completed .progress-text {
-color: #10b981;
-font-size: 0.875rem;
+  color: #10b981;
+  font-size: 0.875rem;
 }
 
 /* ========================================
@@ -1818,29 +1795,29 @@ LESSON BADGE
 ======================================== */
 
 .lesson-badge {
-display: inline-flex;
-align-items: center;
-gap: 0.375rem;
-padding: 0.375rem 0.625rem;
-border-radius: 6px;
-font-size: 0.75rem;
-font-weight: 600;
-width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.625rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  width: fit-content;
 }
 
 .lesson-badge.free {
-background: #dcfce7;
-color: #065f46;
+  background: #dcfce7;
+  color: #065f46;
 }
 
 .lesson-badge.premium {
-background: #fef3c7;
-color: #92400e;
+  background: #fef3c7;
+  color: #92400e;
 }
 
 .lesson-badge svg {
-width: 12px;
-height: 12px;
+  width: 12px;
+  height: 12px;
 }
 
 /* ========================================
@@ -1848,26 +1825,26 @@ LESSON CONTENT
 ======================================== */
 
 .lesson-content {
-flex: 1;
-display: flex;
-flex-direction: column;
-gap: 0.75rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 .lesson-title {
-font-size: 1rem;
-font-weight: 700;
-color: #111827;
-margin: 0;
-line-height: 1.3;
-padding-right: 2.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+  line-height: 1.3;
+  padding-right: 2.5rem;
 }
 
 .lesson-description {
-color: #6b7280;
-font-size: 0.8125rem;
-line-height: 1.5;
-margin: 0;
+  color: #6b7280;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  margin: 0;
 }
 
 /* ========================================
@@ -1875,52 +1852,52 @@ LESSON PROGRESS BAR
 ======================================== */
 
 .lesson-progress {
-padding: 0.75rem;
-background: white;
-border-radius: 8px;
-border: 1px solid #e5e7eb;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
 }
 
 .progress-info {
-display: flex;
-justify-content: space-between;
-align-items: center;
-margin-bottom: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
 }
 
 .progress-label {
-font-size: 0.75rem;
-font-weight: 500;
-color: #6b7280;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6b7280;
 }
 
 .progress-percentage {
-font-size: 0.75rem;
-font-weight: 700;
-color: #6366f1;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #6366f1;
 }
 
 .progress-bar {
-width: 100%;
-height: 5px;
-background: #f3f4f6;
-border-radius: 100px;
-overflow: hidden;
+  width: 100%;
+  height: 5px;
+  background: #f3f4f6;
+  border-radius: 100px;
+  overflow: hidden;
 }
 
 .progress-fill {
-height: 100%;
-background: #6366f1;
-transition: width 0.5s ease;
-border-radius: 100px;
+  height: 100%;
+  background: #6366f1;
+  transition: width 0.5s ease;
+  border-radius: 100px;
 }
 
 .progress-fill.completed {
-background: #10b981;
+  background: #10b981;
 }
 
 .progress-fill.in-progress {
-background: linear-gradient(90deg, #6366f1, #818cf8);
+  background: linear-gradient(90deg, #6366f1, #818cf8);
 }
 
 /* ========================================
@@ -1928,19 +1905,19 @@ LESSON STARS
 ======================================== */
 
 .lesson-stars {
-display: flex;
-gap: 0.25rem;
-margin-top: 0.5rem;
-justify-content: center;
+  display: flex;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+  justify-content: center;
 }
 
 .star {
-font-size: 0.75rem;
-opacity: 0.3;
+  font-size: 0.75rem;
+  opacity: 0.3;
 }
 
 .star.filled {
-opacity: 1;
+  opacity: 1;
 }
 
 /* ========================================
@@ -1948,26 +1925,26 @@ LESSON META
 ======================================== */
 
 .lesson-meta {
-display: flex;
-flex-wrap: wrap;
-gap: 0.875rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.875rem;
 }
 
 .meta-item {
-display: flex;
-align-items: center;
-gap: 0.375rem;
-color: #6b7280;
-font-size: 0.75rem;
-font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: #6b7280;
+  font-size: 0.75rem;
+  font-weight: 500;
 }
 
 .meta-item.time-spent {
-color: #059669;
+  color: #059669;
 }
 
 .meta-item svg {
-flex-shrink: 0;
+  flex-shrink: 0;
 }
 
 /* ========================================
@@ -1975,63 +1952,63 @@ LESSON ACTION BUTTON
 ======================================== */
 
 .lesson-action {
-margin-top: auto;
+  margin-top: auto;
 }
 
 .action-btn {
-width: 100%;
-padding: 0.75rem 1rem;
-border: none;
-border-radius: 8px;
-font-weight: 600;
-font-size: 0.8125rem;
-cursor: pointer;
-transition: all 0.2s;
-background: #6366f1;
-color: white;
-display: flex;
-align-items: center;
-justify-content: center;
-gap: 0.375rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #6366f1;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
 }
 
 .action-btn:hover:not(:disabled) {
-background: #4f46e5;
-transform: translateY(-1px);
-box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  background: #4f46e5;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
 }
 
 .action-btn.premium {
-background: #f59e0b;
+  background: #f59e0b;
 }
 
 .action-btn.premium:hover {
-background: #d97706;
+  background: #d97706;
 }
 
 .action-btn.completed {
-background: #10b981;
+  background: #10b981;
 }
 
 .action-btn.completed:hover {
-background: #059669;
+  background: #059669;
 }
 
 .action-btn.continue {
-background: #6366f1;
+  background: #6366f1;
 }
 
 .action-btn:disabled {
-background: #d1d5db;
-color: #9ca3af;
-cursor: not-allowed;
-transform: none;
-box-shadow: none;
+  background: #d1d5db;
+  color: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .action-btn.locked {
-background: #9ca3af;
-cursor: not-allowed;
+  background: #9ca3af;
+  cursor: not-allowed;
 }
 
 /* ========================================
@@ -2039,22 +2016,22 @@ LOCK OVERLAY
 ======================================== */
 
 .lock-overlay {
-position: absolute;
-top: 0;
-left: 0;
-right: 0;
-bottom: 0;
-background: rgba(255, 255, 255, 0.9);
-display: flex;
-align-items: center;
-justify-content: center;
-border-radius: 12px;
-pointer-events: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  pointer-events: none;
 }
 
 .lock-icon {
-color: #6b7280;
-opacity: 0.6;
+  color: #6b7280;
+  opacity: 0.6;
 }
 
 /* ========================================
@@ -2062,37 +2039,37 @@ ACTION SECTION
 ======================================== */
 
 .action-section {
-background: white;
-padding: 2rem 1.5rem;
-border-radius: 12px;
-text-align: center;
-border: 1px solid #e5e7eb;
+  background: white;
+  padding: 2rem 1.5rem;
+  border-radius: 12px;
+  text-align: center;
+  border: 1px solid #e5e7eb;
 }
 
 .action-content {
-max-width: 600px;
-margin: 0 auto;
+  max-width: 600px;
+  margin: 0 auto;
 }
 
 .action-title {
-font-size: 1.25rem;
-font-weight: 700;
-color: #111827;
-margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 0.5rem 0;
 }
 
 .action-description {
-font-size: 0.9375rem;
-color: #6b7280;
-margin: 0 0 1.5rem 0;
-line-height: 1.6;
+  font-size: 0.9375rem;
+  color: #6b7280;
+  margin: 0 0 1.5rem 0;
+  line-height: 1.6;
 }
 
 .action-buttons {
-display: flex;
-gap: 0.75rem;
-justify-content: center;
-flex-wrap: wrap;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 /* ========================================
@@ -2100,59 +2077,59 @@ BUTTONS
 ======================================== */
 
 .btn {
-padding: 0.875rem 1.5rem;
-border-radius: 8px;
-font-weight: 600;
-font-size: 0.875rem;
-cursor: pointer;
-transition: all 0.2s;
-border: none;
-display: inline-flex;
-align-items: center;
-gap: 0.5rem;
-text-decoration: none;
+  padding: 0.875rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
 }
 
 .btn-primary {
-background: #6366f1;
-color: white;
+  background: #6366f1;
+  color: white;
 }
 
 .btn-primary:hover {
-background: #4f46e5;
-transform: translateY(-2px);
-box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  background: #4f46e5;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
 }
 
 .btn-premium {
-background: linear-gradient(135deg, #f59e0b, #d97706);
-color: white;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
 }
 
 .btn-premium:hover {
-transform: translateY(-2px);
-box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
 }
 
 .btn-secondary {
-background: #f3f4f6;
-color: #6b7280;
-border: 1.5px solid #e5e7eb;
+  background: #f3f4f6;
+  color: #6b7280;
+  border: 1.5px solid #e5e7eb;
 }
 
 .btn-secondary:hover {
-background: #e5e7eb;
-color: #374151;
+  background: #e5e7eb;
+  color: #374151;
 }
 
 .btn-back {
-background: #f3f4f6;
-color: #6b7280;
-border: 1.5px solid #e5e7eb;
+  background: #f3f4f6;
+  color: #6b7280;
+  border: 1.5px solid #e5e7eb;
 }
 
 .btn-back:hover {
-background: #e5e7eb;
+  background: #e5e7eb;
 }
 
 /* ========================================
@@ -2160,114 +2137,114 @@ RESPONSIVE
 ======================================== */
 
 @media (max-width: 768px) {
-.nav-header {
- padding: 1rem 1.5rem;
-}
+  .nav-header {
+    padding: 1rem 1.5rem;
+  }
 
-.topic-content {
- padding: 0 1.5rem 2rem;
-}
+  .topic-content {
+    padding: 0 1.5rem 2rem;
+  }
 
-.topic-hero {
- flex-direction: column;
- gap: 1rem;
-}
+  .topic-hero {
+    flex-direction: column;
+    gap: 1rem;
+  }
 
-.topic-icon {
- font-size: 2rem;
-}
+  .topic-icon {
+    font-size: 2rem;
+  }
 
-.topic-title {
- font-size: 1.5rem;
-}
+  .topic-title {
+    font-size: 1.5rem;
+  }
 
-.topic-description {
- font-size: 0.875rem;
-}
+  .topic-description {
+    font-size: 0.875rem;
+  }
 
-.topic-stats {
- grid-template-columns: repeat(2, 1fr);
-}
+  .topic-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
 
-.section-header {
- flex-direction: column;
- align-items: stretch;
-}
+  .section-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
 
-.lesson-filters {
- justify-content: center;
-}
+  .lesson-filters {
+    justify-content: center;
+  }
 
-.lessons-grid {
- grid-template-columns: 1fr;
-}
+  .lessons-grid {
+    grid-template-columns: 1fr;
+  }
 
-.lessons-section {
- padding: 1.25rem;
-}
+  .lessons-section {
+    padding: 1.25rem;
+  }
 
-.action-section {
- padding: 1.5rem 1.25rem;
-}
+  .action-section {
+    padding: 1.5rem 1.25rem;
+  }
 
-.action-buttons {
- flex-direction: column;
-}
+  .action-buttons {
+    flex-direction: column;
+  }
 
-.btn {
- width: 100%;
- justify-content: center;
-}
+  .btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 @media (max-width: 480px) {
-.topic-header {
- padding: 1.5rem 0;
-}
+  .topic-header {
+    padding: 1.5rem 0;
+  }
 
-.topic-title {
- font-size: 1.25rem;
-}
+  .topic-title {
+    font-size: 1.25rem;
+  }
 
-.stat-card {
- padding: 1rem;
-}
+  .stat-card {
+    padding: 1rem;
+  }
 
-.stat-number {
- font-size: 1.5rem;
-}
+  .stat-number {
+    font-size: 1.5rem;
+  }
 
-.stat-label {
- font-size: 0.75rem;
-}
+  .stat-label {
+    font-size: 0.75rem;
+  }
 
-.lesson-card {
- padding: 1rem;
-}
+  .lesson-card {
+    padding: 1rem;
+  }
 
-.lesson-title {
- font-size: 0.9375rem;
-}
+  .lesson-title {
+    font-size: 0.9375rem;
+  }
 
-.lesson-number {
- width: 1.75rem;
- height: 1.75rem;
- font-size: 0.75rem;
-}
+  .lesson-number {
+    width: 1.75rem;
+    height: 1.75rem;
+    font-size: 0.75rem;
+  }
 
-.filter-btn {
- padding: 0.375rem 0.75rem;
- font-size: 0.75rem;
-}
+  .filter-btn {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+  }
 
-.progress-circle {
- width: 32px;
- height: 32px;
-}
+  .progress-circle {
+    width: 32px;
+    height: 32px;
+  }
 
-.section-title {
- font-size: 1rem;
-}
+  .section-title {
+    font-size: 1rem;
+  }
 }
 
 /* ========================================
@@ -2279,16 +2256,16 @@ ACCESSIBILITY
 .btn:focus,
 .filter-btn:focus,
 .lesson-card:focus {
-outline: 2px solid #6366f1;
-outline-offset: 2px;
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-*,
-*::before,
-*::after {
- animation-duration: 0.01ms !important;
- transition-duration: 0.01ms !important;
-}
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 </style>
