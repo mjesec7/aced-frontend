@@ -13,7 +13,7 @@
             </svg>
             <div class="stat-info">
               <div class="stat-label">Streak</div>
-              <div class="stat-value">{{ userStreak }} days</div>
+              <div class="stat-value">{{ displayStreak }} days</div>
             </div>
           </div>
           <div class="stat-badge points">
@@ -22,7 +22,7 @@
             </svg>
             <div class="stat-info">
               <div class="stat-label">Points</div>
-              <div class="stat-value">{{ totalPoints }}</div>
+              <div class="stat-value">{{ displayPoints }}</div>
             </div>
           </div>
         </div>
@@ -31,6 +31,182 @@
 
     <div class="dashboard-grid">
       <div class="main-column">
+        <!-- 🧬 NEW: Learning DNA Card -->
+        <div v-if="learningProfile" class="section-card learning-dna-card">
+          <div class="section-header">
+            <div class="header-left">
+              <div class="section-icon-badge dna">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21.21 15.89A10 10 0 1 1 8 2.83"/>
+                  <path d="M22 12A10 10 0 0 0 12 2v10z"/>
+                </svg>
+              </div>
+              <div>
+                <h2 class="section-title">🧬 Your Learning DNA</h2>
+                <p class="section-subtitle">AI-powered personalization</p>
+              </div>
+            </div>
+            <button @click="refreshLearningData" class="refresh-btn-small" title="Refresh data">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="23 4 23 10 17 10"/>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Insights -->
+          <div v-if="learningProfile.insights?.length" class="insights-list">
+            <div v-for="(insight, index) in learningProfile.insights" :key="index" class="insight-item">
+              {{ insight }}
+            </div>
+          </div>
+
+          <!-- Learning Style & Chronotype -->
+          <div class="dna-quick-stats">
+            <div class="dna-stat">
+              <span class="dna-icon">{{ getLearningStyleIcon() }}</span>
+              <div class="dna-stat-content">
+                <span class="dna-stat-label">Learning Style</span>
+                <span class="dna-stat-value">{{ getLearningStyleText() }}</span>
+              </div>
+            </div>
+            <div class="dna-stat">
+              <span class="dna-icon">{{ getChronotypeIcon() }}</span>
+              <div class="dna-stat-content">
+                <span class="dna-stat-label">Best Time</span>
+                <span class="dna-stat-value">{{ getChronotypeText() }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cognitive Profile Bars -->
+          <div v-if="learningProfile.cognitiveProfile" class="cognitive-section">
+            <h4>🧠 Cognitive Strengths</h4>
+            <div v-for="(value, key) in learningProfile.cognitiveProfile" :key="key" class="cognitive-bar">
+              <span class="cognitive-label">{{ formatCognitiveLabel(key) }}</span>
+              <div class="cognitive-progress">
+                <div class="cognitive-fill" :style="{ width: value + '%' }"></div>
+              </div>
+              <span class="cognitive-value">{{ value }}%</span>
+            </div>
+          </div>
+
+          <!-- Recommendations -->
+          <div v-if="recommendations" class="recommendations-section">
+            <h4>💡 Smart Tips for You</h4>
+            <div class="rec-grid">
+              <div class="rec-item">
+                <span class="rec-icon">🎯</span>
+                <div class="rec-content">
+                  <span class="rec-label">Learning Path</span>
+                  <span class="rec-value">{{ capitalize(recommendations.preferredPath) }}</span>
+                </div>
+              </div>
+              <div class="rec-item">
+                <span class="rec-icon">⏰</span>
+                <div class="rec-content">
+                  <span class="rec-label">Optimal Time</span>
+                  <span class="rec-value">{{ formatOptimalTime(recommendations.optimalTime) }}</span>
+                </div>
+              </div>
+              <div class="rec-item">
+                <span class="rec-icon">📊</span>
+                <div class="rec-content">
+                  <span class="rec-label">Session Length</span>
+                  <span class="rec-value">{{ recommendations.sessionLength }} min</span>
+                </div>
+              </div>
+              <div class="rec-item">
+                <span class="rec-icon">🎚️</span>
+                <div class="rec-content">
+                  <span class="rec-label">Difficulty</span>
+                  <span class="rec-value">{{ (recommendations.difficultyLevel * 100).toFixed(0) }}%</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Additional Tips -->
+            <div v-if="recommendations.tips?.length" class="tips-section">
+              <div v-for="(tip, index) in recommendations.tips" :key="index" class="tip-item">
+                💡 {{ tip }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 🎮 NEW: Gamification Card -->
+        <div v-if="rewards" class="section-card rewards-card-new">
+          <div class="section-header">
+            <div class="header-left">
+              <div class="section-icon-badge rewards">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+              </div>
+              <div>
+                <h2 class="section-title">🎮 Your Progress</h2>
+                <p class="section-subtitle">Level {{ rewards.level }} • {{ formatNumber(rewards.totalPoints) }} points</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Level Progress Bar -->
+          <div class="level-progress-section">
+            <div class="level-header">
+              <span class="current-level">Level {{ rewards.level }}</span>
+              <span class="next-level">Level {{ rewards.level + 1 }}</span>
+            </div>
+            <div class="progress-bar-container large">
+              <div class="progress-bar-fill gold" :style="{ width: rewards.currentLevelProgress + '%' }"></div>
+            </div>
+            <span class="progress-text">{{ Math.round(rewards.currentLevelProgress) }}% to next level</span>
+          </div>
+
+          <!-- Stats Row -->
+          <div class="rewards-stats-grid">
+            <div class="reward-stat-card">
+              <div class="reward-stat-icon fire">🔥</div>
+              <div class="reward-stat-content">
+                <span class="reward-stat-value">{{ rewards.streak || 0 }}</span>
+                <span class="reward-stat-label">Day Streak</span>
+              </div>
+            </div>
+            <div class="reward-stat-card">
+              <div class="reward-stat-icon trophy">🏆</div>
+              <div class="reward-stat-content">
+                <span class="reward-stat-value">{{ rewards.achievements?.length || 0 }}</span>
+                <span class="reward-stat-label">Achievements</span>
+              </div>
+            </div>
+            <div class="reward-stat-card">
+              <div class="reward-stat-icon target">🎯</div>
+              <div class="reward-stat-content">
+                <span class="reward-stat-value">{{ rewards.nextRewardIn || 0 }}</span>
+                <span class="reward-stat-label">Steps to Reward</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Achievements Display -->
+          <div v-if="rewards.achievements?.length" class="achievements-section-mini">
+            <h4>🏅 Recent Achievements</h4>
+            <div class="achievements-grid-mini">
+              <div 
+                v-for="achievement in rewards.achievements.slice(0, 4)" 
+                :key="achievement.id"
+                :class="['achievement-badge-mini', achievement.rarity]"
+                :title="achievement.name"
+              >
+                <span class="achievement-icon-mini">{{ achievement.icon }}</span>
+                <span class="achievement-name-mini">{{ achievement.name }}</span>
+              </div>
+            </div>
+            <router-link v-if="rewards.achievements.length > 4" to="/profile/achievements" class="view-all-achievements">
+              View all {{ rewards.achievements.length }} achievements →
+            </router-link>
+          </div>
+        </div>
+
         <div class="quick-stats-grid">
           <div class="stat-card">
             <div class="stat-icon-wrapper purple">
@@ -340,11 +516,15 @@ import {
   getUserStudyList,
   getUserProgress,
   getTopicById,
-  getLessonsByTopic
+  getLessonsByTopic,
+  // 🧬 NEW: Learning DNA & Gamification
+  getLearningProfile,
+  getPersonalizedRecommendations,
+  getUserRewards,
+  updateStreak
 } from '@/api';
 import PaymentModal from '@/components/Modals/PaymentModal.vue';
 
-// Helper function to normalize a date to the start of the day
 const startOfDay = (date) => {
   const newDate = new Date(date);
   newDate.setHours(0, 0, 0, 0);
@@ -367,6 +547,12 @@ export default {
       studyList: [],
       userProgress: [],
       loadingStudyList: true,
+      
+      // 🧬 NEW: Learning DNA & Gamification
+      learningProfile: null,
+      recommendations: null,
+      rewards: null,
+      loadingLearningData: false,
       
       showPaywall: false,
       requestedTopicId: null,
@@ -521,6 +707,16 @@ export default {
       return this.userProgress.reduce((sum, p) => sum + (p.points || 0), 0);
     },
     
+    // 🧬 NEW: Display streak from rewards or fallback
+    displayStreak() {
+      return this.rewards?.streak || this.userStreak || 0;
+    },
+    
+    // 🎮 NEW: Display points from rewards or fallback
+    displayPoints() {
+      return this.rewards?.totalPoints || this.totalPoints || 0;
+    },
+    
     averageTestScore() {
       const testScores = this.userProgress
         .filter(p => p.testScore != null)
@@ -554,8 +750,147 @@ export default {
       setInterval(this.updateCurrentDate, 60000);
       
       await this.loadData();
+      
+      // 🧬 NEW: Load Learning DNA & Rewards
+      await this.loadLearningData();
+      
       this.updateGoalsFromProgress();
       this.generateRecentActivity();
+    },
+    
+    // 🧬 NEW: Load Learning DNA from server
+    async loadLearningData() {
+      this.loadingLearningData = true;
+      try {
+        console.log('🧬 Loading Learning DNA from server...');
+        
+        // Update streak first
+        try {
+          await updateStreak(this.userId);
+          console.log('✅ Streak updated');
+        } catch (streakError) {
+          console.warn('⚠️ Streak update failed:', streakError);
+        }
+        
+        // Load all data in parallel
+        const [profileRes, rewardsRes, recommendationsRes] = await Promise.allSettled([
+          getLearningProfile(this.userId),
+          getUserRewards(this.userId),
+          getPersonalizedRecommendations(this.userId)
+        ]);
+        
+        // Handle profile
+        if (profileRes.status === 'fulfilled' && profileRes.value?.success) {
+          this.learningProfile = profileRes.value.profile;
+          console.log('✅ Learning profile loaded:', this.learningProfile);
+        } else {
+          console.warn('⚠️ Learning profile not available');
+        }
+        
+        // Handle rewards
+        if (rewardsRes.status === 'fulfilled' && rewardsRes.value?.success) {
+          this.rewards = rewardsRes.value.rewards;
+          console.log('✅ Rewards loaded:', this.rewards);
+        } else {
+          console.warn('⚠️ Rewards not available');
+        }
+        
+        // Handle recommendations
+        if (recommendationsRes.status === 'fulfilled' && recommendationsRes.value?.success) {
+          this.recommendations = recommendationsRes.value.recommendation;
+          console.log('✅ Recommendations loaded:', this.recommendations);
+        } else {
+          console.warn('⚠️ Recommendations not available');
+        }
+        
+      } catch (error) {
+        console.error('❌ Failed to load learning data:', error);
+      } finally {
+        this.loadingLearningData = false;
+      }
+    },
+    
+    // 🧬 NEW: Refresh learning data
+    async refreshLearningData() {
+      await this.loadLearningData();
+      this.$forceUpdate();
+    },
+    
+    // 🧬 NEW: Format cognitive labels
+    formatCognitiveLabel(key) {
+      const labels = {
+        processingSpeed: 'Processing',
+        workingMemory: 'Memory',
+        visualSpatial: 'Visual',
+        verbalLinguistic: 'Verbal',
+        logicalMathematical: 'Logic'
+      };
+      return labels[key] || key;
+    },
+    
+    // 🧬 NEW: Format optimal time
+    formatOptimalTime(timeData) {
+      if (!timeData) return 'Flexible';
+      if (timeData.isOptimal) return 'Now! 🌟';
+      if (timeData.nextOptimal !== undefined) {
+        const hours = timeData.hoursUntilOptimal;
+        return hours === 0 ? 'Now' : `${timeData.nextOptimal}:00 (${hours}h)`;
+      }
+      return 'Anytime';
+    },
+    
+    // 🧬 NEW: Get learning style icon
+    getLearningStyleIcon() {
+      const icons = {
+        visual: '👁️',
+        auditory: '👂',
+        kinesthetic: '🤸',
+        'reading-writing': '📝'
+      };
+      return icons[this.learningProfile?.learningStyle?.primary] || '🎯';
+    },
+    
+    // 🧬 NEW: Get learning style text
+    getLearningStyleText() {
+      const styles = {
+        visual: 'Visual',
+        auditory: 'Auditory',
+        kinesthetic: 'Hands-on',
+        'reading-writing': 'Reading'
+      };
+      return styles[this.learningProfile?.learningStyle?.primary] || 'Balanced';
+    },
+    
+    // 🧬 NEW: Get chronotype icon
+    getChronotypeIcon() {
+      const icons = {
+        lark: '🌅',
+        owl: '🦉',
+        'third-bird': '🐦',
+        variable: '🔄'
+      };
+      return icons[this.learningProfile?.chronotype?.type] || '🐦';
+    },
+    
+    // 🧬 NEW: Get chronotype text
+    getChronotypeText() {
+      const peakHours = this.learningProfile?.chronotype?.peakHours;
+      if (!peakHours?.length) return 'Anytime';
+      const firstHour = peakHours[0];
+      if (firstHour < 12) return 'Morning';
+      if (firstHour < 17) return 'Afternoon';
+      return 'Evening';
+    },
+    
+    // 🎮 NEW: Format number with commas
+    formatNumber(num) {
+      return num?.toLocaleString() || '0';
+    },
+    
+    // 🎯 NEW: Capitalize first letter
+    capitalize(str) {
+      if (!str) return '';
+      return str.charAt(0).toUpperCase() + str.slice(1);
     },
     
     updateCurrentDate() {
@@ -813,15 +1148,18 @@ export default {
 </script>
 
 <style scoped>
-/* Same CSS as original - no translation needed */
-/* GENERAL STYLES */
+/* =============================================
+   GENERAL STYLES
+   ============================================= */
 .professional-dashboard {
   min-height: 100vh;
   background: #fafafa;
   padding: 1.5rem;
 }
 
-/* HEADER */
+/* =============================================
+   HEADER
+   ============================================= */
 .dashboard-header {
   max-width: 1400px;
   margin: 0 auto 2rem;
@@ -857,13 +1195,415 @@ export default {
 .stat-label { font-size: 0.6875rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.025em; }
 .stat-value { font-size: 1rem; font-weight: 600; color: #111827; }
 
-/* DASHBOARD GRID */
+/* =============================================
+   🧬 LEARNING DNA CARD (NEW)
+   ============================================= */
+.learning-dna-card {
+  background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+  border: 1px solid #e9d5ff;
+}
+
+.section-icon-badge.dna {
+  background: linear-gradient(135deg, #a855f7, #9333ea);
+}
+
+.refresh-btn-small {
+  background: white;
+  border: 1px solid #e9d5ff;
+  border-radius: 8px;
+  padding: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.refresh-btn-small:hover {
+  background: #faf5ff;
+  border-color: #a855f7;
+  transform: rotate(180deg);
+}
+
+.refresh-btn-small svg {
+  width: 1rem;
+  height: 1rem;
+  color: #a855f7;
+}
+
+.insights-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.insight-item {
+  padding: 0.875rem 1rem;
+  background: white;
+  border-radius: 8px;
+  border-left: 3px solid #a855f7;
+  font-size: 0.875rem;
+  color: #4b5563;
+  line-height: 1.5;
+}
+
+.dna-quick-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.dna-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 10px;
+  border: 1px solid #e9d5ff;
+}
+
+.dna-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.dna-stat-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.dna-stat-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.dna-stat-value {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.cognitive-section {
+  margin-bottom: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e9d5ff;
+}
+
+.cognitive-section h4 {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 1rem 0;
+}
+
+.cognitive-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.cognitive-label {
+  flex: 0 0 90px;
+  font-size: 0.8125rem;
+  color: #6b7280;
+}
+
+.cognitive-progress {
+  flex: 1;
+  height: 6px;
+  background: rgba(168, 85, 247, 0.15);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.cognitive-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #a855f7, #9333ea);
+  transition: width 0.5s ease;
+  border-radius: 9999px;
+}
+
+.cognitive-value {
+  flex: 0 0 40px;
+  text-align: right;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #a855f7;
+}
+
+.recommendations-section {
+  padding-top: 1.5rem;
+  border-top: 1px solid #e9d5ff;
+}
+
+.recommendations-section h4 {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 1rem 0;
+}
+
+.rec-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.rec-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e9d5ff;
+}
+
+.rec-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.rec-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.rec-label {
+  font-size: 0.6875rem;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.rec-value {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #111827;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tips-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.tip-item {
+  padding: 0.75rem;
+  background: #fef3c7;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  color: #78350f;
+  line-height: 1.5;
+}
+
+/* =============================================
+   🎮 REWARDS CARD (NEW)
+   ============================================= */
+.rewards-card-new {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border: 1px solid #fcd34d;
+}
+
+.section-icon-badge.rewards {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.level-progress-section {
+  margin-bottom: 1.5rem;
+}
+
+.level-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  font-size: 0.8125rem;
+}
+
+.current-level {
+  color: #78350f;
+  font-weight: 600;
+}
+
+.next-level {
+  color: #92400e;
+  font-weight: 500;
+}
+
+.progress-bar-container.large {
+  height: 10px;
+  margin-bottom: 0.5rem;
+}
+
+.progress-bar-fill.gold {
+  background: linear-gradient(90deg, #f59e0b, #d97706);
+}
+
+.progress-text {
+  display: block;
+  text-align: center;
+  font-size: 0.75rem;
+  color: #92400e;
+  font-weight: 500;
+}
+
+.rewards-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.reward-stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 0.75rem;
+  background: white;
+  border-radius: 10px;
+  border: 1px solid #fcd34d;
+}
+
+.reward-stat-icon {
+  font-size: 1.5rem;
+}
+
+.reward-stat-icon.fire {
+  animation: flicker 2s ease-in-out infinite;
+}
+
+@keyframes flicker {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.1); }
+}
+
+.reward-stat-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.reward-stat-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1;
+}
+
+.reward-stat-label {
+  font-size: 0.6875rem;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  text-align: center;
+}
+
+.achievements-section-mini {
+  padding-top: 1.5rem;
+  border-top: 1px solid #fcd34d;
+}
+
+.achievements-section-mini h4 {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 1rem 0;
+}
+
+.achievements-grid-mini {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.achievement-badge-mini {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 0.75rem;
+  background: white;
+  border-radius: 10px;
+  border: 2px solid #e5e7eb;
+  transition: all 0.2s;
+}
+
+.achievement-badge-mini:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.achievement-badge-mini.legendary {
+  border-color: #f59e0b;
+  background: linear-gradient(135deg, #fffbeb, #fef3c7);
+}
+
+.achievement-badge-mini.epic {
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+}
+
+.achievement-badge-mini.rare {
+  border-color: #10b981;
+  background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+}
+
+.achievement-icon-mini {
+  font-size: 2rem;
+}
+
+.achievement-name-mini {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #111827;
+  text-align: center;
+  line-height: 1.3;
+}
+
+.view-all-achievements {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8125rem;
+  color: #a855f7;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.view-all-achievements:hover {
+  color: #9333ea;
+}
+
+/* =============================================
+   DASHBOARD GRID
+   ============================================= */
 .dashboard-grid {
   max-width: 1400px; margin: 0 auto; display: grid;
   grid-template-columns: 1fr; gap: 1.5rem;
 }
 
-/* QUICK STATS */
+/* =============================================
+   QUICK STATS
+   ============================================= */
 .quick-stats-grid {
   display: grid; grid-template-columns: repeat(2, 1fr);
   gap: 0.75rem; margin-bottom: 1.5rem;
@@ -886,7 +1626,9 @@ export default {
 .stat-number { font-size: 1.5rem; font-weight: 600; color: #111827; line-height: 1; margin-bottom: 0.25rem; }
 .stat-text { font-size: 0.6875rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.025em; }
 
-/* SECTION CARDS */
+/* =============================================
+   SECTION CARDS
+   ============================================= */
 .section-card {
   background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid #e5e7eb; padding: 1.5rem; margin-bottom: 1.5rem;
@@ -919,7 +1661,9 @@ export default {
 .view-all-link:hover { color: #9333ea; }
 .view-all-link svg { width: 0.875rem; height: 0.875rem; }
 
-/* LOADING & EMPTY STATES */
+/* =============================================
+   LOADING & EMPTY STATES
+   ============================================= */
 .loading-state, .empty-state { padding: 2.5rem 1.5rem; text-align: center; }
 .spinner {
   width: 2.5rem; height: 2.5rem; border: 2px solid #e5e7eb; border-top-color: #a855f7;
@@ -937,7 +1681,9 @@ export default {
 }
 .add-course-btn:hover { background: #9333ea; }
 
-/* COURSE CARDS */
+/* =============================================
+   COURSE CARDS
+   ============================================= */
 .courses-list { display: flex; flex-direction: column; gap: 1rem; }
 .course-card {
   border: 1px solid #e5e7eb; border-radius: 10px; padding: 1rem;
@@ -988,7 +1734,9 @@ export default {
 .continue-btn:hover { color: #a855f7; }
 .continue-btn svg { width: 0.875rem; height: 0.875rem; }
 
-/* QUICK ACTIONS */
+/* =============================================
+   QUICK ACTIONS
+   ============================================= */
 .quick-actions-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
 .action-card {
   position: relative; display: flex; flex-direction: column; align-items: center;
@@ -1027,7 +1775,9 @@ export default {
   margin-top: -0.25rem;
 }
 
-/* SIDEBAR */
+/* =============================================
+   SIDEBAR
+   ============================================= */
 .sidebar-column { display: flex; flex-direction: column; gap: 1.5rem; }
 .goals-list { display: flex; flex-direction: column; gap: 1rem; }
 .goal-item { display: flex; flex-direction: column; gap: 0.5rem; }
@@ -1048,7 +1798,9 @@ export default {
 .activity-title { font-size: 0.8125rem; font-weight: 500; color: #111827; margin: 0 0 0.25rem 0; }
 .activity-time { font-size: 0.75rem; color: #6b7280; margin: 0; }
 
-/* INSIGHTS CARD */
+/* =============================================
+   INSIGHTS CARD
+   ============================================= */
 .insights-card {
   background: linear-gradient(135deg, #a855f7, #6366f1); border-radius: 12px;
   box-shadow: 0 4px 16px rgba(168, 85, 247, 0.25); padding: 1.5rem; color: white;
@@ -1066,15 +1818,22 @@ export default {
 .insight-stat-label { font-size: 0.8125rem; opacity: 0.9; margin-bottom: 0.25rem; }
 .insight-stat-value { font-size: 1.5rem; font-weight: 600; }
 
-/* RESPONSIVE & ACCESSIBILITY */
+/* =============================================
+   RESPONSIVE & ACCESSIBILITY
+   ============================================= */
 @media (min-width: 768px) {
   .professional-dashboard { padding: 2rem 2.5rem; }
   .header-content { flex-direction: row; justify-content: space-between; align-items: center; }
   .quick-stats-grid { grid-template-columns: repeat(4, 1fr); gap: 1rem; }
   .quick-actions-grid { grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+  .dna-quick-stats { grid-template-columns: repeat(2, 1fr); }
+  .rec-grid { grid-template-columns: repeat(2, 1fr); }
+  .rewards-stats-grid { grid-template-columns: repeat(3, 1fr); }
+  .achievements-grid-mini { grid-template-columns: repeat(4, 1fr); }
 }
 @media (min-width: 1024px) {
   .dashboard-grid { grid-template-columns: 2fr 1fr; }
+  .rec-grid { grid-template-columns: repeat(4, 1fr); }
 }
 @media (max-width: 640px) {
   .professional-dashboard { padding: 1rem; }
@@ -1082,6 +1841,11 @@ export default {
   .welcome-section .main-title { font-size: 1.375rem; }
   .stat-badge { padding: 0.5rem 0.75rem; }
   .course-card { padding: 0.875rem; }
+  .dna-quick-stats { grid-template-columns: 1fr; }
+  .rec-grid { grid-template-columns: 1fr; }
+  .rewards-stats-grid { grid-template-columns: 1fr; }
+  .achievements-grid-mini { grid-template-columns: repeat(2, 1fr); }
+  .cognitive-label { flex: 0 0 70px; font-size: 0.75rem; }
 }
 .action-card:focus-visible, .course-card:focus-visible, .continue-btn:focus-visible, .play-btn:focus-visible {
   outline: 2px solid #a855f7; outline-offset: 2px;
@@ -1098,5 +1862,11 @@ export default {
   .stat-badge.points { background: #2f253f; border-color: #5c3b8a; }
   .progress-bar-container { background: #374151; }
   .course-footer { border-top-color: #374151; }
+  .learning-dna-card { background: linear-gradient(135deg, #1f1533 0%, #2d1b4e 100%); border-color: #4c1d95; }
+  .insight-item, .dna-stat, .rec-item { background: #1f2937; border-color: #4c1d95; }
+  .cognitive-progress { background: rgba(168, 85, 247, 0.2); }
+  .tip-item { background: #422006; color: #fbbf24; }
+  .rewards-card-new { background: linear-gradient(135deg, #422006 0%, #78350f 100%); border-color: #d97706; }
+  .reward-stat-card, .achievement-badge-mini { background: #1f2937; border-color: #d97706; }
 }
 </style>

@@ -29,7 +29,7 @@
         <line x1="9" y1="9" x2="15" y2="15"/>
       </svg>
       <h3>{{ error }}</h3>
-      <button @click="loadAnalytics" class="action-button primary">
+      <button @click="loadAllData" class="action-button primary">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="23 4 23 10 17 10"/>
           <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
@@ -39,6 +39,149 @@
     </div>
 
     <div v-else class="content-container">
+      <!-- 🧬 NEW: Learning DNA Section -->
+      <div v-if="learningProfile" class="section-card learning-dna-section">
+        <div class="section-header">
+          <div class="section-icon-badge dna">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21.21 15.89A10 10 0 1 1 8 2.83"/>
+              <path d="M22 12A10 10 0 0 0 12 2v10z"/>
+            </svg>
+          </div>
+          <div>
+            <h2 class="section-title">🧬 Ваша ДНК обучения</h2>
+            <p class="section-subtitle">AI-персонализация от сервера</p>
+          </div>
+        </div>
+
+        <!-- Learning Style & Chronotype Grid -->
+        <div class="dna-grid">
+          <div class="dna-card">
+            <div class="dna-card-header">
+              <span class="dna-icon">{{ getLearningStyleIcon() }}</span>
+              <h4>Стиль обучения</h4>
+            </div>
+            <div class="dna-value">{{ getLearningStyleText() }}</div>
+            <p class="dna-desc">Основной способ восприятия</p>
+          </div>
+          
+          <div class="dna-card">
+            <div class="dna-card-header">
+              <span class="dna-icon">{{ getChronotypeIcon() }}</span>
+              <h4>Хронотип</h4>
+            </div>
+            <div class="dna-value">{{ getChronotypeText() }}</div>
+            <p class="dna-desc">{{ getOptimalTimesText() }}</p>
+          </div>
+
+          <div class="dna-card">
+            <div class="dna-card-header">
+              <span class="dna-icon">🎯</span>
+              <h4>Путь обучения</h4>
+            </div>
+            <div class="dna-value">{{ getPreferredPathText() }}</div>
+            <p class="dna-desc">Рекомендованный подход</p>
+          </div>
+
+          <div class="dna-card">
+            <div class="dna-card-header">
+              <span class="dna-icon">⏱️</span>
+              <h4>Длина сессии</h4>
+            </div>
+            <div class="dna-value">{{ getSessionLengthText() }}</div>
+            <p class="dna-desc">Оптимальное время занятий</p>
+          </div>
+        </div>
+
+        <!-- Cognitive Profile -->
+        <div v-if="learningProfile.cognitiveProfile" class="cognitive-profile-section">
+          <h3 class="subsection-title">🧠 Когнитивный профиль</h3>
+          <div class="cognitive-bars">
+            <div v-for="(value, key) in learningProfile.cognitiveProfile" :key="key" class="cognitive-bar">
+              <span class="cognitive-label">{{ formatCognitiveLabel(key) }}</span>
+              <div class="cognitive-progress">
+                <div class="cognitive-fill" :style="{ width: value + '%' }"></div>
+              </div>
+              <span class="cognitive-value">{{ value }}%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Insights -->
+        <div v-if="learningProfile.insights?.length" class="insights-section">
+          <h3 class="subsection-title">💡 Персональные инсайты</h3>
+          <div class="insights-grid">
+            <div v-for="(insight, index) in learningProfile.insights" :key="index" class="insight-card">
+              {{ insight }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 🎮 NEW: Rewards Section -->
+      <div v-if="rewards" class="section-card rewards-section">
+        <div class="section-header">
+          <div class="section-icon-badge rewards">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+          </div>
+          <div>
+            <h2 class="section-title">🎮 Игрофикация</h2>
+            <p class="section-subtitle">Уровень {{ rewards.level }} • {{ formatNumber(rewards.totalPoints) }} очков</p>
+          </div>
+        </div>
+
+        <!-- Level Progress -->
+        <div class="level-section">
+          <div class="level-info">
+            <span class="level-label">Уровень {{ rewards.level }}</span>
+            <span class="level-percent">{{ Math.round(rewards.currentLevelProgress) }}%</span>
+          </div>
+          <div class="level-progress-bar">
+            <div class="level-progress-fill" :style="{ width: rewards.currentLevelProgress + '%' }"></div>
+          </div>
+        </div>
+
+        <!-- Rewards Stats -->
+        <div class="rewards-stats">
+          <div class="reward-stat">
+            <span class="reward-stat-icon">🔥</span>
+            <span class="reward-stat-value">{{ rewards.streak || 0 }}</span>
+            <span class="reward-stat-label">Дней подряд</span>
+          </div>
+          <div class="reward-stat">
+            <span class="reward-stat-icon">🏆</span>
+            <span class="reward-stat-value">{{ rewards.achievements?.length || 0 }}</span>
+            <span class="reward-stat-label">Достижений</span>
+          </div>
+          <div class="reward-stat">
+            <span class="reward-stat-icon">🎯</span>
+            <span class="reward-stat-value">{{ rewards.nextRewardIn || 0 }}</span>
+            <span class="reward-stat-label">До награды</span>
+          </div>
+        </div>
+
+        <!-- Recent Achievements -->
+        <div v-if="rewards.achievements?.length" class="achievements-showcase">
+          <h3 class="subsection-title">🏅 Последние достижения</h3>
+          <div class="achievements-list">
+            <div 
+              v-for="achievement in rewards.achievements.slice(0, 6)" 
+              :key="achievement.id"
+              :class="['achievement-item', achievement.rarity]"
+            >
+              <span class="achievement-icon">{{ achievement.icon }}</span>
+              <div class="achievement-info">
+                <span class="achievement-name">{{ achievement.name }}</span>
+                <span class="achievement-date">{{ formatDate(achievement.unlockedAt) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Original Stats Grid -->
       <div class="stats-grid">
         <div v-for="stat in statCards" :key="stat.id" class="stat-card">
           <div :class="`stat-icon ${stat.color}`" v-html="stat.icon"></div>
@@ -50,6 +193,7 @@
         </div>
       </div>
 
+      <!-- Recent Activity -->
       <div v-if="analytics.recentActivity?.length > 0" class="section-card">
         <div class="section-header">
           <div class="section-icon-badge">
@@ -77,6 +221,7 @@
         </div>
       </div>
 
+      <!-- Empty State -->
       <div v-if="!hasAnyData" class="empty-state">
         <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
@@ -90,6 +235,7 @@
       </div>
     </div>
 
+    <!-- PDF Export Modal -->
     <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
       <div class="modal-card">
         <div class="modal-header">
@@ -131,7 +277,15 @@
 
 <script>
 import { auth } from '@/firebase';
-import { getUserAnalytics, getLessonById } from '@/api';
+import { 
+  getUserAnalytics, 
+  getLessonById,
+  // 🧬 NEW: Learning DNA & Gamification
+  getLearningProfile,
+  getPersonalizedRecommendations,
+  getUserRewards,
+  updateStreak
+} from '@/api';
 
 export default {
   name: 'UserAnalyticsPanel',
@@ -143,6 +297,12 @@ export default {
       selectedStats: ['studyDays', 'completedLessons', 'totalPoints', 'streakDays'],
       period: 30,
       lessonCache: new Map(),
+      
+      // 🧬 NEW: Learning DNA & Gamification
+      learningProfile: null,
+      recommendations: null,
+      rewards: null,
+      
       analytics: {
         studyDays: 0,
         completedLessons: 0,
@@ -165,19 +325,13 @@ export default {
       ],
     };
   },
+  
   computed: {
-    /**
-     * Checks if there is any analytics data to display.
-     */
     hasAnyData() {
       const { totalLessonsDone, studyDays, subjects } = this.analytics;
       return totalLessonsDone > 0 || studyDays > 0 || subjects?.length > 0;
     },
 
-    /**
-     * Generates a configuration array for the main statistics cards.
-     * This makes the template cleaner and easier to modify.
-     */
     statCards() {
         const an = this.analytics;
         return [
@@ -234,15 +388,160 @@ export default {
   },
 
   async mounted() {
-    await this.loadAnalytics();
+    await this.loadAllData();
   },
 
   methods: {
-    /**
-     * Fetches a lesson name by its ID, using a cache to avoid redundant API calls.
-     * @param {string} lessonId - The ID of the lesson.
-     * @returns {Promise<string>} The lesson name or a fallback string.
-     */
+    // 🧬 NEW: Load all data including Learning DNA
+    async loadAllData() {
+      this.loading = true;
+      this.error = null;
+      
+      try {
+        const currentUser = auth.currentUser || (await new Promise(resolve => setTimeout(() => resolve(auth.currentUser), 1000)));
+
+        if (!currentUser) {
+          this.error = 'Необходима авторизация';
+          return;
+        }
+
+        console.log('🚀 Loading analytics and Learning DNA...');
+
+        // Update streak first
+        try {
+          await updateStreak(currentUser.uid);
+        } catch (streakError) {
+          console.warn('⚠️ Streak update failed:', streakError);
+        }
+
+        // Load all data in parallel
+        const [analyticsRes, profileRes, rewardsRes, recommendationsRes] = await Promise.allSettled([
+          getUserAnalytics(currentUser.uid),
+          getLearningProfile(currentUser.uid),
+          getUserRewards(currentUser.uid),
+          getPersonalizedRecommendations(currentUser.uid)
+        ]);
+
+        // Handle analytics
+        if (analyticsRes.status === 'fulfilled') {
+          const responseData = analyticsRes.value?.data?.data || analyticsRes.value?.data;
+          if (responseData && typeof responseData === 'object') {
+            this.analytics = { ...this.analytics, ...responseData };
+            await this.resolveActivityLessonNames();
+          }
+        }
+
+        // Handle learning profile
+        if (profileRes.status === 'fulfilled' && profileRes.value?.success) {
+          this.learningProfile = profileRes.value.profile;
+          console.log('✅ Learning profile loaded');
+        }
+
+        // Handle rewards
+        if (rewardsRes.status === 'fulfilled' && rewardsRes.value?.success) {
+          this.rewards = rewardsRes.value.rewards;
+          console.log('✅ Rewards loaded');
+        }
+
+        // Handle recommendations
+        if (recommendationsRes.status === 'fulfilled' && recommendationsRes.value?.success) {
+          this.recommendations = recommendationsRes.value.recommendation;
+          console.log('✅ Recommendations loaded');
+        }
+
+      } catch (err) {
+        console.error('❌ Error loading data:', err);
+        const status = err.response?.status;
+        if (status === 401) this.error = 'Ошибка авторизации';
+        else if (status === 404) this.error = 'Данные не найдены. Начните изучать уроки!';
+        else if (status >= 500) this.error = 'Ошибка на сервере';
+        else this.error = 'Ошибка загрузки данных';
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async loadAnalytics() {
+      await this.loadAllData();
+    },
+
+    // 🧬 NEW: Learning DNA helper methods
+    getLearningStyleIcon() {
+      const icons = {
+        visual: '👁️',
+        auditory: '👂',
+        kinesthetic: '🤸',
+        'reading-writing': '📝'
+      };
+      return icons[this.learningProfile?.learningStyle?.primary] || '🎯';
+    },
+
+    getLearningStyleText() {
+      const styles = {
+        visual: 'Визуальный',
+        auditory: 'Аудиальный',
+        kinesthetic: 'Кинестетический',
+        'reading-writing': 'Чтение/письмо'
+      };
+      return styles[this.learningProfile?.learningStyle?.primary] || 'Сбалансированный';
+    },
+
+    getChronotypeIcon() {
+      const icons = {
+        lark: '🌅',
+        owl: '🦉',
+        'third-bird': '🐦',
+        variable: '🔄'
+      };
+      return icons[this.learningProfile?.chronotype?.type] || '🐦';
+    },
+
+    getChronotypeText() {
+      const types = {
+        lark: 'Жаворонок',
+        owl: 'Сова',
+        'third-bird': 'Голубь',
+        variable: 'Гибкий'
+      };
+      return types[this.learningProfile?.chronotype?.type] || 'Гибкий';
+    },
+
+    getOptimalTimesText() {
+      const peakHours = this.learningProfile?.chronotype?.peakHours;
+      if (!peakHours?.length) return 'Учитесь в любое время';
+      const hours = peakHours.slice(0, 2).map(h => `${h}:00`).join(', ');
+      return `Лучше в ${hours}`;
+    },
+
+    getPreferredPathText() {
+      const paths = {
+        storyteller: 'Рассказчик',
+        builder: 'Строитель',
+        scientist: 'Ученый',
+        artist: 'Художник',
+        gamer: 'Игрок',
+        social: 'Социальный',
+        debater: 'Дебатер'
+      };
+      return paths[this.learningProfile?.preferredPath] || 'Универсальный';
+    },
+
+    getSessionLengthText() {
+      const length = this.recommendations?.sessionLength || this.learningProfile?.chronotype?.optimalSessionLength;
+      return length ? `${length} минут` : '30 минут';
+    },
+
+    formatCognitiveLabel(key) {
+      const labels = {
+        processingSpeed: 'Скорость обработки',
+        workingMemory: 'Рабочая память',
+        visualSpatial: 'Визуально-пространственное',
+        verbalLinguistic: 'Вербально-лингвистическое',
+        logicalMathematical: 'Логико-математическое'
+      };
+      return labels[key] || key;
+    },
+
     async fetchLessonName(lessonId) {
       if (this.lessonCache.has(lessonId)) {
         return this.lessonCache.get(lessonId);
@@ -263,10 +562,6 @@ export default {
       }
     },
 
-    /**
-     * Resolves lesson IDs in the recent activity list into human-readable names.
-     * It processes requests in batches to avoid overwhelming the server.
-     */
     async resolveActivityLessonNames() {
       const activitiesToResolve = this.analytics.recentActivity?.filter(
         activity => typeof activity.lesson === 'string' && /^[a-f\d]{24}$/i.test(activity.lesson)
@@ -280,7 +575,6 @@ export default {
       try {
         await Promise.allSettled(promises);
         
-        // Update the original activity array with cached names
         this.analytics.recentActivity.forEach(activity => {
             if (this.lessonCache.has(activity.lesson)) {
                 activity.lesson = this.lessonCache.get(activity.lesson);
@@ -291,51 +585,10 @@ export default {
       }
     },
 
-    /**
-     * Loads the main analytics data from the API.
-     */
-    async loadAnalytics() {
-      this.loading = true;
-      this.error = null;
-      try {
-        // Wait for Firebase auth to initialize
-        const currentUser = auth.currentUser || (await new Promise(resolve => setTimeout(() => resolve(auth.currentUser), 1000)));
-
-        if (!currentUser) {
-          this.error = 'Необходима авторизация';
-          return;
-        }
-
-        const response = await getUserAnalytics(currentUser.uid);
-        
-        // Handle various potential API response structures
-        const responseData = response?.data?.data || response?.data;
-        
-        if (responseData && typeof responseData === 'object') {
-            this.analytics = { ...this.analytics, ...responseData };
-            await this.resolveActivityLessonNames();
-        } else {
-            this.error = response?.data?.error || 'Нет данных для аналитики';
-        }
-
-      } catch (err) {
-        const status = err.response?.status;
-        if (status === 401) this.error = 'Ошибка авторизации';
-        else if (status === 404) this.error = 'Данные не найдены. Начните изучать уроки!';
-        else if (status >= 500) this.error = 'Ошибка на сервере';
-        else this.error = 'Ошибка загрузки данных';
-      } finally {
-        this.loading = false;
-      }
-    },
-
     openModal() {
       this.showModal = true;
     },
 
-    /**
-     * Generates and triggers the download of a PDF report.
-     */
     async downloadPDF() {
         const { default: html2pdf } = await import('html2pdf.js');
 
@@ -375,9 +628,6 @@ export default {
         }
     },
 
-    // =============================================
-    // FORMATTING HELPERS
-    // =============================================
     formatNumber: (value) => {
         const num = Number(value);
         return (value === null || value === undefined || isNaN(num)) ? '—' : num.toLocaleString('ru-RU');
@@ -429,14 +679,18 @@ export default {
 </script>
 
 <style scoped>
-/* GENERAL STYLES */
+/* =============================================
+   GENERAL STYLES
+   ============================================= */
 .analytics-page {
   min-height: 100vh;
   background: #fafafa;
   padding: 1.5rem;
 }
 
-/* HEADER */
+/* =============================================
+   HEADER
+   ============================================= */
 .page-header {
   max-width: 1400px;
   margin: 0 auto 2rem;
@@ -497,7 +751,9 @@ export default {
   height: 1.125rem;
 }
 
-/* LOADING & ERROR STATES */
+/* =============================================
+   LOADING & ERROR STATES
+   ============================================= */
 .loading-state,
 .error-state {
   max-width: 1400px;
@@ -543,13 +799,315 @@ export default {
   margin: 0 0 1.5rem 0;
 }
 
-/* CONTENT CONTAINER */
+/* =============================================
+   CONTENT CONTAINER
+   ============================================= */
 .content-container {
   max-width: 1400px;
   margin: 0 auto;
 }
 
-/* STATS GRID */
+/* =============================================
+   🧬 LEARNING DNA SECTION (NEW)
+   ============================================= */
+.learning-dna-section {
+  background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+  border: 1px solid #e9d5ff;
+}
+
+.section-icon-badge.dna {
+  background: linear-gradient(135deg, #a855f7, #9333ea);
+}
+
+.dna-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.dna-card {
+  background: white;
+  border-radius: 10px;
+  padding: 1.25rem;
+  border: 1px solid #e9d5ff;
+  transition: all 0.2s;
+}
+
+.dna-card:hover {
+  border-color: #a855f7;
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.1);
+}
+
+.dna-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.dna-card-header h4 {
+  font-size: 0.875rem;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  margin: 0;
+  font-weight: 600;
+}
+
+.dna-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.dna-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+
+.dna-desc {
+  font-size: 0.8125rem;
+  color: #9ca3af;
+  margin: 0;
+}
+
+.subsection-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 1rem 0;
+}
+
+.cognitive-profile-section {
+  margin-bottom: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid #e9d5ff;
+}
+
+.cognitive-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cognitive-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: white;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #e9d5ff;
+}
+
+.cognitive-label {
+  flex: 0 0 180px;
+  font-size: 0.8125rem;
+  color: #4b5563;
+  font-weight: 500;
+}
+
+.cognitive-progress {
+  flex: 1;
+  height: 8px;
+  background: rgba(168, 85, 247, 0.15);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.cognitive-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #a855f7, #9333ea);
+  transition: width 0.5s ease;
+  border-radius: 9999px;
+}
+
+.cognitive-value {
+  flex: 0 0 50px;
+  text-align: right;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #a855f7;
+}
+
+.insights-section {
+  padding-top: 2rem;
+  border-top: 1px solid #e9d5ff;
+}
+
+.insights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 0.75rem;
+}
+
+.insight-card {
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  border-left: 3px solid #a855f7;
+  font-size: 0.875rem;
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+/* =============================================
+   🎮 REWARDS SECTION (NEW)
+   ============================================= */
+.rewards-section {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border: 1px solid #fcd34d;
+}
+
+.section-icon-badge.rewards {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.level-section {
+  margin-bottom: 2rem;
+}
+
+.level-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.level-label {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #78350f;
+}
+
+.level-percent {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #92400e;
+}
+
+.level-progress-bar {
+  height: 12px;
+  background: rgba(217, 119, 6, 0.2);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.level-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #f59e0b, #d97706);
+  transition: width 0.5s ease;
+  border-radius: 9999px;
+}
+
+.rewards-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.reward-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.5rem 1rem;
+  background: white;
+  border-radius: 10px;
+  border: 1px solid #fcd34d;
+}
+
+.reward-stat-icon {
+  font-size: 2rem;
+}
+
+.reward-stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1;
+}
+
+.reward-stat-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  text-align: center;
+}
+
+.achievements-showcase {
+  padding-top: 2rem;
+  border-top: 1px solid #fcd34d;
+}
+
+.achievements-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 0.75rem;
+}
+
+.achievement-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  border: 2px solid #e5e7eb;
+  transition: all 0.2s;
+}
+
+.achievement-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.achievement-item.legendary {
+  border-color: #f59e0b;
+  background: linear-gradient(135deg, #fffbeb, #fef3c7);
+}
+
+.achievement-item.epic {
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+}
+
+.achievement-item.rare {
+  border-color: #10b981;
+  background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+}
+
+.achievement-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.achievement-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.achievement-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.achievement-date {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+/* =============================================
+   STATS GRID
+   ============================================= */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -622,7 +1180,9 @@ export default {
   color: #9ca3af;
 }
 
-/* SECTION CARD */
+/* =============================================
+   SECTION CARD
+   ============================================= */
 .section-card {
   background: white;
   border-radius: 12px;
@@ -669,7 +1229,9 @@ export default {
   margin: 0.25rem 0 0 0;
 }
 
-/* ACTIVITY LIST */
+/* =============================================
+   ACTIVITY LIST
+   ============================================= */
 .activity-list {
   display: flex;
   flex-direction: column;
@@ -724,7 +1286,9 @@ export default {
   font-weight: 500;
 }
 
-/* EMPTY STATE */
+/* =============================================
+   EMPTY STATE
+   ============================================= */
 .empty-state {
   background: white;
   border-radius: 12px;
@@ -753,7 +1317,9 @@ export default {
   margin: 0 0 2rem 0;
 }
 
-/* ACTION BUTTON */
+/* =============================================
+   ACTION BUTTON
+   ============================================= */
 .action-button {
   padding: 0.75rem 1.25rem;
   border: none;
@@ -792,7 +1358,9 @@ export default {
   background: #e5e7eb;
 }
 
-/* MODAL */
+/* =============================================
+   MODAL
+   ============================================= */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -903,12 +1471,18 @@ export default {
   border-top: 1px solid #e5e7eb;
 }
 
-/* RESPONSIVE & DARK MODE */
+/* =============================================
+   RESPONSIVE & DARK MODE
+   ============================================= */
 @media (max-width: 768px) {
   .analytics-page { padding: 1rem; }
   .header-content { flex-direction: column; align-items: stretch; }
   .download-button { justify-content: center; }
   .stats-grid, .options-grid { grid-template-columns: 1fr; }
+  .dna-grid { grid-template-columns: 1fr; }
+  .rewards-stats { grid-template-columns: 1fr; }
+  .achievements-list { grid-template-columns: 1fr; }
+  .cognitive-label { flex: 0 0 120px; font-size: 0.75rem; }
 }
 
 @media (prefers-color-scheme: dark) {
@@ -924,5 +1498,9 @@ export default {
   .modal-select { background: #374151; border-color: #4b5563; color: #f9fafb; }
   .option-checkbox { background: #374151; border-color: #4b5563; }
   .option-checkbox:hover { background: #4b5563; }
+  .learning-dna-section { background: linear-gradient(135deg, #1f1533 0%, #2d1b4e 100%); border-color: #4c1d95; }
+  .dna-card, .cognitive-bar, .insight-card { background: #1f2937; border-color: #4c1d95; }
+  .rewards-section { background: linear-gradient(135deg, #422006 0%, #78350f 100%); border-color: #d97706; }
+  .reward-stat, .achievement-item { background: #1f2937; border-color: #d97706; }
 }
 </style>

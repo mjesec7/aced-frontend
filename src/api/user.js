@@ -344,3 +344,131 @@ export const getDiaryEntries = async (userId) => {
     throw error;
   }
 };
+
+// =============================================
+// 🧬 LEARNING PROFILE (NEW)
+// =============================================
+
+/**
+ * Get user learning profile
+ */
+export const getLearningProfile = async (userId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) {
+      throw new Error('No authentication token available');
+    }
+
+    const headers = { Authorization: `Bearer ${token}` };
+    const { data } = await api.get(`/api/learning-profile/${userId}`, { headers });
+    
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to get learning profile:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update learning profile from performance
+ */
+export const updateLearningProfile = async (userId, performanceData) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) {
+      throw new Error('No authentication token available');
+    }
+
+    const headers = { Authorization: `Bearer ${token}` };
+    const { data } = await api.post(`/api/learning-profile/${userId}/update`, performanceData, { headers });
+    
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to update learning profile:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get personalized recommendations
+ */
+export const getPersonalizedRecommendations = async (userId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) {
+      throw new Error('No authentication token available');
+    }
+
+    const headers = { Authorization: `Bearer ${token}` };
+    const { data } = await api.get(`/api/learning-profile/${userId}/recommendation`, { headers });
+    
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to get recommendations:', error);
+    throw error;
+  }
+};
+
+// =============================================
+// 🎮 REWARD SYSTEM (NEW)
+// =============================================
+
+/**
+ * Get user rewards
+ */
+export const getUserRewards = async (userId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) {
+      throw new Error('No authentication token available');
+    }
+
+    const headers = { Authorization: `Bearer ${token}` };
+    const { data } = await api.get(`/api/rewards/${userId}`, { headers });
+    
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to get rewards:', error);
+    throw error;
+  }
+};
+
+/**
+ * Check for reward after step completion
+ */
+export const checkReward = async (userId, currentStep) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) {
+      throw new Error('No authentication token available');
+    }
+
+    const headers = { Authorization: `Bearer ${token}` };
+    const { data } = await api.post(`/api/rewards/${userId}/check`, { currentStep }, { headers });
+    
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to check reward:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update user streak
+ */
+export const updateStreak = async (userId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) {
+      throw new Error('No authentication token available');
+    }
+
+    const headers = { Authorization: `Bearer ${token}` };
+    const { data } = await api.post(`/api/rewards/${userId}/streak`, {}, { headers });
+    
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to update streak:', error);
+    throw error;
+  }
+};

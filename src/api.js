@@ -156,7 +156,15 @@ export const {
   updateUserGoal,
   deleteUserGoal,
   saveDiaryEntry,
-  getDiaryEntries
+  getDiaryEntries,
+  // 🧬 NEW: Learning Profile
+  getLearningProfile,
+  updateLearningProfile,
+  getPersonalizedRecommendations,
+  // 🎮 NEW: Reward System
+  getUserRewards,
+  checkReward,
+  updateStreak
 } = UserAPI;
 
 // =============================================
@@ -346,7 +354,9 @@ export {
 import { 
   getCourseById, 
   getUserProgress,
-  initiatePaymePayment 
+  initiatePaymePayment,
+  getLearningProfile,  // NEW
+  getUserRewards       // NEW
 } from '@/api';
 
 // ✅ ALTERNATIVE: Namespace imports
@@ -400,6 +410,16 @@ USER:
 - getUserStatus(userId)
 - getUserStudyList(userId)
 - addToStudyList(userId, topicData)
+
+LEARNING PROFILE (NEW):
+- getLearningProfile(userId) - Get Learning DNA
+- updateLearningProfile(userId, performanceData) - Update from performance
+- getPersonalizedRecommendations(userId) - Get AI recommendations
+
+REWARDS (NEW):
+- getUserRewards(userId) - Get gamification rewards
+- checkReward(userId, stepNumber) - Check if reward earned
+- updateStreak(userId) - Update daily streak
 
 PAYMENTS:
 - initiatePaymePayment(userId, plan)
