@@ -346,7 +346,7 @@ export const getDiaryEntries = async (userId) => {
 };
 
 // =============================================
-// 🧬 LEARNING PROFILE (NEW)
+// 🧬 LEARNING PROFILE (NEW & PATHS FIXED)
 // =============================================
 
 /**
@@ -360,7 +360,8 @@ export const getLearningProfile = async (userId) => {
     }
 
     const headers = { Authorization: `Bearer ${token}` };
-    const { data } = await api.get(`/api/learning-profile/${userId}`, { headers });
+    // ✅ FIXED: Use relative path
+    const { data } = await api.get(`learning-profile/${userId}`, { headers });
     
     return data;
   } catch (error) {
@@ -380,7 +381,8 @@ export const updateLearningProfile = async (userId, performanceData) => {
     }
 
     const headers = { Authorization: `Bearer ${token}` };
-    const { data } = await api.post(`/api/learning-profile/${userId}/update`, performanceData, { headers });
+    // ✅ FIXED: Use relative path
+    const { data } = await api.post(`learning-profile/${userId}/update`, performanceData, { headers });
     
     return data;
   } catch (error) {
@@ -400,7 +402,8 @@ export const getPersonalizedRecommendations = async (userId) => {
     }
 
     const headers = { Authorization: `Bearer ${token}` };
-    const { data } = await api.get(`/api/learning-profile/${userId}/recommendation`, { headers });
+    // ✅ FIXED: Use relative path
+    const { data } = await api.get(`learning-profile/${userId}/recommendation`, { headers });
     
     return data;
   } catch (error) {
@@ -410,7 +413,7 @@ export const getPersonalizedRecommendations = async (userId) => {
 };
 
 // =============================================
-// 🎮 REWARD SYSTEM (NEW)
+// 🎮 REWARD SYSTEM (UPDATED)
 // =============================================
 
 /**
@@ -424,7 +427,8 @@ export const getUserRewards = async (userId) => {
     }
 
     const headers = { Authorization: `Bearer ${token}` };
-    const { data } = await api.get(`/api/rewards/${userId}`, { headers });
+    // ✅ UPDATED: Use relative path
+    const { data } = await api.get(`rewards/${userId}`, { headers });
     
     return data;
   } catch (error) {
@@ -444,7 +448,8 @@ export const checkReward = async (userId, currentStep) => {
     }
 
     const headers = { Authorization: `Bearer ${token}` };
-    const { data } = await api.post(`/api/rewards/${userId}/check`, { currentStep }, { headers });
+    // ✅ UPDATED: Use relative path
+    const { data } = await api.post(`rewards/${userId}/check`, { currentStep }, { headers });
     
     return data;
   } catch (error) {
@@ -464,7 +469,8 @@ export const updateStreak = async (userId) => {
     }
 
     const headers = { Authorization: `Bearer ${token}` };
-    const { data } = await api.post(`/api/rewards/${userId}/streak`, {}, { headers });
+    // ✅ UPDATED: Use relative path
+    const { data } = await api.post(`rewards/${userId}/streak`, {}, { headers });
     
     return data;
   } catch (error) {
