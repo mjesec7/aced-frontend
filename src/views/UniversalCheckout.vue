@@ -3,287 +3,413 @@
     <div class="checkout-container">
       <!-- Payment Success View -->
       <div v-if="paymentStatus === 'success'" class="payment-result success">
-        <div class="result-icon">✅</div>
-        <h1 class="result-title">Payment Successful!</h1>
-        <p class="result-message">Your {{ planName }} subscription has been activated</p>
-        <div class="transaction-info">
-          <p><strong>Plan:</strong> {{ planName }}</p>
-          <p><strong>Amount:</strong> {{ formatAmount(finalAmount) }}</p>
-          <p v-if="transactionId"><strong>Transaction ID:</strong> {{ transactionId }}</p>
-        </div>
-        <div class="result-actions">
-          <button @click="goToDashboard" class="btn-primary btn-large">
-            Go to Courses
-          </button>
-          <button @click="goHome" class="btn-secondary">
-            Home
-          </button>
+        <div class="result-content">
+          <div class="result-icon-wrapper success">
+            <svg class="checkmark" viewBox="0 0 52 52">
+              <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
+              <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+            </svg>
+          </div>
+          <h1 class="result-title">Payment Successful</h1>
+          <p class="result-message">Your {{ planName }} subscription has been activated successfully</p>
+          
+          <div class="transaction-details">
+            <div class="detail-row">
+              <span class="detail-label">Plan</span>
+              <span class="detail-value">{{ planName }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Amount Paid</span>
+              <span class="detail-value amount">{{ formatAmount(finalAmount) }}</span>
+            </div>
+            <div v-if="transactionId" class="detail-row">
+              <span class="detail-label">Transaction ID</span>
+              <span class="detail-value transaction-id">{{ transactionId }}</span>
+            </div>
+          </div>
+          
+          <div class="result-actions">
+            <button @click="goToDashboard" class="btn btn-primary">
+              Start Learning
+            </button>
+            <button @click="goHome" class="btn btn-outline">
+              Back to Home
+            </button>
+          </div>
         </div>
       </div>
 
       <!-- Payment Failed View -->
       <div v-else-if="paymentStatus === 'failed'" class="payment-result failed">
-        <div class="result-icon error">❌</div>
-        <h1 class="result-title">Payment Failed</h1>
-        <p class="result-message">{{ failureReason || 'An error occurred while processing payment' }}</p>
-        <div class="result-actions">
-          <button @click="retryPayment" class="btn-primary btn-large">
-            Try Again
-          </button>
-          <button @click="goBack" class="btn-secondary">
-            Change Payment Method
-          </button>
+        <div class="result-content">
+          <div class="result-icon-wrapper error">
+            <svg viewBox="0 0 52 52" class="error-icon-svg">
+              <circle class="error-circle" cx="26" cy="26" r="25" fill="none"/>
+              <path class="error-cross" fill="none" d="M16 16 36 36 M36 16 16 36"/>
+            </svg>
+          </div>
+          <h1 class="result-title">Payment Failed</h1>
+          <p class="result-message">{{ failureReason || 'We couldn\'t process your payment. Please try again.' }}</p>
+          
+          <div class="result-actions">
+            <button @click="retryPayment" class="btn btn-primary">
+              Try Again
+            </button>
+            <button @click="goBack" class="btn btn-outline">
+              Change Method
+            </button>
+          </div>
         </div>
       </div>
 
       <!-- Payment Cancelled View -->
       <div v-else-if="paymentStatus === 'cancelled'" class="payment-result cancelled">
-        <div class="result-icon warning">⚠️</div>
-        <h1 class="result-title">Payment Cancelled</h1>
-        <p class="result-message">You cancelled the payment process</p>
-        <div class="result-actions">
-          <button @click="retryPayment" class="btn-primary btn-large">
-            Return to Payment
-          </button>
-          <button @click="goHome" class="btn-secondary">
-            Home
-          </button>
+        <div class="result-content">
+          <div class="result-icon-wrapper warning">
+            <svg viewBox="0 0 52 52" class="warning-icon-svg">
+              <circle class="warning-circle" cx="26" cy="26" r="25" fill="none"/>
+              <path class="warning-sign" fill="none" d="M26 14v16m0 4v.01"/>
+            </svg>
+          </div>
+          <h1 class="result-title">Payment Cancelled</h1>
+          <p class="result-message">You cancelled the payment. Your subscription remains unchanged.</p>
+          
+          <div class="result-actions">
+            <button @click="retryPayment" class="btn btn-primary">
+              Return to Payment
+            </button>
+            <button @click="goHome" class="btn btn-outline">
+              Back to Home
+            </button>
+          </div>
         </div>
       </div>
 
       <!-- Loading State -->
       <div v-else-if="loading" class="loading-state">
-        <div class="checkout-logo">
-          <div class="logo-icon">💳</div>
-          <h1>{{ loadingMessage }}</h1>
-        </div>
-        <div class="spinner"></div>
-        <p>Redirecting to payment page...</p>
-        
-        <div class="user-info-loading" v-if="userName">
-          <p><strong>User:</strong> {{ finalUserName }}</p>
-          <p><strong>Plan:</strong> {{ planName }} ({{ formatAmount(finalAmount) }})</p>
+        <div class="loading-content">
+          <div class="loading-spinner">
+            <div class="spinner-ring"></div>
+            <div class="spinner-ring"></div>
+            <div class="spinner-ring"></div>
+          </div>
+          <h2 class="loading-title">{{ loadingMessage }}</h2>
+          <p class="loading-subtitle">Please wait while we prepare your payment...</p>
+          
+          <div v-if="userName" class="loading-details">
+            <div class="loading-detail">
+              <span class="loading-label">User</span>
+              <span class="loading-value">{{ finalUserName }}</span>
+            </div>
+            <div class="loading-detail">
+              <span class="loading-label">Plan</span>
+              <span class="loading-value">{{ planName }}</span>
+            </div>
+            <div class="loading-detail">
+              <span class="loading-label">Amount</span>
+              <span class="loading-value">{{ formatAmount(finalAmount) }}</span>
+            </div>
+          </div>
         </div>
       </div>
 
       <!-- Error State -->
       <div v-else-if="error" class="error-state">
-        <div class="error-icon">❌</div>
-        <h2>Payment Initialization Error</h2>
-        <p class="error-message">{{ error }}</p>
-        
-        <div v-if="showDebugInfo" class="debug-info">
-          <h4>Debug Information:</h4>
-          <pre>{{ debugData }}</pre>
-        </div>
-        
-        <div class="error-actions">
-          <button @click="goBack" class="back-btn">← Back</button>
-          <button @click="retryPayment" class="retry-btn">🔄 Try Again</button>
+        <div class="error-content">
+          <div class="error-icon-large">
+            <svg viewBox="0 0 52 52" class="error-svg-large">
+              <circle class="error-circle-large" cx="26" cy="26" r="25" fill="none"/>
+              <path class="error-cross-large" fill="none" d="M16 16 36 36 M36 16 16 36"/>
+            </svg>
+          </div>
+          <h2 class="error-title">Unable to Process Payment</h2>
+          <p class="error-message">{{ error }}</p>
+          
+          <div v-if="showDebugInfo" class="debug-section">
+            <details>
+              <summary>Technical Details</summary>
+              <pre class="debug-data">{{ debugData }}</pre>
+            </details>
+          </div>
+          
+          <div class="error-actions">
+            <button @click="retryPayment" class="btn btn-primary">
+              Try Again
+            </button>
+            <button @click="goBack" class="btn btn-outline">
+              Go Back
+            </button>
+          </div>
         </div>
       </div>
 
       <!-- Main Checkout View -->
-      <div v-else class="method-selection-state">
-        <div class="checkout-logo">
-          <div class="logo-icon">💳</div>
-          <h1>Payment Checkout</h1>
-          <p class="subtitle">Secure ACED subscription payment</p>
+      <div v-else class="checkout-main">
+        <!-- Header -->
+        <div class="checkout-header">
+          <div class="header-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+              <line x1="1" y1="10" x2="23" y2="10"/>
+            </svg>
+          </div>
+          <h1 class="checkout-title">Complete Your Payment</h1>
+          <p class="checkout-subtitle">Subscribe to ACED and unlock premium features</p>
         </div>
 
-        <div class="user-info-section">
-          <h3>👤 Payment Information</h3>
-          <div class="user-details">
-            <div class="user-row">
-              <span class="label">Name:</span>
-              <span class="value">{{ finalUserName || 'Not specified' }}</span>
+        <!-- Payment Summary -->
+        <div class="payment-summary">
+          <h3 class="section-title">Payment Details</h3>
+          <div class="summary-grid">
+            <div class="summary-item">
+              <span class="summary-label">Account</span>
+              <span class="summary-value">{{ finalUserName || 'Not specified' }}</span>
             </div>
-            <div class="user-row">
-              <span class="label">User ID:</span>
-              <span class="value user-id">{{ finalUserId || 'Not specified' }}</span>
+            <div class="summary-item">
+              <span class="summary-label">Email</span>
+              <span class="summary-value">{{ finalUserEmail || 'Not specified' }}</span>
             </div>
-            <div class="user-row">
-              <span class="label">Email:</span>
-              <span class="value">{{ finalUserEmail || 'Not specified' }}</span>
+            <div class="summary-item highlight">
+              <span class="summary-label">Current Plan</span>
+              <span class="summary-badge current">{{ currentPlan || 'Free' }}</span>
             </div>
-            <div class="user-row">
-              <span class="label">Current Plan:</span>
-              <span class="value current-plan">{{ currentPlan || 'Free' }}</span>
+            <div v-if="finalPlan" class="summary-item highlight">
+              <span class="summary-label">Upgrading To</span>
+              <span class="summary-badge upgrade">{{ planName }}</span>
             </div>
-            <div class="user-row upgrade-row" v-if="finalPlan">
-              <span class="label">Upgrading to:</span>
-              <span class="value new-plan">{{ planName }}</span>
-            </div>
-            <div class="user-row" v-if="finalAmount">
-              <span class="label">Amount to Pay:</span>
-              <span class="value amount">{{ formatAmount(finalAmount) }}</span>
-            </div>
+          </div>
+          
+          <div class="amount-display">
+            <span class="amount-label">Total Amount</span>
+            <span class="amount-value">{{ formatAmount(finalAmount) }}</span>
           </div>
         </div>
 
-        <div class="provider-selection">
-          <h3>💳 Choose Payment Method</h3>
-          <div class="provider-options">
+        <!-- Payment Method Selection -->
+        <div class="payment-methods">
+          <h3 class="section-title">Payment Method</h3>
+          <div class="method-grid">
             <label 
               v-for="(provider, key) in providers"
               :key="key"
-              :class="{ active: paymentProvider === key, disabled: !provider.enabled }"
+              :class="['method-card', { 
+                active: paymentProvider === key, 
+                disabled: !provider.enabled 
+              }]"
               @click="provider.enabled && (paymentProvider = key)"
             >
               <input 
                 type="radio"
                 v-model="paymentProvider"
                 :value="key"
-                :disabled="!provider.enabled" 
+                :disabled="!provider.enabled"
+                class="method-radio"
               />
-              <div class="provider-content">
-                <div class="provider-icon">
-                  {{ provider.emoji }}
-                </div>
-                <div class="provider-info">
-                  <span class="provider-name">{{ provider.name }}</span>
-                  <span class="provider-description">{{ provider.description }}</span>
-                  <span v-if="!provider.enabled" class="coming-soon">Coming Soon</span>
-                </div>
+              <div class="method-icon">
+                {{ provider.emoji }}
+              </div>
+              <div class="method-details">
+                <span class="method-name">{{ provider.name }}</span>
+                <span class="method-desc">{{ provider.description }}</span>
+                <span v-if="!provider.enabled" class="method-status">Coming Soon</span>
+              </div>
+              <div v-if="paymentProvider === key && provider.enabled" class="method-check">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                </svg>
               </div>
             </label>
           </div>
         </div>
 
-        <!-- Saved Cards Section (for Multicard only) -->
-        <div v-if="paymentProvider === 'multicard' && savedCards.length > 0" class="saved-cards-section">
-          <h3>💳 Saved Cards</h3>
-          <div class="saved-cards">
+        <!-- Saved Cards Section -->
+        <div v-if="paymentProvider === 'multicard' && savedCards.length > 0" class="saved-cards">
+          <h3 class="section-title">Saved Cards</h3>
+          <div class="cards-list">
             <label 
               v-for="card in savedCards" 
               :key="card.cardToken"
-              class="card-item"
-              :class="{ active: selectedCardToken === card.cardToken }"
+              :class="['card-option', { active: selectedCardToken === card.cardToken }]"
               @click="selectCard(card.cardToken)"
             >
-              <div class="card-info">
-                <div class="card-icon">
-                  {{ getCardEmoji(card.ps) }}
-                </div>
-                <div class="card-details">
-                  <p class="card-number">•••• {{ card.cardPan?.slice(-4) || '****' }}</p>
-                  <p class="card-type">{{ getCardTypeName(card.ps) }}</p>
+              <div class="card-visual">
+                <div class="card-chip"></div>
+                <div class="card-number">•••• •••• •••• {{ card.cardPan?.slice(-4) || '****' }}</div>
+                <div class="card-footer">
+                  <span class="card-type">{{ getCardTypeName(card.ps) }}</span>
                 </div>
               </div>
-              <div class="card-radio">
+              <div class="card-select">
                 <input 
                   type="radio" 
                   :checked="selectedCardToken === card.cardToken"
                 />
               </div>
             </label>
+            
             <label 
-              class="card-item new-card"
-              :class="{ active: selectedCardToken === null }"
+              :class="['card-option new-card', { active: selectedCardToken === null }]"
               @click="selectCard(null)"
             >
-              <div class="card-info">
-                <div class="card-icon">➕</div>
-                <div class="card-details">
-                  <p class="card-number">New Card</p>
-                  <p class="card-type">Add another card</p>
+              <div class="card-visual new">
+                <div class="new-card-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                  </svg>
                 </div>
+                <span class="new-card-text">Add New Card</span>
               </div>
-              <div class="card-radio">
+              <div class="card-select">
                 <input type="radio" :checked="selectedCardToken === null" />
               </div>
             </label>
           </div>
         </div>
 
-        <div class="plan-selection" v-if="!plan">
-          <h3>📋 Choose Plan</h3>
-          <div class="plan-options">
-            <label class="plan-option" :class="{ active: selectedPlan === 'start' }">
-              <input type="radio" v-model="selectedPlan" value="start" />
-              <div class="plan-details">
-                <strong>Start Plan</strong>
-                <span class="plan-price">260,000 UZS</span>
-                <span class="plan-features">Basic features</span>
+        <!-- Plan Selection (if needed) -->
+        <div v-if="!plan" class="plan-selection">
+          <h3 class="section-title">Choose Your Plan</h3>
+          <div class="plans-grid">
+            <label :class="['plan-card', { active: selectedPlan === 'start' }]">
+              <input type="radio" v-model="selectedPlan" value="start" class="plan-radio" />
+              <div class="plan-header">
+                <span class="plan-name">Start Plan</span>
+                <span class="plan-price">260,000 <span class="currency">UZS</span></span>
+              </div>
+              <ul class="plan-features">
+                <li>Access to basic courses</li>
+                <li>Monthly updates</li>
+                <li>Email support</li>
+              </ul>
+              <div v-if="selectedPlan === 'start'" class="plan-check">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                </svg>
               </div>
             </label>
             
-            <label class="plan-option" :class="{ active: selectedPlan === 'pro' }">
-              <input type="radio" v-model="selectedPlan" value="pro" />
-              <div class="plan-details">
-                <strong>Pro Plan</strong>
-                <span class="plan-price">455,000 UZS</span>
-                <span class="plan-features">All features</span>
+            <label :class="['plan-card featured', { active: selectedPlan === 'pro' }]">
+              <div class="plan-badge">Most Popular</div>
+              <input type="radio" v-model="selectedPlan" value="pro" class="plan-radio" />
+              <div class="plan-header">
+                <span class="plan-name">Pro Plan</span>
+                <span class="plan-price">455,000 <span class="currency">UZS</span></span>
+              </div>
+              <ul class="plan-features">
+                <li>All courses access</li>
+                <li>Priority support</li>
+                <li>Exclusive content</li>
+                <li>Certificate of completion</li>
+              </ul>
+              <div v-if="selectedPlan === 'pro'" class="plan-check">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                </svg>
               </div>
             </label>
           </div>
         </div>
 
-        <div class="language-selection">
-          <h3>🌐 Interface Language</h3>
+        <!-- Language Selection -->
+        <div class="language-selector">
+          <label class="language-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="2" y1="12" x2="22" y2="12"/>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            </svg>
+            Payment Page Language
+          </label>
           <select v-model="selectedLanguage" class="language-select">
-            <option value="ru">🇷🇺 Russian</option>
-            <option value="uz">🇺🇿 O'zbek</option>
             <option value="en">🇺🇸 English</option>
+            <option value="ru">🇷🇺 Русский</option>
+            <option value="uz">🇺🇿 O'zbek</option>
           </select>
         </div>
 
+        <!-- Payment Button -->
         <button 
           @click="processPayment" 
           :disabled="!canProceedToPayment || processing" 
-          class="payment-button"
-          :class="{ disabled: !canProceedToPayment || processing }"
+          class="payment-btn"
         >
-          <span v-if="processing" class="button-spinner"></span>
-          <span v-else-if="providers[paymentProvider]?.enabled && canProceedToPayment">
-            💳 Pay {{ formatAmount(finalAmount) }}
+          <span v-if="processing" class="btn-loading">
+            <span class="loading-dot"></span>
+            <span class="loading-dot"></span>
+            <span class="loading-dot"></span>
           </span>
-          <span v-else-if="!canProceedToPayment">
-            {{ validationMessage }}
+          <span v-else-if="providers[paymentProvider]?.enabled && canProceedToPayment">
+            Continue to Payment • {{ formatAmount(finalAmount) }}
           </span>
           <span v-else>
-            Choose available payment method
+            {{ validationMessage }}
           </span>
         </button>
 
-        <div class="security-notice">
-          <span class="security-icon">🔒</span>
-          <p>Your payment data is protected and transmitted via secure protocol</p>
+        <!-- Security Badge -->
+        <div class="security-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <div class="security-text">
+            <span class="security-title">Secure Payment</span>
+            <span class="security-desc">Your data is encrypted and protected</span>
+          </div>
         </div>
       </div>
 
       <!-- OTP Modal -->
-      <div v-if="showOtpModal" class="modal-overlay" @click.self="closeOtpModal">
-        <div class="modal-content otp-modal">
-          <h3>Enter Verification Code</h3>
-          <p>Code sent to the phone number linked to your card</p>
-          
-          <div class="otp-input-container">
-            <input 
-              v-for="(digit, index) in otpDigits" 
-              :key="index"
-              v-model="otpDigits[index]"
-              type="text"
-              maxlength="1"
-              class="otp-digit"
-              @input="handleOtpInput(index, $event)"
-              @keydown.backspace="handleOtpBackspace(index, $event)"
-              :ref="el => { if (el) otpInputs[index] = el }"
-            />
-          </div>
+      <transition name="modal">
+        <div v-if="showOtpModal" class="modal-overlay" @click.self="closeOtpModal">
+          <div class="modal-card">
+            <div class="modal-header">
+              <h3 class="modal-title">Verify Payment</h3>
+              <button @click="closeOtpModal" class="modal-close" :disabled="processing">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+            
+            <p class="modal-desc">Enter the 6-digit code sent to your registered phone number</p>
+            
+            <div class="otp-container">
+              <input 
+                v-for="(digit, index) in otpDigits" 
+                :key="index"
+                v-model="otpDigits[index]"
+                type="text"
+                inputmode="numeric"
+                maxlength="1"
+                class="otp-input"
+                @input="handleOtpInput(index, $event)"
+                @keydown.backspace="handleOtpBackspace(index, $event)"
+                :ref="el => { if (el) otpInputs[index] = el }"
+              />
+            </div>
 
-          <div v-if="otpError" class="error-message">{{ otpError }}</div>
+            <div v-if="otpError" class="otp-error">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+              </svg>
+              {{ otpError }}
+            </div>
 
-          <div class="modal-actions">
-            <button @click="closeOtpModal" class="btn-secondary" :disabled="processing">
-              Cancel
-            </button>
-            <button @click="submitOtp" class="btn-primary" :disabled="processing || otp.length < 6">
-              {{ processing ? 'Verifying...' : 'Confirm' }}
-            </button>
+            <div class="modal-actions">
+              <button @click="closeOtpModal" class="btn btn-outline" :disabled="processing">
+                Cancel
+              </button>
+              <button @click="submitOtp" class="btn btn-primary" :disabled="processing || otp.length < 6">
+                <span v-if="processing">Verifying...</span>
+                <span v-else>Confirm</span>
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      </transition>
 
     </div>
   </div>
@@ -337,17 +463,14 @@ export default {
       processing: false,
       error: '',
       
-      // Payment status tracking
-      paymentStatus: null, // null, 'success', 'failed', 'cancelled'
+      paymentStatus: null,
       transactionId: null,
       failureReason: '',
       
-      // Payment method selection
       selectedLanguage: 'en',
       selectedPlan: '',
       loadingMessage: 'Preparing payment...',
 
-      // Provider selection with emoji icons
       paymentProvider: 'multicard',
       providers: {
         multicard: { 
@@ -360,7 +483,7 @@ export default {
           enabled: true, 
           name: 'PayMe', 
           emoji: '📱',
-          description: 'Fast payment'
+          description: 'Fast mobile payment'
         },
         click: { 
           enabled: false, 
@@ -372,27 +495,23 @@ export default {
           enabled: false, 
           name: 'Uzum Bank', 
           emoji: '🟣',
-          description: 'Uzum Bank and wallet'
+          description: 'Uzum Bank payments'
         }
       },
       
-      // Saved cards for Multicard
       savedCards: [],
       selectedCardToken: null,
       
-      // OTP handling
       showOtpModal: false,
       otpDigits: ['', '', '', '', '', ''],
       otpInputs: [],
       otpError: null,
       currentPaymentUuid: null,
       
-      // Internal state
       internalUserId: '',
       internalUserName: '',
       internalUserEmail: '',
       
-      // Debug mode
       showDebugInfo: process.env.NODE_ENV === 'development'
     };
   },
@@ -430,14 +549,12 @@ export default {
       let amt = parseInt(this.amount) || 0;
       
       if (amt > 0) {
-        // Return the amount as-is without conversion
         return amt;
       }
       
-      // Use default amounts based on plan (in tiyin)
       const amounts = {
-        start: 26000000,  // 260,000 UZS in tiyin
-        pro: 45500000     // 455,000 UZS in tiyin
+        start: 26000000,
+        pro: 45500000
       };
       
       return amounts[this.finalPlan] || amounts.start;
@@ -459,10 +576,10 @@ export default {
     
     validationMessage() {
       if (!this.finalUserId) return 'User ID not specified';
-      if (!this.finalPlan) return 'Choose plan';
+      if (!this.finalPlan) return 'Please select a plan';
       if (!this.finalAmount || this.finalAmount <= 0) return 'Invalid payment amount';
-      if (!this.providers[this.paymentProvider]?.enabled) return 'Choose available payment method';
-      return 'Fill in all fields';
+      if (!this.providers[this.paymentProvider]?.enabled) return 'Please select an available payment method';
+      return 'Complete all required fields';
     },
     
     otp() {
@@ -509,22 +626,14 @@ export default {
   methods: {
     async initializeCheckout() {
       try {
-        // Check for payment status in URL
         this.checkPaymentStatus();
-        
-        // Load data from multiple sources
         this.loadPaymentData();
-        
-        // Load saved cards for Multicard
         await this.loadSavedCards();
         
-        // Wait for auth if needed
         if (!this.finalUserId && auth.currentUser === null) {
-          console.log('⏳ Waiting for auth...');
           await new Promise((resolve) => {
             const unsubscribe = auth.onAuthStateChanged((user) => {
               if (user) {
-                console.log('✅ Auth ready:', user.uid);
                 this.internalUserId = user.uid;
                 this.internalUserName = user.displayName || 'User';
                 this.internalUserEmail = user.email || '';
@@ -540,12 +649,9 @@ export default {
           });
         }
         
-        // Validate after loading
         this.validatePaymentData();
         
-        // Auto-process if requested
         if (this.$route.query.auto === 'true' && this.canProceedToPayment) {
-          console.log('🚀 Auto-processing payment...');
           await this.processPayment();
         }
         
@@ -589,24 +695,11 @@ export default {
       } else if (query.provider && this.providers[query.provider]) {
         this.paymentProvider = query.provider;
       }
-      
-      console.log('📊 Payment data loaded:', {
-        userId: this.finalUserId,
-        plan: this.finalPlan,
-        amount: this.finalAmount,
-        provider: this.paymentProvider
-      });
     },
 
     async loadSavedCards() {
       try {
-        // Get saved cards from user profile or API
         if (auth.currentUser) {
-          // TODO: Implement API call to get saved cards
-          // const response = await getSavedCards(auth.currentUser.uid);
-          // this.savedCards = response.cards || [];
-          
-          // For now, mock data (remove in production)
           this.savedCards = [];
         }
       } catch (err) {
@@ -616,16 +709,6 @@ export default {
 
     selectCard(token) {
       this.selectedCardToken = token;
-    },
-
-    getCardEmoji(ps) {
-      const emojis = {
-        uzcard: '🟦',
-        humo: '🟩',
-        visa: '🔵',
-        mastercard: '🔴'
-      };
-      return emojis[ps?.toLowerCase()] || '💳';
     },
 
     getCardTypeName(ps) {
@@ -639,13 +722,12 @@ export default {
     },
 
     createOfdData() {
-      // Create proper OFD (fiscal receipt) data - must be an array
       return [
         {
           name: `ACED ${this.finalPlan.toUpperCase()} Plan Subscription`,
           price: this.finalAmount,
           quantity: 1,
-          mxik: '10899002001000000', // Service MXIK code
+          mxik: '10899002001000000',
           packageCode: '1'
         }
       ];
@@ -654,17 +736,9 @@ export default {
     validatePaymentData() {
       const errors = [];
 
-      if (!this.finalUserId) {
-        errors.push('User ID is required');
-      }
-
-      if (!this.finalPlan) {
-        errors.push('Plan selection is required');
-      }
-
-      if (!this.finalAmount || this.finalAmount <= 0) {
-        errors.push('Valid amount is required');
-      }
+      if (!this.finalUserId) errors.push('User ID is required');
+      if (!this.finalPlan) errors.push('Plan selection is required');
+      if (!this.finalAmount || this.finalAmount <= 0) errors.push('Valid amount is required');
 
       if (errors.length > 0) {
         console.warn('⚠️ Payment data validation issues:', errors);
@@ -683,15 +757,6 @@ export default {
         this.error = '';
 
         const provider = this.paymentProvider;
-        
-        console.log('💳 Processing payment:', {
-          provider,
-          plan: this.finalPlan,
-          userId: this.finalUserId,
-          amount: this.finalAmount,
-          cardToken: this.selectedCardToken
-        });
-        
         this.loadingMessage = `Redirecting to ${this.providers[provider]?.name || 'payment'}...`;
         
         if (provider === 'payme') {
@@ -708,14 +773,7 @@ export default {
 
       } catch (error) {
         console.error('❌ Payment processing error:', error);
-        
-        if (error.message?.includes('temporarily disabled') || 
-            error.message?.includes('temporarily unavailable')) {
-          this.error = 'This payment method is temporarily unavailable. Please choose another payment method.';
-        } else {
-          this.error = this.formatError(error);
-        }
-        
+        this.error = this.formatError(error);
         this.loading = false;
         this.processing = false;
       }
@@ -732,7 +790,6 @@ export default {
       );
       
       if (result.paymentUrl) {
-        console.log('✅ PayMe URL received:', result.paymentUrl);
         window.location.href = result.paymentUrl;
       } else {
         throw new Error(result.error || 'Failed to get PayMe payment link');
@@ -753,7 +810,6 @@ export default {
       });
       
       if (result.data?.checkoutUrl) {
-        console.log('✅ Multicard URL received:', result.data.checkoutUrl);
         window.location.href = result.data.checkoutUrl;
       } else {
         throw new Error(result.error || 'Failed to get Multicard payment link');
@@ -776,16 +832,13 @@ export default {
 
       if (result.success) {
         if (result.data.otpHash) {
-          // OTP required
           this.currentPaymentUuid = result.data.uuid;
           this.showOtpModal = true;
           this.loading = false;
           this.processing = false;
         } else if (result.data.checkoutUrl) {
-          // Redirect to payment app
           window.location.href = result.data.checkoutUrl;
         } else if (result.data.status === 'success') {
-          // Payment completed
           this.handlePaymentSuccess(result.data);
         }
       } else {
@@ -842,8 +895,6 @@ export default {
     },
 
     handlePaymentSuccess(paymentData) {
-      console.log('🎉 Payment successful:', paymentData);
-      
       this.paymentStatus = 'success';
       this.transactionId = paymentData.uuid || paymentData.transactionId;
       this.loading = false;
@@ -851,22 +902,10 @@ export default {
     },
 
     formatError(error) {
-      if (typeof error === 'string') {
-        return error;
-      }
-      
-      if (error?.response?.data?.message) {
-        return error.response.data.message;
-      }
-      
-      if (error?.response?.data?.error) {
-        return error.response.data.error;
-      }
-      
-      if (error?.message) {
-        return error.message;
-      }
-      
+      if (typeof error === 'string') return error;
+      if (error?.response?.data?.message) return error.response.data.message;
+      if (error?.response?.data?.error) return error.response.data.error;
+      if (error?.message) return error.message;
       return 'An error occurred while processing payment. Please try again.';
     },
 
@@ -887,7 +926,6 @@ export default {
     formatAmount(amount) {
       if (!amount) return '';
       
-      // Amount is already in tiyin, so we display it as-is
       const uzs = Math.floor(amount);
       
       try {
@@ -921,496 +959,909 @@ export default {
 </script>
 
 <style scoped>
-/* Base styles */
+/* ========================================
+   BASE & LAYOUT
+   ======================================== */
+
 .universal-checkout {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+  padding: 2rem 1rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
 }
 
 .checkout-container {
   background: white;
-  border-radius: 20px;
-  padding: 40px;
-  max-width: 650px;
+  border-radius: 16px;
+  max-width: 680px;
   width: 100%;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
 }
 
-/* Payment Result States */
+/* ========================================
+   PAYMENT RESULT STATES
+   ======================================== */
+
 .payment-result {
+  padding: 3rem 2rem;
+}
+
+.result-content {
   text-align: center;
-  padding: 40px 20px;
+  max-width: 480px;
+  margin: 0 auto;
 }
 
-.result-icon {
-  font-size: 5rem;
-  margin-bottom: 20px;
+.result-icon-wrapper {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 1.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.result-icon.error {
-  color: #e53e3e;
+.result-icon-wrapper.success {
+  background: #d4edda;
 }
 
-.result-icon.warning {
-  color: #ed8936;
+.result-icon-wrapper.error {
+  background: #f8d7da;
+}
+
+.result-icon-wrapper.warning {
+  background: #fff3cd;
+}
+
+/* Success Checkmark Animation */
+.checkmark {
+  width: 48px;
+  height: 48px;
+  stroke-width: 3;
+  stroke: #28a745;
+  stroke-miterlimit: 10;
+  animation: fill 0.4s ease-in-out 0.4s forwards, scale 0.3s ease-in-out 0.9s both;
+}
+
+.checkmark-circle {
+  stroke-dasharray: 166;
+  stroke-dashoffset: 166;
+  stroke-width: 3;
+  stroke: #28a745;
+  animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+}
+
+.checkmark-check {
+  transform-origin: 50% 50%;
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  stroke: #28a745;
+  animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+}
+
+@keyframes stroke {
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes scale {
+  0%, 100% {
+    transform: none;
+  }
+  50% {
+    transform: scale3d(1.1, 1.1, 1);
+  }
+}
+
+/* Error Icon */
+.error-icon-svg, .warning-icon-svg {
+  width: 48px;
+  height: 48px;
+  stroke-width: 3;
+}
+
+.error-circle {
+  stroke: #dc3545;
+  stroke-dasharray: 166;
+  stroke-dashoffset: 166;
+  animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+}
+
+.error-cross {
+  stroke: #dc3545;
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+}
+
+.warning-circle {
+  stroke: #ffc107;
+  stroke-dasharray: 166;
+  stroke-dashoffset: 166;
+  animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+}
+
+.warning-sign {
+  stroke: #ffc107;
+  stroke-linecap: round;
+  stroke-dasharray: 20;
+  stroke-dashoffset: 20;
+  animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
 }
 
 .result-title {
-  font-size: 2rem;
-  color: #2d3748;
-  margin-bottom: 15px;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1a202c;
+  margin: 0 0 0.5rem;
 }
 
 .result-message {
-  font-size: 1.1rem;
+  font-size: 1rem;
   color: #718096;
-  margin-bottom: 30px;
+  margin: 0 0 2rem;
+  line-height: 1.6;
 }
 
-.transaction-info {
+.transaction-details {
   background: #f7fafc;
   border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 30px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
   text-align: left;
 }
 
-.transaction-info p {
-  margin: 10px 0;
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.detail-row:last-child {
+  border-bottom: none;
+}
+
+.detail-label {
+  font-size: 0.875rem;
+  color: #718096;
+  font-weight: 500;
+}
+
+.detail-value {
+  font-size: 0.9375rem;
+  color: #2d3748;
+  font-weight: 600;
+}
+
+.detail-value.amount {
+  color: #2b6cb0;
+}
+
+.detail-value.transaction-id {
+  font-family: 'Courier New', monospace;
+  font-size: 0.8125rem;
   color: #4a5568;
-  font-size: 1rem;
 }
 
 .result-actions {
   display: flex;
-  gap: 15px;
+  gap: 0.75rem;
   justify-content: center;
-  flex-wrap: wrap;
 }
 
-.btn-primary, .btn-secondary {
-  padding: 12px 30px;
-  border: none;
-  border-radius: 10px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
+/* ========================================
+   LOADING STATE
+   ======================================== */
 
-.btn-primary {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: white;
-}
-
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
-}
-
-.btn-secondary {
-  background: #edf2f7;
-  color: #4a5568;
-}
-
-.btn-secondary:hover {
-  background: #e2e8f0;
-}
-
-.btn-large {
-  padding: 15px 40px;
-  font-size: 1.1rem;
-}
-
-/* Logo and Header */
-.checkout-logo {
-  text-align: center;
-  margin-bottom: 30px;
-}
-
-.logo-icon {
-  font-size: 3.5rem;
-  margin-bottom: 10px;
-}
-
-.checkout-logo h1 {
-  color: #333;
-  margin: 0 0 8px 0;
-  font-size: 2.2rem;
-  font-weight: bold;
-}
-
-.subtitle {
-  color: #666;
-  font-size: 1rem;
-  margin: 0;
-}
-
-/* Loading State */
 .loading-state {
+  padding: 3rem 2rem;
   text-align: center;
-  padding: 40px 20px;
 }
 
-.loading-state h1 {
-  font-size: 2rem;
-  color: #333;
+.loading-content {
+  max-width: 400px;
+  margin: 0 auto;
 }
 
-.spinner, .button-spinner {
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #667eea;
+.loading-spinner {
+  width: 64px;
+  height: 64px;
+  position: relative;
+  margin: 0 auto 1.5rem;
+}
+
+.spinner-ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border: 3px solid transparent;
+  border-top-color: #4299e1;
   border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  animation: spin 1s linear infinite;
-  margin: 20px auto;
+  animation: spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
 }
 
-.button-spinner {
-  display: inline-block;
-  width: 20px;
-  height: 20px;
-  border-width: 3px;
-  margin: 0;
+.spinner-ring:nth-child(1) {
+  animation-delay: -0.45s;
+}
+
+.spinner-ring:nth-child(2) {
+  animation-delay: -0.3s;
+}
+
+.spinner-ring:nth-child(3) {
+  animation-delay: -0.15s;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
-/* User Info Section */
-.user-info-section {
-  background: #f8f9fa;
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 25px;
-}
-
-.user-info-section h3 {
-  margin-top: 0;
-  color: #333;
-  font-size: 1.2rem;
-  margin-bottom: 15px;
-}
-
-.user-details {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.user-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px solid #eee;
-}
-
-.user-row:last-child {
-  border-bottom: none;
-}
-
-.label {
+.loading-title {
+  font-size: 1.5rem;
   font-weight: 600;
-  color: #666;
+  color: #2d3748;
+  margin: 0 0 0.5rem;
 }
 
-.value {
-  font-weight: 500;
-  color: #333;
+.loading-subtitle {
+  font-size: 0.9375rem;
+  color: #718096;
+  margin: 0 0 2rem;
 }
 
-.current-plan {
-  background: #e3f2fd;
-  color: #1976d2;
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 0.9rem;
-}
-
-.new-plan {
-  background: #e8f5e8;
-  color: #2e7d32;
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 0.9rem;
-}
-
-.amount {
-  background: #fff3e0;
-  color: #f57c00;
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-weight: bold;
-}
-
-/* Provider Selection */
-.provider-selection {
-  margin-bottom: 25px;
-}
-
-.provider-selection h3 {
-  margin-bottom: 15px;
-  color: #333;
-  font-size: 1.2rem;
-}
-
-.provider-options {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-}
-
-.provider-options label {
-  display: flex;
-  align-items: center;
-  padding: 18px;
-  border: 2px solid #e0e0e0;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  background: white;
-}
-
-.provider-options label:hover:not(.disabled) {
-  border-color: #667eea;
-  background: #f8f9fa;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
-}
-
-.provider-options label.active {
-  border-color: #667eea;
-  background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
-}
-
-.provider-options label.disabled {
-  border-color: #eee;
-  background: #fafafa;
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-.provider-options input[type="radio"] {
-  display: none;
-}
-
-.provider-content {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  gap: 15px;
-}
-
-.provider-icon {
-  font-size: 2.5rem;
-  flex-shrink: 0;
-}
-
-.provider-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  flex: 1;
-}
-
-.provider-name {
-  color: #333;
-  font-weight: 700;
-  font-size: 1.1rem;
-}
-
-.provider-description {
-  color: #666;
-  font-size: 0.9rem;
-}
-
-.coming-soon {
-  color: #f57c00;
-  font-size: 0.85rem;
-  font-weight: 600;
-  margin-top: 4px;
-}
-
-/* Saved Cards */
-.saved-cards-section {
-  margin-bottom: 25px;
-}
-
-.saved-cards-section h3 {
-  margin-bottom: 15px;
-  color: #333;
-  font-size: 1.2rem;
-}
-
-.saved-cards {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.card-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 15px;
-  border: 2px solid #e0e0e0;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  background: white;
-}
-
-.card-item:hover {
-  border-color: #cbd5e0;
+.loading-details {
   background: #f7fafc;
+  border-radius: 12px;
+  padding: 1.25rem;
 }
 
-.card-item.active {
-  border-color: #667eea;
-  background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
-}
-
-.card-item.new-card {
-  border-style: dashed;
-}
-
-.card-info {
+.loading-detail {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 15px;
+  padding: 0.5rem 0;
 }
 
-.card-icon {
-  font-size: 2rem;
-  width: 48px;
+.loading-label {
+  font-size: 0.875rem;
+  color: #718096;
+}
+
+.loading-value {
+  font-size: 0.9375rem;
+  color: #2d3748;
+  font-weight: 600;
+}
+
+/* ========================================
+   ERROR STATE
+   ======================================== */
+
+.error-state {
+  padding: 3rem 2rem;
   text-align: center;
 }
 
-.card-details {
+.error-content {
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.error-icon-large {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 1.5rem;
+  background: #fee;
+  border-radius: 50%;
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  justify-content: center;
 }
 
-.card-number {
-  font-size: 1rem;
-  font-weight: 600;
+.error-svg-large {
+  width: 48px;
+  height: 48px;
+  stroke-width: 3;
+}
+
+.error-circle-large {
+  stroke: #dc3545;
+  stroke-dasharray: 166;
+  stroke-dashoffset: 166;
+  animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+}
+
+.error-cross-large {
+  stroke: #dc3545;
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+}
+
+.error-title {
+  font-size: 1.5rem;
+  font-weight: 700;
   color: #1a202c;
-  margin: 0;
+  margin: 0 0 0.5rem;
 }
 
-.card-type {
+.error-message {
+  font-size: 1rem;
+  color: #718096;
+  margin: 0 0 2rem;
+  line-height: 1.6;
+}
+
+.debug-section {
+  margin-bottom: 2rem;
+}
+
+.debug-section details {
+  background: #f7fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: left;
+}
+
+.debug-section summary {
+  cursor: pointer;
   font-size: 0.875rem;
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.debug-data {
+  margin: 1rem 0 0;
+  padding: 1rem;
+  background: white;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  overflow-x: auto;
+  color: #2d3748;
+}
+
+.error-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+/* ========================================
+   MAIN CHECKOUT
+   ======================================== */
+
+.checkout-main {
+  padding: 2.5rem;
+}
+
+.checkout-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.header-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 1rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.header-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.checkout-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1a202c;
+  margin: 0 0 0.5rem;
+}
+
+.checkout-subtitle {
+  font-size: 0.9375rem;
   color: #718096;
   margin: 0;
 }
 
-.card-radio input[type="radio"] {
-  width: 20px;
-  height: 20px;
+/* ========================================
+   PAYMENT SUMMARY
+   ======================================== */
+
+.payment-summary {
+  background: #f7fafc;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
 }
 
-/* Plan Selection */
-.plan-selection {
-  margin-bottom: 25px;
+.section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #2d3748;
+  margin: 0 0 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.8125rem;
 }
 
-.plan-selection h3 {
-  margin-bottom: 15px;
-  color: #333;
-  font-size: 1.2rem;
-}
-
-.plan-options {
+.summary-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 15px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
 }
 
-.plan-option {
-  flex: 1;
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.summary-label {
+  font-size: 0.75rem;
+  color: #718096;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.summary-value {
+  font-size: 0.9375rem;
+  color: #2d3748;
+  font-weight: 600;
+}
+
+.summary-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  width: fit-content;
+}
+
+.summary-badge.current {
+  background: #e6fffa;
+  color: #047857;
+}
+
+.summary-badge.upgrade {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.amount-display {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+.amount-label {
+  font-size: 0.875rem;
+  color: #718096;
+  font-weight: 500;
+}
+
+.amount-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2b6cb0;
+}
+
+/* ========================================
+   PAYMENT METHODS
+   ======================================== */
+
+.payment-methods {
+  margin-bottom: 1.5rem;
+}
+
+.method-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.method-card {
+  position: relative;
   display: flex;
   align-items: center;
-  padding: 20px;
-  border: 2px solid #e0e0e0;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: white;
+  border: 2px solid #e2e8f0;
   border-radius: 12px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s;
 }
 
-.plan-option:hover {
+.method-card:hover:not(.disabled) {
+  border-color: #cbd5e0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.method-card.active {
   border-color: #667eea;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+  background: #f8f9ff;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.12);
 }
 
-.plan-option.active {
-  border-color: #667eea;
-  background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+.method-card.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f7fafc;
 }
 
-.plan-option input[type="radio"] {
+.method-radio {
   display: none;
 }
 
-.plan-details {
+.method-icon {
+  font-size: 2rem;
+  width: 48px;
+  height: 48px;
   display: flex;
-  flex-direction: column;
-  width: 100%;
-  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  background: #f7fafc;
+  border-radius: 10px;
+  flex-shrink: 0;
 }
 
-.plan-details strong {
-  font-size: 1.1rem;
-  color: #333;
+.method-card.active .method-icon {
+  background: #eef2ff;
+}
+
+.method-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.method-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.method-desc {
+  font-size: 0.8125rem;
+  color: #718096;
+}
+
+.method-status {
+  font-size: 0.75rem;
+  color: #f59e0b;
+  font-weight: 600;
+  margin-top: 0.25rem;
+}
+
+.method-check {
+  width: 24px;
+  height: 24px;
+  color: #667eea;
+  flex-shrink: 0;
+}
+
+/* ========================================
+   SAVED CARDS
+   ======================================== */
+
+.saved-cards {
+  margin-bottom: 1.5rem;
+}
+
+.cards-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.card-option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: 2px solid transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 120px;
+}
+
+.card-option:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(102, 126, 234, 0.2);
+}
+
+.card-option.active {
+  border-color: #4c51bf;
+  box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+}
+
+.card-option.new-card {
+  background: white;
+  border: 2px dashed #cbd5e0;
+}
+
+.card-option.new-card:hover {
+  border-color: #667eea;
+  background: #f8f9ff;
+}
+
+.card-visual {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  color: white;
+}
+
+.card-option.new-card .card-visual {
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+  color: #4a5568;
+}
+
+.card-chip {
+  width: 40px;
+  height: 30px;
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+  border-radius: 6px;
+}
+
+.card-number {
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+}
+
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-type {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.new-card-icon {
+  width: 48px;
+  height: 48px;
+  background: #edf2f7;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #667eea;
+  flex-shrink: 0;
+}
+
+.new-card-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.new-card-text {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.card-select input[type="radio"] {
+  width: 20px;
+  height: 20px;
+  accent-color: white;
+}
+
+.card-option.new-card .card-select input[type="radio"] {
+  accent-color: #667eea;
+}
+
+/* ========================================
+   PLAN SELECTION
+   ======================================== */
+
+.plan-selection {
+  margin-bottom: 1.5rem;
+}
+
+.plans-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.plan-card {
+  position: relative;
+  padding: 1.5rem;
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.plan-card:hover {
+  border-color: #cbd5e0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.plan-card.active {
+  border-color: #667eea;
+  background: #f8f9ff;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.12);
+}
+
+.plan-card.featured {
+  border-color: #6d28d9;
+}
+
+.plan-card.featured.active {
+  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+}
+
+.plan-badge {
+  position: absolute;
+  top: -12px;
+  right: 1rem;
+  padding: 0.25rem 0.75rem;
+  background: linear-gradient(135deg, #6d28d9, #7c3aed);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.plan-radio {
+  display: none;
+}
+
+.plan-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.plan-name {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #2d3748;
 }
 
 .plan-price {
+  font-size: 1.75rem;
+  font-weight: 800;
   color: #667eea;
-  font-weight: bold;
-  font-size: 1.05rem;
+}
+
+.plan-card.featured .plan-price {
+  color: #6d28d9;
+}
+
+.currency {
+  font-size: 1rem;
+  font-weight: 600;
 }
 
 .plan-features {
-  color: #666;
-  font-size: 0.9rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
-/* Language Selection */
-.language-selection {
-  margin-bottom: 25px;
+.plan-features li {
+  font-size: 0.875rem;
+  color: #4a5568;
+  padding-left: 1.5rem;
+  position: relative;
 }
 
-.language-selection h3 {
-  margin-bottom: 12px;
-  color: #333;
-  font-size: 1.2rem;
+.plan-features li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: #48bb78;
+  font-weight: 700;
+}
+
+.plan-check {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 24px;
+  height: 24px;
+  color: #667eea;
+}
+
+.plan-card.featured .plan-check {
+  color: #6d28d9;
+}
+
+/* ========================================
+   LANGUAGE SELECTOR
+   ======================================== */
+
+.language-selector {
+  margin-bottom: 1.5rem;
+}
+
+.language-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #4a5568;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.language-label svg {
+  width: 16px;
+  height: 16px;
+  color: #718096;
 }
 
 .language-select {
   width: 100%;
-  padding: 12px 15px;
-  border: 2px solid #e0e0e0;
-  border-radius: 10px;
-  font-size: 1rem;
+  padding: 0.875rem 1rem;
   background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 0.9375rem;
+  color: #2d3748;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%234a5568' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  padding-right: 2.5rem;
 }
 
 .language-select:hover {
-  border-color: #667eea;
+  border-color: #cbd5e0;
 }
 
 .language-select:focus {
@@ -1419,149 +1870,177 @@ export default {
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
-/* Payment Button */
-.payment-button {
+/* ========================================
+   PAYMENT BUTTON
+   ======================================== */
+
+.payment-btn {
   width: 100%;
-  padding: 16px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
   border-radius: 12px;
-  font-size: 1.1rem;
-  font-weight: bold;
+  font-size: 1rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.3s ease;
-  margin-bottom: 15px;
+  transition: all 0.3s;
+  margin-bottom: 1rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 0.5rem;
+  letter-spacing: 0.025em;
 }
 
-.payment-button:hover:not(:disabled):not(.disabled) {
-  background: linear-gradient(135deg, #5568d3, #6a3f91);
+.payment-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
 }
 
-.payment-button:disabled,
-.payment-button.disabled {
-  background: #ccc;
+.payment-btn:disabled {
+  background: #cbd5e0;
+  color: #a0aec0;
   cursor: not-allowed;
   transform: none;
-  opacity: 0.6;
+  box-shadow: none;
 }
 
-/* Security Notice */
-.security-notice {
+.btn-loading {
+  display: flex;
+  gap: 0.375rem;
+}
+
+.loading-dot {
+  width: 8px;
+  height: 8px;
+  background: white;
+  border-radius: 50%;
+  animation: bounce 1.4s infinite ease-in-out both;
+}
+
+.loading-dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.loading-dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ========================================
+   SECURITY BADGE
+   ======================================== */
+
+.security-badge {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px;
-  background: #f0f8ff;
-  border: 1px solid #d0e7ff;
-  border-radius: 8px;
-  margin-top: 15px;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: #f0fdf4;
+  border: 1px solid #d1fae5;
+  border-radius: 10px;
 }
 
-.security-icon {
-  font-size: 1.5rem;
+.security-badge svg {
+  width: 24px;
+  height: 24px;
+  color: #10b981;
+  flex-shrink: 0;
 }
 
-.security-notice p {
-  margin: 0;
-  color: #1976d2;
-  font-size: 0.9rem;
-}
-
-/* Error State */
-.error-state {
-  text-align: center;
-  padding: 20px;
-}
-
-.error-icon {
-  font-size: 4rem;
-  margin-bottom: 20px;
-}
-
-.error-state h2 {
-  color: #d32f2f;
-  margin-bottom: 15px;
-}
-
-.error-message {
-  color: #666;
-  margin-bottom: 25px;
-  font-size: 1.05rem;
-}
-
-.debug-info {
-  background: #f5f5f5;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 15px;
-  margin: 20px 0;
-  text-align: left;
-}
-
-.debug-info h4 {
-  margin-top: 0;
-  color: #333;
-}
-
-.debug-info pre {
-  background: white;
-  padding: 10px;
-  border-radius: 4px;
-  overflow-x: auto;
-  font-size: 0.85rem;
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.error-actions {
+.security-text {
   display: flex;
-  gap: 15px;
-  justify-content: center;
+  flex-direction: column;
+  gap: 0.125rem;
 }
 
-.back-btn, .retry-btn {
-  padding: 12px 24px;
-  border: none;
-  border-radius: 8px;
+.security-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #065f46;
+}
+
+.security-desc {
+  font-size: 0.75rem;
+  color: #047857;
+}
+
+/* ========================================
+   BUTTONS
+   ======================================== */
+
+.btn {
+  padding: 0.875rem 1.5rem;
+  border-radius: 10px;
+  font-size: 0.9375rem;
+  font-weight: 600;
   cursor: pointer;
-  font-weight: bold;
-  transition: all 0.2s ease;
-  font-size: 1rem;
+  transition: all 0.2s;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
-.back-btn {
-  background: #f5f5f5;
-  color: #333;
-}
-
-.back-btn:hover {
-  background: #e0e0e0;
-}
-
-.retry-btn {
-  background: #667eea;
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
+  flex: 1;
 }
 
-.retry-btn:hover {
-  background: #5568d3;
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.3);
 }
 
-/* OTP Modal */
+.btn-primary:disabled {
+  background: #cbd5e0;
+  color: #a0aec0;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-outline {
+  background: white;
+  color: #4a5568;
+  border: 2px solid #e2e8f0;
+  flex: 1;
+}
+
+.btn-outline:hover:not(:disabled) {
+  background: #f7fafc;
+  border-color: #cbd5e0;
+}
+
+.btn-outline:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ========================================
+   OTP MODAL
+   ======================================== */
+
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1569,113 +2048,200 @@ export default {
   padding: 1rem;
 }
 
-.modal-content {
+.modal-card {
   background: white;
   border-radius: 16px;
   padding: 2rem;
-  max-width: 400px;
+  max-width: 440px;
   width: 100%;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
 }
 
-.otp-modal h3 {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #1a202c;
-  margin: 0 0 0.5rem 0;
-}
-
-.otp-modal p {
-  font-size: 0.875rem;
-  color: #718096;
-  margin: 0 0 1.5rem 0;
-}
-
-.otp-input-container {
+.modal-header {
   display: flex;
-  gap: 0.5rem;
-  justify-content: center;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 1rem;
 }
 
-.otp-digit {
+.modal-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1a202c;
+  margin: 0;
+}
+
+.modal-close {
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  color: #718096;
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.modal-close:hover:not(:disabled) {
+  background: #f7fafc;
+  color: #2d3748;
+}
+
+.modal-close:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modal-close svg {
+  width: 20px;
+  height: 20px;
+}
+
+.modal-desc {
+  font-size: 0.9375rem;
+  color: #718096;
+  margin: 0 0 1.5rem;
+  line-height: 1.6;
+}
+
+.otp-container {
+  display: flex;
+  gap: 0.625rem;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.otp-input {
   width: 48px;
   height: 56px;
   font-size: 1.5rem;
-  font-weight: 600;
+  font-weight: 700;
   text-align: center;
   border: 2px solid #e2e8f0;
   border-radius: 12px;
-  outline: none;
-  transition: border-color 0.2s;
+  color: #2d3748;
+  transition: all 0.2s;
 }
 
-.otp-digit:focus {
+.otp-input:focus {
+  outline: none;
   border-color: #667eea;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.otp-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: #fee;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.otp-error svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
 }
 
 .modal-actions {
   display: flex;
   gap: 0.75rem;
-  margin-top: 1.5rem;
 }
 
-/* Responsive */
+/* ========================================
+   MODAL TRANSITIONS
+   ======================================== */
+
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.3s;
+}
+
+.modal-enter-active .modal-card,
+.modal-leave-active .modal-card {
+  transition: transform 0.3s;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+
+.modal-enter-from .modal-card {
+  transform: scale(0.9) translateY(20px);
+}
+
+.modal-leave-to .modal-card {
+  transform: scale(0.9) translateY(-20px);
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+
 @media (max-width: 768px) {
-  .checkout-container {
-    padding: 25px 20px;
-    margin: 10px;
+  .checkout-main {
+    padding: 1.5rem;
   }
-  
-  .provider-options {
+
+  .checkout-title {
+    font-size: 1.5rem;
+  }
+
+  .summary-grid {
     grid-template-columns: 1fr;
   }
-  
-  .plan-options {
+
+  .plans-grid {
     grid-template-columns: 1fr;
   }
-  
-  .checkout-logo h1 {
-    font-size: 1.8rem;
-  }
-  
-  .provider-icon {
-    font-size: 2rem;
-  }
-  
-  .error-actions, .result-actions {
+
+  .result-actions,
+  .error-actions {
     flex-direction: column;
   }
-  
-  .back-btn, .retry-btn, .btn-primary, .btn-secondary {
+
+  .btn {
     width: 100%;
   }
 
-  .otp-digit {
-    width: 40px;
-    height: 48px;
+  .otp-input {
+    width: 42px;
+    height: 50px;
     font-size: 1.25rem;
   }
 }
 
 @media (max-width: 480px) {
-  .checkout-container {
-    padding: 20px 15px;
-  }
-  
-  .checkout-logo h1 {
-    font-size: 1.5rem;
-  }
-  
-  .user-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 5px;
+  .universal-checkout {
+    padding: 1rem 0.5rem;
   }
 
-  .modal-content {
+  .checkout-main {
+    padding: 1.25rem;
+  }
+
+  .modal-card {
     padding: 1.5rem;
+  }
+
+  .otp-container {
+    gap: 0.5rem;
+  }
+
+  .otp-input {
+    width: 38px;
+    height: 46px;
+    font-size: 1.125rem;
   }
 }
 </style>
