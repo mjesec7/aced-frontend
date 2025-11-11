@@ -31,7 +31,6 @@
 
     <div class="dashboard-grid">
       <div class="main-column">
-        <!-- 🧬 NEW: Learning DNA Card -->
         <div v-if="learningProfile" class="section-card learning-dna-card">
           <div class="section-header">
             <div class="header-left">
@@ -54,14 +53,12 @@
             </button>
           </div>
 
-          <!-- Insights -->
           <div v-if="learningProfile.insights?.length" class="insights-list">
             <div v-for="(insight, index) in learningProfile.insights" :key="index" class="insight-item">
               {{ insight }}
             </div>
           </div>
 
-          <!-- Learning Style & Chronotype -->
           <div class="dna-quick-stats">
             <div class="dna-stat">
               <span class="dna-icon">{{ getLearningStyleIcon() }}</span>
@@ -79,7 +76,6 @@
             </div>
           </div>
 
-          <!-- Cognitive Profile Bars -->
           <div v-if="learningProfile.cognitiveProfile" class="cognitive-section">
             <h4>🧠 Cognitive Strengths</h4>
             <div v-for="(value, key) in learningProfile.cognitiveProfile" :key="key" class="cognitive-bar">
@@ -91,7 +87,6 @@
             </div>
           </div>
 
-          <!-- Recommendations -->
           <div v-if="recommendations" class="recommendations-section">
             <h4>💡 Smart Tips for You</h4>
             <div class="rec-grid">
@@ -125,7 +120,6 @@
               </div>
             </div>
             
-            <!-- Additional Tips -->
             <div v-if="recommendations.tips?.length" class="tips-section">
               <div v-for="(tip, index) in recommendations.tips" :key="index" class="tip-item">
                 💡 {{ tip }}
@@ -134,7 +128,43 @@
           </div>
         </div>
 
-        <!-- 🎮 NEW: Gamification Card -->
+        <div v-else-if="!learningProfile && !loadingLearningData" class="section-card requirements-card">
+          <div class="section-header">
+            <div class="header-left">
+              <div class="section-icon-badge locked">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+              </div>
+              <div>
+                <h2 class="section-title">🧬 Unlock Your Learning DNA</h2>
+                <p class="section-subtitle">Complete lessons to reveal your profile</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="unlock-requirements">
+            <p class="requirements-text">
+              Complete at least {{ learningProfileRequirements.required }} lessons to unlock your personalized Learning DNA and AI-powered recommendations.
+            </p>
+            <div class="requirements-progress">
+              <div class="requirement-item" v-for="i in learningProfileRequirements.required" :key="i">
+                <div :class="['requirement-check', { completed: learningProfileRequirements.current >= i }]">
+                  <svg v-if="learningProfileRequirements.current >= i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  <span v-else>{{ i }}</span>
+                </div>
+                <span class="requirement-label">Lesson {{ i }}</span>
+              </div>
+            </div>
+            <router-link to="/profile/my-courses" class="start-learning-btn">
+              Start Learning
+            </router-link>
+          </div>
+        </div>
+
         <div v-if="rewards" class="section-card rewards-card-new">
           <div class="section-header">
             <div class="header-left">
@@ -150,7 +180,6 @@
             </div>
           </div>
 
-          <!-- Level Progress Bar -->
           <div class="level-progress-section">
             <div class="level-header">
               <span class="current-level">Level {{ rewards.level }}</span>
@@ -162,7 +191,6 @@
             <span class="progress-text">{{ Math.round(rewards.currentLevelProgress) }}% to next level</span>
           </div>
 
-          <!-- Stats Row -->
           <div class="rewards-stats-grid">
             <div class="reward-stat-card">
               <div class="reward-stat-icon fire">🔥</div>
@@ -187,7 +215,6 @@
             </div>
           </div>
 
-          <!-- Achievements Display -->
           <div v-if="rewards.achievements?.length" class="achievements-section-mini">
             <h4>🏅 Recent Achievements</h4>
             <div class="achievements-grid-mini">
@@ -552,6 +579,7 @@ export default {
       learningProfile: null,
       recommendations: null,
       rewards: null,
+      learningProfileRequirements: { current: 0, required: 3 }, // Added this
       loadingLearningData: false,
       
       showPaywall: false,
@@ -781,10 +809,21 @@ export default {
         
         // Handle profile
         if (profileRes.status === 'fulfilled' && profileRes.value?.success) {
-          this.learningProfile = profileRes.value.profile;
-          console.log('✅ Learning profile loaded:', this.learningProfile);
+          if (profileRes.value.profile) {
+            this.learningProfile = profileRes.value.profile;
+            console.log('✅ Learning profile loaded:', this.learningProfile);
+            this.learningProfileRequirements = { current: profileRes.value.profile.requirements?.required || 3, required: profileRes.value.profile.requirements?.required || 3 };
+          } else {
+            // Not enough data yet
+            console.log('⚠️ Learning profile requirements:', profileRes.value.requirements);
+            this.learningProfile = null;
+            if (profileRes.value.requirements) {
+              this.learningProfileRequirements = profileRes.value.requirements;
+            }
+          }
         } else {
           console.warn('⚠️ Learning profile not available');
+          this.learningProfile = null;
         }
         
         // Handle rewards
@@ -797,8 +836,13 @@ export default {
         
         // Handle recommendations
         if (recommendationsRes.status === 'fulfilled' && recommendationsRes.value?.success) {
-          this.recommendations = recommendationsRes.value.recommendation;
-          console.log('✅ Recommendations loaded:', this.recommendations);
+          if (recommendationsRes.value.recommendation) {
+            this.recommendations = recommendationsRes.value.recommendation;
+            console.log('✅ Recommendations loaded:', this.recommendations);
+          } else {
+            console.log('⚠️ Recommendations requirements:', recommendationsRes.value.requirements);
+            this.recommendations = null;
+          }
         } else {
           console.warn('⚠️ Recommendations not available');
         }
@@ -1868,5 +1912,100 @@ export default {
   .tip-item { background: #422006; color: #fbbf24; }
   .rewards-card-new { background: linear-gradient(135deg, #422006 0%, #78350f 100%); border-color: #d97706; }
   .reward-stat-card, .achievement-badge-mini { background: #1f2937; border-color: #d97706; }
+
+  /* Dark mode for requirements card */
+  .requirements-card {
+    background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+    border-color: #4b5563;
+  }
+  .section-icon-badge.locked {
+    background: linear-gradient(135deg, #6b7280, #4b5563);
+  }
+  .requirements-text { color: #d1d5db; }
+  .requirement-check { border-color: #4b5563; color: #6b7280; }
+  .requirement-check.completed { border-color: #10b981; }
+  .requirement-label { color: #9ca3af; }
+}
+
+/* NEW STYLES FOR REQUIREMENTS CARD */
+.requirements-card {
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  border: 2px dashed #9ca3af;
+}
+
+.section-icon-badge.locked {
+  background: linear-gradient(135deg, #9ca3af, #6b7280);
+}
+
+.unlock-requirements {
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.requirements-text {
+  color: #4b5563;
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.requirements-progress {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.requirement-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.requirement-check {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  border: 3px solid #d1d5db;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 1.125rem; /* Slightly larger for the number */
+  color: #9ca3af;
+  transition: all 0.3s;
+}
+
+.requirement-check.completed {
+  background: linear-gradient(135deg, #10b981, #059669);
+  border-color: #10b981;
+  color: white;
+}
+
+.requirement-check svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.requirement-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.start-learning-btn {
+  display: inline-block;
+  background: linear-gradient(135deg, #a855f7, #9333ea);
+  color: white;
+  padding: 0.875rem 2rem;
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.start-learning-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(168, 85, 247, 0.3);
 }
 </style>
