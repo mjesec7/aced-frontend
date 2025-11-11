@@ -99,7 +99,17 @@ api.interceptors.request.use(async (config) => {
     if (pendingRequests.has(requestKey)) {
       const lastRequestTime = pendingRequests.get(requestKey);
       if (Date.now() - lastRequestTime < 1000) { // 1 second debounce
-        config.headers = { ...config.headers, 'X-Debounced': 'true' };
+        // ❌ REMOVE THIS LINE - causing CORS error:
+        // config.headers = { ...config.headers, 'X-Debounced': 'true' };
+        
+        // ✅ Instead, just log it for debugging:
+        console.debug('⚡ Debounced request detected:', config.url);
+        
+        // Or cancel the duplicate request:
+        // return Promise.reject({ 
+        //   isDuplicate: true, 
+        //   message: 'Duplicate request cancelled' 
+        // });
       }
     }
 
