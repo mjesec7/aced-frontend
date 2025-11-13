@@ -543,7 +543,7 @@ export const startPlacementTest = async (userId) => {
     if (!token) throw new Error('No authentication token');
 
     const headers = { Authorization: `Bearer ${token}` };
-    const { data } = await api.post(`placement-test/${userId}/start`, {}, { headers });
+    const { data } = await api.post(`learning-mode/placement-test/${userId}/start`, {}, { headers });
 
     return {
       success: true,
@@ -567,7 +567,7 @@ export const submitPlacementTestAnswer = async (testId, answer, timeSpent) => {
     if (!token) throw new Error('No authentication token');
 
     const headers = { Authorization: `Bearer ${token}` };
-    const { data } = await api.post(`placement-test/${testId}/answer`,
+    const { data } = await api.post(`learning-mode/placement-test/${testId}/answer`,
       { answer, timeSpent },
       { headers }
     );
@@ -594,7 +594,7 @@ export const getPlacementTestResults = async (userId) => {
     if (!token) throw new Error('No authentication token');
 
     const headers = { Authorization: `Bearer ${token}` };
-    const { data } = await api.get(`placement-test/${userId}/results`, { headers });
+    const { data } = await api.get(`learning-mode/placement-test/${userId}/results`, { headers });
 
     return {
       success: true,
