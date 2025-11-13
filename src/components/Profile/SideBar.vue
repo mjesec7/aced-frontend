@@ -31,6 +31,29 @@
           </div>
         </div>
 
+        <!-- Mode Switcher -->
+        <div v-if="hasSelectedMode" class="mode-switcher">
+          <div class="mode-label">Learning Mode</div>
+          <div class="mode-buttons">
+            <button
+              class="mode-btn"
+              :class="{ active: isSchoolMode }"
+              @click="switchToSchool"
+            >
+              <span class="mode-emoji">🎓</span>
+              <span>School</span>
+            </button>
+            <button
+              class="mode-btn"
+              :class="{ active: isStudyCentreMode }"
+              @click="switchToStudyCentre"
+            >
+              <span class="mode-emoji">🌟</span>
+              <span>Study Centre</span>
+            </button>
+          </div>
+        </div>
+
         <!-- Navigation -->
         <nav class="nav-menu">
           <button
@@ -328,6 +351,18 @@ export default {
         'badge-start': status === 'start',
         'badge-pro': status === 'pro'
       };
+    },
+
+    hasSelectedMode() {
+      return this.$store.getters['platformMode/hasSelectedMode'];
+    },
+
+    isSchoolMode() {
+      return this.$store.getters['platformMode/isSchoolMode'];
+    },
+
+    isStudyCentreMode() {
+      return this.$store.getters['platformMode/isStudyCentreMode'];
     }
   },
   
@@ -379,7 +414,35 @@ export default {
       this.$router.push('/settings');
       this.closeSidebarOnMobile();
     },
-    
+
+    async switchToSchool() {
+      if (this.isSchoolMode) return;
+
+      try {
+        await this.$store.dispatch('platformMode/switchMode', {
+          newMode: 'school',
+          reason: 'User switched via sidebar'
+        });
+        this.closeSidebarOnMobile();
+      } catch (error) {
+        console.error('Error switching to school mode:', error);
+      }
+    },
+
+    async switchToStudyCentre() {
+      if (this.isStudyCentreMode) return;
+
+      try {
+        await this.$store.dispatch('platformMode/switchMode', {
+          newMode: 'study_centre',
+          reason: 'User switched via sidebar'
+        });
+        this.closeSidebarOnMobile();
+      } catch (error) {
+        console.error('Error switching to study centre mode:', error);
+      }
+    },
+
     checkMobile() {
       this.isMobile = window.innerWidth <= 768;
     },
@@ -592,6 +655,60 @@ export default {
 .user-badge.badge-pro {
   background: linear-gradient(90deg, #c084fc 0%, #a855f7 100%);
   color: white;
+}
+
+/* Mode Switcher */
+.mode-switcher {
+  padding: 12px 16px 0;
+  margin-bottom: 8px;
+}
+
+.mode-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.mode-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.mode-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 8px;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.mode-btn:hover {
+  border-color: #8b5cf6;
+  transform: translateY(-1px);
+}
+
+.mode-btn.active {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(168, 85, 247, 0.05) 100%);
+  border-color: #8b5cf6;
+  color: #8b5cf6;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
+}
+
+.mode-emoji {
+  font-size: 20px;
+  line-height: 1;
 }
 
 /* Navigation */

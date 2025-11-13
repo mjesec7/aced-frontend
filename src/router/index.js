@@ -512,27 +512,6 @@ router.beforeEach(async (to, from, next) => {
       });
     }
 
-    // Check for platform mode selection (only for logged-in users)
-    if (isLoggedIn && to.meta.requiresAuth) {
-      const hasSelectedMode = store.getters['platformMode/hasSelectedMode'];
-      const exemptRoutes = ['ModeSelector', 'PlacementTest', 'SettingsPage', 'HomePage'];
-
-      // If user hasn't selected a mode and not going to mode selector
-      if (!hasSelectedMode && !exemptRoutes.includes(to.name)) {
-        console.log('🎯 No learning mode selected. Redirecting to mode selector.');
-        return next({ name: 'ModeSelector' });
-      }
-
-      // If user is in school mode and hasn't taken placement test
-      const isSchoolMode = store.getters['platformMode/isSchoolMode'];
-      const placementTestTaken = store.getters['platformMode/placementTestTaken'];
-
-      if (isSchoolMode && !placementTestTaken && to.name !== 'PlacementTest' && to.name !== 'ModeSelector') {
-        console.log('🎓 School mode selected but placement test not taken. Redirecting to placement test.');
-        return next({ name: 'PlacementTest' });
-      }
-    }
-
     // Check for intended route after successful payment
     if (to.name === 'UniversalPaymentSuccess') {
       const intendedRoute = sessionStorage.getItem('intendedRoute');

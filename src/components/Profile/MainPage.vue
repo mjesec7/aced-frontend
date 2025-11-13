@@ -34,6 +34,9 @@
 
     <div class="dashboard-grid">
       <div class="main-column">
+        <!-- Mode Selection (if not selected) -->
+        <ModeChoice v-if="!hasSelectedMode" />
+
         <div v-if="learningProfile" class="section-card learning-dna-card">
           <div class="section-header">
             <div class="header-left">
@@ -555,6 +558,7 @@ import {
 } from '@/api';
 import PaymentModal from '@/components/Modals/PaymentModal.vue';
 import LevelIndicator from '@/components/PlatformMode/LevelIndicator.vue';
+import ModeChoice from '@/components/PlatformMode/ModeChoice.vue';
 
 const startOfDay = (date) => {
   const newDate = new Date(date);
@@ -566,7 +570,8 @@ export default {
   name: 'ProfessionalMainPage',
   components: {
     PaymentModal,
-    LevelIndicator
+    LevelIndicator,
+    ModeChoice
   },
   
   mixins: [userStatusMixin],
@@ -663,7 +668,11 @@ export default {
     ...mapGetters('user', {
       vuexUserStatus: 'userStatus',
     }),
-    
+
+    hasSelectedMode() {
+      return this.$store.getters['platformMode/hasSelectedMode'];
+    },
+
     currentUserStatus() {
       return this.vuexUserStatus || localStorage.getItem('userStatus') || 'free';
     },
