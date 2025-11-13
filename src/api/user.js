@@ -471,10 +471,295 @@ export const updateStreak = async (userId) => {
     const headers = { Authorization: `Bearer ${token}` };
     // ✅ FIXED: Add 'progress/' prefix
     const { data } = await api.post(`progress/rewards/${userId}/streak`, {}, { headers });
-    
+
     return data;
   } catch (error) {
     console.error('❌ Failed to update streak:', error);
     throw error;
+  }
+};
+
+// =============================================
+// 🎓 PLATFORM MODE & PLACEMENT TEST
+// =============================================
+
+/**
+ * Get user's learning mode and profile
+ */
+export const getLearningMode = async (userId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+
+    const headers = { Authorization: `Bearer ${token}` };
+    const { data } = await api.get(`learning-mode/${userId}`, { headers });
+
+    return {
+      success: true,
+      data: data
+    };
+  } catch (error) {
+    console.error('❌ Failed to get learning mode:', error);
+    return {
+      success: false,
+      error: error.response?.data?.error || error.message
+    };
+  }
+};
+
+/**
+ * Switch learning mode
+ */
+export const switchLearningMode = async (userId, newMode, reason = '') => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+
+    const headers = { Authorization: `Bearer ${token}` };
+    const { data } = await api.post(`learning-mode/${userId}/switch`,
+      { newMode, reason },
+      { headers }
+    );
+
+    return {
+      success: true,
+      data: data
+    };
+  } catch (error) {
+    console.error('❌ Failed to switch learning mode:', error);
+    return {
+      success: false,
+      error: error.response?.data?.error || error.message
+    };
+  }
+};
+
+/**
+ * Start placement test
+ */
+export const startPlacementTest = async (userId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+
+    const headers = { Authorization: `Bearer ${token}` };
+    const { data } = await api.post(`placement-test/${userId}/start`, {}, { headers });
+
+    return {
+      success: true,
+      data: data
+    };
+  } catch (error) {
+    console.error('❌ Failed to start placement test:', error);
+    return {
+      success: false,
+      error: error.response?.data?.error || error.message
+    };
+  }
+};
+
+/**
+ * Submit placement test answer
+ */
+export const submitPlacementTestAnswer = async (testId, answer, timeSpent) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+
+    const headers = { Authorization: `Bearer ${token}` };
+    const { data } = await api.post(`placement-test/${testId}/answer`,
+      { answer, timeSpent },
+      { headers }
+    );
+
+    return {
+      success: true,
+      data: data
+    };
+  } catch (error) {
+    console.error('❌ Failed to submit placement test answer:', error);
+    return {
+      success: false,
+      error: error.response?.data?.error || error.message
+    };
+  }
+};
+
+/**
+ * Get placement test results
+ */
+export const getPlacementTestResults = async (userId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+
+    const headers = { Authorization: `Bearer ${token}` };
+    const { data } = await api.get(`placement-test/${userId}/results`, { headers });
+
+    return {
+      success: true,
+      data: data
+    };
+  } catch (error) {
+    console.error('❌ Failed to get placement test results:', error);
+    return {
+      success: false,
+      error: error.response?.data?.error || error.message
+    };
+  }
+};
+
+/**
+ * Get school mode curriculum
+ */
+export const getSchoolCurriculum = async (userId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+
+    const headers = { Authorization: `Bearer ${token}` };
+    const { data } = await api.get(`school/${userId}/curriculum`, { headers });
+
+    return {
+      success: true,
+      data: data
+    };
+  } catch (error) {
+    console.error('❌ Failed to get school curriculum:', error);
+    return {
+      success: false,
+      error: error.response?.data?.error || error.message
+    };
+  }
+};
+
+/**
+ * Complete a level
+ */
+export const completeLevel = async (userId, levelData) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+
+    const headers = { Authorization: `Bearer ${token}` };
+    const { data } = await api.post(`school/${userId}/complete-level`,
+      levelData,
+      { headers }
+    );
+
+    return {
+      success: true,
+      data: data
+    };
+  } catch (error) {
+    console.error('❌ Failed to complete level:', error);
+    return {
+      success: false,
+      error: error.response?.data?.error || error.message
+    };
+  }
+};
+
+/**
+ * Add bookmark to study centre
+ */
+export const addStudyCentreBookmark = async (userId, courseId, notes = '') => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+
+    const headers = { Authorization: `Bearer ${token}` };
+    const { data } = await api.post(`study-centre/${userId}/bookmark`,
+      { courseId, notes },
+      { headers }
+    );
+
+    return {
+      success: true,
+      data: data
+    };
+  } catch (error) {
+    console.error('❌ Failed to add bookmark:', error);
+    return {
+      success: false,
+      error: error.response?.data?.error || error.message
+    };
+  }
+};
+
+/**
+ * Create personal learning path
+ */
+export const createPersonalPath = async (userId, pathData) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+
+    const headers = { Authorization: `Bearer ${token}` };
+    const { data } = await api.post(`study-centre/${userId}/create-path`,
+      pathData,
+      { headers }
+    );
+
+    return {
+      success: true,
+      data: data
+    };
+  } catch (error) {
+    console.error('❌ Failed to create personal path:', error);
+    return {
+      success: false,
+      error: error.response?.data?.error || error.message
+    };
+  }
+};
+
+/**
+ * Get user's accessible content based on mode and level
+ */
+export const getAccessibleContent = async (userId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+
+    const headers = { Authorization: `Bearer ${token}` };
+    const { data } = await api.get(`users/${userId}/accessible-content`, { headers });
+
+    return {
+      success: true,
+      data: data
+    };
+  } catch (error) {
+    console.error('❌ Failed to get accessible content:', error);
+    return {
+      success: false,
+      error: error.response?.data?.error || error.message
+    };
+  }
+};
+
+/**
+ * Check if user can access a specific lesson
+ */
+export const checkLessonAccess = async (userId, lessonId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+
+    const headers = { Authorization: `Bearer ${token}` };
+    const { data } = await api.get(`users/${userId}/lessons/${lessonId}/access`, { headers });
+
+    return {
+      success: true,
+      canAccess: data.canAccess,
+      reason: data.reason
+    };
+  } catch (error) {
+    console.error('❌ Failed to check lesson access:', error);
+    return {
+      success: false,
+      canAccess: false,
+      reason: error.response?.data?.error || error.message
+    };
   }
 };
