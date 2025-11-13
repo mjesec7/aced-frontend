@@ -160,7 +160,8 @@
     </div>
 
     <main v-else class="main-section">
-      <div v-if="!paginatedCourses.length" class="empty-container">
+      <!-- Empty State -->
+      <div v-if="!filteredCourses.length" class="empty-container">
         <div class="empty-illustration">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
             <circle cx="12" cy="12" r="10"/>
@@ -173,9 +174,35 @@
         <p>Try changing your filter or search parameters</p>
       </div>
 
-      <div v-else class="courses-container">
-        <div class="courses-grid">
-          <article v-for="course in paginatedCourses" :key="course.topicId" class="course-card">
+      <!-- SCHOOL MODE VIEW: Subjects with Levels -->
+      <div v-else-if="isSchoolMode" class="courses-container">
+        <div v-for="(courses, subject) in coursesBySubject" :key="subject" class="subject-section">
+          <div class="subject-header">
+            <div class="subject-info">
+              <h2 class="subject-title">{{ subject }}</h2>
+              <span class="subject-count">{{ courses.length }} {{ courses.length === 1 ? 'course' : 'courses' }}</span>
+            </div>
+            <button
+              v-if="placementTestTaken"
+              class="take-test-btn"
+              @click="goToLevelTest(subject)"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 11l3 3L22 4"/>
+                <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+              </svg>
+              Take Test
+            </button>
+          </div>
+
+          <div class="courses-grid">
+            <article v-for="course in courses" :key="course.topicId" class="course-card">
+            <!-- Course Image Banner -->
+            <div class="card-image" :style="{ background: getSubjectGradient(course.subject) }">
+              <span class="subject-icon">{{ getSubjectIcon(course.subject) }}</span>
+              <span class="level-badge">Level {{ course.level }}</span>
+            </div>
+
             <div class="card-header">
               <span class="course-badge" :class="course.type">
                 {{ getTypeLabel(course.type) }}
@@ -246,6 +273,101 @@
             <div class="card-footer">
               <button 
                 class="course-btn" 
+                :class="getButtonClass(course.progress)"
+                @click="handleCourseAccess(course.topicId, course.type)"
+              >
+                <span>{{ getButtonText(course.progress) }}</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                  <polyline points="12 5 19 12 12 19"/>
+                </svg>
+              </button>
+            </div>
+          </article>
+        </div>
+        </div>
+      </div>
+
+      <!-- STUDY CENTRE MODE VIEW: Random Topics with Search -->
+      <div v-else-if="isStudyCentreMode" class="courses-container">
+        <div class="courses-grid">
+          <article v-for="course in paginatedCourses" :key="course.topicId" class="course-card">
+            <!-- Course Image Banner -->
+            <div class="card-image" :style="{ background: getSubjectGradient(course.subject) }">
+              <span class="subject-icon">{{ getSubjectIcon(course.subject) }}</span>
+              <span class="level-badge">Level {{ course.level }}</span>
+            </div>
+
+            <div class="card-header">
+              <span class="course-badge" :class="course.type">
+                {{ getTypeLabel(course.type) }}
+              </span>
+              <button
+                class="bookmark-btn"
+                :class="{ active: course.inStudyPlan }"
+                @click.stop="addToStudyPlan(course)"
+                :disabled="course.inStudyPlan"
+              >
+                <svg viewBox="0 0 24 24" :fill="course.inStudyPlan ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2">
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                </svg>
+              </button>
+            </div>
+
+            <div class="card-body">
+              <h3 class="course-name">{{ course.name }}</h3>
+
+              <div class="course-meta">
+                <span class="meta-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                  </svg>
+                  {{ course.subject }}
+                </span>
+                <span class="meta-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                  </svg>
+                  {{ getLevelDescription(course.level) }}
+                </span>
+              </div>
+
+              <div class="course-stats">
+                <div class="stat-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                  </svg>
+                  {{ course.lessonCount }} {{ getLessonWord(course.lessonCount) }}
+                </div>
+                <div class="stat-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                  {{ course.totalTime }} min
+                </div>
+              </div>
+
+              <div class="progress-container">
+                <div class="progress-info">
+                  <span class="progress-text">Progress</span>
+                  <span class="progress-percent">{{ course.progress }}%</span>
+                </div>
+                <div class="progress-track">
+                  <div
+                    class="progress-fill"
+                    :class="getProgressColor(course.progress)"
+                    :style="{ width: course.progress + '%' }"
+                  ></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card-footer">
+              <button
+                class="course-btn"
                 :class="getButtonClass(course.progress)"
                 @click="handleCourseAccess(course.topicId, course.type)"
               >
@@ -344,6 +466,7 @@
 <script>
 import { mapGetters } from 'vuex';
 import { userStatusMixin } from '@/composables/useUserStatus';
+import { useLevelSystem } from '@/composables/useLevelSystem';
 import {
   getAllLessons,
   getUserProgress,
@@ -356,6 +479,25 @@ export default {
   name: 'CataloguePage',
   components: { PaymentModal },
   mixins: [userStatusMixin],
+
+  setup() {
+    // Use level system for school mode
+    const {
+      isSchoolMode,
+      isStudyCentreMode,
+      canAccessLevel,
+      currentLevelCap,
+      placementTestTaken
+    } = useLevelSystem();
+
+    return {
+      isSchoolMode,
+      isStudyCentreMode,
+      canAccessLevel,
+      currentLevelCap,
+      placementTestTaken
+    };
+  },
 
   data() {
     return {
@@ -410,8 +552,41 @@ export default {
       const levels = new Set(this.courses.map(course => course.level));
       return Array.from(levels).sort((a, b) => Number(a) - Number(b));
     },
+
+    // School Mode: Group courses by subject
+    coursesBySubject() {
+      if (!this.isSchoolMode) return {};
+
+      const grouped = {};
+      this.courses.forEach(course => {
+        const subject = course.subject || 'Uncategorized';
+        if (!grouped[subject]) {
+          grouped[subject] = [];
+        }
+        grouped[subject].push(course);
+      });
+
+      // Sort each subject's courses by level
+      Object.keys(grouped).forEach(subject => {
+        grouped[subject].sort((a, b) => Number(a.level || 0) - Number(b.level || 0));
+      });
+
+      return grouped;
+    },
+
     filteredCourses() {
-      return this.courses.filter(course => {
+      let coursesToFilter = this.courses;
+
+      // School Mode: Filter by accessible levels
+      if (this.isSchoolMode) {
+        coursesToFilter = this.courses.filter(course => {
+          const courseLevel = Number(course.level || 1);
+          return this.canAccessLevel(courseLevel);
+        });
+      }
+
+      // Apply search and filters
+      return coursesToFilter.filter(course => {
         if (this.searchQuery && !course.name.toLowerCase().includes(this.searchQuery.toLowerCase())) {
           return false;
         }
@@ -423,12 +598,12 @@ export default {
         }
         if (this.typeFilter === 'free' && course.type !== 'free') return false;
         if (this.typeFilter === 'premium' && course.type === 'free') return false;
-        
+
         const progress = course.progress || 0;
         if (this.progressFilter === 'not-started' && progress !== 0) return false;
         if (this.progressFilter === 'in-progress' && (progress === 0 || progress === 100)) return false;
         if (this.progressFilter === 'completed' && progress !== 100) return false;
-        
+
         return true;
       });
     },
@@ -703,6 +878,64 @@ export default {
     hasTopicAccess(topicType) {
       if (topicType === 'free') return true;
       return this.userStatus === 'pro' || this.userStatus === 'start';
+    },
+
+    // Navigate to level test
+    goToLevelTest(subject) {
+      console.log('Going to level test for subject:', subject);
+      // Store the subject for the test
+      sessionStorage.setItem('testSubject', subject);
+      // Navigate to level test route
+      this.$router.push({
+        name: 'LevelTest',
+        query: { subject, level: this.currentLevelCap }
+      });
+    },
+
+    // Generate subject-based gradient background
+    getSubjectGradient(subject) {
+      const gradients = {
+        'Mathematics': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        'English': 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+        'Science': 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+        'Physics': 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+        'Chemistry': 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+        'Biology': 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+        'History': 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+        'Geography': 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
+        'Computer Science': 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+        'Programming': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        'Design': 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+        'Art': 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+        'Music': 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+        'Languages': 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+        'default': 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%)'
+      };
+
+      return gradients[subject] || gradients.default;
+    },
+
+    // Get subject icon as SVG
+    getSubjectIcon(subject) {
+      const icons = {
+        'Mathematics': '📐',
+        'English': '📚',
+        'Science': '🔬',
+        'Physics': '⚛️',
+        'Chemistry': '⚗️',
+        'Biology': '🧬',
+        'History': '📜',
+        'Geography': '🌍',
+        'Computer Science': '💻',
+        'Programming': '👨‍💻',
+        'Design': '🎨',
+        'Art': '🖼️',
+        'Music': '🎵',
+        'Languages': '🗣️',
+        'default': '📖'
+      };
+
+      return icons[subject] || icons.default;
     },
   },
 };
@@ -1130,6 +1363,39 @@ export default {
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
   border-color: #e5e7eb;
 }
+
+/* Course Image Banner */
+.card-image {
+  height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.subject-icon {
+  font-size: 3.5rem;
+  opacity: 0.7;
+  z-index: 1;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.level-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #1e293b;
+  padding: 0.375rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 2;
+}
+
 .card-header {
   padding: 1rem 1rem 0;
   display: flex;
@@ -1563,6 +1829,86 @@ export default {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* SCHOOL MODE STYLES */
+.subject-section {
+  margin-bottom: 3rem;
+}
+
+.subject-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.subject-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.subject-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.subject-count {
+  font-size: 0.875rem;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-weight: 500;
+}
+
+.take-test-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+}
+
+.take-test-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+  background: linear-gradient(135deg, #7c3aed 0%, #9333ea 100%);
+}
+
+.take-test-btn svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+@media (max-width: 768px) {
+  .subject-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .take-test-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .subject-title {
+    font-size: 1.25rem;
   }
 }
 </style>
