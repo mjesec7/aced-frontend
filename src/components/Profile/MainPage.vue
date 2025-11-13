@@ -37,6 +37,30 @@
         <!-- Mode Selection (if not selected) -->
         <ModeChoice v-if="!hasSelectedMode" />
 
+        <!-- School Mode: Take Test Card -->
+        <div v-if="hasSelectedMode && isSchoolMode" class="section-card level-test-card">
+          <div class="test-card-content">
+            <div class="test-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 11l3 3L22 4"/>
+                <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+              </svg>
+            </div>
+            <div class="test-card-info">
+              <h3 class="test-card-title">Discover Your Level</h3>
+              <p class="test-card-description">
+                Take a quick test to determine your knowledge level and unlock appropriate courses
+              </p>
+            </div>
+            <button class="take-test-action-btn" @click="goToPlacementTest">
+              <span>Take Placement Test</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
         <div v-if="learningProfile" class="section-card learning-dna-card">
           <div class="section-header">
             <div class="header-left">
@@ -559,6 +583,7 @@ import {
 import PaymentModal from '@/components/Modals/PaymentModal.vue';
 import LevelIndicator from '@/components/PlatformMode/LevelIndicator.vue';
 import ModeChoice from '@/components/PlatformMode/ModeChoice.vue';
+import { useLevelSystem } from '@/composables/useLevelSystem';
 
 const startOfDay = (date) => {
   const newDate = new Date(date);
@@ -573,7 +598,14 @@ export default {
     LevelIndicator,
     ModeChoice
   },
-  
+
+  setup() {
+    const { isSchoolMode } = useLevelSystem();
+    return {
+      isSchoolMode
+    };
+  },
+
   mixins: [userStatusMixin],
   
   data() {
@@ -778,6 +810,11 @@ export default {
   },
   
   methods: {
+    // Navigate to placement test
+    goToPlacementTest() {
+      this.$router.push({ name: 'PlacementTest' });
+    },
+
     async initialize() {
       this.userId = this.$store?.state?.firebaseUserId || 
                     localStorage.getItem('firebaseUserId') || 
@@ -2026,5 +2063,93 @@ export default {
 .start-learning-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(168, 85, 247, 0.3);
+}
+
+/* Level Test Card */
+.level-test-card {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(168, 85, 247, 0.05) 100%);
+  border: 2px solid rgba(139, 92, 246, 0.2);
+  margin-bottom: 2rem;
+}
+
+.test-card-content {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.test-card-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+}
+
+.test-card-icon svg {
+  width: 30px;
+  height: 30px;
+  color: white;
+}
+
+.test-card-info {
+  flex: 1;
+}
+
+.test-card-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 0.5rem 0;
+}
+
+.test-card-description {
+  font-size: 0.9375rem;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.take-test-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1.75rem;
+  background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+  white-space: nowrap;
+}
+
+.take-test-action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+}
+
+.take-test-action-btn svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+@media (max-width: 768px) {
+  .test-card-content {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .take-test-action-btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
 </style>
