@@ -7,6 +7,9 @@
           <p class="date-text">{{ currentDate }}</p>
         </div>
         <div class="header-stats">
+          <!-- Level Indicator -->
+          <LevelIndicator :isCompact="false" :showProgress="true" @selectMode="goToModeSelector" />
+
           <div class="stat-badge streak">
             <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
@@ -551,6 +554,7 @@ import {
   updateStreak
 } from '@/api';
 import PaymentModal from '@/components/Modals/PaymentModal.vue';
+import LevelIndicator from '@/components/PlatformMode/LevelIndicator.vue';
 
 const startOfDay = (date) => {
   const newDate = new Date(date);
@@ -560,8 +564,9 @@ const startOfDay = (date) => {
 
 export default {
   name: 'ProfessionalMainPage',
-  components: { 
-    PaymentModal 
+  components: {
+    PaymentModal,
+    LevelIndicator
   },
   
   mixins: [userStatusMixin],
@@ -859,7 +864,12 @@ export default {
       await this.loadLearningData();
       this.$forceUpdate();
     },
-    
+
+    // Navigate to mode selector
+    goToModeSelector() {
+      this.$router.push({ name: 'ModeSelector' });
+    },
+
     // 🧬 NEW: Format cognitive labels
     formatCognitiveLabel(key) {
       const labels = {

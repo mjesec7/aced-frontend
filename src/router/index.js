@@ -34,6 +34,10 @@ const TopicFinished = () => import('@/views/TopicFinished.vue');
 const TopicOverview = () => import('@/views/TopicOverview.vue');
 const AboutUsPage = () => import('@/components/Main/AboutUs.vue');
 
+// Platform Mode Components
+import ModeSelector from '@/components/PlatformMode/ModeSelector.vue';
+import PlacementTest from '@/components/PlatformMode/PlacementTest.vue';
+
 // --- ACCESS CONTROL HELPERS ---
 
 /**
@@ -123,11 +127,27 @@ const routes = [
     component: AboutUsPage, 
     meta: { title: 'About Us' } 
   },
-  { 
-    path: '/settings', 
-    name: 'SettingsPage', 
-    component: AcedSettings, 
-    meta: { title: 'Settings', requiresAuth: true } 
+  {
+    path: '/settings',
+    name: 'SettingsPage',
+    component: AcedSettings,
+    meta: { title: 'Settings', requiresAuth: true }
+  },
+
+  // ============================================
+  // PLATFORM MODE ROUTES
+  // ============================================
+  {
+    path: '/mode-selector',
+    name: 'ModeSelector',
+    component: ModeSelector,
+    meta: { title: 'Choose Your Learning Mode', requiresAuth: true }
+  },
+  {
+    path: '/placement-test',
+    name: 'PlacementTest',
+    component: PlacementTest,
+    meta: { title: 'Placement Test', requiresAuth: true }
   },
 
   // ============================================
@@ -490,6 +510,27 @@ router.beforeEach(async (to, from, next) => {
           loginRequired: 'true',
         },
       });
+    }
+
+    // Check for platform mode selection (only for logged-in users)
+    if (isLoggedIn && to.meta.requiresAuth) {
+      const hasSelectedMode = store.getters['platformMode/hasSelectedMode'];
+      const exemptRoutes = ['ModeSelector', 'PlacementTest', 'SettingsPage', 'HomePage'];
+
+      // If user hasn't selected a mode and not going to mode selector
+      if (!hasSelectedMode && !exemptRoutes.includes(to.name)) {
+        console.log('🎯 No learning mode selected. Redirecting to mode selector.');
+        return next({ name: 'ModeSelector' });
+      }
+
+      // If user is in school mode and hasn't taken placement test
+      const isSchoolMode = store.getters['platformMode/isSchoolMode'];
+      const placementTestTaken = store.getters['platformMode/placementTestTaken'];
+
+      if (isSchoolMode && !placementTestTaken && to.name !== 'PlacementTest' && to.name !== 'ModeSelector') {
+        console.log('🎓 School mode selected but placement test not taken. Redirecting to placement test.');
+        return next({ name: 'PlacementTest' });
+      }
     }
 
     // Check for intended route after successful payment
