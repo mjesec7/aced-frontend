@@ -3,102 +3,177 @@
     <!-- Subject Selection Screen -->
     <div v-if="currentScreen === 'subject-select'" class="screen">
       <div class="container">
-        <div class="card">
-          <h1>Choose Your Subject</h1>
-          <p class="subtitle">Select a subject to test your knowledge</p>
+        <div class="header">
+          <h1>Placement Test</h1>
+          <p>Choose a subject to assess your current level</p>
+        </div>
 
-          <div class="subjects-grid">
-            <button
-              v-for="subject in availableSubjects"
-              :key="subject.id"
-              class="subject-card"
-              @click="selectSubject(subject.id)"
-            >
-              <div class="subject-icon">{{ subject.icon }}</div>
-              <div class="subject-name">{{ subject.name }}</div>
-            </button>
-          </div>
-
-          <button class="back-link" @click="$router.push('/profile/main')">
-            ← Back to Dashboard
+        <div class="subjects-grid">
+          <button
+            v-for="subject in availableSubjects"
+            :key="subject.id"
+            class="subject-card"
+            @click="selectSubject(subject.id)"
+          >
+            <div class="subject-icon">{{ subject.icon }}</div>
+            <div class="subject-name">{{ subject.name }}</div>
+            <div class="subject-count">10 Questions</div>
           </button>
         </div>
       </div>
     </div>
 
     <!-- Test Screen -->
-    <div v-else-if="currentScreen === 'test'" class="screen">
-      <div class="test-container">
-        <div class="test-header">
-          <div class="progress-bar">
-            <div class="progress-fill" :style="{ width: progressPercentage + '%' }"></div>
+    <div v-else-if="currentScreen === 'test'" class="screen test-screen">
+      <div class="test-wrapper">
+        <div class="test-sidebar">
+          <div class="test-info">
+            <div class="subject-badge">
+              <span class="badge-icon">{{ getSubjectIcon(selectedSubject) }}</span>
+              <span class="badge-text">{{ selectedSubject }}</span>
+            </div>
+            <div class="progress-section">
+              <div class="progress-label">Progress</div>
+              <div class="progress-stats">{{ currentQuestionIndex + 1 }} / {{ totalQuestions }}</div>
+              <div class="progress-bar">
+                <div class="progress-fill" :style="{ width: progressPercentage + '%' }"></div>
+              </div>
+            </div>
           </div>
-          <div class="progress-text">Question {{ currentQuestionIndex + 1 }} / {{ totalQuestions }}</div>
         </div>
 
-        <div class="question-card">
-          <div class="question-number">Question {{ currentQuestionIndex + 1 }}</div>
-          <h2 class="question-text">{{ currentQuestion.question }}</h2>
+        <div class="test-main">
+          <div class="question-container">
+            <div class="question-header">
+              <span class="question-number">Question {{ currentQuestionIndex + 1 }}</span>
+            </div>
 
-          <div class="options">
-            <button
-              v-for="(option, index) in currentQuestion.options"
-              :key="index"
-              class="option-btn"
-              :class="{ selected: selectedAnswer === index }"
-              @click="selectAnswer(index)"
-            >
-              <span class="option-letter">{{ ['A', 'B', 'C', 'D'][index] }}</span>
-              <span class="option-text">{{ option }}</span>
-              <span v-if="selectedAnswer === index" class="check">✓</span>
-            </button>
+            <h2 class="question-text">{{ currentQuestion.question }}</h2>
+
+            <div class="options-list">
+              <button
+                v-for="(option, index) in currentQuestion.options"
+                :key="index"
+                class="option-item"
+                :class="{ selected: selectedAnswer === index }"
+                @click="selectAnswer(index)"
+              >
+                <span class="option-radio">
+                  <span class="radio-dot" v-if="selectedAnswer === index"></span>
+                </span>
+                <span class="option-label">{{ option }}</span>
+              </button>
+            </div>
+
+            <div class="question-actions">
+              <button
+                class="btn-next"
+                :disabled="selectedAnswer === null"
+                @click="nextQuestion"
+              >
+                {{ currentQuestionIndex === totalQuestions - 1 ? 'Finish Test' : 'Next Question' }}
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+            </div>
           </div>
-
-          <button
-            class="next-btn"
-            :disabled="selectedAnswer === null"
-            @click="nextQuestion"
-          >
-            {{ currentQuestionIndex === totalQuestions - 1 ? 'Finish Test' : 'Next Question' }}
-          </button>
         </div>
       </div>
     </div>
 
     <!-- Results Screen -->
     <div v-else-if="currentScreen === 'results'" class="screen">
-      <div class="container">
-        <div class="card results-card">
-          <div class="success-icon">🎉</div>
+      <div class="container results-container">
+        <div class="results-header">
+          <div class="results-icon">
+            <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+              <circle cx="32" cy="32" r="32" fill="#10B981" opacity="0.1"/>
+              <path d="M20 32L28 40L44 24" stroke="#10B981" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
           <h1>Test Complete!</h1>
-          <p class="subtitle">Here's how you did</p>
+          <p>You've completed the {{ selectedSubject }} placement test</p>
+        </div>
 
-          <div class="score-circle">
-            <div class="score-number">{{ scorePercentage }}%</div>
-            <div class="score-label">Your Score</div>
+        <div class="results-content">
+          <div class="score-card">
+            <div class="score-circle">
+              <svg width="200" height="200" viewBox="0 0 200 200">
+                <circle cx="100" cy="100" r="90" fill="none" stroke="#E5E7EB" stroke-width="12"/>
+                <circle
+                  cx="100"
+                  cy="100"
+                  r="90"
+                  fill="none"
+                  stroke="#3B82F6"
+                  stroke-width="12"
+                  stroke-dasharray="565.48"
+                  :stroke-dashoffset="565.48 - (565.48 * scorePercentage / 100)"
+                  transform="rotate(-90 100 100)"
+                  stroke-linecap="round"
+                />
+                <text x="100" y="95" text-anchor="middle" font-size="48" font-weight="700" fill="#111827">
+                  {{ scorePercentage }}%
+                </text>
+                <text x="100" y="115" text-anchor="middle" font-size="14" fill="#6B7280">
+                  Your Score
+                </text>
+              </svg>
+            </div>
+
+            <div class="level-badge">
+              <span class="level-label">Recommended Level:</span>
+              <span class="level-value">{{ recommendedLevel }}</span>
+            </div>
           </div>
 
-          <div class="stats">
-            <div class="stat">
-              <div class="stat-value">{{ correctAnswers }}</div>
-              <div class="stat-label">Correct</div>
+          <div class="stats-grid">
+            <div class="stat-item">
+              <div class="stat-icon correct">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <div class="stat-info">
+                <div class="stat-value">{{ correctAnswers }}</div>
+                <div class="stat-label">Correct</div>
+              </div>
             </div>
-            <div class="stat">
-              <div class="stat-value">{{ wrongAnswers }}</div>
-              <div class="stat-label">Wrong</div>
+
+            <div class="stat-item">
+              <div class="stat-icon wrong">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <div class="stat-info">
+                <div class="stat-value">{{ wrongAnswers }}</div>
+                <div class="stat-label">Wrong</div>
+              </div>
             </div>
-            <div class="stat">
-              <div class="stat-value">{{ recommendedLevel }}</div>
-              <div class="stat-label">Level</div>
+
+            <div class="stat-item">
+              <div class="stat-icon total">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <div class="stat-info">
+                <div class="stat-value">{{ totalQuestions }}</div>
+                <div class="stat-label">Total</div>
+              </div>
             </div>
           </div>
 
-          <button class="primary-btn" @click="$router.push('/profile/catalogue')">
-            Start Learning
-          </button>
-          <button class="secondary-btn" @click="retakeTest">
-            Retake Test
-          </button>
+          <div class="results-actions">
+            <button class="btn-primary" @click="$router.push('/profile/catalogue')">
+              Start Learning
+            </button>
+            <button class="btn-secondary" @click="retakeTest">
+              Take Another Test
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -134,7 +209,6 @@ export default {
       { id: 'Biology', name: 'Biology', icon: '🧬' }
     ];
 
-    // Hardcoded questions for each subject
     const questionBank = {
       English: [
         { question: "What is a noun?", options: ["A person, place, or thing", "An action word", "A describing word", "A connecting word"], correct: 0, difficulty: 1 },
@@ -238,6 +312,11 @@ export default {
       return 'Beginner';
     });
 
+    const getSubjectIcon = (subjectId) => {
+      const subject = availableSubjects.find(s => s.id === subjectId);
+      return subject ? subject.icon : '📚';
+    };
+
     const selectSubject = (subject) => {
       selectedSubject.value = subject;
       questions.value = questionBank[subject];
@@ -251,7 +330,6 @@ export default {
     const nextQuestion = () => {
       if (selectedAnswer.value === null) return;
 
-      // Record answer
       const isCorrect = selectedAnswer.value === currentQuestion.value.correct;
       answers.value.push({
         questionIndex: currentQuestionIndex.value,
@@ -260,7 +338,6 @@ export default {
         correct: isCorrect
       });
 
-      // Move to next question or finish
       if (currentQuestionIndex.value < totalQuestions.value - 1) {
         currentQuestionIndex.value++;
         selectedAnswer.value = null;
@@ -278,8 +355,8 @@ export default {
         const userId = store.state.firebaseUserId || localStorage.getItem('firebaseUserId');
 
         if (token && userId) {
-          await api.post('learning-mode/placement-test/submit-results', {
-            userId,
+          // Send to existing endpoint with subject parameter
+          await api.post(`learning-mode/placement-test/${userId}/complete`, {
             subject: selectedSubject.value,
             totalQuestions: totalQuestions.value,
             correctAnswers: correctAnswers.value,
@@ -293,6 +370,7 @@ export default {
         }
       } catch (error) {
         console.error('Failed to submit results:', error);
+        // Fail silently - results are shown to user regardless
       }
     };
 
@@ -306,6 +384,7 @@ export default {
     return {
       currentScreen,
       availableSubjects,
+      selectedSubject,
       currentQuestion,
       currentQuestionIndex,
       totalQuestions,
@@ -315,6 +394,7 @@ export default {
       wrongAnswers,
       scorePercentage,
       recommendedLevel,
+      getSubjectIcon,
       selectSubject,
       selectAnswer,
       nextQuestion,
@@ -325,67 +405,69 @@ export default {
 </script>
 
 <style scoped>
+* {
+  box-sizing: border-box;
+}
+
 .placement-test {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 2rem;
+  background: #F9FAFB;
 }
 
 .screen {
+  min-height: 100vh;
+  padding: 2rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: calc(100vh - 4rem);
 }
 
 .container {
   width: 100%;
-  max-width: 900px;
+  max-width: 1000px;
+  margin: 0 auto;
 }
 
-.card {
-  background: white;
-  border-radius: 24px;
-  padding: 3rem;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+/* Header */
+.header {
+  text-align: center;
+  margin-bottom: 3rem;
 }
 
-h1 {
+.header h1 {
   font-size: 2.5rem;
-  font-weight: 800;
-  color: #1a202c;
+  font-weight: 700;
+  color: #111827;
   margin: 0 0 0.5rem 0;
-  text-align: center;
 }
 
-.subtitle {
+.header p {
   font-size: 1.125rem;
-  color: #718096;
-  text-align: center;
-  margin: 0 0 3rem 0;
+  color: #6B7280;
+  margin: 0;
 }
 
 /* Subject Selection */
 .subjects-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 1.5rem;
-  margin-bottom: 2rem;
 }
 
 .subject-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border: none;
-  border-radius: 16px;
-  padding: 2rem 1rem;
+  background: white;
+  border: 2px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 2rem 1.5rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   text-align: center;
 }
 
 .subject-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 12px 30px rgba(102, 126, 234, 0.4);
+  border-color: #3B82F6;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+  transform: translateY(-2px);
 }
 
 .subject-icon {
@@ -394,277 +476,437 @@ h1 {
 }
 
 .subject-name {
-  color: white;
   font-size: 1.125rem;
-  font-weight: 700;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 0.5rem;
 }
 
-.back-link {
-  display: block;
-  text-align: center;
-  color: #667eea;
-  text-decoration: none;
-  font-weight: 600;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0.5rem;
+.subject-count {
+  font-size: 0.875rem;
+  color: #6B7280;
 }
 
 /* Test Screen */
-.test-container {
-  max-width: 800px;
-  margin: 0 auto;
+.test-screen {
+  padding: 0;
+  align-items: stretch;
 }
 
-.test-header {
+.test-wrapper {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+}
+
+.test-sidebar {
+  width: 280px;
   background: white;
-  border-radius: 16px;
-  padding: 1.5rem;
+  border-right: 1px solid #E5E7EB;
+  padding: 2rem;
+}
+
+.test-info {
+  position: sticky;
+  top: 2rem;
+}
+
+.subject-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: #F3F4F6;
+  border-radius: 8px;
   margin-bottom: 2rem;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.badge-icon {
+  font-size: 1.5rem;
+}
+
+.badge-text {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.progress-section {
+  padding: 1.5rem;
+  background: #F9FAFB;
+  border-radius: 8px;
+}
+
+.progress-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #6B7280;
+  margin-bottom: 0.5rem;
+}
+
+.progress-stats {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 1rem;
 }
 
 .progress-bar {
   height: 8px;
-  background: #e2e8f0;
+  background: #E5E7EB;
   border-radius: 999px;
   overflow: hidden;
-  margin-bottom: 0.75rem;
 }
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-  transition: width 0.3s ease;
+  background: #3B82F6;
   border-radius: 999px;
+  transition: width 0.3s ease;
 }
 
-.progress-text {
-  text-align: center;
-  font-weight: 700;
-  color: #4a5568;
-  font-size: 0.875rem;
-}
-
-.question-card {
-  background: white;
-  border-radius: 20px;
+.test-main {
+  flex: 1;
   padding: 3rem;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.question-container {
+  width: 100%;
+  max-width: 700px;
+}
+
+.question-header {
+  margin-bottom: 1.5rem;
 }
 
 .question-number {
-  color: #667eea;
-  font-weight: 700;
   font-size: 0.875rem;
+  font-weight: 600;
+  color: #3B82F6;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-bottom: 1rem;
 }
 
 .question-text {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #1a202c;
-  margin: 0 0 2rem 0;
-  line-height: 1.4;
+  font-size: 1.875rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 2.5rem 0;
+  line-height: 1.3;
 }
 
-.options {
+.options-list {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
 }
 
-.option-btn {
+.option-item {
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 1.25rem;
-  background: #f7fafc;
-  border: 3px solid transparent;
-  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  background: white;
+  border: 2px solid #E5E7EB;
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: left;
 }
 
-.option-btn:hover {
-  background: #edf2f7;
-  border-color: #cbd5e0;
+.option-item:hover {
+  border-color: #3B82F6;
+  background: #F9FAFB;
 }
 
-.option-btn.selected {
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-  border-color: #667eea;
+.option-item.selected {
+  border-color: #3B82F6;
+  background: #EFF6FF;
 }
 
-.option-letter {
-  width: 40px;
-  height: 40px;
+.option-radio {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #D1D5DB;
+  border-radius: 50%;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: white;
-  border-radius: 8px;
-  font-weight: 800;
-  color: #667eea;
-  flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
 }
 
-.option-text {
+.option-item.selected .option-radio {
+  border-color: #3B82F6;
+}
+
+.radio-dot {
+  width: 10px;
+  height: 10px;
+  background: #3B82F6;
+  border-radius: 50%;
+}
+
+.option-label {
   flex: 1;
-  font-size: 1.125rem;
-  color: #2d3748;
+  font-size: 1.0625rem;
+  color: #374151;
   font-weight: 500;
+  line-height: 1.5;
 }
 
-.check {
-  color: #667eea;
-  font-size: 1.5rem;
-  font-weight: 800;
+.question-actions {
+  display: flex;
+  justify-content: flex-end;
 }
 
-.next-btn {
-  width: 100%;
-  padding: 1.25rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+.btn-next {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 2rem;
+  background: #3B82F6;
   color: white;
   border: none;
-  border-radius: 12px;
-  font-size: 1.125rem;
-  font-weight: 800;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+  transition: all 0.2s ease;
 }
 
-.next-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 30px rgba(102, 126, 234, 0.5);
+.btn-next:hover:not(:disabled) {
+  background: #2563EB;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
-.next-btn:disabled {
-  opacity: 0.5;
+.btn-next:disabled {
+  background: #D1D5DB;
   cursor: not-allowed;
   transform: none;
 }
 
 /* Results */
-.results-card {
-  text-align: center;
+.results-container {
+  max-width: 800px;
 }
 
-.success-icon {
-  font-size: 5rem;
-  margin-bottom: 1rem;
+.results-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.results-icon {
+  margin: 0 auto 1.5rem;
+  width: 64px;
+  height: 64px;
+}
+
+.results-header h1 {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 0.5rem 0;
+}
+
+.results-header p {
+  font-size: 1.125rem;
+  color: #6B7280;
+  margin: 0;
+}
+
+.results-content {
+  background: white;
+  border-radius: 16px;
+  padding: 3rem;
+  border: 1px solid #E5E7EB;
+}
+
+.score-card {
+  text-align: center;
+  margin-bottom: 3rem;
+  padding-bottom: 3rem;
+  border-bottom: 1px solid #E5E7EB;
 }
 
 .score-circle {
+  margin: 0 auto 2rem;
   width: 200px;
   height: 200px;
-  margin: 2rem auto;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 50%;
-  display: flex;
+}
+
+.level-badge {
+  display: inline-flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 12px 30px rgba(102, 126, 234, 0.3);
+  gap: 0.5rem;
+  padding: 1rem 2rem;
+  background: #F9FAFB;
+  border-radius: 8px;
 }
 
-.score-number {
-  font-size: 3rem;
-  font-weight: 900;
-  color: white;
+.level-label {
+  font-size: 0.875rem;
+  color: #6B7280;
+  font-weight: 500;
 }
 
-.score-label {
-  color: rgba(255, 255, 255, 0.9);
-  font-weight: 600;
-  font-size: 1rem;
+.level-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #3B82F6;
 }
 
-.stats {
+.stats-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1.5rem;
-  margin: 2rem 0;
+  margin-bottom: 3rem;
 }
 
-.stat {
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
   padding: 1.5rem;
-  background: #f7fafc;
-  border-radius: 12px;
+  background: #F9FAFB;
+  border-radius: 8px;
+}
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.stat-icon.correct {
+  background: #D1FAE5;
+  color: #059669;
+}
+
+.stat-icon.wrong {
+  background: #FEE2E2;
+  color: #DC2626;
+}
+
+.stat-icon.total {
+  background: #DBEAFE;
+  color: #2563EB;
+}
+
+.stat-info {
+  flex: 1;
 }
 
 .stat-value {
-  font-size: 2rem;
-  font-weight: 800;
-  color: #667eea;
-  margin-bottom: 0.5rem;
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.25rem;
 }
 
 .stat-label {
-  color: #718096;
-  font-weight: 600;
   font-size: 0.875rem;
+  color: #6B7280;
+  font-weight: 500;
 }
 
-.primary-btn, .secondary-btn {
-  width: 100%;
-  padding: 1.25rem;
+.results-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.btn-primary,
+.btn-secondary {
+  flex: 1;
+  padding: 1rem 2rem;
   border: none;
-  border-radius: 12px;
-  font-size: 1.125rem;
-  font-weight: 800;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
-  margin-bottom: 1rem;
+  transition: all 0.2s ease;
 }
 
-.primary-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+.btn-primary {
+  background: #3B82F6;
   color: white;
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
 }
 
-.primary-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 30px rgba(102, 126, 234, 0.5);
+.btn-primary:hover {
+  background: #2563EB;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
-.secondary-btn {
-  background: #edf2f7;
-  color: #4a5568;
+.btn-secondary {
+  background: #F3F4F6;
+  color: #374151;
 }
 
-.secondary-btn:hover {
-  background: #e2e8f0;
+.btn-secondary:hover {
+  background: #E5E7EB;
 }
 
-@media (max-width: 768px) {
-  .card {
-    padding: 2rem 1.5rem;
+@media (max-width: 1024px) {
+  .test-wrapper {
+    flex-direction: column;
   }
 
-  h1 {
+  .test-sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #E5E7EB;
+    padding: 1.5rem;
+  }
+
+  .test-info {
+    position: static;
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+  }
+
+  .subject-badge {
+    margin-bottom: 0;
+  }
+
+  .test-main {
+    padding: 2rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .results-actions {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 640px) {
+  .header h1 {
     font-size: 2rem;
   }
 
   .question-text {
-    font-size: 1.375rem;
+    font-size: 1.5rem;
   }
 
   .subjects-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
   }
 
-  .stats {
-    grid-template-columns: 1fr;
+  .results-content {
+    padding: 2rem 1.5rem;
   }
 }
 </style>
