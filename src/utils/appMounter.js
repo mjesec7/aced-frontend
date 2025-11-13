@@ -57,6 +57,11 @@ export async function mountVueApplication() {
     // 📦 INSTALL PLUGINS
     // ============================================================================
     app.use(store);
+
+    // Initialize platform mode from localStorage
+    console.log('🎓 Initializing platform mode from localStorage...');
+    store.dispatch('platformMode/loadFromLocalStorage');
+
     app.use(router);
     app.use(VueToast, {
       position: 'top-center',

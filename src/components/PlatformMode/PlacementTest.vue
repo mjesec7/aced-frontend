@@ -251,7 +251,12 @@ export default {
         }
       } catch (err) {
         console.error('Error starting test:', err);
-        error.value = err.message || 'Failed to start placement test';
+        // Check if it's a 404 error (backend not ready)
+        if (err.message && err.message.includes('404')) {
+          error.value = 'Placement test feature is coming soon! For now, you can freely explore all content in Study Centre mode.';
+        } else {
+          error.value = err.message || 'Failed to start placement test';
+        }
       } finally {
         isLoading.value = false;
       }
