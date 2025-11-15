@@ -407,4 +407,70 @@ export const getSubjects = async () => {
     console.error('❌ Failed to fetch subjects:', error);
     return [];
   }
-}
+};
+
+/**
+ * Get topics grouped by subject and level (School Mode)
+ * Returns structure: { subject: { level: [topics] } }
+ */
+export const getTopicsGrouped = async () => {
+  try {
+    const { data } = await api.get('topics/grouped');
+
+    if (data.success) {
+      return {
+        success: true,
+        data: data.data,
+        mode: 'school'
+      };
+    } else {
+      throw new Error('Failed to fetch grouped topics');
+    }
+  } catch (error) {
+    console.error('❌ Failed to fetch grouped topics:', error);
+    return {
+      success: false,
+      data: {},
+      error: error.message
+    };
+  }
+};
+
+/**
+ * Get topics as course cards (Study Centre Mode)
+ * @param {Object} filters - Optional filters (search, subject, level)
+ */
+export const getTopicsAsCourses = async (filters = {}) => {
+  try {
+    const params = new URLSearchParams();
+
+    Object.keys(filters).forEach(key => {
+      if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
+        params.append(key, filters[key]);
+      }
+    });
+
+    const queryString = params.toString();
+    const url = queryString ? `topics/as-courses?${queryString}` : 'topics/as-courses';
+
+    const { data } = await api.get(url);
+
+    if (data.success) {
+      return {
+        success: true,
+        courses: data.data,
+        total: data.total,
+        mode: 'study-centre'
+      };
+    } else {
+      throw new Error('Failed to fetch courses');
+    }
+  } catch (error) {
+    console.error('❌ Failed to fetch courses:', error);
+    return {
+      success: false,
+      courses: [],
+      error: error.message
+    };
+  }
+};

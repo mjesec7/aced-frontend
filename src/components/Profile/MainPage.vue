@@ -328,12 +328,12 @@
                 </svg>
               </div>
               <div>
-                <h2 class="section-title">Active Courses</h2>
+                <h2 class="section-title">{{ isSchoolMode ? 'Current Lessons' : 'Active Courses' }}</h2>
                 <p class="section-subtitle">{{ inProgressCourses }} in progress</p>
               </div>
             </div>
             <router-link to="/profile/my-courses" class="view-all-link">
-              All Courses
+              {{ isSchoolMode ? 'All Lessons' : 'All Courses' }}
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="9 18 15 12 9 6"/>
               </svg>
@@ -600,9 +600,10 @@ export default {
   },
 
   setup() {
-    const { isSchoolMode } = useLevelSystem();
+    const { isSchoolMode, isStudyCentreMode } = useLevelSystem();
     return {
-      isSchoolMode
+      isSchoolMode,
+      isStudyCentreMode
     };
   },
 
@@ -629,15 +630,18 @@ export default {
       
       currentDate: '',
       
-      quickActions: [
-        { 
-          id: 1, 
-          title: 'Course Catalog', 
-          description: 'Browse all available courses',
-          icon: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>', 
-          path: '/profile/catalogue', 
+      // Quick actions will be generated as computed property for mode awareness
+      quickActionsBase: [
+        {
+          id: 1,
+          titleSchool: 'My Curriculum',
+          titleStudyCentre: 'Course Catalog',
+          descriptionSchool: 'View your learning path',
+          descriptionStudyCentre: 'Browse all available courses',
+          icon: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
+          path: '/profile/catalogue',
           color: 'purple',
-          premium: false 
+          premium: false
         },
         { 
           id: 2, 
@@ -790,7 +794,22 @@ export default {
     displayPoints() {
       return this.rewards?.totalPoints || this.totalPoints || 0;
     },
-    
+
+    // 🎓 NEW: Mode-aware quick actions
+    quickActions() {
+      return this.quickActionsBase.map(action => {
+        // For the first action (Catalog/Curriculum), use mode-specific titles
+        if (action.id === 1) {
+          return {
+            ...action,
+            title: this.isSchoolMode ? action.titleSchool : action.titleStudyCentre,
+            description: this.isSchoolMode ? action.descriptionSchool : action.descriptionStudyCentre
+          };
+        }
+        return action;
+      });
+    },
+
     averageTestScore() {
       const testScores = this.userProgress
         .filter(p => p.testScore != null)
@@ -799,7 +818,7 @@ export default {
       const totalScore = testScores.reduce((a, b) => a + b, 0);
       return Math.round(totalScore / testScores.length);
     },
-    
+
     completedGoals() {
       return this.weeklyGoals.filter(g => g.progress >= 100).length;
     }

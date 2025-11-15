@@ -84,7 +84,9 @@ export const {
   getCourseStructuredEnhanced,
   getCourseContent,
   toggleBookmark,
-  getSubjects
+  getSubjects,
+  getTopicsGrouped,
+  getTopicsAsCourses
 } = CoursesAPI;
 
 // =============================================
@@ -157,14 +159,26 @@ export const {
   deleteUserGoal,
   saveDiaryEntry,
   getDiaryEntries,
-  // 🧬 NEW: Learning Profile
+  // 🧬 Learning Profile
   getLearningProfile,
   updateLearningProfile,
   getPersonalizedRecommendations,
-  // 🎮 NEW: Reward System
+  // 🎮 Reward System
   getUserRewards,
   checkReward,
-  updateStreak
+  updateStreak,
+  // 🎓 Platform Mode & Access Control
+  getLearningMode,
+  switchLearningMode,
+  startPlacementTest,
+  submitPlacementTestAnswer,
+  getPlacementTestResults,
+  getSchoolCurriculum,
+  completeLevel,
+  addStudyCentreBookmark,
+  createPersonalPath,
+  getAccessibleContent,
+  checkLessonAccess
 } = UserAPI;
 
 // =============================================

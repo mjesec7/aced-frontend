@@ -467,11 +467,14 @@
 import { mapGetters } from 'vuex';
 import { userStatusMixin } from '@/composables/useUserStatus';
 import { useLevelSystem } from '@/composables/useLevelSystem';
+import { useModeContent } from '@/composables/useModeContent';
 import {
   getAllLessons,
   getUserProgress,
   getUserStudyList,
-  addToStudyList
+  addToStudyList,
+  getTopicsGrouped,
+  getTopicsAsCourses
 } from '@/api';
 import PaymentModal from '@/components/Modals/PaymentModal.vue';
 
@@ -490,12 +493,34 @@ export default {
       placementTestTaken
     } = useLevelSystem();
 
+    // Use mode content for fetching
+    const {
+      groupedContent,
+      courseCards,
+      loading: modeLoading,
+      error: modeError,
+      subjects,
+      fetchContent,
+      getLevelsForSubject,
+      getTopicsForLevel,
+      totalTopicsCount
+    } = useModeContent();
+
     return {
       isSchoolMode,
       isStudyCentreMode,
       canAccessLevel,
       currentLevelCap,
-      placementTestTaken
+      placementTestTaken,
+      groupedContent,
+      courseCards,
+      modeLoading,
+      modeError,
+      subjects,
+      fetchContent,
+      getLevelsForSubject,
+      getTopicsForLevel,
+      totalTopicsCount
     };
   },
 
@@ -654,23 +679,49 @@ export default {
     async loadData() {
       this.isLoading = true;
       try {
-        const [lessonsResult, progressResult, studyListResult] = await Promise.all([
-          getAllLessons(),
+        // Load progress and study list in parallel
+        const [progressResult, studyListResult] = await Promise.all([
           getUserProgress(this.userId),
           getUserStudyList(this.userId),
         ]);
-        
-        this.lessons = lessonsResult?.data || [];
-        
+
         if (progressResult?.success) {
           this.userProgress = this.processProgressData(progressResult.data);
         }
-        
+
         if (studyListResult?.success) {
-          this.studyPlanTopics = studyListResult.data.map(item => this.extractTopicId(item.topicId)).filter(Boolean);
+          this.studyPlanTopics = studyListResult.data.map(item =>
+            this.extractTopicId(item.topicId)
+          ).filter(Boolean);
         }
-        
+
+        // Try to fetch content using new mode-based endpoints
+        try {
+          if (this.isSchoolMode) {
+            // School Mode: Use grouped topics endpoint
+            const result = await getTopicsGrouped();
+            if (result.success && result.data) {
+              this.processModeContent(result.data, 'school');
+              return; // Success, exit early
+            }
+          } else {
+            // Study Centre Mode: Use courses endpoint
+            const result = await getTopicsAsCourses();
+            if (result.success && result.courses) {
+              this.processModeContent(result.courses, 'study-centre');
+              return; // Success, exit early
+            }
+          }
+        } catch (modeError) {
+          console.warn('⚠️ Mode-based endpoints not available, falling back to legacy method:', modeError.message);
+        }
+
+        // Fallback: Use legacy method (getAllLessons)
+        console.log('📚 Using legacy data loading method');
+        const lessonsResult = await getAllLessons();
+        this.lessons = lessonsResult?.data || [];
         this.processAllCourses();
+
       } catch (error) {
         console.error('Error loading catalogue data:', error);
       } finally {
@@ -712,11 +763,11 @@ export default {
     },
     processAllCourses() {
       const coursesMap = new Map();
-      
+
       this.lessons.forEach(lesson => {
         const topicId = this.extractTopicId(lesson.topicId);
         if (!topicId) return;
-        
+
         if (!coursesMap.has(topicId)) {
           coursesMap.set(topicId, {
             topicId,
@@ -728,21 +779,69 @@ export default {
             type: 'free',
           });
         }
-        
+
         const course = coursesMap.get(topicId);
         course.lessonCount++;
         course.totalTime += this.estimateLessonTime(lesson);
-        
+
         if (['premium', 'start', 'pro'].includes(lesson.type)) {
           course.type = 'premium';
         }
       });
-      
+
       this.courses = Array.from(coursesMap.values()).map(course => ({
         ...course,
         progress: this.userProgress[course.topicId] || 0,
         inStudyPlan: this.studyPlanTopics.includes(course.topicId),
       }));
+    },
+
+    /**
+     * Process content from new mode-based endpoints
+     * @param {Object|Array} data - Grouped content or course array
+     * @param {String} mode - 'school' or 'study-centre'
+     */
+    processModeContent(data, mode) {
+      if (mode === 'school') {
+        // School Mode: data is grouped { subject: { level: [topics] } }
+        const allCourses = [];
+
+        for (const subject in data) {
+          for (const level in data[subject]) {
+            const topics = data[subject][level];
+            topics.forEach(topic => {
+              allCourses.push({
+                topicId: topic._id,
+                name: topic.name,
+                level: String(level),
+                subject: subject,
+                lessonCount: topic.lessonCount || 0,
+                totalTime: topic.totalTime || 10,
+                type: topic.type || 'free',
+                progress: this.userProgress[topic._id] || 0,
+                inStudyPlan: this.studyPlanTopics.includes(topic._id),
+              });
+            });
+          }
+        }
+
+        this.courses = allCourses;
+      } else {
+        // Study Centre Mode: data is array of course objects
+        this.courses = data.map(course => ({
+          topicId: course._id || course.id,
+          name: course.title || course.name,
+          level: String(course.level || 1),
+          subject: course.subject || 'Uncategorized',
+          lessonCount: course.lessonCount || 0,
+          totalTime: course.totalTime || 10,
+          type: course.type || 'free',
+          progress: this.userProgress[course._id || course.id] || 0,
+          inStudyPlan: this.studyPlanTopics.includes(course._id || course.id),
+        }));
+      }
+
+      console.log(`✅ Processed ${this.courses.length} courses in ${mode} mode`);
     },
 
     // --- FILTER & PAGINATION HANDLERS ---
