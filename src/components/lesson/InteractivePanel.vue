@@ -1,6 +1,20 @@
 <template>
   <div class="interactive-panel">
-    <div v-if="currentExercise" class="panel-container">
+    <!-- GAME MODE: Display game instead of exercise -->
+    <div v-if="isGameMode" class="game-panel-container">
+      <GameContainer
+        :game-data="gameData"
+        :game-type="gameType"
+        :user-id="userId"
+        :lesson-id="lessonId"
+        :step-index="stepIndex"
+        @game-complete="handleGameComplete"
+        @game-exit="handleGameExit"
+      />
+    </div>
+
+    <!-- EXERCISE MODE: Display regular exercises -->
+    <div v-else-if="currentExercise" class="panel-container">
 
       <header class="panel-header">
         <div class="header-content">
@@ -166,11 +180,15 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
 import { useExercises } from '../../composables/useExercises.js';
+import GameContainer from '../games/base/GameContainer.vue';
 
 const props = defineProps({
   currentExercise: Object,
   exerciseIndex: Number,
   totalExercises: Number,
+  userId: String,
+  lessonId: String,
+  stepIndex: Number,
 });
 
 const emit = defineEmits(['submit', 'next-exercise']);
@@ -398,6 +416,81 @@ const exerciseMeta = computed(() => {
     };
     return colors[exerciseType.value] || colors.default;
 });
+
+// ================================
+// GAME MODE SUPPORT
+// ================================
+
+// Detect if current exercise is a game
+const isGameMode = computed(() => {
+  if (!props.currentExercise) return false;
+
+  // Check if exercise type is 'game' or if gameType property exists
+  return props.currentExercise.type === 'game' ||
+         Boolean(props.currentExercise.gameType);
+});
+
+// Extract game type from exercise data
+const gameType = computed(() => {
+  if (!isGameMode.value) return null;
+
+  // Priority: gameType property, then type if it's a recognized game type
+  return props.currentExercise.gameType ||
+         props.currentExercise.type ||
+         'basket-catch'; // Default fallback
+});
+
+// Extract game data for GameContainer
+const gameData = computed(() => {
+  if (!isGameMode.value) return null;
+
+  return {
+    instructions: props.currentExercise.instructions ||
+                  props.currentExercise.description ||
+                  'Complete the game to proceed!',
+    targetScore: props.currentExercise.targetScore || 100,
+    timeLimit: props.currentExercise.timeLimit || 60,
+    lives: props.currentExercise.lives || 3,
+    difficulty: props.currentExercise.difficulty || 'medium',
+    items: props.currentExercise.items || [],
+    questions: props.currentExercise.questions || [],
+    content: props.currentExercise.content || null,
+    // Pass through any other game-specific data
+    ...props.currentExercise.gameData
+  };
+});
+
+// Handle game completion
+const handleGameComplete = (result) => {
+  console.log('Game completed:', result);
+
+  // Mark the exercise as answered with game results
+  answerWasCorrect.value = result.completed || result.stars >= 2;
+  showCorrectAnswer.value = true;
+
+  // Store game results in userAnswer for tracking
+  userAnswer.value = {
+    type: 'game',
+    score: result.score,
+    stars: result.stars,
+    completed: result.completed,
+    accuracy: result.accuracy
+  };
+
+  // Auto-advance to next exercise after a short delay
+  setTimeout(() => {
+    emit('next-exercise');
+  }, 1500);
+};
+
+// Handle game exit (if user quits early)
+const handleGameExit = () => {
+  console.log('Game exited by user');
+
+  // Reset state and allow retry
+  resetExerciseState();
+  showCorrectAnswer.value = false;
+};
 </script>
 
 <style scoped>
@@ -444,6 +537,12 @@ const exerciseMeta = computed(() => {
   display: flex;
   flex-direction: column;
   height: 100%;
+  overflow: hidden;
+}
+.game-panel-container {
+  width: 100%;
+  height: 100%;
+  min-height: 500px;
   overflow: hidden;
 }
 .panel-header {

@@ -52,6 +52,9 @@ import * as MulticardAPI from './api/multicard';
 // Vocabulary (already modular)
 import * as VocabularyAPI from './api/vocabulary';
 
+// Games (gamified exercises)
+import * as GamesAPI from './api/games';
+
 // =============================================
 // 📤 RE-EXPORT EVERYTHING FOR EASY IMPORTS
 // =============================================
@@ -278,6 +281,22 @@ export const {
   handleVocabularyError,
   VOCABULARY_CONSTANTS
 } = VocabularyAPI;
+
+// =============================================
+// 🎮 GAMES API (Gamified Exercises)
+// =============================================
+export const {
+  generateGame,
+  submitGameResults,
+  getGameLeaderboard,
+  getUserGameStats,
+  getGameTypes,
+  convertExerciseToGame,
+  GAME_TYPES,
+  getGameTypeMetadata,
+  getGameTypesByCategory,
+  getGameCategories
+} = GamesAPI;
 
 // =============================================
 // 🔧 UTILITY API
