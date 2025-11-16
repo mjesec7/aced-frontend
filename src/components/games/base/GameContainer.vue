@@ -79,7 +79,8 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
-import { useSound } from '@/composables/useSound';
+// TODO: Add sound effect support
+// import { useSound } from '@/composables/useSound';
 import { submitGameResults } from '@/api';
 import GameHUD from './GameHUD.vue';
 import GameComplete from './GameComplete.vue';
@@ -117,7 +118,8 @@ const props = defineProps({
 const emit = defineEmits(['game-complete', 'game-exit']);
 
 // Composables
-const sound = useSound();
+// TODO: Add sound effect support
+// const sound = useSound();
 
 // State
 const gameStarted = ref(false);
@@ -216,8 +218,8 @@ const startGame = () => {
   // Start timer
   startTimer();
 
-  // Play start sound
-  sound.play('start');
+  // TODO: Add sound effect support
+  // sound.play('start');
 };
 
 const startTimer = () => {
@@ -227,7 +229,8 @@ const startTimer = () => {
 
       // Warning sound at 10 seconds
       if (timeRemaining.value === 10) {
-        sound.play('warning');
+        // TODO: Add sound effect support
+        // sound.play('warning');
       }
     } else {
       clearInterval(timerInterval.value);
@@ -247,13 +250,15 @@ const handleScoreChange = (change) => {
   });
 
   if (change > 0) {
-    sound.play('success');
+    // TODO: Add sound effect support
+    // sound.play('success');
   }
 };
 
 const handleLifeLost = () => {
   lives.value--;
-  sound.play('error');
+  // TODO: Add sound effect support
+  // sound.play('error');
 
   if (lives.value <= 0) {
     handleGameComplete({ reason: 'no-lives' });
@@ -278,7 +283,8 @@ const handleGameComplete = async (data = {}) => {
 
   // Play completion sound
   if (stars.value >= 2) {
-    sound.play('complete');
+    // TODO: Add sound effect support
+    // sound.play('complete');
   }
 
   // Submit results to backend
