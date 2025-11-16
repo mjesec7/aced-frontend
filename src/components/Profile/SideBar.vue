@@ -31,7 +31,37 @@
           </div>
         </div>
 
-        <!-- Mode Switcher -->
+        <!-- Mode Selection (when no mode selected) -->
+        <div v-if="!hasSelectedMode" class="mode-selection-card">
+          <div class="mode-selection-header">
+            <h4>Choose Learning Path</h4>
+            <p>Select your preferred mode</p>
+          </div>
+          <div class="mode-selection-options">
+            <button
+              class="mode-selection-btn"
+              :class="{ selected: tempSelectedMode === 'school' }"
+              @click="selectInitialMode('school')"
+              :disabled="isSelectingMode"
+            >
+              <span class="mode-emoji-large">🎓</span>
+              <span class="mode-name">School</span>
+              <span class="mode-desc">Structured curriculum</span>
+            </button>
+            <button
+              class="mode-selection-btn"
+              :class="{ selected: tempSelectedMode === 'study_centre' }"
+              @click="selectInitialMode('study_centre')"
+              :disabled="isSelectingMode"
+            >
+              <span class="mode-emoji-large">🌟</span>
+              <span class="mode-name">Study Centre</span>
+              <span class="mode-desc">Free exploration</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Mode Switcher (when mode already selected) -->
         <div v-if="hasSelectedMode" class="mode-switcher">
           <div class="mode-label">Learning Mode</div>
           <div class="mode-buttons">
@@ -215,6 +245,7 @@ import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/firebase';
 import { mapState, mapMutations, mapGetters } from 'vuex';
 import { userStatusMixin } from '@/composables/useUserStatus';
+import { switchLearningMode } from '@/api/user';
 
 // Icon components (inline SVG)
 const HomeIcon = {
@@ -263,7 +294,9 @@ export default {
       showPremiumModal: false,
       selectedFeature: null,
       isMobile: false,
-      
+      tempSelectedMode: null,
+      isSelectingMode: false,
+
       navigationLinks: [
         {
           name: 'main',
@@ -413,6 +446,41 @@ export default {
       this.showPremiumModal = false;
       this.$router.push('/settings');
       this.closeSidebarOnMobile();
+    },
+
+    async selectInitialMode(mode) {
+      if (this.isSelectingMode) return;
+
+      this.tempSelectedMode = mode;
+      this.isSelectingMode = true;
+
+      try {
+        const userId = this.$store.getters.getFirebaseUserId;
+        if (!userId) {
+          console.error('User not authenticated');
+          return;
+        }
+
+        // Save to backend
+        try {
+          await switchLearningMode(userId, mode, 'Initial mode selection');
+        } catch (apiError) {
+          console.warn('Backend API error, saving locally only:', apiError);
+        }
+
+        // Update Vuex store
+        await this.$store.dispatch('platformMode/switchMode', {
+          newMode: mode,
+          reason: 'Initial mode selection'
+        });
+
+        this.closeSidebarOnMobile();
+      } catch (error) {
+        console.error('Error selecting initial mode:', error);
+        this.tempSelectedMode = null;
+      } finally {
+        this.isSelectingMode = false;
+      }
     },
 
     async switchToSchool() {
@@ -655,6 +723,95 @@ export default {
 .user-badge.badge-pro {
   background: linear-gradient(90deg, #c084fc 0%, #a855f7 100%);
   color: white;
+}
+
+/* Mode Selection Card (initial selection) */
+.mode-selection-card {
+  padding: 16px;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(168, 85, 247, 0.02) 100%);
+  border-radius: 12px;
+  border: 1px solid #e9d5ff;
+}
+
+.mode-selection-header {
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.mode-selection-header h4 {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 4px 0;
+}
+
+.mode-selection-header p {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 0;
+}
+
+.mode-selection-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mode-selection-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 12px;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.mode-selection-btn:hover:not(:disabled) {
+  border-color: #8b5cf6;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+}
+
+.mode-selection-btn.selected {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(168, 85, 247, 0.05) 100%);
+  border-color: #8b5cf6;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+}
+
+.mode-selection-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.mode-emoji-large {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.mode-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.mode-selection-btn.selected .mode-name {
+  color: #8b5cf6;
+}
+
+.mode-desc {
+  font-size: 11px;
+  color: #6b7280;
+  text-align: center;
+}
+
+.mode-selection-btn.selected .mode-desc {
+  color: #7e22ce;
 }
 
 /* Mode Switcher */
