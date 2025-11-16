@@ -8,7 +8,7 @@
         </div>
         <div class="header-stats">
           <!-- Level Indicator -->
-          <LevelIndicator :isCompact="false" :showProgress="true" @selectMode="goToModeSelector" />
+          <LevelIndicator :isCompact="false" :showProgress="true" />
 
           <div class="stat-badge streak">
             <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -928,11 +928,6 @@ export default {
     async refreshLearningData() {
       await this.loadLearningData();
       this.$forceUpdate();
-    },
-
-    // Navigate to mode selector
-    goToModeSelector() {
-      this.$router.push({ name: 'ModeSelector' });
     },
 
     // 🧬 NEW: Format cognitive labels

@@ -35,7 +35,6 @@ const TopicOverview = () => import('@/views/TopicOverview.vue');
 const AboutUsPage = () => import('@/components/Main/AboutUs.vue');
 
 // Platform Mode Components
-import ModeSelector from '@/components/PlatformMode/ModeSelector.vue';
 import PlacementTest from '@/components/PlatformMode/PlacementTest.vue';
 import LevelTest from '@/components/PlatformMode/LevelTest.vue';
 
@@ -138,12 +137,6 @@ const routes = [
   // ============================================
   // PLATFORM MODE ROUTES
   // ============================================
-  {
-    path: '/mode-selector',
-    name: 'ModeSelector',
-    component: ModeSelector,
-    meta: { title: 'Choose Your Learning Mode', requiresAuth: true }
-  },
   {
     path: '/placement-test',
     name: 'PlacementTest',
