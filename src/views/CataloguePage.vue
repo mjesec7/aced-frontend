@@ -677,6 +677,10 @@ export default {
       await this.loadData();
     },
     async loadData() {
+      console.log('🚀 CATALOGUE: Starting data load');
+      console.log('📊 Mode:', this.isSchoolMode ? 'SCHOOL' : 'STUDY CENTRE');
+      console.log('📊 Level Cap:', this.currentLevelCap);
+
       this.isLoading = true;
       try {
         // Load progress and study list in parallel
@@ -698,15 +702,17 @@ export default {
         // Try to fetch content using new mode-based endpoints
         try {
           if (this.isSchoolMode) {
-            // School Mode: Use grouped topics endpoint
+            console.log('🏫 Fetching school mode topics...');
             const result = await getTopicsGrouped();
+            console.log('✅ School topics result:', result);
             if (result.success && result.data) {
               this.processModeContent(result.data, 'school');
               return; // Success, exit early
             }
           } else {
-            // Study Centre Mode: Use courses endpoint
+            console.log('📚 Fetching study centre courses...');
             const result = await getTopicsAsCourses();
+            console.log('✅ Study centre result:', result);
             if (result.success && result.courses) {
               this.processModeContent(result.courses, 'study-centre');
               return; // Success, exit early
@@ -717,15 +723,17 @@ export default {
         }
 
         // Fallback: Use legacy method (getAllLessons)
-        console.log('📚 Using legacy data loading method');
+        console.log('⚠️ Using legacy lesson fetch');
         const lessonsResult = await getAllLessons();
+        console.log('📚 Lessons fetched:', lessonsResult?.data?.length || 0);
         this.lessons = lessonsResult?.data || [];
         this.processAllCourses();
 
       } catch (error) {
-        console.error('Error loading catalogue data:', error);
+        console.error('❌ CATALOGUE ERROR:', error);
       } finally {
         this.isLoading = false;
+        console.log('✅ CATALOGUE: Load complete, courses:', this.courses.length);
       }
     },
 
@@ -762,11 +770,26 @@ export default {
       return finalProgress;
     },
     processAllCourses() {
+      console.log('🔧 Processing courses from lessons:', this.lessons.length);
       const coursesMap = new Map();
 
-      this.lessons.forEach(lesson => {
+      this.lessons.forEach((lesson, idx) => {
         const topicId = this.extractTopicId(lesson.topicId);
-        if (!topicId) return;
+
+        if (idx < 5) {
+          console.log(`📝 Lesson ${idx}:`, {
+            name: lesson.lessonName,
+            topic: topicId,
+            subject: lesson.subject,
+            level: lesson.level,
+            type: lesson.type
+          });
+        }
+
+        if (!topicId) {
+          console.warn('⚠️ No topicId:', lesson.lessonName);
+          return;
+        }
 
         if (!coursesMap.has(topicId)) {
           coursesMap.set(topicId, {
@@ -789,11 +812,13 @@ export default {
         }
       });
 
+      console.log('✅ Courses map size:', coursesMap.size);
       this.courses = Array.from(coursesMap.values()).map(course => ({
         ...course,
         progress: this.userProgress[course.topicId] || 0,
         inStudyPlan: this.studyPlanTopics.includes(course.topicId),
       }));
+      console.log('✅ Final courses:', this.courses.length);
     },
 
     /**
