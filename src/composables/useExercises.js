@@ -657,13 +657,33 @@ export function useExercises() {
   const getCurrentExercise = (currentStep) => {
     console.log('🔍 DEBUG getCurrentExercise - Step:', currentStep)
 
-    if (!currentStep || !['exercise', 'practice'].includes(currentStep.type)) {
+    if (!currentStep || !['exercise', 'practice', 'game'].includes(currentStep.type)) {
       return null
     }
 
     let exercises = []
 
     try {
+      // ✅ NEW: Check if this is a game-type exercise
+      if (currentStep.gameType) {
+        console.log('🎮 Game-type exercise detected:', currentStep.gameType)
+
+        // Return the step itself as the exercise, including gameConfig
+        return {
+          type: currentStep.gameType || 'game',
+          gameType: currentStep.gameType,
+          title: currentStep.title,
+          description: currentStep.instructions,
+          instructions: currentStep.instructions,
+          gameData: currentStep.gameConfig,
+          gameConfig: currentStep.gameConfig,
+          // Include original exercise data if available
+          ...(currentStep.content?.exercises?.[0] || {}),
+          // Preserve all step properties
+          ...currentStep
+        }
+      }
+
       // ✅ Check both 'data' and 'content' fields
       const stepData = currentStep.data || currentStep.content
 

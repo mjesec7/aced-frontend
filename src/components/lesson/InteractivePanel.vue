@@ -425,14 +425,26 @@ const exerciseMeta = computed(() => {
 const isGameMode = computed(() => {
   if (!props.currentExercise) return false;
 
+  console.log('🎮 Checking game mode:', {
+    hasGameType: Boolean(props.currentExercise.gameType),
+    type: props.currentExercise.type,
+    hasGameData: Boolean(props.currentExercise.gameData),
+    hasGameConfig: Boolean(props.currentExercise.gameConfig),
+    exercise: props.currentExercise
+  });
+
   // Check if exercise type is 'game' or if gameType property exists
   return props.currentExercise.type === 'game' ||
-         Boolean(props.currentExercise.gameType);
+         Boolean(props.currentExercise.gameType) ||
+         Boolean(props.currentExercise.gameData) ||
+         Boolean(props.currentExercise.gameConfig);
 });
 
 // Extract game type from exercise data
 const gameType = computed(() => {
   if (!isGameMode.value) return null;
+
+  console.log('🎮 Extracting game type from:', props.currentExercise);
 
   // Priority: gameType property, then type if it's a recognized game type
   return props.currentExercise.gameType ||
@@ -444,19 +456,30 @@ const gameType = computed(() => {
 const gameData = computed(() => {
   if (!isGameMode.value) return null;
 
+  console.log('🎮 Extracting game data');
+
+  // Try multiple sources for game data
+  const data = props.currentExercise.gameConfig ||
+               props.currentExercise.gameData ||
+               {};
+
   return {
     instructions: props.currentExercise.instructions ||
                   props.currentExercise.description ||
+                  data.instructions ||
                   'Complete the game to proceed!',
-    targetScore: props.currentExercise.targetScore || 100,
-    timeLimit: props.currentExercise.timeLimit || 60,
-    lives: props.currentExercise.lives || 3,
-    difficulty: props.currentExercise.difficulty || 'medium',
-    items: props.currentExercise.items || [],
+    targetScore: data.targetScore || props.currentExercise.targetScore || 100,
+    timeLimit: data.timeLimit || props.currentExercise.timeLimit || 60,
+    lives: data.lives || props.currentExercise.lives || 3,
+    difficulty: data.difficulty || props.currentExercise.difficulty || 'medium',
+    items: data.items || props.currentExercise.items || [],
+    correctAnswers: data.correctAnswers || [],
+    wrongAnswers: data.wrongAnswers || [],
+    gameplayData: data.gameplayData || {},
     questions: props.currentExercise.questions || [],
     content: props.currentExercise.content || null,
     // Pass through any other game-specific data
-    ...props.currentExercise.gameData
+    ...data
   };
 });
 

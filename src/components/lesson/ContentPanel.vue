@@ -28,36 +28,36 @@
         <div v-else-if="currentStep?.type === 'vocabulary'" class="vocabulary-content">
           <div v-if="!currentStep?.data?.modalCompleted" class="vocabulary-trigger">
             <div class="trigger-icon">📚</div>
-            <h3 class="trigger-heading">Изучение словаря</h3>
-            <p class="trigger-subheading">{{ Array.isArray(currentStep?.data) ? currentStep.data.length : 1 }} новых слов ждут вас!</p>
+            <h3 class="trigger-heading">Vocabulary Learning</h3>
+            <p class="trigger-subheading">{{ Array.isArray(currentStep?.data) ? currentStep.data.length : 1 }} new words await you!</p>
             <button @click="$emit('init-vocabulary')" class="trigger-button">
-              🚀 Начать изучение
+              🚀 Start Learning
             </button>
           </div>
 
           <div v-else class="vocabulary-list-view">
             <div class="vocabulary-header">
-              <h3>📖 Изученные слова</h3>
+              <h3>📖 Learned Words</h3>
               <button @click="$emit('init-vocabulary')" class="review-button">
-                🔄 Повторить
+                🔄 Review
               </button>
             </div>
-            
+
             <div class="vocabulary-list">
-              <div 
-                v-for="(vocab, vocabIndex) in (currentStep?.data?.allWords || currentStep?.data || [])" 
-                :key="vocab?.id || `vocab-list-${vocabIndex}`" 
+              <div
+                v-for="(vocab, vocabIndex) in (currentStep?.data?.allWords || currentStep?.data || [])"
+                :key="vocab?.id || `vocab-list-${vocabIndex}`"
                 class="vocabulary-item"
                 :class="{ 'is-learned': vocab?.learned }"
               >
                 <div class="vocab-item-header">
                   <div class="vocab-term">
                     {{ vocab?.term || 'Term' }}
-                    <button 
+                    <button
                       v-if="vocab?.term"
                       @click="$emit('pronounce', vocab.term)"
                       class="pronunciation-button"
-                      title="Произношение"
+                      title="Pronunciation"
                     >
                       🔊
                     </button>
@@ -66,19 +66,19 @@
                 </div>
                 <div class="vocab-definition">{{ vocab?.definition || 'Definition' }}</div>
                 <div v-if="vocab?.example" class="vocab-example">
-                  <strong>Пример:</strong> {{ vocab.example }}
+                  <strong>Example:</strong> {{ vocab.example }}
                 </div>
               </div>
             </div>
-            
+
             <div class="vocabulary-summary">
               <div class="summary-stat">
                 <span class="summary-number">{{ ((currentStep?.data?.allWords || []).filter(w => w?.learned) || []).length }}</span>
-                <span class="summary-label">изучено</span>
+                <span class="summary-label">learned</span>
               </div>
               <div class="summary-stat">
                 <span class="summary-number">{{ (currentStep?.data?.allWords || []).length }}</span>
-                <span class="summary-label">всего</span>
+                <span class="summary-label">total</span>
               </div>
             </div>
           </div>
@@ -86,9 +86,9 @@
 
         <div v-else-if="['video', 'audio'].includes(currentStep?.type)" class="media-placeholder">
           <div class="media-icon">{{ currentStep?.type === 'video' ? '🎬' : '🎵' }}</div>
-          <h4 class="media-title">{{ currentStep?.type === 'video' ? 'Видео урок' : 'Аудио урок' }}</h4>
-          <p class="media-description">{{ currentStep?.data?.description || 'Мультимедиа контент' }}</p>
-          <div class="media-url">{{ currentStep?.data?.url || 'URL недоступен' }}</div>
+          <h4 class="media-title">{{ currentStep?.type === 'video' ? 'Video Lesson' : 'Audio Lesson' }}</h4>
+          <p class="media-description">{{ currentStep?.data?.description || 'Multimedia content' }}</p>
+          <div class="media-url">{{ currentStep?.data?.url || 'URL unavailable' }}</div>
         </div>
 
         <div v-else class="content-text" v-html="formatContent(getStepContent(currentStep))"></div>
@@ -97,14 +97,14 @@
     
     <footer class="content-navigation">
       <button v-if="currentIndex > 0" class="nav-button prev-button" @click="$emit('previous')">
-        ⬅️ Назад
+        ⬅️ Back
       </button>
-      <button 
-        v-if="!isInteractiveStep" 
-        class="nav-button next-button" 
+      <button
+        v-if="!isInteractiveStep"
+        class="nav-button next-button"
         @click="$emit('next')"
       >
-        {{ isLastStep ? '🏁 Завершить' : '➡️ Далее' }}
+        {{ isLastStep ? '🏁 Finish' : '➡️ Next' }}
       </button>
     </footer>
   </div>
@@ -122,31 +122,56 @@ export default {
     isLastStep: Boolean,
   },
   emits: [ 'init-vocabulary', 'pronounce', 'next', 'previous' ],
+
+  mounted() {
+    console.log('📊 ContentPanel mounted with:', {
+      currentStep: this.currentStep,
+      isInteractiveStep: this.isInteractiveStep,
+      hasGameType: Boolean(this.currentStep?.gameType),
+      stepType: this.currentStep?.type
+    });
+  },
+
+  watch: {
+    currentStep: {
+      handler(newStep) {
+        console.log('📊 ContentPanel step changed:', {
+          step: newStep,
+          type: newStep?.type,
+          gameType: newStep?.gameType,
+          hasGameConfig: Boolean(newStep?.gameConfig)
+        });
+      },
+      deep: true,
+      immediate: true
+    }
+  },
+
   methods: {
     getStepIcon(stepType) {
       const icons = {
         explanation: '📚', example: '💡', reading: '📖', exercise: '✏️',
-        practice: '🧪', quiz: '🧩', vocabulary: '📝', video: '🎬', audio: '🎵'
+        practice: '🧪', quiz: '🧩', vocabulary: '📝', video: '🎬', audio: '🎵', game: '🎮'
       };
       return icons[stepType] || '📄';
     },
     getStepTypeText(stepType) {
       const texts = {
-        explanation: 'Объяснение', example: 'Пример', reading: 'Чтение',
-        exercise: 'Упражнение', practice: 'Практика', quiz: 'Викторина',
-        vocabulary: 'Словарь', video: 'Видео', audio: 'Аудио'
+        explanation: 'Explanation', example: 'Example', reading: 'Reading',
+        exercise: 'Exercise', practice: 'Practice', quiz: 'Quiz',
+        vocabulary: 'Vocabulary', video: 'Video', audio: 'Audio', game: 'Game'
       };
-      return texts[stepType] || 'Контент';
+      return texts[stepType] || 'Content';
     },
     getStepContent(step) {
-      if (!step || !step.data) return 'Контент недоступен';
+      if (!step || !step.data) return 'Content unavailable';
       if (typeof step.data.content === 'string') return step.data.content;
-      return `Контент для шага "${step.type}"`;
+      return `Content for step "${step.type}"`;
     },
     formatContent(content) {
       if (!content) return '';
       let formatted = content;
-      
+
       // Process custom tags like [card]...[/card] for styled boxes
       formatted = formatted.replace(/\[card title="(.*?)"\]([\s\S]*?)\[\/card\]/g, (match, title, innerContent) => {
         return `<div class="content-card"><h3 class="card-heading">${title}</h3><div class="card-content">${innerContent}</div></div>`;
@@ -154,7 +179,7 @@ export default {
       formatted = formatted.replace(/\[card\]([\s\S]*?)\[\/card\]/g, (match, innerContent) => {
         return `<div class="content-card">${innerContent}</div>`;
       });
-      
+
       // Process standard markdown
       formatted = formatted
         .replace(/^## (.*$)/gim, '<h2 class="content-h2">$1</h2>')
