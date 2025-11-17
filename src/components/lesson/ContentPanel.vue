@@ -164,13 +164,86 @@ export default {
       return texts[stepType] || 'Content';
     },
     getStepContent(step) {
-      if (!step || !step.data) return 'Content unavailable';
-      if (typeof step.data.content === 'string') return step.data.content;
-      return `Content for step "${step.type}"`;
+      console.log('🔍 getStepContent called with:', step);
+
+      if (!step) {
+        console.error('❌ No step provided to getStepContent');
+        return 'Step not found';
+      }
+
+      // For game-type steps, return instructions
+      if (step.gameType) {
+        console.log('🎮 Game step detected:', step.gameType);
+        return step.instructions || step.description || 'Complete the game to proceed';
+      }
+
+      // Try multiple paths to extract content
+      let content = null;
+
+      // Path 1: step.data.content
+      if (step.data?.content) {
+        content = step.data.content;
+        console.log('✅ Found content at step.data.content');
+      }
+      // Path 2: step.data.text
+      else if (step.data?.text) {
+        content = step.data.text;
+        console.log('✅ Found content at step.data.text');
+      }
+      // Path 3: step.content.text
+      else if (step.content?.text) {
+        content = step.content.text;
+        console.log('✅ Found content at step.content.text');
+      }
+      // Path 4: step.content.content
+      else if (step.content?.content) {
+        content = step.content.content;
+        console.log('✅ Found content at step.content.content');
+      }
+      // Path 5: step.content as string
+      else if (typeof step.content === 'string') {
+        content = step.content;
+        console.log('✅ Found content at step.content (string)');
+      }
+      // Path 6: step.data as string
+      else if (typeof step.data === 'string') {
+        content = step.data;
+        console.log('✅ Found content at step.data (string)');
+      }
+      // Path 7: step.description
+      else if (step.description) {
+        content = step.description;
+        console.log('✅ Found content at step.description');
+      }
+      // Path 8: step.text
+      else if (step.text) {
+        content = step.text;
+        console.log('✅ Found content at step.text');
+      }
+
+      if (!content) {
+        console.error('❌ No content found. Step structure:', {
+          hasData: Boolean(step.data),
+          dataType: typeof step.data,
+          dataKeys: step.data && typeof step.data === 'object' ? Object.keys(step.data) : [],
+          hasContent: Boolean(step.content),
+          contentType: typeof step.content,
+          contentKeys: step.content && typeof step.content === 'object' ? Object.keys(step.content) : [],
+          stepType: step.type
+        });
+        return `Content for "${step.type}" step is not available`;
+      }
+
+      console.log('✅ Returning content (first 100 chars):', String(content).substring(0, 100));
+      return content;
     },
     formatContent(content) {
-      if (!content) return '';
-      let formatted = content;
+      if (!content) {
+        console.warn('⚠️ formatContent called with empty content');
+        return '';
+      }
+
+      let formatted = String(content);
 
       // Process custom tags like [card]...[/card] for styled boxes
       formatted = formatted.replace(/\[card title="(.*?)"\]([\s\S]*?)\[\/card\]/g, (match, title, innerContent) => {

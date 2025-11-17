@@ -131,7 +131,7 @@ export function useLessonOrchestrator() {
   const readableTime = computed(() => {
     const min = Math.floor(elapsedSeconds.value / 60)
     const sec = elapsedSeconds.value % 60
-    return `${min} мин ${sec} сек`
+    return `${min} min ${sec} sec`
   })
   
   const isLastStep = computed(() => {
@@ -156,15 +156,15 @@ export function useLessonOrchestrator() {
   
   const guestAccessMessage = computed(() => {
     if (!isGuestMode.value) return ''
-    
+
     const remaining = Math.max(0, guestLessonLimit.value - guestLessonsViewed.value)
-    
+
     if (remaining === 0) {
-      return 'Вы достигли лимита бесплатных уроков. Зарегистрируйтесь для продолжения!'
+      return 'You have reached the limit of free lessons. Register to continue!'
     } else if (remaining <= 2) {
-      return `У вас осталось ${remaining} бесплатных урока. Зарегистрируйтесь для неограниченного доступа!`
+      return `You have ${remaining} free lessons remaining. Register for unlimited access!`
     }
-    
+
     return ''
   })
   
@@ -272,16 +272,16 @@ export function useLessonOrchestrator() {
         if (lessonType !== 'free' && lessonType !== 'public') {
           console.warn('⚠️ Guest trying to access premium content:', lessonType)
           showPaywallModal.value = true
-          error.value = 'Этот урок доступен только для зарегистрированных пользователей'
+          error.value = 'This lesson is only available to registered users'
           loading.value = false
           return
         }
-        
+
         // Check guest lesson limit
         if (checkGuestLimit()) {
           console.warn('⚠️ Guest has reached lesson limit')
           showPaywallModal.value = true
-          error.value = 'Вы достигли лимита бесплатных уроков'
+          error.value = 'You have reached the limit of free lessons'
           loading.value = false
           return
         }
@@ -364,18 +364,18 @@ export function useLessonOrchestrator() {
         
         if (!processedStep.data) {
           processedStep.data = {
-            content: `Контент для ${step.type} шага ${index + 1}`
+            content: `Content for ${step.type} step ${index + 1}`
           }
         }
-        
+
         steps.value.push(processedStep)
-        
+
       } catch (stepError) {
         console.error(`❌ Error processing step ${index + 1}:`, stepError)
         steps.value.push({
           type: 'explanation',
-          data: { 
-            content: `Ошибка загрузки шага ${index + 1}: ${stepError.message}`,
+          data: {
+            content: `Error loading step ${index + 1}: ${stepError.message}`,
             error: true
           }
         })
@@ -387,7 +387,7 @@ export function useLessonOrchestrator() {
       steps.value.push({
         type: 'explanation',
         data: {
-          content: lesson.value.description || 'Урок временно недоступен'
+          content: lesson.value.description || 'Lesson temporarily unavailable'
         }
       })
     }
@@ -712,11 +712,11 @@ export function useLessonOrchestrator() {
     earnedPoints.value = Math.max(0, 100 - mistakeCount.value * 10 + stars.value * 5)
 
     if (mistakeCount.value === 0) {
-      medalLabel.value = '🥇 Золотая медаль - Безупречно!'
+      medalLabel.value = '🥇 Gold Medal - Perfect!'
     } else if (mistakeCount.value <= 2) {
-      medalLabel.value = '🥈 Серебряная медаль - Отлично!'
+      medalLabel.value = '🥈 Silver Medal - Excellent!'
     } else {
-      medalLabel.value = '🥉 Бронзовая медаль - Хорошо!'
+      medalLabel.value = '🥉 Bronze Medal - Good!'
     }
 
     setTimeout(() => launchConfetti(), 200)
@@ -807,17 +807,17 @@ export function useLessonOrchestrator() {
   // ✅ MODIFIED: Handle lesson error - add guest-specific messages
   const handleLessonError = (error) => {
     if (error.message?.includes('not found')) {
-      return 'Урок не найден. Проверьте ссылку или попробуйте перезагрузить страницу.'
+      return 'Lesson not found. Check the link or try reloading the page.'
     } else if (error.message?.includes('Invalid lesson ID')) {
-      return 'Неверный ID урока. Пожалуйста, проверьте ссылку.'
+      return 'Invalid lesson ID. Please check the link.'
     } else if (error.message?.includes('Authentication') && !isGuestMode.value) {
-      return 'Необходимо войти в систему для доступа к уроку.'
+      return 'You need to log in to access this lesson.'
     } else if (error.message?.includes('premium') || error.message?.includes('subscription')) {
-      return 'Этот урок доступен только для подписчиков. Зарегистрируйтесь для получения доступа!'
+      return 'This lesson is only available to subscribers. Register to get access!'
     } else if (error.message?.includes('limit')) {
-      return 'Вы достигли лимита бесплатных уроков. Зарегистрируйтесь для продолжения обучения!'
+      return 'You have reached the limit of free lessons. Register to continue learning!'
     } else {
-      return error.message || 'Произошла ошибка при загрузке урока.'
+      return error.message || 'An error occurred while loading the lesson.'
     }
   }
   
@@ -838,17 +838,17 @@ export function useLessonOrchestrator() {
   
   const getStepTypeText = (stepType) => {
     const texts = {
-      explanation: 'Объяснение',
-      example: 'Пример',
-      reading: 'Чтение',
-      exercise: 'Упражнение',
-      practice: 'Практика',
-      quiz: 'Викторина',
-      vocabulary: 'Словарь',
-      video: 'Видео',
-      audio: 'Аудио'
+      explanation: 'Explanation',
+      example: 'Example',
+      reading: 'Reading',
+      exercise: 'Exercise',
+      practice: 'Practice',
+      quiz: 'Quiz',
+      vocabulary: 'Vocabulary',
+      video: 'Video',
+      audio: 'Audio'
     }
-    return texts[stepType] || 'Контент'
+    return texts[stepType] || 'Content'
   }
   
   const getMedalIcon = () => {
@@ -858,7 +858,7 @@ export function useLessonOrchestrator() {
   }
   
   const formatContent = (content) => {
-    if (!content) return 'Контент недоступен'
+    if (!content) return 'Content unavailable'
     return content.replace(/\n/g, '<br>')
   }
   

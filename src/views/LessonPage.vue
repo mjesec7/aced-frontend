@@ -2,37 +2,37 @@
   <div class="lesson-page">
     <div v-if="loading" class="loading-screen">
       <div class="loading-spinner"></div>
-      <p>Загрузка урока...</p>
+      <p>Loading lesson...</p>
     </div>
 
     <div v-else-if="error" class="error-screen">
       <div class="error-icon">❌</div>
-      <h3>Ошибка загрузки урока</h3>
+      <h3>Error Loading Lesson</h3>
       <p>{{ error }}</p>
       <div class="error-actions">
-        <button @click="retryLoad" class="retry-btn">🔄 Попробовать снова</button>
-        <button @click="handleReturnToCatalogue" class="back-btn">⬅️ К каталогу</button>
+        <button @click="retryLoad" class="retry-btn">🔄 Try Again</button>
+        <button @click="handleReturnToCatalogue" class="back-btn">⬅️ Back to Catalogue</button>
       </div>
     </div>
 
     <div v-if="showPaywallModal" class="modal-overlay">
       <div class="modal-content">
-        <h3>🔒 Платный контент</h3>
-        <p>Этот урок доступен только для подписчиков.</p>
+        <h3>🔒 Premium Content</h3>
+        <p>This lesson is only available to subscribers.</p>
         <div class="modal-actions">
-          <button @click="$router.push('/pay/start')" class="premium-btn">💳 Получить подписку</button>
-          <button @click="handleReturnToCatalogue" class="cancel-btn">⬅️ Назад к каталогу</button>
+          <button @click="$router.push('/pay/start')" class="premium-btn">💳 Get Subscription</button>
+          <button @click="handleReturnToCatalogue" class="cancel-btn">⬅️ Back to Catalogue</button>
         </div>
       </div>
     </div>
 
     <div v-if="showExitModal" class="modal-overlay">
       <div class="modal-content">
-        <h3>Вы действительно хотите выйти?</h3>
-        <p>Ваш прогресс будет сохранён автоматически.</p>
+        <h3>Do you really want to exit?</h3>
+        <p>Your progress will be saved automatically.</p>
         <div class="modal-actions">
-          <button @click="exitLesson" class="confirm-btn">Да, выйти</button>
-          <button @click="cancelExit" class="cancel-btn">Нет, остаться</button>
+          <button @click="exitLesson" class="confirm-btn">Yes, Exit</button>
+          <button @click="cancelExit" class="cancel-btn">No, Stay</button>
         </div>
       </div>
     </div>
@@ -40,79 +40,79 @@
     <div v-if="showProblemReportModal" class="modal-overlay" @click.self="closeProblemReportModal">
       <div class="problem-report-modal">
         <div class="modal-header">
-          <h3>⚠️ Сообщить о проблеме с уроком</h3>
+          <h3>⚠️ Report a Problem with this Lesson</h3>
           <button @click="closeProblemReportModal" class="close-btn">✕</button>
         </div>
-        
+
         <div class="modal-body">
           <p class="modal-description">
-            Помогите нам улучшить урок! Опишите проблему подробно и приложите скриншот, если это возможно.
+            Help us improve the lesson! Describe the problem in detail and attach a screenshot if possible.
           </p>
-          
+
           <div class="form-group">
-            <label for="problemType">Тип проблемы:</label>
+            <label for="problemType">Problem Type:</label>
             <select id="problemType" v-model="problemType" class="form-select">
-              <option value="">Выберите тип проблемы</option>
-              <option value="content">Ошибка в содержании</option>
-              <option value="technical">Техническая проблема</option>
-              <option value="interface">Проблема с интерфейсом</option>
-              <option value="exercise">Ошибка в упражнении</option>
-              <option value="audio">Проблема со звуком</option>
-              <option value="other">Другое</option>
+              <option value="">Select problem type</option>
+              <option value="content">Content Error</option>
+              <option value="technical">Technical Problem</option>
+              <option value="interface">Interface Issue</option>
+              <option value="exercise">Exercise Error</option>
+              <option value="audio">Audio Problem</option>
+              <option value="other">Other</option>
             </select>
           </div>
-          
+
           <div class="form-group">
-            <label for="problemDescription">Подробное описание проблемы: <span class="required">*</span></label>
-            <textarea 
-              id="problemDescription" 
-              v-model="problemDescription" 
-              rows="4" 
-              placeholder="Опишите проблему как можно подробнее: что произошло, на каком шаге, что вы ожидали увидеть..."
+            <label for="problemDescription">Detailed Description: <span class="required">*</span></label>
+            <textarea
+              id="problemDescription"
+              v-model="problemDescription"
+              rows="4"
+              placeholder="Describe the problem in as much detail as possible: what happened, at which step, what you expected to see..."
               class="form-textarea"
               :class="{ 'error': showValidationError && !problemDescription.trim() }"
             ></textarea>
             <div v-if="showValidationError && !problemDescription.trim()" class="error-message">
-              Пожалуйста, опишите проблему
+              Please describe the problem
             </div>
           </div>
-          
+
           <div class="form-group">
-            <label for="screenshotUrl">Ссылка на скриншот или фото (необязательно):</label>
-            <input 
-              type="url" 
-              id="screenshotUrl" 
-              v-model="screenshotUrl" 
-              placeholder="https://example.com/screenshot.png или вставьте ссылку с облачного хранилища"
+            <label for="screenshotUrl">Screenshot or Photo URL (optional):</label>
+            <input
+              type="url"
+              id="screenshotUrl"
+              v-model="screenshotUrl"
+              placeholder="https://example.com/screenshot.png or paste a link from cloud storage"
               class="form-input"
             >
             <div class="help-text">
-              💡 Совет: Сделайте скриншот и загрузите его на imgbb.com, imgur.com или Google Drive, затем вставьте ссылку сюда
+              💡 Tip: Take a screenshot and upload it to imgbb.com, imgur.com, or Google Drive, then paste the link here
             </div>
           </div>
-          
+
           <div class="form-group">
-            <label for="contactInfo">Ваш контакт для обратной связи (необязательно):</label>
-            <input 
-              type="text" 
-              id="contactInfo" 
-              v-model="contactInfo" 
-              placeholder="Telegram @username, email или телефон"
+            <label for="contactInfo">Your contact for feedback (optional):</label>
+            <input
+              type="text"
+              id="contactInfo"
+              v-model="contactInfo"
+              placeholder="Telegram @username, email, or phone"
               class="form-input"
             >
           </div>
         </div>
-        
+
         <div class="modal-footer">
           <button @click="closeProblemReportModal" class="cancel-btn">
-            Отмена
+            Cancel
           </button>
-          <button 
-            @click="submitProblemReport" 
+          <button
+            @click="submitProblemReport"
             class="submit-btn"
             :disabled="isSubmitting"
           >
-            {{ isSubmitting ? '📤 Отправка...' : '📤 Отправить отчет' }}
+            {{ isSubmitting ? '📤 Sending...' : '📤 Send Report' }}
           </button>
         </div>
       </div>
@@ -122,8 +122,8 @@
       <div class="success-content">
         <div class="success-icon">✅</div>
         <div class="success-text">
-          <h4>Спасибо за отчет!</h4>
-          <p>Мы получили вашу информацию и рассмотрим проблему в ближайшее время.</p>
+          <h4>Thanks for your report!</h4>
+          <p>We've received your information and will review the problem soon.</p>
         </div>
         <button @click="closeSuccessMessage" class="close-success">✕</button>
       </div>
@@ -260,8 +260,8 @@
           <div v-else class="non-interactive-panel">
             <div class="panel-placeholder">
               <div class="placeholder-icon">📖</div>
-              <h4>Изучите материал слева</h4>
-              <p>Внимательно прочитайте объяснение и переходите к следующему шагу</p>
+              <h4>Study the material on the left</h4>
+              <p>Read the explanation carefully and proceed to the next step</p>
             </div>
           </div>
         </div>
@@ -287,24 +287,24 @@
     >
       <template #extra-actions>
         <button @click="openProblemReportModal" class="btn-secondary">
-          ⚠️ Сообщить о проблеме с уроком
+          ⚠️ Report a Problem with this Lesson
         </button>
       </template>
     </CompletionScreen>
 
     <div v-if="showMigrationPanel" class="migration-panel">
       <div class="migration-content">
-        <h3>🔄 Обновление контента</h3>
-        <p>Хотите создать задания и словарь из уже пройденных уроков?</p>
+        <h3>🔄 Content Update</h3>
+        <p>Would you like to create assignments and vocabulary from already completed lessons?</p>
         <div class="migration-actions">
           <button
             @click="migrateLessonContent"
             :disabled="migrationLoading"
             class="migrate-btn"
           >
-            {{ migrationLoading ? '⏳ Обработка...' : '🚀 Обновить контент' }}
+            {{ migrationLoading ? '⏳ Processing...' : '🚀 Update Content' }}
           </button>
-          <button @click="closeMigrationPanel" class="cancel-btn">❌ Закрыть</button>
+          <button @click="closeMigrationPanel" class="cancel-btn">❌ Close</button>
         </div>
       </div>
     </div>
@@ -921,10 +921,10 @@ export default {
         
         // Different navigation for guests
         if (isGuestMode.value) {
-          router.push({ 
+          router.push({
             name: 'HomePage',
-            query: { 
-              message: 'Спасибо за пробный урок! Зарегистрируйтесь для сохранения прогресса.'
+            query: {
+              message: 'Thanks for trying the lesson! Register to save your progress.'
             }
           })
         } else {
@@ -974,12 +974,12 @@ export default {
 
     const getCurrentLessonInfo = () => {
       return {
-        lessonName: lessonOrchestrator.lesson.value?.lessonName || 'Неизвестный урок',
+        lessonName: lessonOrchestrator.lesson.value?.lessonName || 'Unknown lesson',
         lessonId: lessonOrchestrator.lesson.value?._id || 'N/A',
         currentStep: lessonOrchestrator.currentIndex.value + 1,
         totalSteps: lessonOrchestrator.steps.value?.length || 0,
         userAgent: navigator.userAgent,
-        timestamp: new Date().toLocaleString('ru-RU'),
+        timestamp: new Date().toLocaleString('en-US'),
         url: window.location.href,
         isGuestMode: isGuestMode.value
       }
@@ -987,40 +987,40 @@ export default {
 
     const formatProblemReport = () => {
       const lessonInfo = getCurrentLessonInfo()
-      
-      let message = `🚨 ОТЧЕТ О ПРОБЛЕМЕ В УРОКЕ\n\n`
-      message += `📚 Урок: ${lessonInfo.lessonName}\n`
-      message += `🆔 ID урока: ${lessonInfo.lessonId}\n`
-      message += `📍 Текущий шаг: ${lessonInfo.currentStep}/${lessonInfo.totalSteps}\n`
-      message += `👤 Режим: ${lessonInfo.isGuestMode ? 'Гость (пробный)' : 'Зарегистрированный'}\n`
-      message += `🕐 Время: ${lessonInfo.timestamp}\n\n`
-      
+
+      let message = `🚨 LESSON PROBLEM REPORT\n\n`
+      message += `📚 Lesson: ${lessonInfo.lessonName}\n`
+      message += `🆔 Lesson ID: ${lessonInfo.lessonId}\n`
+      message += `📍 Current Step: ${lessonInfo.currentStep}/${lessonInfo.totalSteps}\n`
+      message += `👤 Mode: ${lessonInfo.isGuestMode ? 'Guest (trial)' : 'Registered'}\n`
+      message += `🕐 Time: ${lessonInfo.timestamp}\n\n`
+
       if (problemType.value) {
         const typeLabels = {
-          content: 'Ошибка в содержании',
-          technical: 'Техническая проблема',
-          interface: 'Проблема с интерфейсом',
-          exercise: 'Ошибка в упражнении',
-          audio: 'Проблема со звуком',
-          other: 'Другое'
+          content: 'Content Error',
+          technical: 'Technical Problem',
+          interface: 'Interface Issue',
+          exercise: 'Exercise Error',
+          audio: 'Audio Problem',
+          other: 'Other'
         }
-        message += `⚠️ Тип проблемы: ${typeLabels[problemType.value]}\n\n`
+        message += `⚠️ Problem Type: ${typeLabels[problemType.value]}\n\n`
       }
-      
-      message += `📝 Описание проблемы:\n${problemDescription.value}\n\n`
-      
+
+      message += `📝 Problem Description:\n${problemDescription.value}\n\n`
+
       if (screenshotUrl.value) {
-        message += `📸 Скриншот: ${screenshotUrl.value}\n\n`
+        message += `📸 Screenshot: ${screenshotUrl.value}\n\n`
       }
-      
+
       if (contactInfo.value) {
-        message += `📞 Контакт: ${contactInfo.value}\n\n`
+        message += `📞 Contact: ${contactInfo.value}\n\n`
       }
-      
-      message += `🔧 ТЕХНИЧЕСКАЯ ИНФОРМАЦИЯ:\n`
+
+      message += `🔧 TECHNICAL INFORMATION:\n`
       message += `🌐 URL: ${lessonInfo.url}\n`
-      message += `💻 Браузер: ${lessonInfo.userAgent}\n`
-      
+      message += `💻 Browser: ${lessonInfo.userAgent}\n`
+
       return message
     }
 
@@ -1077,9 +1077,9 @@ export default {
         console.error('❌ Error submitting problem report:', error)
         
         if (lessonOrchestrator.showToast) {
-          lessonOrchestrator.showToast('Ошибка при отправке отчета. Попробуйте еще раз.', 'error')
+          lessonOrchestrator.showToast('Error submitting report. Please try again.', 'error')
         } else {
-          alert('Ошибка при отправке отчета. Попробуйте еще раз.')
+          alert('Error submitting report. Please try again.')
         }
       } finally {
         isSubmitting.value = false
@@ -1501,7 +1501,7 @@ export default {
         }
 
         if (result.success) {
-          const message = `✅ Миграция завершена! Создано ${result.data?.homeworkCreated || 0} заданий и добавлено ${result.data?.vocabularyAdded || 0} слов в словарь.`
+          const message = `✅ Migration completed! Created ${result.data?.homeworkCreated || 0} assignments and added ${result.data?.vocabularyAdded || 0} words to vocabulary.`
 
           if (lessonOrchestrator.showToast) {
             lessonOrchestrator.showToast(message, 'success')
@@ -1516,7 +1516,7 @@ export default {
 
       } catch (error) {
         console.error('❌ Migration error:', error)
-        const errorMessage = '❌ Ошибка миграции: ' + error.message
+        const errorMessage = '❌ Migration error: ' + error.message
 
         if (lessonOrchestrator.showToast) {
           lessonOrchestrator.showToast(errorMessage, 'error')
@@ -1559,7 +1559,7 @@ export default {
             // Show guest-specific completion message
             if (lessonOrchestrator.showToast) {
               lessonOrchestrator.showToast(
-                '🎉 Урок завершен! Зарегистрируйтесь, чтобы сохранить ваш прогресс навсегда.',
+                '🎉 Lesson completed! Register to save your progress forever.',
                 'success'
               )
             }
@@ -1606,14 +1606,14 @@ export default {
     }
 
     const showCompletionMessage = (extractionResult) => {
-      let message = '🎉 Урок успешно завершён!'
+      let message = '🎉 Lesson completed successfully!'
 
       if (extractionResult.homeworkCreated) {
-        message += '\n📝 Новое домашнее задание создано и доступно в разделе заданий!'
+        message += '\n📝 New homework assignment created and available in the assignments section!'
       }
 
       if (extractionResult.vocabularyAdded) {
-        message += `\n📚 ${extractionResult.vocabularyCount} новых слов добавлено в вашу коллекцию словаря!`
+        message += `\n📚 ${extractionResult.vocabularyCount} new words added to your vocabulary collection!`
       }
 
       if (lessonOrchestrator.showToast) {
