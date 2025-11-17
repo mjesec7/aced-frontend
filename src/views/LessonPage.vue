@@ -831,25 +831,21 @@ export default {
     // NAVIGATION METHODS
     // ==========================================
     const handleReturnToCatalogue = () => {
-      console.log('🔙 Returning to catalogue')
-      
       try {
-        router.push({ 
-          path: '/profile/catalogue' 
+        // Use proper route name for best compatibility
+        router.push({
+          name: 'CataloguePage'
         }).catch(err => {
-          router.push({ 
-            name: 'CataloguePage' 
+          // Fallback to path if name doesn't work
+          router.push({
+            path: '/profile/catalogue'
           }).catch(err2 => {
-            router.push({ 
-              path: '/profile' 
-            }).catch(err3 => {
-              console.error('❌ All navigation attempts failed:', err3)
-              window.location.href = '/profile/catalogue'
-            })
+            // Last resort - direct navigation
+            window.location.href = '/profile/catalogue'
           })
         })
       } catch (error) {
-        console.error('❌ Navigation error in handleReturnToCatalogue:', error)
+        console.error('Navigation error:', error)
         window.location.href = '/profile/catalogue'
       }
     }
