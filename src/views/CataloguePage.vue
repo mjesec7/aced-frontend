@@ -705,6 +705,8 @@ export default {
             console.log('🏫 Fetching school mode topics...');
             const result = await getTopicsGrouped();
             console.log('✅ School topics result:', result);
+            console.log('📚 School data structure:', Object.keys(result.data || {}));
+
             if (result.success && result.data) {
               this.processModeContent(result.data, 'school');
               return; // Success, exit early
@@ -713,19 +715,23 @@ export default {
             console.log('📚 Fetching study centre courses...');
             const result = await getTopicsAsCourses();
             console.log('✅ Study centre result:', result);
+            console.log('📊 Courses received:', result.courses?.length || 0);
+
             if (result.success && result.courses) {
+              console.log('🎓 First course sample:', result.courses[0]);
               this.processModeContent(result.courses, 'study-centre');
               return; // Success, exit early
             }
           }
         } catch (modeError) {
-          console.warn('⚠️ Mode-based endpoints not available, falling back to legacy method:', modeError.message);
+          console.warn('⚠️ Mode-based endpoints error:', modeError);
         }
 
         // Fallback: Use legacy method (getAllLessons)
         console.log('⚠️ Using legacy lesson fetch');
         const lessonsResult = await getAllLessons();
         console.log('📚 Lessons fetched:', lessonsResult?.data?.length || 0);
+        console.log('📖 First lesson sample:', lessonsResult?.data?.[0]);
         this.lessons = lessonsResult?.data || [];
         this.processAllCourses();
 
@@ -827,6 +833,13 @@ export default {
      * @param {String} mode - 'school' or 'study-centre'
      */
     processModeContent(data, mode) {
+      console.log('🔧 Processing mode content:', {
+        mode,
+        dataType: typeof data,
+        hasData: !!data,
+        firstItem: Array.isArray(data) ? data[0] : null
+      });
+
       if (mode === 'school') {
         // School Mode: data is grouped { subject: { level: [topics] } }
         const allCourses = [];
@@ -835,38 +848,70 @@ export default {
           for (const level in data[subject]) {
             const topics = data[subject][level];
             topics.forEach(topic => {
+              // Try multiple name sources with fallback
+              const courseName = topic.name ||
+                                topic.topicName ||
+                                topic.title ||
+                                'Untitled Course';
+
+              console.log(`📚 School topic:`, {
+                id: topic._id,
+                name: courseName,
+                rawTopic: topic
+              });
+
               allCourses.push({
-                topicId: topic._id,
-                name: topic.name,
+                topicId: topic._id || topic.id,
+                name: courseName,
                 level: String(level),
                 subject: subject,
                 lessonCount: topic.lessonCount || 0,
                 totalTime: topic.totalTime || 10,
                 type: topic.type || 'free',
-                progress: this.userProgress[topic._id] || 0,
-                inStudyPlan: this.studyPlanTopics.includes(topic._id),
+                progress: this.userProgress[topic._id || topic.id] || 0,
+                inStudyPlan: this.studyPlanTopics.includes(topic._id || topic.id),
               });
             });
           }
         }
 
         this.courses = allCourses;
+        console.log(`✅ School mode: ${allCourses.length} courses processed`);
       } else {
         // Study Centre Mode: data is array of course objects
-        this.courses = data.map(course => ({
-          topicId: course._id || course.id,
-          name: course.title || course.name,
-          level: String(course.level || 1),
-          subject: course.subject || 'Uncategorized',
-          lessonCount: course.lessonCount || 0,
-          totalTime: course.totalTime || 10,
-          type: course.type || 'free',
-          progress: this.userProgress[course._id || course.id] || 0,
-          inStudyPlan: this.studyPlanTopics.includes(course._id || course.id),
-        }));
+        console.log('🎓 Study Centre raw data:', data);
+
+        this.courses = data.map(course => {
+          // Try multiple name sources with fallback
+          const courseName = course.name ||
+                            course.topicName ||
+                            course.title ||
+                            'Untitled Course';
+
+          console.log(`📖 Study centre course:`, {
+            id: course._id || course.id,
+            name: courseName,
+            rawCourse: course
+          });
+
+          return {
+            topicId: course._id || course.id || course.topicId,
+            name: courseName,
+            level: String(course.level || 1),
+            subject: course.subject || 'Uncategorized',
+            lessonCount: course.lessonCount || 0,
+            totalTime: course.totalTime || 10,
+            type: course.type || 'free',
+            progress: this.userProgress[course._id || course.id || course.topicId] || 0,
+            inStudyPlan: this.studyPlanTopics.includes(course._id || course.id || course.topicId),
+          };
+        });
+
+        console.log(`✅ Study centre: ${this.courses.length} courses processed`);
       }
 
-      console.log(`✅ Processed ${this.courses.length} courses in ${mode} mode`);
+      // Log first few courses for debugging
+      console.log('📊 Final courses sample:', this.courses.slice(0, 3));
     },
 
     // --- FILTER & PAGINATION HANDLERS ---
@@ -964,9 +1009,32 @@ export default {
       return String(topicId);
     },
     getTopicName(lesson) {
+      // Try multiple sources for topic name
       if (lesson?.topic && typeof lesson.topic === 'string' && lesson.topic.trim()) {
         return lesson.topic.trim();
       }
+
+      if (lesson?.topicName && typeof lesson.topicName === 'string' && lesson.topicName.trim()) {
+        return lesson.topicName.trim();
+      }
+
+      // Try translations
+      const lang = localStorage.getItem('lang') || 'en';
+      if (lesson?.translations?.[lang]?.topic) {
+        return lesson.translations[lang].topic.trim();
+      }
+
+      // Try nested topic object
+      if (lesson?.topic && typeof lesson.topic === 'object') {
+        if (lesson.topic[lang]) return lesson.topic[lang].trim();
+        if (lesson.topic.en) return lesson.topic.en.trim();
+      }
+
+      // Fallback to lesson name
+      if (lesson?.lessonName) {
+        return `Topic: ${lesson.lessonName.trim()}`;
+      }
+
       return 'Untitled Topic';
     },
     estimateLessonTime: (lesson) => lesson.estimatedTime || lesson.duration || 10,
