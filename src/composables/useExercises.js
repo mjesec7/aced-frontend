@@ -50,19 +50,16 @@ export function useExercises() {
   
   const detectQuestionsFromExercise = (exercise) => {
     if (!exercise) return []
-    
-    console.log('🔍 Detecting questions from exercise:', exercise)
-    
+
     let questions = []
     
     // Strategy 1: Check for explicit questions array
     if (exercise.questions && Array.isArray(exercise.questions)) {
       questions = exercise.questions.map((q, index) => ({
-        question: typeof q === 'string' ? q : (q.text || q.question || `Вопрос ${index + 1}`),
+        question: typeof q === 'string' ? q : (q.text || q.question || `Question ${index + 1}`),
         index: index,
         source: 'explicit-array'
       }))
-      console.log('🔍 Found explicit questions array:', questions)
       return questions
     }
     
@@ -101,7 +98,6 @@ export function useExercises() {
             index: index,
             source: `pattern-${pattern.name}`
           }))
-          console.log(`🔍 Parsed questions using ${pattern.name}:`, questions)
           break
         }
       }
@@ -117,7 +113,6 @@ export function useExercises() {
             index: index,
             source: 'line-split'
           }))
-          console.log('🔍 Split questions by lines:', questions)
         }
       }
     }
@@ -139,14 +134,13 @@ export function useExercises() {
         }
       } else if (exercise.data.questions && Array.isArray(exercise.data.questions)) {
         questions = exercise.data.questions.map((q, index) => ({
-          question: typeof q === 'string' ? q : (q.text || q.question || `Вопрос ${index + 1}`),
+          question: typeof q === 'string' ? q : (q.text || q.question || `Question ${index + 1}`),
           index: index,
           source: 'data-questions'
         }))
       }
     }
-    
-    console.log('🔍 Final detected questions:', questions)
+
     return questions
   }
   
@@ -221,20 +215,16 @@ export function useExercises() {
   // ===================================
   
   const validateShortAnswer = (userAnswer, exercise) => {
-    console.log('🔍 Validating short answer:', { userAnswer, exercise })
-    
     // Detect questions from exercise
     const detectedQuestions = detectQuestionsFromExercise(exercise)
     
     // Handle multiple questions (enhanced detection)
     if (detectedQuestions.length > 1) {
       if (!Array.isArray(userAnswer)) {
-        console.log('🔍 Multiple questions detected but userAnswer is not array:', userAnswer)
         return false
       }
-      
+
       const correctAnswers = getCorrectAnswersArray(exercise)
-      console.log('🔍 Multiple questions validation:', { userAnswer, correctAnswers, detectedQuestions })
       
       // Validate each detected question
       let validAnswers = 0
@@ -275,10 +265,10 @@ export function useExercises() {
           }
         }
       }
-      
+
+
       // Require at least 70% of questions to be answered correctly
       const successRate = validAnswers / totalQuestions
-      console.log('🔍 Multiple questions success rate:', successRate, `(${validAnswers}/${totalQuestions})`)
       return successRate >= 0.7
     }
     
@@ -502,37 +492,37 @@ export function useExercises() {
   
   const getRandomSuccessMessage = () => {
     const messages = [
-      '✅ Отлично! Правильный ответ!',
-      '🎉 Верно! Так держать!',
-      '⭐ Великолепно! Продолжайте!',
-      '🚀 Правильно! Вы молодец!',
-      '💯 Точно в цель! Отличная работа!',
-      '🏆 Превосходно! Идём дальше!'
+      '✅ Excellent! Correct answer!',
+      '🎉 Correct! Keep it up!',
+      '⭐ Magnificent! Continue!',
+      '🚀 Right! You did great!',
+      '💯 Bull\'s-eye! Great work!',
+      '🏆 Superb! Let\'s move on!'
     ]
     return messages[Math.floor(Math.random() * messages.length)]
   }
 
   const getSecondChanceMessage = (exercise) => {
     const messages = [
-      '🤔 Не совсем правильно. У вас есть ещё одна попытка!',
-      '💭 Подумайте ещё немного. Попробуйте снова!',
-      '🎯 Почти попали! Ещё одна попытка!',
-      '🔍 Внимательнее! У вас есть вторая попытка!',
-      '📚 Перечитайте материал и попробуйте ещё раз!',
-      '⚡ Не сдавайтесь! Попробуйте другой вариант!'
+      '🤔 Not quite right. You have one more attempt!',
+      '💭 Think a little more. Try again!',
+      '🎯 Almost there! One more try!',
+      '🔍 Pay attention! You have a second attempt!',
+      '📚 Re-read the material and try again!',
+      '⚡ Don\'t give up! Try another option!'
     ]
-    
+
     return messages[Math.floor(Math.random() * messages.length)]
   }
 
   const getFinalFailureMessage = (exercise, correctAnswer) => {
     const messages = [
-      '📚 Не беспокойтесь! Правильный ответ:',
-      '💡 Вот правильный ответ:',
-      '🎯 Правильный ответ:',
-      '✅ Запомните правильный ответ:'
+      '📚 Don\'t worry! Correct answer:',
+      '💡 Here\'s the correct answer:',
+      '🎯 Correct answer:',
+      '✅ Remember the correct answer:'
     ]
-    
+
     const message = messages[Math.floor(Math.random() * messages.length)]
     return `${message} ${correctAnswer}`
   }
@@ -543,17 +533,17 @@ export function useExercises() {
     }
     
     if (!Array.isArray(userPairs) || userPairs.length === 0) {
-      return '🔗 Создайте хотя бы одну пару для проверки!'
+      return '🔗 Create at least one pair to check!'
     }
-    
+
     const exercisePairs = exercise.pairs || []
     const requiredPairs = exercisePairs.length
     const userPairCount = userPairs.length
-    
+
     if (userPairCount < requiredPairs) {
-      return `🔗 Создайте все ${requiredPairs} пар (у вас ${userPairCount})`
+      return `🔗 Create all ${requiredPairs} pairs (you have ${userPairCount})`
     }
-    
+
     let correctCount = 0
     userPairs.forEach((userPair) => {
       const { leftIndex, rightIndex } = userPair
@@ -561,13 +551,13 @@ export function useExercises() {
         correctCount++
       }
     })
-    
+
     if (correctCount === 0) {
-      return '🤔 Ни одна пара не совпадает. Подумайте о логических связях!'
+      return '🤔 No pairs match. Think about logical connections!'
     } else if (correctCount === 1) {
-      return `🎯 ${correctCount} пара правильная из ${requiredPairs}. Проверьте остальные!`
+      return `🎯 ${correctCount} pair correct out of ${requiredPairs}. Check the rest!`
     } else {
-      return `🎯 ${correctCount} пар правильных из ${requiredPairs}. Почти получилось!`
+      return `🎯 ${correctCount} pairs correct out of ${requiredPairs}. Almost there!`
     }
   }
 
@@ -593,14 +583,14 @@ export function useExercises() {
         if (exercise.pairs && Array.isArray(exercise.pairs)) {
           return exercise.pairs.map(pair => `${pair.left} ↔ ${pair.correctMatch}`).join('; ');
         }
-        return 'Правильные пары показаны выше';
+        return 'Correct pairs shown above';
     }
 
     if (type === 'ordering' || type === 'structure') {
         if (exercise.questions && Array.isArray(exercise.questions)) {
             return exercise.questions.map(q => q.correctOrder.join(' ')).join('; ');
         }
-        return 'Правильный порядок показан выше';
+        return 'Correct order shown above';
     }
     
     return Array.isArray(correctAnswer) ? correctAnswer.join('; ') : String(correctAnswer || '');
@@ -616,10 +606,10 @@ export function useExercises() {
     answerWasCorrect.value = isCorrect;
 
     if (isCorrect) {
-      confirmation.value = '✅ Отлично! Правильный ответ!';
+      confirmation.value = '✅ Excellent! Correct answer!';
     } else {
       const correctAnswerText = getCorrectAnswerDisplay(exercise);
-      confirmation.value = `Правильный ответ: ${correctAnswerText}`;
+      confirmation.value = `Correct answer: ${correctAnswerText}`;
     }
     showCorrectAnswer.value = true;
     return isCorrect;
@@ -655,8 +645,6 @@ export function useExercises() {
   };
 
   const getCurrentExercise = (currentStep) => {
-    console.log('🔍 DEBUG getCurrentExercise - Step:', currentStep)
-
     if (!currentStep || !['exercise', 'practice', 'game'].includes(currentStep.type)) {
       return null
     }
@@ -664,53 +652,41 @@ export function useExercises() {
     let exercises = []
 
     try {
-      // ✅ NEW: Check if this is a game-type exercise
-      if (currentStep.gameType) {
-        console.log('🎮 Game-type exercise detected:', currentStep.gameType)
-
-        // Return the step itself as the exercise, including gameConfig
+      // Check if this is a game-type exercise
+      if (currentStep.gameType || currentStep.type === 'game') {
         return {
-          type: currentStep.gameType || 'game',
-          gameType: currentStep.gameType,
+          type: 'game',
+          gameType: currentStep.gameType || currentStep.type,
           title: currentStep.title,
-          description: currentStep.instructions,
-          instructions: currentStep.instructions,
-          gameData: currentStep.gameConfig,
-          gameConfig: currentStep.gameConfig,
-          // Include original exercise data if available
+          description: currentStep.instructions || currentStep.description,
+          instructions: currentStep.instructions || currentStep.description,
+          gameData: currentStep.gameConfig || currentStep.data,
+          gameConfig: currentStep.gameConfig || currentStep.data,
           ...(currentStep.content?.exercises?.[0] || {}),
-          // Preserve all step properties
           ...currentStep
         }
       }
 
-      // ✅ Check both 'data' and 'content' fields
-      const stepData = currentStep.data || currentStep.content
-
-      if (!stepData) {
-        console.warn('⚠️ No data or content found in step')
-        return null
-      }
-
-      // Try multiple extraction strategies
-      if (Array.isArray(stepData)) {
-        exercises = stepData
-      }
-      else if (stepData.exercises && Array.isArray(stepData.exercises)) {
-        exercises = stepData.exercises
-      }
-      else if (stepData.content && Array.isArray(stepData.content.exercises)) {
-        exercises = stepData.content.exercises
-      }
-      else if (stepData.question) {
-        exercises = [stepData]
-      }
-      else if (currentStep.exercises && Array.isArray(currentStep.exercises)) {
+      // Handle ALL possible data locations with priority order
+      if (Array.isArray(currentStep.data)) {
+        exercises = currentStep.data
+      } else if (currentStep.data?.exercises && Array.isArray(currentStep.data.exercises)) {
+        exercises = currentStep.data.exercises
+      } else if (currentStep.content?.exercises && Array.isArray(currentStep.content.exercises)) {
+        exercises = currentStep.content.exercises
+      } else if (currentStep.exercises && Array.isArray(currentStep.exercises)) {
         exercises = currentStep.exercises
+      } else if (currentStep.data?.question) {
+        exercises = [currentStep.data]
+      } else if (currentStep.content?.question) {
+        exercises = [currentStep.content]
+      } else if (currentStep.question) {
+        exercises = [currentStep]
+      } else if (Array.isArray(currentStep.content)) {
+        exercises = currentStep.content
       }
 
       if (exercises.length === 0) {
-        console.warn('⚠️ No exercises found')
         return null
       }
 
@@ -728,7 +704,7 @@ export function useExercises() {
       return exercise || null
 
     } catch (error) {
-      console.error('❌ Error in getCurrentExercise:', error)
+      console.error('Error in getCurrentExercise:', error)
       return null
     }
   }
@@ -852,17 +828,13 @@ export function useExercises() {
   
   const initializeCurrentExerciseData = (exercise) => {
     if (!exercise) return
-    
-    console.log('🔧 Initializing exercise data for type:', exercise.type)
-    
+
     switch (exercise.type) {
       case 'fill-blank':
         initializeFillBlankAnswers(exercise)
         break
       case 'ordering':
-        console.log('📝 Original items:', exercise.items)
         initializeOrderingItems(exercise)
-        console.log('🔀 Shuffled items:', orderingItems.value.map(item => item.text))
         break
       case 'drag-drop':
         initializeDragDropItems(exercise)
@@ -874,7 +846,6 @@ export function useExercises() {
         // Enhanced: Initialize for multiple questions
         const detectedQuestions = detectQuestionsFromExercise(exercise)
         if (detectedQuestions.length > 1) {
-          console.log('🔧 Initializing multiple answer array for', detectedQuestions.length, 'questions')
           userAnswer.value = new Array(detectedQuestions.length).fill('')
         }
         break
@@ -1109,7 +1080,7 @@ export function useExercises() {
   // ===================================
   
   const showHint = () => {
-    currentHint.value = "Внимательно прочитайте вопрос и подумайте о правильном ответе."
+    currentHint.value = "Read the question carefully and think about the correct answer."
   }
 
   const clearSmartHint = () => {

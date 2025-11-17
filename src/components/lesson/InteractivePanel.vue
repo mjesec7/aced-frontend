@@ -28,7 +28,7 @@
             </div>
           </div>
           <div class="exercise-counter">
-            Упражнение {{ exerciseIndex + 1 }} из {{ totalExercises }}
+            Exercise {{ exerciseIndex + 1 }} of {{ totalExercises }}
           </div>
         </div>
       </header>
@@ -39,7 +39,7 @@
           <div v-if="['reading', 'short-answer', 'sentence-transformation', 'error-correction'].includes(exerciseType)" class="exercise-type-container">
             
             <article v-if="currentExercise.content" class="exercise-card reading-text-card">
-              <h3 class="card-subtitle">Текст для чтения</h3>
+              <h3 class="card-subtitle">Reading Text</h3>
               <div class="reading-text-content"><p>{{ currentExercise.content }}</p></div>
             </article>
 
@@ -49,7 +49,7 @@
                 <textarea 
                   :value="userAnswer[qIndex] || ''" 
                   @input="updateMultiAnswer(qIndex, $event.target.value)" 
-                  :placeholder="question.placeholder || 'Введите ваш ответ...'" 
+                  :placeholder="question.placeholder || 'Enter your answer...'" 
                   :disabled="showCorrectAnswer" 
                   class="answer-textarea"
                 ></textarea>
@@ -62,7 +62,7 @@
                 <p v-if="currentExercise.instruction" class="instruction-text">{{ currentExercise.instruction }}</p>
                 <textarea 
                   v-model="userAnswer" 
-                  placeholder="Введите ваш ответ..." 
+                  placeholder="Enter your answer..." 
                   :disabled="showCorrectAnswer" 
                   class="answer-textarea"
                 ></textarea>
@@ -119,7 +119,7 @@
                   class="matching-select"
                   :class="getMatchingSelectClasses((pair.id || index), pair.correctMatch)"
                 >
-                  <option value="" disabled>Выберите окончание...</option>
+                  <option value="" disabled>Select the ending...</option>
                   <option 
                     v-for="option in shuffledRightOptions" 
                     :key="option" 
@@ -163,16 +163,16 @@
 
       <footer class="panel-actions">
         <button v-if="!showCorrectAnswer" @click="submit" class="action-button submit-button" :disabled="!canSubmit" :style="{backgroundColor: exerciseMeta.color}">
-          Проверить ответы
+          Check Answers
         </button>
         <button v-else @click="resetAndNext" class="action-button next-button" :style="{borderColor: exerciseMeta.color, color: exerciseMeta.color}">
-          {{ isLastExercise ? 'Завершить' : 'Следующее упражнение' }}
+          {{ isLastExercise ? 'Complete' : 'Next Exercise' }}
         </button>
       </footer>
     </div>
     
     <div v-else class="panel-loading">
-      <p>Загрузка...</p>
+      <p>Loading...</p>
     </div>
   </div>
 </template>
@@ -340,7 +340,7 @@ const onDrop = (questionId, event) => {
 const renderFeedback = (user, correct) => {
     const isCorrect = answerWasCorrect.value;
     const resultClass = isCorrect ? 'is-correct' : 'is-incorrect';
-    let content = `<p class="feedback-line">Ваш ответ: <strong>${user || '(Нет ответа)'}</strong></p>`;
+    let content = `<p class="feedback-line">Your answer: <strong>${user || '(No answer)'}</strong></p>`;
     if (isCorrect) {
         content = `<p class="feedback-line">${confirmation.value}</p>`;
     } else if (showCorrectAnswer.value) {
@@ -425,14 +425,6 @@ const exerciseMeta = computed(() => {
 const isGameMode = computed(() => {
   if (!props.currentExercise) return false;
 
-  console.log('🎮 Checking game mode:', {
-    hasGameType: Boolean(props.currentExercise.gameType),
-    type: props.currentExercise.type,
-    hasGameData: Boolean(props.currentExercise.gameData),
-    hasGameConfig: Boolean(props.currentExercise.gameConfig),
-    exercise: props.currentExercise
-  });
-
   // Check if exercise type is 'game' or if gameType property exists
   return props.currentExercise.type === 'game' ||
          Boolean(props.currentExercise.gameType) ||
@@ -444,8 +436,6 @@ const isGameMode = computed(() => {
 const gameType = computed(() => {
   if (!isGameMode.value) return null;
 
-  console.log('🎮 Extracting game type from:', props.currentExercise);
-
   // Priority: gameType property, then type if it's a recognized game type
   return props.currentExercise.gameType ||
          props.currentExercise.type ||
@@ -455,8 +445,6 @@ const gameType = computed(() => {
 // Extract game data for GameContainer
 const gameData = computed(() => {
   if (!isGameMode.value) return null;
-
-  console.log('🎮 Extracting game data');
 
   // Try multiple sources for game data
   const data = props.currentExercise.gameConfig ||
@@ -485,8 +473,6 @@ const gameData = computed(() => {
 
 // Handle game completion
 const handleGameComplete = (result) => {
-  console.log('Game completed:', result);
-
   // Mark the exercise as answered with game results
   answerWasCorrect.value = result.completed || result.stars >= 2;
   showCorrectAnswer.value = true;
@@ -508,8 +494,6 @@ const handleGameComplete = (result) => {
 
 // Handle game exit (if user quits early)
 const handleGameExit = () => {
-  console.log('Game exited by user');
-
   // Reset state and allow retry
   resetExerciseState();
   showCorrectAnswer.value = false;
