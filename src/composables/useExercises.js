@@ -656,42 +656,57 @@ export function useExercises() {
 
   const getCurrentExercise = (currentStep) => {
     console.log('🔍 DEBUG getCurrentExercise - Step:', currentStep)
-    
+
     if (!currentStep || !['exercise', 'practice'].includes(currentStep.type)) {
       return null
     }
-    
+
     let exercises = []
-    
+
     try {
-      if (Array.isArray(currentStep.data)) {
-        exercises = currentStep.data
-      } 
-      else if (currentStep.data && Array.isArray(currentStep.data.exercises)) {
-        exercises = currentStep.data.exercises
+      // ✅ Check both 'data' and 'content' fields
+      const stepData = currentStep.data || currentStep.content
+
+      if (!stepData) {
+        console.warn('⚠️ No data or content found in step')
+        return null
       }
-      else if (currentStep.data && currentStep.data.question) {
-        exercises = [currentStep.data]
+
+      // Try multiple extraction strategies
+      if (Array.isArray(stepData)) {
+        exercises = stepData
+      }
+      else if (stepData.exercises && Array.isArray(stepData.exercises)) {
+        exercises = stepData.exercises
+      }
+      else if (stepData.content && Array.isArray(stepData.content.exercises)) {
+        exercises = stepData.content.exercises
+      }
+      else if (stepData.question) {
+        exercises = [stepData]
       }
       else if (currentStep.exercises && Array.isArray(currentStep.exercises)) {
         exercises = currentStep.exercises
       }
-      
-      if (exercises.length === 0) return null
-      
+
+      if (exercises.length === 0) {
+        console.warn('⚠️ No exercises found')
+        return null
+      }
+
       if (currentExerciseIndex.value >= exercises.length) {
         currentExerciseIndex.value = 0
       }
-      
+
       const exercise = exercises[currentExerciseIndex.value]
-      
+
       if (exercise) {
         detectQuestionsFromExercise(exercise)
       }
 
-      setCurrentExercise(exercise); // Keep internal ref updated
+      setCurrentExercise(exercise)
       return exercise || null
-      
+
     } catch (error) {
       console.error('❌ Error in getCurrentExercise:', error)
       return null
@@ -702,26 +717,30 @@ export function useExercises() {
     if (!currentStep || currentStep.type !== 'quiz') {
       return null
     }
-    
+
     let quizzes = []
-    
+
     try {
-      if (Array.isArray(currentStep.data)) {
-        quizzes = currentStep.data
-      } else if (currentStep.data && Array.isArray(currentStep.data.quizzes)) {
-        quizzes = currentStep.data.quizzes
-      } else if (currentStep.data && currentStep.data.question) {
-        quizzes = [currentStep.data]
+      const stepData = currentStep.data || currentStep.content
+
+      if (Array.isArray(stepData)) {
+        quizzes = stepData
+      } else if (stepData && Array.isArray(stepData.quizzes)) {
+        quizzes = stepData.quizzes
+      } else if (stepData && stepData.content && Array.isArray(stepData.content.questions)) {
+        quizzes = stepData.content.questions
+      } else if (stepData && stepData.question) {
+        quizzes = [stepData]
       }
-      
+
       if (quizzes.length === 0) return null
-      
+
       if (currentQuizIndex.value >= quizzes.length) {
         currentQuizIndex.value = 0
       }
-      
+
       return quizzes[currentQuizIndex.value] || null
-      
+
     } catch (error) {
       console.error('❌ Error in getCurrentQuiz:', error)
       return null
@@ -732,18 +751,19 @@ export function useExercises() {
     if (!currentStep || !['exercise', 'practice'].includes(currentStep.type)) {
       return 0
     }
-    
+
     try {
       let exercises = []
-      
-      if (Array.isArray(currentStep.data)) {
-        exercises = currentStep.data
-      } else if (currentStep.data && Array.isArray(currentStep.data.exercises)) {
-        exercises = currentStep.data.exercises
-      } else if (currentStep.data && currentStep.data.question) {
-        exercises = [currentStep.data]
+      const stepData = currentStep.data || currentStep.content
+
+      if (Array.isArray(stepData)) {
+        exercises = stepData
+      } else if (stepData && Array.isArray(stepData.exercises)) {
+        exercises = stepData.exercises
+      } else if (stepData && stepData.content && Array.isArray(stepData.content.exercises)) {
+        exercises = stepData.content.exercises
       }
-      
+
       return exercises.length
     } catch (error) {
       console.error('❌ Error in getTotalExercises:', error)
@@ -755,18 +775,19 @@ export function useExercises() {
     if (!currentStep || currentStep.type !== 'quiz') {
       return 0
     }
-    
+
     try {
       let quizzes = []
-      
-      if (Array.isArray(currentStep.data)) {
-        quizzes = currentStep.data
-      } else if (currentStep.data && Array.isArray(currentStep.data.quizzes)) {
-        quizzes = currentStep.data.quizzes
-      } else if (currentStep.data && currentStep.data.question) {
-        quizzes = [currentStep.data]
+      const stepData = currentStep.data || currentStep.content
+
+      if (Array.isArray(stepData)) {
+        quizzes = stepData
+      } else if (stepData && Array.isArray(stepData.quizzes)) {
+        quizzes = stepData.quizzes
+      } else if (stepData && stepData.content && Array.isArray(stepData.content.questions)) {
+        quizzes = stepData.content.questions
       }
-      
+
       return quizzes.length
     } catch (error) {
       console.error('❌ Error in getTotalQuizzes:', error)

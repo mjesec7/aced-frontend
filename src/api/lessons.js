@@ -277,6 +277,8 @@ export const getTopicById = async (topicId) => {
  */
 export const getLessonsByTopic = async (topicId) => {
   try {
+    console.log('🔍 API: Fetching lessons for topic:', topicId);
+
     if (!topicId) {
       throw new Error('Topic ID is required');
     }
@@ -284,6 +286,7 @@ export const getLessonsByTopic = async (topicId) => {
     // Strategy 1: Try the enhanced lessons endpoint first
     try {
       const { data } = await api.get(`lessons/topic/${topicId}?includeStats=true&sortBy=createdAt&order=asc`);
+      console.log('✅ Enhanced endpoint response:', data);
 
       if (data && data.success) {
         return {
@@ -294,12 +297,13 @@ export const getLessonsByTopic = async (topicId) => {
         };
       }
     } catch (enhancedError) {
-      console.warn('⚠️ Enhanced lessons endpoint failed:', enhancedError.response?.status, enhancedError.message);
+      console.warn('⚠️ Enhanced endpoint failed:', enhancedError.message);
     }
 
     // Strategy 2: Try legacy topic-specific lessons endpoint
     try {
       const { data } = await api.get(`topics/${topicId}/lessons`);
+      console.log('✅ Legacy endpoint response:', data);
 
       if (data && data.success) {
         return {
@@ -315,14 +319,14 @@ export const getLessonsByTopic = async (topicId) => {
         };
       }
     } catch (legacyError) {
-      console.warn('⚠️ Legacy topic lessons endpoint failed:', legacyError.response?.status, legacyError.message);
+      console.warn('⚠️ Legacy endpoint failed:', legacyError.message);
     }
 
     // Strategy 3: Final fallback - get all lessons and filter by topicId
     try {
       const { data } = await api.get('lessons');
-
       const allLessons = Array.isArray(data) ? data : [];
+
       const filteredLessons = allLessons.filter(lesson => {
         if (!lesson) return false;
 
@@ -343,6 +347,8 @@ export const getLessonsByTopic = async (topicId) => {
         return false;
       });
 
+      console.log('✅ Filtered lessons:', filteredLessons.length);
+
       return {
         success: true,
         data: filteredLessons,
@@ -361,7 +367,7 @@ export const getLessonsByTopic = async (topicId) => {
     };
 
   } catch (error) {
-    console.error('❌ API: Failed to fetch lessons by topic:', error);
+    console.error('❌ API: Failed to fetch lessons:', error);
 
     return {
       success: false,
