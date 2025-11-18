@@ -156,7 +156,6 @@ export async function mountVueApplicationBasic() {
   const { default: router } = await import('../router');
   const { createI18n } = await import('vue-i18n');
   const messages = (await import('../locales/messages.json')).default;
-...');
 
   try {
     app = createApp(App);
@@ -182,7 +181,7 @@ export async function mountVueApplicationBasic() {
     // 🚨 BASIC ERROR HANDLER
     // ============================================================================
     app.config.errorHandler = (error, instance, info) => {
-:', error);
+      console.error('Vue Error:', error);
     };
 
     // ============================================================================
@@ -191,7 +190,6 @@ export async function mountVueApplicationBasic() {
     app.mount('#app');
     isApplicationMounted = true;
     appLifecycle.mounted = true;
-');
 
     return true;
   } catch (error) {

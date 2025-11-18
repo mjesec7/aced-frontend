@@ -217,11 +217,9 @@ const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
     const merchantId = import.meta.env.VITE_PAYME_MERCHANT_ID;
     
     if (!merchantId || merchantId === 'undefined' || typeof merchantId !== 'string') {
-
-throw new Error('PayMe Merchant ID not configured. Check your .env file.');
+      throw new Error('PayMe Merchant ID not configured. Check your .env file.');
     }
-+ '...');
-    
+
     const amounts = getPaymentAmounts();
     const planAmount = amounts[plan]?.tiyin;
     
@@ -389,14 +387,6 @@ form.submit();
     </script>
     `;
 
-+ '...',
-      orderId: cleanOrderId,
-      amount: planAmount,
-      plan: plan,
-      language: language,
-      callback: callbackUrl
-    });
-    
     return {
       success: true,
       formHtml,

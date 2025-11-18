@@ -31,13 +31,7 @@ multicardApi.interceptors.request.use(
         const token = await currentUser.getIdToken();
         config.headers.Authorization = `Bearer ${token}`;
       }
-,
-        url: config.url,
-        fullUrl: `${config.baseURL}${config.url}`,
-        hasAuth: !!config.headers.Authorization,
-        hasData: !!config.data
-      });
-      
+
       return config;
     } catch (error) {
 return config;
@@ -157,14 +151,11 @@ export const initiateMulticardPayment = async (paymentData) => {
       userEmail: paymentData.userEmail || '',
       provider: 'multicard' // ✅ Add provider field
     };
-});
 
     const { data } = await multicardApi.post('/multicard/initiate', requestPayload);
-// Handle success
+
+    // Handle success
     if (data.success && data.data) {
-+ '...'
-      });
-      
       return {
         success: true,
         data: {
@@ -388,9 +379,6 @@ const validSystems = ['payme', 'click', 'uzum', 'anorbank', 'alif', 'oson', 'xaz
     const { data } = await multicardApi.post('/multicard/payment/via-app', paymentData);
 
     if (data.success) {
-+ '...'
-      });
-      
       return {
         success: true,
         data: data.data,

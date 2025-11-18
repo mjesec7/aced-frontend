@@ -499,7 +499,6 @@ this.handleInitializationError(error);
     async loadCoursesWithRetry() {
       for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
         try {
-`);
           await this.loadCourses();
           this.retryCount = 0;
           break;

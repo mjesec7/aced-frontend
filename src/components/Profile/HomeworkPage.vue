@@ -747,7 +747,6 @@ let errorMessage = 'Error submitting answers';
 
     async retryFetch() {
       this.retryCount++;
-`);
       await this.fetchHomework();
     },
 
