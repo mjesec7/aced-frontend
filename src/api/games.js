@@ -46,8 +46,7 @@ export const generateGame = async ({
       throw new Error(data.error || 'Failed to generate game');
     }
   } catch (error) {
-    console.error('❌ Failed to generate game:', error);
-    return {
+return {
       success: false,
       error: error.response?.data?.error || error.message
     };
@@ -89,8 +88,7 @@ export const submitGameResults = async (results) => {
       throw new Error(data.error || 'Failed to submit game results');
     }
   } catch (error) {
-    console.error('❌ Failed to submit game results:', error);
-    return {
+return {
       success: false,
       error: error.response?.data?.error || error.message
     };
@@ -122,8 +120,7 @@ export const getGameLeaderboard = async (gameType, options = {}) => {
       throw new Error(data.error || 'Failed to fetch leaderboard');
     }
   } catch (error) {
-    console.error('❌ Failed to fetch leaderboard:', error);
-    return {
+return {
       success: false,
       leaderboard: [],
       error: error.response?.data?.error || error.message
@@ -153,8 +150,7 @@ export const getUserGameStats = async (userId) => {
       throw new Error(data.error || 'Failed to fetch game stats');
     }
   } catch (error) {
-    console.error('❌ Failed to fetch game stats:', error);
-    return {
+return {
       success: false,
       stats: null,
       error: error.response?.data?.error || error.message
@@ -178,8 +174,7 @@ export const getGameTypes = async () => {
       throw new Error(data.error || 'Failed to fetch game types');
     }
   } catch (error) {
-    console.error('❌ Failed to fetch game types:', error);
-    return {
+return {
       success: false,
       gameTypes: [],
       error: error.response?.data?.error || error.message
@@ -217,8 +212,7 @@ export const convertExerciseToGame = async ({ lessonId, stepIndex, gameType }) =
       throw new Error(data.error || 'Failed to convert exercise');
     }
   } catch (error) {
-    console.error('❌ Failed to convert exercise to game:', error);
-    return {
+return {
       success: false,
       error: error.response?.data?.error || error.message
     };

@@ -860,15 +860,11 @@ export default {
     async loadLearningData() {
       this.loadingLearningData = true;
       try {
-        console.log('🧬 Loading Learning DNA from server...');
-        
-        // Update streak first
+// Update streak first
         try {
           await updateStreak(this.userId);
-          console.log('✅ Streak updated');
-        } catch (streakError) {
-          console.warn('⚠️ Streak update failed:', streakError);
-        }
+} catch (streakError) {
+}
         
         // Load all data in parallel
         const [profileRes, rewardsRes, recommendationsRes] = await Promise.allSettled([
@@ -881,45 +877,36 @@ export default {
         if (profileRes.status === 'fulfilled' && profileRes.value?.success) {
           if (profileRes.value.profile) {
             this.learningProfile = profileRes.value.profile;
-            console.log('✅ Learning profile loaded:', this.learningProfile);
-            this.learningProfileRequirements = { current: profileRes.value.profile.requirements?.required || 3, required: profileRes.value.profile.requirements?.required || 3 };
+this.learningProfileRequirements = { current: profileRes.value.profile.requirements?.required || 3, required: profileRes.value.profile.requirements?.required || 3 };
           } else {
             // Not enough data yet
-            console.log('⚠️ Learning profile requirements:', profileRes.value.requirements);
-            this.learningProfile = null;
+this.learningProfile = null;
             if (profileRes.value.requirements) {
               this.learningProfileRequirements = profileRes.value.requirements;
             }
           }
         } else {
-          console.warn('⚠️ Learning profile not available');
-          this.learningProfile = null;
+this.learningProfile = null;
         }
         
         // Handle rewards
         if (rewardsRes.status === 'fulfilled' && rewardsRes.value?.success) {
           this.rewards = rewardsRes.value.rewards;
-          console.log('✅ Rewards loaded:', this.rewards);
-        } else {
-          console.warn('⚠️ Rewards not available');
-        }
+} else {
+}
         
         // Handle recommendations
         if (recommendationsRes.status === 'fulfilled' && recommendationsRes.value?.success) {
           if (recommendationsRes.value.recommendation) {
             this.recommendations = recommendationsRes.value.recommendation;
-            console.log('✅ Recommendations loaded:', this.recommendations);
-          } else {
-            console.log('⚠️ Recommendations requirements:', recommendationsRes.value.requirements);
-            this.recommendations = null;
+} else {
+this.recommendations = null;
           }
         } else {
-          console.warn('⚠️ Recommendations not available');
-        }
+}
         
       } catch (error) {
-        console.error('❌ Failed to load learning data:', error);
-      } finally {
+} finally {
         this.loadingLearningData = false;
       }
     },
@@ -1029,8 +1016,7 @@ export default {
         }
         
       } catch (error) {
-        console.error('❌ Data loading error:', error);
-      } finally {
+} finally {
         this.loadingStudyList = false;
       }
     },
@@ -1056,8 +1042,7 @@ export default {
               lastAccessed: entry.lastAccessed || new Date().toISOString()
             };
           } catch (error) {
-            console.error(`Error enriching topic ${entry.topicId}:`, error);
-            return null;
+return null;
           }
         });
       

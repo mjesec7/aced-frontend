@@ -57,8 +57,7 @@ const getEffectiveUserPlan = () => {
         subscriptionPlan = parsed.plan;
       }
     } catch (e) {
-      console.error('Error parsing subscription data:', e);
-    }
+}
   }
 
   // Prioritize sources: active subscription > Vuex store > local storage
@@ -293,8 +292,7 @@ const routes = [
     beforeEnter: (to, from, next) => {
       const validPlans = ['start', 'pro'];
       if (!validPlans.includes(to.params.plan)) {
-        console.error('❌ Invalid payment plan:', to.params.plan);
-        return next({ 
+return next({ 
           name: 'SettingsPage', 
           query: { error: 'invalid_plan' } 
         });
@@ -346,8 +344,7 @@ const routes = [
     beforeEnter: (to, from, next) => {
       const validProviders = ['payme', 'multicard', 'click', 'uzum'];
       if (!validProviders.includes(to.params.provider)) {
-        console.error('❌ Invalid payment provider:', to.params.provider);
-        return next({ 
+return next({ 
           name: 'PaymentSelection',
           params: { plan: to.query.plan || 'start' }
         });
@@ -399,8 +396,7 @@ const routes = [
     beforeEnter: (to, from, next) => {
       const validProviders = ['payme', 'multicard', 'click', 'uzum'];
       if (!validProviders.includes(to.params.provider)) {
-        console.error('❌ Invalid payment provider in return:', to.params.provider);
-        return next({ 
+return next({ 
           name: 'UniversalPaymentFailed',
           params: { provider: 'unknown' },
           query: { error: 'Invalid payment provider' }
@@ -482,15 +478,12 @@ const router = createRouter({
 
 router.beforeEach(async (to, from, next) => {
   try {
-    console.log(`🔄 Navigating from ${from.name || 'Start'} to ${to.name}`);
-
-    // Wait for Firebase auth to be initialized on app start
+// Wait for Firebase auth to be initialized on app start
     try {
       const { authInitPromise } = await import('@/main.js');
       await authInitPromise;
     } catch (err) {
-      console.warn('⚠️ Auth initialization is not yet complete. Proceeding anyway.');
-    }
+}
 
     const isLoggedIn = store.getters.isLoggedIn;
     const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
@@ -502,8 +495,7 @@ router.beforeEach(async (to, from, next) => {
 
     // Handle protected routes
     if (requiresAuth && !isLoggedIn) {
-      console.log('🔒 Auth required. Redirecting to HomePage.');
-      return next({
+return next({
         name: 'HomePage',
         query: {
           redirect: to.fullPath,
@@ -525,16 +517,12 @@ router.beforeEach(async (to, from, next) => {
             router.push(route);
           }, 3000);
         } catch (e) {
-          console.error('Error parsing intended route:', e);
-        }
+}
       }
     }
-
-    console.log('✅ Navigation allowed.');
-    next();
+next();
   } catch (error) {
-    console.error('❌ Global navigation guard error:', error);
-    next(false);
+next(false);
   }
 });
 
@@ -550,19 +538,15 @@ router.afterEach((to, from) => {
     
     if (!lastCheck || (Date.now() - lastCheck) > fiveMinutes) {
       store.dispatch('user/checkPendingPayments').catch(err => {
-        console.error('❌ Failed to auto-check pending payments:', err);
-      });
+});
     }
   }
 
   // Log successful navigation
-  console.log(`✅ Successfully navigated to: ${to.name || to.path}`);
 });
 
 router.onError((err) => {
-  console.error('❌ Router Error:', err);
-
-  // Silently ignore NavigationDuplicated errors
+// Silently ignore NavigationDuplicated errors
   if (err.name === 'NavigationDuplicated') {
     return;
   }
@@ -570,8 +554,7 @@ router.onError((err) => {
   // Automatically reload on chunk load errors
   if (err.message.includes('Failed to fetch dynamically imported module') || 
       err.message.includes('Loading chunk')) {
-    console.log('🔄 Chunk loading failed. Reloading the page...');
-    window.location.reload();
+window.location.reload();
   }
 });
 
@@ -587,8 +570,7 @@ router.onError((err) => {
 export function safeNavigate(routerInstance, route) {
   return routerInstance.push(route).catch(err => {
     if (err.name !== 'NavigationDuplicated') {
-      console.error('Navigation error:', err);
-      return Promise.reject(err);
+return Promise.reject(err);
     }
     return Promise.resolve();
   });
@@ -607,8 +589,7 @@ export function navigateWithLoading(routerInstance, route, loadingCallback) {
   return routerInstance.push(route)
     .catch(err => {
       if (err.name !== 'NavigationDuplicated') {
-        console.error('Navigation failed:', err);
-        throw err;
+throw err;
       }
     })
     .finally(() => {
@@ -626,8 +607,7 @@ export function navigateWithLoading(routerInstance, route, loadingCallback) {
 export function navigateToPayment(routerInstance, plan, userData = {}, provider = 'multicard') {
   const validPlans = ['start', 'pro'];
   if (!validPlans.includes(plan)) {
-    console.error('❌ Invalid plan:', plan);
-    plan = 'start';
+plan = 'start';
   }
 
   return safeNavigate(routerInstance, {
@@ -649,15 +629,13 @@ if (process.env.NODE_ENV !== 'production') {
   window.routerDebug = {
     getPlan: () => {
       const plan = getEffectiveUserPlan();
-      console.log('Current Plan:', plan);
-      return plan;
+return plan;
     },
     testAccess: (feature, plans = ['start', 'pro']) => {
       const currentPlan = getEffectiveUserPlan();
       const hasAccess = plans.includes(currentPlan);
-      console.log(`Access to '${feature}' with plans [${plans.join(', ')}]:`, hasAccess);
-      console.log(`Current plan: ${currentPlan}`);
-      return hasAccess;
+}]:`, hasAccess);
+return hasAccess;
     },
     goTo: (path) => router.push(path),
     currentRoute: () => {
@@ -665,8 +643,7 @@ if (process.env.NODE_ENV !== 'production') {
       return router.currentRoute.value;
     },
     testPayment: (plan = 'start', provider = 'multicard') => {
-      console.log(`Testing payment flow: plan=${plan}, provider=${provider}`);
-      navigateToPayment(router, plan, {
+navigateToPayment(router, plan, {
         userId: 'test-user-123',
         userName: 'Test User',
         userEmail: 'test@example.com',
@@ -681,8 +658,8 @@ if (process.env.NODE_ENV !== 'production') {
       })));
     }
   };
-  console.log('🐛 Router debug helpers available at window.routerDebug');
-  console.log('Try: window.routerDebug.testPayment("pro", "multicard")');
+
+');
 }
 
 export default router;

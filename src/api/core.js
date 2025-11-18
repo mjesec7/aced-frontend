@@ -5,7 +5,6 @@ import { auth } from '@/firebase';
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live';
 
 if (!BASE_URL) {
-  console.warn('⚠️ VITE_API_BASE_URL is not defined in your .env file!');
 }
 
 // Create axios instance
@@ -30,8 +29,7 @@ const RETRY_DELAY = 1000; // 1 second
 // Request deduplication helper
 const createRequestKey = (config) => {
   if (!config || !config.method || !config.url) {
-    console.warn('⚠️ Invalid config object in createRequestKey:', config);
-    return `unknown-${Date.now()}`;
+return `unknown-${Date.now()}`;
   }
   return `${config.method}-${config.url}-${JSON.stringify(config.data || {})}`;
 };
@@ -76,14 +74,12 @@ export const getValidToken = async () => {
   try {
     const currentUser = auth.currentUser;
     if (!currentUser) {
-      console.warn('⚠️ No Firebase user available');
-      return null;
+return null;
     }
     const token = await currentUser.getIdToken(true);
     return token;
   } catch (error) {
-    console.error('❌ Failed to get valid token:', error);
-    return null;
+return null;
   }
 };
 
@@ -103,9 +99,7 @@ api.interceptors.request.use(async (config) => {
         // config.headers = { ...config.headers, 'X-Debounced': 'true' };
         
         // ✅ Instead, just log it for debugging:
-        console.debug('⚡ Debounced request detected:', config.url);
-        
-        // Or cancel the duplicate request:
+// Or cancel the duplicate request:
         // return Promise.reject({ 
         //   isDuplicate: true, 
         //   message: 'Duplicate request cancelled' 
@@ -132,12 +126,10 @@ api.interceptors.request.use(async (config) => {
 
     return config;
   } catch (error) {
-    console.error('❌ Request interceptor error:', error);
-    return Promise.reject(error);
+return Promise.reject(error);
   }
 }, (error) => {
-  console.error('❌ Request interceptor setup error:', error);
-  return Promise.reject(error);
+return Promise.reject(error);
 });
 
 // ========================================
@@ -153,8 +145,7 @@ api.interceptors.response.use(
         pendingRequests.delete(requestKey);
       }
     } catch (cleanupError) {
-      console.warn('⚠️ Cleanup error:', cleanupError);
-    }
+}
 
     // Cache successful GET requests
     if (response.config?.method &&
@@ -179,8 +170,7 @@ api.interceptors.response.use(
           }
         }
       } catch (cacheError) {
-        console.warn('⚠️ Cache error:', cacheError);
-      }
+}
     }
     return response;
   },
@@ -195,8 +185,7 @@ api.interceptors.response.use(
           pendingRequests.delete(requestKey);
         }
       } catch (cleanupError) {
-        console.warn('⚠️ Error cleanup failed:', cleanupError);
-      }
+}
     }
 
     const errorInfo = {
@@ -205,10 +194,7 @@ api.interceptors.response.use(
       status: error.response?.status || 'unknown',
       message: error.response?.data?.message || error.message || 'Unknown error'
     };
-
-    console.error('API Error:', errorInfo);
-
-    // Handle 401 errors with token refresh
+// Handle 401 errors with token refresh
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
@@ -269,9 +255,7 @@ export const retryApiCall = async (apiCall, maxRetries = 3, delay = 1000) => {
     try {
       return await apiCall();
     } catch (error) {
-      console.warn(`⚠️ API call attempt ${attempt} failed:`, error.message);
-
-      if (error.response?.status === 401 || error.response?.status === 403) {
+if (error.response?.status === 401 || error.response?.status === 403) {
         throw error;
       }
 
@@ -288,17 +272,14 @@ export const withErrorHandling = async (apiCall, context = 'API call') => {
   try {
     return await apiCall();
   } catch (error) {
-    console.error(`❌ ${context} failed:`, error);
-
-    if (error.response?.status === 401) {
+if (error.response?.status === 401) {
       try {
         if (auth.currentUser) {
           await auth.currentUser.getIdToken(true);
           return await apiCall();
         }
       } catch (refreshError) {
-        console.error('❌ Token refresh failed:', refreshError);
-        throw new Error('Authentication failed. Please log in again.');
+throw new Error('Authentication failed. Please log in again.');
       }
     } else if (error.response?.status === 404) {
       throw new Error('Resource not found');
@@ -321,8 +302,7 @@ export const healthCheck = async () => {
     const { data } = await api.get('health');
     return data;
   } catch (error) {
-    console.error('❌ Health check failed:', error);
-    throw error;
+throw error;
   }
 };
 
@@ -331,8 +311,7 @@ export const authTest = async () => {
     const { data } = await api.get('auth-test');
     return data;
   } catch (error) {
-    console.error('❌ Auth test failed:', error);
-    throw error;
+throw error;
   }
 };
 
@@ -354,8 +333,7 @@ export const checkApiHealth = async () => {
       routes: routesData
     };
   } catch (error) {
-    console.error('❌ Backend connectivity test failed:', error);
-    return {
+return {
       success: false,
       error: error.message
     };

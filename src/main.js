@@ -35,8 +35,6 @@ import { setupDevTools } from './utils/devTools.js';
 // 🛡️ IMMEDIATE SUBSCRIPTION RESTORATION (RUNS BEFORE EVERYTHING)
 // ============================================================================
 const preservedStatus = immediateSubscriptionRestore();
-console.log(`🛡️ Preserved status on startup: ${preservedStatus}`);
-
 // Setup auth subscription monitoring
 setupAuthSubscriptionMonitoring();
 
@@ -54,8 +52,10 @@ const i18n = createI18n({
 // 🚀 FIREBASE AUTH PERSISTENCE SETUP
 // ============================================================================
 setPersistence(auth, browserLocalPersistence)
-  .then(() => console.log('✅ Firebase auth persistence set'))
-  .catch((error) => console.error('❌ Failed to set auth persistence:', error));
+  .then(() =>
+)
+  .catch((error) =>
+);
 
 // ============================================================================
 // 📊 TRACK APP LIFECYCLE
@@ -100,7 +100,6 @@ setupGlobalHelpers(store, eventBus);
 // ============================================================================
 if (import.meta.env.DEV) {
   setupDevTools(store, eventBus, authInitPromise, appLifecycle);
-  console.log('🛠️ Development tools enabled');
 }
 
 // ============================================================================
@@ -111,5 +110,4 @@ export { eventBus, authInitPromise };
 // ============================================================================
 // ✅ INITIALIZATION COMPLETE
 // ============================================================================
-console.log('✅ Main.js initialization complete');
-console.log('⏳ Waiting for authentication...');
+

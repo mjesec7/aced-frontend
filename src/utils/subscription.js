@@ -22,21 +22,17 @@ export function immediateSubscriptionRestore() {
         localStorage.setItem('preservedStatus', subscription.plan);
         localStorage.setItem('validSubscriptionDetected', 'true');
         localStorage.setItem('preserveStatusDuringAuth', subscription.plan);
-
-        console.log(`✅ Subscription restored: ${subscription.plan}`);
-        return subscription.plan;
+return subscription.plan;
       } else if (!isValid) {
         // Clean up expired subscription
         localStorage.removeItem('subscriptionData');
         localStorage.removeItem('validSubscriptionDetected');
         localStorage.removeItem('preserveStatusDuringAuth');
-        console.log('⏰ Subscription expired and removed');
-      }
+}
     }
     return 'free';
   } catch (error) {
-    console.error('❌ Immediate restore error:', error);
-    return 'free';
+return 'free';
   }
 }
 
@@ -75,8 +71,7 @@ export function setupAuthSubscriptionMonitoring() {
         }
       }
     } catch (error) {
-      console.error('❌ Monitoring error:', error);
-    }
+}
 
     setTimeout(monitor, 100); // Check every 100ms
   };
@@ -85,9 +80,8 @@ export function setupAuthSubscriptionMonitoring() {
   
   // Stop monitoring after 10 seconds (auth should be complete)
   setTimeout(() => { 
-    monitoringActive = false; 
-    console.log('⏹️ Auth subscription monitoring stopped');
-  }, 10000);
+    monitoringActive = false;
+}, 10000);
 }
 
 // ============================================================================
@@ -95,13 +89,9 @@ export function setupAuthSubscriptionMonitoring() {
 // ============================================================================
 export async function setupSubscriptionPersistence(plan, source = 'manual') {
   if (!plan || plan === 'free') {
-    console.log('📌 Skipping persistence for free plan');
-    return;
+return;
   }
-
-  console.log(`📅 Setting up subscription for ${plan} from ${source}`);
-
-  const now = new Date();
+const now = new Date();
   // ✅ CRITICAL: Set expiry to exactly 1 month (30 days) from now
   const expiryDate = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000));
   
@@ -113,7 +103,7 @@ export async function setupSubscriptionPersistence(plan, source = 'manual') {
     const existingExpiry = new Date(existingSubscription.expiryDate);
     if (existingExpiry > now) {
       // Keep existing expiry if still valid
-      console.log(`📌 Keeping existing subscription expiry: ${existingExpiry.toLocaleDateString()}`);
+}`);
       subscriptionData = {
         ...existingSubscription,
         lastUpdated: now.toISOString(),
@@ -122,12 +112,11 @@ export async function setupSubscriptionPersistence(plan, source = 'manual') {
       };
     } else {
       // If expired, create new subscription with fresh 30-day period
-      console.log(`🔄 Subscription expired, creating new 30-day subscription`);
-      subscriptionData = createNewSubscription(plan, now, expiryDate, source);
+subscriptionData = createNewSubscription(plan, now, expiryDate, source);
     }
   } else {
     // Create new subscription (fresh activation)
-    console.log(`✨ Creating new ${plan} subscription valid until ${expiryDate.toLocaleDateString()}`);
+}`);
     subscriptionData = createNewSubscription(plan, now, expiryDate, source);
   }
 
@@ -142,11 +131,9 @@ export async function setupSubscriptionPersistence(plan, source = 'manual') {
     localStorage.setItem('plan', plan);
     localStorage.setItem('subscriptionStatus', 'active');
     localStorage.setItem('serverConfirmedSubscription', 'true');
-
-    console.log(`✅ Subscription persisted: ${plan} until ${new Date(subscriptionData.expiryDate).toLocaleDateString()}`);
+.toLocaleDateString()}`);
   } catch (error) {
-    console.error('❌ Failed to persist subscription:', error);
-  }
+}
 
   return subscriptionData;
 }
@@ -176,8 +163,7 @@ export function getStoredSubscription() {
       if (subscription && subscription.plan && subscription.expiryDate) {
         return subscription;
       } else {
-        console.warn('⚠️ Invalid subscription data, removing...');
-        localStorage.removeItem('subscriptionData');
+localStorage.removeItem('subscriptionData');
       }
     }
 
@@ -197,12 +183,10 @@ export function getStoredSubscription() {
       };
       // Store the reconstructed data to fix it for the future
       localStorage.setItem('subscriptionData', JSON.stringify(fallbackSubscription));
-      console.log(`🔧 Reconstructed subscription from localStorage: ${plan}`);
-      return fallbackSubscription;
+return fallbackSubscription;
     }
   } catch (error) {
-    console.error('❌ Get subscription error:', error);
-    // Clear potentially corrupted data on parsing error
+// Clear potentially corrupted data on parsing error
     localStorage.removeItem('subscriptionData');
   }
 
@@ -213,16 +197,14 @@ export function isSubscriptionValid() {
   const subscription = getStoredSubscription();
 
   if (!subscription || !subscription.expiryDate) {
-    console.log('❌ No valid subscription data found');
-    return false;
+return false;
   }
 
   const now = new Date();
   const expiryDate = new Date(subscription.expiryDate);
   const isValid = now < expiryDate;
   const daysRemaining = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
-
-  console.log(`📅 Subscription check: ${subscription.plan} - ${isValid ? `Valid (${daysRemaining} days remaining)` : 'Expired'}`);
+` : 'Expired'}`);
 
   return isValid;
 }
@@ -231,9 +213,7 @@ export function isSubscriptionValid() {
 // ⏰ SUBSCRIPTION EXPIRY HANDLING
 // ============================================================================
 export function handleSubscriptionExpiry(expiredSubscription) {
-  console.log(`⏰ Subscription expired: ${expiredSubscription.plan} plan`);
-
-  // Update all storage to FREE (not start!)
+// Update all storage to FREE (not start!)
   localStorage.setItem('userStatus', 'free');
   localStorage.setItem('userPlan', 'free');
   localStorage.setItem('subscriptionPlan', 'free');
@@ -251,11 +231,9 @@ export function handleSubscriptionExpiry(expiredSubscription) {
       store.commit('user/SET_USER_STATUS', 'free');
       store.commit('user/FORCE_UPDATE');
     }).catch(err => {
-      console.error('❌ Store update failed:', err);
-    });
+});
   } catch (error) {
-    console.error('❌ Failed to update store on expiry:', error);
-  }
+}
 
   // Trigger status change events
   window.triggerGlobalEvent('userStatusChanged', {
@@ -279,8 +257,6 @@ export function handleSubscriptionExpiry(expiredSubscription) {
       timestamp: Date.now()
     });
   }
-
-  console.log(`✅ User reverted to FREE plan after ${expiredSubscription.plan} expiry`);
 }
 
 // ============================================================================
@@ -294,23 +270,19 @@ export function setupSubscriptionExpiryCheck() {
 
   // Function to check subscription
   const checkSubscription = () => {
-    console.log('🔍 Running subscription expiry check...');
-
-    const subscription = getStoredSubscription();
+const subscription = getStoredSubscription();
     if (!subscription || subscription.plan === 'free') {
       return; // No need to check free subscriptions
     }
 
     if (!isSubscriptionValid()) {
-      console.log('⚠️ Subscription expired, handling expiry...');
-      handleSubscriptionExpiry(subscription);
+handleSubscriptionExpiry(subscription);
     } else {
       // Calculate and log days remaining
       const now = new Date();
       const expiryDate = new Date(subscription.expiryDate);
       const daysRemaining = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
-
-      console.log(`✅ Subscription active: ${subscription.plan} (${daysRemaining} days remaining)`);
+`);
 
       // Show warning if expiring soon (less than 3 days)
       if (daysRemaining <= 3 && daysRemaining > 0) {
@@ -333,24 +305,19 @@ export function setupSubscriptionExpiryCheck() {
   // Also check on visibility change (when user returns to tab)
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) {
-      console.log('👀 Tab became visible, checking subscription...');
-      checkSubscription();
+checkSubscription();
     }
   });
 
   // Initial check after 10 seconds (give app time to load)
   setTimeout(checkSubscription, 10000);
-
-  console.log('✅ Subscription expiry checking configured');
 }
 
 // ============================================================================
 // 🌐 SETUP SUBSCRIPTION SYSTEM
 // ============================================================================
 export function setupSubscriptionSystem(store, eventBus) {
-  console.log('✅ Setting up subscription system');
-
-  // Setup automatic expiry checking
+// Setup automatic expiry checking
   setupSubscriptionExpiryCheck();
 
   // Check if user has a valid subscription on startup
@@ -361,8 +328,7 @@ export function setupSubscriptionSystem(store, eventBus) {
       localStorage.setItem('userStatus', existingSubscription.plan);
       localStorage.setItem('userPlan', existingSubscription.plan);
       localStorage.setItem('subscriptionPlan', existingSubscription.plan);
-      console.log(`✅ Valid subscription found on startup: ${existingSubscription.plan}`);
-    } else {
+} else {
       handleSubscriptionExpiry(existingSubscription);
     }
   }
@@ -371,9 +337,7 @@ export function setupSubscriptionSystem(store, eventBus) {
   // 🎫 GLOBAL PROMOCODE APPLICATION
   // ============================================================================
   window.applyPromocodeGlobally = async (promocode, plan) => {
-    console.log(`🎫 Applying promocode ${promocode} for ${plan} plan`);
-
-    try {
+try {
       const currentUser = auth.currentUser;
       if (!currentUser) {
         throw new Error('User not authenticated');
@@ -381,10 +345,7 @@ export function setupSubscriptionSystem(store, eventBus) {
 
       const userId = currentUser.uid;
       const token = await currentUser.getIdToken();
-
-      console.log(`📮 Sending promocode to server...`);
-
-      // Apply promocode via server
+// Apply promocode via server
       const baseUrl = import.meta.env.VITE_API_BASE_URL;
       const response = await fetch(`${baseUrl}/api/payments/promo-code`, {
         method: 'POST',
@@ -402,9 +363,7 @@ export function setupSubscriptionSystem(store, eventBus) {
       const result = await response.json();
 
       if (result?.success) {
-        console.log(`✅ Promocode accepted by server`);
-
-        // Set up proper 30-day subscription
+// Set up proper 30-day subscription
         const subscriptionData = await setupSubscriptionPersistence(plan, 'promocode');
 
         // Update localStorage immediately
@@ -427,8 +386,7 @@ export function setupSubscriptionSystem(store, eventBus) {
             localStorage.setItem('user', JSON.stringify(userData));
           }
         } catch (userUpdateError) {
-          console.warn('⚠️ Failed to update user object:', userUpdateError);
-        }
+}
 
         // Update store
         if (window.store || store) {
@@ -466,11 +424,9 @@ export function setupSubscriptionSystem(store, eventBus) {
           try {
             window.triggerGlobalEvent(eventType, { ...eventData, eventType });
           } catch (eventError) {
-            console.warn(`⚠️ Failed to trigger ${eventType}:`, eventError);
-          }
+}
         });
-
-        console.log(`🎉 ${plan} subscription activated until ${new Date(subscriptionData.expiryDate).toLocaleDateString()}`);
+.toLocaleDateString()}`);
 
         return {
           success: true,
@@ -483,13 +439,10 @@ export function setupSubscriptionSystem(store, eventBus) {
 
       return result;
     } catch (error) {
-      console.error('❌ Global promocode application failed:', error);
-      return {
+return {
         success: false,
         error: error.message
       };
     }
   };
-
-  console.log('✅ Subscription system configured');
 }

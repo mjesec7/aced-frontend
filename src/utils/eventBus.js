@@ -14,8 +14,7 @@ class AdvancedEventBus {
   
     emit(event, data) {
       if (this.debugMode) {
-        console.log(`🔔 Event emitted: ${event}`, data);
-      }
+}
   
       // Emit to regular event listeners
       if (this.events[event]) {
@@ -72,8 +71,7 @@ class AdvancedEventBus {
         try {
           callback(event, data);
         } catch (error) {
-          console.error('❌ Status listener error:', error);
-        }
+}
       });
     }
   
@@ -88,8 +86,7 @@ class AdvancedEventBus {
         try {
           callback(event, data);
         } catch (error) {
-          console.error('❌ Subscription listener error:', error);
-        }
+}
       });
     }
   
@@ -100,13 +97,11 @@ class AdvancedEventBus {
     }
   
     handleEventError(event, error, data) {
-      console.error(`❌ Event error in ${event}:`, error);
-      this.errorHandlers.forEach(handler => {
+this.errorHandlers.forEach(handler => {
         try {
           handler(event, error, data);
         } catch (handlerError) {
-          console.error('❌ Error handler failed:', handlerError);
-        }
+}
       });
     }
   
@@ -208,30 +203,24 @@ class AdvancedEventBus {
             timestamp: Date.now()
           }));
         } catch (storageError) {
-          console.error('❌ Storage error:', storageError);
-        }
+}
       }
     } catch (eventError) {
-      console.error('❌ Trigger global event error:', eventError);
-    }
+}
   };
   
   // ============================================================================
   // 🌐 SETUP GLOBAL EVENT SYSTEM
   // ============================================================================
   export function setupGlobalEventSystem(store) {
-    console.log('✅ Setting up global event system');
-    
-    // Periodic status consistency check (every 30 seconds)
+// Periodic status consistency check (every 30 seconds)
     setInterval(() => {
       try {
         const storeStatus = store.getters['user/userStatus'];
         const localStatus = localStorage.getItem('userStatus');
   
         if (storeStatus && localStatus && storeStatus !== localStatus) {
-          console.log(`🔄 Status mismatch detected: store=${storeStatus}, local=${localStatus}`);
-          
-          // Sync localStorage to match store
+// Sync localStorage to match store
           localStorage.setItem('userStatus', storeStatus);
           
           // Trigger sync event
@@ -243,9 +232,6 @@ class AdvancedEventBus {
           });
         }
       } catch (error) {
-        console.error('❌ Periodic sync error:', error);
-      }
+}
     }, 30000); // 30 seconds
-  
-    console.log('✅ Global event system configured');
-  }
+}

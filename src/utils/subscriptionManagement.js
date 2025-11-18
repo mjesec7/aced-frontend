@@ -3,9 +3,7 @@
 import { getApp } from './appMounter.js';
 
 export function setupEnhancedGlobalSubscriptionManagement(store, eventBus) {
-  console.log('✅ Setting up enhanced global subscription management');
-
-  const handleGlobalSubscriptionChange = (event) => {
+const handleGlobalSubscriptionChange = (event) => {
     const { plan, newStatus, userStatus, subscriptionPlan, message, source, oldPlan, timestamp } = event.detail || {};
     
     let actualPlan = plan || newStatus || userStatus || subscriptionPlan;
@@ -45,8 +43,7 @@ export function setupEnhancedGlobalSubscriptionManagement(store, eventBus) {
     if (!['free', 'start', 'pro', 'premium'].includes(actualPlan)) {
       actualPlan = 'free';
     }
-
-    console.log(`🔄 Global subscription change: ${actualPlan} (${source || 'unknown'})`);
+`);
 
     // Update page title
     const planLabel = actualPlan === 'pro' ? 'Pro' : actualPlan === 'start' ? 'Start' : 'Free';
@@ -84,8 +81,7 @@ export function setupEnhancedGlobalSubscriptionManagement(store, eventBus) {
         }
       }
     } catch (storeError) {
-      console.error('❌ Store update error:', storeError);
-    }
+}
 
     // Force Vue app update
     const app = getApp();
@@ -93,8 +89,7 @@ export function setupEnhancedGlobalSubscriptionManagement(store, eventBus) {
       try {
         app._instance.proxy.$forceUpdate();
       } catch (error) {
-        console.error('❌ Force update error:', error);
-      }
+}
     }
 
     // Emit multiple event types
@@ -166,17 +161,13 @@ export function setupEnhancedGlobalSubscriptionManagement(store, eventBus) {
     if (!['free', 'start', 'pro', 'premium'].includes(actualStatus)) {
       actualStatus = 'free';
     }
-
-    console.log(`📊 User status changed event: ${actualStatus}`);
-
-    try {
+try {
       localStorage.setItem('userStatus', actualStatus);
       localStorage.setItem('userPlan', actualStatus);
       localStorage.setItem('subscriptionPlan', actualStatus);
       localStorage.setItem('statusUpdateTime', Date.now().toString());
     } catch (storageError) {
-      console.error('❌ Storage error:', storageError);
-    }
+}
 
     try {
       const currentStoreStatus = store.getters['user/userStatus'];
@@ -190,8 +181,7 @@ export function setupEnhancedGlobalSubscriptionManagement(store, eventBus) {
         }
       }
     } catch (storeError) {
-      console.error('❌ Store error:', storeError);
-    }
+}
 
     const app = getApp();
     if (app?._instance) {
@@ -201,15 +191,12 @@ export function setupEnhancedGlobalSubscriptionManagement(store, eventBus) {
           // Trigger next tick for delayed components
         });
       } catch (error) {
-        console.error('❌ Force update error:', error);
-      }
+}
     }
   });
 
   eventBus.on('promocodeApplied', (data) => {
-    console.log('🎫 Promocode applied event received', data);
-
-    const domEvent = new CustomEvent('userSubscriptionChanged', {
+const domEvent = new CustomEvent('userSubscriptionChanged', {
       detail: {
         plan: data.newStatus,
         source: 'promocode',
@@ -222,9 +209,7 @@ export function setupEnhancedGlobalSubscriptionManagement(store, eventBus) {
   });
 
   eventBus.on('paymentCompleted', (data) => {
-    console.log('💳 Payment completed event received', data);
-
-    const domEvent = new CustomEvent('userSubscriptionChanged', {
+const domEvent = new CustomEvent('userSubscriptionChanged', {
       detail: {
         plan: data.plan,
         source: 'payment',
@@ -236,6 +221,4 @@ export function setupEnhancedGlobalSubscriptionManagement(store, eventBus) {
     });
     window.dispatchEvent(domEvent);
   });
-
-  console.log('✅ Enhanced global subscription management configured');
 }

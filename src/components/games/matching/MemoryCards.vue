@@ -82,8 +82,7 @@ const gridSize = computed(() => {
 // Methods
 const initializeGame = () => {
   if (pairs.value.length === 0) {
-    console.warn('No pairs provided for memory game');
-    return;
+return;
   }
 
   // Create pairs of cards

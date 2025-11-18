@@ -677,8 +677,7 @@ export default {
         
         return status;
       } catch (e) {
-        console.error('Error getting current plan:', e);
-        return localStorage.getItem('userStatus') || 'free';
+return localStorage.getItem('userStatus') || 'free';
       }
     },
     
@@ -704,8 +703,7 @@ export default {
           timeRemaining: this.getTimeRemaining(diffTime)
         };
       } catch (e) {
-        console.error('Error getting subscription expiry info:', e);
-        return null;
+return null;
       }
     },
     
@@ -721,8 +719,7 @@ export default {
       try {
         return this.currentUsage?.messages || 0;
       } catch (e) {
-        console.error('Error getting current usage messages:', e);
-        return 0;
+return 0;
       }
     },
     
@@ -730,8 +727,7 @@ export default {
       try {
         return this.currentUsage?.images || 0;
       } catch (e) {
-        console.error('Error getting current usage images:', e);
-        return 0;
+return 0;
       }
     },
     
@@ -739,8 +735,7 @@ export default {
       try {
         return this.usageLimits?.messages || 50;
       } catch (e) {
-        console.error('Error getting usage limits messages:', e);
-        return 50;
+return 50;
       }
     },
     
@@ -748,8 +743,7 @@ export default {
       try {
         return this.usageLimits?.images || 5;
       } catch (e) {
-        console.error('Error getting usage limits images:', e);
-        return 5;
+return 5;
       }
     },
     
@@ -759,8 +753,7 @@ export default {
         const limit = this.usageLimitsMessages;
         return (limit === -1) ? 0 : Math.min(100, Math.round((messages / limit) * 100));
       } catch (e) {
-        console.error('Error calculating message usage percentage:', e);
-        return 0;
+return 0;
       }
     },
     
@@ -770,8 +763,7 @@ export default {
         const limit = this.usageLimitsImages;
         return (limit === -1) ? 0 : Math.min(100, Math.round((images / limit) * 100));
       } catch (e) {
-        console.error('Error calculating image usage percentage:', e);
-        return 0;
+return 0;
       }
     },
     
@@ -853,8 +845,7 @@ export default {
             this.handleUserStatusChange(newPlan, oldPlan);
           }
         } catch (e) {
-          console.error('Error watching store user:', e);
-        }
+}
       },
       deep: true,
       immediate: true
@@ -867,22 +858,19 @@ export default {
             this.forceReactivityUpdate();
           }
         } catch (e) {
-          console.error('Error watching current plan:', e);
-        }
+}
       },
       immediate: true
     }
   },
   
   async mounted() {
-    console.log('🔧 AcedSettings component mounted');
-    await this.initializeComponent();
+await this.initializeComponent();
     this.componentMounted = true;
   },
   
   beforeUnmount() {
-    console.log('🔧 AcedSettings component unmounting');
-    this.cleanup();
+this.cleanup();
   },
   
   methods: {
@@ -902,8 +890,7 @@ export default {
         }
 
       } catch (error) {
-        console.error('❌ Error handling status change:', error);
-        this.$forceUpdate();
+this.$forceUpdate();
       }
     },
 
@@ -918,8 +905,7 @@ export default {
           this.$forceUpdate();
         });
       } catch (error) {
-        console.error('Reactivity update error:', error);
-      }
+}
     },
 
     getTimeRemaining(diffTime) {
@@ -949,14 +935,11 @@ export default {
       this.loadingText = 'Loading settings...';
       
       try {
-        console.log('📥 Loading component data...');
-        await this.checkAuthState();
+await this.checkAuthState();
         await this.loadInitialData();
         this.forceReactivityUpdate();
-        console.log('✅ Component initialized successfully');
-      } catch (error) {
-        console.error('❌ AcedSettings initialization error:', error);
-        this.showNotification('Error loading settings', 'error');
+} catch (error) {
+this.showNotification('Error loading settings', 'error');
       } finally {
         this.loading = false;
       }
@@ -964,20 +947,15 @@ export default {
 
     async loadInitialData() {
       try {
-        console.log('📦 Loading initial user data...');
-        
-        if (this.$store && this.$store.dispatch) {
+if (this.$store && this.$store.dispatch) {
           await this.$store.dispatch('user/loadUserStatus');
-          console.log('✅ User status loaded');
-          
-          // Force reactivity update after data loads
+// Force reactivity update after data loads
           this.$nextTick(() => {
             this.forceReactivityUpdate();
           });
         }
       } catch (error) {
-        console.error('❌ Load initial data error:', error);
-      }
+}
     },
     
     checkAuthState() {
@@ -985,12 +963,10 @@ export default {
         onAuthStateChanged(auth, async (user) => {
           this.currentUser = user;
           if (user) {
-            console.log('👤 User authenticated:', user.uid);
-            this.isGoogleUser = user.providerData[0]?.providerId === "google.com";
+this.isGoogleUser = user.providerData[0]?.providerId === "google.com";
             await this.fetchUserData();
           } else {
-            console.log('❌ No authenticated user');
-          }
+}
           resolve();
         });
       });
@@ -999,18 +975,14 @@ export default {
     async fetchUserData() {
       try {
         if (!this.currentUser) return;
-        
-        console.log('📄 Fetching user document...');
-        const userRef = doc(db, "users", this.currentUser.uid);
+const userRef = doc(db, "users", this.currentUser.uid);
         const userDoc = await getDoc(userRef);
         
         if (userDoc.exists()) {
           this.user = userDoc.data();
           this.tempUser = { name: this.user.name, surname: this.user.surname };
-          console.log('✅ User data fetched');
-        } else {
-          console.log('📝 Creating new user document');
-          const newUserData = {
+} else {
+const newUserData = {
             name: "New User",
             surname: "",
             email: this.currentUser.email,
@@ -1020,8 +992,7 @@ export default {
           this.tempUser = { name: newUserData.name, surname: newUserData.surname };
         }
       } catch (error) {
-        console.error('❌ User data fetch error:', error);
-        this.showNotification("Error loading user data", 'error');
+this.showNotification("Error loading user data", 'error');
       }
     },
 
@@ -1053,8 +1024,7 @@ export default {
 
         this.showNotification('Name updated successfully!', 'success');
       } catch (error) {
-        console.error('❌ Save name error:', error);
-        this.showNotification('Error saving name', 'error');
+this.showNotification('Error saving name', 'error');
       } finally {
         this.loading = false;
       }
@@ -1094,16 +1064,12 @@ export default {
       
       try {
         const promocodeUpper = this.promoCode.trim().toUpperCase();
-        console.log('🔍 Validating promocode:', promocodeUpper);
-        
-        if (this.$store && this.$store.dispatch) {
+if (this.$store && this.$store.dispatch) {
           const storeResult = await this.$store.dispatch('user/validatePromocode', promocodeUpper);
           
           if (storeResult && typeof storeResult === 'object') {
             this.promoValidation = storeResult;
-            console.log('✅ Promocode validation result:', storeResult);
-            
-            if (storeResult.valid && storeResult.data?.grantsPlan && !this.selectedPlan) {
+if (storeResult.valid && storeResult.data?.grantsPlan && !this.selectedPlan) {
               this.selectedPlan = storeResult.data.grantsPlan;
             }
             
@@ -1118,8 +1084,7 @@ export default {
         };
         
       } catch (error) {
-        console.error('❌ Promocode validation error:', error);
-        this.promoValidation = {
+this.promoValidation = {
           valid: false,
           error: 'Error checking promo code.'
         };
@@ -1138,9 +1103,7 @@ export default {
       
       try {
         const normalizedCode = this.promoCode.trim().toUpperCase();
-        console.log('💳 Applying promocode:', normalizedCode, 'for plan:', this.selectedPlan);
-        
-        const result = await this.$store.dispatch('user/applyPromocode', {
+const result = await this.$store.dispatch('user/applyPromocode', {
           code: normalizedCode,
           plan: this.selectedPlan,
           userId: this.userId
@@ -1161,8 +1124,7 @@ export default {
         }
         
       } catch (error) {
-        console.error('❌ Apply promo error:', error);
-        this.showNotification('Error applying promo code', 'error');
+this.showNotification('Error applying promo code', 'error');
       } finally {
         this.isProcessingPromo = false;
       }
@@ -1173,8 +1135,7 @@ export default {
         return;
       }
       this.paymentPlan = plan;
-      console.log('📌 Payment plan selected:', plan);
-    },
+},
 
     async goToPayment() {
       if (!this.paymentPlan) {
@@ -1192,10 +1153,7 @@ export default {
           start: 260000,
           pro: 455000
         };
-
-        console.log('🔄 Navigating to payment page...');
-        
-        await this.$router.push({
+await this.$router.push({
           name: 'PaymentSelection',
           params: { 
             plan: this.paymentPlan 
@@ -1213,9 +1171,7 @@ export default {
           }
         });
       } catch (error) {
-        console.error('❌ Navigation error:', error);
-        
-        if (error.name !== 'NavigationDuplicated') {
+if (error.name !== 'NavigationDuplicated') {
           this.showNotification('Error navigating to payment.', 'error');
         }
       }
@@ -1243,9 +1199,7 @@ export default {
         await sendPasswordResetEmail(auth, this.user.email);
         this.showNotification('Password reset email sent!', 'success');
       } catch (error) {
-        console.error('❌ Password reset error:', error);
-        
-        let errorMessage = 'Error sending email';
+let errorMessage = 'Error sending email';
         
         if (error.code === 'auth/user-not-found') {
           errorMessage = 'User with this email not found';

@@ -136,8 +136,7 @@ export default {
         }
         
       } catch (error) {
-        console.error('❌ Payment return processing error:', error);
-        this.error = `Ошибка проверки статуса: ${error.message}`;
+this.error = `Ошибка проверки статуса: ${error.message}`;
         this.loading = false;
       }
     },

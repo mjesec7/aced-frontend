@@ -23,10 +23,7 @@ export async function mountVueApplication() {
   const { default: router } = await import('../router');
   const { createI18n } = await import('vue-i18n');
   const messages = (await import('../locales/messages.json')).default;
-
-  console.log('🚀 Mounting Vue application...');
-
-  try {
+try {
     app = createApp(App);
 
     // ============================================================================
@@ -59,8 +56,7 @@ export async function mountVueApplication() {
     app.use(store);
 
     // Initialize platform mode from localStorage
-    console.log('🎓 Initializing platform mode from localStorage...');
-    store.dispatch('platformMode/loadFromLocalStorage');
+store.dispatch('platformMode/loadFromLocalStorage');
 
     app.use(router);
     app.use(VueToast, {
@@ -74,13 +70,9 @@ export async function mountVueApplication() {
     // 🚨 ENHANCED ERROR HANDLER
     // ============================================================================
     app.config.errorHandler = (error, instance, info) => {
-      console.error('❌ Vue error:', error, info);
-
-      // Check if error is related to length property
+// Check if error is related to length property
       if (error.message?.includes("Cannot read properties of undefined (reading 'length')")) {
-        console.warn('⚠️ Length property error detected in Vue component');
-        
-        window.eventBus.emit('lengthPropertyError', {
+window.eventBus.emit('lengthPropertyError', {
           error: error.message,
           component: instance?.$options?.name || 'Unknown',
           info,
@@ -94,8 +86,7 @@ export async function mountVueApplication() {
             timestamp: Date.now()
           });
         } catch (recoveryError) {
-          console.error('❌ Recovery error:', recoveryError);
-        }
+}
       }
 
       // Emit error to event bus
@@ -113,10 +104,7 @@ export async function mountVueApplication() {
     app.mount('#app');
     isApplicationMounted = true;
     appLifecycle.mounted = true;
-
-    console.log('✅ Vue application mounted successfully');
-
-    // ============================================================================
+// ============================================================================
     // 🔧 SETUP GLOBAL SUBSCRIPTION MANAGEMENT
     // ============================================================================
     setupEnhancedGlobalSubscriptionManagement(store, window.eventBus);
@@ -142,23 +130,16 @@ export async function mountVueApplication() {
     // ============================================================================
     setTimeout(() => {
       const currentStatus = store.getters['user/userStatus'] || 'free';
-      console.log(`📢 Final status propagation: ${currentStatus}`);
-      
-      window.triggerGlobalEvent('userStatusChanged', {
+window.triggerGlobalEvent('userStatusChanged', {
         oldStatus: null,
         newStatus: currentStatus,
         source: 'app-mount-complete',
         timestamp: Date.now()
       });
     }, 200);
-
-    console.log('🎉 Application initialization complete!');
-
-    return true;
+return true;
   } catch (error) {
-    console.error('❌ Mount error:', error);
-
-    window.eventBus.emit('appMountError', {
+window.eventBus.emit('appMountError', {
       error: error.message,
       timestamp: Date.now()
     });
@@ -175,8 +156,7 @@ export async function mountVueApplicationBasic() {
   const { default: router } = await import('../router');
   const { createI18n } = await import('vue-i18n');
   const messages = (await import('../locales/messages.json')).default;
-
-  console.log('🔧 Mounting Vue application (basic fallback)...');
+...');
 
   try {
     app = createApp(App);
@@ -202,7 +182,7 @@ export async function mountVueApplicationBasic() {
     // 🚨 BASIC ERROR HANDLER
     // ============================================================================
     app.config.errorHandler = (error, instance, info) => {
-      console.error('❌ Vue error (basic):', error);
+:', error);
     };
 
     // ============================================================================
@@ -211,13 +191,11 @@ export async function mountVueApplicationBasic() {
     app.mount('#app');
     isApplicationMounted = true;
     appLifecycle.mounted = true;
-
-    console.log('✅ Vue application mounted (basic mode)');
+');
 
     return true;
   } catch (error) {
-    console.error('❌ Basic mount error:', error);
-    throw error;
+throw error;
   }
 }
 
@@ -243,47 +221,36 @@ export function forceAppUpdate() {
   if (app?._instance) {
     try {
       app._instance.proxy.$forceUpdate();
-      console.log('✅ App force updated');
-      return true;
+return true;
     } catch (error) {
-      console.error('❌ Force update error:', error);
-      return false;
+return false;
     }
   }
-  console.warn('⚠️ App not available for force update');
-  return false;
+return false;
 }
 
 // ============================================================================
 // 🔄 REMOUNT APP (FOR RECOVERY)
 // ============================================================================
 export async function remountApp() {
-  console.log('🔄 Remounting app...');
-  
-  try {
+try {
     // Unmount if already mounted
     if (app && isApplicationMounted) {
       app.unmount();
       isApplicationMounted = false;
       appLifecycle.mounted = false;
-      console.log('✅ App unmounted');
-    }
+}
 
     // Remount
     await mountVueApplication();
-    console.log('✅ App remounted successfully');
-    return true;
+return true;
   } catch (error) {
-    console.error('❌ Remount failed:', error);
-    
-    // Try basic mount as fallback
+// Try basic mount as fallback
     try {
       await mountVueApplicationBasic();
-      console.log('✅ App remounted in basic mode');
-      return true;
+return true;
     } catch (fallbackError) {
-      console.error('❌ Basic remount also failed:', fallbackError);
-      return false;
+return false;
     }
   }
 }

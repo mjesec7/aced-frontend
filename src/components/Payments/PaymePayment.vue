@@ -419,8 +419,7 @@ export default {
           formattedPrice = `${actualPrice.toLocaleString('uz-UZ')} сум`;
         }
       } catch (formatError) {
-        console.warn('⚠️ Format error, using fallback:', formatError);
-        actualPrice = this.plan === 'start' ? 260000 : 455000;
+actualPrice = this.plan === 'start' ? 260000 : 455000;
         formattedPrice = `${actualPrice.toLocaleString('uz-UZ')} сум`;
       }
       
@@ -487,11 +486,9 @@ export default {
         this.apiStatus.lastCheck = Date.now();
         
         if (!health.success) {
-          console.warn('⚠️ API health check failed:', health.error);
-        }
+}
       } catch (error) {
-        console.error('❌ System health check failed:', error);
-        this.apiStatus.connected = false;
+this.apiStatus.connected = false;
       }
     },
 
@@ -570,8 +567,7 @@ export default {
         }
 
       } catch (err) {
-        console.error('❌ User validation error:', err);
-        this.userValidation = { loading: false, valid: false, user: null };
+this.userValidation = { loading: false, valid: false, user: null };
         
         // Parse error response
         const errorData = err.response?.data;
@@ -671,9 +667,7 @@ export default {
         }
 
       } catch (err) {
-        console.error('❌ Promo code error:', err);
-        
-        if (err.message?.includes('Direct browser access')) {
+if (err.message?.includes('Direct browser access')) {
           this.criticalError = 'Ошибка конфигурации платежной системы. Обратитесь в поддержку.';
         } else if (err.message?.includes('Слишком много попыток')) {
           this.handlePromoRateLimit();
@@ -745,8 +739,7 @@ export default {
           try {
             window.location.href = result.paymentUrl;
           } catch (redirectError) {
-            console.error('❌ Redirect failed:', redirectError);
-            this.error = 'Ошибка перенаправления. Попробуйте открыть ссылку вручную.';
+this.error = 'Ошибка перенаправления. Попробуйте открыть ссылку вручную.';
             
             // Show manual link
             const link = document.createElement('a');
@@ -767,9 +760,7 @@ export default {
         }
 
       } catch (err) {
-        console.error('❌ Payment initiation error:', err);
-        
-        // Enhanced error handling
+// Enhanced error handling
         if (err.message?.includes('Direct browser access')) {
           this.criticalError = 'Ошибка конфигурации платежной системы. Обратитесь в поддержку.';
         } else if (err.message?.includes('Слишком много попыток')) {
@@ -843,8 +834,7 @@ export default {
         }
 
       } catch (err) {
-        console.error('❌ Status check error:', err);
-        this.error = handlePaymentError(err, 'Проверка статуса');
+this.error = handlePaymentError(err, 'Проверка статуса');
       } finally {
         this.statusLoading = false;
       }
@@ -905,8 +895,7 @@ export default {
       try {
         return formatPaymentAmount(amount / 100, 'UZS');
       } catch (error) {
-        console.warn('⚠️ Amount formatting failed:', error);
-        return `${(amount / 100).toLocaleString('uz-UZ')} сум`;
+return `${(amount / 100).toLocaleString('uz-UZ')} сум`;
       }
     },
 

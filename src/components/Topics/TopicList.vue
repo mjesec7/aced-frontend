@@ -33,8 +33,7 @@
         const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/topics`);
         this.topics = res.data;
       } catch (err) {
-        console.error('❌ Ошибка загрузки тем:', err);
-      } finally {
+} finally {
         this.loading = false;
       }
     },
@@ -46,8 +45,7 @@
           });
           alert('✅ Тема добавлена в список!');
         } catch (err) {
-          console.error('❌ Ошибка при добавлении темы:', err);
-        }
+}
       },
       handleStartTopic(topicId) {
         this.$router.push(`/topic/${topicId}/overview`);

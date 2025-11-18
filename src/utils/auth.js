@@ -29,14 +29,11 @@ export const authInitPromise = new Promise((resolve) => {
           localStorage.setItem('userPlan', subscription.plan);
           localStorage.setItem('subscriptionPlan', subscription.plan);
           localStorage.setItem('authPreserveStatus', subscription.plan);
-          
-          console.log(`🛡️ Preserving subscription: ${subscription.plan}`);
-          return subscription.plan;
+return subscription.plan;
         }
       }
     } catch (error) {
-      console.error('❌ Subscription check error:', error);
-    }
+}
     return 'free';
   };
 
@@ -49,9 +46,7 @@ export const authInitPromise = new Promise((resolve) => {
       unsubscribe();
 
       try {
-        console.log('🔐 Auth state changed:', firebaseUser ? firebaseUser.email : 'No user');
-
-        // Ensure store is initialized
+// Ensure store is initialized
         await ensureStoreInitialized();
 
         if (firebaseUser) {
@@ -79,14 +74,11 @@ export const authInitPromise = new Promise((resolve) => {
           });
         }, 50);
       } catch (error) {
-        console.error('❌ Auth error:', error);
-        
-        try {
+try {
           // Try basic mount as fallback
           await mountVueApplicationBasic();
         } catch (mountError) {
-          console.error('❌ Basic mount error:', mountError);
-        }
+}
 
         // Resolve with error state
         setTimeout(() => {
@@ -106,8 +98,7 @@ export const authInitPromise = new Promise((resolve) => {
   // Timeout fallback (8 seconds)
   setTimeout(() => {
     if (!authStateResolved) {
-      console.warn('⏰ Auth timeout reached, forcing initialization...');
-      authStateResolved = true;
+authStateResolved = true;
       unsubscribe();
 
       // Fallback initialization
@@ -146,32 +137,24 @@ async function ensureStoreInitialized() {
 
   try {
     if (store.getters['user/isInitialized']) {
-      console.log('✅ Store already initialized');
-      
-      const lastServerLoad = localStorage.getItem('lastServerLoad');
+const lastServerLoad = localStorage.getItem('lastServerLoad');
       const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
 
       if (!lastServerLoad || parseInt(lastServerLoad) < fiveMinutesAgo) {
-        console.log('🔄 Reloading user from server (5+ minutes since last load)');
+');
         await store.dispatch('user/loadUserFromServer');
       }
       return true;
     }
-
-    console.log('🔧 Initializing store...');
-    await store.dispatch('user/initialize');
+await store.dispatch('user/initialize');
 
     const currentUser = auth.currentUser;
     if (currentUser) {
-      console.log('📥 Loading user from server...');
-      await store.dispatch('user/loadUserFromServer');
+await store.dispatch('user/loadUserFromServer');
     }
-
-    console.log('✅ Store initialized successfully');
-    return true;
+return true;
   } catch (error) {
-    console.error('❌ Store initialization failed:', error);
-    throw error;
+throw error;
   }
 }
 
@@ -180,10 +163,7 @@ async function ensureStoreInitialized() {
 // ============================================================================
 async function handleUserAuthenticated(firebaseUser) {
   const { default: store } = await import('../store');
-
-  console.log('👤 Handling authenticated user:', firebaseUser.email);
-
-  try {
+try {
     const token = await firebaseUser.getIdToken(true);
     const userId = firebaseUser.uid;
 
@@ -205,10 +185,7 @@ async function handleUserAuthenticated(firebaseUser) {
         const userData = await response.json();
         serverUser = userData.user || userData;
         userStatus = serverUser.subscriptionPlan || serverUser.userStatus || 'free';
-
-        console.log(`✅ Server fetch successful: ${userStatus}`);
-
-        // ✅ CRITICAL: Immediately update localStorage with server status
+// ✅ CRITICAL: Immediately update localStorage with server status
         localStorage.setItem('userStatus', userStatus);
         localStorage.setItem('userPlan', userStatus);
         localStorage.setItem('subscriptionPlan', userStatus);
@@ -217,17 +194,13 @@ async function handleUserAuthenticated(firebaseUser) {
         localStorage.setItem('serverStatusConfirmed', 'true');
         localStorage.setItem('lastServerFetch', Date.now().toString());
       } else {
-        console.warn('⚠️ Server fetch failed, status:', response.status);
-      }
+}
     } catch (fetchError) {
-      console.error('❌ Server fetch error:', fetchError);
-    }
+}
 
     // ✅ CRITICAL: If server fetch failed, try saveUser as fallback
     if (!serverUser) {
-      console.log('📝 Creating user data from Firebase info');
-      
-      const userData = {
+const userData = {
         uid: firebaseUser.uid,
         email: firebaseUser.email,
         displayName: firebaseUser.displayName,
@@ -242,18 +215,14 @@ async function handleUserAuthenticated(firebaseUser) {
         if (saveResult && saveResult.success && saveResult.user) {
           serverUser = saveResult.user;
           userStatus = serverUser.subscriptionPlan || serverUser.userStatus || 'free';
-          
-          console.log(`✅ User saved: ${userStatus}`);
-          
-          // ✅ CRITICAL: Update localStorage with saved user status
+// ✅ CRITICAL: Update localStorage with saved user status
           localStorage.setItem('userStatus', userStatus);
           localStorage.setItem('userPlan', userStatus);
           localStorage.setItem('subscriptionPlan', userStatus);
           localStorage.setItem('plan', userStatus);
         }
       } catch (saveError) {
-        console.error('❌ SaveUser failed:', saveError);
-      }
+}
     }
 
     // ✅ CRITICAL: Create enhanced user object with server status
@@ -273,10 +242,7 @@ async function handleUserAuthenticated(firebaseUser) {
       serverStatusConfirmed: true,
       lastServerSync: new Date().toISOString()
     };
-
-    console.log(`📦 Enhanced user object created with status: ${userStatus}`);
-
-    // ✅ CRITICAL: Update store with server status
+// ✅ CRITICAL: Update store with server status
     store.commit('setUser', enhancedUser);
     store.commit('setFirebaseUserId', enhancedUser.firebaseId);
     store.commit('setToken', token);
@@ -329,19 +295,15 @@ async function handleUserAuthenticated(firebaseUser) {
       try {
         window.triggerGlobalEvent(eventType, { ...eventData, eventType });
       } catch (eventError) {
-        console.warn(`⚠️ Failed to trigger ${eventType}:`, eventError);
-      }
+}
     });
 
     // ✅ CRITICAL: Delayed propagation for stubborn components
     setTimeout(() => {
       window.triggerGlobalEvent('delayedStatusSync', eventData);
     }, 100);
-
-    console.log(`✅ User authentication complete: ${userStatus}`);
-  } catch (error) {
-    console.error('❌ Authentication failed:', error);
-    await handleBasicUserAuthentication(firebaseUser, null, 'free');
+} catch (error) {
+await handleBasicUserAuthentication(firebaseUser, null, 'free');
   }
 }
 
@@ -350,10 +312,7 @@ async function handleUserAuthenticated(firebaseUser) {
 // ============================================================================
 async function handleBasicUserAuthentication(firebaseUser, token = null, serverStatus = 'free') {
   const { default: store } = await import('../store');
-
-  console.log('🔧 Handling basic user authentication');
-
-  try {
+try {
     let existingStatus = serverStatus;
 
     if (existingStatus === 'free') {
@@ -361,8 +320,7 @@ async function handleBasicUserAuthentication(firebaseUser, token = null, serverS
       const subscription = getStoredSubscription();
       if (subscription && subscription.plan !== 'free' && isSubscriptionValid()) {
         existingStatus = subscription.plan;
-        console.log(`📌 Preserved subscription: ${existingStatus}`);
-      }
+}
     }
 
     const basicUser = {
@@ -418,8 +376,7 @@ async function handleBasicUserAuthentication(firebaseUser, token = null, serverS
       localStorage.setItem('authMode', 'basic-with-server');
       localStorage.setItem('serverStatusConfirmed', serverStatus !== 'free' ? 'true' : 'false');
     } catch (storageError) {
-      console.error('❌ Storage error:', storageError);
-    }
+}
 
     // Trigger events
     const eventData = {
@@ -450,11 +407,8 @@ async function handleBasicUserAuthentication(firebaseUser, token = null, serverS
         timestamp: Date.now()
       });
     }, 100);
-
-    console.log(`✅ Basic authentication complete: ${existingStatus}`);
-  } catch (error) {
-    console.error('❌ Basic authentication failed:', error);
-    throw error;
+} catch (error) {
+throw error;
   }
 }
 
@@ -463,25 +417,19 @@ async function handleBasicUserAuthentication(firebaseUser, token = null, serverS
 // ============================================================================
 async function handleUserNotAuthenticated() {
   const { default: store } = await import('../store');
-
-  console.log('🚪 Handling user not authenticated');
-
-  try {
+try {
     // 🛡️ CRITICAL: Check for valid subscription BEFORE clearing anything
     const validSubscription = localStorage.getItem('validSubscriptionDetected');
     const preserveStatus = localStorage.getItem('preserveStatusDuringAuth');
 
     if (validSubscription === 'true' && preserveStatus && preserveStatus !== 'free') {
-      console.log(`📌 Preserving subscription during logout: ${preserveStatus}`);
-      
-      // Don't clear subscription-related data, but clear other auth data
+// Don't clear subscription-related data, but clear other auth data
       const keysToRemove = ['user', 'firebaseUserId', 'userId', 'token', 'lastLoginTime'];
       keysToRemove.forEach(key => {
         try {
           localStorage.removeItem(key);
         } catch (error) {
-          console.error('❌ Remove error:', error);
-        }
+}
       });
 
       // Set preserved status in store
@@ -491,7 +439,7 @@ async function handleUserNotAuthenticated() {
       localStorage.removeItem('validSubscriptionDetected');
       localStorage.removeItem('preserveStatusDuringAuth');
     } else {
-      console.log('🧹 Clearing user state (no subscription to preserve)');
+');
       
       // Normal clearing for truly free users
       await store.dispatch('user/logout');
@@ -502,8 +450,7 @@ async function handleUserNotAuthenticated() {
         try {
           localStorage.removeItem(key);
         } catch (error) {
-          console.error('❌ Remove error:', error);
-        }
+}
       });
 
       store.commit('user/SET_USER_STATUS', 'free');
@@ -520,12 +467,8 @@ async function handleUserNotAuthenticated() {
         timestamp: Date.now()
       });
     }, 100);
-
-    console.log(`✅ Not authenticated handling complete: ${currentStatus}`);
-  } catch (error) {
-    console.error('❌ Not authenticated handling error:', error);
-
-    // Force basic state but preserve subscriptions
+} catch (error) {
+// Force basic state but preserve subscriptions
     try {
       const preserveStatus = localStorage.getItem('preserveStatusDuringAuth');
       if (preserveStatus && preserveStatus !== 'free') {
@@ -536,8 +479,7 @@ async function handleUserNotAuthenticated() {
         localStorage.setItem('userStatus', 'free');
       }
     } catch (clearError) {
-      console.error('❌ Clear error:', clearError);
-    }
+}
   }
 }
 
@@ -545,6 +487,5 @@ async function handleUserNotAuthenticated() {
 // 🔧 SETUP AUTH STATE LISTENER (EXPOSED FOR MAIN.JS)
 // ============================================================================
 export function setupAuthStateListener(store, router, i18n, VueToast) {
-  console.log('✅ Auth state listener configured');
-  // Auth state listener is already setup in authInitPromise above
+// Auth state listener is already setup in authInitPromise above
 }

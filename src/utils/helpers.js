@@ -3,26 +3,22 @@
 import { getApp } from './appMounter.js';
 
 export function setupGlobalHelpers(store, eventBus) {
-  console.log('✅ Setting up global helpers');
-
-  // ============================================================================
+// ============================================================================
   // 📢 EMIT USER STATUS CHANGE
   // ============================================================================
   window.emitUserStatusChange = (oldStatus, newStatus, source = 'unknown') => {
-    console.log(`📢 Emitting status change: ${oldStatus} → ${newStatus} (${source})`);
+`);
 
     const validStatuses = ['free', 'start', 'pro', 'premium'];
     if (!validStatuses.includes(newStatus)) {
-      console.warn('⚠️ Invalid status:', newStatus);
-      return;
+return;
     }
 
     // Update store
     try {
       store.commit('user/SET_USER_STATUS', newStatus);
     } catch (storeError) {
-      console.error('❌ Store update error:', storeError);
-    }
+}
 
     // Update localStorage
     try {
@@ -31,8 +27,7 @@ export function setupGlobalHelpers(store, eventBus) {
       localStorage.setItem('subscriptionPlan', newStatus);
       localStorage.setItem('statusUpdateTime', Date.now().toString());
     } catch (storageError) {
-      console.error('❌ Storage error:', storageError);
-    }
+}
 
     const eventData = {
       oldStatus,
@@ -57,8 +52,7 @@ export function setupGlobalHelpers(store, eventBus) {
       try {
         app._instance.proxy.$forceUpdate();
       } catch (error) {
-        console.error('❌ Force update error:', error);
-      }
+}
     }
   };
 
@@ -66,9 +60,7 @@ export function setupGlobalHelpers(store, eventBus) {
   // 🔄 EMIT FORCE UPDATE
   // ============================================================================
   window.emitForceUpdate = (reason = 'manual') => {
-    console.log(`🔄 Force update: ${reason}`);
-
-    window.triggerGlobalEvent('globalForceUpdate', {
+window.triggerGlobalEvent('globalForceUpdate', {
       reason,
       timestamp: Date.now()
     });
@@ -76,17 +68,14 @@ export function setupGlobalHelpers(store, eventBus) {
     try {
       store.commit('user/FORCE_UPDATE');
     } catch (error) {
-      console.error('❌ Force update error:', error);
-    }
+}
   };
 
   // ============================================================================
   // 👂 LISTEN TO USER CHANGES
   // ============================================================================
   window.listenToUserChanges = (callback) => {
-    console.log('👂 Setting up user change listener');
-
-    const events = [
+const events = [
       'userStatusChanged',
       'promocodeApplied',
       'featuresUpdated',
@@ -118,8 +107,7 @@ export function setupGlobalHelpers(store, eventBus) {
 
       return storeStatus || localStatus || 'free';
     } catch (error) {
-      console.error('❌ Get status error:', error);
-      return localStorage.getItem('userStatus') || 'free';
+return localStorage.getItem('userStatus') || 'free';
     }
   };
 
@@ -127,9 +115,7 @@ export function setupGlobalHelpers(store, eventBus) {
   // 🔧 REPAIR STORE STATUS
   // ============================================================================
   window.repairStoreStatus = () => {
-    console.log('🔧 Repairing store status...');
-
-    const localStatus = localStorage.getItem('userStatus') ||
+const localStatus = localStorage.getItem('userStatus') ||
       localStorage.getItem('userPlan') ||
       localStorage.getItem('subscriptionPlan') ||
       'free';
@@ -137,9 +123,7 @@ export function setupGlobalHelpers(store, eventBus) {
     try {
       // Check if user state exists
       if (!store.state.user) {
-        console.warn('⚠️ User state missing, attempting to create...');
-        
-        try {
+try {
           // Try to register user module
           store.registerModule('user', {
             namespaced: true,
@@ -162,11 +146,8 @@ export function setupGlobalHelpers(store, eventBus) {
               CLEAR_USER: (state) => { state.user = null; state.userStatus = 'free'; }
             }
           });
-          console.log('✅ User module registered');
-        } catch (moduleError) {
-          console.error('❌ Module registration error:', moduleError);
-          
-          // Manual state creation as last resort
+} catch (moduleError) {
+// Manual state creation as last resort
           store.state.user = {
             user: null,
             userStatus: localStatus,
@@ -174,8 +155,7 @@ export function setupGlobalHelpers(store, eventBus) {
             isAuthenticated: false,
             isInitialized: true
           };
-          console.log('✅ User state created manually');
-        }
+}
       }
 
       // Try different possible mutations
@@ -206,20 +186,15 @@ export function setupGlobalHelpers(store, eventBus) {
 
       // ✅ CRITICAL: If getter still fails, create a working getter
       if (!newStoreStatus || newStoreStatus === 'undefined') {
-        console.warn('⚠️ Getter failed, creating backup function');
-        
-        window.getWorkingUserStatus = () => {
+window.getWorkingUserStatus = () => {
           return store.state.user?.userStatus ||
             localStorage.getItem('userStatus') ||
             'free';
         };
       }
-
-      console.log('✅ Store status repaired:', newStoreStatus || localStatus);
-      return newStoreStatus || localStatus;
+return newStoreStatus || localStatus;
     } catch (error) {
-      console.error('❌ Repair failed:', error);
-      return localStatus;
+return localStatus;
     }
   };
 
@@ -243,8 +218,7 @@ export function setupGlobalHelpers(store, eventBus) {
 
       return storeStatus || localStatus || 'free';
     } catch (error) {
-      console.error('❌ Sync error:', error);
-      return 'free';
+return 'free';
     }
   };
 
@@ -261,19 +235,17 @@ export function setupGlobalHelpers(store, eventBus) {
         timestamp: Date.now()
       });
     } catch (error) {
-      console.error('❌ Force sync error:', error);
-    }
+}
   };
 
   // ============================================================================
   // 📦 UPDATE USER SUBSCRIPTION (EXTERNAL HOOK)
   // ============================================================================
   window.updateUserSubscription = (newPlan, source = 'external') => {
-    console.log(`📦 Updating subscription: ${newPlan} (${source})`);
+`);
 
     if (!['free', 'start', 'pro'].includes(newPlan)) {
-      console.warn('❌ Invalid plan:', newPlan);
-      return false;
+return false;
     }
 
     const oldStatus = window.getCurrentUserStatus();
@@ -286,11 +258,8 @@ export function setupGlobalHelpers(store, eventBus) {
   // 🎫 APPLY PROMOCODE (HOOK)
   // ============================================================================
   window.applyPromocode = (promocode, newPlan) => {
-    console.log(`🎫 Applying promocode: ${promocode} for ${newPlan}`);
-
-    if (!newPlan || !['free', 'start', 'pro'].includes(newPlan)) {
-      console.warn('❌ Invalid plan for promocode:', newPlan);
-      return false;
+if (!newPlan || !['free', 'start', 'pro'].includes(newPlan)) {
+return false;
     }
 
     const oldStatus = window.getCurrentUserStatus();
@@ -318,11 +287,8 @@ export function setupGlobalHelpers(store, eventBus) {
   // 💳 PAYMENT COMPLETED (HOOK)
   // ============================================================================
   window.paymentCompleted = (transactionId, plan, amount) => {
-    console.log(`💳 Payment completed: ${plan} - ${amount}`);
-
-    if (!['start', 'pro'].includes(plan)) {
-      console.warn('❌ Invalid plan for payment:', plan);
-      return false;
+if (!['start', 'pro'].includes(plan)) {
+return false;
     }
 
     const oldStatus = window.getCurrentUserStatus();
@@ -360,8 +326,7 @@ export function setupGlobalHelpers(store, eventBus) {
     if (detectedPlan && detectedPlan !== 'free') {
       const storeStatus = store.getters['user/userStatus'];
       if (!storeStatus || storeStatus === 'undefined' || storeStatus !== detectedPlan) {
-        console.log(`🔍 Smart detection found: ${detectedPlan}, repairing store...`);
-        window.repairStoreStatus();
+window.repairStoreStatus();
       }
     }
 
@@ -374,6 +339,4 @@ export function setupGlobalHelpers(store, eventBus) {
   setInterval(() => {
     window.smartPromocodeDetection();
   }, 5000); // Check every 5 seconds
-
-  console.log('✅ Global helpers configured successfully');
 }

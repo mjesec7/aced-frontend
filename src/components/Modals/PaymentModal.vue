@@ -229,8 +229,7 @@ export default {
         }
 
       } catch (err) {
-        console.error('❌ Promo code application error:', err);
-        this.error = 'Произошла ошибка при применении промокода';
+this.error = 'Произошла ошибка при применении промокода';
       } finally {
         this.loading = false;
       }
@@ -264,8 +263,7 @@ export default {
         this.closeModal();
 
       } catch (err) {
-        console.error('❌ Payment navigation error:', err);
-        this.error = 'Ошибка при переходе к оплате';
+this.error = 'Ошибка при переходе к оплате';
       } finally {
         this.loading = false;
       }

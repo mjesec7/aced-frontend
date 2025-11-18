@@ -482,8 +482,7 @@ export default {
         this.showToast('Данные загружены успешно', 'success');
         
       } catch (error) {
-        console.error('❌ Ошибка загрузки данных дневника:', error);
-        this.error = this.getErrorMessage(error);
+this.error = this.getErrorMessage(error);
         this.showToast('Ошибка загрузки данных', 'error');
       } finally {
         this.loading = false;
@@ -608,9 +607,7 @@ export default {
         }
 
       } catch (error) {
-        console.error('❌ Ошибка сохранения дневника:', error);
-        
-        const errorMessage = this.getErrorMessage(error);
+const errorMessage = this.getErrorMessage(error);
         this.saveMessage = errorMessage;
         this.saveMessageType = 'error';
         this.showToast('Ошибка сохранения дневника', 'error');
@@ -639,8 +636,7 @@ export default {
         
         this.showToast('Дневник экспортирован', 'success');
       } catch (error) {
-        console.error('❌ Export error:', error);
-        this.showToast('Ошибка экспорта', 'error');
+this.showToast('Ошибка экспорта', 'error');
       }
     },
 

@@ -164,7 +164,8 @@ const shareResults = () => {
       title: 'My Game Results',
       text: text,
       url: window.location.href
-    }).catch(err => console.log('Share failed:', err));
+    }).catch(err =>
+);
   } else {
     // Fallback: copy to clipboard
     navigator.clipboard.writeText(text).then(() => {

@@ -260,8 +260,7 @@ export function processCurriculum(curriculum) {
 
     // Fallback logic: If steps are empty but description exists, create virtual step
     if ((!stepsToProcess || stepsToProcess.length === 0) && lesson.description) {
-      console.warn(`⚠️ Lesson "${lesson.title}" has no steps. Creating fallback step.`);
-      stepsToProcess = [{
+stepsToProcess = [{
         type: 'explanation',
         title: 'Основная информация',
         content: lesson.description.replace(/\n/g, '<br />'),

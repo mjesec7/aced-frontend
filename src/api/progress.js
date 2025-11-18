@@ -64,16 +64,14 @@ export const submitProgress = async (userId, progressData) => {
           };
         }
       } catch (endpointError) {
-        console.warn(`⚠️ Progress save failed via ${endpoint}:`, endpointError.response?.status, endpointError.message);
-        continue;
+continue;
       }
     }
 
     throw new Error('All progress save endpoints failed');
 
   } catch (error) {
-    console.error('❌ Failed to save progress:', error);
-    throw error;
+throw error;
   }
 };
 
@@ -84,8 +82,7 @@ export const getLessonProgress = async (userId, lessonId) => {
   try {
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
-      console.warn('⚠️ No auth token available for progress');
-      return { success: false, data: null };
+return { success: false, data: null };
     }
 
     const headers = { Authorization: `Bearer ${token}` };
@@ -115,14 +112,10 @@ export const getLessonProgress = async (userId, lessonId) => {
           }
         }
       } catch (endpointError) {
-        console.warn(`⚠️ Endpoint ${endpoint} failed:`, endpointError.message);
-
-        if (endpointError.response?.status === 404) {
+if (endpointError.response?.status === 404) {
           continue;
         }
-
-        console.warn(`⚠️ Endpoint ${endpoint} error:`, endpointError.response?.status, endpointError.message);
-        continue;
+continue;
       }
     }
 
@@ -132,8 +125,7 @@ export const getLessonProgress = async (userId, lessonId) => {
     };
 
   } catch (error) {
-    console.error('❌ Failed to fetch lesson progress:', error);
-    return {
+return {
       success: false,
       data: null,
       error: error.message
@@ -175,14 +167,10 @@ export const getUserProgress = async (userId) => {
           }
         }
       } catch (endpointError) {
-        console.warn(`⚠️ Progress endpoint ${endpoint} failed:`, endpointError.message);
-
-        if (endpointError.response?.status === 404) {
+if (endpointError.response?.status === 404) {
           continue;
         }
-
-        console.warn(`⚠️ Progress endpoint ${endpoint} error:`, endpointError.response?.status, endpointError.message);
-        continue;
+continue;
       }
     }
 
@@ -192,8 +180,7 @@ export const getUserProgress = async (userId) => {
     };
 
   } catch (error) {
-    console.error('❌ Failed to fetch user progress:', error);
-    return {
+return {
       success: false,
       data: [],
       error: error.message
@@ -214,8 +201,7 @@ export const getUserProgressStats = async (userId) => {
     });
     return data;
   } catch (error) {
-    console.error('❌ Failed to get progress stats:', error);
-    throw error;
+throw error;
   }
 };
 
@@ -232,8 +218,7 @@ export const getLessonProgressStats = async (userId, lessonId) => {
     });
     return data;
   } catch (error) {
-    console.error('❌ Failed to get lesson progress stats:', error);
-    throw error;
+throw error;
   }
 };
 
@@ -250,8 +235,7 @@ export const getTopicsProgress = async (userId) => {
     });
     return data;
   } catch (error) {
-    console.error('❌ Failed to get topics progress:', error);
-    throw error;
+throw error;
   }
 };
 
@@ -268,8 +252,7 @@ export const getUserPoints = async (userId) => {
     });
     return data;
   } catch (error) {
-    console.error('❌ Failed to get user points:', error);
-    throw error;
+throw error;
   }
 };
 
@@ -289,19 +272,15 @@ export const getUserAnalytics = async (userId) => {
       const { data } = await api.get(`users/${userId}/analytics`, { headers });
       return data;
     } catch (error) {
-      console.warn('⚠️ User analytics endpoint failed, trying fallback:', error.message);
-
-      try {
+try {
         const { data } = await api.get(`analytics/${userId}`, { headers });
         return data;
       } catch (fallbackError) {
-        console.error('❌ All analytics endpoints failed:', fallbackError.message);
-        throw fallbackError;
+throw fallbackError;
       }
     }
   } catch (error) {
-    console.error('❌ Failed to fetch user analytics:', error);
-    throw error;
+throw error;
   }
 };
 
@@ -318,8 +297,7 @@ export const getUserStats = async (userId) => {
     });
     return data;
   } catch (error) {
-    console.error('❌ Failed to get user stats:', error);
-    throw error;
+throw error;
   }
 };
 
@@ -336,8 +314,7 @@ export const getUserAchievements = async (userId) => {
     });
     return data;
   } catch (error) {
-    console.error('❌ Failed to get user achievements:', error);
-    throw error;
+throw error;
   }
 };
 
@@ -354,7 +331,6 @@ export const getRecommendations = async (userId) => {
     });
     return data;
   } catch (error) {
-    console.error('❌ Failed to get recommendations:', error);
-    throw error;
+throw error;
   }
 };

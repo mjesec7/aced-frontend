@@ -335,9 +335,7 @@ export default {
         this.setUserData(userData, firebaseUser.uid, token);
         
       } catch (error) {
-        console.error('❌ Auth state change error:', error);
-        
-        try {
+try {
           const fallbackUserData = {
             name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
             email: firebaseUser.email,
@@ -348,8 +346,7 @@ export default {
           const token = await firebaseUser.getIdToken(true);
           this.setUserData(fallbackUserData, firebaseUser.uid, token);
         } catch (fallbackError) {
-          console.error('❌ Complete auth failure:', fallbackError);
-          this.showError('Login system error');
+this.showError('Login system error');
         }
       }
     },
@@ -536,8 +533,7 @@ export default {
           this.$router.push('/');
         }
       } catch (error) {
-        console.error('❌ Logout error:', error);
-      }
+}
     },
 
     resetForms() {

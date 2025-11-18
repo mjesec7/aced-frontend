@@ -467,8 +467,7 @@ export default {
       this.setupEventListeners();
       this.setupPeriodicChecks();
     } catch (error) {
-      console.error('❌ TopicOverview: Mount error:', error);
-      this.loading = false; 
+this.loading = false; 
     }
   },
   
@@ -478,8 +477,7 @@ export default {
       try {
         this.$router.push({ name: 'CataloguePage' });
       } catch (error) {
-        console.error('❌ Error navigating to profile:', error);
-        this.$router.push('/profile/catalogue');
+this.$router.push('/profile/catalogue');
       }
     },
 
@@ -501,8 +499,7 @@ export default {
           await this.loadUserProgressForLessons();
         }
       } catch (error) {
-        console.error('❌ Component initialization failed:', error);
-        this.error = this.handleError(error, 'component initialization');
+this.error = this.handleError(error, 'component initialization');
         this.loading = false;
         this.topic = null;
         this.lessons = [];
@@ -569,8 +566,7 @@ export default {
         });
 
       } catch (error) {
-        console.error('❌ Error loading user progress:', error);
-      } finally {
+} finally {
         this.progressLoading = false;
       }
     },
@@ -742,9 +738,7 @@ export default {
         }
         
         if (!topicData || !topicData._id && !topicData.id) {
-          console.error('❌ No valid topic data found in response after parsing:', topicResult);
-          
-          if (this.isDevelopment) {
+if (this.isDevelopment) {
             this.debugInfo = {
               message: 'No valid topic data found in response',
               response: topicResult,
@@ -761,9 +755,7 @@ export default {
         await this.loadLessonsForTopic(this.topic._id || this.topic.id);
         
       } catch (err) {
-        console.error('❌ Error loading topic data:', err);
-        
-        this.error = this.handleError(err, 'loading topic');
+this.error = this.handleError(err, 'loading topic');
         this.topic = null;
         this.lessons = [];
         
@@ -824,8 +816,7 @@ export default {
           .filter(lesson => lesson !== null);
         
       } catch (lessonError) {
-        console.error('❌ Error loading lessons:', lessonError);
-        this.lessons = [];
+this.lessons = [];
         
         if (this.isDevelopment) {
           this.debugInfo = {
@@ -871,8 +862,7 @@ export default {
       };
 
       if (!normalized._id && !normalized.id) {
-          console.error('Normalization: Topic data missing a valid ID:', rawData);
-          return null;
+return null;
       }
       if (!normalized.name || normalized.name === 'Untitled') {
           normalized.name = `Topic ${normalized._id?.substring(0, 8) || ''}`;
@@ -1103,9 +1093,7 @@ export default {
     
     // Comprehensive error handling utility
     handleError(error, context = 'operation') {
-      console.error(`❌ Error in ${context}:`, error);
-      
-      let errorMessage = `An error occurred during ${context}. Please try again.`;
+let errorMessage = `An error occurred during ${context}. Please try again.`;
 
       if (error.response) {
         switch (error.response.status) {
@@ -1134,8 +1122,7 @@ export default {
       }
       
       if (this.isDevelopment) {
-        console.error('Full error object for debugging:', error);
-      }
+}
 
       return errorMessage;
     },
@@ -1185,8 +1172,7 @@ export default {
     startLesson(lesson) {
       try {
         if (!lesson || !lesson._id && !lesson.id) {
-          console.error('❌ Cannot start lesson: invalid lesson object or missing ID', lesson);
-          this.error = 'Error: invalid lesson or missing ID.';
+this.error = 'Error: invalid lesson or missing ID.';
           return;
         }
         
@@ -1200,8 +1186,7 @@ export default {
         this.$router.push({ name: 'LessonPage', params: { id: lessonId } });
         
       } catch (error) {
-        console.error('❌ Error starting lesson:', error);
-        this.error = 'Error starting lesson';
+this.error = 'Error starting lesson';
       }
     },
     
@@ -1218,8 +1203,7 @@ export default {
           this.handleSubscription();
         }
       } catch (error) {
-        console.error('❌ Error starting first lesson:', error);
-        this.error = 'Error starting first lesson';
+this.error = 'Error starting first lesson';
       }
     },
     
@@ -1235,12 +1219,10 @@ export default {
             topicId: this.topic?._id || this.topic?.id
           }
         }).catch(err => {
-          console.error('Router push to payment failed:', err);
-          window.location.href = '/payment/start';
+window.location.href = '/payment/start';
         });
       } catch (error) {
-        console.error('❌ Error redirecting to subscription:', error);
-        window.location.href = '/payment/start';
+window.location.href = '/payment/start';
       }
     },
     
@@ -1342,10 +1324,8 @@ export default {
   
   // Error boundary for template errors
   errorCaptured(err, vm, info) {
-    console.error('❌ TopicOverview: Component error captured:', err);
-    console.error('Error info:', info);
-    
-    if (this.isDevelopment) {
+
+if (this.isDevelopment) {
       this.debugInfo = {
         ...this.debugInfo,
         templateError: err.message,

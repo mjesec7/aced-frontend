@@ -21,8 +21,7 @@ export const getUserInfo = async (userId) => {
     const { data } = await api.get(`users/${userId}`, { headers });
     return data;
   } catch (error) {
-    console.error('❌ Failed to fetch user info:', error);
-    throw error;
+throw error;
   }
 };
 
@@ -58,8 +57,7 @@ export const getUserStatus = async (userId) => {
           };
         }
       } catch (endpointError) {
-        console.warn(`⚠️ Status endpoint ${endpoint} failed:`, endpointError.message);
-        continue;
+continue;
       }
     }
 
@@ -71,8 +69,7 @@ export const getUserStatus = async (userId) => {
     };
 
   } catch (error) {
-    console.error('❌ Failed to get user status:', error);
-    return {
+return {
       success: false,
       data: { subscriptionPlan: 'free' },
       status: 'free',
@@ -93,8 +90,7 @@ export const saveUser = async (userData) => {
       data: data
     };
   } catch (error) {
-    console.error('❌ Failed to save user:', error);
-    throw error;
+throw error;
   }
 };
 
@@ -113,8 +109,7 @@ export const updateUserProfile = async (userId, profileData) => {
     const { data } = await api.put(`users/${userId}/profile`, profileData, { headers });
     return data;
   } catch (error) {
-    console.error('❌ Failed to update user profile:', error);
-    throw error;
+throw error;
   }
 };
 
@@ -140,9 +135,7 @@ export const getUserStudyList = async (userId) => {
       message: data.message
     };
   } catch (error) {
-    console.error('❌ Failed to get study list:', error);
-
-    if (error.response?.status === 404) {
+if (error.response?.status === 404) {
       return {
         success: true,
         data: [],
@@ -224,8 +217,7 @@ export const cleanupStudyList = async (userId) => {
     });
     return data;
   } catch (error) {
-    console.error('❌ Failed to cleanup study list:', error);
-    throw error;
+throw error;
   }
 };
 
@@ -246,8 +238,7 @@ export const getUserGoals = async (userId) => {
     });
     return data;
   } catch (error) {
-    console.error('❌ Failed to get user goals:', error);
-    throw error;
+throw error;
   }
 };
 
@@ -264,8 +255,7 @@ export const createUserGoal = async (userId, goalData) => {
     });
     return data;
   } catch (error) {
-    console.error('❌ Failed to create user goal:', error);
-    throw error;
+throw error;
   }
 };
 
@@ -282,8 +272,7 @@ export const updateUserGoal = async (userId, goalId, goalData) => {
     });
     return data;
   } catch (error) {
-    console.error('❌ Failed to update user goal:', error);
-    throw error;
+throw error;
   }
 };
 
@@ -300,8 +289,7 @@ export const deleteUserGoal = async (userId, goalId) => {
     });
     return data;
   } catch (error) {
-    console.error('❌ Failed to delete user goal:', error);
-    throw error;
+throw error;
   }
 };
 
@@ -322,8 +310,7 @@ export const saveDiaryEntry = async (userId, diaryData) => {
     });
     return data;
   } catch (error) {
-    console.error('❌ Failed to save diary entry:', error);
-    throw error;
+throw error;
   }
 };
 
@@ -340,8 +327,7 @@ export const getDiaryEntries = async (userId) => {
     });
     return data;
   } catch (error) {
-    console.error('❌ Failed to get diary entries:', error);
-    throw error;
+throw error;
   }
 };
 
@@ -365,8 +351,7 @@ export const getLearningProfile = async (userId) => {
     
     return data;
   } catch (error) {
-    console.error('❌ Failed to get learning profile:', error);
-    throw error;
+throw error;
   }
 };
 
@@ -386,8 +371,7 @@ export const updateLearningProfile = async (userId, performanceData) => {
     
     return data;
   } catch (error) {
-    console.error('❌ Failed to update learning profile:', error);
-    throw error;
+throw error;
   }
 };
 
@@ -407,8 +391,7 @@ export const getPersonalizedRecommendations = async (userId) => {
     
     return data;
   } catch (error) {
-    console.error('❌ Failed to get recommendations:', error);
-    throw error;
+throw error;
   }
 };
 
@@ -432,8 +415,7 @@ export const getUserRewards = async (userId) => {
     
     return data;
   } catch (error) {
-    console.error('❌ Failed to get rewards:', error);
-    throw error;
+throw error;
   }
 };
 
@@ -453,8 +435,7 @@ export const checkReward = async (userId, currentStep) => {
     
     return data;
   } catch (error) {
-    console.error('❌ Failed to check reward:', error);
-    throw error;
+throw error;
   }
 };
 
@@ -474,8 +455,7 @@ export const updateStreak = async (userId) => {
 
     return data;
   } catch (error) {
-    console.error('❌ Failed to update streak:', error);
-    throw error;
+throw error;
   }
 };
 
@@ -499,8 +479,7 @@ export const getLearningMode = async (userId) => {
       data: data
     };
   } catch (error) {
-    console.error('❌ Failed to get learning mode:', error);
-    return {
+return {
       success: false,
       error: error.response?.data?.error || error.message
     };
@@ -526,8 +505,7 @@ export const switchLearningMode = async (userId, newMode, reason = '') => {
       data: data
     };
   } catch (error) {
-    console.error('❌ Failed to switch learning mode:', error);
-    return {
+return {
       success: false,
       error: error.response?.data?.error || error.message
     };
@@ -550,8 +528,7 @@ export const startPlacementTest = async (userId) => {
       data: data
     };
   } catch (error) {
-    console.error('❌ Failed to start placement test:', error);
-    return {
+return {
       success: false,
       error: error.response?.data?.error || error.message
     };
@@ -577,8 +554,7 @@ export const submitPlacementTestAnswer = async (testId, answer, timeSpent) => {
       data: data
     };
   } catch (error) {
-    console.error('❌ Failed to submit placement test answer:', error);
-    return {
+return {
       success: false,
       error: error.response?.data?.error || error.message
     };
@@ -601,8 +577,7 @@ export const getPlacementTestResults = async (userId) => {
       data: data
     };
   } catch (error) {
-    console.error('❌ Failed to get placement test results:', error);
-    return {
+return {
       success: false,
       error: error.response?.data?.error || error.message
     };
@@ -625,8 +600,7 @@ export const getSchoolCurriculum = async (userId) => {
       data: data
     };
   } catch (error) {
-    console.error('❌ Failed to get school curriculum:', error);
-    return {
+return {
       success: false,
       error: error.response?.data?.error || error.message
     };
@@ -652,8 +626,7 @@ export const completeLevel = async (userId, levelData) => {
       data: data
     };
   } catch (error) {
-    console.error('❌ Failed to complete level:', error);
-    return {
+return {
       success: false,
       error: error.response?.data?.error || error.message
     };
@@ -679,8 +652,7 @@ export const addStudyCentreBookmark = async (userId, courseId, notes = '') => {
       data: data
     };
   } catch (error) {
-    console.error('❌ Failed to add bookmark:', error);
-    return {
+return {
       success: false,
       error: error.response?.data?.error || error.message
     };
@@ -706,8 +678,7 @@ export const createPersonalPath = async (userId, pathData) => {
       data: data
     };
   } catch (error) {
-    console.error('❌ Failed to create personal path:', error);
-    return {
+return {
       success: false,
       error: error.response?.data?.error || error.message
     };
@@ -730,8 +701,7 @@ export const getAccessibleContent = async (userId) => {
       data: data
     };
   } catch (error) {
-    console.error('❌ Failed to get accessible content:', error);
-    return {
+return {
       success: false,
       error: error.response?.data?.error || error.message
     };
@@ -755,8 +725,7 @@ export const checkLessonAccess = async (userId, lessonId) => {
       reason: data.reason
     };
   } catch (error) {
-    console.error('❌ Failed to check lesson access:', error);
-    return {
+return {
       success: false,
       canAccess: false,
       reason: error.response?.data?.error || error.message

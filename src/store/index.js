@@ -72,8 +72,7 @@ export default createStore({
         localStorage.setItem('token', token);
 
       } catch (err) {
-        console.error('❌ [Vuex] Login error:', err.response?.data || err.message);
-      }
+}
     },
 
     logoutUser({ commit }) {
@@ -97,8 +96,7 @@ export default createStore({
         commit('setDiaryLogs', diaryLogs);
         commit('setAuthInitialized', true);
       } catch (error) {
-        console.error('❌ [Vuex] Error loading local session:', error);
-        commit('setAuthInitialized', true); // Prevent hanging
+commit('setAuthInitialized', true); // Prevent hanging
       }
     },
 

@@ -314,8 +314,7 @@ const handleGameComplete = async (data = {}) => {
       isPersonalBest.value = result.result?.personalBest || false;
     }
   } catch (error) {
-    console.error('Failed to submit game results:', error);
-  } finally {
+} finally {
     isLoading.value = false;
   }
 };
@@ -343,7 +342,6 @@ const continueLesson = () => {
 };
 
 const handleShare = (shareData) => {
-  console.log('Sharing results:', shareData);
 };
 
 // Lifecycle

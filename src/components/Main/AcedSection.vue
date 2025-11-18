@@ -196,120 +196,86 @@ export default {
 
   async mounted() {
     try {
-      console.log('🚀 AcedSection mounting...');
-      await this.initializeCourses();
+await this.initializeCourses();
     } catch (error) {
-      console.error('❌ AcedSection mount error:', error);
-      this.handleError(error);
+this.handleError(error);
     }
   },
 
   methods: {
     async initializeCourses() {
-      console.log('📦 Initializing courses...');
-      this.loadingCourses = true;
+this.loadingCourses = true;
       this.errorMessage = null;
       
       try {
         let coursesData = await this.fetchCoursesFromLessons();
-        console.log('📊 Courses from lessons:', coursesData?.length);
-        
-        if (!coursesData || coursesData.length === 0) {
-          console.log('⚠️ No courses from lessons, trying topics...');
-          coursesData = await this.fetchCoursesFromTopics();
-          console.log('📊 Courses from topics:', coursesData?.length);
-        }
+if (!coursesData || coursesData.length === 0) {
+coursesData = await this.fetchCoursesFromTopics();
+}
         
         if (coursesData && coursesData.length > 0) {
           this.allCourses = coursesData;
-          console.log('✅ Set allCourses:', this.allCourses.length);
-          
-          this.extractSubjects();
+this.extractSubjects();
           this.filterCourses();
-          
-          console.log('✅ Final state:', {
-            allCourses: this.allCourses.length,
-            filteredCourses: this.filteredCourses.length,
-            displayedCourses: this.displayedCourses.length
-          });
-        } else {
-          console.warn('⚠️ No courses found from any source');
-          this.allCourses = [];
+} else {
+this.allCourses = [];
           this.filteredCourses = [];
           this.displayedCourses = [];
         }
         
       } catch (error) {
-        console.error('❌ Error initializing courses:', error);
-        this.handleError(error);
+this.handleError(error);
       } finally {
         this.loadingCourses = false;
-        console.log('✅ Loading complete. DisplayedCourses:', this.displayedCourses.length);
-      }
+}
     },
 
     async fetchCoursesFromLessons() {
       try {
-        console.log('📡 Fetching lessons...');
-        const lessonsResult = await getAllLessons();
+const lessonsResult = await getAllLessons();
         
         if (lessonsResult?.success && Array.isArray(lessonsResult.data) && lessonsResult.data.length > 0) {
-          console.log('✅ Got', lessonsResult.data.length, 'lessons');
-          const courses = this.buildCoursesFromLessons(lessonsResult.data);
-          console.log('✅ Built', courses.length, 'courses from lessons');
-          return courses;
+const courses = this.buildCoursesFromLessons(lessonsResult.data);
+return courses;
         }
-        
-        console.warn('⚠️ No valid lessons data');
-        return [];
+return [];
       } catch (error) {
-        console.error('❌ Error fetching courses from lessons:', error);
-        return [];
+return [];
       }
     },
 
     async fetchCoursesFromTopics() {
       try {
-        console.log('📡 Fetching topics...');
-        const topicsResult = await getTopics({ includeStats: true });
+const topicsResult = await getTopics({ includeStats: true });
         
         if (topicsResult?.success && Array.isArray(topicsResult.data) && topicsResult.data.length > 0) {
-          console.log('✅ Got', topicsResult.data.length, 'topics');
-          const coursesWithLessons = topicsResult.data.filter(topic => {
+const coursesWithLessons = topicsResult.data.filter(topic => {
             return topic.lessons && topic.lessons.length > 0;
           });
-          console.log('✅ Filtered to', coursesWithLessons.length, 'topics with lessons');
-          return coursesWithLessons;
+return coursesWithLessons;
         }
-        
-        console.warn('⚠️ No valid topics data');
-        return [];
+return [];
       } catch (error) {
-        console.error('❌ Error fetching courses from topics:', error);
-        return [];
+return [];
       }
     },
 
     buildCoursesFromLessons(lessons) {
-      console.log('🔨 Building courses from', lessons.length, 'lessons');
-      const coursesMap = new Map();
+const coursesMap = new Map();
       
       lessons.forEach((lesson, index) => {
         if (!lesson?.topicId) {
-          console.warn('⚠️ Lesson', index, 'has no topicId');
-          return;
+return;
         }
         
         const topicId = this.extractTopicId(lesson.topicId);
         if (!topicId) {
-          console.warn('⚠️ Could not extract topicId from:', lesson.topicId);
-          return;
+return;
         }
         
         const topicName = this.getTopicNameFromLesson(lesson);
         if (!topicName) {
-          console.warn('⚠️ Could not get topic name from lesson');
-          return;
+return;
         }
         
         if (!coursesMap.has(topicId)) {
@@ -329,8 +295,7 @@ export default {
             createdAt: lesson.createdAt || new Date().toISOString()
           };
           coursesMap.set(topicId, newCourse);
-          console.log('✅ Created new course:', topicName);
-        } else {
+} else {
           const course = coursesMap.get(topicId);
           course.lessons.push(lesson);
           course.lessonCount++;
@@ -339,18 +304,14 @@ export default {
       });
       
       const coursesArray = Array.from(coursesMap.values());
-      console.log('🔨 Built courses map:', coursesArray.length, 'unique courses');
-      
-      const sortedCourses = coursesArray.sort((a, b) => {
+const sortedCourses = coursesArray.sort((a, b) => {
         if (a.type !== b.type) {
           if (a.type === 'free') return -1;
           if (b.type === 'free') return 1;
         }
         return a.subject.localeCompare(b.subject);
       });
-      
-      console.log('✅ Final sorted courses:', sortedCourses.length);
-      return sortedCourses;
+return sortedCourses;
     },
 
     extractSubjects() {
@@ -361,21 +322,16 @@ export default {
         }
       });
       this.availableSubjects = Array.from(subjects).sort();
-      console.log('📚 Extracted subjects:', this.availableSubjects);
-    },
+},
 
     filterCourses() {
-      console.log('🔍 Filtering courses from', this.allCourses.length, 'total courses');
-      this.filteredCourses = [...this.allCourses];
-      console.log('✅ Filtered courses:', this.filteredCourses.length);
-      this.updateDisplayedCourses();
+this.filteredCourses = [...this.allCourses];
+this.updateDisplayedCourses();
     },
 
     updateDisplayedCourses() {
-      console.log('📋 Updating displayed courses');
-      this.displayedCourses = this.filteredCourses.slice(0, this.maxDisplayedCourses);
-      console.log('✅ Displayed courses set to:', this.displayedCourses.length);
-    },
+this.displayedCourses = this.filteredCourses.slice(0, this.maxDisplayedCourses);
+},
 
     async refreshCourses() {
       if (this.retryCount >= this.maxRetries) {
@@ -384,8 +340,7 @@ export default {
       }
       
       this.retryCount++;
-      console.log('🔄 Refreshing courses, attempt:', this.retryCount);
-      await this.initializeCourses();
+await this.initializeCourses();
       
       if (!this.errorMessage) {
         this.retryCount = 0;
@@ -393,45 +348,32 @@ export default {
     },
 
     handleCourseClick(course) {
-      console.log('👆 Course clicked:', course);
-      this.handleStartCourse(course);
+this.handleStartCourse(course);
     },
 
     async handleStartCourse(course) {
       // ✅ UPDATED: Prevent duplicate processing
       if (!course?._id || this.processingCourse === course._id || this.navigationInProgress) {
-        console.warn('⚠️ Invalid course, already processing, or navigation in progress');
-        return;
+return;
       }
-      
-      console.log('🚀 Starting course:', course);
-      this.processingCourse = course._id;
+this.processingCourse = course._id;
       this.navigationInProgress = true;
       
       try {
         const topicType = this.getTopicType(course);
         const isAuthenticated = this.checkUserAuthentication();
-        
-        console.log('Course type:', topicType, 'Authenticated:', isAuthenticated);
-        
-        // ✅ UPDATED: For free courses - allow guest access
+// ✅ UPDATED: For free courses - allow guest access
         if (topicType === 'free') {
           const firstLesson = course.lessons && course.lessons.length > 0 ? course.lessons[0] : null;
           
           if (firstLesson && firstLesson._id) {
-            console.log('📖 Opening first lesson:', firstLesson._id);
-            
-            const lessonId = String(firstLesson._id).trim();
+const lessonId = String(firstLesson._id).trim();
             
             if (!lessonId || lessonId === 'null' || lessonId === 'undefined' || lessonId === '') {
-              console.error('❌ Invalid lesson ID:', firstLesson._id);
-              this.errorMessage = 'Invalid lesson ID';
+this.errorMessage = 'Invalid lesson ID';
               return;
             }
-            
-            console.log('✅ Validated lesson ID:', lessonId);
-            
-            // ✅ NEW: Navigate with guest parameter for unauthenticated users
+// ✅ NEW: Navigate with guest parameter for unauthenticated users
             try {
               await this.$router.push({ 
                 name: 'LessonPage',
@@ -442,13 +384,8 @@ export default {
                   type: 'free'  // ✅ Mark as free content
                 }
               });
-              
-              console.log('✅ Successfully navigated to lesson page');
-              
-            } catch (navError) {
-              console.error('❌ Navigation error:', navError);
-              
-              // Fallback: Try direct path navigation
+} catch (navError) {
+// Fallback: Try direct path navigation
               const guestParam = !isAuthenticated ? '&guest=true&type=free' : '&type=free';
               window.location.href = `/lesson/${lessonId}?source=aced-section${guestParam}`;
             }
@@ -466,8 +403,7 @@ export default {
                 }
               });
             } catch (topicError) {
-              console.error('❌ Topic overview navigation failed:', topicError);
-              this.errorMessage = 'Unable to open topic';
+this.errorMessage = 'Unable to open topic';
             }
           }
         } else {
@@ -489,8 +425,7 @@ export default {
                   }
                 });
               } catch (navError) {
-                console.error('❌ Premium lesson navigation failed:', navError);
-                window.location.href = `/lesson/${lessonId}?source=aced-section&type=${topicType}`;
+window.location.href = `/lesson/${lessonId}?source=aced-section&type=${topicType}`;
               }
             }
           } else {
@@ -501,8 +436,7 @@ export default {
         }
         
       } catch (error) {
-        console.error('❌ Error starting course:', error);
-        this.errorMessage = 'Unable to open course';
+this.errorMessage = 'Unable to open course';
       } finally {
         // Reset processing flags with delay
         setTimeout(() => {
@@ -515,8 +449,7 @@ export default {
     checkUserAuthentication() {
       const auth = getAuth();
       const isAuth = !!auth.currentUser;
-      console.log('🔐 User authenticated:', isAuth);
-      return isAuth;
+return isAuth;
     },
 
     triggerRegistration() {
@@ -560,8 +493,7 @@ export default {
       }
       
       this.errorMessage = errorMessage;
-      console.error('❌ Error handled:', errorMessage);
-    },
+},
 
     getTopicName(course) {
       if (!course) return 'Untitled';

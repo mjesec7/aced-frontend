@@ -260,8 +260,7 @@ onMounted(() => {
   if (patterns.value.length > 0) {
     initializeLevel();
   } else {
-    console.warn('No patterns provided for PatternBuilder game');
-  }
+}
 });
 </script>
 

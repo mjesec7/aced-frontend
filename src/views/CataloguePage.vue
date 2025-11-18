@@ -677,11 +677,9 @@ export default {
       await this.loadData();
     },
     async loadData() {
-      console.log('🚀 CATALOGUE: Starting data load');
-      console.log('📊 Mode:', this.isSchoolMode ? 'SCHOOL' : 'STUDY CENTRE');
-      console.log('📊 Level Cap:', this.currentLevelCap);
 
-      this.isLoading = true;
+
+this.isLoading = true;
       try {
         // Load progress and study list in parallel
         const [progressResult, studyListResult] = await Promise.all([
@@ -702,45 +700,35 @@ export default {
         // Try to fetch content using new mode-based endpoints
         try {
           if (this.isSchoolMode) {
-            console.log('🏫 Fetching school mode topics...');
-            const result = await getTopicsGrouped();
-            console.log('✅ School topics result:', result);
-            console.log('📚 School data structure:', Object.keys(result.data || {}));
+const result = await getTopicsGrouped();
+
+);
 
             if (result.success && result.data) {
               this.processModeContent(result.data, 'school');
               return; // Success, exit early
             }
           } else {
-            console.log('📚 Fetching study centre courses...');
-            const result = await getTopicsAsCourses();
-            console.log('✅ Study centre result:', result);
-            console.log('📊 Courses received:', result.courses?.length || 0);
+const result = await getTopicsAsCourses();
 
-            if (result.success && result.courses) {
-              console.log('🎓 First course sample:', result.courses[0]);
-              this.processModeContent(result.courses, 'study-centre');
+if (result.success && result.courses) {
+this.processModeContent(result.courses, 'study-centre');
               return; // Success, exit early
             }
           }
         } catch (modeError) {
-          console.warn('⚠️ Mode-based endpoints error:', modeError);
-        }
+}
 
         // Fallback: Use legacy method (getAllLessons)
-        console.log('⚠️ Using legacy lesson fetch');
-        const lessonsResult = await getAllLessons();
-        console.log('📚 Lessons fetched:', lessonsResult?.data?.length || 0);
-        console.log('📖 First lesson sample:', lessonsResult?.data?.[0]);
-        this.lessons = lessonsResult?.data || [];
+const lessonsResult = await getAllLessons();
+
+this.lessons = lessonsResult?.data || [];
         this.processAllCourses();
 
       } catch (error) {
-        console.error('❌ CATALOGUE ERROR:', error);
-      } finally {
+} finally {
         this.isLoading = false;
-        console.log('✅ CATALOGUE: Load complete, courses:', this.courses.length);
-      }
+}
     },
 
     // --- DATA PROCESSING ---
@@ -776,25 +764,16 @@ export default {
       return finalProgress;
     },
     processAllCourses() {
-      console.log('🔧 Processing courses from lessons:', this.lessons.length);
-      const coursesMap = new Map();
+const coursesMap = new Map();
 
       this.lessons.forEach((lesson, idx) => {
         const topicId = this.extractTopicId(lesson.topicId);
 
         if (idx < 5) {
-          console.log(`📝 Lesson ${idx}:`, {
-            name: lesson.lessonName,
-            topic: topicId,
-            subject: lesson.subject,
-            level: lesson.level,
-            type: lesson.type
-          });
-        }
+}
 
         if (!topicId) {
-          console.warn('⚠️ No topicId:', lesson.lessonName);
-          return;
+return;
         }
 
         if (!coursesMap.has(topicId)) {
@@ -817,15 +796,12 @@ export default {
           course.type = 'premium';
         }
       });
-
-      console.log('✅ Courses map size:', coursesMap.size);
-      this.courses = Array.from(coursesMap.values()).map(course => ({
+this.courses = Array.from(coursesMap.values()).map(course => ({
         ...course,
         progress: this.userProgress[course.topicId] || 0,
         inStudyPlan: this.studyPlanTopics.includes(course.topicId),
       }));
-      console.log('✅ Final courses:', this.courses.length);
-    },
+},
 
     /**
      * Process content from new mode-based endpoints
@@ -833,11 +809,7 @@ export default {
      * @param {String} mode - 'school' or 'study-centre'
      */
     processModeContent(data, mode) {
-      console.log('🔧 Processing mode content:', {
-        mode,
-        dataType: typeof data,
-        hasData: !!data,
-        firstItem: Array.isArray(data) ? data[0] : null
+? data[0] : null
       });
 
       if (mode === 'school') {
@@ -853,14 +825,7 @@ export default {
                                 topic.topicName ||
                                 topic.title ||
                                 'Untitled Course';
-
-              console.log(`📚 School topic:`, {
-                id: topic._id,
-                name: courseName,
-                rawTopic: topic
-              });
-
-              allCourses.push({
+allCourses.push({
                 topicId: topic._id || topic.id,
                 name: courseName,
                 level: String(level),
@@ -876,25 +841,15 @@ export default {
         }
 
         this.courses = allCourses;
-        console.log(`✅ School mode: ${allCourses.length} courses processed`);
-      } else {
+} else {
         // Study Centre Mode: data is array of course objects
-        console.log('🎓 Study Centre raw data:', data);
-
-        this.courses = data.map(course => {
+this.courses = data.map(course => {
           // Try multiple name sources with fallback
           const courseName = course.name ||
                             course.topicName ||
                             course.title ||
                             'Untitled Course';
-
-          console.log(`📖 Study centre course:`, {
-            id: course._id || course.id,
-            name: courseName,
-            rawCourse: course
-          });
-
-          return {
+return {
             topicId: course._id || course.id || course.topicId,
             name: courseName,
             level: String(course.level || 1),
@@ -906,12 +861,10 @@ export default {
             inStudyPlan: this.studyPlanTopics.includes(course._id || course.id || course.topicId),
           };
         });
-
-        console.log(`✅ Study centre: ${this.courses.length} courses processed`);
-      }
+}
 
       // Log first few courses for debugging
-      console.log('📊 Final courses sample:', this.courses.slice(0, 3));
+);
     },
 
     // --- FILTER & PAGINATION HANDLERS ---
@@ -982,8 +935,7 @@ export default {
           throw new Error(result.error || 'Failed to add to study plan');
         }
       } catch (error) {
-        console.error('Error adding to study plan:', error);
-        alert(error.message || 'Failed to add course to study plan');
+alert(error.message || 'Failed to add course to study plan');
         this.showAddModal = false;
       }
     },
@@ -1074,8 +1026,7 @@ export default {
 
     // Navigate to level test
     goToLevelTest(subject) {
-      console.log('Going to level test for subject:', subject);
-      // Store the subject for the test
+// Store the subject for the test
       sessionStorage.setItem('testSubject', subject);
       // Navigate to level test route
       this.$router.push({

@@ -9,16 +9,7 @@ import { BASE_URL } from './core';
  * General error handler for API calls
  */
 export const handleApiError = (error, context = 'API call') => {
-  console.error(`❌ ${context} failed:`, {
-    url: error.config?.url,
-    method: error.config?.method,
-    status: error.response?.status,
-    statusText: error.response?.statusText,
-    message: error.response?.data?.message || error.message,
-    data: error.response?.data
-  });
-
-  if (error.response?.status === 401) {
+if (error.response?.status === 401) {
     return 'Необходимо войти в систему';
   } else if (error.response?.status === 403) {
     return 'Доступ запрещен';
@@ -85,8 +76,7 @@ export const processOfflineQueue = async () => {
       try {
         await request();
       } catch (error) {
-        console.error('❌ Failed to process offline request:', error);
-        // Re-queue failed requests
+// Re-queue failed requests
         offlineQueue.push(request);
       }
     }
@@ -97,8 +87,7 @@ export const processOfflineQueue = async () => {
 if (typeof window !== 'undefined') {
   window.addEventListener('online', processOfflineQueue);
   window.addEventListener('offline', () => {
-    console.log('📴 App is offline');
-  });
+});
 }
 
 // =============================================
@@ -134,8 +123,7 @@ export const diagnosticTool = {
       };
 
     } catch (error) {
-      console.error('❌ Backend connectivity test failed:', error);
-      return {
+return {
         success: false,
         error: error.message
       };
@@ -176,14 +164,11 @@ export const diagnosticTool = {
         };
 
         if (response.ok) {
-          console.log(`✅ ${endpoint.name}: ${response.status}`);
-        } else {
-          console.warn(`⚠️ ${endpoint.name}: ${response.status} - ${data.error || data.message || 'Unknown error'}`);
-        }
+} else {
+}
 
       } catch (error) {
-        console.error(`❌ ${endpoint.name}: ${error.message}`);
-        results[endpoint.name] = {
+results[endpoint.name] = {
           status: 'ERROR',
           success: false,
           error: error.message,
@@ -235,8 +220,7 @@ export const diagnosticTool = {
       }
 
     } catch (error) {
-      console.error('❌ Auth flow test failed:', error);
-      return {
+return {
         success: false,
         error: error.message
       };
@@ -256,8 +240,7 @@ export const formatCurrency = (amount, currency = 'UZS') => {
     const numAmount = Number(amount);
     
     if (isNaN(numAmount)) {
-      console.warn('⚠️ Invalid amount for formatting:', amount);
-      return `${amount} сум`;
+return `${amount} сум`;
     }
     
     if (currency === 'UZS') {
@@ -275,8 +258,7 @@ export const formatCurrency = (amount, currency = 'UZS') => {
       maximumFractionDigits: 0
     }).format(numAmount);
   } catch (error) {
-    console.warn('⚠️ Currency formatting failed, using fallback:', error);
-    const numAmount = Number(amount) || 0;
+const numAmount = Number(amount) || 0;
     return `${numAmount.toLocaleString('uz-UZ')} сум`;
   }
 };
@@ -309,8 +291,7 @@ export const formatDate = (date, format = 'default') => {
         return d.toLocaleDateString('ru-RU');
     }
   } catch (error) {
-    console.warn('⚠️ Date formatting failed:', error);
-    return date;
+return date;
   }
 };
 
@@ -394,8 +375,7 @@ export const deepClone = (obj) => {
   try {
     return JSON.parse(JSON.stringify(obj));
   } catch (error) {
-    console.warn('⚠️ Deep clone failed:', error);
-    return obj;
+return obj;
   }
 };
 
@@ -533,8 +513,7 @@ export const copyToClipboard = async (text) => {
       return true;
     }
   } catch (error) {
-    console.error('❌ Failed to copy to clipboard:', error);
-    return false;
+return false;
   }
 };
 
@@ -554,8 +533,7 @@ export const downloadFile = (data, filename, mimeType = 'text/plain') => {
     window.URL.revokeObjectURL(url);
     return true;
   } catch (error) {
-    console.error('❌ Failed to download file:', error);
-    return false;
+return false;
   }
 };
 

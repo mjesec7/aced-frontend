@@ -579,8 +579,7 @@ export default {
           });
         }
       } catch (error) {
-        console.error('Failed to submit results:', error);
-        // Fail silently - results are shown to user regardless
+// Fail silently - results are shown to user regardless
       }
     };
 

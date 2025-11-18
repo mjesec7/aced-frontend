@@ -40,8 +40,7 @@ const trackPaymentAttempt = (userId, operation) => {
   
   // Check if max attempts reached
   if (attempts.count >= MAX_PAYMENT_ATTEMPTS) {
-    console.warn(`🚫 Payment attempt limit reached for ${key}`);
-    return false;
+return false;
   }
   
   // Increment attempt count
@@ -75,17 +74,14 @@ const getValidToken = async () => {
   try {
     const currentUser = auth.currentUser;
     if (!currentUser) {
-      console.warn('⚠️ No Firebase user available for payment');
-      return null;
+return null;
     }
     
     const token = await currentUser.getIdToken(true);
     localStorage.setItem('token', token);
-    console.log('🔑 Fresh payment token obtained');
-    return token;
+return token;
   } catch (error) {
-    console.error('❌ Failed to get valid payment token:', error);
-    return null;
+return null;
   }
 };
 
@@ -103,8 +99,7 @@ paymentApi.interceptors.request.use(async (config) => {
     
     return config;
   } catch (error) {
-    console.error('❌ Payment request interceptor error:', error);
-    return Promise.reject(error);
+return Promise.reject(error);
   }
 });
 
@@ -113,14 +108,7 @@ paymentApi.interceptors.response.use(
     return response;
   },
   async (error) => {
-    console.error('Payment API Error:', {
-      url: error.config?.url,
-      method: error.config?.method,
-      status: error.response?.status,
-      message: error.response?.data?.message || error.message
-    });
-    
-    // Handle 401 errors with token refresh for payments
+// Handle 401 errors with token refresh for payments
     if (error.response?.status === 401 && !error.config._retry) {
       error.config._retry = true;
       
@@ -133,8 +121,7 @@ paymentApi.interceptors.response.use(
           return paymentApi(error.config);
         }
       } catch (refreshError) {
-        console.error('❌ Payment token refresh failed:', refreshError);
-        localStorage.removeItem('token');
+localStorage.removeItem('token');
       }
     }
     
@@ -182,8 +169,7 @@ export const formatPaymentAmount = (amount, currency = 'UZS') => {
     const numAmount = Number(amount);
     
     if (isNaN(numAmount)) {
-      console.warn('⚠️ Invalid amount for formatting:', amount);
-      return `${amount} сум`;
+return `${amount} сум`;
     }
     
     if (currency === 'UZS') {
@@ -201,8 +187,7 @@ export const formatPaymentAmount = (amount, currency = 'UZS') => {
       maximumFractionDigits: 0
     }).format(numAmount);
   } catch (error) {
-    console.warn('⚠️ Currency formatting failed, using fallback:', error);
-    const numAmount = Number(amount) || 0;
+const numAmount = Number(amount) || 0;
     return `${numAmount.toLocaleString('uz-UZ')} сум`;
   }
 };
@@ -228,18 +213,14 @@ export const getTransactionStateText = (state) => {
 
 const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
   try {
-    console.log('🔗 Generating PayMe GET URL - Method 1');
-    
-    // Get merchant ID with validation
+// Get merchant ID with validation
     const merchantId = import.meta.env.VITE_PAYME_MERCHANT_ID;
     
     if (!merchantId || merchantId === 'undefined' || typeof merchantId !== 'string') {
-      console.error('❌ VITE_PAYME_MERCHANT_ID not loaded properly');
-      console.error('Current value:', merchantId, 'Type:', typeof merchantId);
-      throw new Error('PayMe Merchant ID not configured. Check your .env file.');
+
+throw new Error('PayMe Merchant ID not configured. Check your .env file.');
     }
-    
-    console.log('✅ Merchant ID loaded:', merchantId.substring(0, 10) + '...');
++ '...');
     
     const amounts = getPaymentAmounts();
     const planAmount = amounts[plan]?.tiyin;
@@ -252,15 +233,7 @@ const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
     const timestamp = Date.now();
     const randomPart = Math.random().toString(36).substr(2, 6);
     const orderId = `aced${timestamp}${randomPart}`;
-    
-    console.log('💰 Payment details:', {
-      plan,
-      orderId,
-      amountTiyin: planAmount,
-      amountUzs: amounts[plan].uzs
-    });
-    
-    // Build parameters according to GET documentation
+// Build parameters according to GET documentation
     const params = [];
     params.push(`m=${merchantId}`);
     params.push(`ac.Login=${orderId}`);
@@ -280,9 +253,7 @@ const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
     
     // Join with semicolon as per documentation
     const paramString = params.join(';');
-    console.log('📝 Parameter string:', paramString);
-    
-    // Validate no undefined values
+// Validate no undefined values
     if (paramString.includes('undefined') || paramString.includes('null')) {
       throw new Error('Parameter string contains invalid values: ' + paramString);
     }
@@ -293,15 +264,10 @@ const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
     
     // Final verification
     const verification = atob(base64Params);
-    console.log('✅ Verification - decoded:', verification);
-    
-    if (verification !== paramString) {
+if (verification !== paramString) {
       throw new Error('URL encoding/decoding mismatch');
     }
-    
-    console.log('✅ PayMe GET URL generated successfully');
-    
-    return {
+return {
       success: true,
       paymentUrl,
       method: 'GET',
@@ -313,8 +279,7 @@ const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
     };
     
   } catch (error) {
-    console.error('❌ GET URL generation failed:', error);
-    return {
+return {
       success: false,
       error: error.message
     };
@@ -327,9 +292,7 @@ const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
 
 const generateDirectPaymeForm = async (userId, plan, options = {}) => {
   try {
-    console.log('📝 Generating PayMe POST form - Method 2');
-    
-    // ✅ CRITICAL FIX: Clean merchant ID
+// ✅ CRITICAL FIX: Clean merchant ID
     const merchantId = (import.meta.env.VITE_PAYME_MERCHANT_ID || '68016cc1a5e04614247f7174').trim();
     
     // ✅ VALIDATION: Check merchant ID
@@ -351,10 +314,7 @@ const generateDirectPaymeForm = async (userId, plan, options = {}) => {
     
     // ✅ SANITIZE: Remove any special characters from order ID
     const cleanOrderId = orderId.replace(/[^a-zA-Z0-9]/g, '');
-    
-    console.log('🧹 Clean order ID generated:', cleanOrderId);
-    
-    // ✅ Create detail object as per PayMe documentation
+// ✅ Create detail object as per PayMe documentation
     const detail = {
       receipt_type: 0,
       items: [{
@@ -373,8 +333,7 @@ const generateDirectPaymeForm = async (userId, plan, options = {}) => {
       const detailJson = JSON.stringify(detail);
       detailBase64 = btoa(unescape(encodeURIComponent(detailJson)));
     } catch (encodingError) {
-      console.error('❌ Detail encoding failed:', encodingError);
-      detailBase64 = ''; // Fallback to empty detail
+detailBase64 = ''; // Fallback to empty detail
     }
     
     // ✅ Generate clean callback URL
@@ -410,17 +369,13 @@ const generateDirectPaymeForm = async (userId, plan, options = {}) => {
     </form>
     
     <script>
-      console.log('📝 PayMe POST form auto-submitting...');
-      
-      // Wait for DOM to be ready
+// Wait for DOM to be ready
       function submitPaymeForm() {
         const form = document.getElementById('payme-form');
         if (form) {
-          console.log('✅ Form found, submitting to PayMe...');
-          form.submit();
+form.submit();
         } else {
-          console.error('❌ PayMe form not found in DOM');
-        }
+}
       }
       
       // Auto-submit after short delay
@@ -433,10 +388,8 @@ const generateDirectPaymeForm = async (userId, plan, options = {}) => {
       }
     </script>
     `;
-    
-    console.log('✅ PayMe POST form generated successfully');
-    console.log('📋 Form details:', {
-      merchantId: merchantId.substring(0, 10) + '...',
+
++ '...',
       orderId: cleanOrderId,
       amount: planAmount,
       plan: plan,
@@ -457,8 +410,7 @@ const generateDirectPaymeForm = async (userId, plan, options = {}) => {
     };
     
   } catch (error) {
-    console.error('❌ POST form generation failed:', error);
-    return {
+return {
       success: false,
       error: error.message || 'Failed to generate PayMe POST form'
     };
@@ -476,9 +428,7 @@ export const initiatePaymePayment = async (userId, plan, additionalData = {}) =>
   }
   
   try {
-    console.log('🚀 Initiating PayMe payment:', { userId, plan, additionalData });
-    
-    const amounts = getPaymentAmounts();
+const amounts = getPaymentAmounts();
     const planAmount = amounts[plan]?.tiyin;
     
     if (!planAmount) {
@@ -533,9 +483,7 @@ export const initiatePaymePayment = async (userId, plan, additionalData = {}) =>
     }
     
   } catch (error) {
-    console.error('❌ Payment initiation error:', error);
-    
-    return {
+return {
       success: false,
       error: error.message || 'Ошибка инициации платежа',
       details: error
@@ -550,9 +498,7 @@ export const generatePaymeForm = async (userId, plan, method = 'post', options =
   }
   
   try {
-    console.log('🎨 Generating PayMe form:', { userId, plan, method, options });
-    
-    // Always use direct generation for reliability
+// Always use direct generation for reliability
     if (method === 'get') {
       const result = await generateDirectPaymeUrl(userId, plan, { method, ...options });
       return {
@@ -576,8 +522,7 @@ export const generatePaymeForm = async (userId, plan, method = 'post', options =
     }
     
     // For button and QR methods, fallback to GET for now
-    console.warn('⚠️ Button and QR methods not fully implemented, using GET method');
-    const result = await generateDirectPaymeUrl(userId, plan, { method: 'get', ...options });
+const result = await generateDirectPaymeUrl(userId, plan, { method: 'get', ...options });
     return {
       success: result.success,
       method: 'GET',
@@ -587,8 +532,7 @@ export const generatePaymeForm = async (userId, plan, method = 'post', options =
     };
     
   } catch (error) {
-    console.error('❌ Form generation error:', error);
-    return {
+return {
       success: false,
       error: handlePaymentError(error, 'Генерация формы оплаты')
     };
@@ -602,9 +546,7 @@ export const applyPromoCode = debounceRequest(async (userId, plan, promoCode) =>
   }
   
   try {
-    console.log('🎟️ Applying promo code:', { userId, plan, promoCode });
-    
-    const response = await paymentApi.post('/payments/promo-code', {
+const response = await paymentApi.post('/payments/promo-code', {
       userId,
       plan,
       promoCode
@@ -616,8 +558,7 @@ export const applyPromoCode = debounceRequest(async (userId, plan, promoCode) =>
       message: response.data.message || 'Промокод успешно применён'
     };
   } catch (error) {
-    console.error('❌ Promo code error:', error);
-    return {
+return {
       success: false,
       error: error.response?.data?.message || error.message || 'Ошибка применения промокода'
     };
@@ -630,10 +571,7 @@ export const checkPaymentStatus = async (transactionId, userId = null) => {
     const url = userId 
       ? `/payments/status/${transactionId}/${userId}`
       : `/payments/status/${transactionId}`;
-    
-    console.log('🔍 Checking payment status:', { transactionId, userId });
-    
-    const response = await paymentApi.get(url);
+const response = await paymentApi.get(url);
     
     return {
       success: true,
@@ -642,8 +580,7 @@ export const checkPaymentStatus = async (transactionId, userId = null) => {
       status: response.data.transaction?.state
     };
   } catch (error) {
-    console.error('❌ Payment status check error:', error);
-    return {
+return {
       success: false,
       error: error.response?.data?.message || error.message || 'Ошибка проверки статуса платежа'
     };
@@ -653,9 +590,7 @@ export const checkPaymentStatus = async (transactionId, userId = null) => {
 // ✅ USER VALIDATION FOR PAYMENTS
 export const validateUser = async (userId) => {
   try {
-    console.log('🔍 Validating user:', userId);
-    
-    const response = await paymentApi.get(`/payments/validate-user/${userId}`);
+const response = await paymentApi.get(`/payments/validate-user/${userId}`);
     
     return {
       success: true,
@@ -665,8 +600,7 @@ export const validateUser = async (userId) => {
       note: response.data.note
     };
   } catch (error) {
-    console.error('❌ User validation error:', error);
-    return {
+return {
       success: false,
       valid: false,
       error: error.response?.data?.error || error.message
@@ -686,9 +620,7 @@ export const validatePaymeUrl = (url) => {
     
     // Decode and check
     const decoded = atob(base64Part);
-    console.log('🔍 URL validation - decoded:', decoded);
-    
-    // Check for required parameters
+// Check for required parameters
     const hasValidMerchant = decoded.includes('m=') && !decoded.includes('m=undefined');
     const hasValidAmount = decoded.includes('a=') && /a=\d+/.test(decoded);
     const hasValidOrderId = decoded.includes('ac.Login=') && !decoded.includes('ac.Login=undefined');
@@ -707,14 +639,10 @@ export const validatePaymeUrl = (url) => {
       isCorrupted,
       decodedParams: decoded
     };
-    
-    console.log('🔍 URL validation result:', validation);
-    
-    return validation;
+return validation;
     
   } catch (error) {
-    console.error('❌ URL validation failed:', error);
-    return {
+return {
       isValid: false,
       error: error.message
     };
@@ -723,9 +651,7 @@ export const validatePaymeUrl = (url) => {
 
 // ✅ COMPREHENSIVE ERROR HANDLER FOR PAYMENTS
 export const handlePaymentError = (error, context = 'Платежная операция') => {
-  console.error(`❌ ${context} failed:`, error);
-  
-  // Check for PayMe specific error codes
+// Check for PayMe specific error codes
   if (error.response?.data?.code && error.response.data.code.toString().startsWith('-316')) {
     return getPaymeErrorMessage(error.response.data.code);
   }
@@ -761,7 +687,6 @@ export const resetPaymentAttempts = (userId) => {
     }
   }
   keysToDelete.forEach(key => requestAttempts.delete(key));
-  console.log(`🔄 Payment attempts reset for user ${userId}`);
 };
 
 // =============================================
@@ -771,20 +696,15 @@ export const resetPaymentAttempts = (userId) => {
 // ✅ SAFE URL GENERATION TEST
 export const testCleanUrlGeneration = async () => {
   try {
-    console.log('🧪 Testing clean URL generation...');
-    
-    const testResult = await generateDirectPaymeUrl('testuser123', 'start', {
+const testResult = await generateDirectPaymeUrl('testuser123', 'start', {
       lang: 'ru',
       callback: 'https://aced.live/payment/success'
     });
     
     if (testResult.success) {
       const validation = validatePaymeUrl(testResult.paymentUrl);
-      
-      console.log('✅ Test URL generated:', testResult.paymentUrl);
-      console.log('✅ Validation result:', validation);
-      
-      return {
+
+return {
         success: validation.isValid,
         url: testResult.paymentUrl,
         validation
@@ -794,8 +714,7 @@ export const testCleanUrlGeneration = async () => {
     }
     
   } catch (error) {
-    console.error('❌ Test failed:', error);
-    return {
+return {
       success: false,
       error: error.message
     };
@@ -805,36 +724,24 @@ export const testCleanUrlGeneration = async () => {
 // ✅ PAYMENT FLOW TEST
 export const testPaymentFlow = async (userId, plan = 'start') => {
   if (import.meta.env.MODE === 'production') {
-    console.warn('⚠️ Test functions not available in production');
-    return;
+return;
   }
-  
-  console.log('🧪 Testing payment flow:', { userId, plan });
-  
-  try {
+try {
     resetPaymentAttempts(userId);
     
     const userValidation = await validateUser(userId);
-    console.log('👤 User validation:', userValidation);
-    
-    const promoResult = await applyPromoCode(userId, plan, 'acedpromocode2406');
-    console.log('🎟️ Promo code result:', promoResult);
-    
-    if (!promoResult.success) {
+const promoResult = await applyPromoCode(userId, plan, 'acedpromocode2406');
+if (!promoResult.success) {
       const paymentResult = await initiatePaymePayment(userId, plan);
-      console.log('💳 Payment initiation:', paymentResult);
-      
-      if (paymentResult.success && paymentResult.paymentUrl) {
-        console.log('✅ Payment URL generated successfully');
-        console.log('🔗 URL:', paymentResult.paymentUrl);
-      }
+if (paymentResult.success && paymentResult.paymentUrl) {
+
+}
     }
     
     return { success: true, message: 'Test completed successfully' };
     
   } catch (error) {
-    console.error('❌ Test failed:', error);
-    return { success: false, error: error.message };
+return { success: false, error: error.message };
   }
 };
 

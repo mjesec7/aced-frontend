@@ -489,9 +489,7 @@ export default {
             loadedTests = userTestsResponse.data.tests;
           }
         } catch (userTestsError) {
-          console.warn('User tests failed, trying fallback');
-          
-          // Strategy 2: General tests endpoint
+// Strategy 2: General tests endpoint
           try {
             const generalTestsResponse = await withTimeout(
               api.get('/tests', {
@@ -507,8 +505,7 @@ export default {
               ? testsData.filter(test => test.isActive !== false) 
               : [];
           } catch (generalTestsError) {
-            console.error('All test loading failed');
-            // Use empty array as final fallback
+// Use empty array as final fallback
             loadedTests = [];
           }
         }
@@ -516,8 +513,7 @@ export default {
         tests.value = loadedTests;
 
       } catch (err) {
-        console.error('Error loading tests:', err);
-        error.value = err.message;
+error.value = err.message;
         tests.value = [];
       } finally {
         loading.value = false;
@@ -588,8 +584,7 @@ export default {
         currentQuestionIndex.value = 0;
 
       } catch (err) {
-        console.error('Error loading test:', err);
-        error.value = err.message || 'Failed to load test';
+error.value = err.message || 'Failed to load test';
         
         // Reset state on error
         activeTest.value = null;
@@ -635,9 +630,7 @@ export default {
             { headers: { Authorization: `Bearer ${token}` } }
           );
         } catch (submitError) {
-          console.warn('User-specific submit failed:', submitError.message);
-          
-          await api.post(
+await api.post(
             `/tests/${activeTest.value._id}/submit`,
             { 
               userId: userId,
@@ -650,8 +643,7 @@ export default {
         currentQuestionIndex.value = activeTest.value.questions.length;
         
       } catch (err) {
-        console.error('Error submitting test:', err);
-      }
+}
     };
 
     const handleGoBack = () => {
@@ -726,8 +718,7 @@ export default {
         selectRandomHeroImage();
         await loadTests();
       } catch (err) {
-        console.error('Mount error:', err);
-        error.value = 'Error loading page';
+error.value = 'Error loading page';
       }
     });
 

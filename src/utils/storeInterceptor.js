@@ -1,9 +1,7 @@
 // src/utils/storeInterceptor.js - Store Mutation Interceptor
 
 export function setupStoreInterceptor(store) {
-    console.log('✅ Setting up store interceptor');
-  
-    store.subscribe((mutation, state) => {
+store.subscribe((mutation, state) => {
       // User-related mutations that should trigger global events
       const userMutations = [
         'user/SET_USER_STATUS',
@@ -21,10 +19,7 @@ export function setupStoreInterceptor(store) {
         if (mutation.type === 'user/SET_USER_STATUS' && mutation.payload) {
           oldStatus = currentStatus;
         }
-  
-        console.log(`🔄 Store mutation detected: ${mutation.type} -> ${currentStatus}`);
-  
-        const eventData = {
+const eventData = {
           oldStatus,
           newStatus: currentStatus,
           source: 'store-mutation',
@@ -56,6 +51,4 @@ export function setupStoreInterceptor(store) {
         }, 100);
       }
     });
-  
-    console.log('✅ Store interceptor configured');
-  }
+}

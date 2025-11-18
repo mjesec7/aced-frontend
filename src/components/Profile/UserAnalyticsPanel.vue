@@ -404,15 +404,11 @@ export default {
           this.error = 'Необходима авторизация';
           return;
         }
-
-        console.log('🚀 Loading analytics and Learning DNA...');
-
-        // Update streak first
+// Update streak first
         try {
           await updateStreak(currentUser.uid);
         } catch (streakError) {
-          console.warn('⚠️ Streak update failed:', streakError);
-        }
+}
 
         // Load all data in parallel
         const [analyticsRes, profileRes, rewardsRes, recommendationsRes] = await Promise.allSettled([
@@ -434,24 +430,20 @@ export default {
         // Handle learning profile
         if (profileRes.status === 'fulfilled' && profileRes.value?.success) {
           this.learningProfile = profileRes.value.profile;
-          console.log('✅ Learning profile loaded');
-        }
+}
 
         // Handle rewards
         if (rewardsRes.status === 'fulfilled' && rewardsRes.value?.success) {
           this.rewards = rewardsRes.value.rewards;
-          console.log('✅ Rewards loaded');
-        }
+}
 
         // Handle recommendations
         if (recommendationsRes.status === 'fulfilled' && recommendationsRes.value?.success) {
           this.recommendations = recommendationsRes.value.recommendation;
-          console.log('✅ Recommendations loaded');
-        }
+}
 
       } catch (err) {
-        console.error('❌ Error loading data:', err);
-        const status = err.response?.status;
+const status = err.response?.status;
         if (status === 401) this.error = 'Ошибка авторизации';
         else if (status === 404) this.error = 'Данные не найдены. Начните изучать уроки!';
         else if (status >= 500) this.error = 'Ошибка на сервере';
@@ -555,8 +547,7 @@ export default {
         this.lessonCache.set(lessonId, lessonName);
         return lessonName;
       } catch (error) {
-        console.error(`❌ Error fetching name for lesson ${lessonId}:`, error);
-        const fallbackName = `Урок (${lessonId.slice(-6)})`;
+const fallbackName = `Урок (${lessonId.slice(-6)})`;
         this.lessonCache.set(lessonId, fallbackName);
         return fallbackName;
       }
@@ -581,8 +572,7 @@ export default {
             }
         });
       } catch (error) {
-        console.error('❌ Error during lesson name resolution:', error);
-      }
+}
     },
 
     openModal() {

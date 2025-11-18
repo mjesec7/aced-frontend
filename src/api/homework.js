@@ -19,8 +19,7 @@ const buildHomeworkListFallback = async (token, userId, headers) => {
     const { data: hwResponse } = await api.get('homeworks', { headers });
     allHomeworks = hwResponse.data || hwResponse || [];
   } catch (hwError) {
-    console.warn('⚠️ Could not fetch standalone homework:', hwError.message);
-  }
+}
 
   // Get lessons with homework
   try {
@@ -30,8 +29,7 @@ const buildHomeworkListFallback = async (token, userId, headers) => {
       lesson.homework && Array.isArray(lesson.homework) && lesson.homework.length > 0
     );
   } catch (lessonsError) {
-    console.warn('⚠️ Could not fetch lessons:', lessonsError.message);
-  }
+}
 
   // Get user progress
   try {
@@ -50,13 +48,11 @@ const buildHomeworkListFallback = async (token, userId, headers) => {
           break;
         }
       } catch (progressError) {
-        console.warn(`⚠️ Progress endpoint ${endpoint} failed:`, progressError.message);
-        continue;
+continue;
       }
     }
   } catch (generalProgressError) {
-    console.warn('⚠️ Could not fetch user progress:', generalProgressError.message);
-  }
+}
 
   // Combine all sources
   const combinedHomeworks = [];
@@ -179,9 +175,7 @@ export const getAllHomeworks = async (userId) => {
         };
       }
     } catch (enhancedError) {
-      console.warn('⚠️ Enhanced homework endpoint failed:', enhancedError.message);
-
-      if (enhancedError.response?.status >= 500) {
+if (enhancedError.response?.status >= 500) {
         throw new Error('Ошибка сервера при загрузке домашних заданий');
       }
     }
@@ -210,8 +204,7 @@ export const getAllHomeworks = async (userId) => {
           }
         }
       } catch (altError) {
-        console.warn(`⚠️ Alternative endpoint ${endpoint} failed:`, altError.message);
-        continue;
+continue;
       }
     }
 
@@ -234,8 +227,7 @@ export const getAllHomeworks = async (userId) => {
     };
 
   } catch (error) {
-    console.error('❌ Failed to fetch all homework:', error);
-    return {
+return {
       success: false,
       data: [],
       error: error.message || 'Ошибка загрузки домашних заданий'
@@ -270,8 +262,7 @@ export const getHomeworkByLesson = async (userId, lessonId) => {
         };
       }
     } catch (enhancedError) {
-      console.warn('⚠️ Enhanced lesson homework endpoint failed:', enhancedError.message);
-    }
+}
 
     // Fallback: Build from lesson data
     try {
@@ -303,8 +294,7 @@ export const getHomeworkByLesson = async (userId, lessonId) => {
           }
         }
       } catch (progressError) {
-        console.warn('⚠️ Could not fetch lesson progress:', progressError.message);
-      }
+}
 
       return {
         success: true,
@@ -321,13 +311,11 @@ export const getHomeworkByLesson = async (userId, lessonId) => {
       };
 
     } catch (lessonError) {
-      console.error('❌ Lesson fallback failed:', lessonError);
-      throw new Error('Урок не найден или недоступен');
+throw new Error('Урок не найден или недоступен');
     }
 
   } catch (error) {
-    console.error('❌ Failed to fetch homework by lesson:', error);
-    throw error;
+throw error;
   }
 };
 
@@ -358,8 +346,7 @@ export const getStandaloneHomework = async (userId, homeworkId) => {
         };
       }
     } catch (userError) {
-      console.warn('⚠️ User-specific standalone homework endpoint failed:', userError.message);
-    }
+}
 
     // Fallback: Get homework directly and combine with user progress
     try {
@@ -390,8 +377,7 @@ export const getStandaloneHomework = async (userId, homeworkId) => {
           }
         }
       } catch (progressError) {
-        console.warn('⚠️ Could not fetch homework progress:', progressError.message);
-      }
+}
 
       return {
         success: true,
@@ -403,13 +389,11 @@ export const getStandaloneHomework = async (userId, homeworkId) => {
       };
 
     } catch (homeworkError) {
-      console.error('❌ Homework fallback failed:', homeworkError);
-      throw new Error('Домашнее задание не найдено');
+throw new Error('Домашнее задание не найдено');
     }
 
   } catch (error) {
-    console.error('❌ Failed to fetch standalone homework:', error);
-    throw error;
+throw error;
   }
 };
 
@@ -452,16 +436,14 @@ export const saveHomework = async (userId, lessonId, answers) => {
           };
         }
       } catch (endpointError) {
-        console.warn(`⚠️ Homework save endpoint ${endpoint} failed:`, endpointError.message);
-        continue;
+continue;
       }
     }
 
     throw new Error('All homework save endpoints failed');
 
   } catch (error) {
-    console.error('❌ Failed to save homework:', error);
-    throw error;
+throw error;
   }
 };
 
@@ -500,16 +482,14 @@ export const submitHomework = async (userId, lessonId, answers) => {
           };
         }
       } catch (endpointError) {
-        console.warn(`⚠️ Homework submit endpoint ${endpoint} failed:`, endpointError.message);
-        continue;
+continue;
       }
     }
 
     throw new Error('All homework submit endpoints failed');
 
   } catch (error) {
-    console.error('❌ Failed to submit homework:', error);
-    throw error;
+throw error;
   }
 };
 
@@ -548,16 +528,14 @@ export const saveStandaloneHomework = async (userId, homeworkId, answers) => {
           };
         }
       } catch (endpointError) {
-        console.warn(`⚠️ Standalone homework save endpoint ${endpoint} failed:`, endpointError.message);
-        continue;
+continue;
       }
     }
 
     throw new Error('All standalone homework save endpoints failed');
 
   } catch (error) {
-    console.error('❌ Failed to save standalone homework:', error);
-    throw error;
+throw error;
   }
 };
 
@@ -596,15 +574,13 @@ export const submitStandaloneHomework = async (userId, homeworkId, answers) => {
           };
         }
       } catch (endpointError) {
-        console.warn(`⚠️ Standalone homework submit endpoint ${endpoint} failed:`, endpointError.message);
-        continue;
+continue;
       }
     }
 
     throw new Error('All standalone homework submit endpoints failed');
 
   } catch (error) {
-    console.error('❌ Failed to submit standalone homework:', error);
-    throw error;
+throw error;
   }
 };

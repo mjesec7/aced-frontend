@@ -455,15 +455,12 @@ export default {
     // GUEST MODE METHODS
     // ==========================================
     const handleGuestRegister = () => {
-      console.log('🚀 Guest user requesting registration')
-      
-      // Save current lesson ID to return to after registration
+// Save current lesson ID to return to after registration
       if (lessonOrchestrator.lesson.value?._id) {
         try {
           sessionStorage.setItem('returnToLesson', lessonOrchestrator.lesson.value._id)
         } catch (error) {
-          console.error('Error saving return lesson:', error)
-        }
+}
       }
       
       // Trigger registration modal
@@ -488,8 +485,7 @@ export default {
       try {
         sessionStorage.setItem('guestBannerDismissed', 'true')
       } catch (error) {
-        console.error('Error saving banner state:', error)
-      }
+}
     }
     
     const saveGuestProgress = () => {
@@ -511,11 +507,9 @@ export default {
           }
           
           localStorage.setItem('guestProgress', JSON.stringify(guestProgress))
-          console.log('📝 Guest progress saved to localStorage')
-        }
+}
       } catch (error) {
-        console.error('❌ Error saving guest progress:', error)
-      }
+}
     }
     
     const loadGuestProgress = () => {
@@ -526,12 +520,10 @@ export default {
         const lessonId = lessonOrchestrator.lesson.value?._id
         
         if (lessonId && guestProgress[lessonId]) {
-          console.log('📂 Loaded guest progress from localStorage')
-          return guestProgress[lessonId]
+return guestProgress[lessonId]
         }
       } catch (error) {
-        console.error('❌ Error loading guest progress:', error)
-      }
+}
       
       return null
     }
@@ -714,8 +706,7 @@ export default {
           timestamp: Date.now()
         }))
       } catch (error) {
-        console.error('Error saving split sizes:', error)
-      }
+}
     }
 
     const handleResizeKeyboard = (event) => {
@@ -770,8 +761,7 @@ export default {
           timestamp: Date.now()
         }))
       } catch (error) {
-        console.error('Error saving split sizes:', error)
-      }
+}
     }
 
     const resetSplitSizes = () => {
@@ -781,8 +771,7 @@ export default {
       try {
         localStorage.removeItem('lessonPageSplitSizes')
       } catch (error) {
-        console.error('Error removing split sizes:', error)
-      }
+}
     }
 
     const loadSavedSizes = () => {
@@ -845,17 +834,13 @@ export default {
           })
         })
       } catch (error) {
-        console.error('Navigation error:', error)
-        window.location.href = '/profile/catalogue'
+window.location.href = '/profile/catalogue'
       }
     }
 
     const handleGoToHomework = () => {
-      console.log('📝 Navigating to homework')
-      
-      if (isGuestMode.value) {
-        console.log('⚠️ Guest user trying to access homework - redirecting to registration')
-        handleGuestRegister()
+if (isGuestMode.value) {
+handleGuestRegister()
         return
       }
       
@@ -872,22 +857,18 @@ export default {
             router.push({ 
               name: 'HomeworkList' 
             }).catch(err2 => {
-              console.error('❌ Homework navigation failed:', err2)
-              window.location.href = '/profile/homeworks'
+window.location.href = '/profile/homeworks'
             })
           })
         } catch (error) {
-          console.error('❌ Error navigating to homework:', error)
-          window.location.href = '/profile/homeworks'
+window.location.href = '/profile/homeworks'
         }
       } else {
-        console.error('❌ Cannot navigate to homework: Lesson ID is missing.')
-        try {
+try {
           router.push({ 
             name: 'HomeworkList' 
           }).catch(err => {
-            console.error('❌ Fallback homework navigation failed:', err)
-            window.location.href = '/profile/homeworks'
+window.location.href = '/profile/homeworks'
           })
         } catch (error) {
           window.location.href = '/profile/homeworks'
@@ -896,17 +877,14 @@ export default {
     }
 
     const exitLesson = () => {
-      console.log('👋 Exiting lesson', { isGuestMode: isGuestMode.value })
-      
-      try {
+try {
         // Save progress before exit
         if (isGuestMode.value) {
           saveGuestProgress()
         } else if (lessonOrchestrator.saveProgress) {
           // Don't await for faster exit
           lessonOrchestrator.saveProgress().catch(err => {
-            console.error('Error saving progress:', err)
-          })
+})
         }
         
         if (lessonOrchestrator.cleanup) {
@@ -928,8 +906,7 @@ export default {
         }
         
       } catch (error) {
-        console.error('❌ Error during lesson exit:', error)
-        lessonOrchestrator.showExitModal.value = false
+lessonOrchestrator.showExitModal.value = false
         
         // Fallback navigation
         if (isGuestMode.value) {
@@ -1031,10 +1008,7 @@ export default {
         const reportMessage = formatProblemReport()
         const encodedMessage = encodeURIComponent(reportMessage)
         const telegramLink = `https://t.me/aced_live?text=${encodedMessage}`
-        
-        console.log('📤 Submitting problem report')
-        
-        // Only try analytics for authenticated users
+// Only try analytics for authenticated users
         if (!isGuestMode.value) {
           try {
             await fetch('/api/analytics/problem-report', {
@@ -1055,8 +1029,7 @@ export default {
               })
             })
           } catch (analyticsError) {
-            console.error('Analytics error:', analyticsError)
-            // Don't block the report submission
+// Don't block the report submission
           }
         }
         
@@ -1070,9 +1043,7 @@ export default {
         }, 5000)
         
       } catch (error) {
-        console.error('❌ Error submitting problem report:', error)
-        
-        if (lessonOrchestrator.showToast) {
+if (lessonOrchestrator.showToast) {
           lessonOrchestrator.showToast('Error submitting report. Please try again.', 'error')
         } else {
           alert('Error submitting report. Please try again.')
@@ -1104,28 +1075,22 @@ export default {
     // VOCABULARY METHODS
     // ==========================================
     const initializeVocabularyModal = (step) => {
-      console.log('📚 Initializing vocabulary modal')
-
-      let vocabularyStep = step
+let vocabularyStep = step
 
       if (!vocabularyStep) {
         vocabularyStep = lessonOrchestrator.currentStep.value
       }
 
       if (!vocabularyStep) {
-        console.error('❌ No vocabulary step available for initialization')
-        return
+return
       }
 
       if (vocabularyStep.type !== 'vocabulary') {
-        console.error('❌ Step is not a vocabulary type:', vocabularyStep.type)
-
-        const vocabularySteps = lessonOrchestrator.steps.value?.filter(s => s.type === 'vocabulary')
+const vocabularySteps = lessonOrchestrator.steps.value?.filter(s => s.type === 'vocabulary')
         if (vocabularySteps && vocabularySteps.length > 0) {
           vocabularyStep = vocabularySteps[0]
         } else {
-          console.error('❌ No vocabulary steps found in entire lesson')
-          return
+return
         }
       }
 
@@ -1133,9 +1098,7 @@ export default {
     }
 
     const jumpToVocabWord = (index) => {
-      console.log('🔢 Jumping to vocab word:', index)
-
-      if (index >= 0 && index < vocabulary.vocabularyModal.words.length) {
+if (index >= 0 && index < vocabulary.vocabularyModal.words.length) {
         vocabulary.cardAnimation.isFlipping = false
         vocabulary.cardAnimation.showDefinition = false
 
@@ -1143,8 +1106,7 @@ export default {
           vocabulary.vocabularyModal.currentIndex = index
         }, 50)
       } else {
-        console.warn('Invalid vocab word index')
-      }
+}
     }
 
     const showVocabDefinition = () => {
@@ -1186,14 +1148,13 @@ export default {
           utterance.lang = 'en-US'
           utterance.rate = 0.8
           utterance.pitch = 1
-          utterance.onerror = (event) => console.error('❌ Pronunciation error:', event.error)
-          window.speechSynthesis.speak(utterance)
+          utterance.onerror = (event) =>
+window.speechSynthesis.speak(utterance)
         } else {
           sound.pronounceWord?.(word)
         }
       } catch (error) {
-        console.error('❌ Error pronouncing word:', error)
-        sound.pronounceWord?.(word)
+sound.pronounceWord?.(word)
       }
     }
 
@@ -1262,8 +1223,7 @@ export default {
         saveGuestProgress()
       } else if (lessonOrchestrator.saveProgress) {
         lessonOrchestrator.saveProgress().catch(err => {
-          console.error('Error saving progress:', err)
-        })
+})
       }
     }
 
@@ -1470,8 +1430,7 @@ export default {
     // Migration functionality
     const migrateLessonContent = async () => {
       if (isGuestMode.value) {
-        console.log('⚠️ Guest user trying to migrate content - redirecting to registration')
-        handleGuestRegister()
+handleGuestRegister()
         return
       }
       
@@ -1511,8 +1470,7 @@ export default {
         }
 
       } catch (error) {
-        console.error('❌ Migration error:', error)
-        const errorMessage = '❌ Migration error: ' + error.message
+const errorMessage = '❌ Migration error: ' + error.message
 
         if (lessonOrchestrator.showToast) {
           lessonOrchestrator.showToast(errorMessage, 'error')
@@ -1562,16 +1520,14 @@ export default {
           }
         }
       } catch (error) {
-        console.error('❌ Error completing lesson with extraction:', error)
-        lessonOrchestrator.lessonCompleted.value = true
+lessonOrchestrator.lessonCompleted.value = true
       }
     }
 
     const extractLessonContent = async () => {
       try {
         if (!lessonOrchestrator.currentUser?.value?.uid || !lessonOrchestrator.lesson.value?._id) {
-          console.error('❌ Missing required data for extraction')
-          return { success: false, error: 'Missing user or lesson data' }
+return { success: false, error: 'Missing user or lesson data' }
         }
 
         const response = await fetch('/api/lessons/complete-and-extract', {
@@ -1596,8 +1552,7 @@ export default {
         return result
 
       } catch (error) {
-        console.error('❌ Error extracting lesson content:', error)
-        return { success: false, error: error.message }
+return { success: false, error: error.message }
       }
     }
 
@@ -1637,18 +1592,15 @@ export default {
           guestBannerDismissed.value = true
         }
       } catch (error) {
-        console.error('Error loading banner state:', error)
-      }
+}
       
       // Load guest progress if available
       if (isGuestMode.value) {
         const savedProgress = loadGuestProgress()
         if (savedProgress) {
-          console.log('📂 Guest progress loaded from localStorage')
-        }
+}
         startGuestAutoSave()
-        console.log('✅ Guest mode initialized with auto-save')
-      }
+}
       
       // Make debug functions globally available
       window.resetSplitSizes = resetSplitSizes
@@ -1658,13 +1610,7 @@ export default {
         right: currentRightWidth.value,
         direction: resizeDirection.value
       })
-      
-      console.log('✅ LessonPage mounted', {
-        isGuestMode: isGuestMode.value,
-        guestBannerDismissed: guestBannerDismissed.value,
-        lessonId: route.params.id
-      })
-    })
+})
 
     onUnmounted(() => {
       document.removeEventListener('keydown', handleKeyboardShortcuts)
@@ -1681,8 +1627,7 @@ export default {
       // Save guest progress one last time
       if (isGuestMode.value && lessonOrchestrator.started.value) {
         saveGuestProgress()
-        console.log('📝 Final guest progress saved on unmount')
-      }
+}
       
       // Clean up debug functions
       delete window.resetSplitSizes
@@ -1696,8 +1641,7 @@ export default {
         startConfetti()
         if (isGuestMode.value) {
           saveGuestProgress()
-          console.log('🎉 Guest lesson completed and saved')
-        }
+}
       }
     })
 
@@ -1718,15 +1662,13 @@ export default {
 
     // Watch for resize direction changes
     watch(() => resizeDirection.value, (newDirection) => {
-      console.log('🔄 Resize direction changed:', newDirection)
-    })
+})
     
     // Auto-save guest progress on step change
     watch(() => lessonOrchestrator.currentIndex.value, (newIndex, oldIndex) => {
       if (isGuestMode.value && lessonOrchestrator.started.value && newIndex !== oldIndex) {
         saveGuestProgress()
-        console.log(`📝 Guest progress auto-saved at step ${newIndex + 1}`)
-      }
+}
     })
 
     // Return all props and methods

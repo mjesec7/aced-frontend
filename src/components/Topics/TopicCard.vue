@@ -37,8 +37,7 @@ export default {
     goToLesson() {
       const subject = this.topic.subject?.toLowerCase?.().replace(/\s+/g, '-');
       if (!subject) {
-        console.warn('⚠️ [TopicCard] Missing subject:', this.topic);
-        alert('❌ Предмет не указан.');
+alert('❌ Предмет не указан.');
         return;
       }
 

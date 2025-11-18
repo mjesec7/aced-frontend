@@ -457,16 +457,14 @@ export default {
       try {
         const userId = this.$store.getters.getFirebaseUserId;
         if (!userId) {
-          console.error('User not authenticated');
-          return;
+return;
         }
 
         // Save to backend
         try {
           await switchLearningMode(userId, mode, 'Initial mode selection');
         } catch (apiError) {
-          console.warn('Backend API error, saving locally only:', apiError);
-        }
+}
 
         // Update Vuex store
         await this.$store.dispatch('platformMode/switchMode', {
@@ -476,8 +474,7 @@ export default {
 
         this.closeSidebarOnMobile();
       } catch (error) {
-        console.error('Error selecting initial mode:', error);
-        this.tempSelectedMode = null;
+this.tempSelectedMode = null;
       } finally {
         this.isSelectingMode = false;
       }
@@ -493,8 +490,7 @@ export default {
         });
         this.closeSidebarOnMobile();
       } catch (error) {
-        console.error('Error switching to school mode:', error);
-      }
+}
     },
 
     async switchToStudyCentre() {
@@ -507,8 +503,7 @@ export default {
         });
         this.closeSidebarOnMobile();
       } catch (error) {
-        console.error('Error switching to study centre mode:', error);
-      }
+}
     },
 
     checkMobile() {
@@ -532,8 +527,7 @@ export default {
         localStorage.clear();
         this.$router.push('/');
       } catch (error) {
-        console.error('Logout error:', error);
-      }
+}
     },
     
     isActive(name) {

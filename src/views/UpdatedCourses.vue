@@ -406,8 +406,7 @@ export default {
                           'free';
         return userStatus;
       } catch (error) {
-        console.warn('⚠️ Error getting user status:', error);
-        return 'free';
+return 'free';
       }
     },
 
@@ -465,12 +464,10 @@ export default {
   },
 
   async mounted() {
-    console.log('🚀 UpdatedCourses: Component mounted');
-    try {
+try {
       await this.initializeComponent();
     } catch (error) {
-      console.error('❌ UpdatedCourses: Mount error:', error);
-      this.error = 'Ошибка инициализации компонента';
+this.error = 'Ошибка инициализации компонента';
     }
   },
 
@@ -484,36 +481,30 @@ export default {
     // =====================================
     
     async initializeComponent() {
-      console.log('🔧 Initializing UpdatedCourses component');
-      
-      try {
+try {
         // Check if we need to refresh cache
         if (this.shouldRefreshCache || this.courses.length === 0) {
           await this.loadCoursesWithRetry();
         } else {
-          console.log('📋 Using cached courses data');
-        }
+}
         
         this.setupEventListeners();
         this.validateComponentState();
         
       } catch (error) {
-        console.error('❌ Component initialization failed:', error);
-        this.handleInitializationError(error);
+this.handleInitializationError(error);
       }
     },
 
     async loadCoursesWithRetry() {
       for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
         try {
-          console.log(`📚 Loading courses (attempt ${attempt}/${this.maxRetries})`);
+`);
           await this.loadCourses();
           this.retryCount = 0;
           break;
         } catch (error) {
-          console.warn(`⚠️ Load attempt ${attempt} failed:`, error.message);
-          
-          if (attempt === this.maxRetries) {
+if (attempt === this.maxRetries) {
             this.handleLoadError(error);
           } else {
             // Wait before retry with exponential backoff
@@ -526,22 +517,17 @@ export default {
     validateComponentState() {
       // Validate that we have the required data structure
       if (!Array.isArray(this.courses)) {
-        console.warn('⚠️ Courses is not an array, fixing...');
-        this.courses = [];
+this.courses = [];
       }
 
       if (!Array.isArray(this.availableCategories)) {
-        console.warn('⚠️ Categories is not an array, fixing...');
-        this.availableCategories = [];
+this.availableCategories = [];
       }
 
       if (!Array.isArray(this.availableLevels)) {
-        console.warn('⚠️ Levels is not an array, fixing...');
-        this.availableLevels = [];
+this.availableLevels = [];
       }
-
-      console.log('✅ Component state validated');
-    },
+},
 
     handleInitializationError(error) {
       this.error = this.getErrorMessage(error);
@@ -568,28 +554,22 @@ export default {
       
       try {
         const filters = this.buildFilters();
-        console.log('🔍 Loading courses with filters:', filters);
-        
-        // ✅ ENHANCED: Try structured format first, fallback to standard
+// ✅ ENHANCED: Try structured format first, fallback to standard
         let response = await getUpdatedCoursesWithFormat(filters, 'structured');
         
         // Validate response structure
         if (!this.validateResponse(response)) {
-          console.warn('⚠️ Invalid response structure, trying standard format');
-          response = await getUpdatedCourses(filters);
+response = await getUpdatedCourses(filters);
         }
         
         if (response && response.success) {
           this.processCoursesResponse(response);
           this.lastFetchTime = Date.now();
-          
-          console.log(`✅ Loaded ${this.courses.length} courses successfully`);
-        } else {
+} else {
           throw new Error(response?.error || 'Failed to fetch courses');
         }
       } catch (error) {
-        console.error('❌ Error loading courses:', error);
-        this.handleLoadError(error);
+this.handleLoadError(error);
       } finally {
         this.loading = false;
       }
@@ -610,22 +590,18 @@ export default {
       
       // Store metadata
       this.storeCourseMetadata(response);
-      
-      console.log(`📊 Processed: ${this.courses.length} courses, ${this.availableCategories.length} categories, ${this.availableLevels.length} levels`);
-    },
+},
 
     processCourses(courses) {
       if (!Array.isArray(courses)) {
-        console.warn('⚠️ Courses data is not an array:', courses);
-        return [];
+return [];
       }
       
       return courses.map((course, index) => {
         try {
           return this.processSingleCourse(course, index);
         } catch (error) {
-          console.warn(`⚠️ Error processing course ${index}:`, error);
-          return this.createFallbackCourse(course, index);
+return this.createFallbackCourse(course, index);
         }
       }).filter(course => course !== null);
     },
@@ -740,8 +716,7 @@ export default {
 
         sessionStorage.setItem('coursesMetadata', JSON.stringify(metadata));
       } catch (error) {
-        console.warn('⚠️ Failed to store metadata:', error);
-      }
+}
     },
 
     // =====================================
@@ -894,8 +869,7 @@ export default {
 
     handleImageError(event, course) {
       // This method is kept for compatibility but won't be needed with CSS gradients
-      console.log('Image error handled for course:', course?.title);
-    },
+},
 
     // =====================================
     // ENHANCED MODAL METHODS
@@ -903,8 +877,7 @@ export default {
 
     async openModal(course) {
       if (!course || (!course._id && !course.id)) {
-        console.error('❌ Invalid course data for modal:', course);
-        return;
+return;
       }
 
       this.selectedCourse = null;
@@ -912,23 +885,18 @@ export default {
       this.modalLoading = true;
       
       try {
-        console.log('🔍 Loading detailed course data for modal');
-        
-        const courseId = course._id || course.id;
+const courseId = course._id || course.id;
         
         // ✅ ENHANCED: Try structured format first with better error handling
         let response = await getCourseStructuredEnhanced(courseId);
         
         if (response && response.success && response.data) {
           this.selectedCourse = this.enhanceCourseForModal(response.data, course);
-          console.log(`✅ Modal loaded course in ${response.format || 'standard'} format`);
-        } else {
-          console.warn('⚠️ Failed to fetch detailed course info, using basic data');
-          this.selectedCourse = this.enhanceCourseForModal(course, course);
+} else {
+this.selectedCourse = this.enhanceCourseForModal(course, course);
         }
       } catch (error) {
-        console.error('❌ Error fetching course details for modal:', error);
-        this.selectedCourse = this.enhanceCourseForModal(course, course);
+this.selectedCourse = this.enhanceCourseForModal(course, course);
       } finally {
         this.modalLoading = false;
       }
@@ -977,13 +945,9 @@ export default {
 
     async startCourse(course) {
       if (!course) {
-        console.error('❌ No course data to start');
-        return;
+return;
       }
-
-      console.log('🚀 Starting course:', course.title);
-
-      // Enhanced premium access check
+// Enhanced premium access check
       if (course.isPremium && !this.isPremiumUser) {
         const message = this.getPremiumMessage(course);
         this.showToast(message, 'error');
@@ -1002,8 +966,7 @@ export default {
         this.trackCourseStart(completeCourse);
         
       } catch (error) {
-        console.error('❌ Error starting course:', error);
-        this.showToast('Ошибка при запуске курса', 'error');
+this.showToast('Ошибка при запуске курса', 'error');
       }
     },
 
@@ -1011,9 +974,7 @@ export default {
       // If we don't have structured data or curriculum, try to fetch it
       if (!course.structuredData && (!course.curriculum || !course.curriculum.length)) {
         try {
-          console.log('📚 Fetching complete course data for learning');
-          
-          // Try structured format first
+// Try structured format first
           let response = await getCourseStructuredEnhanced(course._id || course.id);
           
           if (response && response.success && response.data) {
@@ -1028,8 +989,7 @@ export default {
             };
           }
         } catch (error) {
-          console.error('❌ Error fetching complete course data:', error);
-          // Continue with original course data
+// Continue with original course data
         }
       }
       
@@ -1061,8 +1021,7 @@ export default {
         // Emit event for potential analytics
         this.$emit('courseStarted', trackingData);
       } catch (error) {
-        console.warn('⚠️ Failed to track course start:', error);
-      }
+}
     },
 
     // =====================================
@@ -1119,10 +1078,8 @@ export default {
       } else {
         // Fallback for environments without toast
         if (type === 'error') {
-          console.error('Toast:', message);
-        } else {
-          console.log('Toast:', message);
-        }
+} else {
+}
       }
     },
 
@@ -1332,9 +1289,7 @@ export default {
     // =====================================
 
     cleanup() {
-      console.log('🧹 Cleaning up UpdatedCourses component');
-
-      // Clear timeouts
+// Clear timeouts
       if (this.debounceTimeout) {
         clearTimeout(this.debounceTimeout);
         this.debounceTimeout = null;
@@ -1348,9 +1303,7 @@ export default {
         clearInterval(this.refreshInterval);
         this.refreshInterval = null;
       }
-
-      console.log('✅ Cleanup completed');
-    },
+},
 
     setupEventListeners() {
       // Enhanced event listeners setup
@@ -1363,8 +1316,7 @@ export default {
         };
         
         this.handleOffline = () => {
-          console.warn('⚠️ Gone offline - using cached data');
-        };
+};
 
         window.addEventListener('online', this.handleOnline);
         window.addEventListener('offline', this.handleOffline);
@@ -1408,9 +1360,7 @@ export default {
 
     handleUserStatusChange(newStatus, oldStatus) {
       if (!newStatus || newStatus === oldStatus) return;
-
-      console.log('👤 User status changed:', oldStatus, '->', newStatus);
-      this.triggerReactivityUpdate();
+this.triggerReactivityUpdate();
 
       // Show success message for upgrades
       if (newStatus && newStatus !== 'free' && oldStatus === 'free') {

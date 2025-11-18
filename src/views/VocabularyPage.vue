@@ -356,29 +356,25 @@ const filteredWords = computed(() => {
 const getUserVocabulary = async (userId, languageCode = null) => {
   try {
     if (!userId) {
-      console.warn('⚠️ No user ID provided, using demo data')
-      return getDemoVocabulary(languageCode)
+return getDemoVocabulary(languageCode)
     }
     
     let progressResponse
     try {
       progressResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live'}/users/${userId}/progress`)
     } catch (fetchError) {
-      console.warn('⚠️ Progress fetch failed:', fetchError.message)
-      return await extractVocabularyFromAllLessons(languageCode)
+return await extractVocabularyFromAllLessons(languageCode)
     }
     
     if (!progressResponse || !progressResponse.ok) {
-      console.warn('⚠️ Could not fetch user progress, trying lessons directly...')
-      return await extractVocabularyFromAllLessons(languageCode)
+return await extractVocabularyFromAllLessons(languageCode)
     }
     
     let progressData
     try {
       progressData = await progressResponse.json()
     } catch (jsonError) {
-      console.warn('⚠️ Progress JSON parse failed:', jsonError.message)
-      return await extractVocabularyFromAllLessons(languageCode)
+return await extractVocabularyFromAllLessons(languageCode)
     }
     
     const userProgress = Array.isArray(progressData) ? progressData : progressData.data || []
@@ -432,8 +428,7 @@ const getUserVocabulary = async (userId, languageCode = null) => {
         })
         
       } catch (lessonError) {
-        console.warn(`⚠️ Error processing lesson ${progress.lessonId}:`, lessonError.message)
-        continue
+continue
       }
     }
     
@@ -459,8 +454,7 @@ const getUserVocabulary = async (userId, languageCode = null) => {
     return uniqueVocabulary
     
   } catch (error) {
-    console.error('❌ Error extracting vocabulary from lessons:', error)
-    return getDemoVocabulary(languageCode)
+return getDemoVocabulary(languageCode)
   }
 }
 
@@ -539,8 +533,7 @@ const extractVocabularyFromStep = (vocab, lesson, progress, uniqueId) => {
     }
     
   } catch (error) {
-    console.error('❌ Error extracting vocabulary from step:', error)
-    return null
+return null
   }
 }
 
@@ -628,8 +621,7 @@ const extractVocabularyFromAllLessons = async (languageCode = null) => {
     return allVocabulary
     
   } catch (error) {
-    console.error('❌ Error extracting from all lessons:', error)
-    return getDemoVocabulary(languageCode)
+return getDemoVocabulary(languageCode)
   }
 }
 
@@ -750,8 +742,7 @@ const loadLanguages = async () => {
       showToast('Нет доступных языков в словаре', 'warning')
     }
   } catch (error) {
-    console.error('❌ Error loading languages:', error)
-    showToast('Ошибка загрузки языков', 'error')
+showToast('Ошибка загрузки языков', 'error')
     languages.value = []
   } finally {
     loading.value = false

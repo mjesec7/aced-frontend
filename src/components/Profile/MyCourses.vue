@@ -550,8 +550,7 @@ export default {
           this.studyList = await this.enrichCourses(studyListResult.data);
         }
       } catch (error) {
-        console.error('Error loading courses:', error);
-      } finally {
+} finally {
         this.loading = false;
       }
     },
@@ -581,8 +580,7 @@ export default {
             lastAccessed: entry.lastAccessed || new Date().toISOString()
           });
         } catch (error) {
-          console.error(`Error enriching ${entry.topicId}:`, error);
-        }
+}
       }
       
       return enriched;
@@ -732,8 +730,7 @@ export default {
         this.studyList = this.studyList.filter(c => c._id !== this.deleteModal.course._id);
         this.closeDeleteModal();
       } catch (error) {
-        console.error('Error removing course:', error);
-        alert('Failed to delete course');
+alert('Failed to delete course');
         this.deleteModal.deleting = false;
       }
     },

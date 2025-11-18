@@ -288,8 +288,7 @@ methods: {
        
       }
     } catch (error) {
-      console.error('❌ Failed to initialize component:', error);
-    }
+}
   },
   
   async loadUsageData() {
@@ -314,8 +313,7 @@ methods: {
         
       }
     } catch (error) {
-      console.error('❌ Failed to load usage data:', error);
-    }
+}
   },
   
   async checkMonthlyReset() {
@@ -357,8 +355,7 @@ methods: {
       });
       
     } catch (error) {
-      console.error('❌ Failed to perform monthly reset:', error);
-    }
+}
   },
   
   async updateResetCheck() {
@@ -370,8 +367,7 @@ methods: {
         lastResetCheck: new Date().toISOString()
       });
     } catch (error) {
-      console.error('❌ Failed to update reset check:', error);
-    }
+}
   },
   
   async sendMessage() {
@@ -426,9 +422,7 @@ methods: {
       
       
     } catch (error) {
-      console.error('❌ Failed to send message:', error);
-      
-      // Remove user message on error
+// Remove user message on error
       this.messages.pop();
       
       // Show error message
@@ -456,8 +450,7 @@ methods: {
       });
       
     } catch (error) {
-      console.error('❌ Failed to save usage data:', error);
-    }
+}
   },
   
   async handleFile(event) {
@@ -492,8 +485,7 @@ methods: {
           alert('Не удалось загрузить изображение.');
         }
       } catch (err) {
-        console.error('Image upload failed:', err);
-        alert('Произошла ошибка при загрузке изображения.');
+alert('Произошла ошибка при загрузке изображения.');
       }
     };
     

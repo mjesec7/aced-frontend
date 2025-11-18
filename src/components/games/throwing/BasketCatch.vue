@@ -146,7 +146,6 @@ const removeItem = (itemId, caught) => {
 
 const animateCatch = (x, y) => {
   // Could add particle effects here
-  console.log(`Caught item at ${x}, ${y}`);
 };
 
 const startGame = () => {

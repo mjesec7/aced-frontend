@@ -78,8 +78,7 @@ export async function getUserUsage() {
     };
 
   } catch (error) {
-    console.error('❌ [GPTService] Failed to get usage:', error);
-    return {
+return {
       success: false,
       error: error.message,
       usage: { messages: 0, images: 0 },
@@ -150,9 +149,7 @@ export async function getAIResponse(userInput, imageUrl = null, lessonId = null)
     return reply;
 
   } catch (error) {
-    console.error('❌ [GPTService] Error:', error);
-
-    // Handle specific error types
+// Handle specific error types
     if (error.response?.status === 429) {
       return '⏳ Слишком много запросов. Попробуйте через некоторое время.';
     }
@@ -224,9 +221,7 @@ export async function getLessonAIResponse(userInput, lessonContext, userProgress
     return reply;
 
   } catch (error) {
-    console.error('❌ [GPTService] Lesson AI Error:', error);
-    
-    if (error.response?.status === 429) {
+if (error.response?.status === 429) {
       return '⏳ Слишком много запросов. Подождите немного и попробуйте снова.';
     }
     
@@ -320,8 +315,7 @@ export async function generateSmartHint(exercise, mistakeCount, lessonContext) {
 
     return response.data?.reply || "Не переживай! Потрать немного времени на размышления о ключевых концепциях из этого урока. У тебя получится! 💪";
   } catch (error) {
-    console.error('❌ Error generating smart hint:', error);
-    return "Не переживай! Потрать немного времени на размышления о ключевых концепциях из этого урока. У тебя получится! 💪";
+return "Не переживай! Потрать немного времени на размышления о ключевых концепциях из этого урока. У тебя получится! 💪";
   }
 }
 
@@ -346,8 +340,7 @@ export async function generateProgressInsight(userProgress, lessonContext) {
     const completionPercent = Math.round((userProgress.completedSteps.length / lessonContext.totalSteps) * 100);
     return response.data?.reply || `Отличный прогресс! Вы завершили ${completionPercent}% урока. Продолжайте в том же духе! 🌟`;
   } catch (error) {
-    console.error('❌ Error generating progress insight:', error);
-    const completionPercent = Math.round((userProgress.completedSteps.length / lessonContext.totalSteps) * 100);
+const completionPercent = Math.round((userProgress.completedSteps.length / lessonContext.totalSteps) * 100);
     return `Отличный прогресс! Вы завершили ${completionPercent}% урока. Продолжайте в том же духе! 🌟`;
   }
 }
@@ -373,8 +366,7 @@ export async function getExplanationHelp(explanationText, userQuestion, lessonCo
 
     return response.data?.reply || 'Не удалось получить помощь с объяснением. Попробуйте переформулировать вопрос.';
   } catch (error) {
-    console.error('❌ Error getting explanation help:', error);
-    return 'Не удалось получить помощь с объяснением. Попробуйте переформулировать вопрос.';
+return 'Не удалось получить помощь с объяснением. Попробуйте переформулировать вопрос.';
   }
 }
 
@@ -402,8 +394,7 @@ export async function resetMonthlyUsage() {
     return { success: true, data: response.data };
 
   } catch (error) {
-    console.error('❌ [GPTService] Failed to reset usage:', error);
-    return { success: false, error: error.message };
+return { success: false, error: error.message };
   }
 }
 
@@ -432,8 +423,7 @@ export async function getUsageStats(months = 3) {
     };
 
   } catch (error) {
-    console.error('❌ [GPTService] Failed to get usage stats:', error);
-    return {
+return {
       success: false,
       error: error.message,
       stats: [],
@@ -480,8 +470,7 @@ export async function checkUpgradeEligibility() {
     };
 
   } catch (error) {
-    console.error('❌ [GPTService] Failed to check upgrade eligibility:', error);
-    return { canUpgrade: false, error: error.message };
+return { canUpgrade: false, error: error.message };
   }
 }
 

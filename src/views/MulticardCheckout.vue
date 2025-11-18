@@ -359,8 +359,7 @@
             savedCards.value = authStore.user.savedCards;
           }
         } catch (err) {
-          console.error('❌ Error loading saved cards:', err);
-        }
+}
       };
   
       const createOfdPayload = () => {
@@ -393,8 +392,7 @@
             await payWithNewCard();
           }
         } catch (err) {
-          console.error('❌ Payment error:', err);
-          error.value = err.message || 'Ошибка при обработке платежа';
+error.value = err.message || 'Ошибка при обработке платежа';
         } finally {
           processing.value = false;
         }
@@ -472,8 +470,7 @@
             throw new Error(result.error);
           }
         } catch (err) {
-          console.error('❌ Payment via app error:', err);
-          error.value = err.message;
+error.value = err.message;
         } finally {
           processing.value = false;
         }
@@ -515,8 +512,7 @@
             throw new Error(result.error);
           }
         } catch (err) {
-          console.error('❌ OTP error:', err);
-          otpError.value = err.message || 'Неверный код';
+otpError.value = err.message || 'Неверный код';
         } finally {
           processing.value = false;
         }
@@ -529,9 +525,7 @@
       };
   
       const handlePaymentSuccess = (paymentData) => {
-        console.log('🎉 Payment successful:', paymentData);
-        
-        // Redirect to success page
+// Redirect to success page
         router.push({
           name: 'PaymentSuccess',
           query: {

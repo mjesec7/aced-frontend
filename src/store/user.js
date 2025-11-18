@@ -58,8 +58,7 @@ const triggerGlobalEvent = (eventName, data = {}) => {
     }
 
   } catch (eventError) {
-    console.error(`❌ Failed to trigger global event '${eventName}':`, eventError);
-  }
+}
 };
 
 // Helper functions
@@ -531,8 +530,7 @@ const mutations = {
 
 
     } catch (stateUpdateError) {
-      console.error('❌ State update failed:', stateUpdateError);
-    }
+}
 
     // ✅ CRITICAL: Update feature matrix
     updateFeatureMatrix(state);
@@ -547,8 +545,7 @@ const mutations = {
       localStorage.setItem('mutationTime', Date.now().toString());
       
     } catch (storageError) {
-      console.error('❌ localStorage update failed:', storageError);
-    }
+}
 
     // ✅ CRITICAL: Enhanced global event broadcasting with multiple triggers
     const eventData = {
@@ -582,8 +579,7 @@ const mutations = {
       try {
         triggerGlobalEvent(eventType, { ...eventData, eventType });
       } catch (eventError) {
-        console.warn(`⚠️ Failed to trigger ${eventType}:`, eventError);
-      }
+}
     });
 
     // ✅ CRITICAL: Delayed events for stubborn components
@@ -626,8 +622,7 @@ const mutations = {
 
     // Validate promocode
     if (!promocode.code || promocode.code.length < 3) {
-      console.error('❌ Invalid promocode data:', promocode);
-      return;
+return;
     }
 
     // Check for duplicates
@@ -686,8 +681,7 @@ const mutations = {
 
     // Validate payment data
     if (!payment.id || payment.amount <= 0) {
-      console.error('❌ Invalid payment data:', payment);
-      return;
+return;
     }
 
     // Check for duplicates
@@ -974,8 +968,7 @@ const mutations = {
       try {
         triggerGlobalEvent(eventType, { ...eventData, eventType });
       } catch (eventError) {
-        console.warn(`⚠️ Failed to trigger force ${eventType}:`, eventError);
-      }
+}
     });
 
     // ✅ CRITICAL: Delayed force update
@@ -996,10 +989,7 @@ const mutations = {
     };
     state.system.errors.errorCount++;
     state.system.lastUpdate = timestamp;
-
-    console.error('❌ Store error logged:', state.system.errors.lastError);
-
-    triggerGlobalEvent('storeError', {
+triggerGlobalEvent('storeError', {
       error: state.system.errors.lastError,
       totalErrors: state.system.errors.errorCount
     });
@@ -1124,8 +1114,7 @@ const actions = {
       try {
         commit('SET_USER_STATUS', newStatus);
       } catch (statusError) {
-        console.error('❌ SET_USER_STATUS failed:', statusError);
-        result.error = 'Failed to update store status: ' + statusError.message;
+result.error = 'Failed to update store status: ' + statusError.message;
         result.duration = Date.now() - startTime;
         return result; // ✅ RETURN RESULT OBJECT
       }
@@ -1210,9 +1199,7 @@ const actions = {
   
     } catch (error) {
       // Step 7: Handle any unexpected exceptions
-      console.error('❌ updateUserStatus failed with exception:', error);
-  
-      // Try to commit error to store (don't let this fail the return)
+// Try to commit error to store (don't let this fail the return)
       try {
         commit('SET_ERROR', {
           message: 'Status update failed',
@@ -1220,8 +1207,7 @@ const actions = {
           originalError: error.message
         });
       } catch (commitError) {
-        console.error('❌ Failed to commit error to store:', commitError);
-      }
+}
   
       // Build error result
       result.success = false;
@@ -1234,8 +1220,7 @@ const actions = {
     }
     
     // ✅ SAFETY NET: This should never be reached, but just in case
-    console.error('🚨 CRITICAL: Reached end of updateUserStatus without returning!');
-    result.error = 'Reached end of function without returning';
+result.error = 'Reached end of function without returning';
     result.duration = Date.now() - startTime;
     return result; // ✅ RETURN RESULT OBJECT
   },
@@ -1272,15 +1257,13 @@ const actions = {
     // ✅ CRITICAL: Input validation with detailed feedback
     if (!userData || typeof userData !== 'object') {
       const error = 'Missing or invalid user data';
-      console.error('❌', error, { hasUserData: !!userData, userDataType: typeof userData });
-      commit('SET_ERROR', { message: error, context: 'saveUser-validation' });
+commit('SET_ERROR', { message: error, context: 'saveUser-validation' });
       return createErrorResult(error, { validationError: true });
     }
 
     if (!token || typeof token !== 'string' || token.length < 10) {
       const error = 'Missing or invalid authentication token';
-      console.error('❌', error, { hasToken: !!token, tokenLength: token?.length || 0 });
-      commit('SET_ERROR', { message: error, context: 'saveUser-validation' });
+commit('SET_ERROR', { message: error, context: 'saveUser-validation' });
       return createErrorResult(error, { validationError: true });
     }
 
@@ -1291,8 +1274,7 @@ const actions = {
       const baseUrl = import.meta.env.VITE_API_BASE_URL;
       if (!baseUrl || typeof baseUrl !== 'string') {
         const error = 'Application configuration error - API base URL not set';
-        console.error('❌', error, { hasBaseUrl: !!baseUrl, baseUrlType: typeof baseUrl });
-        commit('SET_ERROR', { message: error, context: 'saveUser-config' });
+commit('SET_ERROR', { message: error, context: 'saveUser-config' });
         return createErrorResult(error, { configError: true });
       }
 
@@ -1314,8 +1296,7 @@ const actions = {
 
       } catch (apiImportError) {
         const error = 'Failed to load API module - application error';
-        console.error('❌', error, apiImportError);
-        commit('SET_ERROR', { message: error, context: 'saveUser-api-import', originalError: apiImportError.message });
+commit('SET_ERROR', { message: error, context: 'saveUser-api-import', originalError: apiImportError.message });
         return createErrorResult(error, { apiImportError: true });
       }
 
@@ -1340,11 +1321,7 @@ const actions = {
       // ✅ CRITICAL: Validate essential payload fields
       if (!payload.firebaseUserId || !payload.email) {
         const error = 'Missing essential user information (ID or email)';
-        console.error('❌', error, {
-          hasFirebaseId: !!payload.firebaseUserId,
-          hasEmail: !!payload.email,
-          userData: Object.keys(userData)
-        });
+});
         commit('SET_ERROR', { message: error, context: 'saveUser-payload-validation' });
         return createErrorResult(error, { payloadValidationError: true });
       }
@@ -1379,9 +1356,7 @@ const actions = {
        
 
       } catch (networkError) {
-        console.error('❌ Network error during user save:', networkError);
-
-        // ✅ CRITICAL: Detailed network error handling
+// ✅ CRITICAL: Detailed network error handling
         let userFriendlyError = 'Network error occurred';
         let statusCode = null;
         let errorDetails = { isNetworkError: true };
@@ -1454,16 +1429,14 @@ const actions = {
       // ✅ CRITICAL: Response validation
       if (!response || typeof response !== 'object') {
         const error = 'Invalid response from server';
-        console.error('❌', error, { hasResponse: !!response, responseType: typeof response });
-        commit('SET_ERROR', { message: error, context: 'saveUser-response-validation' });
+commit('SET_ERROR', { message: error, context: 'saveUser-response-validation' });
         return createErrorResult(error, { responseValidationError: true });
       }
 
       const responseData = response.data;
       if (!responseData || typeof responseData !== 'object') {
         const error = 'Empty or invalid response from server';
-        console.error('❌', error, { hasResponseData: !!responseData, responseDataType: typeof responseData });
-        commit('SET_ERROR', { message: error, context: 'saveUser-response-data' });
+commit('SET_ERROR', { message: error, context: 'saveUser-response-data' });
         return createErrorResult(error, { responseDataError: true });
       }
 
@@ -1478,7 +1451,7 @@ const actions = {
           savedUser = responseData.user;
         } else {
           const error = 'Server returned success but no user data';
-          console.error('❌', error, { responseStructure: Object.keys(responseData) });
+});
           commit('SET_ERROR', { message: error, context: 'saveUser-response-structure' });
           return createErrorResult(error, { responseStructureError: true });
         }
@@ -1491,21 +1464,18 @@ const actions = {
         savedUser = responseData;
       } else if (responseData.success === false) {
         const error = responseData.message || responseData.error || 'Server returned failure status';
-        console.error('❌ Server returned success: false:', error);
-        commit('SET_ERROR', { message: error, context: 'saveUser-server-failure' });
+commit('SET_ERROR', { message: error, context: 'saveUser-server-failure' });
         return createErrorResult(error, { serverFailure: true, serverResponse: responseData });
       } else {
         const error = 'Server returned unrecognized response format';
-        console.error('❌', error, responseData);
-        commit('SET_ERROR', { message: error, context: 'saveUser-unknown-response' });
+commit('SET_ERROR', { message: error, context: 'saveUser-unknown-response' });
         return createErrorResult(error, { unknownResponseError: true, rawResponse: responseData });
       }
 
       // ✅ CRITICAL: Validate saved user object
       if (!savedUser || typeof savedUser !== 'object') {
         const error = 'Server returned invalid user data';
-        console.error('❌', error, { savedUserType: typeof savedUser, hasSavedUser: !!savedUser });
-        commit('SET_ERROR', { message: error, context: 'saveUser-user-validation' });
+commit('SET_ERROR', { message: error, context: 'saveUser-user-validation' });
         return createErrorResult(error, { userValidationError: true });
       }
 
@@ -1531,11 +1501,7 @@ const actions = {
       // ✅ CRITICAL: Final validation of complete user
       if (!completeUser.firebaseId || !completeUser.email) {
         const error = 'Server user data missing essential fields';
-        console.error('❌', error, {
-          hasFirebaseId: !!completeUser.firebaseId,
-          hasEmail: !!completeUser.email,
-          userFields: Object.keys(completeUser)
-        });
+});
         commit('SET_ERROR', { message: error, context: 'saveUser-final-validation' });
         return createErrorResult(error, { finalValidationError: true });
       }
@@ -1556,8 +1522,7 @@ const actions = {
         }
 
       } catch (storeError) {
-        console.error('❌ Failed to update local store:', storeError);
-        commit('SET_ERROR', { message: 'Store update failed', context: 'saveUser-store-update', originalError: storeError.message });
+commit('SET_ERROR', { message: 'Store update failed', context: 'saveUser-store-update', originalError: storeError.message });
         // Don't fail the entire operation if store update fails
       }
 
@@ -1566,9 +1531,7 @@ const actions = {
       return finalResult;
 
     } catch (error) {
-      console.error('❌ Unexpected error in saveUser:', error);
-
-      // ✅ CRITICAL: Comprehensive error categorization
+// ✅ CRITICAL: Comprehensive error categorization
       let userFriendlyError = 'An unexpected error occurred while saving user data.';
       let errorCategory = 'unexpected';
 
@@ -1596,13 +1559,7 @@ const actions = {
         stack: error.stack,
         category: errorCategory
       });
-
-      console.error('❌ Detailed error info:', {
-        message: error.message,
-        stack: error.stack,
-        name: error.name,
-        category: errorCategory,
-        duration: Date.now() - startTime + 'ms'
+- startTime + 'ms'
       });
 
       // ✅ CRITICAL: ALWAYS return error result
@@ -1667,8 +1624,7 @@ const actions = {
       }
 
     } catch (error) {
-      console.error('❌ Failed to load user status:', error);
-      commit('SET_USER_STATUS', 'free');
+commit('SET_USER_STATUS', 'free');
       commit('SET_ERROR', {
         message: 'User status loading failed',
         context: 'loadUserStatus',
@@ -1735,8 +1691,7 @@ const actions = {
       try {
         commit('SET_USER_STATUS', validatedPlan);
       } catch (statusError) {
-        console.error('❌ SET_USER_STATUS failed:', statusError);
-        return {
+return {
           success: false,
           error: 'Failed to update user status',
           originalError: statusError.message,
@@ -1747,8 +1702,7 @@ const actions = {
       try {
         commit('UPDATE_SUBSCRIPTION', subscriptionData);
       } catch (subscriptionError) {
-        console.error('❌ UPDATE_SUBSCRIPTION failed:', subscriptionError);
-        return {
+return {
           success: false,
           error: 'Failed to update subscription',
           originalError: subscriptionError.message,
@@ -1838,10 +1792,7 @@ const actions = {
 
     } catch (error) {
       const duration = Date.now() - startTime;
-
-      console.error('❌ updateSubscription failed:', error);
-
-      try {
+try {
         commit('SET_ERROR', {
           message: 'Subscription update failed',
           context: 'updateSubscription',
@@ -1850,8 +1801,7 @@ const actions = {
           source
         });
       } catch (commitError) {
-        console.error('❌ Failed to commit error:', commitError);
-      }
+}
 
       const errorResult = {
         success: false,
@@ -1945,8 +1895,7 @@ const actions = {
 
         // ✅ CRITICAL: Check if update was successful
         if (!updateResult || updateResult.success !== true) {
-          console.error('❌ Subscription update failed after promocode application:', updateResult);
-          return {
+return {
             success: false,
             error: 'Промокод применён на сервере, но локальное обновление не удалось',
             serverSuccess: true,
@@ -1991,9 +1940,7 @@ const actions = {
       return { success: false, error: serverError };
 
     } catch (error) {
-      console.error('❌ Promocode application failed:', error);
-
-      let userFriendlyError = 'Произошла ошибка при применении промокода';
+let userFriendlyError = 'Произошла ошибка при применении промокода';
 
       if (error.message === 'Request timeout') {
         userFriendlyError = 'Истекло время ожидания. Попробуйте снова.';
@@ -2081,9 +2028,7 @@ const actions = {
       return validationResult;
 
     } catch (error) {
-      console.error('❌ Promocode validation failed:', error);
-
-      let userFriendlyError = 'Ошибка проверки промокода';
+let userFriendlyError = 'Ошибка проверки промокода';
 
       if (error.message === 'Validation timeout') {
         userFriendlyError = 'Истекло время ожидания проверки';
@@ -2177,9 +2122,7 @@ const actions = {
       };
 
     } catch (error) {
-      console.error('❌ Store initialization failed:', error);
-
-      // Even if initialization fails, mark as initialized to prevent infinite loops
+// Even if initialization fails, mark as initialized to prevent infinite loops
       commit('SET_INITIALIZED', false);
 
       return {
@@ -2241,17 +2184,14 @@ const actions = {
       };
 
     } catch (error) {
-      console.error('❌ Force update failed:', error);
-
-      try {
+try {
         commit('SET_ERROR', {
           message: 'Force update failed',
           context: 'forceUpdate',
           originalError: error.message
         });
       } catch (commitError) {
-        console.error('❌ Failed to commit force update error:', commitError);
-      }
+}
 
       return { success: false, error: error.message };
     }
@@ -2338,16 +2278,13 @@ const actions = {
       };
 
     } catch (error) {
-      console.error('❌ Enhanced logout error:', error);
-
-      // Even if logout fails, try to clear critical data
+// Even if logout fails, try to clear critical data
       try {
         commit('CLEAR_USER');
         localStorage.removeItem('currentUser');
         localStorage.removeItem('token');
       } catch (emergencyError) {
-        console.error('❌ Emergency cleanup also failed:', emergencyError);
-      }
+}
 
       return {
         success: false,
@@ -2368,8 +2305,7 @@ const actions = {
         try {
           localSubscription = JSON.parse(localSubscriptionJson);
         } catch (error) {
-          console.warn('⚠️ Invalid local subscription data');
-        }
+}
       }
 
       // Perform global sync
@@ -2397,8 +2333,7 @@ const actions = {
       };
       
     } catch (error) {
-      console.error('❌ Global sync initialization failed:', error);
-      return {
+return {
         success: false,
         error: error.message
       };
@@ -2430,8 +2365,7 @@ const actions = {
       }
       return result;
     } catch (error) {
-      console.error('❌ Global promocode application failed:', error);
-      return {
+return {
         success: false,
         error: error.message
       };
@@ -2462,8 +2396,7 @@ const actions = {
       }
       return result;
     } catch (error) {
-      console.error('❌ Global payment completion failed:', error);
-      return {
+return {
         success: false,
         error: error.message
       };
@@ -2518,9 +2451,7 @@ const actions = {
         throw new Error(result.error || 'Status update failed');
       }
     } catch (error) {
-      console.error('❌ Store status update with server sync failed:', error);
-  
-      // Fallback: update locally only
+// Fallback: update locally only
       try {
         commit('SET_USER_STATUS', newStatus);
         localStorage.setItem('userStatus', newStatus);
@@ -2572,8 +2503,7 @@ const actions = {
         throw new Error(result.error || 'Promocode application failed');
       }
     } catch (error) {
-      console.error('❌ Store promocode application with global sync failed:', error);
-      return {
+return {
         success: false,
         error: error.message
       };
@@ -2632,8 +2562,7 @@ const actions = {
       }
       return { success: false, error: 'Invalid server response' };
     } catch (error) {
-      console.error('❌ Failed to load user from server:', error);
-      return { success: false, error: error.message };
+return { success: false, error: error.message };
     }
   },
 };
@@ -2668,9 +2597,7 @@ const handleFailedUserSave = (store, { userData, token }) => {
       } else {
         // Handle undefined or invalid result
         const errorMessage = retryResult?.error || 'Retry failed - invalid or undefined result';
-        console.error('❌ Retry failed with result:', retryResult);
-
-        eventBus.emit('userLoginRetryFailed', {
+eventBus.emit('userLoginRetryFailed', {
           error: errorMessage,
           finalFailure: true,
           invalidResult: true,
@@ -2679,8 +2606,7 @@ const handleFailedUserSave = (store, { userData, token }) => {
         });
       }
     } catch (retryError) {
-      console.error('❌ Retry exception:', retryError);
-      eventBus.emit('userLoginRetryFailed', {
+eventBus.emit('userLoginRetryFailed', {
         error: retryError.message || 'Retry exception occurred',
         isException: true,
         timestamp: Date.now()
@@ -3479,8 +3405,7 @@ export const setupUserStoreEvents = (app, store) => {
     try {
       await store.dispatch('user/initialize');
     } catch (error) {
-      console.error('❌ Auto-initialization failed:', error);
-    }
+}
   };
 
   // Initialize on DOM ready
@@ -3509,8 +3434,7 @@ export const setupUserStoreEvents = (app, store) => {
   window.addEventListener('storeError', (event) => {
     const error = event.detail?.error;
     if (error) {
-      console.error('🚨 User store error:', error);
-      // You can add your global error handling logic here
+// You can add your global error handling logic here
       // For example, show a notification, send to error tracking service, etc.
     }
   });

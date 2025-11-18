@@ -70,8 +70,7 @@ export default {
         try {
           await switchLearningMode(userId, selectedMode.value, 'Initial selection');
         } catch (apiError) {
-          console.warn('Backend not ready, saving locally only');
-        }
+}
 
         // Always save to Vuex store
         await store.dispatch('platformMode/switchMode', {
@@ -83,8 +82,7 @@ export default {
         // but don't force redirect
 
       } catch (error) {
-        console.error('Error setting mode:', error);
-      } finally {
+} finally {
         isLoading.value = false;
       }
     };

@@ -265,8 +265,7 @@ export default {
         await this.loadTopicData();
         
       } catch (error) {
-        console.error('❌ Component initialization failed:', error);
-        this.error = 'Ошибка инициализации компонента';
+this.error = 'Ошибка инициализации компонента';
         this.loading = false;
       }
     },
@@ -345,8 +344,7 @@ export default {
           // Nested data property
           this.lessons = lessonsResult.data;
         } else {
-          console.warn('⚠️ No lessons found in response:', lessonsResult);
-          this.lessons = [];
+this.lessons = [];
         }
         
         
@@ -360,8 +358,7 @@ export default {
         }));
         
       } catch (err) {
-        console.error('❌ Error loading topic data:', err);
-        this.error = this.getErrorMessage(err);
+this.error = this.getErrorMessage(err);
         this.topic = null;
         this.lessons = [];
       } finally {
@@ -383,8 +380,7 @@ export default {
         if (statusResult.success) {
           this.userPlan = statusResult.status || statusResult.data?.subscriptionPlan || 'free';
         } else {
-          console.warn('⚠️ Failed to load user status, defaulting to free');
-          this.userPlan = 'free';
+this.userPlan = 'free';
         }
         
         // Also check localStorage as fallback
@@ -394,8 +390,7 @@ export default {
         }
         
       } catch (err) {
-        console.warn('⚠️ Error loading user plan:', err.message);
-        this.userPlan = 'free';
+this.userPlan = 'free';
       }
     },
 
@@ -522,8 +517,7 @@ export default {
         }
         
       } catch (error) {
-        console.warn('⚠️ Payment status check failed:', error.message);
-        // Don't throw error, just log it
+// Don't throw error, just log it
       }
     }
   },

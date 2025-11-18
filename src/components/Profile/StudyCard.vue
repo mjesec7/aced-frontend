@@ -192,8 +192,7 @@ export default {
         
         return 'Курс без названия';
       } catch (error) {
-        console.error('Error getting topic name:', error);
-        return 'Курс без названия';
+return 'Курс без названия';
       }
     },
     
@@ -224,8 +223,7 @@ export default {
           return `Курс "${name}" по предмету "${subject}" (Уровень ${level}).`;
         }
       } catch (error) {
-        console.error('Error getting topic description:', error);
-        return 'Описание отсутствует';
+return 'Описание отсутствует';
       }
     },
     
@@ -413,8 +411,7 @@ export default {
         });
         
       } catch (err) {
-        console.error('❌ StudyCard: Error navigating to topic overview:', err);
-        this.$nextTick(() => {
+this.$nextTick(() => {
           alert('❌ Не удалось открыть курс: ' + err.message);
         });
       }
@@ -447,8 +444,7 @@ export default {
         });
         
       } catch (err) {
-        console.error('❌ Ошибка удаления курса:', err);
-        this.$nextTick(() => {
+this.$nextTick(() => {
           alert('❌ Не удалось удалить курс: ' + (err.message || 'Неизвестная ошибка'));
         });
       }

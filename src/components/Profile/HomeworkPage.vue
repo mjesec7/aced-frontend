@@ -486,8 +486,7 @@ export default {
         try {
           await this.saveHomework(true);
         } catch (error) {
-          console.warn('Auto-save failed:', error.message);
-        }
+}
       }
     },
 
@@ -501,17 +500,8 @@ export default {
         const lessonId = this.computedLessonId;
         const primaryId = this.primaryId;
         const suggestedType = this.computedHomeworkType;
-        
-        console.log('🔍 Fetching homework:', {
-          homeworkId,
-          lessonId,
-          primaryId,
-          suggestedType
-        });
-        
-        if (!primaryId) {
-          console.error('❌ No homework or lesson ID available');
-          this.error = 'Assignment ID not found';
+if (!primaryId) {
+this.error = 'Assignment ID not found';
           this.errorDetails = 'Check the link and try again';
           return;
         }
@@ -529,9 +519,7 @@ export default {
         
         if (shouldTryStandalone && primaryId) {
           try {
-            console.log('🔄 Trying standalone homework approach...');
-            
-            const result = await getStandaloneHomework(userId, primaryId);
+const result = await getStandaloneHomework(userId, primaryId);
             
             if (result.success && result.data && result.data.homework) {
               const homeworkData = result.data.homework;
@@ -549,15 +537,11 @@ export default {
                 if (userProgress && userProgress.answers) {
                   this.loadUserAnswers(userProgress.answers);
                 }
-                
-                console.log('✅ Successfully loaded standalone homework');
-                return;
+return;
               }
             }
           } catch (homeworkError) {
-            console.warn('⚠️ Standalone homework approach failed:', homeworkError.message);
-            
-            if (homeworkError.response?.status !== 404 && homeworkError.response?.status >= 500) {
+if (homeworkError.response?.status !== 404 && homeworkError.response?.status >= 500) {
               this.error = 'Server error loading assignment';
               this.errorDetails = homeworkError.message;
               return;
@@ -566,9 +550,7 @@ export default {
         }
 
         try {
-          console.log('🔄 Trying lesson homework approach...');
-          
-          const result = await getHomeworkByLesson(userId, primaryId);
+const result = await getHomeworkByLesson(userId, primaryId);
           
           if (result.success && result.data) {
             const lessonInfo = result.data.lessonInfo;
@@ -576,8 +558,7 @@ export default {
             const homework = result.data.homework;
             
             if (!questions || !Array.isArray(questions) || questions.length === 0) {
-              console.warn('⚠️ No homework questions found in lesson');
-              this.error = 'No homework in this lesson';
+this.error = 'No homework in this lesson';
               this.errorDetails = 'The assignment may not have been created yet';
               return;
             }
@@ -593,15 +574,11 @@ export default {
             if (homework && homework.answers) {
               this.loadUserAnswers(homework.answers);
             }
-
-            console.log('✅ Successfully loaded lesson homework');
-            return;
+return;
           }
           
         } catch (lessonError) {
-          console.error('❌ Lesson homework approach also failed:', lessonError);
-          
-          if (lessonError.response?.status === 404) {
+if (lessonError.response?.status === 404) {
             if (suggestedType === 'standalone') {
               this.error = 'Homework not found';
               this.errorDetails = 'It may have been deleted or not yet created';
@@ -619,8 +596,7 @@ export default {
         }
 
       } catch (err) {
-        console.error('❌ General error loading homework:', err);
-        this.error = 'Error loading homework';
+this.error = 'Error loading homework';
         this.errorDetails = err.message || 'Try refreshing the page';
         
         this.$toast?.error('Error loading homework');
@@ -630,9 +606,7 @@ export default {
     },
 
     loadUserAnswers(answers) {
-      console.log('📝 Loading user answers:', answers);
-      
-      if (Array.isArray(answers)) {
+if (Array.isArray(answers)) {
         for (const entry of answers) {
           if (entry.questionIndex !== undefined && 
               entry.questionIndex >= 0 && 
@@ -648,9 +622,7 @@ export default {
           }
         });
       }
-      
-      console.log('✅ Loaded answers:', this.userAnswers);
-    },
+},
 
     async saveHomework(silent = false) {
       try {
@@ -666,15 +638,7 @@ export default {
           userAnswer: ans || '',
           answer: ans || ''
         }));
-
-        console.log('💾 Saving homework:', {
-          userId,
-          primaryId: this.primaryId,
-          isStandalone: this.isStandalone,
-          answerCount: answers.length
-        });
-        
-        let result;
+let result;
         
         if (this.isStandalone) {
           result = await saveStandaloneHomework(userId, this.primaryId, answers);
@@ -685,13 +649,8 @@ export default {
         if (!silent) {
           this.$toast?.success('Answers saved!');
         }
-        
-        console.log('✅ Homework saved successfully');
-        
-      } catch (err) {
-        console.error('❌ Error saving homework:', err);
-        
-        if (!silent) {
+} catch (err) {
+if (!silent) {
           let errorMessage = 'Failed to save answers';
           
           if (err.response?.data?.error) {
@@ -731,25 +690,14 @@ export default {
           userAnswer: ans || '',
           answer: ans || ''
         }));
-
-        console.log('📤 Submitting homework:', {
-          userId,
-          primaryId: this.primaryId,
-          isStandalone: this.isStandalone,
-          answerCount: answers.length
-        });
-
-        let result;
+let result;
         
         if (this.isStandalone) {
           result = await submitStandaloneHomework(userId, this.primaryId, answers);
         } else {
           result = await submitHomeworkAPI(userId, this.primaryId, answers);
         }
-
-        console.log('✅ Homework submitted successfully:', result);
-
-        const responseData = result.data?.data || result.data || result;
+const responseData = result.data?.data || result.data || result;
         const score = responseData?.score || 0;
         const stars = responseData?.stars || 0;
         const correctAnswers = responseData?.correctAnswers || 0;
@@ -773,9 +721,7 @@ export default {
         }, 3000);
         
       } catch (err) {
-        console.error('❌ Error submitting homework:', err);
-        
-        let errorMessage = 'Error submitting answers';
+let errorMessage = 'Error submitting answers';
         
         if (err.response?.status === 404) {
           errorMessage = 'Assignment not found. It may have been deleted.';
@@ -801,7 +747,7 @@ export default {
 
     async retryFetch() {
       this.retryCount++;
-      console.log(`🔄 Retrying fetch (attempt ${this.retryCount})`);
+`);
       await this.fetchHomework();
     },
 
@@ -813,14 +759,9 @@ export default {
   
   created() {
     console.group('🎯 HomeworkPage Created');
-    console.log('Route params:', this.$route.params);
-    console.log('Route query:', this.$route.query);
-    console.log('Props:', { 
-      homeworkId: this.homeworkId, 
-      lessonId: this.lessonId, 
-      homeworkType: this.homeworkType 
-    });
-    console.groupEnd();
+
+
+console.groupEnd();
     
     this.showDebug = process.env.NODE_ENV === 'development' || this.$route.query.debug === 'true';
   },
@@ -829,8 +770,7 @@ export default {
     if (this.primaryId) {
       await this.fetchHomework();
     } else {
-      console.error('❌ No homework or lesson ID available on mount');
-      this.loading = false;
+this.loading = false;
       this.error = 'Assignment ID not found';
       this.errorDetails = 'Check that the link is correct';
     }
@@ -844,8 +784,7 @@ export default {
 
   watch: {
     '$route'(to, from) {
-      console.log('🔄 Route changed:', { from: from.params, to: to.params });
-      if (to.params !== from.params && this.primaryId) {
+if (to.params !== from.params && this.primaryId) {
         this.fetchHomework();
       }
     },

@@ -443,8 +443,7 @@ export default {
     // ✅ ENHANCED: Load course content with structured format support
     async loadCourseContent() {
       if (!this.course || (!this.course._id && !this.course.id)) {
-        console.error('❌ LessonPlayer: Invalid course data:', this.course);
-        this.error = 'Неверные данные курса';
+this.error = 'Неверные данные курса';
         this.loading = false;
         return;
       }
@@ -464,8 +463,7 @@ export default {
           const result = await response.json();
           
           if (result.success && result.course) {
-            console.log('✅ Loaded course in structured format');
-            this.structuredCourseData = result.course;
+this.structuredCourseData = result.course;
             this.isStructuredFormat = true;
             
             // Extract structured lessons
@@ -476,8 +474,7 @@ export default {
             }
           }
         } catch (structuredError) {
-          console.warn('⚠️ Structured format not available, trying standard format:', structuredError.message);
-        }
+}
 
         // ✅ STRATEGY 2: Fall back to standard format
         try {
@@ -496,8 +493,7 @@ export default {
             }
           }
         } catch (standardError) {
-          console.warn('⚠️ Standard format fetch failed:', standardError.message);
-        }
+}
 
         // ✅ STRATEGY 3: Fallback to general Updated Courses API
         if (!courseDetails && lessons.length === 0) {
@@ -518,8 +514,7 @@ export default {
               }
             }
           } catch (coursesError) {
-            console.warn('⚠️ Updated Courses fallback failed:', coursesError.message);
-          }
+}
         }
 
         // ✅ Set final data
@@ -528,14 +523,11 @@ export default {
 
         if (!this.isStructuredFormat && lessons.length === 0) {
           this.error = 'Содержание уроков для этого курса не найдено';
-          console.warn('⚠️ No lessons found for course:', courseId);
-        } else {
-          console.log(`✅ Loaded ${this.isStructuredFormat ? this.structuredLessons.length : lessons.length} lessons in ${this.isStructuredFormat ? 'structured' : 'traditional'} format`);
-        }
+} else {
+}
         
       } catch (error) {
-        console.error('❌ Critical error loading Updated Course:', error);
-        this.error = 'Не удалось загрузить содержание курса. Пожалуйста, попробуйте еще раз.';
+this.error = 'Не удалось загрузить содержание курса. Пожалуйста, попробуйте еще раз.';
       } finally {
         this.loading = false;
       }
@@ -544,8 +536,7 @@ export default {
     // ✅ NEW: Process structured lessons to traditional format for backward compatibility
     processStructuredLessonsToTraditional(structuredLessons) {
       if (!Array.isArray(structuredLessons)) {
-        console.warn('⚠️ Structured lessons is not an array:', typeof structuredLessons);
-        return [];
+return [];
       }
 
       return structuredLessons.map((lesson, index) => {
@@ -564,8 +555,7 @@ export default {
           return processedLesson;
 
         } catch (lessonError) {
-          console.error(`❌ Error processing structured lesson ${index}:`, lessonError);
-          return {
+return {
             id: `error_lesson_${index}`,
             title: `Урок ${index + 1} (Ошибка)`,
             lessonName: `Урок ${index + 1} (Ошибка)`,
@@ -687,8 +677,7 @@ export default {
     // ✅ FIXED: Process curriculum from Updated Courses (unchanged)
     processCurriculum(curriculum) {
       if (!Array.isArray(curriculum)) {
-        console.warn('⚠️ Curriculum is not an array:', typeof curriculum);
-        return [];
+return [];
       }
 
       return curriculum.map((lesson, index) => {
@@ -707,8 +696,7 @@ export default {
           return processedLesson;
 
         } catch (lessonError) {
-          console.error(`❌ Error processing lesson ${index}:`, lessonError);
-          return {
+return {
             id: `error_lesson_${index}`,
             title: `Урок ${index + 1} (Ошибка)`,
             lessonName: `Урок ${index + 1} (Ошибка)`,
@@ -722,8 +710,7 @@ export default {
     // ✅ FIXED: Process steps from Updated Course curriculum (unchanged)
     processSteps(steps) {
       if (!Array.isArray(steps)) {
-        console.warn('⚠️ Steps is not an array:', typeof steps);
-        return [];
+return [];
       }
 
       return steps.map((step, index) => {
@@ -747,8 +734,7 @@ export default {
           return processedStep;
           
         } catch (stepError) {
-          console.error(`❌ Error processing step ${index}:`, stepError);
-          return {
+return {
             id: `error_step_${index}`,
             type: 'explanation',
             title: 'Ошибка загрузки шага',

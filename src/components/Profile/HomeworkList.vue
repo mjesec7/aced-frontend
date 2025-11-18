@@ -432,8 +432,7 @@ export default {
           query: query
         });
       } catch (err) {
-        console.error('Navigation error:', err);
-      }
+}
     },
     
     statusLabel(hw) {
@@ -530,8 +529,7 @@ export default {
           this.homeworks = [];
         }
       } catch (err) {
-        console.error('Error loading homeworks:', err);
-        this.error = err.message || 'Ошибка загрузки домашних заданий';
+this.error = err.message || 'Ошибка загрузки домашних заданий';
         this.homeworks = [];
       } finally {
         this.loading = false;

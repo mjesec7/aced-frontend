@@ -63,8 +63,7 @@ export const getUpdatedCourses = async (filters = {}) => {
       throw new Error(data.error || 'Failed to fetch courses');
     }
   } catch (error) {
-    console.error('❌ Failed to fetch updated courses:', error);
-    return {
+return {
       success: false,
       courses: [],
       error: error.message || 'Network error'
@@ -100,9 +99,7 @@ export const getCourseById = async (courseId) => {
       throw new Error('Course not found or invalid response');
     }
   } catch (error) {
-    console.error('❌ Failed to fetch course by ID:', error);
-
-    if (error.response?.status === 404) {
+if (error.response?.status === 404) {
       return {
         success: false,
         error: 'Course not found',
@@ -122,9 +119,7 @@ export const getCourseById = async (courseId) => {
  */
 export const getCourseStructured = async (courseId) => {
   try {
-    console.log('🔍 Fetching structured course:', courseId);
-
-    const { data } = await api.get(`updated-courses/${courseId}?format=structured`);
+const { data } = await api.get(`updated-courses/${courseId}?format=structured`);
 
     if (data && data.success && data.course) {
       return {
@@ -136,8 +131,7 @@ export const getCourseStructured = async (courseId) => {
       throw new Error('Structured course not found');
     }
   } catch (error) {
-    console.error('❌ Failed to fetch structured course:', error);
-    return {
+return {
       success: false,
       error: error.message || 'Failed to fetch structured course'
     };
@@ -149,9 +143,7 @@ export const getCourseStructured = async (courseId) => {
  */
 export const getUpdatedCoursesWithFormat = async (filters = {}, preferredFormat = 'standard') => {
   try {
-    console.log('🔍 Fetching courses with format preference:', preferredFormat);
-
-    const params = new URLSearchParams();
+const params = new URLSearchParams();
     
     Object.keys(filters).forEach(key => {
       if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
@@ -210,8 +202,7 @@ export const getUpdatedCoursesWithFormat = async (filters = {}, preferredFormat 
       throw new Error(data.error || 'Failed to fetch courses');
     }
   } catch (error) {
-    console.error('❌ Failed to fetch courses with format:', error);
-    return {
+return {
       success: false,
       courses: [],
       error: error.message || 'Network error',
@@ -225,13 +216,10 @@ export const getUpdatedCoursesWithFormat = async (filters = {}, preferredFormat 
  */
 export const getCourseStructuredEnhanced = async (courseId) => {
   try {
-    console.log('🔍 Fetching enhanced structured course:', courseId);
-
-    let response = await getCourseStructured(courseId);
+let response = await getCourseStructured(courseId);
     
     if (!response.success) {
-      console.warn('⚠️ Structured course fetch failed, trying standard format');
-      response = await getCourseById(courseId);
+response = await getCourseById(courseId);
     }
     
     if (response && response.success && response.data) {
@@ -271,8 +259,7 @@ export const getCourseStructuredEnhanced = async (courseId) => {
       throw new Error('Course not found or invalid response');
     }
   } catch (error) {
-    console.error('❌ Error fetching enhanced structured course:', error);
-    return {
+return {
       success: false,
       error: error.message || 'Failed to fetch course'
     };
@@ -309,8 +296,7 @@ export const getCourseContent = async (courseId) => {
         };
       }
     } catch (courseError) {
-      console.warn('⚠️ Course lessons endpoint failed:', courseError.message);
-    }
+}
 
     // Fallback: Get course details and extract curriculum
     try {
@@ -339,8 +325,7 @@ export const getCourseContent = async (courseId) => {
         };
       }
     } catch (detailError) {
-      console.warn('⚠️ Course details endpoint failed:', detailError.message);
-    }
+}
 
     return {
       success: true,
@@ -349,8 +334,7 @@ export const getCourseContent = async (courseId) => {
     };
 
   } catch (error) {
-    console.error('❌ Failed to fetch course content:', error);
-    return {
+return {
       success: false,
       data: [],
       error: error.message || 'Failed to fetch course content'
@@ -365,8 +349,7 @@ export const toggleBookmark = async (userId, courseId, isBookmarked) => {
   try {
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
-      console.warn('⚠️ No auth token for bookmark toggle');
-      return {
+return {
         success: true,
         bookmarked: isBookmarked,
         message: 'Bookmark toggled (demo mode)'
@@ -404,8 +387,7 @@ export const getSubjects = async () => {
     const { data } = await api.get('subjects');
     return Array.isArray(data) ? data : [];
   } catch (error) {
-    console.error('❌ Failed to fetch subjects:', error);
-    return [];
+return [];
   }
 };
 
@@ -427,8 +409,7 @@ export const getTopicsGrouped = async () => {
       throw new Error('Failed to fetch grouped topics');
     }
   } catch (error) {
-    console.error('❌ Failed to fetch grouped topics:', error);
-    return {
+return {
       success: false,
       data: {},
       error: error.message
@@ -466,8 +447,7 @@ export const getTopicsAsCourses = async (filters = {}) => {
       throw new Error('Failed to fetch courses');
     }
   } catch (error) {
-    console.error('❌ Failed to fetch courses:', error);
-    return {
+return {
       success: false,
       courses: [],
       error: error.message

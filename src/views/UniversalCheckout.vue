@@ -656,8 +656,7 @@ export default {
         }
         
       } catch (error) {
-        console.error('❌ Checkout initialization error:', error);
-        this.error = 'Payment initialization error';
+this.error = 'Payment initialization error';
       }
     },
     
@@ -703,8 +702,7 @@ export default {
           this.savedCards = [];
         }
       } catch (err) {
-        console.error('❌ Error loading saved cards:', err);
-      }
+}
     },
 
     selectCard(token) {
@@ -741,8 +739,7 @@ export default {
       if (!this.finalAmount || this.finalAmount <= 0) errors.push('Valid amount is required');
 
       if (errors.length > 0) {
-        console.warn('⚠️ Payment data validation issues:', errors);
-      }
+}
     },
 
     async processPayment() {
@@ -772,8 +769,7 @@ export default {
         }
 
       } catch (error) {
-        console.error('❌ Payment processing error:', error);
-        this.error = this.formatError(error);
+this.error = this.formatError(error);
         this.loading = false;
         this.processing = false;
       }
@@ -881,8 +877,7 @@ export default {
           throw new Error(result.error);
         }
       } catch (err) {
-        console.error('❌ OTP error:', err);
-        this.otpError = err.message || 'Invalid verification code';
+this.otpError = err.message || 'Invalid verification code';
       } finally {
         this.processing = false;
       }

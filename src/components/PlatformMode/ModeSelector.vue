@@ -183,8 +183,7 @@ export default {
           throw new Error(result.error || 'Failed to set learning mode');
         }
       } catch (error) {
-        console.error('Error setting mode:', error);
-        alert('Failed to set learning mode. Please try again.');
+alert('Failed to set learning mode. Please try again.');
       } finally {
         isLoading.value = false;
       }

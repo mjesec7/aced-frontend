@@ -175,8 +175,7 @@ export default {
           await this.$store.dispatch('user/loadUserStatus');
         }
       } catch (error) {
-        console.warn('⚠️ Failed to update user status:', error);
-      }
+}
     },
 
     formatAmount(amount) {

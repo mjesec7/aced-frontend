@@ -13,8 +13,7 @@ export const saveSubscriptionToServer = async (userId, subscriptionData) => {
   try {
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
-      console.warn('⚠️ No auth token for server save');
-      return { success: false, error: 'No authentication token' };
+return { success: false, error: 'No authentication token' };
     }
 
     const headers = {
@@ -64,22 +63,19 @@ export const saveSubscriptionToServer = async (userId, subscriptionData) => {
           };
         }
       } catch (endpointError) {
-        console.warn(`⚠️ Endpoint ${endpoint} failed:`, endpointError.message);
-        continue;
+continue;
       }
     }
 
     // If all endpoints fail, still return success but with warning
-    console.warn('⚠️ All save endpoints failed, subscription saved locally only');
-    return {
+return {
       success: true,
       localOnly: true,
       warning: 'Saved locally only - server sync failed',
       serverData: serverData
     };
   } catch (error) {
-    console.error('❌ Failed to save subscription to server:', error);
-    return {
+return {
       success: false,
       error: error.message,
       localOnly: true
@@ -94,8 +90,7 @@ export const loadSubscriptionFromServer = async (userId) => {
   try {
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
-      console.warn('⚠️ No auth token for server load');
-      return { success: false, error: 'No authentication token' };
+return { success: false, error: 'No authentication token' };
     }
 
     const headers = {
@@ -154,8 +149,7 @@ export const loadSubscriptionFromServer = async (userId) => {
           }
         }
       } catch (endpointError) {
-        console.warn(`⚠️ Endpoint ${endpoint} failed:`, endpointError.message);
-        continue;
+continue;
       }
     }
 
@@ -165,8 +159,7 @@ export const loadSubscriptionFromServer = async (userId) => {
       message: 'No subscription found on server'
     };
   } catch (error) {
-    console.error('❌ Failed to load subscription from server:', error);
-    return {
+return {
       success: false,
       error: error.message
     };
@@ -263,8 +256,7 @@ export const syncSubscriptionGlobally = async (userId, localSubscription = null)
       message: 'No valid subscription to sync'
     };
   } catch (error) {
-    console.error('❌ Global subscription sync failed:', error);
-    return {
+return {
       success: false,
       error: error.message
     };
@@ -305,8 +297,7 @@ export const updateUserStatusWithPersistence = async (userId, newStatus, source 
           break;
         }
       } catch (endpointError) {
-        console.warn(`⚠️ Server update failed via ${endpoint}:`, endpointError.message);
-        continue;
+continue;
       }
     }
 
@@ -340,8 +331,7 @@ export const updateUserStatusWithPersistence = async (userId, newStatus, source 
       try {
         localStorage.setItem(key, value);
       } catch (storageError) {
-        console.warn(`⚠️ Failed to persist ${key}:`, storageError);
-      }
+}
     });
 
     // 4. Update user object in localStorage
@@ -356,8 +346,7 @@ export const updateUserStatusWithPersistence = async (userId, newStatus, source 
         localStorage.setItem('user', JSON.stringify(userData));
       }
     } catch (userUpdateError) {
-      console.warn('⚠️ Failed to update user object:', userUpdateError);
-    }
+}
 
     return {
       success: true,
@@ -367,17 +356,14 @@ export const updateUserStatusWithPersistence = async (userId, newStatus, source 
     };
 
   } catch (error) {
-    console.error('❌ Global status persistence failed:', error);
-
-    // Fallback: at least persist locally
+// Fallback: at least persist locally
     try {
       localStorage.setItem('userStatus', newStatus);
       localStorage.setItem('userPlan', newStatus);
       localStorage.setItem('subscriptionPlan', newStatus);
       localStorage.setItem('plan', newStatus);
     } catch (fallbackError) {
-      console.error('❌ Even fallback persistence failed:', fallbackError);
-    }
+}
 
     return {
       success: false,
@@ -424,9 +410,7 @@ export const applyPromocodeWithGlobalPersistence = async (userId, promocode, pla
       };
     }
   } catch (error) {
-    console.error('❌ Promocode application with persistence failed:', error);
-
-    return {
+return {
       success: false,
       error: error.response?.data?.message || error.message || 'Failed to apply promocode'
     };
@@ -468,9 +452,7 @@ export const completePaymentWithGlobalPersistence = async (userId, paymentData) 
       };
     }
   } catch (error) {
-    console.error('❌ Payment completion with persistence failed:', error);
-
-    return {
+return {
       success: false,
       error: error.response?.data?.message || error.message || 'Failed to complete payment'
     };
@@ -484,8 +466,7 @@ export const checkGlobalSyncStatus = async (userId, localSubscription = null) =>
   try {
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
-      console.warn('⚠️ No auth token for status check');
-      return { syncNeeded: false, message: 'No authenticated user' };
+return { syncNeeded: false, message: 'No authenticated user' };
     }
 
     const headers = { 'Authorization': `Bearer ${token}` };
@@ -496,8 +477,7 @@ export const checkGlobalSyncStatus = async (userId, localSubscription = null) =>
 
     return data;
   } catch (error) {
-    console.error('❌ Failed to check global sync status:', error);
-    return {
+return {
       syncNeeded: true,
       message: 'Server check failed, assuming sync is needed',
       error: error.message

@@ -40,8 +40,7 @@ export const getTopics = async (filters = {}) => {
       };
     }
   } catch (error) {
-    console.error('❌ Failed to fetch topics:', error);
-    return {
+return {
       success: false,
       data: [],
       error: error.message
@@ -55,8 +54,7 @@ export const getTopics = async (filters = {}) => {
 export const getTopicById = async (topicId) => {
   try {
     if (!topicId || typeof topicId !== 'string') {
-      console.error('❌ Invalid topicId:', topicId);
-      return {
+return {
         success: false,
         error: 'Invalid topic ID provided',
         code: 400,
@@ -99,9 +97,7 @@ export const getTopicById = async (topicId) => {
       }
 
     } catch (topicsError) {
-      console.warn('⚠️ Topics endpoint failed:', topicsError.response?.status, topicsError.message);
-
-      if (topicsError.response?.status !== 404) {
+if (topicsError.response?.status !== 404) {
         throw topicsError;
       }
     }
@@ -205,9 +201,7 @@ export const getTopicById = async (topicId) => {
       };
 
     } catch (lessonsError) {
-      console.error('❌ Lessons fallback failed:', lessonsError);
-
-      return {
+return {
         success: false,
         error: 'Topic not found and lessons fallback failed',
         code: 404,
@@ -218,9 +212,7 @@ export const getTopicById = async (topicId) => {
     }
 
   } catch (error) {
-    console.error('❌ API: Failed to fetch topic by ID:', error);
-
-    if (error.response?.status === 404) {
+if (error.response?.status === 404) {
       return {
         success: false,
         error: 'Topic not found',
@@ -277,18 +269,14 @@ export const getTopicById = async (topicId) => {
  */
 export const getLessonsByTopic = async (topicId) => {
   try {
-    console.log('🔍 API: Fetching lessons for topic:', topicId);
-
-    if (!topicId) {
+if (!topicId) {
       throw new Error('Topic ID is required');
     }
 
     // Strategy 1: Try the enhanced lessons endpoint first
     try {
       const { data } = await api.get(`lessons/topic/${topicId}?includeStats=true&sortBy=createdAt&order=asc`);
-      console.log('✅ Enhanced endpoint response:', data);
-
-      if (data && data.success) {
+if (data && data.success) {
         return {
           success: true,
           data: data.lessons || [],
@@ -297,15 +285,12 @@ export const getLessonsByTopic = async (topicId) => {
         };
       }
     } catch (enhancedError) {
-      console.warn('⚠️ Enhanced endpoint failed:', enhancedError.message);
-    }
+}
 
     // Strategy 2: Try legacy topic-specific lessons endpoint
     try {
       const { data } = await api.get(`topics/${topicId}/lessons`);
-      console.log('✅ Legacy endpoint response:', data);
-
-      if (data && data.success) {
+if (data && data.success) {
         return {
           success: true,
           data: data.data || data.lessons || [],
@@ -319,8 +304,7 @@ export const getLessonsByTopic = async (topicId) => {
         };
       }
     } catch (legacyError) {
-      console.warn('⚠️ Legacy endpoint failed:', legacyError.message);
-    }
+}
 
     // Strategy 3: Final fallback - get all lessons and filter by topicId
     try {
@@ -346,18 +330,14 @@ export const getLessonsByTopic = async (topicId) => {
 
         return false;
       });
-
-      console.log('✅ Filtered lessons:', filteredLessons.length);
-
-      return {
+return {
         success: true,
         data: filteredLessons,
         source: 'fallback-filter'
       };
 
     } catch (fallbackError) {
-      console.error('❌ Final fallback failed:', fallbackError.message);
-    }
+}
 
     return {
       success: true,
@@ -367,9 +347,7 @@ export const getLessonsByTopic = async (topicId) => {
     };
 
   } catch (error) {
-    console.error('❌ API: Failed to fetch lessons:', error);
-
-    return {
+return {
       success: false,
       data: [],
       error: error.message || 'Failed to fetch lessons for topic',
@@ -404,8 +382,7 @@ export const getAllLessons = async (filters = {}) => {
       data: Array.isArray(data) ? data : []
     };
   } catch (error) {
-    console.error('❌ Failed to fetch all lessons:', error);
-    return {
+return {
       success: false,
       data: [],
       error: error.message
@@ -436,9 +413,7 @@ export const getLessonById = async (lessonId) => {
       throw new Error('Invalid lesson data structure');
     }
   } catch (error) {
-    console.error('❌ Failed to fetch lesson by ID:', error);
-
-    if (error.response?.status === 404) {
+if (error.response?.status === 404) {
       throw new Error('Lesson not found');
     } else if (error.response?.status === 403) {
       throw new Error('Access denied to this lesson');

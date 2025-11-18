@@ -183,8 +183,7 @@ export default {
           state.studyCentreProfile = { ...state.studyCentreProfile, ...studyCentreProfile };
         }
       } catch (error) {
-        console.error('Error loading platform mode from localStorage:', error);
-      }
+}
     },
 
     RESET_PLATFORM_MODE(state) {

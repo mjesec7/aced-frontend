@@ -39,9 +39,7 @@ export default {
     }
   },
   errorCaptured(err, instance, info) {
-    console.error('Error captured by ErrorBoundary:', err, info)
-
-    this.hasError = true
+this.hasError = true
     this.errorMessage = err.message || 'An unexpected error occurred'
     this.errorStack = err.stack || ''
     this.errorInfo = {

@@ -234,11 +234,8 @@ export default {
         const existingTests = JSON.parse(localStorage.getItem('levelTests') || '[]');
         existingTests.push(testData);
         localStorage.setItem('levelTests', JSON.stringify(existingTests));
-
-        console.log('✅ Test results saved:', testData);
-      } catch (error) {
-        console.error('❌ Error saving test results:', error);
-      }
+} catch (error) {
+}
     };
 
     const retakeTest = () => {
