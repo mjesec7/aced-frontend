@@ -89,7 +89,7 @@
           </div>
 
           <div v-else-if="exerciseType === 'fill-blanks'" class="exercise-type-container">
-            <article v-for="question in normalizedExercise?.questions" :key="question.id" class="exercise-card">
+            <article v-for="(question, qIndex) in (normalizedExercise?.questions || [normalizedExercise])" :key="question.id || qIndex" class="exercise-card">
               <div class="question-text fill-blank-sentence">
                 <template v-for="(part, pIndex) in question.sentenceParts" :key="pIndex">
                   <span>{{ part.text }}</span>
