@@ -43,12 +43,8 @@ export function useAuth() {
   /**
    * Initialize authentication state listener
    */
-  const initializeAuth = () => {
-    console.log('🔥 Initializing Firebase Auth...')
-    
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      console.log('🔄 Auth state changed:', user ? `User: ${user.email}` : 'No user')
-      
+  const initializeAuth = () => {    
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {      
       isLoading.value = true
       authError.value = null
 
@@ -82,24 +78,13 @@ export function useAuth() {
               name: user.displayName || user.email?.split('@')[0] || 'User',
               email: user.email,
               subscriptionPlan: 'free'
-            })
-            console.log('✅ User saved to backend')
-          } catch (saveError) {
-            console.warn('⚠️ Failed to save user to backend:', saveError.message)
-            // Don't block auth flow if backend save fails
-          }
-
-          console.log('✅ User authenticated:', user.email)
-        } else {
+            })          } catch (saveError) {            // Don't block auth flow if backend save fails
+          }        } else {
           // User is signed out
           currentUser.value = null
           isAuthenticated.value = false
-          userProfile.value = null
-          console.log('👋 User signed out')
-        }
-      } catch (error) {
-        console.error('❌ Auth state change error:', error)
-        authError.value = error.message
+          userProfile.value = null        }
+      } catch (error) {        authError.value = error.message
       } finally {
         isLoading.value = false
       }
@@ -108,9 +93,7 @@ export function useAuth() {
       authStateListeners.forEach(listener => {
         try {
           listener(user)
-        } catch (listenerError) {
-          console.error('❌ Auth listener error:', listenerError)
-        }
+        } catch (listenerError) {        }
       })
     })
 
@@ -120,22 +103,15 @@ export function useAuth() {
   /**
    * Sign in with email and password
    */
-  const signIn = async (email, password) => {
-    console.log('🔐 Signing in user:', email)
-    
+  const signIn = async (email, password) => {    
     try {
       isLoading.value = true
       authError.value = null
       
       const userCredential = await signInWithEmailAndPassword(auth, email, password)
-      const user = userCredential.user
+      const user = userCredential.user      return { success: true, user }
       
-      console.log('✅ Sign in successful:', user.email)
-      return { success: true, user }
-      
-    } catch (error) {
-      console.error('❌ Sign in failed:', error)
-      authError.value = getReadableAuthError(error)
+    } catch (error) {      authError.value = getReadableAuthError(error)
       return { success: false, error: authError.value }
     } finally {
       isLoading.value = false
@@ -145,9 +121,7 @@ export function useAuth() {
   /**
    * Sign up with email and password
    */
-  const signUp = async (email, password, displayName = '') => {
-    console.log('📝 Creating account for:', email)
-    
+  const signUp = async (email, password, displayName = '') => {    
     try {
       isLoading.value = true
       authError.value = null
@@ -157,24 +131,13 @@ export function useAuth() {
       
       // Update display name if provided
       if (displayName.trim()) {
-        await updateProfile(user, { displayName: displayName.trim() })
-        console.log('✅ Display name updated:', displayName)
-      }
+        await updateProfile(user, { displayName: displayName.trim() })      }
 
       // Send email verification
       try {
-        await sendEmailVerification(user)
-        console.log('📧 Verification email sent')
-      } catch (verificationError) {
-        console.warn('⚠️ Failed to send verification email:', verificationError.message)
-      }
+        await sendEmailVerification(user)      } catch (verificationError) {      }      return { success: true, user }
       
-      console.log('✅ Account created:', user.email)
-      return { success: true, user }
-      
-    } catch (error) {
-      console.error('❌ Sign up failed:', error)
-      authError.value = getReadableAuthError(error)
+    } catch (error) {      authError.value = getReadableAuthError(error)
       return { success: false, error: authError.value }
     } finally {
       isLoading.value = false
@@ -184,9 +147,7 @@ export function useAuth() {
   /**
    * Sign in with Google
    */
-  const signInWithGoogle = async () => {
-    console.log('🔐 Signing in with Google...')
-    
+  const signInWithGoogle = async () => {    
     try {
       isLoading.value = true
       authError.value = null
@@ -209,13 +170,9 @@ export function useAuth() {
         result = await signInWithPopup(auth, provider)
       }
       
-      const user = result.user
-      console.log('✅ Google sign in successful:', user.email)
-      return { success: true, user }
+      const user = result.user      return { success: true, user }
       
-    } catch (error) {
-      console.error('❌ Google sign in failed:', error)
-      authError.value = getReadableAuthError(error)
+    } catch (error) {      authError.value = getReadableAuthError(error)
       return { success: false, error: authError.value }
     } finally {
       isLoading.value = false
@@ -228,14 +185,10 @@ export function useAuth() {
   const handleRedirectResult = async () => {
     try {
       const result = await getRedirectResult(auth)
-      if (result) {
-        console.log('✅ Redirect sign in successful:', result.user.email)
-        return { success: true, user: result.user }
+      if (result) {        return { success: true, user: result.user }
       }
       return { success: true, user: null }
-    } catch (error) {
-      console.error('❌ Redirect result error:', error)
-      authError.value = getReadableAuthError(error)
+    } catch (error) {      authError.value = getReadableAuthError(error)
       return { success: false, error: authError.value }
     }
   }
@@ -243,9 +196,7 @@ export function useAuth() {
   /**
    * Sign out current user
    */
-  const signOutUser = async () => {
-    console.log('👋 Signing out user...')
-    
+  const signOutUser = async () => {    
     try {
       isLoading.value = true
       authError.value = null
@@ -255,18 +206,13 @@ export function useAuth() {
       // Clear local state
       currentUser.value = null
       isAuthenticated.value = false
-      userProfile.value = null
-      
-      console.log('✅ Sign out successful')
-      
+      userProfile.value = null      
       // Redirect to login page
       router.push('/auth/login')
       
       return { success: true }
       
-    } catch (error) {
-      console.error('❌ Sign out failed:', error)
-      authError.value = getReadableAuthError(error)
+    } catch (error) {      authError.value = getReadableAuthError(error)
       return { success: false, error: authError.value }
     } finally {
       isLoading.value = false
@@ -276,20 +222,13 @@ export function useAuth() {
   /**
    * Send password reset email
    */
-  const resetPassword = async (email) => {
-    console.log('🔑 Sending password reset email to:', email)
-    
+  const resetPassword = async (email) => {    
     try {
       authError.value = null
       
-      await sendPasswordResetEmail(auth, email)
+      await sendPasswordResetEmail(auth, email)      return { success: true }
       
-      console.log('✅ Password reset email sent')
-      return { success: true }
-      
-    } catch (error) {
-      console.error('❌ Password reset failed:', error)
-      authError.value = getReadableAuthError(error)
+    } catch (error) {      authError.value = getReadableAuthError(error)
       return { success: false, error: authError.value }
     }
   }
@@ -297,9 +236,7 @@ export function useAuth() {
   /**
    * Update user profile
    */
-  const updateUserProfile = async (updates) => {
-    console.log('👤 Updating user profile...')
-    
+  const updateUserProfile = async (updates) => {    
     try {
       if (!currentUser.value) {
         throw new Error('No authenticated user')
@@ -315,14 +252,9 @@ export function useAuth() {
           ...userProfile.value,
           ...updates
         }
-      }
+      }      return { success: true }
       
-      console.log('✅ Profile updated')
-      return { success: true }
-      
-    } catch (error) {
-      console.error('❌ Profile update failed:', error)
-      authError.value = getReadableAuthError(error)
+    } catch (error) {      authError.value = getReadableAuthError(error)
       return { success: false, error: authError.value }
     }
   }
@@ -336,13 +268,9 @@ export function useAuth() {
         throw new Error('No authenticated user')
       }
       
-      const token = await currentUser.value.getIdToken(true)
-      console.log('✅ Token refreshed')
-      return { success: true, token }
+      const token = await currentUser.value.getIdToken(true)      return { success: true, token }
       
-    } catch (error) {
-      console.error('❌ Token refresh failed:', error)
-      return { success: false, error: error.message }
+    } catch (error) {      return { success: false, error: error.message }
     }
   }
 
@@ -356,9 +284,7 @@ export function useAuth() {
       }
       
       return await currentUser.value.getIdToken()
-    } catch (error) {
-      console.error('❌ Failed to get token:', error)
-      return null
+    } catch (error) {      return null
     }
   }
 
@@ -400,22 +326,22 @@ export function useAuth() {
    */
   const getReadableAuthError = (error) => {
     const errorMessages = {
-      'auth/user-not-found': 'Пользователь с таким email не найден',
-      'auth/wrong-password': 'Неверный пароль',
-      'auth/email-already-in-use': 'Пользователь с таким email уже существует',
-      'auth/weak-password': 'Пароль должен содержать минимум 6 символов',
-      'auth/invalid-email': 'Неверный формат email',
-      'auth/user-disabled': 'Учетная запись отключена',
-      'auth/too-many-requests': 'Слишком много попыток входа. Попробуйте позже',
-      'auth/network-request-failed': 'Ошибка сети. Проверьте подключение к интернету',
-      'auth/popup-closed-by-user': 'Окно авторизации было закрыто',
-      'auth/popup-blocked': 'Браузер заблокировал всплывающее окно',
-      'auth/invalid-credential': 'Неверные учетные данные',
-      'auth/expired-action-code': 'Ссылка устарела',
-      'auth/invalid-action-code': 'Неверная ссылка'
+      'auth/user-not-found': 'User with this email not found',
+      'auth/wrong-password': 'Incorrect password',
+      'auth/email-already-in-use': 'User with this email already exists',
+      'auth/weak-password': 'Password must contain at least 6 characters',
+      'auth/invalid-email': 'Invalid email format',
+      'auth/user-disabled': 'Account disabled',
+      'auth/too-many-requests': 'Too many login attempts. Please try again later',
+      'auth/network-request-failed': 'Network error. Check your internet connection',
+      'auth/popup-closed-by-user': 'Authorization window was closed',
+      'auth/popup-blocked': 'Browser blocked the popup window',
+      'auth/invalid-credential': 'Invalid credentials',
+      'auth/expired-action-code': 'Link expired',
+      'auth/invalid-action-code': 'Invalid link'
     }
     
-    return errorMessages[error.code] || error.message || 'Произошла ошибка авторизации'
+    return errorMessages[error.code] || error.message || 'An authorization error occurred'
   }
 
   // Auto-initialize auth state listener

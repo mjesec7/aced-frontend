@@ -14,11 +14,11 @@
         </div>
         
         <div class="vocab-header-actions">
-          <button @click="$emit('skip')" class="vocab-skip-btn" title="Пропустить и перейти к списку">
+          <button @click="$emit('skip')" class="vocab-skip-btn" title="Skip and go to list">
             <span class="btn-icon">⏭️</span>
-            <span class="btn-text">Пропустить</span>
+            <span class="btn-text">Skip</span>
           </button>
-          <button @click="$emit('close')" class="vocab-close-btn" title="Выйти из урока">
+          <button @click="$emit('close')" class="vocab-close-btn" title="Exit lesson">
             ✕
           </button>
         </div>
@@ -60,7 +60,7 @@
               
               <div class="card-instruction">
                 <div class="instruction-icon">💫</div>
-                <p>Нажмите, чтобы увидеть определение</p>
+                <p>Click to see definition</p>
               </div>
             </div>
             
@@ -69,7 +69,7 @@
               v-if="getWordTerm(currentDisplayWord)" 
               @click.stop="$emit('pronounce', getWordTerm(currentDisplayWord))"
               class="voice-btn"
-              title="Произношение"
+              title="Pronunciation"
             >
               <span class="voice-icon">🔊</span>
             </button>
@@ -86,14 +86,14 @@
                 </div>
                 
                 <div v-if="getWordExample(currentDisplayWord)" class="vocab-example">
-                  <strong>Пример:</strong><br>
+                  <strong>Example:</strong><br>
                   <em>{{ getWordExample(currentDisplayWord) }}</em>
                 </div>
               </div>
               
               <div class="card-instruction">
                 <div class="instruction-icon">↩️</div>
-                <p>Нажмите, чтобы вернуться к термину</p>
+                <p>Нажмите, чтобы вернуться к терminу</p>
               </div>
             </div>
             
@@ -102,7 +102,7 @@
               v-if="getWordTerm(currentDisplayWord)" 
               @click.stop="$emit('pronounce', getWordTerm(currentDisplayWord))"
               class="voice-btn"
-              title="Произношение"
+              title="Pronunciation"
             >
               <span class="voice-icon">🔊</span>
             </button>
@@ -115,10 +115,10 @@
             @click="$emit('previous-word')" 
             :disabled="(vocabularyData?.currentIndex || 0) === 0"
             class="vocab-nav-btn vocab-prev-btn"
-            title="Предыдущее слово"
+            title="Previous word"
           >
             <span class="btn-icon">⬅️</span>
-            <span class="btn-text">Назад</span>
+            <span class="btn-text">Back</span>
           </button>
           
           <div class="vocab-main-actions">
@@ -126,29 +126,29 @@
               @click="$emit('mark-learned')" 
               class="vocab-learned-btn"
               :class="{ active: currentDisplayWord?.learned }"
-              title="Отметить как изученное"
+              title="Отметить как learned"
             >
               <span class="btn-icon">{{ currentDisplayWord?.learned ? '✅' : '📚' }}</span>
-              <span class="btn-text">{{ currentDisplayWord?.learned ? 'Изучено' : 'Изучить' }}</span>
+              <span class="btn-text">{{ currentDisplayWord?.learned ? 'Learned' : 'Learn' }}</span>
             </button>
             
             <button 
               @click="$emit('next-word')" 
               class="vocab-next-btn"
-              title="Следующее слово"
+              title="Next word"
             >
               <span class="btn-icon">{{ isLastWord ? '🏁' : '➡️' }}</span>
-              <span class="btn-text">{{ isLastWord ? 'Завершить' : 'Далее' }}</span>
+              <span class="btn-text">{{ isLastWord ? 'Finish' : 'Next' }}</span>
             </button>
           </div>
           
           <button 
             @click="$emit('restart')" 
             class="vocab-restart-btn"
-            title="Начать заново"
+            title="Start over"
           >
             <span class="btn-icon">🔄</span>
-            <span class="btn-text">Заново</span>
+            <span class="btn-text">Start over</span>
           </button>
         </div>
 
@@ -172,22 +172,22 @@
       <!-- FIXED: No Words Available State -->
       <div v-else-if="!hasValidWords && !vocabularyData?.isCompleted && !vocabularyData?.showingList" class="no-vocabulary-content">
         <div class="no-vocab-icon">📚</div>
-        <h3 class="no-vocab-title">Словарь пуст</h3>
+        <h3 class="no-vocab-title">Vocabulary is empty</h3>
         <p class="no-vocab-subtitle">
-          {{ vocabularyData?.words?.length > 0 ? 'В этом уроке нет корректных слов для изучения' : 'В этом уроке нет слов для изучения' }}
+          {{ vocabularyData?.words?.length > 0 ? 'В этом lessonе нет корректных words для learning' : 'В этом lessonе нет words для learning' }}
         </p>
         
         <!-- Show problematic data for debugging in development -->
         <div v-if="isDevelopment && vocabularyData?.words?.length > 0" class="debug-words">
           <details>
-            <summary>🔧 Отладочная информация слов</summary>
+            <summary>🔧 Word debug information</summary>
             <pre>{{ JSON.stringify(vocabularyData.words, null, 2) }}</pre>
           </details>
         </div>
         
         <button @click="$emit('skip')" class="continue-btn">
           <span class="btn-icon">📋</span>
-          <span class="btn-text">Продолжить урок</span>
+          <span class="btn-text">Continue lesson</span>
         </button>
       </div>
 
@@ -195,25 +195,25 @@
       <div v-else-if="vocabularyData?.isCompleted && !vocabularyData?.showingList" class="vocabulary-completion">
         <div class="completion-animation">
           <div class="completion-icon">🎉</div>
-          <h3 class="completion-title">Отлично!</h3>
+          <h3 class="completion-title">Excellent!</h3>
           <p class="completion-subtitle">
-            Вы изучили {{ getLearnedWordsCount() }} из {{ getValidWordsCount() }} слов
+            You learned {{ getLearnedWordsCount() }} of {{ getValidWordsCount() }} words
           </p>
           
           <div class="completion-stats">
             <div class="completion-stat">
               <div class="stat-number">{{ getLearnedWordsCount() }}</div>
-              <div class="stat-label">Изучено</div>
+              <div class="stat-label">Learned</div>
             </div>
             <div class="completion-stat">
               <div class="stat-number">{{ getCompletionPercentage() }}%</div>
-              <div class="stat-label">Прогресс</div>
+              <div class="stat-label">Progress</div>
             </div>
           </div>
           
           <button @click="$emit('skip')" class="continue-btn">
             <span class="btn-icon">📋</span>
-            <span class="btn-text">Перейти к списку слов</span>
+            <span class="btn-text">Go to word list</span>
           </button>
         </div>
       </div>
@@ -222,7 +222,7 @@
       <div v-else-if="vocabularyData?.showingList" class="vocabulary-list-transition">
         <div class="transition-animation">
           <div class="transition-icon">📚</div>
-          <h3>Переход к списку слов...</h3>
+          <h3>Going to word list...</h3>
           <div class="loading-dots">
             <span></span>
             <span></span>
@@ -380,11 +380,11 @@ export default {
     },
 
     getWordDefinition(word) {
-      if (!word) return 'Определение не найдено'
+      if (!word) return 'Definition not found'
       
       // Try multiple possible property names
       const definition = word.definition || word.translation || word.meaning || word.desc || word.description || ''
-      return String(definition).trim() || 'Определение не найдено'
+      return String(definition).trim() || 'Definition not found'
     },
 
     getWordExample(word) {

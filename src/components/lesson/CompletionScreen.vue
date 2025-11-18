@@ -2,7 +2,7 @@
   <div class="completion-screen" @click.self="$emit('return-to-catalogue')">
     <div class="completion-content">
       <div class="completion-header">
-        <h3 class="completion-title">🏆 Урок завершён!</h3>
+        <h3 class="completion-title">🏆 Lesson completed!</h3>
         <div class="medal-section">
           <div class="medal-icon" :class="getMedalClass()">{{ medalIcon }}</div>
           <p class="medal-label">{{ medalLabel }}</p>
@@ -13,29 +13,29 @@
         <div class="stat-card time-stat">
           <div class="stat-icon">⏱️</div>
           <div class="stat-value">{{ readableTime }}</div>
-          <div class="stat-label">Время</div>
+          <div class="stat-label">Time</div>
         </div>
         <div class="stat-card stars-stat">
           <div class="stat-icon">⭐</div>
           <div class="stat-value">{{ stars }}</div>
-          <div class="stat-label">Звезды</div>
+          <div class="stat-label">Stars</div>
         </div>
         <div class="stat-card mistakes-stat">
           <div class="stat-icon">❌</div>
           <div class="stat-value">{{ mistakeCount }}</div>
-          <div class="stat-label">Ошибки</div>
+          <div class="stat-label">Mistakes</div>
         </div>
         <div class="stat-card points-stat">
           <div class="stat-icon">🎯</div>
           <div class="stat-value">{{ earnedPoints }}</div>
-          <div class="stat-label">Очки</div>
+          <div class="stat-label">Points</div>
         </div>
       </div>
       
       <!-- Performance metrics -->
       <div class="performance-metrics">
         <div class="metric-item">
-          <span class="metric-label">Точность:</span>
+          <span class="metric-label">Accuracy:</span>
           <div class="metric-bar">
             <div class="metric-fill" :style="{ width: accuracyPercentage + '%' }"></div>
           </div>
@@ -43,7 +43,7 @@
         </div>
         
         <div class="metric-item">
-          <span class="metric-label">Скорость:</span>
+          <span class="metric-label">Speed:</span>
           <div class="metric-bar">
             <div class="metric-fill speed-fill" :style="{ width: speedPercentage + '%' }"></div>
           </div>
@@ -53,13 +53,13 @@
       
       <!-- AI Progress Insight -->
       <div v-if="progressInsight" class="progress-insight">
-        <h4>🤖 Анализ прогресса</h4>
+        <h4>🤖 Progress Analysis</h4>
         <p>{{ progressInsight }}</p>
       </div>
       
       <!-- Achievement badges -->
       <div v-if="achievements.length" class="achievements-section">
-        <h4>🏅 Достижения</h4>
+        <h4>🏅 Achievements</h4>
         <div class="achievements-grid">
           <div 
             v-for="achievement in achievements" 
@@ -75,24 +75,24 @@
       
       <div class="completion-actions">
         <button class="action-btn primary" @click="$emit('return-to-catalogue')">
-          📚 К каталогу
+          📚 To Catalogue
         </button>
         <button class="action-btn secondary" @click="$emit('share')">
-          📤 Поделиться
+          📤 Share
         </button>
         <button class="action-btn secondary" @click="$emit('homework')">
-          📝 Домашнее задание
+          📝 Homework
         </button>
       </div>
       
       <!-- Lesson recommendations -->
       <div class="recommendations-section">
-        <h4>📖 Рекомендуемые уроки</h4>
-        <p>Продолжите обучение с этими уроками:</p>
+        <h4>📖 Recommended lessons</h4>
+        <p>Continue learning with these lessons:</p>
         <div class="recommendation-tags">
-          <span class="recommendation-tag">Урок 2: Продвинутая грамматика</span>
-          <span class="recommendation-tag">Урок 3: Разговорная практика</span>
-          <span class="recommendation-tag">Урок 4: Аудирование</span>
+          <span class="recommendation-tag">Lesson 2: Advanced Grammar</span>
+          <span class="recommendation-tag">Lesson 3: Conversation Practice</span>
+          <span class="recommendation-tag">Lesson 4: Listening</span>
         </div>
       </div>
     </div>
@@ -162,18 +162,18 @@ export default {
       if (this.mistakeCount === 0) {
         achievements.push({
           id: 'perfect',
-          name: 'Безупречно',
+          name: 'Perfect',
           icon: '🎯',
-          description: 'Завершили урок без ошибок'
+          description: 'Completed the lesson without mistakes'
         });
       }
       
       if (this.stars >= this.totalSteps * 0.8) {
         achievements.push({
           id: 'star_collector',
-          name: 'Звездочет',
+          name: 'Star Collector',
           icon: '⭐',
-          description: 'Собрали большинство звезд'
+          description: 'Collected most stars'
         });
       }
       
@@ -181,18 +181,18 @@ export default {
       if (timeInMinutes <= this.totalSteps * 1.5) {
         achievements.push({
           id: 'speed_runner',
-          name: 'Скоростной',
+          name: 'Speed Runner',
           icon: '⚡',
-          description: 'Прошли урок очень быстро'
+          description: 'Completed the lesson very fast'
         });
       }
       
       if (this.earnedPoints >= 80) {
         achievements.push({
           id: 'high_scorer',
-          name: 'Отличник',
+          name: 'High Achiever',
           icon: '📚',
-          description: 'Набрали высокий балл'
+          description: 'Achieved high score'
         });
       }
       
@@ -211,10 +211,10 @@ export default {
       let minutes = 0;
       
       for (let i = 0; i < parts.length; i++) {
-        if (parts[i].includes('мин')) {
+        if (parts[i].includes('min')) {
           minutes += parseInt(parts[i - 1]) || 0;
         }
-        if (parts[i].includes('сек')) {
+        if (parts[i].includes('sec')) {
           minutes += (parseInt(parts[i - 1]) || 0) / 60;
         }
       }
@@ -224,11 +224,11 @@ export default {
     
     getSpeedText() {
       const percentage = this.speedPercentage;
-      if (percentage >= 80) return 'Очень быстро';
-      if (percentage >= 60) return 'Быстро';
-      if (percentage >= 40) return 'Нормально';
-      if (percentage >= 20) return 'Медленно';
-      return 'Очень медленно';
+      if (percentage >= 80) return 'Very fast';
+      if (percentage >= 60) return 'Fast';
+      if (percentage >= 40) return 'Normal';
+      if (percentage >= 20) return 'Slow';
+      return 'Very slow';
     }
   }
 }

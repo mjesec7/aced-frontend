@@ -3,29 +3,29 @@
     <button class="exit-btn" @click="$emit('exit')">✕</button>
     
     <div class="intro-content">
-      <h2 class="lesson-title">{{ getLocalized(lesson?.lessonName) || 'Без названия' }}</h2>
-      <p class="lesson-description">{{ getLocalized(lesson?.description) || 'Описание недоступно' }}</p>
+      <h2 class="lesson-title">{{ getLocalized(lesson?.lessonName) || 'Untitled' }}</h2>
+      <p class="lesson-description">{{ getLocalized(lesson?.description) || 'Description unavailable' }}</p>
       
       <div class="lesson-info-grid">
         <div class="info-card">
           <div class="info-icon">⏱️</div>
           <div class="info-text">
-            <span class="info-label">Время</span>
-            <span class="info-value">~{{ estimatedTime }} мин</span>
+            <span class="info-label">Time</span>
+            <span class="info-value">~{{ estimatedTime }} min</span>
           </div>
         </div>
         <div class="info-card">
           <div class="info-icon">📝</div>
           <div class="info-text">
-            <span class="info-label">Шагов</span>
+            <span class="info-label">Steps</span>
             <span class="info-value">{{ (steps || []).length }}</span>
           </div>
         </div>
         <div class="info-card">
           <div class="info-icon">🎯</div>
           <div class="info-text">
-            <span class="info-label">Тип</span>
-            <span class="info-value">{{ lesson?.type === 'premium' ? 'Премиум' : 'Бесплатный' }}</span>
+            <span class="info-label">Type</span>
+            <span class="info-value">{{ lesson?.type === 'premium' ? 'Premium' : 'Free' }}</span>
           </div>
         </div>
       </div>
@@ -35,37 +35,37 @@
         <button 
           class="problem-report-link" 
           @click="$emit('report-problem')"
-          title="Сообщить о проблеме с уроком"
+          title="Report a problem with the lesson"
         >
-          ⚠️ Есть проблема с уроком?
+          ⚠️ Having issues with the lesson?
         </button>
       </div>
       
       <!-- Previous Progress Display -->
       <div v-if="previousProgress && (previousProgress?.completedSteps || []).length > 0" class="previous-progress">
-        <h4>📈 Предыдущий прогресс</h4>
+        <h4>📈 Previous progress</h4>
         <div class="progress-stats-grid">
           <div class="stat">
             <span class="stat-value">{{ (previousProgress?.completedSteps || []).length }}/{{ (steps || []).length }}</span>
-            <span class="stat-label">Прогресс</span>
+            <span class="stat-label">Progress</span>
           </div>
           <div class="stat">
             <span class="stat-value">⭐ {{ previousProgress?.stars || 0 }}</span>
-            <span class="stat-label">Звезды</span>
+            <span class="stat-label">Stars</span>
           </div>
           <div class="stat">
             <span class="stat-value">❌ {{ previousProgress?.mistakes || 0 }}</span>
-            <span class="stat-label">Ошибки</span>
+            <span class="stat-label">Mistakes</span>
           </div>
         </div>
         <button @click="$emit('continue')" class="continue-btn">
-          📖 Продолжить с места остановки
+          📖 Continue from where you left off
         </button>
       </div>
       
       <div class="intro-actions">
         <button class="start-btn" @click="$emit('start')">
-          {{ previousProgress ? '🔄 Начать заново' : '🚀 Начать урок' }}
+          {{ previousProgress ? '🔄 Start over' : '🚀 Start lesson' }}
         </button>
       </div>
     </div>

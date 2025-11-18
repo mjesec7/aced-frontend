@@ -31,12 +31,7 @@ export function useVocabulary() {
     
     const currentWord = validWords[vocabularyModal.currentIndex] || null
     
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔍 [useVocabulary] currentVocabWord:', {
-        currentIndex: vocabularyModal.currentIndex,
-        validWordsLength: validWords.length,
-        hasCurrentWord: !!currentWord,
-        term: currentWord ? extractWordProperty(currentWord, 'term') : null
+    if (process.env.NODE_ENV === 'development') { : null
       })
     }
     
@@ -215,38 +210,19 @@ export function useVocabulary() {
   }
 
   // ✅ Vocabulary Initialization
-  const initializeVocabularyModal = (step) => {
-    console.log('📚 [useVocabulary] Initializing vocabulary modal with step:', step)
-    
-    if (!step) {
-      console.error('❌ [useVocabulary] No step provided')
-      return false
+  const initializeVocabularyModal = (step) => {    
+    if (!step) {      return false
     }
     
-    if (step.type !== 'vocabulary') {
-      console.error('❌ [useVocabulary] Step type is not vocabulary:', step.type)
-      return false
+    if (step.type !== 'vocabulary') {      return false
     }
     
     try {
       const { patterns, recommendation, bestPattern } = detectVocabularyPatterns(step)
-      
-      console.log('🔍 [useVocabulary] Pattern analysis:', {
-        totalPatterns: patterns.length,
-        recommendation,
-        bestPattern: bestPattern ? {
-          type: bestPattern.type,
-          count: bestPattern.count,
-          valid: bestPattern.valid
-        } : null
-      })
-
       let vocabularyItems = []
 
       if (bestPattern) {
-        vocabularyItems = bestPattern.data
-        console.log(`📝 [useVocabulary] Using ${bestPattern.type} with ${bestPattern.valid} valid items`)
-      } else {
+        vocabularyItems = bestPattern.data      } else {
         // Enhanced fallback with realistic vocabulary
         vocabularyItems = [
           {
@@ -279,24 +255,18 @@ export function useVocabulary() {
             difficulty: "medium",
             learned: false
           }
-        ]
-        console.warn('⚠️ [useVocabulary] Using fallback vocabulary items')
-      }
+        ]      }
       
       // Process and validate vocabulary items
       const processedItems = vocabularyItems
         .map((vocab, index) => {
-          if (!vocab || typeof vocab !== 'object') {
-            console.warn(`⚠️ [useVocabulary] Invalid item at index ${index}:`, vocab)
-            return null
+          if (!vocab || typeof vocab !== 'object') {            return null
           }
           
           const term = extractWordProperty(vocab, 'term')
           const definition = extractWordProperty(vocab, 'definition')
           
-          if (!term || !definition) {
-            console.warn(`⚠️ [useVocabulary] Missing required fields at index ${index}:`, { term, definition })
-            return null
+          if (!term || !definition) {            return null
           }
           
           return {
@@ -317,9 +287,7 @@ export function useVocabulary() {
         })
         .filter(Boolean)
       
-      if (processedItems.length === 0) {
-        console.error('❌ [useVocabulary] No valid vocabulary items after processing')
-        return false
+      if (processedItems.length === 0) {        return false
       }
       
       // Initialize modal state
@@ -334,10 +302,7 @@ export function useVocabulary() {
       cardAnimation.showDefinition = false
       
       // Start study timer
-      startStudyTimer()
-      
-      console.log(`✅ [useVocabulary] Modal initialized with ${processedItems.length} words`)
-      
+      startStudyTimer()      
       trackVocabularyEvent('vocabulary_started', {
         wordCount: processedItems.length,
         source: bestPattern ? 'detected' : 'fallback',
@@ -346,9 +311,7 @@ export function useVocabulary() {
       
       return true
       
-    } catch (error) {
-      console.error('❌ [useVocabulary] Initialization error:', error)
-      return false
+    } catch (error) {      return false
     }
   }
   
@@ -581,21 +544,15 @@ export function useVocabulary() {
       
       localStorage.setItem('vocabularyProgress', JSON.stringify(progressData))
       
-      if (process.env.NODE_ENV === 'development') {
-        console.log('💾 [useVocabulary] Progress auto-saved')
-      }
-    } catch (error) {
-      console.warn('⚠️ [useVocabulary] Failed to auto-save:', error)
-    }
+      if (process.env.NODE_ENV === 'development') {      }
+    } catch (error) {    }
   }
 
   const loadSavedProgress = () => {
     try {
       const saved = localStorage.getItem('vocabularyProgress')
       return saved ? JSON.parse(saved) : null
-    } catch (error) {
-      console.warn('⚠️ [useVocabulary] Failed to load saved progress:', error)
-      return null
+    } catch (error) {      return null
     }
   }
 
@@ -621,19 +578,14 @@ export function useVocabulary() {
 
       if (progressData.currentIndex !== undefined && progressData.currentIndex < validWords.length) {
         vocabularyModal.currentIndex = progressData.currentIndex
-      }
-
-      console.log(`✅ [useVocabulary] Applied saved progress to ${appliedCount}/${validWords.length} words`)
-      
+      }      
       trackVocabularyEvent('progress_restored', {
         totalWords: validWords.length,
         restoredWords: appliedCount
       })
 
       return true
-    } catch (error) {
-      console.error('❌ [useVocabulary] Failed to apply saved progress:', error)
-      return false
+    } catch (error) {      return false
     }
   }
 
@@ -655,15 +607,11 @@ export function useVocabulary() {
           trackVocabularyEvent('word_pronounced', { word, lang: utterance.lang })
         }
         
-        utterance.onerror = (event) => {
-          console.error('❌ [useVocabulary] Pronunciation error:', event.error)
-        }
+        utterance.onerror = (event) => {        }
         
         window.speechSynthesis.speak(utterance)
       }
-    } catch (error) {
-      console.error('❌ [useVocabulary] Error pronouncing word:', error)
-    }
+    } catch (error) {    }
   }
 
   // ✅ Accessibility
@@ -682,9 +630,7 @@ export function useVocabulary() {
       setTimeout(() => {
         document.body.removeChild(announcement)
       }, 1000)
-    } catch (error) {
-      console.warn('⚠️ [useVocabulary] Screen reader announcement failed:', error)
-    }
+    } catch (error) {    }
   }
 
   // ✅ Keyboard Shortcuts
@@ -961,9 +907,7 @@ export function useVocabulary() {
       sessionId: `vocab_${Date.now()}`
     }
     
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`📚 [useVocabulary] Event: ${eventType}`, eventData)
-    }
+    if (process.env.NODE_ENV === 'development') {    }
     
     // Store events locally for analytics
     try {
@@ -976,15 +920,11 @@ export function useVocabulary() {
       }
       
       localStorage.setItem('vocabularyEvents', JSON.stringify(events))
-    } catch (error) {
-      console.warn('Could not store vocabulary event locally:', error)
-    }
+    } catch (error) {    }
   }
 
   // ✅ Cleanup
-  const cleanup = () => {
-    console.log('🧹 [useVocabulary] Cleaning up')
-    
+  const cleanup = () => {    
     stopStudyTimer()
     
     // Reset all state
@@ -1065,16 +1005,7 @@ export function useVocabulary() {
     window.extractWordProperty = extractWordProperty
     window.detectVocabularyPatterns = detectVocabularyPatterns
     window.getStudySessionStats = getStudySessionStats
-    window.exportVocabularyData = exportVocabularyData
-    
-    console.log('🔧 [useVocabulary] Debug functions available:')
-    console.log('  - getVocabularyDebugInfo() - Complete state inspection')
-    console.log('  - validateVocabularyStep(step) - Validate step data')
-    console.log('  - vocabularyModal - Direct state access')
-    console.log('  - extractWordProperty(word, type) - Property extraction')
-    console.log('  - detectVocabularyPatterns(step) - Pattern analysis')
-    console.log('  - getStudySessionStats() - Session statistics')
-    console.log('  - exportVocabularyData() - Export functionality')
+    window.exportVocabularyData = exportVocabularyData - Complete state inspection') - Validate step data') - Property extraction') - Pattern analysis') - Session statistics') - Export functionality')
   }
 
   return {

@@ -42,7 +42,6 @@ export function useModeContent() {
         }
       }
     } catch (err) {
-      console.error('❌ Error fetching mode content:', err);
       error.value = err.message;
     } finally {
       loading.value = false;

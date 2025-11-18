@@ -5,7 +5,7 @@
       <button class="exit-btn-small" @click="$emit('exit')">✕</button>
       
       <!-- Lesson Title -->
-      <h2 class="lesson-title">{{ getLocalized(lesson?.lessonName) || 'Урок' }}</h2>
+      <h2 class="lesson-title">{{ getLocalized(lesson?.lessonName) || 'Lesson' }}</h2>
       
       <!-- Progress Bar with Markers -->
       <div class="progress-container">
@@ -42,7 +42,7 @@
       <button 
         class="problem-report-btn-header" 
         @click="$emit('report-problem')"
-        title="Сообщить о проблеме с уроком"
+        title="Report a problem with the lesson"
       >
         ⚠️
       </button>
@@ -94,7 +94,7 @@ export default {
           position: i * stepWidth,
           completed: i < this.currentStep - 1,
           current: i === this.currentStep - 1,
-          title: `Шаг ${i + 1}`
+          title: `Step ${i + 1}`
         });
       }
       

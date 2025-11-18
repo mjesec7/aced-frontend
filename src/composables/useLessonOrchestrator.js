@@ -58,15 +58,7 @@ export function useLessonOrchestrator() {
     const isFreeType = route.query.type === 'free'
     
     const isGuest = hasGuestQuery || (!hasAuthToken && !hasFirebaseUser) || isFreeType
-    
-    console.log('🔐 Guest mode check:', {
-      hasGuestQuery,
-      hasAuthToken,
-      hasFirebaseUser,
-      isFreeType,
-      result: isGuest
-    })
-    
+
     return isGuest
   }
   
@@ -87,11 +79,9 @@ export function useLessonOrchestrator() {
       
       localStorage.setItem('guestLessonData', JSON.stringify(guestData))
       guestLessonsViewed.value = guestData.viewedLessons.length
-      
-      console.log('📊 Guest lessons viewed:', guestLessonsViewed.value, '/', guestLessonLimit.value)
-      
+
     } catch (error) {
-      console.error('Error tracking guest lesson view:', error)
+      // Error tracking guest lesson view
     }
   }
   
@@ -172,23 +162,18 @@ export function useLessonOrchestrator() {
   const waitForAuth = async () => {
     // Skip auth wait for guest mode
     if (checkGuestMode()) {
-      console.log('🆓 Guest mode detected, skipping auth wait')
       return
     }
-    
+
     if (auth.currentUser) {
-      console.log('✅ User already authenticated')
       return
     }
-    
-    console.log('⏳ Waiting for authentication...')
     
     return new Promise((resolve) => {
       const unsubscribe = auth.onAuthStateChanged((user) => {
         unsubscribe()
-        
+
         if (user) {
-          console.log('✅ User authenticated:', user.uid)
           try {
             // Update store if available
             const store = window.$store || window.__VUE_STORE__
@@ -200,19 +185,16 @@ export function useLessonOrchestrator() {
               })
             }
           } catch (storeError) {
-            console.warn('⚠️ Store update failed:', storeError)
+            // Store update failed
           }
-        } else {
-          console.log('⚠️ No authenticated user')
         }
-        
+
         resolve()
       })
-      
+
       // Timeout after 5 seconds
       setTimeout(() => {
         unsubscribe()
-        console.log('⏱️ Auth wait timeout')
         resolve()
       }, 5000)
     })
@@ -229,13 +211,9 @@ export function useLessonOrchestrator() {
       
       loading.value = true
       error.value = null
-      
-      console.log('📚 Loading lesson:', lessonId)
-      
+
       // ✅ Check if guest mode
       isGuestMode.value = checkGuestMode()
-      
-      console.log('🔐 Loading mode:', isGuestMode.value ? 'GUEST' : 'AUTHENTICATED')
       
       // ✅ Load lesson data
       const response = await withErrorHandling(
@@ -260,17 +238,13 @@ export function useLessonOrchestrator() {
       }
       
       lesson.value = lessonData
-      
-      console.log('✅ Lesson loaded:', lesson.value.lessonName || lesson.value.title)
-      console.log('📊 Lesson type:', lesson.value.type)
-      
+
       // ✅ NEW: Check guest access restrictions
       if (isGuestMode.value) {
         const lessonType = lesson.value.type || route.query.type || 'free'
         
         // Check if lesson is premium and guest trying to access
         if (lessonType !== 'free' && lessonType !== 'public') {
-          console.warn('⚠️ Guest trying to access premium content:', lessonType)
           showPaywallModal.value = true
           error.value = 'This lesson is only available to registered users'
           loading.value = false
@@ -279,7 +253,6 @@ export function useLessonOrchestrator() {
 
         // Check guest lesson limit
         if (checkGuestLimit()) {
-          console.warn('⚠️ Guest has reached lesson limit')
           showPaywallModal.value = true
           error.value = 'You have reached the limit of free lessons'
           loading.value = false
@@ -295,24 +268,15 @@ export function useLessonOrchestrator() {
       
       // ✅ REMOVED: Don't require auth for guest mode
       // The old code had: if (!auth.currentUser) { throw new Error('Authentication required') }
-      
+
       if (steps.value.length === 0) {
-        console.warn('⚠️ No steps found, creating default step')
         steps.value = [{
           type: 'explanation',
           data: { content: lesson.value.description || 'Lesson content not available' }
         }]
       }
-      
-      console.log('✅ Processed', steps.value.length, 'steps')
-      
-      // Log step details for debugging
-      steps.value.forEach((step, index) => {
-        console.log(`  Step ${index + 1}: ${step.type}`, step.data ? '✓' : '✗')
-      })
-      
+
     } catch (err) {
-      console.error('❌ Error loading lesson:', err)
       error.value = handleLessonError(err)
       retryCount.value++
     } finally {
@@ -322,18 +286,14 @@ export function useLessonOrchestrator() {
   
   const processLessonSteps = () => {
     steps.value = []
-    
+
     if (!lesson.value.steps || !Array.isArray(lesson.value.steps)) {
-      console.log('📝 No steps array found, using legacy format')
       processLegacyLessonFormat()
       return
     }
-    
-    console.log('📝 Processing', lesson.value.steps.length, 'steps')
-    
+
     lesson.value.steps.forEach((step, index) => {
       if (!step || typeof step !== 'object') {
-        console.warn(`⚠️ Invalid step at index ${index}`)
         return
       }
       
@@ -371,7 +331,6 @@ export function useLessonOrchestrator() {
         steps.value.push(processedStep)
 
       } catch (stepError) {
-        console.error(`❌ Error processing step ${index + 1}:`, stepError)
         steps.value.push({
           type: 'explanation',
           data: {
@@ -381,9 +340,8 @@ export function useLessonOrchestrator() {
         })
       }
     })
-    
+
     if (steps.value.length === 0) {
-      console.warn('⚠️ No valid steps processed')
       steps.value.push({
         type: 'explanation',
         data: {
@@ -394,7 +352,6 @@ export function useLessonOrchestrator() {
   }
   
   const processExerciseStep = (step, index) => {
-    console.log(`Processing exercise step ${index + 1}`)
     return {
       type: 'exercise',
       data: step.data || step.exercises || []
@@ -402,7 +359,6 @@ export function useLessonOrchestrator() {
   }
   
   const processQuizStep = (step, index) => {
-    console.log(`Processing quiz step ${index + 1}`)
     return {
       type: 'quiz',
       data: step.data || step.questions || []
@@ -410,7 +366,6 @@ export function useLessonOrchestrator() {
   }
   
   const processVocabularyStep = (step, index) => {
-    console.log(`Processing vocabulary step ${index + 1}`)
     return {
       type: 'vocabulary',
       data: step.data || step.words || []
@@ -444,8 +399,6 @@ export function useLessonOrchestrator() {
   }
   
   const processLegacyLessonFormat = () => {
-    console.log('📝 Processing legacy lesson format')
-    
     // Add explanations
     if (Array.isArray(lesson.value.explanations)) {
       lesson.value.explanations.forEach(explanation => {
@@ -477,19 +430,16 @@ export function useLessonOrchestrator() {
         data: lesson.value.exercises
       })
     }
-    
-    console.log('✅ Processed legacy format:', steps.value.length, 'steps')
   }
   
   // ✅ MODIFIED: Progress management - handle guest progress
   const loadPreviousProgress = async () => {
     // ✅ NEW: Handle guest progress from localStorage
     if (isGuestMode.value) {
-      console.log('🆓 Guest mode: Loading progress from localStorage')
       try {
         const guestProgress = JSON.parse(localStorage.getItem('guestProgress') || '{}')
         const lessonProgress = guestProgress[lesson.value._id]
-        
+
         if (lessonProgress) {
           previousProgress.value = {
             completedSteps: lessonProgress.completedSteps || [],
@@ -498,24 +448,19 @@ export function useLessonOrchestrator() {
             duration: lessonProgress.elapsedSeconds || 0,
             currentStep: lessonProgress.currentStep || 0
           }
-          console.log('✅ Guest progress loaded:', previousProgress.value)
-        } else {
-          console.log('📝 No previous guest progress found')
         }
       } catch (error) {
-        console.error('❌ Error loading guest progress:', error)
+        // Error loading guest progress
       }
       return
     }
-    
+
     // Regular authenticated user progress
     if (!lesson.value._id || !userId.value) {
-      console.log('⚠️ Cannot load progress: missing lessonId or userId')
       return
     }
-    
+
     try {
-      console.log('📊 Loading progress for user:', userId.value)
       const progressResult = await getLessonProgress(userId.value, lesson.value._id)
       
       if (progressResult.success && progressResult.data) {
@@ -536,18 +481,14 @@ export function useLessonOrchestrator() {
             hintsUsed: progressData.hintsUsed || 0,
             medal: progressData.medal || 'none'
           }
-          console.log('✅ Progress loaded:', previousProgress.value)
         } else {
           previousProgress.value = null
-          console.log('📝 No previous progress found')
         }
       } else {
         previousProgress.value = null
-        console.log('📝 No progress data available')
       }
-      
+
     } catch (err) {
-      console.warn('⚠️ Could not load previous progress:', err)
       previousProgress.value = null
     }
   }
@@ -557,8 +498,6 @@ export function useLessonOrchestrator() {
     try {
       // ✅ NEW: Save guest progress to localStorage
       if (isGuestMode.value) {
-        console.log('💾 Saving guest progress to localStorage')
-        
         const guestProgress = JSON.parse(localStorage.getItem('guestProgress') || '{}')
         
         const completedSteps = []
@@ -580,15 +519,13 @@ export function useLessonOrchestrator() {
           completed: completed,
           timestamp: Date.now()
         }
-        
+
         localStorage.setItem('guestProgress', JSON.stringify(guestProgress))
-        console.log('✅ Guest progress saved to localStorage')
         return true
       }
-      
+
       // Regular authenticated save
       if (!userId.value || !lesson.value._id) {
-        console.error('❌ Missing userId or lessonId for progress save')
         return false
       }
 
@@ -620,20 +557,15 @@ export function useLessonOrchestrator() {
         submittedHomework: false
       }
 
-      console.log('💾 Saving progress to server:', progressData)
-
       const result = await submitProgress(userId.value, progressData)
-      
+
       if (result.success) {
-        console.log('✅ Progress saved to server')
         return true
       } else {
-        console.warn('⚠️ Progress save failed')
         return false
       }
-      
+
     } catch (err) {
-      console.error('❌ Progress save error:', err)
       return false
     }
   }
@@ -646,13 +578,12 @@ export function useLessonOrchestrator() {
         setTimeout(() => autosaveProgress(), 30000)
       }
     } catch (error) {
-      console.error('❌ Autosave error:', error)
+      // Autosave error
     }
   }
   
   // ✅ Lesson control methods
   const startLesson = () => {
-    console.log('▶️ Starting lesson')
     started.value = true
     timerInterval.value = setInterval(() => elapsedSeconds.value++, 1000)
     
@@ -666,10 +597,9 @@ export function useLessonOrchestrator() {
   }
   
   const continuePreviousProgress = () => {
-    console.log('⏩ Continuing from previous progress')
     if (previousProgress.value) {
       currentIndex.value = Math.min(
-        previousProgress.value.completedSteps?.length || previousProgress.value.currentStep || 0, 
+        previousProgress.value.completedSteps?.length || previousProgress.value.currentStep || 0,
         steps.value.length - 1
       )
       stars.value = parseInt(previousProgress.value.stars) || 0
@@ -677,12 +607,6 @@ export function useLessonOrchestrator() {
       elapsedSeconds.value = parseInt(previousProgress.value.duration) || 0
       hintsUsed.value = Boolean(previousProgress.value.hintsUsed)
       earnedPoints.value = parseInt(previousProgress.value.points) || 0
-      
-      console.log('✅ Progress restored:', {
-        currentIndex: currentIndex.value,
-        stars: stars.value,
-        mistakes: mistakeCount.value
-      })
     }
     startLesson()
   }
@@ -692,19 +616,16 @@ export function useLessonOrchestrator() {
       completeLesson()
     } else {
       currentIndex.value++
-      console.log('➡️ Next step:', currentIndex.value + 1, '/', steps.value.length)
     }
   }
-  
+
   const goPrevious = () => {
     if (currentIndex.value > 0) {
       currentIndex.value--
-      console.log('⬅️ Previous step:', currentIndex.value + 1, '/', steps.value.length)
     }
   }
   
   const completeLesson = async () => {
-    console.log('🎉 Completing lesson')
     clearTimers()
     lessonCompleted.value = true
     showConfetti.value = true
@@ -721,48 +642,35 @@ export function useLessonOrchestrator() {
 
     setTimeout(() => launchConfetti(), 200)
     await saveProgress(true)
-    
-    console.log('✅ Lesson completed:', {
-      mistakes: mistakeCount.value,
-      stars: stars.value,
-      points: earnedPoints.value,
-      time: formattedTime.value
-    })
   }
-  
+
   const retryLoad = async () => {
-    console.log('🔄 Retrying lesson load, attempt:', retryCount.value + 1)
     retryCount.value++
     await loadLesson()
   }
-  
+
   // ✅ MODIFIED: Modal controls - handle guest exit
   const confirmExit = () => {
-    console.log('🚪 Confirming exit')
     showExitModal.value = true
   }
-  
+
   const cancelExit = () => {
-    console.log('❌ Canceling exit')
     showExitModal.value = false
   }
-  
+
   const exitLesson = async () => {
-    console.log('👋 Exiting lesson')
     if (started.value && !lessonCompleted.value) {
       await saveProgress(false)
     }
     showExitModal.value = false
-    
+
     // ✅ MODIFIED: Different redirect for guests
     if (isGuestMode.value) {
-      console.log('🆓 Guest user exiting, redirecting to home')
-      router.push({ 
+      router.push({
         name: 'HomePage',
         query: { message: 'guest_lesson_exit' }
       })
     } else {
-      console.log('👤 Authenticated user exiting, redirecting to catalogue')
       router.push('/profile/catalogue')
     }
   }
@@ -800,7 +708,6 @@ export function useLessonOrchestrator() {
   
   const launchConfetti = () => {
     // Implementation would use confetti library
-    console.log('🎊 Launching confetti')
     setTimeout(() => (showConfetti.value = false), 5000)
   }
   
@@ -869,29 +776,20 @@ export function useLessonOrchestrator() {
   
   // ✅ MODIFIED: Lifecycle management - support guest mode
   const initializeLesson = async () => {
-    console.log('🚀 Initializing lesson orchestrator')
-    
     // ✅ Check guest mode first
     isGuestMode.value = checkGuestMode()
-    
-    console.log('🔐 Mode:', isGuestMode.value ? 'GUEST' : 'AUTHENTICATED')
-    
+
     if (!isGuestMode.value) {
       // Only wait for auth if not in guest mode
       await waitForAuth()
-      
-      userId.value = localStorage.getItem('firebaseUserId') || 
-                    localStorage.getItem('userId') || 
+
+      userId.value = localStorage.getItem('firebaseUserId') ||
+                    localStorage.getItem('userId') ||
                     auth.currentUser?.uid
-      
+
       if (!userId.value) {
-        console.warn('⚠️ No user ID found, switching to guest mode')
         isGuestMode.value = true
-      } else {
-        console.log('✅ User ID:', userId.value)
       }
-    } else {
-      console.log('🆓 Guest mode - skipping authentication')
     }
     
     // ✅ Load lesson (works for both guests and authenticated users)
@@ -905,21 +803,18 @@ export function useLessonOrchestrator() {
   }
   
   const cleanup = () => {
-    console.log('🧹 Cleaning up lesson orchestrator')
     clearTimers()
     if (started.value && !lessonCompleted.value) {
       saveProgress(false)
     }
   }
-  
+
   // ✅ Lifecycle hooks
   onMounted(async () => {
-    console.log('📱 LessonOrchestrator mounted')
     await initializeLesson()
   })
-  
+
   onUnmounted(() => {
-    console.log('📴 LessonOrchestrator unmounted')
     cleanup()
   })
   

@@ -80,8 +80,8 @@ export function useExercises() {
         },
         {
           name: 'question-prefix',
-          regex: /((?:Вопрос|Question)\s*\d+[:.]\s*[^?]*\?)/gi,
-          extract: (match) => match.replace(/(?:Вопрос|Question)\s*\d+[:.]\s*/i, '').trim()
+          regex: /((?:Question|Question)\s*\d+[:.]\s*[^?]*\?)/gi,
+          extract: (match) => match.replace(/(?:Question|Question)\s*\d+[:.]\s*/i, '').trim()
         },
         {
           name: 'simple-questions',
@@ -127,7 +127,7 @@ export function useExercises() {
         
         if (dataQuestions.length > 0) {
           questions = dataQuestions.map((item, index) => ({
-            question: typeof item === 'string' ? item : (item.question || item.text || `Вопрос ${index + 1}`),
+            question: typeof item === 'string' ? item : (item.question || item.text || `Question ${index + 1}`),
             index: index,
             source: 'data-array'
           }))
@@ -704,7 +704,6 @@ export function useExercises() {
       return exercise || null
 
     } catch (error) {
-      console.error('Error in getCurrentExercise:', error)
       return null
     }
   }
@@ -738,7 +737,6 @@ export function useExercises() {
       return quizzes[currentQuizIndex.value] || null
 
     } catch (error) {
-      console.error('❌ Error in getCurrentQuiz:', error)
       return null
     }
   }
@@ -762,7 +760,6 @@ export function useExercises() {
 
       return exercises.length
     } catch (error) {
-      console.error('❌ Error in getTotalExercises:', error)
       return 0
     }
   }
@@ -786,7 +783,6 @@ export function useExercises() {
 
       return quizzes.length
     } catch (error) {
-      console.error('❌ Error in getTotalQuizzes:', error)
       return 0
     }
   }

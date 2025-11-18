@@ -37,9 +37,7 @@ export function useSound() {
           ) || voices[0]
           
           if (defaultVoice) {
-            currentVoice.value = defaultVoice
-            console.log('🔊 Default voice set:', defaultVoice.name)
-          }
+            currentVoice.value = defaultVoice          }
         }
         
         // Load voices when available
@@ -47,30 +45,19 @@ export function useSound() {
           loadVoices()
         } else {
           speechSynthesis.addEventListener('voiceschanged', loadVoices)
-        }
-        
-        console.log('✅ Speech synthesis initialized')
-      } else {
-        console.warn('⚠️ Speech synthesis not supported')
-        speechSupported.value = false
+        }      } else {        speechSupported.value = false
       }
-    } catch (error) {
-      console.error('❌ Speech initialization error:', error)
-      speechSupported.value = false
+    } catch (error) {      speechSupported.value = false
       soundError.value = error.message
     }
   }
   
   // ✅ Text-to-speech methods
   const pronounceWord = async (text, options = {}) => {
-    if (!speechSupported.value) {
-      console.warn('⚠️ Speech synthesis not available')
-      return false
+    if (!speechSupported.value) {      return false
     }
     
-    if (!text || typeof text !== 'string') {
-      console.warn('⚠️ Invalid text for pronunciation')
-      return false
+    if (!text || typeof text !== 'string') {      return false
     }
     
     try {
@@ -95,19 +82,13 @@ export function useSound() {
       }
       
       // Event handlers
-      utterance.onstart = () => {
-        console.log('🔊 Started pronouncing:', text)
-        isPlaying.value = true
+      utterance.onstart = () => {        isPlaying.value = true
       }
       
-      utterance.onend = () => {
-        console.log('✅ Finished pronouncing:', text)
-        isPlaying.value = false
+      utterance.onend = () => {        isPlaying.value = false
       }
       
-      utterance.onerror = (event) => {
-        console.error('❌ Speech error:', event.error)
-        soundError.value = event.error
+      utterance.onerror = (event) => {        soundError.value = event.error
         isPlaying.value = false
       }
       
@@ -123,9 +104,7 @@ export function useSound() {
       
       return true
       
-    } catch (error) {
-      console.error('❌ Pronunciation error:', error)
-      soundError.value = error.message
+    } catch (error) {      soundError.value = error.message
       isPlaying.value = false
       return false
     }
@@ -152,17 +131,13 @@ export function useSound() {
       
       return true
       
-    } catch (error) {
-      console.error('❌ Sentence pronunciation error:', error)
-      return false
+    } catch (error) {      return false
     }
   }
   
   // ✅ Audio playback methods (for audio files)
   const playAudioFile = async (audioUrl, options = {}) => {
-    if (!audioUrl) {
-      console.warn('⚠️ No audio URL provided')
-      return false
+    if (!audioUrl) {      return false
     }
     
     try {
@@ -176,29 +151,19 @@ export function useSound() {
       audio.playbackRate = options.playbackRate || 1.0
       
       // Event handlers
-      audio.addEventListener('loadstart', () => {
-        console.log('🔄 Loading audio:', audioUrl)
-      })
+      audio.addEventListener('loadstart', () => {      })
       
       audio.addEventListener('canplay', () => {
-        isLoading.value = false
-        console.log('✅ Audio ready to play')
-      })
+        isLoading.value = false      })
       
       audio.addEventListener('play', () => {
-        isPlaying.value = true
-        console.log('🔊 Audio started playing')
-      })
+        isPlaying.value = true      })
       
       audio.addEventListener('ended', () => {
-        isPlaying.value = false
-        console.log('✅ Audio finished playing')
-      })
+        isPlaying.value = false      })
       
       audio.addEventListener('error', (event) => {
-        const error = `Audio error: ${event.target.error?.message || 'Unknown error'}`
-        console.error('❌', error)
-        soundError.value = error
+        const error = `Audio error: ${event.target.error?.message || 'Unknown error'}`        soundError.value = error
         isLoading.value = false
         isPlaying.value = false
       })
@@ -213,9 +178,7 @@ export function useSound() {
       
       return true
       
-    } catch (error) {
-      console.error('❌ Audio playback error:', error)
-      soundError.value = error.message
+    } catch (error) {      soundError.value = error.message
       isLoading.value = false
       isPlaying.value = false
       return false
@@ -238,12 +201,8 @@ export function useSound() {
         }
       })
       
-      isPlaying.value = false
-      console.log('🛑 All sounds stopped')
-      
-    } catch (error) {
-      console.error('❌ Error stopping sound:', error)
-    }
+      isPlaying.value = false      
+    } catch (error) {    }
   }
   
   const pauseSound = () => {
@@ -260,12 +219,8 @@ export function useSound() {
         }
       })
       
-      isPlaying.value = false
-      console.log('⏸️ Sound paused')
-      
-    } catch (error) {
-      console.error('❌ Error pausing sound:', error)
-    }
+      isPlaying.value = false      
+    } catch (error) {    }
   }
   
   const resumeSound = () => {
@@ -282,19 +237,13 @@ export function useSound() {
         }
       })
       
-      isPlaying.value = true
-      console.log('▶️ Sound resumed')
-      
-    } catch (error) {
-      console.error('❌ Error resuming sound:', error)
-    }
+      isPlaying.value = true      
+    } catch (error) {    }
   }
   
   // ✅ Settings methods
   const updateSoundSettings = (newSettings) => {
-    Object.assign(soundSettings, newSettings)
-    console.log('🔧 Sound settings updated:', newSettings)
-    
+    Object.assign(soundSettings, newSettings)    
     // Reinitialize if language changed
     if (newSettings.language && newSettings.language !== soundSettings.language) {
       initializeSpeech()
@@ -304,12 +253,8 @@ export function useSound() {
   const setVoice = (voiceName) => {
     const voice = speechVoices.value.find(v => v.name === voiceName)
     if (voice) {
-      currentVoice.value = voice
-      console.log('🎙️ Voice changed to:', voice.name)
-      return true
-    } else {
-      console.warn('⚠️ Voice not found:', voiceName)
-      return false
+      currentVoice.value = voice      return true
+    } else {      return false
     }
   }
   
@@ -363,9 +308,7 @@ export function useSound() {
   }
   
   const trackSoundEvent = (eventType, data = {}) => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`🔊 Sound Event: ${eventType}`, data)
-    }
+    if (process.env.NODE_ENV === 'development') {    }
     // Send to analytics service if needed
   }
   
@@ -410,9 +353,7 @@ export function useSound() {
       const phoneticText = `<phoneme alphabet="ipa" ph="${phonetics}">${word}</phoneme>`
       return await pronounceWord(phoneticText)
     } catch (error) {
-      // Fallback to regular pronunciation
-      console.warn('⚠️ Phonetic pronunciation failed, using fallback')
-      return await pronounceWord(word)
+      // Fallback to regular pronunciation      return await pronounceWord(word)
     }
   }
   
@@ -433,9 +374,7 @@ export function useSound() {
       speechSynthesis.speak(utterance)
       return true
       
-    } catch (error) {
-      console.error('❌ SSML pronunciation error:', error)
-      return false
+    } catch (error) {      return false
     }
   }
   

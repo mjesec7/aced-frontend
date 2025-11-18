@@ -79,10 +79,9 @@ export function useExplanation() {
       } else {
         throw new Error('Explanation help service not available')
       }
-      
+
     } catch (error) {
-      console.error('❌ Explanation help error:', error)
-      explanationAIResponse.value = 'Не удалось получить помощь. Попробуйте снова.'
+      explanationAIResponse.value = 'Unable to get help. Please try again.'
     } finally {
       isLoadingExplanation.value = false
     }
@@ -139,10 +138,9 @@ export function useExplanation() {
       } else {
         throw new Error('AI chat service not available')
       }
-      
+
     } catch (error) {
-      console.error('❌ AI chat error:', error)
-      addToAIChatHistory('ai', 'Извините, возникла ошибка. Попробуйте снова.')
+      addToAIChatHistory('ai', 'Sorry, an error occurred. Please try again.')
     } finally {
       aiIsLoading.value = false
     }

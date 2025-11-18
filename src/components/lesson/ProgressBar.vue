@@ -21,7 +21,7 @@
         </div>
       </div>
       <div class="progress-info">
-        <span class="progress-label">{{ progressPercentage }}% завершено</span>
+        <span class="progress-label">{{ progressPercentage }}% completed</span>
         <span class="stars-display">⭐ {{ stars }}</span>
       </div>
     </div>
@@ -62,7 +62,7 @@
             position: i * stepWidth,
             completed: i < this.currentStep,
             current: i === this.currentStep,
-            title: `Шаг ${i + 1}`
+            title: `Step ${i + 1}`
           });
         }
         

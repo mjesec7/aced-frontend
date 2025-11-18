@@ -1,14 +1,14 @@
 <template>
   <div class="floating-ai-assistant">
     <div class="ai-header">
-      <h4>🤖 AI Помощник</h4>
+      <h4>🤖 AI Assistant</h4>
       <button @click="$emit('close')" class="close-ai-btn">✕</button>
     </div>
     
     <div class="ai-body">
       <!-- Usage Display -->
       <div v-if="formattedUsage" class="usage-display">
-        <p>📊 Использовано: {{ formattedUsage }}</p>
+        <p>📊 Used: {{ formattedUsage }}</p>
         <div v-if="usagePercentage > 0 && !isUnlimited" class="usage-bar">
           <div class="usage-fill" :style="{ width: usagePercentage + '%' }"></div>
         </div>
@@ -16,7 +16,7 @@
       
       <!-- Quick Suggestions -->
       <div v-if="(quickSuggestions || []).length" class="quick-suggestions">
-        <p class="suggestions-label">💡 Быстрые вопросы:</p>
+        <p class="suggestions-label">💡 Quick questions:</p>
         <div class="suggestions-list">
           <button 
             v-for="(suggestion, quickIndex) in (quickSuggestions || [])" 
@@ -35,7 +35,7 @@
         <div class="chat-messages" ref="chatMessages">
           <div v-if="!(aiChatHistory || []).length" class="empty-chat-state">
             <div class="empty-icon">💭</div>
-            <p>Задайте вопрос о текущем шаге!</p>
+            <p>Ask a question about the current step!</p>
           </div>
           
           <div 
@@ -72,7 +72,7 @@
           <input 
             v-model="localFloatingInput" 
             @keyup.enter="sendMessage"
-            placeholder="Спросите о текущем шаге..."
+            placeholder="Ask about the current step..."
             :disabled="aiIsLoading || isMessageLimitReached"
             class="chat-input-field"
             ref="chatInput"
@@ -81,7 +81,7 @@
             @click="sendMessage" 
             :disabled="!localFloatingInput?.trim() || aiIsLoading || isMessageLimitReached"
             class="send-btn"
-            :title="isMessageLimitReached ? 'Лимит сообщений исчерпан' : 'Отправить сообщение'"
+            :title="isMessageLimitReached ? 'Message limit reached' : 'Send message'"
           >
             <span v-if="aiIsLoading" class="loading-spinner">⏳</span>
             <span v-else>📤</span>
@@ -91,11 +91,11 @@
         <!-- Message Limit Warning -->
         <div v-if="isNearLimit || isMessageLimitReached" class="limit-warning">
           <div v-if="isMessageLimitReached" class="limit-reached">
-            🚫 Лимит сообщений исчерпан. 
-            <a href="/pay/start" class="upgrade-link">Обновить подписку</a>
+            🚫 Message limit reached. 
+            <a href="/pay/start" class="upgrade-link">Upgrade subscription</a>
           </div>
           <div v-else-if="isNearLimit" class="limit-near">
-            ⚠️ Осталось {{ remainingMessages }} сообщений
+            ⚠️ Remaining {{ remainingMessages }} messages
           </div>
         </div>
       </div>
@@ -103,10 +103,10 @@
       <!-- Chat Controls -->
       <div v-if="(aiChatHistory || []).length > 3" class="chat-controls">
         <button @click="showAllMessages = !showAllMessages" class="toggle-messages-btn">
-          {{ showAllMessages ? 'Показать меньше' : 'Показать все' }}
+          {{ showAllMessages ? 'Show less' : 'Show all' }}
         </button>
         <button @click="clearChat" class="clear-chat-btn">
-          🗑️ Очистить
+          🗑️ Clear
         </button>
       </div>
     </div>

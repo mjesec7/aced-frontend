@@ -1,17 +1,17 @@
 <template>
   <div class="ai-help-panel">
     <div class="ai-help-header">
-      <h4>🤖 AI Помощник</h4>
+      <h4>🤖 AI Assistant</h4>
       <div v-if="aiUsage" class="usage-display">
         <span class="usage-text">{{ formatUsage(aiUsage) }}</span>
       </div>
     </div>
     
-    <p class="ai-help-description">Выберите ответ слева, и я помогу вам с объяснениями!</p>
+    <p class="ai-help-description">Select an answer on the left, and I will help you with explanations!</p>
     
     <!-- Quick suggestions -->
     <div v-if="(aiSuggestions || []).length" class="quick-suggestions">
-      <p class="suggestions-title"><strong>Популярные вопросы:</strong></p>
+      <p class="suggestions-title"><strong>Popular questions:</strong></p>
       <div class="suggestions-grid">
         <button 
           v-for="(suggestion, suggestionIndex) in (aiSuggestions || [])" 
@@ -30,7 +30,7 @@
       <input 
         v-model="localChatInput" 
         @keyup.enter="sendMessage"
-        placeholder="Спросите об этом упражнении..."
+        placeholder="Ask about this exercise..."
         :disabled="aiIsLoading"
         class="chat-input-field"
       />
@@ -47,8 +47,8 @@
     <!-- Chat history -->
     <div v-if="(aiChatHistory || []).length" class="ai-chat-history">
       <div class="chat-header">
-        <h5>💬 История чата</h5>
-        <button @click="clearChat" class="clear-chat-btn" title="Очистить историю">
+        <h5>💬 Chat history</h5>
+        <button @click="clearChat" class="clear-chat-btn" title="Clear history">
           🗑️
         </button>
       </div>
@@ -60,7 +60,7 @@
         >
           <div class="message-header">
             <strong v-if="message?.type === 'user'">
-              <span class="user-icon">👤</span> Вы:
+              <span class="user-icon">👤</span> You:
             </strong>
             <strong v-else>
               <span class="ai-icon">🤖</span> AI:
@@ -75,7 +75,7 @@
       
       <div v-if="(aiChatHistory || []).length > 3" class="show-more-container">
         <button @click="showAllMessages = !showAllMessages" class="show-more-btn">
-          {{ showAllMessages ? 'Показать меньше' : `Показать все (${(aiChatHistory || []).length})` }}
+          {{ showAllMessages ? 'Show less' : `Show all (${(aiChatHistory || []).length})` }}
         </button>
       </div>
     </div>
@@ -83,7 +83,7 @@
     <!-- Empty state -->
     <div v-else class="ai-empty-state">
       <div class="empty-icon">🤔</div>
-      <p>Задайте вопрос, и я помогу вам разобраться с упражнением!</p>
+      <p>Ask a question, and I will help you understand the exercise!</p>
     </div>
   </div>
 </template>
@@ -159,7 +159,7 @@ export default {
       const messages = usage.messages || 0;
       const limit = usage.plan === 'free' ? 50 : '∞';
       
-      return `${messages}/${limit} сообщений`;
+      return `${messages}/${limit} messages`;
     },
 
     formatMessageTime(message) {

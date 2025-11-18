@@ -45,7 +45,6 @@ export function usePaymentValidation() {
       const storeStatus = getStatusFromStore()
       if (storeStatus && storeStatus !== 'unknown') {
         userStatus.value = storeStatus
-        console.log('✅ Using cached user status:', storeStatus)
         return storeStatus
       }
       
@@ -58,15 +57,13 @@ export function usePaymentValidation() {
         // Cache in localStorage
         localStorage.setItem('subscriptionPlan', newStatus)
         localStorage.setItem('statusLastChecked', Date.now().toString())
-        
-        console.log('✅ Updated user status:', newStatus)
+
         return newStatus
       } else {
         throw new Error(statusResult.error || 'Failed to get user status')
       }
-      
+
     } catch (error) {
-      console.error('❌ Error checking user status:', error)
       statusError.value = error.message
       
       // Fallback to cached status
@@ -114,56 +111,48 @@ export function usePaymentValidation() {
       if (!lesson) {
         throw new Error('Lesson data not provided')
       }
-      
+
       const lessonType = lesson.type || 'free'
-      console.log('🔍 Validating access for lesson type:', lessonType)
-      
+
       // Free lessons are always accessible
       if (lessonType === 'free') {
-        console.log('✅ Free lesson - access granted')
         return { hasAccess: true, reason: 'free_lesson' }
       }
-      
+
       // Check user authentication
       const currentUser = auth.currentUser
       if (!currentUser) {
-        console.log('❌ User not authenticated')
         return { hasAccess: false, reason: 'not_authenticated' }
       }
-      
+
       // Check premium status
       await checkUserStatus()
-      
+
       if (lessonType === 'premium' && !isPremiumUser.value) {
-        console.log('❌ Premium lesson requires subscription')
         return { hasAccess: false, reason: 'premium_required' }
       }
-      
-      console.log('✅ Access granted')
+
       return { hasAccess: true, reason: 'premium_user' }
-      
+
     } catch (error) {
-      console.error('❌ Access validation error:', error)
       return { hasAccess: false, reason: 'validation_error', error: error.message }
     }
   }
   
   const handleAccessDenied = (reason, lessonType = 'premium') => {
-    console.log('🚫 Access denied:', reason)
-    
     switch (reason) {
       case 'not_authenticated':
         // Redirect to login
         return { action: 'redirect', path: '/login' }
-        
+
       case 'premium_required':
         // Show paywall modal
         showPaywallModal.value = true
         return { action: 'paywall' }
-        
+
       case 'validation_error':
         // Show error message
-        return { action: 'error', message: 'Ошибка проверки доступа' }
+        return { action: 'error', message: 'Access validation error' }
         
       default:
         // Show generic paywall
@@ -185,23 +174,23 @@ export function usePaymentValidation() {
   const getFeaturesByPlan = (plan) => {
     const features = {
       free: [
-        'Доступ к бесплатным урокам',
-        'Базовая статистика прогресса',
-        'Сохранение прогресса'
+        'Access to free lessons',
+        'Basic progress statistics',
+        'Progress saving'
       ],
       start: [
-        'Все функции Free',
-        'Доступ к премиум урокам',
-        'Детальная аналитика',
-        'Домашние задания',
-        'AI помощник (ограниченно)'
+        'All Free features',
+        'Access to premium lessons',
+        'Detailed analytics',
+        'Homework assignments',
+        'AI assistant (limited)'
       ],
       pro: [
-        'Все функции Start',
-        'Неограниченный AI помощник',
-        'Персонализированные рекомендации',
-        'Приоритетная поддержка',
-        'Расширенная статистика'
+        'All Start features',
+        'Unlimited AI assistant',
+        'Personalized recommendations',
+        'Priority support',
+        'Extended statistics'
       ]
     }
     
@@ -211,12 +200,12 @@ export function usePaymentValidation() {
   const getUpgradeOptions = (currentPlan) => {
     if (currentPlan === 'free') {
       return [
-        { plan: 'start', price: '260,000 сум', popular: true },
-        { plan: 'pro', price: '455,000 сум', premium: true }
+        { plan: 'start', price: '260,000 sum', popular: true },
+        { plan: 'pro', price: '455,000 sum', premium: true }
       ]
     } else if (currentPlan === 'start') {
       return [
-        { plan: 'pro', price: '195,000 сум', upgrade: true }
+        { plan: 'pro', price: '195,000 sum', upgrade: true }
       ]
     }
     
@@ -229,7 +218,6 @@ export function usePaymentValidation() {
     localStorage.removeItem('statusLastChecked')
     sessionStorage.removeItem('userStatus')
     userStatus.value = 'free'
-    console.log('🗑️ Status cache cleared')
   }
   
   const isStatusCacheValid = () => {
@@ -263,15 +251,13 @@ export function usePaymentValidation() {
     if (process.env.NODE_ENV === 'development') {
       userStatus.value = 'pro'
       localStorage.setItem('subscriptionPlan', 'pro')
-      console.log('🧪 Simulated premium access for development')
     }
   }
-  
+
   const simulateFreeAccess = () => {
     if (process.env.NODE_ENV === 'development') {
       userStatus.value = 'free'
       localStorage.setItem('subscriptionPlan', 'free')
-      console.log('🧪 Simulated free access for development')
     }
   }
   

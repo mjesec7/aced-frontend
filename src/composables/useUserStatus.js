@@ -36,9 +36,7 @@ const triggerGlobalEvent = (eventName, data = {}) => {
     }
 
 
-  } catch (error) {
-    console.error(`❌ Failed to trigger global event '${eventName}':`, error);
-  }
+  } catch (error) {  }
 };
 
 // ✅ EXPORTED ACTION: updateUserStatus for store import (ENHANCED)
@@ -49,9 +47,7 @@ export const updateUserStatusAction = async ({ commit, state, dispatch }, newSta
     
     // ✅ STEP 1: Validate input
     const validStatuses = ['free', 'start', 'pro', 'premium'];
-    if (!validStatuses.includes(newStatus)) {
-      console.error('❌ Invalid status provided:', newStatus);
-      const errorResult = { success: false, error: 'Invalid status' };
+    if (!validStatuses.includes(newStatus)) {      const errorResult = { success: false, error: 'Invalid status' };
       return errorResult;
     }
     
@@ -100,9 +96,7 @@ export const updateUserStatusAction = async ({ commit, state, dispatch }, newSta
         timestamp: new Date().toISOString(),
         source: 'store-action'
       }));
-    } catch (storageError) {
-      console.warn('⚠️ Failed to update localStorage:', storageError);
-    }
+    } catch (storageError) {    }
     
     // ✅ STEP 8: Create comprehensive event data
     const eventData = {
@@ -146,9 +140,7 @@ export const updateUserStatusAction = async ({ commit, state, dispatch }, newSta
       });
       window.dispatchEvent(domEvent);
       
-    } catch (domError) {
-      console.warn('⚠️ DOM event dispatch failed:', domError);
-    }
+    } catch (domError) {    }
     
     // ✅ STEP 11: Delayed updates for stubborn components (non-blocking)
     setTimeout(() => {
@@ -180,18 +172,14 @@ export const updateUserStatusAction = async ({ commit, state, dispatch }, newSta
     
     return successResult;
     
-  } catch (error) {
-    console.error('❌ updateUserStatus failed:', error);
-    
+  } catch (error) {    
     try {
       commit('SET_ERROR', {
         message: 'Status update failed',
         context: 'updateUserStatus',
         originalError: error.message
       });
-    } catch (commitError) {
-      console.error('❌ Failed to commit error:', commitError);
-    }
+    } catch (commitError) {    }
     
     const errorResult = {
       success: false,
@@ -254,9 +242,7 @@ export const userStatusMixin = {
        
         
         return finalStatus;
-      } catch (error) {
-        console.error(`❌ [${this.$options.name}] Error in reactiveUserStatus:`, error);
-        return 'free';
+      } catch (error) {        return 'free';
       }
     },
     
@@ -307,11 +293,11 @@ export const userStatusMixin = {
     subscriptionText() {
       const status = this.reactiveUserStatus;
       const texts = {
-        pro: 'Pro подписка',
-        start: 'Start подписка',
-        free: 'Бесплатный доступ'
+        pro: 'Pro subscription',
+        start: 'Start subscription',
+        free: 'Free access'
       };
-      return texts[status] || 'Бесплатный доступ';
+      return texts[status] || 'Free access';
     },
     
     // ✅ NEW: Status badge class for UI components
@@ -385,9 +371,7 @@ export const userStatusMixin = {
       await this.syncStatusWithStore();
       
       
-    } catch (error) {
-      console.error(`❌ [${this.$options.name}] UserStatus mixin mount error:`, error);
-    }
+    } catch (error) {    }
   },
   
   beforeUnmount() {
@@ -578,7 +562,7 @@ export const userStatusMixin = {
       if (newStatus && newStatus !== 'free') {
         const planLabel = newStatus === 'pro' ? 'Pro' : 'Start';
         this.showStatusNotification(
-          `🎟️ Промокод "${promocode}" применён! ${planLabel} план активирован!`,
+          `🎟️ Promo code "${promocode}" applied! ${planLabel} plan activated!`,
           'success'
         );
       }
@@ -595,7 +579,7 @@ export const userStatusMixin = {
       if (plan && plan !== 'free') {
         const planLabel = plan === 'pro' ? 'Pro' : 'Start';
         this.showStatusNotification(
-          `💳 Оплата прошла успешно! ${planLabel} план активирован!`,
+          `💳 Payment successful! ${planLabel} plan activated!`,
           'success'
         );
       }
@@ -652,9 +636,7 @@ export const userStatusMixin = {
               } catch (e2) {
                 try {
                   this.$store.commit('setUserStatus', newStatus);
-                } catch (e3) {
-                  console.warn(`⚠️ [${this.$options.name}] Could not find store mutation for user status`);
-                }
+                } catch (e3) {                }
               }
             }
           }
@@ -668,16 +650,12 @@ export const userStatusMixin = {
             
             try {
               this.$store.commit('setUser', updatedUser);
-            } catch (e) {
-              console.warn(`⚠️ [${this.$options.name}] Could not update user object:`, e.message);
-            }
+            } catch (e) {            }
           }
         }
         
         
-      } catch (error) {
-        console.error(`❌ [${this.$options.name}] Error updating user status:`, error);
-      }
+      } catch (error) {      }
     },
     
     // ✅ CORE: Sync status with store
@@ -720,9 +698,7 @@ export const userStatusMixin = {
         
         this.lastSyncTime = currentTime;
         
-      } catch (error) {
-        console.error(`❌ [${this.$options.name}] Error syncing status:`, error);
-      }
+      } catch (error) {      }
     },
     
     // ✅ CORE: Trigger reactivity update
@@ -779,7 +755,7 @@ export const userStatusMixin = {
       };
       
       const planLabel = planLabels[newStatus] || (newStatus && typeof newStatus === 'string' ? newStatus.toUpperCase() : 'Unknown');
-      const message = `🎉 Поздравляем! ${planLabel} подписка активирована!`;
+      const message = `🎉 Congratulations! ${planLabel} subscription activated!`;
       
       this.showStatusNotification(message, 'success');
     },
@@ -876,9 +852,7 @@ export function useUserStatus() {
       
       
       return finalStatus;
-    } catch (error) {
-      console.warn('⚠️ useUserStatus: Error getting status:', error);
-      return localStorage.getItem('userStatus') || 'free';
+    } catch (error) {      return localStorage.getItem('userStatus') || 'free';
     }
   });
   
@@ -920,17 +894,15 @@ export function useUserStatus() {
   
   const subscriptionText = computed(() => {
     const status = userStatus.value;
-    return status === 'pro' ? 'Pro подписка'
-      : (status === 'start' || status === 'premium') ? 'Start подписка'
-      : 'Бесплатный доступ';
+    return status === 'pro' ? 'Pro subscription'
+      : (status === 'start' || status === 'premium') ? 'Start subscription'
+      : 'Free access';
   });
   
   const isUpdatingStatus = computed(() => {
     try {
       return store.getters['user/isUpdatingStatus'] || false;
-    } catch (error) {
-      console.warn('⚠️ useUserStatus: Error getting updating status:', error);
-      return false;
+    } catch (error) {      return false;
     }
   });
   
@@ -943,9 +915,7 @@ export function useUserStatus() {
       lastUpdateTime.value = Date.now();
       
    
-    } catch (error) {
-      console.warn('⚠️ useUserStatus: Reactivity update failed:', error);
-    }
+    } catch (error) {    }
   };
   
   // ✅ NEW: Handle user status change
@@ -975,16 +945,12 @@ export function useUserStatus() {
         lastSyncTime.value = currentTime;
       }
       
-    } catch (error) {
-      console.error('❌ useUserStatus: Error syncing status:', error);
-    }
+    } catch (error) {    }
   };
   
   // ✅ Status update method - calls the store action
   const updateStatus = async (newStatus) => {
-    if (!newStatus || !['free', 'start', 'pro', 'premium'].includes(newStatus)) {
-      console.error('❌ useUserStatus: Invalid status:', newStatus);
-      return false;
+    if (!newStatus || !['free', 'start', 'pro', 'premium'].includes(newStatus)) {      return false;
     }
     
     try {
@@ -994,13 +960,9 @@ export function useUserStatus() {
       if (result && result.success) {
         triggerReactivityUpdate();
         return true;
-      } else {
-        console.error('❌ useUserStatus: Status update failed:', result?.error);
-        return false;
+      } else {        return false;
       }
-    } catch (error) {
-      console.error('❌ useUserStatus: Status update error:', error);
-      return false;
+    } catch (error) {      return false;
     }
   };
   
@@ -1117,9 +1079,7 @@ export function useUserStatus() {
     eventCleanupFunctions.forEach(cleanup => {
       try {
         cleanup();
-      } catch (error) {
-        console.warn('⚠️ useUserStatus: Cleanup error:', error);
-      }
+      } catch (error) {      }
     });
     eventCleanupFunctions.length = 0;
     
@@ -1166,9 +1126,7 @@ export function useUserStatus() {
   const hasFeatureAccess = (feature) => {
     try {
       return store.getters['user/hasFeatureAccess'](feature);
-    } catch (error) {
-      console.warn('⚠️ useUserStatus: Error checking feature access:', error);
-      return false;
+    } catch (error) {      return false;
     }
   };
   
@@ -1217,9 +1175,7 @@ export function useUserStatus() {
       });
       
       triggerReactivityUpdate();
-    } catch (error) {
-      console.error('❌ useUserStatus: Emergency sync failed:', error);
-    }
+    } catch (error) {    }
   };
   
   // ✅ Return reactive properties and methods
@@ -1259,9 +1215,7 @@ export function useUserStatus() {
 
 // Quick setup function for any component that needs user status reactivity
 export function setupUserStatusReactivity(component) {
-  if (!component) {
-    console.error('❌ setupUserStatusReactivity: No component provided');
-    return;
+  if (!component) {    return;
   }
   
   
