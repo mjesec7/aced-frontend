@@ -1209,6 +1209,20 @@ sound.pronounceWord?.(word)
       const step = lessonOrchestrator.currentStep.value
       if (!step) return null
 
+      // ✅ FIX: Explicitly handle Game Steps
+      if (step.type === 'game' || step.gameType) {
+         // Construct a standardized game object
+         return {
+            ...step,
+            id: step.id || `game_${lessonOrchestrator.currentIndex.value}`,
+            type: 'game', // Ensure type is explicitly 'game' for InteractivePanel logic
+            gameType: step.gameType || 'basket-catch', // Fallback
+            gameConfig: step.gameConfig || step.data || {}, // Ensure config exists
+            // Pass through instructions
+            instructions: step.instructions || step.description || "Play the game!"
+         };
+      }
+
       // ✅ FIX: Handle Steps with Data Arrays (Exercises/Quizzes)
       // If step.data is an array, pick the specific item based on currentExerciseIndex
       if (['exercise', 'quiz', 'practice'].includes(step.type) && Array.isArray(step.data)) {
