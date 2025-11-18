@@ -160,111 +160,180 @@
       @report-problem="openProblemReportModal"
     />
 
-    <div v-else-if="started && !showPaywallModal && !loading && !error" class="lesson-container">
+    <div v-else-if="started && !showPaywallModal && !loading && !error" class="lesson-container-new">
 
-      <LessonHeader
-        :lesson="lesson"
-        :current-step="currentIndex + 1"
-        :total-steps="steps.length"
-        :formatted-time="formattedTime"
-        :stars="stars"
-        :progress-percentage="progressPercentage"
-        @exit="confirmExit"
-        @report-problem="openProblemReportModal"
-      />
-
-      <div class="split-content" :class="{ dragging: isResizing }">
-        <div class="content-panel" :style="leftPanelStyle">
-          <ContentPanel
-            :current-step="currentStep"
-            :current-index="currentIndex"
-            :is-interactive-step="isInteractiveStep"
-            :current-exercise="getCurrentExercise()"
-            :current-quiz="getCurrentQuiz()"
-            :exercise-index="currentExerciseIndex"
-            :quiz-index="currentQuizIndex"
-            :total-exercises="getTotalExercises()"
-            :total-quizzes="getTotalQuizzes()"
-            :show-explanation-help="showExplanationHelp"
-            :explanation-question="explanationQuestion"
-            :explanation-ai-response="explanationAIResponse"
-            :is-loading-explanation="isLoadingExplanation"
-            :is-last-step="isLastStep"
-            @toggle-explanation-help="toggleExplanationHelp"
-            @update:explanation-question="explanationQuestion = $event"
-            @ask-explanation="askAboutExplanation"
-            @init-vocabulary="initializeVocabularyModal"
-            @pronounce="pronounceWord"
-            @next="goNext"
-            @previous="goPrevious"
-          />
+      <!-- New Header -->
+      <div class="lesson-header-new">
+        <div class="header-left">
+          <button @click="confirmExit" class="close-btn-new">✕</button>
+          <div class="lesson-title-info">
+            <h2>{{ lesson?.title || 'Lesson' }}</h2>
+            <p>{{ lesson?.subtitle || '' }}</p>
+          </div>
+          <div class="progress-bar-inline">
+            <div class="progress-fill-inline" :style="{ width: progressPercentage + '%' }"></div>
+          </div>
+          <span class="progress-text-inline">{{ currentIndex + 1 }}/{{ steps.length }}</span>
         </div>
+        <div class="header-right">
+          <div class="streak-badge-new">
+            <span>⚡</span>
+            <span>{{ consecutiveCorrect }}</span>
+          </div>
+          <div class="points-badge-new">
+            <span>🏆</span>
+            <span>{{ earnedPoints }}</span>
+          </div>
+        </div>
+      </div>
 
-        <div 
-          class="resize-divider"
-          :class="{ active: isResizing }"
-          @mousedown="startResize"
-          @touchstart="startResize"
-          @keydown="handleResizeKeyboard"
-          tabindex="0"
-          role="separator"
-          :aria-label="`Resize panels. Current split: ${widthIndicatorText}`"
-          :title="`Current split: ${widthIndicatorText}. Use arrow keys or drag to resize.`"
-        ></div>
+      <!-- Grid Layout: Main Content + Sidebar -->
+      <div class="lesson-grid-container">
 
-        <div class="right-panel" :style="rightPanelStyle">
-          <div v-if="isInteractiveStep" class="interactive-panel-container">
-            <InteractivePanel
+        <!-- Main Content Area -->
+        <div class="main-content-new">
+          <!-- Tab Buttons -->
+          <div class="tab-buttons-new">
+            <button
+              :class="['tab-btn-new', { active: currentTab === 'explanation' }]"
+              @click="currentTab = 'explanation'"
+            >
+              📖 Explanation
+            </button>
+            <button
+              :class="['tab-btn-new', { active: currentTab === 'exercise' }]"
+              @click="currentTab = 'exercise'"
+              :disabled="!isInteractiveStep"
+            >
+              🎯 Exercise
+            </button>
+          </div>
+
+          <!-- Explanation View -->
+          <div v-show="currentTab === 'explanation'" class="explanation-view-new">
+            <ContentPanel
               :current-step="currentStep"
+              :current-index="currentIndex"
+              :is-interactive-step="isInteractiveStep"
               :current-exercise="getCurrentExercise()"
               :current-quiz="getCurrentQuiz()"
               :exercise-index="currentExerciseIndex"
               :quiz-index="currentQuizIndex"
               :total-exercises="getTotalExercises()"
               :total-quizzes="getTotalQuizzes()"
-              :user-answer="userAnswer"
-              :confirmation="confirmation"
-              :answer-was-correct="answerWasCorrect"
-              :current-hint="currentHint"
-              :smart-hint="smartHint"
-              :mistake-count="mistakeCount"
-              :fill-blank-answers="fillBlankAnswers"
-              :matching-pairs="matchingPairs"
-              :selected-matching-item="selectedMatchingItem"
-              :ordering-items="orderingItems"
-              :drag-drop-placements="dragDropPlacements"
-              :available-drag-items="availableDragItems"
-              :drop-zones="dropZones"
-              :attempt-count="attemptCount"
-              :max-attempts="maxAttempts"
-              :is-on-second-chance="isOnSecondChance"
-              :show-correct-answer="showCorrectAnswer"
-              :correct-answer-text="correctAnswerText"
-              @answer-changed="handleAnswerChanged"
-              @fill-blank-updated="updateFillBlankAnswer"
-              @submit="handleSubmitOrNext"
-              @next-exercise="goToNextExercise"
-              @next-quiz="goToNextQuiz"
-              @show-hint="showHint"
-              @clear-hint="clearSmartHint"
-              @matching-item-selected="handleMatchingItemSelected"
-              @remove-matching-pair="handleRemoveMatchingPair"
-              @drag-item-start="handleDragItemStart"
-              @drag-over-zone="handleDragOverZone"
-              @drag-leave-zone="handleDragLeaveZone"
-              @drop-in-zone="handleDropInZone"
-              @remove-dropped-item="handleRemoveDroppedItem"
+              :show-explanation-help="showExplanationHelp"
+              :explanation-question="explanationQuestion"
+              :explanation-ai-response="explanationAIResponse"
+              :is-loading-explanation="isLoadingExplanation"
+              :is-last-step="isLastStep"
+              @toggle-explanation-help="toggleExplanationHelp"
+              @update:explanation-question="explanationQuestion = $event"
+              @ask-explanation="askAboutExplanation"
+              @init-vocabulary="initializeVocabularyModal"
+              @pronounce="pronounceWord"
+              @next="goNext"
+              @previous="goPrevious"
             />
           </div>
 
-          <div v-else class="non-interactive-panel">
-            <div class="panel-placeholder">
+          <!-- Exercise View -->
+          <div v-show="currentTab === 'exercise'" class="exercise-view-new">
+            <div v-if="isInteractiveStep">
+              <InteractivePanel
+                :current-step="currentStep"
+                :current-exercise="getCurrentExercise()"
+                :current-quiz="getCurrentQuiz()"
+                :exercise-index="currentExerciseIndex"
+                :quiz-index="currentQuizIndex"
+                :total-exercises="getTotalExercises()"
+                :total-quizzes="getTotalQuizzes()"
+                :user-answer="userAnswer"
+                :confirmation="confirmation"
+                :answer-was-correct="answerWasCorrect"
+                :current-hint="currentHint"
+                :smart-hint="smartHint"
+                :mistake-count="mistakeCount"
+                :fill-blank-answers="fillBlankAnswers"
+                :matching-pairs="matchingPairs"
+                :selected-matching-item="selectedMatchingItem"
+                :ordering-items="orderingItems"
+                :drag-drop-placements="dragDropPlacements"
+                :available-drag-items="availableDragItems"
+                :drop-zones="dropZones"
+                :attempt-count="attemptCount"
+                :max-attempts="maxAttempts"
+                :is-on-second-chance="isOnSecondChance"
+                :show-correct-answer="showCorrectAnswer"
+                :correct-answer-text="correctAnswerText"
+                @answer-changed="handleAnswerChanged"
+                @fill-blank-updated="updateFillBlankAnswer"
+                @submit="handleSubmitOrNext"
+                @next-exercise="goToNextExercise"
+                @next-quiz="goToNextQuiz"
+                @show-hint="showHint"
+                @clear-hint="clearSmartHint"
+                @matching-item-selected="handleMatchingItemSelected"
+                @remove-matching-pair="handleRemoveMatchingPair"
+                @drag-item-start="handleDragItemStart"
+                @drag-over-zone="handleDragOverZone"
+                @drag-leave-zone="handleDragLeaveZone"
+                @drop-in-zone="handleDropInZone"
+                @remove-dropped-item="handleRemoveDroppedItem"
+              />
+            </div>
+            <div v-else class="no-exercise-message">
               <div class="placeholder-icon">📖</div>
-              <h4>Study the material on the left</h4>
-              <p>Read the explanation carefully and proceed to the next step</p>
+              <h4>No exercise in this step</h4>
+              <p>Switch to the Explanation tab to view the content</p>
             </div>
           </div>
         </div>
+
+        <!-- Sidebar -->
+        <div class="sidebar-new">
+          <!-- Stats Card -->
+          <div class="stats-card-new">
+            <h3>Your Stats</h3>
+            <div class="stat-item-new">
+              <div class="stat-label-new">
+                <span>🏆</span>
+                <span>Total Score</span>
+              </div>
+              <div class="stat-value-new">{{ earnedPoints }}</div>
+            </div>
+            <div class="stat-item-new">
+              <div class="stat-label-new">
+                <span>⚡</span>
+                <span>Current Streak</span>
+              </div>
+              <div class="stat-value-new">{{ consecutiveCorrect }} 🔥</div>
+            </div>
+            <div class="stat-item-new">
+              <div class="stat-label-new">
+                <span>⭐</span>
+                <span>Stars</span>
+              </div>
+              <div class="stat-value-new">{{ stars }}</div>
+            </div>
+            <div class="stat-item-new">
+              <div class="stat-label-new">
+                <span>📚</span>
+                <span>Progress</span>
+              </div>
+              <div class="stat-value-new">{{ Math.round(progressPercentage) }}%</div>
+            </div>
+          </div>
+
+          <!-- Pro Tip Card -->
+          <div class="tip-card-new">
+            <div class="tip-header-new">
+              <span>💡</span>
+              <h3>Pro Tip</h3>
+            </div>
+            <p class="tip-content-new">{{ currentTab === 'explanation' ? 'Read through the explanation carefully - understanding the concept will help you solve problems faster!' : 'Take your time with the exercise. First attempts earn more points!' }}</p>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -430,6 +499,9 @@ export default {
     const extractionResults = ref(null)
     const migrationLoading = ref(false)
     const showMigrationPanel = ref(false)
+
+    // Tab switching state
+    const currentTab = ref('explanation')
 
     // Problem reporting state
     const showProblemReportModal = ref(false)
@@ -1748,6 +1820,8 @@ return { success: false, error: error.message }
       showMigrationPanel,
       migrationLoading,
       extractionResults,
+      currentTab,
+      consecutiveCorrect: lessonOrchestrator.consecutiveCorrect,
 
       // AI Explanation and Chat
       showExplanationHelp: explanation.showExplanationHelp,
