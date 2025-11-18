@@ -477,13 +477,15 @@ const exerciseMeta = computed(() => {
 const isGameMode = computed(() => {
   if (!props.currentExercise) return false;
 
-  // Robust check for game types based on JSON structure
+  // Enhanced detection for the object returned by LessonPage
   return props.currentExercise.type === 'game' ||
          Boolean(props.currentExercise.gameType) ||
          Boolean(props.currentExercise.gameData) ||
          Boolean(props.currentExercise.gameConfig) || // Matches JSON "gameConfig"
          props.currentExercise.type === 'basket-catch' ||
-         props.currentExercise.type === 'whack-a-mole';
+         props.currentExercise.type === 'whack-a-mole' ||
+         props.currentExercise.gameType === 'basket-catch' ||
+         props.currentExercise.gameType === 'whack-a-mole';
 });
 
 // Extract game type from exercise data
