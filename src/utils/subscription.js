@@ -103,7 +103,6 @@ const now = new Date();
     const existingExpiry = new Date(existingSubscription.expiryDate);
     if (existingExpiry > now) {
       // Keep existing expiry if still valid
-}`);
       subscriptionData = {
         ...existingSubscription,
         lastUpdated: now.toISOString(),
@@ -116,7 +115,6 @@ subscriptionData = createNewSubscription(plan, now, expiryDate, source);
     }
   } else {
     // Create new subscription (fresh activation)
-}`);
     subscriptionData = createNewSubscription(plan, now, expiryDate, source);
   }
 
@@ -131,7 +129,6 @@ subscriptionData = createNewSubscription(plan, now, expiryDate, source);
     localStorage.setItem('plan', plan);
     localStorage.setItem('subscriptionStatus', 'active');
     localStorage.setItem('serverConfirmedSubscription', 'true');
-.toLocaleDateString()}`);
   } catch (error) {
 }
 
@@ -204,7 +201,6 @@ return false;
   const expiryDate = new Date(subscription.expiryDate);
   const isValid = now < expiryDate;
   const daysRemaining = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
-` : 'Expired'}`);
 
   return isValid;
 }
@@ -282,7 +278,6 @@ handleSubscriptionExpiry(subscription);
       const now = new Date();
       const expiryDate = new Date(subscription.expiryDate);
       const daysRemaining = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
-`);
 
       // Show warning if expiring soon (less than 3 days)
       if (daysRemaining <= 3 && daysRemaining > 0) {
@@ -426,7 +421,6 @@ try {
           } catch (eventError) {
 }
         });
-.toLocaleDateString()}`);
 
         return {
           success: true,

@@ -151,19 +151,24 @@ export function useSound() {
       audio.playbackRate = options.playbackRate || 1.0
       
       // Event handlers
-      audio.addEventListener('loadstart', () => {      })
-      
+      audio.addEventListener('loadstart', () => {
+      })
+
       audio.addEventListener('canplay', () => {
-        isLoading.value = false      })
-      
+        isLoading.value = false
+      })
+
       audio.addEventListener('play', () => {
-        isPlaying.value = true      })
-      
+        isPlaying.value = true
+      })
+
       audio.addEventListener('ended', () => {
-        isPlaying.value = false      })
-      
+        isPlaying.value = false
+      })
+
       audio.addEventListener('error', (event) => {
-        const error = `Audio error: ${event.target.error?.message || 'Unknown error'}`        soundError.value = error
+        const error = `Audio error: ${event.target.error?.message || 'Unknown error'}`
+        soundError.value = error
         isLoading.value = false
         isPlaying.value = false
       })
@@ -253,8 +258,10 @@ export function useSound() {
   const setVoice = (voiceName) => {
     const voice = speechVoices.value.find(v => v.name === voiceName)
     if (voice) {
-      currentVoice.value = voice      return true
-    } else {      return false
+      currentVoice.value = voice
+      return true
+    } else {
+      return false
     }
   }
   

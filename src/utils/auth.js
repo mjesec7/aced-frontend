@@ -141,7 +141,6 @@ const lastServerLoad = localStorage.getItem('lastServerLoad');
       const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
 
       if (!lastServerLoad || parseInt(lastServerLoad) < fiveMinutesAgo) {
-');
         await store.dispatch('user/loadUserFromServer');
       }
       return true;
@@ -439,8 +438,6 @@ try {
       localStorage.removeItem('validSubscriptionDetected');
       localStorage.removeItem('preserveStatusDuringAuth');
     } else {
-');
-      
       // Normal clearing for truly free users
       await store.dispatch('user/logout');
       store.commit('logout');

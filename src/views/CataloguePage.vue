@@ -700,9 +700,7 @@ this.isLoading = true;
         // Try to fetch content using new mode-based endpoints
         try {
           if (this.isSchoolMode) {
-const result = await getTopicsGrouped();
-
-);
+            const result = await getTopicsGrouped();
 
             if (result.success && result.data) {
               this.processModeContent(result.data, 'school');
@@ -809,9 +807,6 @@ this.courses = Array.from(coursesMap.values()).map(course => ({
      * @param {String} mode - 'school' or 'study-centre'
      */
     processModeContent(data, mode) {
-? data[0] : null
-      });
-
       if (mode === 'school') {
         // School Mode: data is grouped { subject: { level: [topics] } }
         const allCourses = [];
@@ -861,10 +856,7 @@ return {
             inStudyPlan: this.studyPlanTopics.includes(course._id || course.id || course.topicId),
           };
         });
-}
-
-      // Log first few courses for debugging
-);
+      }
     },
 
     // --- FILTER & PAGINATION HANDLERS ---

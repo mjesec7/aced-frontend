@@ -109,9 +109,11 @@ export function useAuth() {
       authError.value = null
       
       const userCredential = await signInWithEmailAndPassword(auth, email, password)
-      const user = userCredential.user      return { success: true, user }
-      
-    } catch (error) {      authError.value = getReadableAuthError(error)
+      const user = userCredential.user
+      return { success: true, user }
+
+    } catch (error) {
+      authError.value = getReadableAuthError(error)
       return { success: false, error: authError.value }
     } finally {
       isLoading.value = false
@@ -169,10 +171,12 @@ export function useAuth() {
         // Use popup for desktop
         result = await signInWithPopup(auth, provider)
       }
-      
-      const user = result.user      return { success: true, user }
-      
-    } catch (error) {      authError.value = getReadableAuthError(error)
+
+      const user = result.user
+      return { success: true, user }
+
+    } catch (error) {
+      authError.value = getReadableAuthError(error)
       return { success: false, error: authError.value }
     } finally {
       isLoading.value = false
@@ -225,10 +229,12 @@ export function useAuth() {
   const resetPassword = async (email) => {    
     try {
       authError.value = null
-      
-      await sendPasswordResetEmail(auth, email)      return { success: true }
-      
-    } catch (error) {      authError.value = getReadableAuthError(error)
+
+      await sendPasswordResetEmail(auth, email)
+      return { success: true }
+
+    } catch (error) {
+      authError.value = getReadableAuthError(error)
       return { success: false, error: authError.value }
     }
   }
@@ -267,10 +273,12 @@ export function useAuth() {
       if (!currentUser.value) {
         throw new Error('No authenticated user')
       }
-      
-      const token = await currentUser.value.getIdToken(true)      return { success: true, token }
-      
-    } catch (error) {      return { success: false, error: error.message }
+
+      const token = await currentUser.value.getIdToken(true)
+      return { success: true, token }
+
+    } catch (error) {
+      return { success: false, error: error.message }
     }
   }
 

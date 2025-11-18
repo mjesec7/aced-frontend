@@ -43,7 +43,6 @@ const handleGlobalSubscriptionChange = (event) => {
     if (!['free', 'start', 'pro', 'premium'].includes(actualPlan)) {
       actualPlan = 'free';
     }
-`);
 
     // Update page title
     const planLabel = actualPlan === 'pro' ? 'Pro' : actualPlan === 'start' ? 'Start' : 'Free';

@@ -634,8 +634,7 @@ return plan;
     testAccess: (feature, plans = ['start', 'pro']) => {
       const currentPlan = getEffectiveUserPlan();
       const hasAccess = plans.includes(currentPlan);
-}]:`, hasAccess);
-return hasAccess;
+      return hasAccess;
     },
     goTo: (path) => router.push(path),
     currentRoute: () => {
@@ -658,8 +657,6 @@ navigateToPayment(router, plan, {
       })));
     }
   };
-
-');
 }
 
 export default router;

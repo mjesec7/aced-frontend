@@ -7,8 +7,6 @@ export function setupGlobalHelpers(store, eventBus) {
   // 📢 EMIT USER STATUS CHANGE
   // ============================================================================
   window.emitUserStatusChange = (oldStatus, newStatus, source = 'unknown') => {
-`);
-
     const validStatuses = ['free', 'start', 'pro', 'premium'];
     if (!validStatuses.includes(newStatus)) {
 return;
@@ -242,8 +240,6 @@ return 'free';
   // 📦 UPDATE USER SUBSCRIPTION (EXTERNAL HOOK)
   // ============================================================================
   window.updateUserSubscription = (newPlan, source = 'external') => {
-`);
-
     if (!['free', 'start', 'pro'].includes(newPlan)) {
 return false;
     }

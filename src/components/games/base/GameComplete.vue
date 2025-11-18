@@ -164,8 +164,9 @@ const shareResults = () => {
       title: 'My Game Results',
       text: text,
       url: window.location.href
-    }).catch(err =>
-);
+    }).catch(err => {
+      // Silently handle share cancellation
+    });
   } else {
     // Fallback: copy to clipboard
     navigator.clipboard.writeText(text).then(() => {

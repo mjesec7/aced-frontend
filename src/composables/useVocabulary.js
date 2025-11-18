@@ -30,11 +30,7 @@ export function useVocabulary() {
     if (!validWords.length) return null
     
     const currentWord = validWords[vocabularyModal.currentIndex] || null
-    
-    if (process.env.NODE_ENV === 'development') { : null
-      })
-    }
-    
+
     return currentWord
   })
   
@@ -1005,7 +1001,7 @@ export function useVocabulary() {
     window.extractWordProperty = extractWordProperty
     window.detectVocabularyPatterns = detectVocabularyPatterns
     window.getStudySessionStats = getStudySessionStats
-    window.exportVocabularyData = exportVocabularyData - Complete state inspection') - Validate step data') - Property extraction') - Pattern analysis') - Session statistics') - Export functionality')
+    window.exportVocabularyData = exportVocabularyData
   }
 
   return {
