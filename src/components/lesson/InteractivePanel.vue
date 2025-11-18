@@ -89,15 +89,15 @@
           </div>
 
           <div v-else-if="exerciseType === 'fill-blanks'" class="exercise-type-container">
-            <article v-for="question in currentExercise.questions" :key="question.id" class="exercise-card">
+            <article v-for="question in normalizedExercise?.questions" :key="question.id" class="exercise-card">
               <div class="question-text fill-blank-sentence">
                 <template v-for="(part, pIndex) in question.sentenceParts" :key="pIndex">
                   <span>{{ part.text }}</span>
-                  <input 
+                  <input
                     v-if="part.blank"
-                    type="text" 
-                    :value="userAnswer[part.blank.id] || ''" 
-                    @input="updateFillBlankAnswer(part.blank.id, $event.target.value)" 
+                    type="text"
+                    :value="userAnswer[part.blank.id] || ''"
+                    @input="updateFillBlankAnswer(part.blank.id, $event.target.value)"
                     :placeholder="part.blank.placeholder"
                     :disabled="showCorrectAnswer"
                     class="fill-blank-input"
@@ -134,16 +134,16 @@
           </div>
 
           <div v-else-if="exerciseType === 'structure'" class="exercise-type-container">
-             <article v-for="question in currentExercise.questions" :key="question.id" class="exercise-card">
+             <article v-for="question in normalizedExercise?.questions" :key="question.id" class="exercise-card">
                <p class="question-text">{{ question.instruction }}</p>
-               <div 
-                 class="word-bank" 
+               <div
+                 class="word-bank"
                  @dragover.prevent @drop="onDrop(question.id, $event)"
                >
-                 <div 
-                   v-for="(word, wIndex) in (userAnswer[question.id] || [])" 
-                   :key="`${question.id}-${word}-${wIndex}`" 
-                   draggable="true" 
+                 <div
+                   v-for="(word, wIndex) in (userAnswer[question.id] || [])"
+                   :key="`${question.id}-${word}-${wIndex}`"
+                   draggable="true"
                    @dragstart="onDragStart(question.id, wIndex, $event)"
                    class="word-button"
                    :class="getStructureWordClasses(question.id, wIndex)"
@@ -156,6 +156,24 @@
                  <p class="correct-answer-text">Correct order: "{{ question.correctOrder.join(' ') }}"</p>
                </div>
              </article>
+          </div>
+
+          <!-- Fallback for unknown exercise types (e.g., timed-practice) -->
+          <div v-else class="exercise-type-container">
+            <article class="exercise-card">
+              <h3 class="card-subtitle">{{ currentExercise.title || 'Challenge' }}</h3>
+              <div class="instruction-text" v-if="currentExercise.instructions || currentExercise.instruction">
+                <p>{{ currentExercise.instructions || currentExercise.instruction || '' }}</p>
+              </div>
+              <p v-else class="question-text">{{ currentExercise.question || 'Complete the activity.' }}</p>
+
+              <textarea
+                v-model="userAnswer"
+                placeholder="Type your answer here..."
+                :disabled="showCorrectAnswer"
+                class="answer-textarea"
+              ></textarea>
+            </article>
           </div>
 
         </div>
@@ -205,6 +223,7 @@ const {
 const localMatchingAnswers = ref({});
 const draggedItem = ref({ questionId: null, wordIndex: null });
 const shuffledRightOptions = ref([]);
+const normalizedExercise = ref(null);
 
 const canSubmit = computed(() => {
   // For matching exercises, check the local state
@@ -224,74 +243,85 @@ const canSubmit = computed(() => {
 });
 
 // Watch for exercise changes to reset state and prepare data
+// Clone the exercise to avoid prop mutation
 watch(() => props.currentExercise, (newEx) => {
   resetExerciseState();
-  if (newEx) {
-    switch(newEx.type) {
-        case 'reading':
-        case 'short-answer':
-            if (newEx.questions && newEx.questions.length > 0) {
-                userAnswer.value = Array(newEx.questions.length).fill('');
-            } else {
-                userAnswer.value = '';
-            }
-            break;
-        case 'matching':
-            localMatchingAnswers.value = {};
-            userAnswer.value = {};
-            if (newEx.pairs) {
-                const rightOptions = newEx.pairs.map(p => p.correctMatch || p.right);
-                shuffledRightOptions.value = [...rightOptions].sort(() => Math.random() - 0.5);
-            } else {
-                shuffledRightOptions.value = [];
-            }
-            break;
-        case 'structure':
-             userAnswer.value = newEx.questions.reduce((acc, q) => {
-                acc[q.id] = [...q.words].sort(() => Math.random() - 0.5);
-                return acc;
-            }, {});
-            break;
-        case 'fill-blanks':
-             userAnswer.value = {};
-
-             // Handle both array of questions and single question structures
-             const questionsArray = newEx.questions || [newEx];
-
-             questionsArray.forEach(q => {
-                q.sentenceParts = [];
-
-                // Use template, sentence, or question property for the text
-                let remainingSentence = q.template || q.sentence || q.question || '';
-
-                // Get blanks array
-                const blanks = q.blanks || [];
-
-                blanks.forEach((blank, index) => {
-                    const split = remainingSentence.split('_____');
-                    q.sentenceParts.push({ text: split[0], blank: null });
-
-                    // Create blank object with proper structure
-                    const blankObj = typeof blank === 'string'
-                        ? { id: `blank_${index}`, correctAnswer: blank, placeholder: '...' }
-                        : { id: blank.id || `blank_${index}`, correctAnswer: blank.correctAnswer || blank, placeholder: blank.placeholder || '...' };
-
-                    q.sentenceParts.push({ text: '', blank: blankObj });
-                    remainingSentence = split.slice(1).join('_____');
-                });
-                q.sentenceParts.push({ text: remainingSentence, blank: null });
-            });
-
-            // If it was a single question, update the main exercise object
-            if (!newEx.questions) {
-                newEx.questions = questionsArray;
-            }
-            break;
-        default:
-            userAnswer.value = null;
-            break;
-    }
+  if (!newEx) {
+    normalizedExercise.value = null;
+    return;
   }
+
+  // Clone the exercise to avoid prop mutation
+  const exerciseClone = JSON.parse(JSON.stringify(newEx));
+
+  switch(exerciseClone.type) {
+      case 'reading':
+      case 'short-answer':
+          if (exerciseClone.questions && exerciseClone.questions.length > 0) {
+              userAnswer.value = Array(exerciseClone.questions.length).fill('');
+          } else {
+              userAnswer.value = '';
+          }
+          break;
+      case 'matching':
+          localMatchingAnswers.value = {};
+          userAnswer.value = {};
+          if (exerciseClone.pairs) {
+              const rightOptions = exerciseClone.pairs.map(p => p.correctMatch || p.right);
+              shuffledRightOptions.value = [...rightOptions].sort(() => Math.random() - 0.5);
+          } else {
+              shuffledRightOptions.value = [];
+          }
+          break;
+      case 'structure':
+           userAnswer.value = exerciseClone.questions.reduce((acc, q) => {
+              acc[q.id] = [...q.words].sort(() => Math.random() - 0.5);
+              return acc;
+          }, {});
+          break;
+      case 'fill-blanks':
+           userAnswer.value = {};
+
+           // Handle both array of questions and single question structures
+           const questionsArray = exerciseClone.questions || [exerciseClone];
+
+           // Perform normalization on the clone
+           questionsArray.forEach(q => {
+              q.sentenceParts = [];
+
+              // Use template, sentence, or question property for the text
+              let remainingSentence = q.template || q.sentence || q.question || '';
+
+              // Get blanks array
+              const blanks = q.blanks || [];
+
+              blanks.forEach((blank, index) => {
+                  const split = remainingSentence.split('_____');
+                  q.sentenceParts.push({ text: split[0], blank: null });
+
+                  // Create blank object with proper structure
+                  const blankObj = typeof blank === 'string'
+                      ? { id: `blank_${index}`, correctAnswer: blank, placeholder: '...' }
+                      : { id: blank.id || `blank_${index}`, correctAnswer: blank.correctAnswer || blank, placeholder: blank.placeholder || '...' };
+
+                  q.sentenceParts.push({ text: '', blank: blankObj });
+                  remainingSentence = split.slice(1).join('_____');
+              });
+              q.sentenceParts.push({ text: remainingSentence, blank: null });
+          });
+
+          // If it was a single question, update the clone
+          if (!exerciseClone.questions) {
+              exerciseClone.questions = questionsArray;
+          }
+          break;
+      default:
+          userAnswer.value = null;
+          break;
+  }
+
+  // Store the normalized exercise
+  normalizedExercise.value = exerciseClone;
 }, { immediate: true, deep: true });
 
 const exerciseType = computed(() => props.currentExercise?.type || 'short-answer');
@@ -410,7 +440,8 @@ const getFillBlankInputClasses = (blankId, correctAnswer) => {
 
 const getStructureWordClasses = (questionId, wordIndex) => {
     if (!showCorrectAnswer.value) return '';
-    const questionData = props.currentExercise.questions.find(q=>q.id === questionId);
+    const questionData = normalizedExercise.value?.questions?.find(q=>q.id === questionId);
+    if (!questionData) return '';
     const isCorrect = (userAnswer.value[questionId] || [])[wordIndex] === questionData.correctOrder[wordIndex];
     return isCorrect ? 'is-correct' : 'is-incorrect';
 };
@@ -446,11 +477,13 @@ const exerciseMeta = computed(() => {
 const isGameMode = computed(() => {
   if (!props.currentExercise) return false;
 
-  // Check if exercise type is 'game' or if gameType property exists
+  // Robust check for game types based on JSON structure
   return props.currentExercise.type === 'game' ||
          Boolean(props.currentExercise.gameType) ||
          Boolean(props.currentExercise.gameData) ||
-         Boolean(props.currentExercise.gameConfig);
+         Boolean(props.currentExercise.gameConfig) || // Matches JSON "gameConfig"
+         props.currentExercise.type === 'basket-catch' ||
+         props.currentExercise.type === 'whack-a-mole';
 });
 
 // Extract game type from exercise data

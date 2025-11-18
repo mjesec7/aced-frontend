@@ -1234,7 +1234,37 @@ sound.pronounceWord?.(word)
     // EXERCISE METHODS
     // ==========================================
     const getCurrentExercise = () => {
-      const exercise = exercises.getCurrentExercise(lessonOrchestrator.currentStep.value)
+      const step = lessonOrchestrator.currentStep.value
+      if (!step) return null
+
+      // ✅ FIX: Handle Steps with Data Arrays (Exercises/Quizzes)
+      // If step.data is an array, pick the specific item based on currentExerciseIndex
+      if (['exercise', 'quiz', 'practice'].includes(step.type) && Array.isArray(step.data)) {
+        // Use the index from exercises composable, default to 0
+        const index = exercises.currentExerciseIndex.value || 0
+        const specificExercise = step.data[index]
+
+        // Ensure we return a valid object and trigger initialization if it changes
+        if (specificExercise) {
+          const exerciseId = specificExercise.id || `${step.id}_${index}`
+
+          if (initializationTracker.value.currentExerciseId !== exerciseId) {
+            initializationTracker.value = { currentExerciseId: exerciseId, initialized: false }
+            nextTick(() => {
+              exercises.initializeCurrentExerciseData(specificExercise)
+              initializationTracker.value.initialized = true
+
+              if (specificExercise.type === 'drag-drop') {
+                ensureDragDropInitialization()
+              }
+            })
+          }
+          return specificExercise
+        }
+      }
+
+      // Fallback to existing logic (for single-item steps or games)
+      const exercise = exercises.getCurrentExercise(step)
       if (exercise) {
         const exerciseId = exercise.id || `${exercise.type}_${exercise.question?.substring(0, 20)}`
         if (initializationTracker.value.currentExerciseId !== exerciseId) {
@@ -1242,7 +1272,7 @@ sound.pronounceWord?.(word)
           nextTick(() => {
             exercises.initializeCurrentExerciseData(exercise)
             initializationTracker.value.initialized = true
-            
+
             if (exercise.type === 'drag-drop') {
               nextTick(() => {
                 ensureDragDropInitialization()
@@ -1717,8 +1747,29 @@ return { success: false, error: error.message }
       }
     })
 
+    // Watch for step changes and reset exercise index
+    watch(() => lessonOrchestrator.currentStep.value, (newStep, oldStep) => {
+      // Reset exercise index when changing high-level steps
+      if (newStep?.id !== oldStep?.id) {
+        exercises.currentExerciseIndex.value = 0
+
+        // Also reset initialization tracker
+        initializationTracker.value = { currentExerciseId: null, initialized: false }
+      }
+
+      // Check for drag-drop exercises
+      if (newStep && newStep.type === 'exercise') {
+        const currentExercise = getCurrentExercise()
+        if (currentExercise && currentExercise.type === 'drag-drop') {
+          nextTick(() => {
+            ensureDragDropInitialization()
+          })
+        }
+      }
+    }, { immediate: false })
+
     // Watch for exercise changes and ensure drag-drop is initialized
-    watch(() => [lessonOrchestrator.currentStep.value, exercises.currentExerciseIndex.value], 
+    watch(() => [lessonOrchestrator.currentStep.value, exercises.currentExerciseIndex.value],
       ([newStep, newIndex], [oldStep, oldIndex]) => {
         if (newStep && newStep.type === 'exercise') {
           const currentExercise = getCurrentExercise()
@@ -1728,7 +1779,7 @@ return { success: false, error: error.message }
             })
           }
         }
-      }, 
+      },
       { immediate: true }
     )
 
