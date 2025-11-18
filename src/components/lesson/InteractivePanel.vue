@@ -254,17 +254,38 @@ watch(() => props.currentExercise, (newEx) => {
             break;
         case 'fill-blanks':
              userAnswer.value = {};
-             newEx.questions.forEach(q => {
+
+             // Handle both array of questions and single question structures
+             const questionsArray = newEx.questions || [newEx];
+
+             questionsArray.forEach(q => {
                 q.sentenceParts = [];
-                let remainingSentence = q.sentence;
-                q.blanks.forEach(blank => {
+
+                // Use template, sentence, or question property for the text
+                let remainingSentence = q.template || q.sentence || q.question || '';
+
+                // Get blanks array
+                const blanks = q.blanks || [];
+
+                blanks.forEach((blank, index) => {
                     const split = remainingSentence.split('_____');
                     q.sentenceParts.push({ text: split[0], blank: null });
-                    q.sentenceParts.push({ text: '', blank: blank });
+
+                    // Create blank object with proper structure
+                    const blankObj = typeof blank === 'string'
+                        ? { id: `blank_${index}`, correctAnswer: blank, placeholder: '...' }
+                        : { id: blank.id || `blank_${index}`, correctAnswer: blank.correctAnswer || blank, placeholder: blank.placeholder || '...' };
+
+                    q.sentenceParts.push({ text: '', blank: blankObj });
                     remainingSentence = split.slice(1).join('_____');
                 });
                 q.sentenceParts.push({ text: remainingSentence, blank: null });
             });
+
+            // If it was a single question, update the main exercise object
+            if (!newEx.questions) {
+                newEx.questions = questionsArray;
+            }
             break;
         default:
             userAnswer.value = null;
