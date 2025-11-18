@@ -52,10 +52,12 @@ const i18n = createI18n({
 // 🚀 FIREBASE AUTH PERSISTENCE SETUP
 // ============================================================================
 setPersistence(auth, browserLocalPersistence)
-  .then(() =>
-)
-  .catch((error) =>
-);
+  .then(() => {
+    console.log('🔥 Firebase auth persistence set to LOCAL');
+  })
+  .catch((error) => {
+    console.error('❌ Firebase persistence setup failed:', error);
+  });
 
 // ============================================================================
 // 📊 TRACK APP LIFECYCLE
