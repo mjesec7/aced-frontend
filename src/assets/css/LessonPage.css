@@ -2062,3 +2062,86 @@
     justify-content: center;
   }
 }
+
+/* ================================
+   MODERN SPLIT SCREEN LAYOUT
+   ================================ */
+
+.lesson-split-layout {
+  display: grid;
+  grid-template-columns: 1fr 400px; /* Fluid content, Fixed interactive width */
+  gap: 1.5rem;
+  height: calc(100vh - 70px); /* Subtract header height */
+  padding: 1rem;
+  background-color: #f8f9fc;
+  overflow: hidden;
+}
+
+.split-panel {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  overflow-y: auto;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.content-side {
+  border-right: 1px solid #eee;
+}
+
+.interactive-container {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 300px;
+}
+
+.sidebar-compact {
+  padding: 1rem;
+  background: #fff;
+  border-top: 1px solid #f0f0f0;
+}
+
+.stats-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.stat-pill {
+  background: #f3f4f6;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #374151;
+}
+
+.ai-tip-card {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.tip-icon {
+  font-size: 1.2rem;
+}
+
+.tip-text {
+  font-size: 0.85rem;
+  color: #1e40af;
+  line-height: 1.4;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 1024px) {
+  .lesson-split-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 1fr;
+  }
+}

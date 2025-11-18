@@ -187,59 +187,39 @@
         </div>
       </div>
 
-      <!-- Grid Layout: Main Content + Sidebar -->
-      <div class="lesson-grid-container">
+      <!-- Modern Split Screen Layout -->
+      <div class="lesson-split-layout">
 
-        <!-- Main Content Area -->
-        <div class="main-content-new">
-          <!-- Tab Buttons -->
-          <div class="tab-buttons-new">
-            <button
-              :class="['tab-btn-new', { active: currentTab === 'explanation' }]"
-              @click="currentTab = 'explanation'"
-            >
-              📖 Explanation
-            </button>
-            <button
-              :class="['tab-btn-new', { active: currentTab === 'exercise' }]"
-              @click="currentTab = 'exercise'"
-              :disabled="!isInteractiveStep"
-            >
-              🎯 Exercise
-            </button>
-          </div>
+        <div class="split-panel content-side">
+          <ContentPanel
+            :current-step="currentStep"
+            :current-index="currentIndex"
+            :is-interactive-step="isInteractiveStep"
+            :current-exercise="getCurrentExercise()"
+            :current-quiz="getCurrentQuiz()"
+            :exercise-index="currentExerciseIndex"
+            :quiz-index="currentQuizIndex"
+            :total-exercises="getTotalExercises()"
+            :total-quizzes="getTotalQuizzes()"
+            :show-explanation-help="showExplanationHelp"
+            :explanation-question="explanationQuestion"
+            :explanation-ai-response="explanationAIResponse"
+            :is-loading-explanation="isLoadingExplanation"
+            :is-last-step="isLastStep"
+            @toggle-explanation-help="toggleExplanationHelp"
+            @update:explanation-question="explanationQuestion = $event"
+            @ask-explanation="askAboutExplanation"
+            @init-vocabulary="initializeVocabularyModal"
+            @pronounce="pronounceWord"
+            @next="goNext"
+            @previous="goPrevious"
+          />
+        </div>
 
-          <!-- Explanation View -->
-          <div v-show="currentTab === 'explanation'" class="explanation-view-new">
-            <ContentPanel
-              :current-step="currentStep"
-              :current-index="currentIndex"
-              :is-interactive-step="isInteractiveStep"
-              :current-exercise="getCurrentExercise()"
-              :current-quiz="getCurrentQuiz()"
-              :exercise-index="currentExerciseIndex"
-              :quiz-index="currentQuizIndex"
-              :total-exercises="getTotalExercises()"
-              :total-quizzes="getTotalQuizzes()"
-              :show-explanation-help="showExplanationHelp"
-              :explanation-question="explanationQuestion"
-              :explanation-ai-response="explanationAIResponse"
-              :is-loading-explanation="isLoadingExplanation"
-              :is-last-step="isLastStep"
-              @toggle-explanation-help="toggleExplanationHelp"
-              @update:explanation-question="explanationQuestion = $event"
-              @ask-explanation="askAboutExplanation"
-              @init-vocabulary="initializeVocabularyModal"
-              @pronounce="pronounceWord"
-              @next="goNext"
-              @previous="goPrevious"
-            />
-          </div>
+        <div class="split-panel interactive-side">
 
-          <!-- Exercise View -->
-          <div v-show="currentTab === 'exercise'" class="exercise-view-new">
-            <div v-if="isInteractiveStep">
-              <InteractivePanel
+          <div v-if="isInteractiveStep" class="interactive-container">
+             <InteractivePanel
                 :current-step="currentStep"
                 :current-exercise="getCurrentExercise()"
                 :current-quiz="getCurrentQuiz()"
@@ -280,60 +260,26 @@
                 @drop-in-zone="handleDropInZone"
                 @remove-dropped-item="handleRemoveDroppedItem"
               />
-            </div>
-            <div v-else class="no-exercise-message">
-              <div class="placeholder-icon">📖</div>
-              <h4>No exercise in this step</h4>
-              <p>Switch to the Explanation tab to view the content</p>
-            </div>
           </div>
+
+          <div class="sidebar-compact">
+             <div class="stats-row">
+                <div class="stat-pill">🏆 {{ earnedPoints }}</div>
+                <div class="stat-pill">⚡ {{ consecutiveCorrect }}</div>
+                <div class="stat-pill">⭐ {{ stars }}</div>
+             </div>
+
+             <div class="ai-tip-card">
+                <div class="tip-icon">💡</div>
+                <div class="tip-text">
+                   {{ currentStep?.type === 'explanation'
+                      ? 'Read carefully to master the concept!'
+                      : 'Take your time. Accuracy earns more points!' }}
+                </div>
+             </div>
+          </div>
+
         </div>
-
-        <!-- Sidebar -->
-        <div class="sidebar-new">
-          <!-- Stats Card -->
-          <div class="stats-card-new">
-            <h3>Your Stats</h3>
-            <div class="stat-item-new">
-              <div class="stat-label-new">
-                <span>🏆</span>
-                <span>Total Score</span>
-              </div>
-              <div class="stat-value-new">{{ earnedPoints }}</div>
-            </div>
-            <div class="stat-item-new">
-              <div class="stat-label-new">
-                <span>⚡</span>
-                <span>Current Streak</span>
-              </div>
-              <div class="stat-value-new">{{ consecutiveCorrect }} 🔥</div>
-            </div>
-            <div class="stat-item-new">
-              <div class="stat-label-new">
-                <span>⭐</span>
-                <span>Stars</span>
-              </div>
-              <div class="stat-value-new">{{ stars }}</div>
-            </div>
-            <div class="stat-item-new">
-              <div class="stat-label-new">
-                <span>📚</span>
-                <span>Progress</span>
-              </div>
-              <div class="stat-value-new">{{ Math.round(progressPercentage) }}%</div>
-            </div>
-          </div>
-
-          <!-- Pro Tip Card -->
-          <div class="tip-card-new">
-            <div class="tip-header-new">
-              <span>💡</span>
-              <h3>Pro Tip</h3>
-            </div>
-            <p class="tip-content-new">{{ currentTab === 'explanation' ? 'Read through the explanation carefully - understanding the concept will help you solve problems faster!' : 'Take your time with the exercise. First attempts earn more points!' }}</p>
-          </div>
-        </div>
-
       </div>
     </div>
 
@@ -892,22 +838,17 @@ return guestProgress[lessonId]
     // NAVIGATION METHODS
     // ==========================================
     const handleReturnToCatalogue = () => {
-      try {
-        // Use proper route name for best compatibility
-        router.push({
-          name: 'CataloguePage'
-        }).catch(err => {
-          // Fallback to path if name doesn't work
-          router.push({
-            path: '/profile/catalogue'
-          }).catch(err2 => {
-            // Last resort - direct navigation
-            window.location.href = '/profile/catalogue'
-          })
-        })
-      } catch (error) {
-window.location.href = '/profile/catalogue'
+      if (isGuestMode.value) {
+        router.push({ name: 'HomePage' });
+        return;
       }
+
+      // Use router.replace to prevent back-button loops
+      router.replace({ name: 'CataloguePage' }).catch(err => {
+         console.warn('Router navigation failed, trying path:', err);
+         // Fallback to explicit path defined in router
+         router.replace('/profile/catalogue');
+      });
     }
 
     const handleGoToHomework = () => {
@@ -948,6 +889,37 @@ window.location.href = '/profile/homeworks'
       }
     }
 
+    const addToMyCourses = async () => {
+      if (isGuestMode.value || !lessonOrchestrator.lesson.value) return;
+
+      try {
+        const userId = lessonOrchestrator.currentUser.value?.uid;
+        const lesson = lessonOrchestrator.lesson.value;
+
+        await fetch(`/api/users/${userId}/study-list`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${userToken.value}`
+          },
+          body: JSON.stringify({
+             topicId: lesson.topicId,
+             topicName: lesson.topic,
+             // Add metadata to help backend identify it
+             lessonId: lesson._id,
+             addedAt: new Date()
+          })
+        });
+      } catch (e) {
+        console.error('Failed to add to courses silently', e);
+      }
+    };
+
+    const startLesson = async () => {
+       await lessonOrchestrator.startLesson();
+       addToMyCourses(); // Fire and forget
+    };
+
     const exitLesson = () => {
 try {
         // Save progress before exit
@@ -958,13 +930,13 @@ try {
           lessonOrchestrator.saveProgress().catch(err => {
 })
         }
-        
+
         if (lessonOrchestrator.cleanup) {
           lessonOrchestrator.cleanup()
         }
-        
+
         lessonOrchestrator.showExitModal.value = false
-        
+
         // Different navigation for guests
         if (isGuestMode.value) {
           router.push({
@@ -976,10 +948,10 @@ try {
         } else {
           handleReturnToCatalogue()
         }
-        
+
       } catch (error) {
 lessonOrchestrator.showExitModal.value = false
-        
+
         // Fallback navigation
         if (isGuestMode.value) {
           window.location.href = '/'
@@ -1911,7 +1883,7 @@ return { success: false, error: error.message }
 
       // Lesson orchestrator methods
       retryLoad: lessonOrchestrator.retryLoad,
-      startLesson: lessonOrchestrator.startLesson,
+      startLesson,
       continuePreviousProgress: lessonOrchestrator.continuePreviousProgress,
       confirmExit: lessonOrchestrator.confirmExit,
       cancelExit: lessonOrchestrator.cancelExit,

@@ -361,11 +361,26 @@ export function useExercises() {
 
   const validateFillBlank = (userAnswers, exercise) => {
     if (!userAnswers || typeof userAnswers !== 'object') return false;
-    const allBlanks = exercise.questions.flatMap(q => q.blanks);
+
+    // Handle both 'exercise.questions' array AND direct 'exercise.blanks'
+    let allBlanks = [];
+
+    if (exercise.questions && Array.isArray(exercise.questions)) {
+      allBlanks = exercise.questions.flatMap(q => q.blanks || []);
+    } else if (exercise.blanks && Array.isArray(exercise.blanks)) {
+      allBlanks = exercise.blanks;
+    }
+
+    if (allBlanks.length === 0) return false;
     if (Object.keys(userAnswers).length < allBlanks.length) return false;
-    return allBlanks.every(blank => 
-      (userAnswers[blank.id] || '').trim().toLowerCase() === blank.correctAnswer.trim().toLowerCase()
-    );
+
+    return allBlanks.every(blank => {
+      const key = blank.id;
+      const userAnswer = userAnswers[key];
+      const correctAnswer = blank.correctAnswer;
+
+      return (userAnswer || '').trim().toLowerCase() === (correctAnswer || '').trim().toLowerCase();
+    });
   };
   
   const validateMatching = (userPairs, exercise) => {
