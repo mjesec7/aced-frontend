@@ -15,9 +15,23 @@
     <div class="content-step-container">
       <div class="content-padding">
         
-        <div v-if="isInteractiveStep" class="interactive-instruction-card">
+        <div v-if="isExerciseStep" class="interactive-instruction-card">
+          <div class="instruction-icon">✏️</div>
+          <h3 class="instruction-heading">Complete the exercise on the right</h3>
+          <p class="instruction-text">
+            Use the interactive panel to answer {{ totalExercisesInStep }} question(s) and continue with the lesson.
+          </p>
+        </div>
+
+        <div v-else-if="isGameStep" class="interactive-instruction-card">
+          <div class="instruction-icon">🎮</div>
+          <h3 class="instruction-heading">Play the game on the right</h3>
+          <p class="instruction-text">{{ currentStep?.instructions || 'Complete the game to proceed!' }}</p>
+        </div>
+
+        <div v-else-if="isInteractiveStep && !isExerciseStep && !isGameStep" class="interactive-instruction-card">
           <div class="instruction-icon">
-            {{ currentStep?.type === 'exercise' ? '✏️' : currentStep?.type === 'practice' ? '🧪' : '🧩' }}
+            {{ currentStep?.type === 'practice' ? '🧪' : '🧩' }}
           </div>
           <h3 class="instruction-heading">Complete the {{ getStepTypeText(currentStep?.type).toLowerCase() }} on the right</h3>
           <p class="instruction-text">Use the interactive panel to answer the question and continue with the lesson.</p>
@@ -123,6 +137,31 @@ export default {
   },
   emits: [ 'init-vocabulary', 'pronounce', 'next', 'previous' ],
 
+
+  computed: {
+    isExerciseStep() {
+      return (this.currentStep?.type === 'exercise' || this.currentStep?.type === 'practice') &&
+             !this.currentStep?.gameType;
+    },
+    isGameStep() {
+      return this.currentStep?.type === 'game' || Boolean(this.currentStep?.gameType);
+    },
+    totalExercisesInStep() {
+      if (!this.currentStep) return 0;
+
+      // Check all possible data locations
+      if (Array.isArray(this.currentStep.data)) {
+        return this.currentStep.data.length;
+      }
+      if (this.currentStep.data?.exercises) {
+        return this.currentStep.data.exercises.length;
+      }
+      if (this.currentStep.exercises) {
+        return this.currentStep.exercises.length;
+      }
+      return 1;
+    }
+  },
 
   methods: {
     getStepIcon(stepType) {
