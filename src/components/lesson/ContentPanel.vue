@@ -23,12 +23,12 @@
           </p>
         </div>
 
-        <div v-else-if="isGameStep" class="interactive-instruction-wrapper">
-          <div class="content-text" v-html="formatContent(getStepContent(currentStep))"></div>
-          <div class="mini-prompt">
-            <span class="prompt-icon">👉</span>
-            <span>Complete the activity on the right panel</span>
-          </div>
+        <div v-else-if="isGameStep" class="game-context-view">
+            <div class="context-card">
+                <h3>🎮 Game Time!</h3>
+                <p>Review the concept above while you play.</p>
+            </div>
+            <div class="content-text" v-html="formatContent(getStepContent(currentStep))"></div>
         </div>
 
         <div v-else-if="isInteractiveStep && !isExerciseStep && !isGameStep" class="interactive-instruction-card">
@@ -291,19 +291,54 @@ export default {
 /* ==       MAIN LAYOUT          == */
 /* ================================ */
 .content-panel-wrapper {
+  height: 100%;
   display: flex;
   flex-direction: column;
-  height: 100%;
   font-family: var(--font-sans, sans-serif);
   background-color: var(--background);
   color: var(--foreground);
 }
 .content-step-container {
-  flex-grow: 1;
+  flex: 1;
   overflow-y: auto;
+  padding: 24px; /* Reduced padding */
 }
 .content-padding {
   padding: 1.5rem;
+}
+
+/* Responsive Text */
+.content-text {
+  font-size: clamp(1rem, 2.5vmin, 1.2rem); /* Responsive text size */
+  line-height: 1.6;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Game Context View */
+.game-context-view {
+  padding: 1rem 0;
+}
+
+.context-card {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: white;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.context-card h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.context-card p {
+  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.9;
 }
 
 /* ================================ */
