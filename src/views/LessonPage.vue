@@ -1209,7 +1209,10 @@ sound.pronounceWord?.(word)
       const step = lessonOrchestrator.currentStep.value
       if (!step) return null
 
-      // ✅ FIX: Explicitly handle Game Steps
+      // ✅ DEBUG: Check what step we are actually on
+      console.log('Current Step Type:', step.type, 'Index:', lessonOrchestrator.currentIndex.value)
+
+      // ✅ CRITICAL FIX: Force Game Object Creation
       // GAME RENDERING EXPLANATION:
       // Games in the lesson JSON have type='game' or gameType property (e.g., 'basket-catch', 'whack-a-mole')
       // Previously, games were returning null because useExercises.getCurrentExercise() skipped game steps
@@ -1227,21 +1230,32 @@ sound.pronounceWord?.(word)
       //   instructions: 'Play the game to practice!',
       //   description: 'Catch falling items'
       // }
-      if (step.type === 'game' || step.gameType) {
+      //
+      // We check for 'game' type OR if gameConfig exists in data
+      if (step.type === 'game' || step.gameType || (step.data && step.data.gameConfig)) {
+         console.log('🎮 Game Step Detected! Returning Game Object.')
+
          // Construct a standardized game object that InteractivePanel expects
          return {
-            ...step, // Spread all step properties (id, title, description, etc.)
+            _id: step._id || `game_${lessonOrchestrator.currentIndex.value}`,
             id: step.id || `game_${lessonOrchestrator.currentIndex.value}`, // Ensure unique ID
             type: 'game', // Ensure type is explicitly 'game' for InteractivePanel's isGameMode check
+            title: step.title || 'Game',
+            description: step.instructions || step.description || '',
             gameType: step.gameType || 'basket-catch', // Fallback to basket-catch if not specified
-            gameConfig: step.gameConfig || step.data || {}, // Game configuration (score, time, items)
+            // Ensure gameConfig is pulled from the right place
+            gameConfig: step.gameConfig || step.data?.gameConfig || step.data || {}, // Game configuration (score, time, items)
+            questions: step.questions || [],
             // Pass through instructions for display before/during game
-            instructions: step.instructions || step.description || "Play the game!"
+            instructions: step.instructions || step.description || "Play the game!",
+            // Pass the whole step data just in case
+            ...step
          };
       }
 
       // ✅ FIX: Handle Steps with Data Arrays (Exercises/Quizzes)
       // If step.data is an array, pick the specific item based on currentExerciseIndex
+      // Only proceed here if it is NOT a game
       if (['exercise', 'quiz', 'practice'].includes(step.type) && Array.isArray(step.data)) {
         // Use the index from exercises composable, default to 0
         const index = exercises.currentExerciseIndex.value || 0
@@ -1754,6 +1768,7 @@ return { success: false, error: error.message }
     watch(() => lessonOrchestrator.currentStep.value, (newStep, oldStep) => {
       // Reset exercise index when changing high-level steps
       if (newStep?.id !== oldStep?.id) {
+        console.log('Step changed, resetting exercise index') // Debug
         exercises.currentExerciseIndex.value = 0
 
         // Also reset initialization tracker

@@ -512,13 +512,17 @@ const exerciseMeta = computed(() => {
 const isGameMode = computed(() => {
   if (!props.currentExercise) return false;
 
+  // ✅ DEBUG: Log what we're checking
+  console.log('Checking Game Mode for:', props.currentExercise.type)
+
+  // ✅ FIX: Robust check matching the object we created in LessonPage
   // Multi-level detection strategy to catch all possible game formats:
   // 1. Check if type is explicitly 'game'
   // 2. Check if gameType property exists (preferred method)
   // 3. Check if gameData or gameConfig objects exist
   // 4. Check if type matches known game types (basket-catch, whack-a-mole)
   // 5. Check if gameType matches known game types
-  return props.currentExercise.type === 'game' ||
+  const result = props.currentExercise.type === 'game' ||
          Boolean(props.currentExercise.gameType) ||
          Boolean(props.currentExercise.gameData) ||
          Boolean(props.currentExercise.gameConfig) || // Matches JSON "gameConfig"
@@ -526,6 +530,9 @@ const isGameMode = computed(() => {
          props.currentExercise.type === 'whack-a-mole' ||
          props.currentExercise.gameType === 'basket-catch' ||
          props.currentExercise.gameType === 'whack-a-mole';
+
+  console.log('isGameMode result:', result)
+  return result
 });
 
 // Extract game type from exercise data
@@ -548,38 +555,26 @@ const gameType = computed(() => {
 const gameData = computed(() => {
   if (!isGameMode.value) return null;
 
-  // Try multiple sources for game configuration data
-  // gameConfig is preferred, gameData is legacy fallback
-  const data = props.currentExercise.gameConfig ||
-               props.currentExercise.gameData ||
-               {};
+  // Prioritize gameConfig, then gameData, then the data object itself
+  const config = props.currentExercise.gameConfig ||
+                 props.currentExercise.gameData ||
+                 props.currentExercise.data ||
+                 {};
 
   // Return normalized game data object with sensible defaults
   return {
+    // Merge config with defaults - spread config first, then override with specific values
     // Game instructions (displayed before/during game)
-    instructions: props.currentExercise.instructions ||
-                  props.currentExercise.description ||
-                  data.instructions ||
-                  'Complete the game to proceed!',
+    instructions: props.currentExercise.instructions || props.currentExercise.description || "Play the game!",
+    targetScore: 100,
+    timeLimit: 60,
+    lives: 3,
+    ...config, // Spread the config to override defaults
 
-    // Game configuration with fallback values
-    targetScore: data.targetScore || props.currentExercise.targetScore || 100,
-    timeLimit: data.timeLimit || props.currentExercise.timeLimit || 60,
-    lives: data.lives || props.currentExercise.lives || 3,
-    difficulty: data.difficulty || props.currentExercise.difficulty || 'medium',
-
-    // Game content arrays
-    items: data.items || props.currentExercise.items || [], // All items to display
-    correctAnswers: data.correctAnswers || [], // Items that give points
-    wrongAnswers: data.wrongAnswers || [], // Items that lose lives
-
-    // Optional additional data
-    gameplayData: data.gameplayData || {}, // Game-specific settings
-    questions: props.currentExercise.questions || [], // Optional Q&A format
-    content: props.currentExercise.content || null,
-
-    // Pass through any other game-specific data from the config
-    ...data
+    // Ensure critical arrays exist (override after spread)
+    correctAnswers: config.correctAnswers || [],
+    wrongAnswers: config.wrongAnswers || [],
+    items: config.items || []
   };
 });
 
