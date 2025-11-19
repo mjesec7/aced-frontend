@@ -218,7 +218,7 @@
 
         <div class="split-panel interactive-side">
 
-          <div v-if="isInteractiveStep" class="interactive-container">
+          <div v-if="isInteractiveStep || isGameStep" class="interactive-container">
              <InteractivePanel
                 :key="currentStep?.id || currentStep?._id || currentIndex"
                 :current-step="currentStep"
@@ -621,6 +621,11 @@ return guestProgress[lessonId]
 
     const isLastStep = computed(() => {
       return lessonOrchestrator.currentIndex.value >= lessonOrchestrator.steps.value.length - 1
+    })
+
+    const isGameStep = computed(() => {
+      const step = lessonOrchestrator.currentStep.value;
+      return step?.type === 'game' || !!step?.gameType;
     })
 
     const userToken = computed(() => {
@@ -1851,6 +1856,7 @@ return { success: false, error: error.message }
       progressPercentage: lessonOrchestrator.progressPercentage,
       currentStep: lessonOrchestrator.currentStep,
       isInteractiveStep: lessonOrchestrator.isInteractiveStep,
+      isGameStep,
       showPaywallModal: paymentValidation.showPaywallModal,
       showExitModal: lessonOrchestrator.showExitModal,
       lessonCompleted: lessonOrchestrator.lessonCompleted,

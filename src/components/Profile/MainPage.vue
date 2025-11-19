@@ -1952,36 +1952,6 @@ return null;
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
-@media (prefers-color-scheme: dark) {
-  .professional-dashboard { background: #111827; }
-  .header-content, .stat-card, .section-card, .course-card { background: #1f2937; border-color: #374151; }
-  .welcome-section .main-title, .stat-value, .stat-number, .section-title, .course-title, .goal-title, .activity-title, .next-lesson { color: #f9fafb; }
-  .date-text, .stat-label, .stat-text, .section-subtitle, .meta-item, .empty-text, .lessons-count, .goal-progress, .activity-time { color: #9ca3af; }
-  .stat-badge.streak { background: #36291a; border-color: #7c4a1b; }
-  .stat-badge.points { background: #2f253f; border-color: #5c3b8a; }
-  .progress-bar-container { background: #374151; }
-  .course-footer { border-top-color: #374151; }
-  .learning-dna-card { background: linear-gradient(135deg, #1f1533 0%, #2d1b4e 100%); border-color: #4c1d95; }
-  .insight-item, .dna-stat, .rec-item { background: #1f2937; border-color: #4c1d95; }
-  .cognitive-progress { background: rgba(168, 85, 247, 0.2); }
-  .tip-item { background: #422006; color: #fbbf24; }
-  .rewards-card-new { background: linear-gradient(135deg, #422006 0%, #78350f 100%); border-color: #d97706; }
-  .reward-stat-card, .achievement-badge-mini { background: #1f2937; border-color: #d97706; }
-
-  /* Dark mode for requirements card */
-  .requirements-card {
-    background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
-    border-color: #4b5563;
-  }
-  .section-icon-badge.locked {
-    background: linear-gradient(135deg, #6b7280, #4b5563);
-  }
-  .requirements-text { color: #d1d5db; }
-  .requirement-check { border-color: #4b5563; color: #6b7280; }
-  .requirement-check.completed { border-color: #10b981; }
-  .requirement-label { color: #9ca3af; }
-}
-
 /* NEW STYLES FOR REQUIREMENTS CARD */
 .requirements-card {
   background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);

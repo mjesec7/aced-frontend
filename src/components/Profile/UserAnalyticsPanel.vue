@@ -1475,22 +1475,4 @@ const fallbackName = `Урок (${lessonId.slice(-6)})`;
   .cognitive-label { flex: 0 0 120px; font-size: 0.75rem; }
 }
 
-@media (prefers-color-scheme: dark) {
-  .analytics-page { background: #111827; }
-  .header-content, .loading-state, .error-state, .stat-card, .section-card, .empty-state, .modal-card { background: #1f2937; border-color: #374151; }
-  .page-title, .stat-value, .section-title, .activity-title, .empty-state h3, .modal-header h3 { color: #f9fafb; }
-  .page-subtitle, .stat-label, .stat-subtext, .section-subtitle, .activity-meta, .empty-state p, .modal-label, .option-checkbox span { color: #9ca3af; }
-  .activity-item { background: #374151; }
-  .activity-item:hover { background: #4b5563; }
-  .action-button.secondary, .close-button { background: #374151; color: #d1d5db; border-color: #4b5563; }
-  .action-button.secondary:hover, .close-button:hover { background: #4b5563; }
-  .modal-header, .modal-footer { border-color: #374151; }
-  .modal-select { background: #374151; border-color: #4b5563; color: #f9fafb; }
-  .option-checkbox { background: #374151; border-color: #4b5563; }
-  .option-checkbox:hover { background: #4b5563; }
-  .learning-dna-section { background: linear-gradient(135deg, #1f1533 0%, #2d1b4e 100%); border-color: #4c1d95; }
-  .dna-card, .cognitive-bar, .insight-card { background: #1f2937; border-color: #4c1d95; }
-  .rewards-section { background: linear-gradient(135deg, #422006 0%, #78350f 100%); border-color: #d97706; }
-  .reward-stat, .achievement-item { background: #1f2937; border-color: #d97706; }
-}
 </style>
