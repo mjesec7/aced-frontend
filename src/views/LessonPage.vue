@@ -1210,15 +1210,32 @@ sound.pronounceWord?.(word)
       if (!step) return null
 
       // ✅ FIX: Explicitly handle Game Steps
+      // GAME RENDERING EXPLANATION:
+      // Games in the lesson JSON have type='game' or gameType property (e.g., 'basket-catch', 'whack-a-mole')
+      // Previously, games were returning null because useExercises.getCurrentExercise() skipped game steps
+      // This caused InteractivePanel to show "Loading..." indefinitely
+      //
+      // SOLUTION: Detect game steps early and construct a standardized game object
+      // This object gets passed to InteractivePanel which triggers v-if="isGameMode"
+      // The GameContainer component then receives gameData and gameType props to render the game
+      //
+      // EXPECTED JSON STRUCTURE:
+      // {
+      //   type: 'game',
+      //   gameType: 'basket-catch' | 'whack-a-mole',
+      //   gameConfig: { targetScore, timeLimit, items, correctAnswers, wrongAnswers },
+      //   instructions: 'Play the game to practice!',
+      //   description: 'Catch falling items'
+      // }
       if (step.type === 'game' || step.gameType) {
-         // Construct a standardized game object
+         // Construct a standardized game object that InteractivePanel expects
          return {
-            ...step,
-            id: step.id || `game_${lessonOrchestrator.currentIndex.value}`,
-            type: 'game', // Ensure type is explicitly 'game' for InteractivePanel logic
-            gameType: step.gameType || 'basket-catch', // Fallback
-            gameConfig: step.gameConfig || step.data || {}, // Ensure config exists
-            // Pass through instructions
+            ...step, // Spread all step properties (id, title, description, etc.)
+            id: step.id || `game_${lessonOrchestrator.currentIndex.value}`, // Ensure unique ID
+            type: 'game', // Ensure type is explicitly 'game' for InteractivePanel's isGameMode check
+            gameType: step.gameType || 'basket-catch', // Fallback to basket-catch if not specified
+            gameConfig: step.gameConfig || step.data || {}, // Game configuration (score, time, items)
+            // Pass through instructions for display before/during game
             instructions: step.instructions || step.description || "Play the game!"
          };
       }
