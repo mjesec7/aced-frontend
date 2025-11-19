@@ -539,19 +539,28 @@ const isGameMode = computed(() => {
 const gameType = computed(() => {
   if (!isGameMode.value) return null;
 
-  // ✅ FIX: Do NOT fallback to props.currentExercise.type (which is 'game')
-  // If gameType is missing, check gameConfig.
-  // If still missing, ONLY THEN fallback to basket-catch.
+  // ✅ STRICT CHECK: Only return what is explicitly in the data
+  // This prevents "defaulting" to basket-catch if whack-a-mole is requested
+  // Priority: currentExercise.gameType > gameConfig.gameType > fallback
 
   const explicitType = props.currentExercise.gameType;
   const configType = props.currentExercise.gameConfig?.gameType;
 
   // Log to debug
-  console.log('Resolving Game Type:', { explicitType, configType });
+  console.log('🎮 Resolving Game Type:', { explicitType, configType, fullExercise: props.currentExercise });
 
-  if (explicitType && explicitType !== 'game') return explicitType;
-  if (configType && configType !== 'game') return configType;
+  // Force explicit type check - avoid generic 'game' string
+  if (explicitType && explicitType !== 'game') {
+    console.log('✅ Using explicit gameType:', explicitType);
+    return explicitType;
+  }
 
+  if (configType && configType !== 'game') {
+    console.log('✅ Using gameConfig.gameType:', configType);
+    return configType;
+  }
+
+  console.log('⚠️ No specific gameType found, falling back to basket-catch');
   return 'basket-catch'; // Default fallback
 });
 

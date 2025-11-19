@@ -61,9 +61,10 @@
 
     <div v-if="!gameActive" class="start-overlay" @click="startGame">
         <div class="start-card">
+            <div class="start-icon">🎮</div>
             <h2>Ready?</h2>
-            <p>Catch the correct answer!</p>
-            <button class="start-btn">▶ Play</button>
+            <p>Drag the basket to catch the correct answer!</p>
+            <button class="start-btn">▶ Play Now</button>
         </div>
     </div>
   </div>
@@ -99,12 +100,13 @@ const feedbackText = ref('');
 const feedbackType = ref('');
 const feedbackIcon = ref('');
 
+// Colors
 const BUBBLE_COLORS = ['#FFE0B2', '#C8E6C9', '#BBDEFB', '#F8BBD0', '#E1BEE7'];
 
-// Logic
-const questions = computed(() => props.gameData.questions || [{ q: "Ready?", a: "Go" }]);
+// Questions Logic
+const questions = computed(() => props.gameData.questions || [{ q: "Ready?", a: "Go", wrong: [] }]);
 const currentQuestion = computed(() => questions.value[currentQuestionIndex.value]);
-const currentQuestionText = computed(() => currentQuestion.value?.q || "Loading...");
+const currentQuestionText = computed(() => currentQuestion.value?.q || currentQuestion.value?.question || "Loading...");
 
 // Game Loop
 const spawnItem = () => {
@@ -114,22 +116,26 @@ const spawnItem = () => {
   if (!q) return;
 
   const isCorrectSpawn = Math.random() > 0.5;
-  const text = isCorrectSpawn
-    ? (q.a || q.correctAnswer)
-    : (q.wrong || ["0"])[Math.floor(Math.random() * (q.wrong?.length || 1))];
+
+  const correctAnswer = q.a || q.correctAnswer || q.answer;
+  const wrongAnswers = q.wrong || q.wrongAnswers || ["0", "1"];
+  // Pick random wrong answer
+  const wrongAnswer = wrongAnswers[Math.floor(Math.random() * wrongAnswers.length)];
+
+  const text = isCorrectSpawn ? correctAnswer : wrongAnswer;
 
   const newItem = {
     id: `item-${itemIdCounter.value++}`,
     text: text,
     isCorrect: isCorrectSpawn,
-    x: Math.random() * 80 + 10,
+    x: Math.random() * 80 + 10, // 10% - 90%
     speed: props.gameData.difficulty === 'hard' ? 2.5 : 4,
     color: BUBBLE_COLORS[Math.floor(Math.random() * BUBBLE_COLORS.length)]
   };
 
   fallingItems.value.push(newItem);
 
-  // Cleanup
+  // Auto cleanup based on speed + buffer
   setTimeout(() => { removeItem(newItem.id); }, (newItem.speed * 1000) + 500);
 };
 
@@ -145,25 +151,27 @@ const checkCollisions = () => {
     if (!el) return;
     const itemRect = el.getBoundingClientRect();
 
-    // Collision Check
-    if (
-      itemRect.bottom >= basketRect.top + 20 &&
-      itemRect.right >= basketRect.left &&
-      itemRect.left <= basketRect.right &&
-      itemRect.top <= basketRect.bottom
-    ) {
-       catchItem(item);
+    // Collision detection using bounding boxes
+    const overlap = !(
+        itemRect.right < basketRect.left + 20 ||
+        itemRect.left > basketRect.right - 20 ||
+        itemRect.bottom < basketRect.top + 20 ||
+        itemRect.top > basketRect.bottom - 20
+    );
+
+    if (overlap) {
+        catchItem(item);
     }
   });
 };
 
 const catchItem = (item) => {
-  removeItem(item.id); // Remove immediately visual
+  removeItem(item.id);
 
   if (item.isCorrect) {
       emit('score-change', 100);
       triggerFeedback('Correct!', 'success', '✨');
-      fallingItems.value = []; // Clear screen
+      fallingItems.value = []; // Clear items for next question focus
 
       setTimeout(() => {
           if (currentQuestionIndex.value < questions.value.length - 1) {
@@ -195,7 +203,7 @@ const removeItem = (id) => {
     }
 };
 
-// Input
+// Input Handlers
 const handleMouseMove = (e) => {
     if(!gameContainer.value || !gameActive.value) return;
     const rect = gameContainer.value.getBoundingClientRect();
@@ -218,12 +226,15 @@ const handleGameClick = () => {
     if (!gameActive.value) startGame();
 };
 
+// Lifecycle
 const startGame = () => {
     gameActive.value = true;
     fallingItems.value = [];
     currentQuestionIndex.value = 0;
-    clearInterval(spawnInterval.value);
-    clearInterval(collisionInterval.value);
+
+    if (spawnInterval.value) clearInterval(spawnInterval.value);
+    if (collisionInterval.value) clearInterval(collisionInterval.value);
+
     spawnInterval.value = setInterval(spawnItem, 1400);
     collisionInterval.value = setInterval(checkCollisions, 50);
 };
@@ -235,11 +246,15 @@ const stopGame = () => {
 };
 
 watch(() => props.lives, (val) => { if(val <= 0) stopGame(); });
-onMounted(() => startGame());
+onMounted(() => {
+    // Clean start state
+    fallingItems.value = [];
+});
 onUnmounted(stopGame);
 </script>
 
 <style scoped>
+/* MAIN CONTAINER */
 .basket-catch-game {
   position: relative;
   width: 100%;
@@ -250,6 +265,8 @@ onUnmounted(stopGame);
   font-family: 'Inter', sans-serif;
   user-select: none;
   border: 4px solid white;
+  box-shadow: inset 0 0 30px rgba(0,0,0,0.05);
+  cursor: none;
 }
 
 /* HUD */
@@ -285,19 +302,21 @@ onUnmounted(stopGame);
     color: #475569;
     font-size: 0.85rem;
 }
+
 .timer-pill.pulse-red { color: #ef4444; animation: pulse 1s infinite; }
 .lives-container { display: flex; gap: 4px; }
 .heart { font-size: 1.1rem; }
 .heart.lost { opacity: 0.3; filter: grayscale(1); }
-.pause-btn { border: none; background: none; font-size: 1.2rem; cursor: pointer; }
+.pause-btn { background: none; border: none; font-size: 1.2rem; cursor: pointer; opacity: 0.6; }
 
 .question-banner { text-align: center; }
-.math-text { font-size: 2.2rem; font-weight: 900; color: #1e293b; margin: 0; }
+.math-text { font-size: 2.2rem; font-weight: 900; color: #1e293b; margin: 0; line-height: 1.1; }
+.solve-label { font-size: 0.7rem; font-weight: 800; color: #64748b; letter-spacing: 1px; }
 
-/* FALLING ITEMS */
+/* FALLING ITEMS (CSS ANIMATION) */
 .falling-orb {
     position: absolute;
-    top: -100px; /* Start off screen */
+    top: -100px; /* Start above screen */
     width: 75px;
     height: 75px;
     border-radius: 50%;
@@ -309,19 +328,14 @@ onUnmounted(stopGame);
     z-index: 10;
     border: 3px solid white;
 
-    /* ✅ KEY FIX: Pure CSS Animation */
+    /* CSS Animation controls movement */
     animation-name: fall;
     animation-timing-function: linear;
     animation-fill-mode: forwards;
 }
 
-.orb-text {
-    font-size: 1.8rem;
-    font-weight: 800;
-    color: #334155;
-}
+.orb-text { font-size: 1.8rem; font-weight: 800; color: #334155; }
 
-/* ✅ KEY FIX: Animation Definition */
 @keyframes fall {
     from { top: -15%; }
     to { top: 115%; }
@@ -334,53 +348,28 @@ onUnmounted(stopGame);
     transform: translateX(-50%);
     pointer-events: none;
     z-index: 50;
-}
-.basket-body {
-    font-size: 4.5rem;
-    filter: drop-shadow(0 10px 10px rgba(0,0,0,0.15));
-}
-
-/* FEEDBACK */
-.feedback-splash {
-    position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    background: white;
-    padding: 20px 40px;
-    border-radius: 20px;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.2);
-    text-align: center;
-    z-index: 200;
-}
-.splash-icon { font-size: 3rem; margin-bottom: 5px; }
-.splash-text { font-size: 1.8rem; font-weight: 900; }
-.feedback-splash.success .splash-text { color: #22c55e; }
-.feedback-splash.error .splash-text { color: #ef4444; }
-
-/* OVERLAY */
-.start-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(255,255,255,0.8);
-    backdrop-filter: blur(5px);
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    z-index: 300;
+}
+.basket-body { font-size: 4.5rem; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.15)); }
+.basket-label { font-size: 0.7rem; background: rgba(255,255,255,0.9); padding: 2px 8px; border-radius: 8px; font-weight: 700; color: #64748b; margin-top: -10px; }
+
+/* OVERLAYS */
+.start-overlay {
+    position: absolute; inset: 0; background: rgba(255,255,255,0.8);
+    backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; z-index: 300;
 }
 .start-card {
-    background: white;
-    padding: 30px 50px;
-    border-radius: 24px;
-    text-align: center;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    background: white; padding: 30px 50px; border-radius: 24px;
+    text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.1);
 }
+.start-icon { font-size: 3rem; margin-bottom: 10px; }
 .start-card h2 { margin: 0 0 10px 0; color: #0f172a; font-size: 1.8rem; font-weight: 800; }
-.start-card p { color: #64748b; margin-bottom: 20px; }
+.start-card p { color: #64748b; margin-bottom: 20px; font-size: 1rem; }
 .start-btn {
-    background: #3b82f6; color: white; border: none;
-    padding: 12px 32px; border-radius: 12px;
-    font-weight: 700; font-size: 1.1rem; cursor: pointer;
+    background: #3b82f6; color: white; border: none; padding: 12px 32px;
+    border-radius: 12px; font-weight: 700; font-size: 1.1rem; cursor: pointer;
     transition: all 0.3s;
 }
 .start-btn:hover {
@@ -388,6 +377,16 @@ onUnmounted(stopGame);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
 }
+
+.feedback-splash {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: white; padding: 20px 40px; border-radius: 20px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.2); text-align: center; z-index: 200;
+}
+.splash-icon { font-size: 3rem; margin-bottom: 5px; }
+.splash-text { font-size: 1.8rem; font-weight: 900; color: #1e293b; }
+.feedback-splash.success .splash-text { color: #22c55e; }
+.feedback-splash.error .splash-text { color: #ef4444; }
 
 @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 .pop-enter-active { animation: popIn 0.3s; }
@@ -425,6 +424,10 @@ onUnmounted(stopGame);
 
   .start-card h2 {
     font-size: 1.4rem;
+  }
+
+  .start-icon {
+    font-size: 2.5rem;
   }
 }
 </style>
