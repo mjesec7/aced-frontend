@@ -473,11 +473,51 @@ const exerciseMeta = computed(() => {
 // GAME MODE SUPPORT
 // ================================
 
+/**
+ * GAME RENDERING SYSTEM OVERVIEW
+ * ===============================
+ *
+ * This component (InteractivePanel) handles both regular exercises AND games.
+ * When a game step is detected, it switches from exercise rendering to game rendering.
+ *
+ * FLOW:
+ * 1. LessonPage.getCurrentExercise() detects game step and returns standardized game object
+ * 2. InteractivePanel receives game object as currentExercise prop
+ * 3. isGameMode computed detects it's a game (checks multiple properties)
+ * 4. Template uses v-if="isGameMode" to render GameContainer instead of exercise UI
+ * 5. GameContainer receives gameType and gameData props
+ * 6. GameContainer loads the appropriate game component (BasketCatch.vue, WhackAMole.vue, etc.)
+ *
+ * SUPPORTED GAMES:
+ * - basket-catch: Catch falling items (correct answers)
+ * - whack-a-mole: Click on correct answers before they disappear
+ *
+ * GAME DATA STRUCTURE (passed to GameContainer):
+ * {
+ *   instructions: 'Catch the correct grammar forms!',
+ *   targetScore: 100,      // Points needed to complete
+ *   timeLimit: 60,         // Seconds allowed
+ *   lives: 3,              // Mistakes before game over
+ *   difficulty: 'medium',  // easy | medium | hard
+ *   items: [...],          // Items to display in game
+ *   correctAnswers: [...], // Items that give points
+ *   wrongAnswers: [...],   // Items that lose lives
+ *   questions: [...],      // Optional question data
+ *   gameplayData: {...}    // Game-specific configuration
+ * }
+ */
+
 // Detect if current exercise is a game
+// This controls v-if="isGameMode" in the template
 const isGameMode = computed(() => {
   if (!props.currentExercise) return false;
 
-  // Enhanced detection for the object returned by LessonPage
+  // Multi-level detection strategy to catch all possible game formats:
+  // 1. Check if type is explicitly 'game'
+  // 2. Check if gameType property exists (preferred method)
+  // 3. Check if gameData or gameConfig objects exist
+  // 4. Check if type matches known game types (basket-catch, whack-a-mole)
+  // 5. Check if gameType matches known game types
   return props.currentExercise.type === 'game' ||
          Boolean(props.currentExercise.gameType) ||
          Boolean(props.currentExercise.gameData) ||
@@ -489,51 +529,87 @@ const isGameMode = computed(() => {
 });
 
 // Extract game type from exercise data
+// Returns: 'basket-catch' | 'whack-a-mole' | etc.
+// This tells GameContainer which game component to load
 const gameType = computed(() => {
   if (!isGameMode.value) return null;
 
-  // Priority: gameType property, then type if it's a recognized game type
+  // Priority order for extracting game type:
+  // 1. Explicit gameType property (e.g., gameType: 'basket-catch')
+  // 2. Fall back to type property if it's a game type
+  // 3. Default to 'basket-catch' if nothing is found
   return props.currentExercise.gameType ||
          props.currentExercise.type ||
          'basket-catch'; // Default fallback
 });
 
-// Extract game data for GameContainer
+// Extract and normalize game data for GameContainer
+// This creates a standardized data structure regardless of JSON format
 const gameData = computed(() => {
   if (!isGameMode.value) return null;
 
-  // Try multiple sources for game data
+  // Try multiple sources for game configuration data
+  // gameConfig is preferred, gameData is legacy fallback
   const data = props.currentExercise.gameConfig ||
                props.currentExercise.gameData ||
                {};
 
+  // Return normalized game data object with sensible defaults
   return {
+    // Game instructions (displayed before/during game)
     instructions: props.currentExercise.instructions ||
                   props.currentExercise.description ||
                   data.instructions ||
                   'Complete the game to proceed!',
+
+    // Game configuration with fallback values
     targetScore: data.targetScore || props.currentExercise.targetScore || 100,
     timeLimit: data.timeLimit || props.currentExercise.timeLimit || 60,
     lives: data.lives || props.currentExercise.lives || 3,
     difficulty: data.difficulty || props.currentExercise.difficulty || 'medium',
-    items: data.items || props.currentExercise.items || [],
-    correctAnswers: data.correctAnswers || [],
-    wrongAnswers: data.wrongAnswers || [],
-    gameplayData: data.gameplayData || {},
-    questions: props.currentExercise.questions || [],
+
+    // Game content arrays
+    items: data.items || props.currentExercise.items || [], // All items to display
+    correctAnswers: data.correctAnswers || [], // Items that give points
+    wrongAnswers: data.wrongAnswers || [], // Items that lose lives
+
+    // Optional additional data
+    gameplayData: data.gameplayData || {}, // Game-specific settings
+    questions: props.currentExercise.questions || [], // Optional Q&A format
     content: props.currentExercise.content || null,
-    // Pass through any other game-specific data
+
+    // Pass through any other game-specific data from the config
     ...data
   };
 });
 
-// Handle game completion
+/**
+ * Handle game completion event from GameContainer
+ * Called when user finishes a game (win or lose)
+ *
+ * @param {Object} result - Game result object from GameContainer
+ * @param {number} result.score - Final score achieved
+ * @param {number} result.stars - Stars earned (0-3)
+ * @param {boolean} result.completed - Whether game was completed successfully
+ * @param {number} result.accuracy - Percentage of correct answers
+ *
+ * COMPLETION CRITERIA:
+ * - result.completed = true (reached target score within time)
+ * - OR result.stars >= 2 (earned at least 2 stars)
+ *
+ * RESULT HANDLING:
+ * 1. Mark as correct/incorrect for progress tracking
+ * 2. Store game results in userAnswer for lesson orchestrator
+ * 3. Auto-advance to next step after 1.5s delay (show results briefly)
+ */
 const handleGameComplete = (result) => {
   // Mark the exercise as answered with game results
+  // Game is considered "correct" if completed or earned 2+ stars
   answerWasCorrect.value = result.completed || result.stars >= 2;
   showCorrectAnswer.value = true;
 
   // Store game results in userAnswer for tracking
+  // This gets saved to user progress and affects lesson completion stats
   userAnswer.value = {
     type: 'game',
     score: result.score,
@@ -543,12 +619,16 @@ const handleGameComplete = (result) => {
   };
 
   // Auto-advance to next exercise after a short delay
+  // Gives user time to see final score/stars
   setTimeout(() => {
     emit('next-exercise');
   }, 1500);
 };
 
-// Handle game exit (if user quits early)
+/**
+ * Handle early game exit (user quits before completion)
+ * Allows user to retry the game without penalty
+ */
 const handleGameExit = () => {
   // Reset state and allow retry
   resetExerciseState();
