@@ -345,30 +345,4 @@
       display: none;
     }
   }
-  
-  /* Dark mode support */
-  @media (prefers-color-scheme: dark) {
-    .progress-section {
-      background: #1e293b;
-      border-bottom-color: #374151;
-    }
-    
-    .progress-bar-wrapper {
-      background: #374151;
-    }
-    
-    .progress-label {
-      color: #e2e8f0;
-    }
-    
-    .marker-dot {
-      background: #1e293b;
-      border-color: #6b7280;
-    }
-    
-    .progress-marker.completed .marker-dot {
-      background: #3b82f6;
-      border-color: #3b82f6;
-    }
-  }
-  </style>
+</style>

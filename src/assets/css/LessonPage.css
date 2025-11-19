@@ -1704,18 +1704,6 @@
       padding-top: env(safe-area-inset-top);
     }
   }
-  
-  /* ================================
-     FORCE LIGHT MODE
-     ================================ */
-  
-  @media (prefers-color-scheme: dark) {
-    .lesson-page,
-    .lesson-page * {
-      color-scheme: light;
-    }
-  }
-  
   /* ================================
      PERFORMANCE OPTIMIZATIONS
      ================================ */
