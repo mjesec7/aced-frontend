@@ -1,59 +1,80 @@
 <template>
   <div
-    class="basket-catch-game"
+    class="basket-game-container"
     ref="gameContainer"
     @mousemove="handleMouseMove"
     @touchmove="handleTouchMove"
     @click="handleGameClick"
+    :class="{ 'shake-screen': isShaking }"
   >
-    <div class="game-hud-wrapper">
-        <div class="hud-card">
-            <div class="hud-row">
-                <span class="badge-pill">Math Problem {{ currentQuestionIndex + 1 }}/{{ questions.length }}</span>
-                <span class="timer-pill" :class="{ 'urgent': timeRemaining < 10 }">⏱️ {{ timeRemaining }}s</span>
+    <!-- 🟢 HEADER HUD -->
+    <div class="hud-glass-panel">
+        <div class="hud-top-row">
+            <div class="progress-pill">
+                <span class="pill-icon">🧠</span>
+                <span class="pill-text">Q{{ currentQuestionIndex + 1 }} / {{ questions.length }}</span>
             </div>
-            <div class="question-display">
-                {{ currentQuestionText }}
+
+            <div class="timer-pill" :class="{ 'pulse-red': timeRemaining < 10 }">
+                <span>⏰ {{ timeRemaining }}</span>
             </div>
-             <div class="progress-track">
-                <div
-                    class="progress-fill"
-                    :style="{ width: ((currentQuestionIndex) / questions.length * 100) + '%' }"
-                ></div>
+
+            <div class="lives-container">
+                <span v-for="i in 3" :key="i" class="heart" :class="{ 'lost': i > lives }">❤️</span>
             </div>
+
+            <button class="pause-btn" @click.stop="$emit('pause')">⏸️</button>
+        </div>
+
+        <!-- 🟢 MAIN QUESTION DISPLAY -->
+        <div class="question-banner">
+            <transition name="slide-fade" mode="out-in">
+                <h1 :key="currentQuestionIndex">{{ currentQuestionText }}</h1>
+            </transition>
         </div>
     </div>
 
-    <div class="items-layer">
+    <!-- 🟢 FALLING ITEMS LAYER -->
+    <div class="game-world">
       <div
         v-for="item in fallingItems"
         :key="item.id"
-        class="falling-item"
+        class="falling-orb"
         :style="{
           left: item.x + '%',
           top: item.y + '%',
+          backgroundColor: item.color,
           transition: item.falling ? `top ${item.speed}s linear` : 'none'
         }"
       >
-        <div class="math-bubble">
-          {{ item.text }}
-        </div>
+        <span class="orb-text">{{ item.text }}</span>
       </div>
     </div>
 
-    <div class="basket" :style="{ left: basketPosition + '%' }">
-      <div class="basket-visual">
-          <span class="basket-emoji">🗑️</span>
+    <!-- 🟢 BASKET -->
+    <div class="basket-wrapper" :style="{ left: basketPosition + '%' }">
+      <div class="basket-body">
+          <span class="basket-icon">🗑️</span>
       </div>
-      <div class="basket-label">Catch Here</div>
+      <div class="basket-guide-line"></div>
     </div>
 
-    <transition name="scale-fade">
-      <div v-if="showFeedback" class="feedback-toast" :class="feedbackType">
-         <span class="feedback-icon">{{ feedbackIcon }}</span>
-         <span class="feedback-text">{{ feedbackText }}</span>
+    <!-- 🟢 FEEDBACK OVERLAY -->
+    <transition name="pop">
+      <div v-if="showFeedback" class="feedback-splash" :class="feedbackType">
+         <div class="splash-icon">{{ feedbackIcon }}</div>
+         <div class="splash-text">{{ feedbackText }}</div>
       </div>
     </transition>
+
+    <!-- 🟢 START OVERLAY -->
+    <div v-if="!gameActive && !isPaused" class="start-overlay" @click="startGame">
+        <div class="start-card">
+            <h2>Ready to Solve?</h2>
+            <p>Drag the basket to catch the correct answer!</p>
+            <button class="start-btn">▶ Start Game</button>
+        </div>
+    </div>
   </div>
 </template>
 
@@ -64,108 +85,99 @@ const props = defineProps({
   gameData: { type: Object, required: true },
   score: { type: Number, default: 0 },
   lives: { type: Number, default: 3 },
-  timeRemaining: { type: Number, default: 60 }
+  timeRemaining: { type: Number, default: 60 },
+  isPaused: { type: Boolean, default: false }
 });
 
-const emit = defineEmits(['score-change', 'life-lost', 'item-collected', 'game-complete']);
+const emit = defineEmits(['score-change', 'life-lost', 'item-collected', 'game-complete', 'pause']);
 
 // Refs
 const gameContainer = ref(null);
 const fallingItems = ref([]);
 const basketPosition = ref(50);
-const gameActive = ref(true);
+const gameActive = ref(false); // Start inactive
 const itemIdCounter = ref(0);
 const spawnInterval = ref(null);
 const collisionInterval = ref(null);
 const currentQuestionIndex = ref(0);
+const isShaking = ref(false);
 
-// Feedback State
+// Feedback
 const showFeedback = ref(false);
 const feedbackText = ref('');
 const feedbackType = ref('');
 const feedbackIcon = ref('');
 
-// Constants
-const HIT_Y_THRESHOLD = 85;
-const BASKET_WIDTH_PERCENT = 14;
+// Colors for bubbles (Pastel Palette)
+const BUBBLE_COLORS = ['#FF9AA2', '#FFB7B2', '#FFDAC1', '#E2F0CB', '#B5EAD7', '#C7CEEA'];
 
-// Questions Data
+// --- Computed Logic ---
+
 const questions = computed(() => {
-    if (props.gameData.questions && props.gameData.questions.length > 0) {
-        return props.gameData.questions;
-    }
-    return [
-        { q: "7 x 6 = ?", a: "42", wrong: ["36", "48", "54", "49"] },
-        { q: "9 x 5 = ?", a: "45", wrong: ["54", "40", "35", "50"] },
-        { q: "8 x 8 = ?", a: "64", wrong: ["56", "72", "88", "48"] },
-        { q: "6 x 4 = ?", a: "24", wrong: ["28", "12", "36", "18"] }
+    return props.gameData.questions || [
+        { q: "2 + 2 = ?", a: "4", wrong: ["2", "5", "6"] } // Fallback
     ];
 });
 
 const currentQuestion = computed(() => questions.value[currentQuestionIndex.value]);
-const currentQuestionText = computed(() => currentQuestion.value?.q || currentQuestion.value?.question || "Loading...");
+const currentQuestionText = computed(() => currentQuestion.value?.q || "Loading...");
 
-// Spawning
+// --- Game Loop ---
+
 const spawnItem = () => {
-  if (!gameActive.value || !currentQuestion.value) return;
+  if (!gameActive.value || props.isPaused) return;
 
   const q = currentQuestion.value;
-  const correctAnswer = q.a || q.correctAnswer || q.answer;
-  const wrongAnswers = q.wrong || q.wrongAnswers || ["0", "1"];
+  const isCorrectSpawn = Math.random() > 0.5; // 50/50 chance
 
-  const isCorrectSpawn = Math.random() > 0.55; // Slightly higher chance for correct answers
-
-  let text = "";
-  let isCorrect = false;
-
-  if (isCorrectSpawn) {
-      text = correctAnswer;
-      isCorrect = true;
-  } else {
-      text = wrongAnswers[Math.floor(Math.random() * wrongAnswers.length)];
-      isCorrect = false;
-  }
+  const text = isCorrectSpawn
+      ? (q.a || q.correctAnswer)
+      : (q.wrong || ["0"])[Math.floor(Math.random() * (q.wrong?.length || 1))];
 
   const newItem = {
     id: `item-${itemIdCounter.value++}`,
     text: text,
-    isCorrect: isCorrect,
-    x: Math.random() * 85 + 5,
+    isCorrect: isCorrectSpawn,
+    x: Math.random() * 80 + 10, // 10% - 90%
     y: -15,
-    speed: 3.5, // Consistent readable speed
+    speed: props.gameData.difficulty === 'hard' ? 2.5 : 4, // Seconds to fall
+    color: BUBBLE_COLORS[Math.floor(Math.random() * BUBBLE_COLORS.length)],
     falling: false,
     startTime: Date.now()
   };
 
   fallingItems.value.push(newItem);
 
+  // Trigger animation
   setTimeout(() => {
       const item = fallingItems.value.find(i => i.id === newItem.id);
       if (item) {
           item.falling = true;
-          item.y = 125;
+          item.y = 110;
       }
   }, 50);
 
+  // Auto cleanup
   setTimeout(() => { removeItem(newItem.id); }, (newItem.speed + 1) * 1000);
 };
 
-// Collision
 const checkCollisions = () => {
-  if (!gameActive.value) return;
+  if (!gameActive.value || props.isPaused) return;
 
   fallingItems.value.forEach(item => {
       if (item.caught) return;
 
+      // Mathematical Position Calculation
       const elapsed = (Date.now() - item.startTime) / 1000;
       const progress = elapsed / item.speed;
-      const currentY = -15 + (progress * 140);
+      const currentY = -15 + (progress * 125);
 
-      if (currentY > HIT_Y_THRESHOLD && currentY < HIT_Y_THRESHOLD + 15) {
-          const basketLeft = basketPosition.value - (BASKET_WIDTH_PERCENT / 2);
-          const basketRight = basketPosition.value + (BASKET_WIDTH_PERCENT / 2);
+      // Catch Zone: 82% - 92% Y
+      if (currentY > 82 && currentY < 92) {
+          const basketLeft = basketPosition.value - 10; // +/- 10% width
+          const basketRight = basketPosition.value + 10;
 
-          if (item.x + 5 > basketLeft && item.x < basketRight) {
+          if (item.x > basketLeft && item.x < basketRight) {
               catchItem(item);
           }
       }
@@ -173,37 +185,42 @@ const checkCollisions = () => {
 };
 
 const catchItem = (item) => {
-  if (item.caught) return;
   item.caught = true;
-
   const el = document.getElementById(item.id);
-  if (el) el.style.transition = 'none';
+  if(el) el.style.transition = 'none';
 
   if (item.isCorrect) {
-      emit('score-change', 20);
-      handleCorrectAnswer();
+      handleSuccess();
   } else {
-      emit('score-change', -10);
-      emit('life-lost');
-      triggerFeedback('Oops! Try again', 'error', '❌');
+      handleFailure();
   }
-
   removeItem(item.id);
 };
 
-const handleCorrectAnswer = () => {
-    fallingItems.value = []; // Clear screen
-    triggerFeedback('Correct!', 'success', '🌟');
+const handleSuccess = () => {
+    emit('score-change', 100);
+    triggerFeedback('Great!', 'success', '✨');
 
-    if (currentQuestionIndex.value < questions.value.length - 1) {
-        setTimeout(() => {
+    // Clear items to focus on next question
+    fallingItems.value = [];
+
+    setTimeout(() => {
+        if (currentQuestionIndex.value < questions.value.length - 1) {
             currentQuestionIndex.value++;
-        }, 1200);
-    } else {
-        setTimeout(() => {
+        } else {
             emit('game-complete', { score: props.score + 100 });
-        }, 1200);
-    }
+        }
+    }, 1000);
+};
+
+const handleFailure = () => {
+    emit('score-change', -20);
+    emit('life-lost');
+    triggerFeedback('Wrong!', 'error', '💩');
+
+    // Screen shake effect
+    isShaking.value = true;
+    setTimeout(() => isShaking.value = false, 500);
 };
 
 const triggerFeedback = (text, type, icon) => {
@@ -211,28 +228,27 @@ const triggerFeedback = (text, type, icon) => {
     feedbackType.value = type;
     feedbackIcon.value = icon;
     showFeedback.value = true;
-    setTimeout(() => { showFeedback.value = false; }, 1500);
+    setTimeout(() => showFeedback.value = false, 1000);
 };
 
-const removeItem = (itemId) => {
-  const index = fallingItems.value.findIndex(i => i.id === itemId);
-  if (index !== -1) fallingItems.value.splice(index, 1);
+const removeItem = (id) => {
+    const idx = fallingItems.value.findIndex(i => i.id === id);
+    if(idx !== -1) fallingItems.value.splice(idx, 1);
 };
 
-// Controls
+// --- Input ---
+
 const handleMouseMove = (e) => {
-  if (!gameContainer.value) return;
-  const rect = gameContainer.value.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  updateBasket(x, rect.width);
+    if(!gameContainer.value || !gameActive.value) return;
+    const rect = gameContainer.value.getBoundingClientRect();
+    updateBasket(e.clientX - rect.left, rect.width);
 };
 
 const handleTouchMove = (e) => {
-  e.preventDefault();
-  if (!gameContainer.value || !e.touches[0]) return;
-  const rect = gameContainer.value.getBoundingClientRect();
-  const x = e.touches[0].clientX - rect.left;
-  updateBasket(x, rect.width);
+    e.preventDefault();
+    if(!gameContainer.value || !gameActive.value) return;
+    const rect = gameContainer.value.getBoundingClientRect();
+    updateBasket(e.touches[0].clientX - rect.left, rect.width);
 };
 
 const updateBasket = (x, width) => {
@@ -240,189 +256,238 @@ const updateBasket = (x, width) => {
     basketPosition.value = Math.max(8, Math.min(92, percent));
 };
 
-const handleGameClick = () => {};
+const handleGameClick = () => {
+    if (!gameActive.value) startGame();
+};
 
-// Lifecycle
+// --- Lifecycle ---
+
 const startGame = () => {
-  gameActive.value = true;
-  spawnInterval.value = setInterval(spawnItem, 1500);
-  collisionInterval.value = setInterval(checkCollisions, 50);
+    gameActive.value = true;
+    fallingItems.value = [];
+    currentQuestionIndex.value = 0;
+    spawnInterval.value = setInterval(spawnItem, 1500);
+    collisionInterval.value = setInterval(checkCollisions, 50);
 };
 
 const stopGame = () => {
-  gameActive.value = false;
-  clearInterval(spawnInterval.value);
-  clearInterval(collisionInterval.value);
-  fallingItems.value = [];
+    gameActive.value = false;
+    clearInterval(spawnInterval.value);
+    clearInterval(collisionInterval.value);
 };
 
-watch(() => props.lives, (val) => { if(val <= 0) stopGame(); });
-watch(() => props.timeRemaining, (val) => { if(val <= 0) stopGame(); });
-
-onMounted(startGame);
+// Cleanup
 onUnmounted(stopGame);
+watch(() => props.lives, (val) => { if(val <= 0) stopGame(); });
 </script>
 
 <style scoped>
-.basket-catch-game {
+/* === MAIN CONTAINER === */
+.basket-game-container {
   position: relative;
   width: 100%;
   height: 100%;
-  background: linear-gradient(180deg, #E0F2FE 0%, #F0F9FF 100%);
+  background: radial-gradient(circle at 50% 10%, #f8fafc, #e2e8f0);
   overflow: hidden;
   border-radius: 16px;
-  cursor: none;
+  font-family: 'Fredoka', 'Nunito', sans-serif;
+  user-select: none;
   touch-action: none;
-  font-family: 'Inter', sans-serif;
+  border: 4px solid #fff;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
 }
 
-/* === 🟢 NEW HUD STYLES === */
-.game-hud-wrapper {
+/* === HUD (Glassmorphism) === */
+.hud-glass-panel {
     position: absolute;
-    top: 20px;
-    width: 100%;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 600px;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 24px;
+    padding: 12px 24px;
+    border: 1px solid rgba(255,255,255,0.8);
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+    z-index: 100;
     display: flex;
-    justify-content: center;
-    z-index: 50; /* Ensure on top */
-    pointer-events: none;
+    flex-direction: column;
+    gap: 10px;
 }
 
-.hud-card {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(5px);
-    border-radius: 16px;
-    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.2);
-    padding: 16px 32px;
-    text-align: center;
-    min-width: 280px;
-    border: 1px solid rgba(255,255,255,0.5);
-}
-
-.hud-row {
+.hud-top-row {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 8px;
-    font-size: 0.85rem;
-    color: #64748b;
-    font-weight: 600;
+    align-items: center;
 }
 
-.question-display {
-    font-size: 2.5rem;
+.progress-pill, .timer-pill {
+    background: #fff;
+    padding: 6px 14px;
+    border-radius: 20px;
     font-weight: 800;
-    color: #1e293b;
-    letter-spacing: -1px;
-    margin-bottom: 12px;
-    text-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    color: #475569;
+    font-size: 0.9rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
-.progress-track {
-    width: 100%;
-    height: 6px;
-    background: #f1f5f9;
-    border-radius: 3px;
-    overflow: hidden;
-}
-
-.progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #3b82f6, #60a5fa);
-    transition: width 0.5s ease;
-}
-
-.timer-pill.urgent {
+.timer-pill.pulse-red {
     color: #ef4444;
-    animation: pulse 1s infinite;
+    animation: heartbeat 1s infinite;
 }
 
-/* === ITEMS === */
-.items-layer { position: absolute; inset: 0; pointer-events: none; }
-.falling-item {
-  position: absolute;
-  transform: translateX(-50%);
-  z-index: 10;
-  width: 80px; /* Fixed width for consistency */
-  display: flex;
-  justify-content: center;
+.lives-container {
+    display: flex;
+    gap: 4px;
+}
+.heart { font-size: 1.2rem; transition: filter 0.3s; }
+.heart.lost { filter: grayscale(100%) opacity(0.3); transform: scale(0.8); }
+
+.pause-btn {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+.pause-btn:hover { opacity: 1; }
+
+.question-banner h1 {
+    margin: 0;
+    font-size: 2.2rem;
+    color: #1e293b;
+    text-align: center;
+    font-weight: 900;
+    letter-spacing: -1px;
+    background: linear-gradient(45deg, #3b82f6, #2563eb);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
-.math-bubble {
-  background: white;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 1.4rem;
-  color: #334155;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-  border: 4px solid #f1f5f9; /* Neutral border */
+/* === GAME PIECES === */
+.game-world { position: absolute; inset: 0; pointer-events: none; }
+.falling-orb {
+    position: absolute;
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: translateX(-50%);
+    box-shadow:
+        inset 0 -5px 10px rgba(0,0,0,0.1),
+        0 5px 15px rgba(0,0,0,0.15);
+    z-index: 10;
+    border: 3px solid rgba(255,255,255,0.5);
+}
+
+.orb-text {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #334155;
 }
 
 /* === BASKET === */
-.basket {
-  position: absolute;
-  bottom: 20px;
-  transform: translateX(-50%);
-  pointer-events: none;
-  z-index: 40;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.basket-emoji {
-  font-size: 5rem;
-  filter: drop-shadow(0 10px 15px rgba(0,0,0,0.2));
-}
-
-.basket-label {
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: #94a3b8;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-top: -10px;
-  background: rgba(255,255,255,0.8);
-  padding: 2px 8px;
-  border-radius: 4px;
-}
-
-/* === FEEDBACK TOAST === */
-.feedback-toast {
+.basket-wrapper {
     position: absolute;
-    top: 50%;
+    bottom: 30px;
+    transform: translateX(-50%);
+    pointer-events: none;
+    z-index: 20;
+}
+
+.basket-body {
+    font-size: 5rem;
+    filter: drop-shadow(0 10px 10px rgba(0,0,0,0.2));
+    transform-origin: bottom center;
+    transition: transform 0.1s;
+}
+
+.basket-guide-line {
+    width: 2px;
+    height: 1000px;
+    background: rgba(59, 130, 246, 0.1);
+    position: absolute;
+    bottom: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: -1;
+}
+
+/* === OVERLAYS === */
+.start-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    cursor: pointer;
+}
+
+.start-card {
+    background: white;
+    padding: 30px 50px;
+    border-radius: 24px;
+    text-align: center;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+    animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.start-card h2 { margin: 0 0 10px 0; color: #0f172a; }
+.start-card p { color: #64748b; margin-bottom: 20px; }
+
+.start-btn {
+    background: #3b82f6;
+    color: white;
+    border: none;
+    padding: 12px 32px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+}
+
+.feedback-splash {
+    position: absolute;
+    top: 45%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: white;
-    padding: 16px 32px;
-    border-radius: 20px;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.2);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    z-index: 100;
+    text-align: center;
+    z-index: 300;
+    pointer-events: none;
 }
 
-.feedback-toast.success { border: 3px solid #22c55e; color: #16a34a; }
-.feedback-toast.error { border: 3px solid #ef4444; color: #dc2626; }
+.splash-icon { font-size: 4rem; margin-bottom: 5px; }
+.splash-text { font-size: 2.5rem; font-weight: 900; color: #3b82f6; text-shadow: 0 4px 0 #fff; }
+.feedback-splash.error .splash-text { color: #ef4444; }
 
-.feedback-icon { font-size: 3rem; margin-bottom: 8px; }
-.feedback-text { font-size: 1.5rem; font-weight: 800; }
+/* === ANIMATIONS === */
+.shake-screen { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
 
-.scale-fade-enter-active { animation: popIn 0.3s; }
-.scale-fade-leave-active { transition: opacity 0.2s; opacity: 0; }
-
-@keyframes popIn {
-    0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
-    80% { transform: translate(-50%, -50%) scale(1.1); }
-    100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+@keyframes shake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60% { transform: translate3d(4px, 0, 0); }
 }
 
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.6; }
-}
+@keyframes heartbeat { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+@keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.slide-fade-enter-active, .slide-fade-leave-active { transition: all 0.3s ease; }
+.slide-fade-enter-from { transform: translateY(20px); opacity: 0; }
+.slide-fade-leave-to { transform: translateY(-20px); opacity: 0; }
+.pop-enter-active { animation: popIn 0.3s; }
+.pop-leave-active { transition: opacity 0.2s; opacity: 0; }
 </style>
