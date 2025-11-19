@@ -1,49 +1,70 @@
 <template>
   <div
-    class="basket-game"
+    class="basket-catch-game"
     ref="gameContainer"
     @mousemove="handleMouseMove"
     @touchmove="handleTouchMove"
     @click="handleGameClick"
   >
-    <div class="hud-banner">
-      <div class="stats-row">
-        <span>🎯 {{ score }}</span>
-        <span>⏰ {{ timeRemaining }}</span>
-        <span>❤️ {{ lives }}</span>
-      </div>
-      <div class="q-display">
-        <span class="label">SOLVE:</span>
-        <h1 :key="currentQuestionText">{{ currentQuestionText }}</h1>
-      </div>
+    <div class="hud-glass-panel">
+        <div class="hud-top-row">
+            <div class="progress-pill">
+                <span class="pill-icon">🧩</span>
+                <span class="pill-text">Q{{ currentQuestionIndex + 1 }} / {{ questions.length }}</span>
+            </div>
+            <div class="timer-pill" :class="{ 'pulse-red': timeRemaining < 10 }">
+                <span>⏳ {{ timeRemaining }}s</span>
+            </div>
+            <div class="lives-container">
+                <span v-for="i in 3" :key="i" class="heart" :class="{ 'lost': i > lives }">❤️</span>
+            </div>
+            <button class="pause-btn" @click.stop="$emit('pause')">⏸️</button>
+        </div>
+
+        <div class="question-banner">
+            <transition name="slide-up" mode="out-in">
+                <div :key="currentQuestionIndex" class="q-content">
+                    <h1 class="math-text">{{ currentQuestionText }}</h1>
+                </div>
+            </transition>
+        </div>
     </div>
 
-    <div class="sky-layer">
+    <div class="game-world">
       <div
         v-for="item in fallingItems"
         :key="item.id"
-        class="falling-item"
+        class="falling-orb"
+        :ref="el => { if(el) itemRefs[item.id] = el }"
         :style="{
           left: item.x + '%',
           animationDuration: item.speed + 's',
           backgroundColor: item.color
         }"
-        :ref="el => { if(el) itemRefs[item.id] = el }"
       >
-        {{ item.text }}
+        <span class="orb-text">{{ item.text }}</span>
       </div>
     </div>
 
-    <div class="player-basket" :style="{ left: basketPosition + '%' }">
-      <div class="basket-graphic">🧺</div>
+    <div class="basket-wrapper" :style="{ left: basketPosition + '%' }">
+      <div class="basket-body">
+          <span class="basket-emoji">🧺</span>
+      </div>
     </div>
 
-    <div v-if="!gameActive" class="start-screen" @click="startGame">
-      <div class="msg-box">
-        <h1>Math Catch</h1>
-        <p>Catch the correct answers!</p>
-        <button class="btn-play">▶ PLAY</button>
+    <transition name="pop">
+      <div v-if="showFeedback" class="feedback-splash" :class="feedbackType">
+         <div class="splash-icon">{{ feedbackIcon }}</div>
+         <div class="splash-text">{{ feedbackText }}</div>
       </div>
+    </transition>
+
+    <div v-if="!gameActive" class="start-overlay" @click="startGame">
+        <div class="start-card">
+            <h2>Ready?</h2>
+            <p>Catch the correct answer!</p>
+            <button class="start-btn">▶ Play</button>
+        </div>
     </div>
   </div>
 </template>
@@ -55,230 +76,355 @@ const props = defineProps({
   gameData: { type: Object, required: true },
   score: { type: Number, default: 0 },
   lives: { type: Number, default: 3 },
-  timeRemaining: { type: Number, default: 60 }
+  timeRemaining: { type: Number, default: 60 },
+  isPaused: { type: Boolean, default: false }
 });
 
-const emit = defineEmits(['score-change', 'life-lost', 'game-complete', 'item-collected']);
+const emit = defineEmits(['score-change', 'life-lost', 'item-collected', 'game-complete', 'pause']);
 
+// Refs
 const gameContainer = ref(null);
 const fallingItems = ref([]);
 const itemRefs = ref({});
 const basketPosition = ref(50);
 const gameActive = ref(false);
 const itemIdCounter = ref(0);
-const loops = ref({ spawn: null, collision: null });
-const currentQIndex = ref(0);
+const spawnInterval = ref(null);
+const collisionInterval = ref(null);
+const currentQuestionIndex = ref(0);
 
-// Colors
-const COLORS = ['#FFCDD2', '#F8BBD0', '#E1BEE7', '#D1C4E9', '#C5CAE9', '#BBDEFB', '#B3E5FC', '#B2EBF2', '#B2DFDB', '#C8E6C9'];
+// Feedback
+const showFeedback = ref(false);
+const feedbackText = ref('');
+const feedbackType = ref('');
+const feedbackIcon = ref('');
+
+const BUBBLE_COLORS = ['#FFE0B2', '#C8E6C9', '#BBDEFB', '#F8BBD0', '#E1BEE7'];
 
 // Logic
-const questions = computed(() => props.gameData.questions || [{ q: "Ready?", a: "Go", wrong: [] }]);
-const currentQuestion = computed(() => questions.value[currentQIndex.value]);
-const currentQuestionText = computed(() => currentQuestion.value?.q || "Done!");
+const questions = computed(() => props.gameData.questions || [{ q: "Ready?", a: "Go" }]);
+const currentQuestion = computed(() => questions.value[currentQuestionIndex.value]);
+const currentQuestionText = computed(() => currentQuestion.value?.q || "Loading...");
 
-// Methods
+// Game Loop
 const spawnItem = () => {
-  if (!gameActive.value || !currentQuestion.value) return;
+  if (!gameActive.value || props.isPaused) return;
 
   const q = currentQuestion.value;
-  const isCorrect = Math.random() > 0.5;
-  const text = isCorrect ? (q.a || q.correctAnswer) : (q.wrong || ["0"])[Math.floor(Math.random() * (q.wrong?.length || 1))];
+  if (!q) return;
 
-  const item = {
-    id: itemIdCounter.value++,
-    text,
-    isCorrect,
+  const isCorrectSpawn = Math.random() > 0.5;
+  const text = isCorrectSpawn
+    ? (q.a || q.correctAnswer)
+    : (q.wrong || ["0"])[Math.floor(Math.random() * (q.wrong?.length || 1))];
+
+  const newItem = {
+    id: `item-${itemIdCounter.value++}`,
+    text: text,
+    isCorrect: isCorrectSpawn,
     x: Math.random() * 80 + 10,
-    speed: 3 + Math.random() * 2,
-    color: COLORS[Math.floor(Math.random() * COLORS.length)],
-    createdAt: Date.now()
+    speed: props.gameData.difficulty === 'hard' ? 2.5 : 4,
+    color: BUBBLE_COLORS[Math.floor(Math.random() * BUBBLE_COLORS.length)]
   };
 
-  fallingItems.value.push(item);
+  fallingItems.value.push(newItem);
 
-  // Auto remove
-  setTimeout(() => {
-    const idx = fallingItems.value.findIndex(i => i.id === item.id);
-    if (idx !== -1) fallingItems.value.splice(idx, 1);
-  }, item.speed * 1000 + 200);
+  // Cleanup
+  setTimeout(() => { removeItem(newItem.id); }, (newItem.speed * 1000) + 500);
 };
 
-const checkCollision = () => {
-  if (!gameActive.value) return;
-  const basketRect = gameContainer.value?.querySelector('.player-basket')?.getBoundingClientRect();
-  if (!basketRect) return;
+const checkCollisions = () => {
+  if (!gameActive.value || props.isPaused) return;
 
-  fallingItems.value.forEach((item, idx) => {
+  const basketEl = gameContainer.value?.querySelector('.basket-body');
+  if (!basketEl) return;
+  const basketRect = basketEl.getBoundingClientRect();
+
+  fallingItems.value.forEach(item => {
     const el = itemRefs.value[item.id];
     if (!el) return;
+    const itemRect = el.getBoundingClientRect();
 
-    const rect = el.getBoundingClientRect();
-
-    // Check overlap
-    if (!(rect.right < basketRect.left || rect.left > basketRect.right || rect.bottom < basketRect.top || rect.top > basketRect.bottom)) {
-      // Collision!
-      if (item.isCorrect) {
-        emit('score-change', 10);
-        emit('item-collected', { isCorrect: true });
-        handleCorrect();
-      } else {
-        emit('score-change', -5);
-        emit('life-lost');
-        emit('item-collected', { isCorrect: false });
-      }
-      fallingItems.value.splice(idx, 1);
+    // Collision Check
+    if (
+      itemRect.bottom >= basketRect.top + 20 &&
+      itemRect.right >= basketRect.left &&
+      itemRect.left <= basketRect.right &&
+      itemRect.top <= basketRect.bottom
+    ) {
+       catchItem(item);
     }
   });
 };
 
-const handleCorrect = () => {
-  fallingItems.value = []; // Clear screen
-  if (currentQIndex.value < questions.value.length - 1) {
-    currentQIndex.value++;
+const catchItem = (item) => {
+  removeItem(item.id); // Remove immediately visual
+
+  if (item.isCorrect) {
+      emit('score-change', 100);
+      triggerFeedback('Correct!', 'success', '✨');
+      fallingItems.value = []; // Clear screen
+
+      setTimeout(() => {
+          if (currentQuestionIndex.value < questions.value.length - 1) {
+              currentQuestionIndex.value++;
+          } else {
+              emit('game-complete', { score: props.score + 100 });
+          }
+      }, 800);
   } else {
-    emit('game-complete', { score: props.score + 100 });
+      emit('score-change', -20);
+      emit('life-lost');
+      triggerFeedback('Wrong!', 'error', '❌');
   }
+};
+
+const triggerFeedback = (text, type, icon) => {
+    feedbackText.value = text;
+    feedbackType.value = type;
+    feedbackIcon.value = icon;
+    showFeedback.value = true;
+    setTimeout(() => showFeedback.value = false, 1000);
+};
+
+const removeItem = (id) => {
+    const idx = fallingItems.value.findIndex(i => i.id === id);
+    if(idx !== -1) {
+        fallingItems.value.splice(idx, 1);
+        delete itemRefs.value[id];
+    }
 };
 
 // Input
 const handleMouseMove = (e) => {
-  if (!gameContainer.value) return;
-  const rect = gameContainer.value.getBoundingClientRect();
-  const pct = ((e.clientX - rect.left) / rect.width) * 100;
-  basketPosition.value = Math.max(5, Math.min(95, pct));
+    if(!gameContainer.value || !gameActive.value) return;
+    const rect = gameContainer.value.getBoundingClientRect();
+    updateBasket(e.clientX - rect.left, rect.width);
 };
 
 const handleTouchMove = (e) => {
-  e.preventDefault();
-  if (!gameContainer.value) return;
-  const rect = gameContainer.value.getBoundingClientRect();
-  const pct = ((e.touches[0].clientX - rect.left) / rect.width) * 100;
-  basketPosition.value = Math.max(5, Math.min(95, pct));
+    e.preventDefault();
+    if(!gameContainer.value || !gameActive.value) return;
+    const rect = gameContainer.value.getBoundingClientRect();
+    updateBasket(e.touches[0].clientX - rect.left, rect.width);
+};
+
+const updateBasket = (x, width) => {
+    const percent = (x / width) * 100;
+    basketPosition.value = Math.max(10, Math.min(90, percent));
 };
 
 const handleGameClick = () => {
-  // Optional: Handle clicks
+    if (!gameActive.value) startGame();
 };
 
-// Start/Stop
 const startGame = () => {
-  gameActive.value = true;
-  fallingItems.value = [];
-  currentQIndex.value = 0;
-  loops.value.spawn = setInterval(spawnItem, 1200);
-  loops.value.collision = setInterval(checkCollision, 50);
+    gameActive.value = true;
+    fallingItems.value = [];
+    currentQuestionIndex.value = 0;
+    clearInterval(spawnInterval.value);
+    clearInterval(collisionInterval.value);
+    spawnInterval.value = setInterval(spawnItem, 1400);
+    collisionInterval.value = setInterval(checkCollisions, 50);
 };
 
 const stopGame = () => {
-  gameActive.value = false;
-  clearInterval(loops.value.spawn);
-  clearInterval(loops.value.collision);
+    gameActive.value = false;
+    clearInterval(spawnInterval.value);
+    clearInterval(collisionInterval.value);
 };
 
-watch(() => props.lives, v => { if(v<=0) stopGame(); });
+watch(() => props.lives, (val) => { if(val <= 0) stopGame(); });
+onMounted(() => startGame());
 onUnmounted(stopGame);
 </script>
 
 <style scoped>
-.basket-game {
-  width: 100%; height: 100%; position: relative; overflow: hidden;
-  background: linear-gradient(180deg, #E3F2FD, #FAFAFA);
-  border-radius: 12px;
-  font-family: sans-serif;
+.basket-catch-game {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, #E3F2FD 0%, #F3E5F5 100%);
+  overflow: hidden;
+  border-radius: 16px;
+  font-family: 'Inter', sans-serif;
   user-select: none;
+  border: 4px solid white;
 }
 
 /* HUD */
-.hud-banner {
-  position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
-  background: rgba(255,255,255,0.9); padding: 10px 20px;
-  border-radius: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-  text-align: center; z-index: 10; width: 90%; max-width: 400px;
+.hud-glass-panel {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 500px;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(8px);
+    border-radius: 20px;
+    padding: 12px 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
-.stats-row { display: flex; justify-content: space-between; font-weight: bold; color: #555; margin-bottom: 5px; }
-.q-display h1 { margin: 0; color: #1565C0; font-size: 1.8rem; }
-.label { font-size: 0.7rem; color: #888; letter-spacing: 1px; font-weight: bold; }
 
-/* SKY LAYER */
-.sky-layer {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
+.hud-top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-/* ITEM */
-.falling-item {
-  position: absolute; top: -50px;
-  width: 60px; height: 60px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-weight: bold; color: #333; border: 3px solid white;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-  animation: fall linear forwards;
-  pointer-events: auto;
+.progress-pill, .timer-pill {
+    background: #F1F5F9;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-weight: 700;
+    color: #475569;
+    font-size: 0.85rem;
 }
-@keyframes fall { to { top: 110%; } }
+.timer-pill.pulse-red { color: #ef4444; animation: pulse 1s infinite; }
+.lives-container { display: flex; gap: 4px; }
+.heart { font-size: 1.1rem; }
+.heart.lost { opacity: 0.3; filter: grayscale(1); }
+.pause-btn { border: none; background: none; font-size: 1.2rem; cursor: pointer; }
+
+.question-banner { text-align: center; }
+.math-text { font-size: 2.2rem; font-weight: 900; color: #1e293b; margin: 0; }
+
+/* FALLING ITEMS */
+.falling-orb {
+    position: absolute;
+    top: -100px; /* Start off screen */
+    width: 75px;
+    height: 75px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: translateX(-50%);
+    box-shadow: inset 0 -5px 10px rgba(0,0,0,0.1), 0 8px 15px rgba(0,0,0,0.1);
+    z-index: 10;
+    border: 3px solid white;
+
+    /* ✅ KEY FIX: Pure CSS Animation */
+    animation-name: fall;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
+}
+
+.orb-text {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #334155;
+}
+
+/* ✅ KEY FIX: Animation Definition */
+@keyframes fall {
+    from { top: -15%; }
+    to { top: 115%; }
+}
 
 /* BASKET */
-.player-basket {
-  position: absolute; bottom: 20px; transform: translateX(-50%);
-  font-size: 4rem; pointer-events: none;
-  z-index: 5;
+.basket-wrapper {
+    position: absolute;
+    bottom: 30px;
+    transform: translateX(-50%);
+    pointer-events: none;
+    z-index: 50;
+}
+.basket-body {
+    font-size: 4.5rem;
+    filter: drop-shadow(0 10px 10px rgba(0,0,0,0.15));
 }
 
-/* START SCREEN */
-.start-screen {
-  position: absolute; inset: 0; background: rgba(255,255,255,0.8);
-  display: flex; align-items: center; justify-content: center; z-index: 20; cursor: pointer;
+/* FEEDBACK */
+.feedback-splash {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 20px 40px;
+    border-radius: 20px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+    text-align: center;
+    z-index: 200;
 }
-.msg-box {
-  background: white; padding: 30px; border-radius: 20px; text-align: center;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+.splash-icon { font-size: 3rem; margin-bottom: 5px; }
+.splash-text { font-size: 1.8rem; font-weight: 900; }
+.feedback-splash.success .splash-text { color: #22c55e; }
+.feedback-splash.error .splash-text { color: #ef4444; }
+
+/* OVERLAY */
+.start-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.8);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 300;
 }
-.msg-box h1 { font-size: 2rem; font-weight: 800; color: #1565C0; margin: 0 0 10px 0; }
-.msg-box p { font-size: 1rem; color: #666; margin-bottom: 20px; }
-.btn-play {
-  background: #2196F3; color: white; border: none; padding: 10px 30px;
-  border-radius: 8px; font-weight: bold; font-size: 1.2rem; margin-top: 15px;
-  cursor: pointer; transition: all 0.3s;
+.start-card {
+    background: white;
+    padding: 30px 50px;
+    border-radius: 24px;
+    text-align: center;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
 }
-.btn-play:hover {
-  background: #1976D2;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+.start-card h2 { margin: 0 0 10px 0; color: #0f172a; font-size: 1.8rem; font-weight: 800; }
+.start-card p { color: #64748b; margin-bottom: 20px; }
+.start-btn {
+    background: #3b82f6; color: white; border: none;
+    padding: 12px 32px; border-radius: 12px;
+    font-weight: 700; font-size: 1.1rem; cursor: pointer;
+    transition: all 0.3s;
 }
+.start-btn:hover {
+    background: #2563eb;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+.pop-enter-active { animation: popIn 0.3s; }
+@keyframes popIn { from { transform: translate(-50%, -50%) scale(0.8); opacity: 0; } to { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
+.slide-up-enter-active { transition: all 0.3s ease; }
+.slide-up-enter-from { opacity: 0; transform: translateY(10px); }
 
 /* RESPONSIVE */
 @media (max-width: 768px) {
-  .hud-banner {
-    padding: 8px 15px;
+  .hud-glass-panel {
     width: 95%;
+    padding: 10px 15px;
   }
 
-  .q-display h1 {
-    font-size: 1.4rem;
-  }
-
-  .falling-item {
-    width: 50px;
-    height: 50px;
-    font-size: 0.9rem;
-  }
-
-  .player-basket {
-    font-size: 3rem;
-  }
-
-  .msg-box {
-    padding: 20px;
-  }
-
-  .msg-box h1 {
+  .math-text {
     font-size: 1.6rem;
   }
 
-  .msg-box p {
-    font-size: 0.9rem;
+  .falling-orb {
+    width: 60px;
+    height: 60px;
+  }
+
+  .orb-text {
+    font-size: 1.4rem;
+  }
+
+  .basket-body {
+    font-size: 3.5rem;
+  }
+
+  .start-card {
+    padding: 20px 30px;
+  }
+
+  .start-card h2 {
+    font-size: 1.4rem;
   }
 }
 </style>
