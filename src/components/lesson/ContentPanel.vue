@@ -23,10 +23,12 @@
           </p>
         </div>
 
-        <div v-else-if="isGameStep" class="interactive-instruction-card">
-          <div class="instruction-icon">🎮</div>
-          <h3 class="instruction-heading">Play the game on the right</h3>
-          <p class="instruction-text">{{ currentStep?.instructions || 'Complete the game to proceed!' }}</p>
+        <div v-else-if="isGameStep" class="interactive-instruction-wrapper">
+          <div class="content-text" v-html="formatContent(getStepContent(currentStep))"></div>
+          <div class="mini-prompt">
+            <span class="prompt-icon">👉</span>
+            <span>Complete the activity on the right panel</span>
+          </div>
         </div>
 
         <div v-else-if="isInteractiveStep && !isExerciseStep && !isGameStep" class="interactive-instruction-card">
@@ -131,6 +133,8 @@ export default {
     currentStep: Object,
     currentIndex: Number,
     isInteractiveStep: Boolean,
+    isGameStep: Boolean, // Add this
+    showExplanationAlways: Boolean,
     totalExercises: Number,
     exerciseIndex: Number,
     isLastStep: Boolean,

@@ -187,14 +187,21 @@
         </div>
       </div>
 
-      <!-- Modern Split Screen Layout -->
-      <div class="lesson-split-layout">
-
-        <div class="split-panel content-side">
+      <!-- Modern Split Screen Layout with Resize -->
+      <div
+        class="split-content"
+        ref="splitContainer"
+        @mouseup="stopResize"
+        @mouseleave="stopResize"
+        @touchend="stopResize"
+      >
+        <div class="split-panel content-side" :style="leftPanelStyle">
           <ContentPanel
             :current-step="currentStep"
             :current-index="currentIndex"
             :is-interactive-step="isInteractiveStep"
+            :is-game-step="isGameStep"
+            :show-explanation-always="true"
             :current-exercise="getCurrentExercise()"
             :current-quiz="getCurrentQuiz()"
             :exercise-index="currentExerciseIndex"
@@ -216,7 +223,16 @@
           />
         </div>
 
-        <div class="split-panel interactive-side">
+        <div
+          class="resize-handle"
+          @mousedown="startResize"
+          @touchstart="startResize"
+          :class="{ 'is-resizing': isResizing }"
+        >
+          <div class="handle-bar"></div>
+        </div>
+
+        <div class="split-panel interactive-side" :style="rightPanelStyle">
 
           <div v-if="isInteractiveStep || isGameStep" class="interactive-container">
              <InteractivePanel
@@ -267,19 +283,14 @@
              <div class="stats-row">
                 <div class="stat-pill">🏆 {{ earnedPoints }}</div>
                 <div class="stat-pill">⚡ {{ consecutiveCorrect }}</div>
-                <div class="stat-pill">⭐ {{ stars }}</div>
              </div>
-
              <div class="ai-tip-card">
                 <div class="tip-icon">💡</div>
                 <div class="tip-text">
-                   {{ currentStep?.type === 'explanation'
-                      ? 'Read carefully to master the concept!'
-                      : 'Take your time. Accuracy earns more points!' }}
+                   {{ currentStep?.type === 'explanation' ? 'Read carefully!' : 'Good luck!' }}
                 </div>
              </div>
           </div>
-
         </div>
       </div>
     </div>
@@ -427,12 +438,12 @@ export default {
     // RESIZABLE SPLIT SCREEN STATE
     // ==========================================
     const isResizing = ref(false)
+    const currentLeftWidth = ref(60) // Initial %
     const startX = ref(0)
     const startY = ref(0)
-    const startWidthLeft = ref(75)
-    const startWidthRight = ref(25)
-    const currentLeftWidth = ref(75)
-    const currentRightWidth = ref(25)
+    const startWidthLeft = ref(60)
+    const startWidthRight = ref(40)
+    const currentRightWidth = ref(40)
     const resizeDirection = ref('horizontal')
 
     // ==========================================
@@ -568,41 +579,13 @@ return guestProgress[lessonId]
     // ==========================================
     // RESIZABLE SPLIT SCREEN COMPUTED PROPERTIES
     // ==========================================
-    const leftPanelStyle = computed(() => {
-      const isVertical = window.innerWidth <= 1023
-      if (isVertical) {
-        return { 
-          flex: `1 1 ${currentLeftWidth.value}%`,
-          minHeight: '300px',
-          maxHeight: currentLeftWidth.value >= 80 ? '80%' : 'none'
-        }
-      }
-      return { 
-        flex: `0 0 ${currentLeftWidth.value}%`,
-        minWidth: '300px',
-        maxWidth: currentLeftWidth.value >= 85 ? '85%' : 'none',
-        height: '100%',
-        overflow: 'hidden'
-      }
-    })
+    const leftPanelStyle = computed(() => ({
+      width: `${currentLeftWidth.value}%`
+    }))
 
-    const rightPanelStyle = computed(() => {
-      const isVertical = window.innerWidth <= 1023
-      if (isVertical) {
-        return { 
-          flex: `1 1 ${currentRightWidth.value}%`,
-          minHeight: '150px',
-          maxHeight: currentRightWidth.value >= 75 ? '75%' : 'none'
-        }
-      }
-      return { 
-        flex: `0 0 ${currentRightWidth.value}%`,
-        minWidth: '200px',
-        maxWidth: currentRightWidth.value >= 80 ? '80%' : 'none',
-        height: '100%',
-        overflow: 'hidden'
-      }
-    })
+    const rightPanelStyle = computed(() => ({
+      width: `${100 - currentLeftWidth.value}%`
+    }))
 
     const widthIndicatorText = computed(() => {
       return `Content: ${Math.round(currentLeftWidth.value)}% | Interactive: ${Math.round(currentRightWidth.value)}%`
