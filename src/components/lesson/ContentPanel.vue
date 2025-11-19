@@ -24,11 +24,24 @@
         </div>
 
         <div v-else-if="isGameStep" class="game-context-view">
-            <div class="context-card">
-                <h3>🎮 Game Time!</h3>
-                <p>Review the concept above while you play.</p>
+            <div class="game-intro-card">
+                <div class="intro-header">
+                    <span class="game-icon">🎮</span>
+                    <h3>Game Time: {{ currentStep.title || 'Interactive Challenge' }}</h3>
+                </div>
+
+                <div class="game-instructions-box">
+                    <h4>How to Play:</h4>
+                    <ul class="instruction-list">
+                        <li>Solve the math problem shown at the top.</li>
+                        <li>Catch the <strong>correct answer</strong> in your basket.</li>
+                        <li>Avoid the wrong numbers!</li>
+                        <li>Complete all questions to win.</li>
+                    </ul>
+                </div>
             </div>
-            <div class="content-text" v-html="formatContent(getStepContent(currentStep))"></div>
+
+            <div class="content-text-faded" v-html="formatContent(getStepContent(currentStep))"></div>
         </div>
 
         <div v-else-if="isInteractiveStep && !isExerciseStep && !isGameStep" class="interactive-instruction-card">
@@ -317,28 +330,54 @@ export default {
 
 /* Game Context View */
 .game-context-view {
-  padding: 1rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
 }
 
-.context-card {
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-  color: white;
-  padding: 1rem 1.5rem;
-  border-radius: 12px;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+.game-intro-card {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 1px solid #bae6fd;
+    border-radius: 16px;
+    padding: 24px;
 }
 
-.context-card h3 {
-  margin: 0 0 0.5rem 0;
-  font-size: 1.2rem;
-  font-weight: 700;
+.intro-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
 }
 
-.context-card p {
-  margin: 0;
-  font-size: 0.9rem;
-  opacity: 0.9;
+.game-icon { font-size: 28px; }
+.intro-header h3 { margin: 0; color: #0369a1; font-size: 1.2rem; }
+
+.game-instructions-box {
+    margin-top: 12px;
+}
+
+.game-instructions-box h4 {
+    color: #0c4a6e;
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin: 0 0 8px 0;
+}
+
+.instruction-list {
+    margin: 0;
+    padding-left: 20px;
+    color: #334155;
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+.instruction-list li {
+    margin-bottom: 4px;
+}
+
+.content-text-faded {
+    opacity: 0.7;
+    font-size: 0.9rem;
 }
 
 /* ================================ */
