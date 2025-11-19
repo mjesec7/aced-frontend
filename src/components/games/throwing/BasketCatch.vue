@@ -6,18 +6,21 @@
     @touchmove="handleTouchMove"
     @click="handleGameClick"
   >
-    <div class="game-hud">
-        <div class="question-card">
-            <div class="q-label">Current Problem</div>
-            <div class="q-text">{{ currentQuestionText }}</div>
-        </div>
-        <div class="progress-bar">
-             <div
-                v-for="(q, idx) in questions"
-                :key="idx"
-                class="progress-segment"
-                :class="{ 'completed': idx < currentQuestionIndex, 'active': idx === currentQuestionIndex }"
-             ></div>
+    <div class="game-hud-wrapper">
+        <div class="hud-card">
+            <div class="hud-row">
+                <span class="badge-pill">Math Problem {{ currentQuestionIndex + 1 }}/{{ questions.length }}</span>
+                <span class="timer-pill" :class="{ 'urgent': timeRemaining < 10 }">⏱️ {{ timeRemaining }}s</span>
+            </div>
+            <div class="question-display">
+                {{ currentQuestionText }}
+            </div>
+             <div class="progress-track">
+                <div
+                    class="progress-fill"
+                    :style="{ width: ((currentQuestionIndex) / questions.length * 100) + '%' }"
+                ></div>
+            </div>
         </div>
     </div>
 
@@ -32,7 +35,7 @@
           transition: item.falling ? `top ${item.speed}s linear` : 'none'
         }"
       >
-        <div class="item-bubble neutral-bubble">
+        <div class="math-bubble">
           {{ item.text }}
         </div>
       </div>
@@ -40,16 +43,15 @@
 
     <div class="basket" :style="{ left: basketPosition + '%' }">
       <div class="basket-visual">
-          <span class="basket-emoji">🧺</span>
+          <span class="basket-emoji">🗑️</span>
       </div>
+      <div class="basket-label">Catch Here</div>
     </div>
 
-    <transition name="pop">
-      <div v-if="showFeedback" class="feedback-overlay" :class="feedbackType">
-         <div class="feedback-content">
-             <span class="feedback-icon">{{ feedbackIcon }}</span>
-             <span class="feedback-text">{{ feedbackText }}</span>
-         </div>
+    <transition name="scale-fade">
+      <div v-if="showFeedback" class="feedback-toast" :class="feedbackType">
+         <span class="feedback-icon">{{ feedbackIcon }}</span>
+         <span class="feedback-text">{{ feedbackText }}</span>
       </div>
     </transition>
   </div>
@@ -80,21 +82,18 @@ const currentQuestionIndex = ref(0);
 // Feedback State
 const showFeedback = ref(false);
 const feedbackText = ref('');
-const feedbackType = ref(''); // 'success' or 'error'
+const feedbackType = ref('');
 const feedbackIcon = ref('');
 
 // Constants
 const HIT_Y_THRESHOLD = 85;
 const BASKET_WIDTH_PERCENT = 14;
 
-// --- Question Logic ---
-
+// Questions Data
 const questions = computed(() => {
-    // Prioritize structured questions from gameConfig
     if (props.gameData.questions && props.gameData.questions.length > 0) {
         return props.gameData.questions;
     }
-    // Fallback Math Data
     return [
         { q: "7 x 6 = ?", a: "42", wrong: ["36", "48", "54", "49"] },
         { q: "9 x 5 = ?", a: "45", wrong: ["54", "40", "35", "50"] },
@@ -104,19 +103,17 @@ const questions = computed(() => {
 });
 
 const currentQuestion = computed(() => questions.value[currentQuestionIndex.value]);
-const currentQuestionText = computed(() => currentQuestion.value?.question || currentQuestion.value?.q || "Get Ready!");
+const currentQuestionText = computed(() => currentQuestion.value?.q || currentQuestion.value?.question || "Loading...");
 
-// --- Spawning Logic ---
-
+// Spawning
 const spawnItem = () => {
   if (!gameActive.value || !currentQuestion.value) return;
 
   const q = currentQuestion.value;
-  const correctAnswer = q.correctAnswer || q.a || q.answer;
-  const wrongAnswers = q.wrongAnswers || q.wrong || ["0", "1", "2"];
+  const correctAnswer = q.a || q.correctAnswer || q.answer;
+  const wrongAnswers = q.wrong || q.wrongAnswers || ["0", "1"];
 
-  // 40% chance for Correct Answer, 60% for Distractor
-  const isCorrectSpawn = Math.random() > 0.6;
+  const isCorrectSpawn = Math.random() > 0.55; // Slightly higher chance for correct answers
 
   let text = "";
   let isCorrect = false;
@@ -129,36 +126,31 @@ const spawnItem = () => {
       isCorrect = false;
   }
 
-  const baseSpeed = props.gameData.difficulty === 'hard' ? 2.5 : 3.5;
-
   const newItem = {
     id: `item-${itemIdCounter.value++}`,
     text: text,
     isCorrect: isCorrect,
     x: Math.random() * 85 + 5,
     y: -15,
-    speed: baseSpeed - (Math.random() * 0.5),
+    speed: 3.5, // Consistent readable speed
     falling: false,
     startTime: Date.now()
   };
 
   fallingItems.value.push(newItem);
 
-  // Start animation next frame
   setTimeout(() => {
       const item = fallingItems.value.find(i => i.id === newItem.id);
       if (item) {
           item.falling = true;
-          item.y = 125; // Fall past bottom
+          item.y = 125;
       }
   }, 50);
 
-  // Cleanup
   setTimeout(() => { removeItem(newItem.id); }, (newItem.speed + 1) * 1000);
 };
 
-// --- Physics & Collision ---
-
+// Collision
 const checkCollisions = () => {
   if (!gameActive.value) return;
 
@@ -184,7 +176,6 @@ const catchItem = (item) => {
   if (item.caught) return;
   item.caught = true;
 
-  // Stop visual falling
   const el = document.getElementById(item.id);
   if (el) el.style.transition = 'none';
 
@@ -192,29 +183,26 @@ const catchItem = (item) => {
       emit('score-change', 20);
       handleCorrectAnswer();
   } else {
-      emit('score-change', -5);
+      emit('score-change', -10);
       emit('life-lost');
-      triggerFeedback('Wrong!', 'error', '❌');
+      triggerFeedback('Oops! Try again', 'error', '❌');
   }
 
   removeItem(item.id);
 };
 
 const handleCorrectAnswer = () => {
-    // Clear current falling items to clean up screen for next question
-    fallingItems.value = [];
+    fallingItems.value = []; // Clear screen
+    triggerFeedback('Correct!', 'success', '🌟');
 
-    triggerFeedback('Correct!', 'success', '⭐');
-
-    // Advance Question
     if (currentQuestionIndex.value < questions.value.length - 1) {
         setTimeout(() => {
             currentQuestionIndex.value++;
-        }, 1000);
+        }, 1200);
     } else {
         setTimeout(() => {
             emit('game-complete', { score: props.score + 100 });
-        }, 1000);
+        }, 1200);
     }
 };
 
@@ -223,7 +211,7 @@ const triggerFeedback = (text, type, icon) => {
     feedbackType.value = type;
     feedbackIcon.value = icon;
     showFeedback.value = true;
-    setTimeout(() => { showFeedback.value = false; }, 1200);
+    setTimeout(() => { showFeedback.value = false; }, 1500);
 };
 
 const removeItem = (itemId) => {
@@ -231,8 +219,7 @@ const removeItem = (itemId) => {
   if (index !== -1) fallingItems.value.splice(index, 1);
 };
 
-// --- Controls ---
-
+// Controls
 const handleMouseMove = (e) => {
   if (!gameContainer.value) return;
   const rect = gameContainer.value.getBoundingClientRect();
@@ -253,12 +240,12 @@ const updateBasket = (x, width) => {
     basketPosition.value = Math.max(8, Math.min(92, percent));
 };
 
-const handleGameClick = () => { /* Optional click interactions */ };
+const handleGameClick = () => {};
 
 // Lifecycle
 const startGame = () => {
   gameActive.value = true;
-  spawnInterval.value = setInterval(spawnItem, 1200);
+  spawnInterval.value = setInterval(spawnItem, 1500);
   collisionInterval.value = setInterval(checkCollisions, 50);
 };
 
@@ -281,136 +268,161 @@ onUnmounted(stopGame);
   position: relative;
   width: 100%;
   height: 100%;
-  background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+  background: linear-gradient(180deg, #E0F2FE 0%, #F0F9FF 100%);
   overflow: hidden;
   border-radius: 16px;
   cursor: none;
   touch-action: none;
   font-family: 'Inter', sans-serif;
-  border: 1px solid #cbd5e1;
 }
 
-/* === HUD === */
-.game-hud {
+/* === 🟢 NEW HUD STYLES === */
+.game-hud-wrapper {
     position: absolute;
     top: 20px;
-    left: 0;
-    right: 0;
+    width: 100%;
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    z-index: 20;
+    justify-content: center;
+    z-index: 50; /* Ensure on top */
     pointer-events: none;
 }
 
-.question-card {
-    background: white;
-    padding: 12px 32px;
+.hud-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(5px);
     border-radius: 16px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.2);
+    padding: 16px 32px;
     text-align: center;
-    border: 1px solid #e2e8f0;
-    margin-bottom: 12px;
-    min-width: 200px;
+    min-width: 280px;
+    border: 1px solid rgba(255,255,255,0.5);
 }
 
-.q-label {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+.hud-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 0.85rem;
     color: #64748b;
     font-weight: 600;
-    margin-bottom: 4px;
 }
 
-.q-text {
-    font-size: 28px;
+.question-display {
+    font-size: 2.5rem;
     font-weight: 800;
-    color: #0f172a;
+    color: #1e293b;
+    letter-spacing: -1px;
+    margin-bottom: 12px;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.05);
 }
 
-.progress-bar {
-    display: flex;
-    gap: 6px;
-}
-
-.progress-segment {
-    width: 30px;
+.progress-track {
+    width: 100%;
     height: 6px;
-    background: rgba(0,0,0,0.1);
-    border-radius: 4px;
-    transition: all 0.3s;
+    background: #f1f5f9;
+    border-radius: 3px;
+    overflow: hidden;
 }
-.progress-segment.active { background: #3b82f6; }
-.progress-segment.completed { background: #22c55e; }
 
-/* === FALLING ITEMS === */
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #60a5fa);
+    transition: width 0.5s ease;
+}
+
+.timer-pill.urgent {
+    color: #ef4444;
+    animation: pulse 1s infinite;
+}
+
+/* === ITEMS === */
 .items-layer { position: absolute; inset: 0; pointer-events: none; }
-.falling-item { position: absolute; transform: translateX(-50%); z-index: 10; }
+.falling-item {
+  position: absolute;
+  transform: translateX(-50%);
+  z-index: 10;
+  width: 80px; /* Fixed width for consistency */
+  display: flex;
+  justify-content: center;
+}
 
-/* Neutral Style - No Spoilers */
-.neutral-bubble {
+.math-bubble {
   background: white;
-  padding: 12px 20px;
-  border-radius: 50px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  font-weight: 800;
-  font-size: 22px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.4rem;
   color: #334155;
-  border: 2px solid #cbd5e1; /* Neutral gray border */
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  border: 4px solid #f1f5f9; /* Neutral border */
 }
 
 /* === BASKET === */
 .basket {
   position: absolute;
-  bottom: 5%;
+  bottom: 20px;
   transform: translateX(-50%);
   pointer-events: none;
-  z-index: 30;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .basket-emoji {
-  font-size: 72px;
-  line-height: 1;
-  filter: drop-shadow(0 8px 12px rgba(0,0,0,0.15));
+  font-size: 5rem;
+  filter: drop-shadow(0 10px 15px rgba(0,0,0,0.2));
 }
 
-/* === FEEDBACK OVERLAY === */
-.feedback-overlay {
+.basket-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: -10px;
+  background: rgba(255,255,255,0.8);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+/* === FEEDBACK TOAST === */
+.feedback-toast {
     position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(255,255,255,0.3);
-    backdrop-filter: blur(2px);
-    z-index: 50;
-}
-
-.feedback-content {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     background: white;
-    padding: 20px 40px;
+    padding: 16px 32px;
     border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.2);
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
-    transform: scale(1);
-    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 100;
 }
 
-.feedback-overlay.success .feedback-content { border: 3px solid #22c55e; color: #15803d; }
-.feedback-overlay.error .feedback-content { border: 3px solid #ef4444; color: #b91c1c; }
+.feedback-toast.success { border: 3px solid #22c55e; color: #16a34a; }
+.feedback-toast.error { border: 3px solid #ef4444; color: #dc2626; }
 
-.feedback-icon { font-size: 48px; }
-.feedback-text { font-size: 32px; font-weight: 800; }
+.feedback-icon { font-size: 3rem; margin-bottom: 8px; }
+.feedback-text { font-size: 1.5rem; font-weight: 800; }
+
+.scale-fade-enter-active { animation: popIn 0.3s; }
+.scale-fade-leave-active { transition: opacity 0.2s; opacity: 0; }
 
 @keyframes popIn {
-    from { transform: scale(0.8); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
+    0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+    80% { transform: translate(-50%, -50%) scale(1.1); }
+    100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
 }
 
-.pop-enter-active, .pop-leave-active { transition: opacity 0.2s; }
-.pop-enter-from, .pop-leave-to { opacity: 0; }
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
 </style>

@@ -28,14 +28,14 @@
 
   /* === HEADER === */
   .lesson-header-new {
-    flex: 0 0 64px;
-    background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(0,0,0,0.05);
+    flex: 0 0 72px; /* Slightly taller for breathing room */
+    height: 72px;
+    background: white;
+    border-bottom: 1px solid #e2e8f0;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 24px;
+    padding: 0 32px;
     z-index: 50;
     box-shadow: 0 1px 3px rgba(0,0,0,0.02);
   }
@@ -55,9 +55,10 @@
 
   .lesson-title-info { margin-left: 16px; }
   .lesson-title-info h2 {
-    font-size: 1.1rem;
+    font-size: 1.25rem;
+    letter-spacing: -0.02em;
     font-weight: 700;
-    color: #1e293b;
+    color: #0f172a;
     margin: 0;
   }
 
@@ -1929,38 +1930,37 @@
   overflow: hidden;
 }
 
-/* Tab Buttons */
+/* === MODERN TAB BUTTONS === */
 .tab-buttons-new {
   display: flex;
-  gap: 10px;
-  margin-bottom: 30px;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  align-self: center; /* Center tabs */
+  gap: 0; /* Remove gap, padding handles spacing */
 }
 
 .tab-btn-new {
-  padding: 10px 24px;
+  padding: 8px 24px;
   border: none;
-  border-radius: 8px;
-  font-size: 15px;
-  font-weight: 500;
+  border-radius: 10px;
+  background: transparent;
+  color: #64748b;
+  font-weight: 600;
+  font-size: 0.95rem;
   cursor: pointer;
-  transition: all 0.3s;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  transition: all 0.2s;
+}
+
+.tab-btn-new:hover {
+  color: #1e293b;
 }
 
 .tab-btn-new.active {
-  background: #333;
-  color: white;
-}
-
-.tab-btn-new:not(.active) {
-  background: #f5f5f5;
-  color: #666;
-}
-
-.tab-btn-new:not(.active):hover:not(:disabled) {
-  background: #e5e5e5;
+  background: white;
+  color: #2563eb; /* Brand Blue */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 .tab-btn-new:disabled {
@@ -2124,30 +2124,29 @@
   display: flex;
   flex-direction: row;
   overflow: hidden;
-  padding: 16px;
-  gap: 0;
+  padding: 16px 24px 24px 24px; /* More padding on sides/bottom */
+  background: #f8fafc;
+  gap: 16px; /* Explicit gap between panels */
 }
 
 .split-panel {
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+  border-radius: 16px; /* Larger rounded corners */
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); /* Subtler shadow */
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  border: 1px solid rgba(255,255,255,0.5);
+  overflow: hidden; /* Clean clipping */
 }
 
 /* Content Side */
 .content-side {
-  background: #ffffff;
+  background: white;
   z-index: 1;
 }
 
-/* Interactive Side */
+/* Interactive Side - No border-left since we use gap now */
 .interactive-side {
-  background: #f8fafc;
-  border-left: 1px solid #e2e8f0;
+  background: white;
   position: relative;
 }
 
@@ -2155,8 +2154,10 @@
   flex: 1;
   display: flex;
   flex-direction: column;
+  position: relative; /* For absolute positioning children */
+  background: #f0f9ff; /* Light blue background for game area */
+  padding: 0; /* Remove padding so game hits edges */
   overflow: hidden;
-  padding: 0; /* Full bleed for games */
 }
 
 /* === DRAG HANDLE === */

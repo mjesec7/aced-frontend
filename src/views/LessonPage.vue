@@ -1232,8 +1232,11 @@ sound.pronounceWord?.(word)
             title: step.title || 'Game',
             description: step.instructions || step.description || '',
             gameType: step.gameType || 'basket-catch', // Fallback to basket-catch if not specified
-            // Ensure gameConfig is pulled from the right place
-            gameConfig: step.gameConfig || step.data?.gameConfig || step.data || {}, // Game configuration (score, time, items)
+            // ✅ FIX: Ensure questions are passed correctly
+            gameConfig: {
+               ...(step.gameConfig || {}),
+               questions: step.gameConfig?.questions || step.data?.questions || []
+            },
             questions: step.questions || [],
             // Pass through instructions for display before/during game
             instructions: step.instructions || step.description || "Play the game!",
