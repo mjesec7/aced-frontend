@@ -220,6 +220,7 @@
 
           <div v-if="isInteractiveStep" class="interactive-container">
              <InteractivePanel
+                :key="currentStep?.id || currentStep?._id || currentIndex"
                 :current-step="currentStep"
                 :current-exercise="getCurrentExercise()"
                 :current-quiz="getCurrentQuiz()"
