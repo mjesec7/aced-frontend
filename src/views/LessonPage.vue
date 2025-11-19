@@ -1215,14 +1215,21 @@ sound.pronounceWord?.(word)
       // {
       //   type: 'game',
       //   gameType: 'basket-catch' | 'whack-a-mole',
-      //   gameConfig: { targetScore, timeLimit, items, correctAnswers, wrongAnswers },
+      //   gameConfig: { targetScore, timeLimit, items, correctAnswers, wrongAnswers, questions },
       //   instructions: 'Play the game to practice!',
       //   description: 'Catch falling items'
       // }
       //
       // We check for 'game' type OR if gameConfig exists in data
       if (step.type === 'game' || step.gameType || (step.data && step.data.gameConfig)) {
-         console.log('🎮 Game Step Detected! Returning Game Object.')
+         // ✅ FIX: Explicitly handle Game Steps
+         // Extract game type, prioritizing specific overrides
+         const specificGameType = step.gameType ||
+                                  (step.gameConfig && step.gameConfig.type) ||
+                                  (step.gameConfig && step.gameConfig.gameType) ||
+                                  'basket-catch'; // Only fallback if absolutely nothing else exists
+
+         console.log(`🎮 Game Step Detected! Type: ${specificGameType}`);
 
          // Construct a standardized game object that InteractivePanel expects
          return {
@@ -1231,13 +1238,18 @@ sound.pronounceWord?.(word)
             type: 'game', // Ensure type is explicitly 'game' for InteractivePanel's isGameMode check
             title: step.title || 'Game',
             description: step.instructions || step.description || '',
-            gameType: step.gameType || 'basket-catch', // Fallback to basket-catch if not specified
-            // ✅ FIX: Ensure questions are passed correctly
+
+            // ✅ IMPORTANT: Pass the specific type clearly
+            gameType: specificGameType,
+
+            // Ensure config is flattened and accessible
             gameConfig: {
                ...(step.gameConfig || {}),
-               questions: step.gameConfig?.questions || step.data?.questions || []
+               ...(step.data || {}),
+               gameType: specificGameType, // redundancy for safety
+               questions: step.gameConfig?.questions || step.data?.questions || step.questions || []
             },
-            questions: step.questions || [],
+            questions: step.questions || step.gameConfig?.questions || step.data?.questions || [],
             // Pass through instructions for display before/during game
             instructions: step.instructions || step.description || "Play the game!",
             // Pass the whole step data just in case

@@ -539,13 +539,20 @@ const isGameMode = computed(() => {
 const gameType = computed(() => {
   if (!isGameMode.value) return null;
 
-  // Priority order for extracting game type:
-  // 1. Explicit gameType property (e.g., gameType: 'basket-catch')
-  // 2. Fall back to type property if it's a game type
-  // 3. Default to 'basket-catch' if nothing is found
-  return props.currentExercise.gameType ||
-         props.currentExercise.type ||
-         'basket-catch'; // Default fallback
+  // ✅ FIX: Do NOT fallback to props.currentExercise.type (which is 'game')
+  // If gameType is missing, check gameConfig.
+  // If still missing, ONLY THEN fallback to basket-catch.
+
+  const explicitType = props.currentExercise.gameType;
+  const configType = props.currentExercise.gameConfig?.gameType;
+
+  // Log to debug
+  console.log('Resolving Game Type:', { explicitType, configType });
+
+  if (explicitType && explicitType !== 'game') return explicitType;
+  if (configType && configType !== 'game') return configType;
+
+  return 'basket-catch'; // Default fallback
 });
 
 // Extract and normalize game data for GameContainer
