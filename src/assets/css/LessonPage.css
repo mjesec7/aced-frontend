@@ -14,7 +14,7 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background-color: #f3f4f6; /* Soft gray background */
+    background-color: #f1f5f9; /* Soft slate background */
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   }
 
@@ -1933,33 +1933,34 @@
 /* === MODERN TAB BUTTONS === */
 .tab-buttons-new {
   display: flex;
-  background: #f1f5f9;
+  gap: 8px;
+  margin-bottom: 16px;
+  background: #e2e8f0;
   padding: 4px;
   border-radius: 12px;
-  margin-bottom: 16px;
-  align-self: center; /* Center tabs */
-  gap: 0; /* Remove gap, padding handles spacing */
+  width: fit-content;
+  align-self: flex-start; /* Align to left */
 }
 
 .tab-btn-new {
-  padding: 8px 24px;
+  padding: 8px 16px;
+  border-radius: 8px;
   border: none;
-  border-radius: 10px;
   background: transparent;
-  color: #64748b;
   font-weight: 600;
+  color: #64748b;
   font-size: 0.95rem;
   cursor: pointer;
   transition: all 0.2s;
 }
 
-.tab-btn-new:hover {
+.tab-btn-new:hover:not(:disabled) {
   color: #1e293b;
 }
 
 .tab-btn-new.active {
   background: white;
-  color: #2563eb; /* Brand Blue */
+  color: #0f172a;
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
@@ -2155,9 +2156,12 @@
   display: flex;
   flex-direction: column;
   position: relative; /* For absolute positioning children */
-  background: #f0f9ff; /* Light blue background for game area */
-  padding: 0; /* Remove padding so game hits edges */
+  width: 100%;
+  height: 100%;
+  background: #f8fafc; /* Light background for game area */
+  padding: 0; /* IMPORTANT: No padding for game to fill entire space */
   overflow: hidden;
+  border-radius: 16px;
 }
 
 /* === DRAG HANDLE === */
