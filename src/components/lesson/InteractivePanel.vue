@@ -526,10 +526,8 @@ const isGameMode = computed(() => {
          Boolean(props.currentExercise.gameType) ||
          Boolean(props.currentExercise.gameData) ||
          Boolean(props.currentExercise.gameConfig) || // Matches JSON "gameConfig"
-         props.currentExercise.type === 'basket-catch' ||
-         props.currentExercise.type === 'whack-a-mole' ||
-         props.currentExercise.gameType === 'basket-catch' ||
-         props.currentExercise.gameType === 'whack-a-mole';
+         ['basket-catch', 'whack-a-mole', 'memory-cards'].includes(props.currentExercise.type) ||
+         ['basket-catch', 'whack-a-mole', 'memory-cards'].includes(props.currentExercise.gameType);
 
   console.log('isGameMode result:', result)
   return result
@@ -555,27 +553,25 @@ const gameType = computed(() => {
 const gameData = computed(() => {
   if (!isGameMode.value) return null;
 
-  // Prioritize gameConfig, then gameData, then the data object itself
-  const config = props.currentExercise.gameConfig ||
-                 props.currentExercise.gameData ||
-                 props.currentExercise.data ||
-                 {};
+  const ex = props.currentExercise;
 
-  // Return normalized game data object with sensible defaults
-  return {
-    // Merge config with defaults - spread config first, then override with specific values
-    // Game instructions (displayed before/during game)
-    instructions: props.currentExercise.instructions || props.currentExercise.description || "Play the game!",
+  // Improved merging strategy:
+  // 1. Start with sensible defaults
+  // 2. Spread gameConfig to override defaults
+  // 3. Spread entire exercise object to allow root properties to override
+  // 4. Explicitly set gameType to ensure it's always present
+  const data = {
+    instructions: ex.instructions || ex.description || "Play the game!",
     targetScore: 100,
     timeLimit: 60,
     lives: 3,
-    ...config, // Spread the config to override defaults
-
-    // Ensure critical arrays exist (override after spread)
-    correctAnswers: config.correctAnswers || [],
-    wrongAnswers: config.wrongAnswers || [],
-    items: config.items || []
+    ...(ex.gameConfig || {}), // Config object overrides defaults
+    ...ex, // Root properties override everything
+    gameType: ex.gameType || ex.type || 'basket-catch' // Ensure gameType is set
   };
+
+  console.log('🎮 GameData being passed to GameContainer:', data);
+  return data;
 });
 
 /**
