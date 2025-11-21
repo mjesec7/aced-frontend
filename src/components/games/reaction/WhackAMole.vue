@@ -384,14 +384,15 @@ onUnmounted(stopGame);
 .game-grid {
   flex: 1; /* Take remaining space */
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(9, 1fr);
   gap: 16px;
   padding: 10px 20px 30px;
-  max-width: 600px;
+  max-width: 100%; /* Allow full width for single row */
   width: 100%;
   margin: 0 auto;
   align-content: center;
-  overflow-y: auto; /* Allow scroll if screen is very small */
+  overflow-x: auto; /* Allow horizontal scroll if needed */
+  overflow-y: hidden;
 }
 
 .hole-wrapper {

@@ -924,17 +924,8 @@ window.location.href = '/profile/homeworks'
 
         lessonOrchestrator.showExitModal.value = false
 
-        // Different navigation for guests
-        if (isGuestMode.value) {
-          router.push({
-            name: 'HomePage',
-            query: {
-              message: 'Thanks for trying the lesson! Register to save your progress.'
-            }
-          })
-        } else {
-          handleReturnToCatalogue()
-        }
+        // STRICT REDIRECT: Always go to catalogue for all users
+        handleReturnToCatalogue()
 
       } catch (error) {
         console.error('Error during exit:', error)
