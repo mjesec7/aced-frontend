@@ -872,7 +872,7 @@ return {
   error,
   retryCount,
 
-  // ✅ NEW: Guest mode state
+  // Guest mode state
   isGuestMode,
   showPaywallModal,
   guestLessonLimit,
@@ -932,5 +932,4 @@ return {
   getLocalized,
   initializeLesson,
   cleanup
-}
 }
