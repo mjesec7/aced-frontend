@@ -315,6 +315,9 @@ export function useLessonOrchestrator() {
           case 'vocabulary':
             processedStep = processVocabularyStep(step, index)
             break
+          case 'game':
+            processedStep = processGameStep(step, index)
+            break
           case 'explanation':
           case 'example':
           case 'reading':
@@ -369,6 +372,27 @@ export function useLessonOrchestrator() {
     return {
       type: 'vocabulary',
       data: step.data || step.words || []
+    }
+  }
+
+  // ✅ NEW: Process game steps to preserve configuration
+  const processGameStep = (step, index) => {
+    // Ensure data object exists
+    const data = step.data || step.content || {}
+
+    // Inject game configuration into data object so it's available to InteractivePanel
+    // which often receives 'data' as 'currentExercise'
+    if (step.gameType) data.gameType = step.gameType
+    if (step.gameConfig) data.gameConfig = step.gameConfig
+
+    return {
+      type: 'game',
+      // Preserve all game-related data on step level
+      gameType: step.gameType || step.data?.gameType,
+      gameConfig: step.gameConfig || step.data?.gameConfig,
+      data: data,
+      // Ensure metadata is passed through
+      metadata: step.metadata || {}
     }
   }
 
@@ -674,8 +698,9 @@ export function useLessonOrchestrator() {
       })
     } else {
       // Try to go back to previous page first
+      // Check if we have a valid history to go back to
       if (window.history.length > 1) {
-        router.go(-1)
+        router.back()
       } else {
         // Fallback to catalogue if no history
         router.push('/profile/catalogue')
