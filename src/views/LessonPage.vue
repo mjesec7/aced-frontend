@@ -224,6 +224,7 @@
         </div>
 
         <div
+          v-if="!isGameStep"
           class="resize-handle"
           @mousedown="startResize"
           @touchstart="startResize"
@@ -279,7 +280,7 @@
               />
           </div>
 
-          <div class="sidebar-compact">
+          <div v-if="!isGameStep" class="sidebar-compact">
              <div class="stats-row">
                 <div class="stat-pill">🏆 {{ earnedPoints }}</div>
                 <div class="stat-pill">⚡ {{ consecutiveCorrect }}</div>
@@ -579,13 +580,15 @@ return guestProgress[lessonId]
     // ==========================================
     // RESIZABLE SPLIT SCREEN COMPUTED PROPERTIES
     // ==========================================
-    const leftPanelStyle = computed(() => ({
-      width: `${currentLeftWidth.value}%`
-    }))
+    const leftPanelStyle = computed(() => {
+      if (isGameStep.value) return { display: 'none' }
+      return { width: `${currentLeftWidth.value}%` }
+    })
 
-    const rightPanelStyle = computed(() => ({
-      width: `${100 - currentLeftWidth.value}%`
-    }))
+    const rightPanelStyle = computed(() => {
+      if (isGameStep.value) return { width: '100%' }
+      return { width: `${100 - currentLeftWidth.value}%` }
+    })
 
     const widthIndicatorText = computed(() => {
       return `Content: ${Math.round(currentLeftWidth.value)}% | Interactive: ${Math.round(currentRightWidth.value)}%`
@@ -827,25 +830,11 @@ return guestProgress[lessonId]
     // NAVIGATION METHODS
     // ==========================================
     const handleReturnToCatalogue = () => {
-      if (isGuestMode.value) {
-        router.push({ name: 'HomePage' });
-        return;
-      }
-
-      // Check if user came from within the site (not external or direct navigation)
-      const referrer = document.referrer;
-      const currentOrigin = window.location.origin;
-      
-      // If referrer exists and is from same origin, go back
-      if (referrer && referrer.startsWith(currentOrigin)) {
-        router.go(-1);
-      } else {
-        // No referrer or external referrer - go to Catalogue
-        router.replace({ name: 'CataloguePage' }).catch(err => {
-           console.warn('Router navigation failed, trying path:', err);
-           router.replace('/profile/catalogue');
-        });
-      }
+      // STRICT REDIRECT: Always go to catalogue as requested
+      router.push('/profile/catalogue').catch(err => {
+         console.warn('Router navigation failed, trying path:', err);
+         window.location.href = '/profile/catalogue';
+      });
     }
 
     const handleGoToHomework = () => {
@@ -951,12 +940,8 @@ window.location.href = '/profile/homeworks'
         console.error('Error during exit:', error)
         lessonOrchestrator.showExitModal.value = false
 
-        // Fallback navigation using router to avoid reload
-        if (isGuestMode.value) {
-          router.push('/')
-        } else {
-          router.push('/profile/catalogue')
-        }
+        // Fallback navigation
+        router.push('/profile/catalogue')
       }
     }
 
