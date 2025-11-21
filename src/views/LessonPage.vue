@@ -832,15 +832,17 @@ return guestProgress[lessonId]
         return;
       }
 
-      // Try to go back if history exists and we didn't come from an external site
-      // window.history.length > 1 suggests there is history
-      if (window.history.length > 1) {
+      // Check if user came from within the site (not external or direct navigation)
+      const referrer = document.referrer;
+      const currentOrigin = window.location.origin;
+      
+      // If referrer exists and is from same origin, go back
+      if (referrer && referrer.startsWith(currentOrigin)) {
         router.go(-1);
       } else {
-        // Default to Catalogue if no history
+        // No referrer or external referrer - go to Catalogue
         router.replace({ name: 'CataloguePage' }).catch(err => {
            console.warn('Router navigation failed, trying path:', err);
-           // Fallback to explicit path defined in router
            router.replace('/profile/catalogue');
         });
       }
@@ -1250,14 +1252,16 @@ sound.pronounceWord?.(word)
          console.log(`🎮 Game Step Detected! Type: ${specificGameType}`);
 
          // Construct a standardized game object that InteractivePanel expects
+         // CRITICAL: Spread step FIRST, then override with our corrected values
          return {
+            ...step, // Spread original step data first
             _id: step._id || `game_${lessonOrchestrator.currentIndex.value}`,
-            id: step.id || `game_${lessonOrchestrator.currentIndex.value}`, // Ensure unique ID
-            type: 'game', // Ensure type is explicitly 'game' for InteractivePanel's isGameMode check
+            id: step.id || `game_${lessonOrchestrator.currentIndex.value}`,
+            type: 'game', // Force type to 'game'
             title: step.title || 'Game',
             description: step.instructions || step.description || '',
 
-            // ✅ IMPORTANT: Pass the specific type clearly
+            // ✅ CRITICAL: Override gameType AFTER spreading step
             gameType: specificGameType,
 
             // Ensure config is flattened and accessible
@@ -1268,10 +1272,7 @@ sound.pronounceWord?.(word)
                questions: step.gameConfig?.questions || step.data?.questions || step.questions || []
             },
             questions: step.questions || step.gameConfig?.questions || step.data?.questions || [],
-            // Pass through instructions for display before/during game
             instructions: step.instructions || step.description || "Play the game!",
-            // Pass the whole step data just in case
-            ...step
          };
       }
 
@@ -2011,6 +2012,7 @@ return { success: false, error: error.message }
       nextVocabWord,
       previousVocabWord,
       skipVocabularyModal,
+      closeVocabularyModal,
       restartVocabulary,
       pronounceWord,
 
