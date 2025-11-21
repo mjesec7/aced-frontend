@@ -15,6 +15,11 @@
       :target-score="100"
     />
 
+    <!-- Question Banner -->
+    <div v-if="gameActive" class="question-banner">
+      <p class="question-text">{{ currentPrompt }}</p>
+    </div>
+
     <div class="game-grid">
       <div v-for="(hole, index) in holes" :key="index" class="hole-wrapper">
         <!-- Back of the mound -->
@@ -310,7 +315,6 @@ onUnmounted(stopGame);
   display: flex;
   flex-direction: column;
   box-shadow: inset 0 0 60px rgba(0,0,0,0.1);
-  padding-right: 200px; /* Space for sidebar */
 }
 
 .bg-decoration {
@@ -321,6 +325,27 @@ onUnmounted(stopGame);
 }
 .circle-1 { width: 300px; height: 300px; top: -50px; left: -50px; }
 .circle-2 { width: 200px; height: 200px; bottom: 50px; right: -20px; }
+
+/* Question Banner */
+.question-banner {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  padding: 16px 24px;
+  margin: 20px auto 0;
+  border-radius: 20px;
+  max-width: 600px;
+  text-align: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  z-index: 50;
+}
+
+.question-text {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 0;
+  line-height: 1.2;
+}
 
 
 /* GRID */

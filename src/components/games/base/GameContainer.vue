@@ -1,29 +1,5 @@
 <template>
   <div class="game-container" :class="`game-${gameType}`">
-    <!-- Give Up Button -->
-    <button 
-      v-if="gameStarted && !gameComplete && !showGiveUpConfirm" 
-      class="give-up-btn" 
-      @click="showGiveUpConfirm = true"
-      title="Give Up"
-    >
-      ✕
-    </button>
-
-    <!-- Give Up Confirmation Modal -->
-    <transition name="fade">
-      <div v-if="showGiveUpConfirm" class="confirm-overlay" @click.self="showGiveUpConfirm = false">
-        <div class="confirm-modal">
-          <h3>Give Up?</h3>
-          <p>Are you sure you want to give up this game?</p>
-          <div class="confirm-buttons">
-            <button class="confirm-btn cancel" @click="showGiveUpConfirm = false">Cancel</button>
-            <button class="confirm-btn confirm" @click="handleGiveUp">Give Up</button>
-          </div>
-        </div>
-      </div>
-    </transition>
-
     <!-- Game HUD -->
     <GameHUD
       v-if="gameStarted && !gameComplete"
@@ -160,7 +136,6 @@ const wrongItems = ref(0);
 const isPersonalBest = ref(false);
 const timerInterval = ref(null);
 const actions = ref([]);
-const showGiveUpConfirm = ref(false);
 
 // Computed
 const gameComponent = computed(() => {

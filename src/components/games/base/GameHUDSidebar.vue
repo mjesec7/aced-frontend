@@ -68,27 +68,26 @@ defineProps({
 <style scoped>
 .game-hud-sidebar {
   position: absolute;
-  right: 0;
-  top: 0;
-  height: 100%;
-  width: 180px;
+  right: 20px;
+  top: 20px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
-  border-radius: 16px 0 0 16px;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  box-shadow: -4px 0 15px rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  padding: 12px 16px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   z-index: 100;
 }
 
 .hud-section {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   gap: 6px;
-  padding: 12px;
+  padding: 8px 12px;
   background: rgba(255, 255, 255, 0.6);
   border-radius: 12px;
   border: 2px solid rgba(0, 0, 0, 0.05);
@@ -99,18 +98,14 @@ defineProps({
 }
 
 .hud-value {
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   font-weight: 800;
   color: #1e293b;
   line-height: 1;
 }
 
 .hud-label {
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  display: none; /* Hide labels in compact mode */
 }
 
 .hud-section.timer.warning .hud-value {
@@ -142,48 +137,36 @@ defineProps({
 }
 
 .hud-section.prompt {
-  flex: 1;
-  justify-content: center;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.1));
-  border: 2px solid rgba(59, 130, 246, 0.2);
+  display: none; /* Hide prompt from HUD - will show in game area */
 }
 
 .prompt-text {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #1e293b;
-  text-align: center;
-  margin: 0;
-  line-height: 1.3;
-  word-break: break-word;
+  display: none;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
   .game-hud-sidebar {
-    width: 140px;
-    padding: 15px;
-    gap: 12px;
+    right: 10px;
+    top: 10px;
+    gap: 8px;
+    padding: 8px 12px;
   }
 
   .hud-section {
-    padding: 10px;
+    padding: 6px 10px;
   }
 
   .hud-icon {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
   }
 
   .hud-value {
-    font-size: 1.2rem;
-  }
-
-  .prompt-text {
-    font-size: 0.9rem;
+    font-size: 1rem;
   }
 
   .heart {
-    font-size: 1.1rem;
+    font-size: 1rem;
   }
 }
 </style>

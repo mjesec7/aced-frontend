@@ -255,7 +255,6 @@ onUnmounted(stopGame);
   border: 4px solid white;
   box-shadow: inset 0 0 30px rgba(0,0,0,0.05);
   cursor: none;
-  padding-right: 200px; /* Space for sidebar */
 }
 
 
