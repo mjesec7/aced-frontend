@@ -560,6 +560,11 @@ const gameType = computed(() => {
     return configType;
   }
 
+  // Check if the exercise type itself is a specific game type
+  if (['basket-catch', 'whack-a-mole', 'memory-cards'].includes(props.currentExercise.type)) {
+      return props.currentExercise.type;
+  }
+
   console.log('⚠️ No specific gameType found, falling back to basket-catch');
   return 'basket-catch'; // Default fallback
 });

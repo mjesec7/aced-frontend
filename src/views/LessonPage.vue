@@ -143,7 +143,7 @@
       @previous-word="previousVocabWord"
       @skip="skipVocabularyModal"
       @restart="restartVocabulary"
-      @close="confirmExit"
+      @close="closeVocabularyModal"
       @pronounce="pronounceWord"
       @jump-to-word="jumpToVocabWord"
     />
@@ -832,12 +832,17 @@ return guestProgress[lessonId]
         return;
       }
 
-      // Use router.replace to prevent back-button loops
-      router.replace({ name: 'CataloguePage' }).catch(err => {
-         console.warn('Router navigation failed, trying path:', err);
-         // Fallback to explicit path defined in router
-         router.replace('/profile/catalogue');
-      });
+      // Try to go back if history exists, otherwise default to Catalogue
+      if (window.history.state && window.history.state.back) {
+        router.back();
+      } else {
+        // Use router.replace to prevent back-button loops
+        router.replace({ name: 'CataloguePage' }).catch(err => {
+           console.warn('Router navigation failed, trying path:', err);
+           // Fallback to explicit path defined in router
+           router.replace('/profile/catalogue');
+        });
+      }
     }
 
     const handleGoToHomework = () => {
@@ -1170,6 +1175,12 @@ if (index >= 0 && index < vocabulary.vocabularyModal.words.length) {
       vocabulary.restartVocabulary()
     }
 
+    const closeVocabularyModal = () => {
+      if (vocabulary.vocabularyModal) {
+        vocabulary.vocabularyModal.isVisible = false
+      }
+    }
+
     const pronounceWord = (word) => {
       if (!word || typeof word !== 'string') {
         return
@@ -1222,11 +1233,13 @@ sound.pronounceWord?.(word)
       //
       // We check for 'game' type OR if gameConfig exists in data
       if (step.type === 'game' || step.gameType || (step.data && step.data.gameConfig)) {
-         // ✅ FIX: Explicitly handle Game Steps
+          // ✅ FIX: Explicitly handle Game Steps
          // Extract game type, prioritizing specific overrides
          const specificGameType = step.gameType ||
                                   (step.gameConfig && step.gameConfig.type) ||
                                   (step.gameConfig && step.gameConfig.gameType) ||
+                                  (step.type === 'whack-a-mole' ? 'whack-a-mole' : null) || 
+                                  (step.type === 'basket-catch' ? 'basket-catch' : null) ||
                                   'basket-catch'; // Only fallback if absolutely nothing else exists
 
          console.log(`🎮 Game Step Detected! Type: ${specificGameType}`);
