@@ -272,20 +272,21 @@ onUnmounted(stopGame);
 /* HUD */
 .hud-glass-panel {
     position: absolute;
-    top: 12px;
+    top: 0; /* Move to very top */
     left: 50%;
     transform: translateX(-50%);
-    width: 90%;
-    max-width: 500px;
-    background: rgba(255, 255, 255, 0.8);
+    width: 100%; /* Full width */
+    max-width: 600px; /* Slightly wider */
+    background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(8px);
-    border-radius: 20px;
-    padding: 12px 20px;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+    padding: 8px 16px; /* Reduced padding */
     box-shadow: 0 4px 15px rgba(0,0,0,0.05);
     z-index: 100;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 4px; /* Reduced gap */
 }
 
 .hud-top-row {

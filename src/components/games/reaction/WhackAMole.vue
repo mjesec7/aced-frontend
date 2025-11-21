@@ -254,12 +254,14 @@ onUnmounted(stopGame);
 /* HUD */
 .hud-glass {
   background: rgba(255,255,255,0.9);
-  margin: 16px;
-  padding: 12px 20px;
+  margin: 8px; /* Reduced margin */
+  padding: 8px 16px; /* Reduced padding */
   border-radius: 16px;
   box-shadow: 0 4px 15px rgba(0,0,0,0.1);
   z-index: 20;
   text-align: center;
+  max-width: 90%; /* Prevent full width on small screens */
+  align-self: center; /* Center in flex container */
 }
 
 .hud-stats {
