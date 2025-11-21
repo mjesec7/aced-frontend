@@ -416,118 +416,145 @@ export function useLessonOrchestrator() {
       content = step.data.text
     }
 
-  }
-
-  return {
-    type: step.type,
-    data: {
-      content: content,
-      questions: step.questions || step.data?.questions || []
-    }
-  }
-}
-
-const processLegacyLessonFormat = () => {
-  // Add explanations
-  if (Array.isArray(lesson.value.explanations)) {
-    lesson.value.explanations.forEach(explanation => {
-      steps.value.push({
-        type: 'explanation',
-        data: {
-          content: typeof explanation === 'string' ? explanation : explanation.content || ''
-        }
-      })
-    })
-  }
-
-  // Add examples
-  if (Array.isArray(lesson.value.examples)) {
-    lesson.value.examples.forEach(example => {
-      steps.value.push({
-        type: 'example',
-        data: {
-          content: typeof example === 'string' ? example : example.content || ''
-        }
-      })
-    })
-  }
-
-  // Add exercises
-  if (Array.isArray(lesson.value.exercises)) {
-    steps.value.push({
-      type: 'exercise',
-      data: lesson.value.exercises
-    })
-  }
-}
-
-// ✅ MODIFIED: Progress management - handle guest progress
-const loadPreviousProgress = async () => {
-  // ✅ NEW: Handle guest progress from localStorage
-  if (isGuestMode.value) {
-    try {
-      const guestProgress = JSON.parse(localStorage.getItem('guestProgress') || '{}')
-      const lessonProgress = guestProgress[lesson.value._id]
-
-      if (lessonProgress) {
-        previousProgress.value = {
-          completedSteps: lessonProgress.completedSteps || [],
-          mistakes: lessonProgress.mistakes || 0,
-          stars: lessonProgress.stars || 0,
-          duration: lessonProgress.elapsedSeconds || 0,
-          currentStep: lessonProgress.currentStep || 0
-        }
+    return {
+      type: step.type,
+      data: {
+        content: content,
+        questions: step.questions || step.data?.questions || []
       }
-    } catch (error) {
-      // Error loading guest progress
     }
-    return
   }
 
-  // Regular authenticated user progress
-  if (!lesson.value._id || !userId.value) {
-    return
+  const processLegacyLessonFormat = () => {
+    // Add explanations
+    if (Array.isArray(lesson.value.explanations)) {
+      lesson.value.explanations.forEach(explanation => {
+        steps.value.push({
+          type: 'explanation',
+          data: {
+            content: typeof explanation === 'string' ? explanation : explanation.content || ''
+          }
+        })
+      })
+    }
+
+    // Add examples
+    if (Array.isArray(lesson.value.examples)) {
+      lesson.value.examples.forEach(example => {
+        steps.value.push({
+          type: 'example',
+          data: {
+            content: typeof example === 'string' ? example : example.content || ''
+          }
+        })
+      })
+    }
+
+    // Add exercises
+    if (Array.isArray(lesson.value.exercises)) {
+      steps.value.push({
+        type: 'exercise',
+        data: lesson.value.exercises
+      })
+    }
   }
 
-  try {
-    const progressResult = await getLessonProgress(userId.value, lesson.value._id)
+  // ✅ MODIFIED: Progress management - handle guest progress
+  const loadPreviousProgress = async () => {
+    // ✅ NEW: Handle guest progress from localStorage
+    if (isGuestMode.value) {
+      try {
+        const guestProgress = JSON.parse(localStorage.getItem('guestProgress') || '{}')
+        const lessonProgress = guestProgress[lesson.value._id]
 
-    if (progressResult.success && progressResult.data) {
-      const progressData = progressResult.data
+        if (lessonProgress) {
+          previousProgress.value = {
+            completedSteps: lessonProgress.completedSteps || [],
+            mistakes: lessonProgress.mistakes || 0,
+            stars: lessonProgress.stars || 0,
+            duration: lessonProgress.elapsedSeconds || 0,
+            currentStep: lessonProgress.currentStep || 0
+          }
+        }
+      } catch (error) {
+        // Error loading guest progress
+      }
+      return
+    }
 
-      if (progressData.completedSteps && progressData.completedSteps.length > 0) {
-        previousProgress.value = {
-          _id: progressData._id,
-          userId: progressData.userId,
-          lessonId: progressData.lessonId,
-          completedSteps: progressData.completedSteps || [],
-          accuracy: progressData.accuracy || 0,
-          completed: progressData.completed || false,
-          duration: progressData.duration || 0,
-          mistakes: progressData.mistakes || 0,
-          points: progressData.points || 0,
-          stars: progressData.stars || 0,
-          hintsUsed: progressData.hintsUsed || 0,
-          medal: progressData.medal || 'none'
+    // Regular authenticated user progress
+    if (!lesson.value._id || !userId.value) {
+      return
+    }
+
+    try {
+      const progressResult = await getLessonProgress(userId.value, lesson.value._id)
+
+      if (progressResult.success && progressResult.data) {
+        const progressData = progressResult.data
+
+        if (progressData.completedSteps && progressData.completedSteps.length > 0) {
+          previousProgress.value = {
+            _id: progressData._id,
+            userId: progressData.userId,
+            lessonId: progressData.lessonId,
+            completedSteps: progressData.completedSteps || [],
+            accuracy: progressData.accuracy || 0,
+            completed: progressData.completed || false,
+            duration: progressData.duration || 0,
+            mistakes: progressData.mistakes || 0,
+            points: progressData.points || 0,
+            stars: progressData.stars || 0,
+            hintsUsed: progressData.hintsUsed || 0,
+            medal: progressData.medal || 'none'
+          }
+        } else {
+          previousProgress.value = null
         }
       } else {
         previousProgress.value = null
       }
-    } else {
+
+    } catch (err) {
       previousProgress.value = null
     }
-
-  } catch (err) {
-    previousProgress.value = null
   }
-}
 
-// ✅ MODIFIED: Save progress - handle guest saves
-const saveProgress = async (completed = false) => {
-  try {
-    // ✅ NEW: Save guest progress to localStorage
-    if (isGuestMode.value) {
-      const guestProgress = JSON.parse(localStorage.getItem('guestProgress') || '{}')
+  // ✅ MODIFIED: Save progress - handle guest saves
+  const saveProgress = async (completed = false) => {
+    try {
+      // ✅ NEW: Save guest progress to localStorage
+      if (isGuestMode.value) {
+        const guestProgress = JSON.parse(localStorage.getItem('guestProgress') || '{}')
+
+        const completedSteps = []
+        if (started.value) {
+          const maxIndex = Math.min(currentIndex.value, steps.value.length - 1)
+          for (let i = 0; i <= maxIndex; i++) {
+            completedSteps.push(i)
+          }
+        }
+
+        guestProgress[lesson.value._id] = {
+          lessonId: lesson.value._id,
+          lessonName: lesson.value.lessonName || lesson.value.title,
+          currentStep: currentIndex.value,
+          completedSteps: completedSteps,
+          mistakes: mistakeCount.value,
+          stars: stars.value,
+          elapsedSeconds: elapsedSeconds.value,
+          completed: completed,
+          timestamp: Date.now()
+        }
+
+        localStorage.setItem('guestProgress', JSON.stringify(guestProgress))
+        return true
+      }
+
+      // Regular authenticated save
+      if (!userId.value || !lesson.value._id) {
+        return false
+      }
 
       const completedSteps = []
       if (started.value) {
@@ -537,399 +564,371 @@ const saveProgress = async (completed = false) => {
         }
       }
 
-      guestProgress[lesson.value._id] = {
-        lessonId: lesson.value._id,
-        lessonName: lesson.value.lessonName || lesson.value.title,
-        currentStep: currentIndex.value,
+      const progressPercent = steps.value.length > 0
+        ? Math.floor((completedSteps.length / steps.value.length) * 100)
+        : 0
+
+      const progressData = {
+        userId: userId.value,
+        lessonId: String(lesson.value._id),
+        topicId: String(lesson.value.topicId || lesson.value._id),
         completedSteps: completedSteps,
-        mistakes: mistakeCount.value,
-        stars: stars.value,
-        elapsedSeconds: elapsedSeconds.value,
+        progressPercent: progressPercent,
         completed: completed,
-        timestamp: Date.now()
+        mistakes: mistakeCount.value,
+        medal: mistakeCount.value === 0 ? 'gold' : mistakeCount.value <= 2 ? 'silver' : 'bronze',
+        duration: elapsedSeconds.value,
+        stars: stars.value,
+        points: earnedPoints.value,
+        hintsUsed: hintsUsed.value ? 1 : 0,
+        submittedHomework: false
       }
 
-      localStorage.setItem('guestProgress', JSON.stringify(guestProgress))
-      return true
-    }
+      const result = await submitProgress(userId.value, progressData)
 
-    // Regular authenticated save
-    if (!userId.value || !lesson.value._id) {
+      if (result.success) {
+        return true
+      } else {
+        return false
+      }
+
+    } catch (err) {
       return false
     }
+  }
 
-    const completedSteps = []
-    if (started.value) {
-      const maxIndex = Math.min(currentIndex.value, steps.value.length - 1)
-      for (let i = 0; i <= maxIndex; i++) {
-        completedSteps.push(i)
+  const autosaveProgress = async () => {
+    try {
+      const success = await saveProgress(false)
+      if (!success) {
+        // Retry after 30 seconds if save failed
+        setTimeout(() => autosaveProgress(), 30000)
       }
+    } catch (error) {
+      // Autosave error
     }
+  }
 
-    const progressPercent = steps.value.length > 0
-      ? Math.floor((completedSteps.length / steps.value.length) * 100)
-      : 0
+  // ✅ Lesson control methods
+  const startLesson = () => {
+    started.value = true
+    timerInterval.value = setInterval(() => elapsedSeconds.value++, 1000)
 
-    const progressData = {
-      userId: userId.value,
-      lessonId: String(lesson.value._id),
-      topicId: String(lesson.value.topicId || lesson.value._id),
-      completedSteps: completedSteps,
-      progressPercent: progressPercent,
-      completed: completed,
-      mistakes: mistakeCount.value,
-      medal: mistakeCount.value === 0 ? 'gold' : mistakeCount.value <= 2 ? 'silver' : 'bronze',
-      duration: elapsedSeconds.value,
-      stars: stars.value,
-      points: earnedPoints.value,
-      hintsUsed: hintsUsed.value ? 1 : 0,
-      submittedHomework: false
-    }
-
-    const result = await submitProgress(userId.value, progressData)
-
-    if (result.success) {
-      return true
+    // ✅ Only autosave for authenticated users
+    if (!isGuestMode.value) {
+      autosaveTimer.value = setInterval(() => autosaveProgress(), 15000)
     } else {
-      return false
+      // For guests, save periodically to localStorage
+      autosaveTimer.value = setInterval(() => saveProgress(false), 30000)
+    }
+  }
+
+  const continuePreviousProgress = () => {
+    if (previousProgress.value) {
+      currentIndex.value = Math.min(
+        previousProgress.value.completedSteps?.length || previousProgress.value.currentStep || 0,
+        steps.value.length - 1
+      )
+      stars.value = parseInt(previousProgress.value.stars) || 0
+      mistakeCount.value = parseInt(previousProgress.value.mistakes) || 0
+      elapsedSeconds.value = parseInt(previousProgress.value.duration) || 0
+      hintsUsed.value = Boolean(previousProgress.value.hintsUsed)
+      earnedPoints.value = parseInt(previousProgress.value.points) || 0
+    }
+    startLesson()
+  }
+
+  const goNext = () => {
+    if (isLastStep.value) {
+      completeLesson()
+    } else {
+      currentIndex.value++
+    }
+  }
+
+  const goPrevious = () => {
+    if (currentIndex.value > 0) {
+      currentIndex.value--
+    }
+  }
+
+  const completeLesson = async () => {
+    clearTimers()
+    lessonCompleted.value = true
+    showConfetti.value = true
+
+    earnedPoints.value = Math.max(0, 100 - mistakeCount.value * 10 + stars.value * 5)
+
+    if (mistakeCount.value === 0) {
+      medalLabel.value = '🥇 Gold Medal - Perfect!'
+    } else if (mistakeCount.value <= 2) {
+      medalLabel.value = '🥈 Silver Medal - Excellent!'
+    } else {
+      medalLabel.value = '🥉 Bronze Medal - Good!'
     }
 
-  } catch (err) {
-    return false
+    setTimeout(() => launchConfetti(), 200)
+    await saveProgress(true)
   }
-}
 
-const autosaveProgress = async () => {
-  try {
-    const success = await saveProgress(false)
-    if (!success) {
-      // Retry after 30 seconds if save failed
-      setTimeout(() => autosaveProgress(), 30000)
+  const retryLoad = async () => {
+    retryCount.value++
+    await loadLesson()
+  }
+
+  // ✅ MODIFIED: Modal controls - handle guest exit
+  const confirmExit = () => {
+    showExitModal.value = true
+  }
+
+  const cancelExit = () => {
+    showExitModal.value = false
+  }
+
+  const exitLesson = () => {
+    showExitModal.value = false
+
+    // Stop any active timers
+    if (timerInterval.value) clearInterval(timerInterval.value)
+
+    // Save progress before exiting
+    if (started.value && !lessonCompleted.value) {
+      saveProgress()
     }
-  } catch (error) {
-    // Autosave error
-  }
-}
 
-// ✅ Lesson control methods
-const startLesson = () => {
-  started.value = true
-  timerInterval.value = setInterval(() => elapsedSeconds.value++, 1000)
+    // ✅ MODIFIED: Only redirect to Home if TRULY a guest (no auth)
+    // Logged in users playing free lessons should go back to catalogue/previous page
+    const isTrueGuest = isGuestMode.value && !localStorage.getItem('authToken') && !auth.currentUser
 
-  // ✅ Only autosave for authenticated users
-  if (!isGuestMode.value) {
-    autosaveTimer.value = setInterval(() => autosaveProgress(), 15000)
-  } else {
-    // For guests, save periodically to localStorage
-    autosaveTimer.value = setInterval(() => saveProgress(false), 30000)
-  }
-}
-
-const continuePreviousProgress = () => {
-  if (previousProgress.value) {
-    currentIndex.value = Math.min(
-      previousProgress.value.completedSteps?.length || previousProgress.value.currentStep || 0,
-      steps.value.length - 1
-    )
-    stars.value = parseInt(previousProgress.value.stars) || 0
-    mistakeCount.value = parseInt(previousProgress.value.mistakes) || 0
-    elapsedSeconds.value = parseInt(previousProgress.value.duration) || 0
-    hintsUsed.value = Boolean(previousProgress.value.hintsUsed)
-    earnedPoints.value = parseInt(previousProgress.value.points) || 0
-  }
-  startLesson()
-}
-
-const goNext = () => {
-  if (isLastStep.value) {
-    completeLesson()
-  } else {
-    currentIndex.value++
-  }
-}
-
-const goPrevious = () => {
-  if (currentIndex.value > 0) {
-    currentIndex.value--
-  }
-}
-
-const completeLesson = async () => {
-  clearTimers()
-  lessonCompleted.value = true
-  showConfetti.value = true
-
-  earnedPoints.value = Math.max(0, 100 - mistakeCount.value * 10 + stars.value * 5)
-
-  if (mistakeCount.value === 0) {
-    medalLabel.value = '🥇 Gold Medal - Perfect!'
-  } else if (mistakeCount.value <= 2) {
-    medalLabel.value = '🥈 Silver Medal - Excellent!'
-  } else {
-    medalLabel.value = '🥉 Bronze Medal - Good!'
+    if (isTrueGuest) {
+      router.push({
+        name: 'HomePage',
+        query: { message: 'guest_lesson_exit' }
+      })
+    } else {
+      // Try to go back to previous page first
+      // Check if we have a valid history to go back to
+      if (window.history.length > 1) {
+        router.back()
+      } else {
+        // Fallback to catalogue if no history
+        router.push('/profile/catalogue')
+      }
+    }
   }
 
-  setTimeout(() => launchConfetti(), 200)
-  await saveProgress(true)
-}
-
-const retryLoad = async () => {
-  retryCount.value++
-  await loadLesson()
-}
-
-// ✅ MODIFIED: Modal controls - handle guest exit
-const confirmExit = () => {
-  showExitModal.value = true
-}
-
-const cancelExit = () => {
-  showExitModal.value = false
-}
-
-const exitLesson = () => {
-  showExitModal.value = false
-
-  // Stop any active timers
-  if (timerInterval.value) clearInterval(timerInterval.value)
-
-  // Save progress before exiting
-  if (started.value && !lessonCompleted.value) {
-    saveProgress()
+  // ✅ NEW: Show registration/paywall modal for guests
+  const showRegistrationPrompt = () => {
+    showPaywallModal.value = true
   }
 
-  // ✅ MODIFIED: Only redirect to Home if TRULY a guest (no auth)
-  // Logged in users playing free lessons should go back to catalogue/previous page
-  const isTrueGuest = isGuestMode.value && !localStorage.getItem('authToken') && !auth.currentUser
+  const closePaywallModal = () => {
+    showPaywallModal.value = false
+  }
 
-  if (isTrueGuest) {
+  const redirectToRegistration = () => {
     router.push({
       name: 'HomePage',
-      query: { message: 'guest_lesson_exit' }
+      query: {
+        openLogin: 'true',
+        returnTo: route.fullPath
+      }
     })
-  } else {
-    // Try to go back to previous page first
-    // Check if we have a valid history to go back to
-    if (window.history.length > 1) {
-      router.back()
+  }
+
+  // ✅ Utility methods
+  const clearTimers = () => {
+    if (timerInterval.value) {
+      clearInterval(timerInterval.value)
+      timerInterval.value = null
+    }
+    if (autosaveTimer.value) {
+      clearInterval(autosaveTimer.value)
+      autosaveTimer.value = null
+    }
+  }
+
+  const launchConfetti = () => {
+    // Implementation would use confetti library
+    setTimeout(() => (showConfetti.value = false), 5000)
+  }
+
+  // ✅ MODIFIED: Handle lesson error - add guest-specific messages
+  const handleLessonError = (error) => {
+    if (error.message?.includes('not found')) {
+      return 'Lesson not found. Check the link or try reloading the page.'
+    } else if (error.message?.includes('Invalid lesson ID')) {
+      return 'Invalid lesson ID. Please check the link.'
+    } else if (error.message?.includes('Authentication') && !isGuestMode.value) {
+      return 'You need to log in to access this lesson.'
+    } else if (error.message?.includes('premium') || error.message?.includes('subscription')) {
+      return 'This lesson is only available to subscribers. Register to get access!'
+    } else if (error.message?.includes('limit')) {
+      return 'You have reached the limit of free lessons. Register to continue learning!'
     } else {
-      // Fallback to catalogue if no history
-      router.push('/profile/catalogue')
+      return error.message || 'An error occurred while loading the lesson.'
     }
   }
-}
 
-// ✅ NEW: Show registration/paywall modal for guests
-const showRegistrationPrompt = () => {
-  showPaywallModal.value = true
-}
-
-const closePaywallModal = () => {
-  showPaywallModal.value = false
-}
-
-const redirectToRegistration = () => {
-  router.push({
-    name: 'HomePage',
-    query: {
-      openLogin: 'true',
-      returnTo: route.fullPath
+  const getStepIcon = (stepType) => {
+    const icons = {
+      explanation: '📚',
+      example: '💡',
+      reading: '📖',
+      exercise: '✏️',
+      practice: '🧪',
+      quiz: '🧩',
+      vocabulary: '📝',
+      video: '🎬',
+      audio: '🎵'
     }
+    return icons[stepType] || '📄'
+  }
+
+  const getStepTypeText = (stepType) => {
+    const texts = {
+      explanation: 'Explanation',
+      example: 'Example',
+      reading: 'Reading',
+      exercise: 'Exercise',
+      practice: 'Practice',
+      quiz: 'Quiz',
+      vocabulary: 'Vocabulary',
+      video: 'Video',
+      audio: 'Audio'
+    }
+    return texts[stepType] || 'Content'
+  }
+
+  const getMedalIcon = () => {
+    if (mistakeCount.value === 0) return '🥇'
+    if (mistakeCount.value <= 2) return '🥈'
+    return '🥉'
+  }
+
+  const formatContent = (content) => {
+    if (!content) return 'Content unavailable'
+    return content.replace(/\n/g, '<br>')
+  }
+
+  const getLocalized = (field) => {
+    if (typeof field === 'string') return field
+    return (field?.en || field?.ru || field?.uz || '').replace(/^(en|ru|uz):/i, '').trim()
+  }
+
+  // ✅ MODIFIED: Lifecycle management - support guest mode
+  const initializeLesson = async () => {
+    // ✅ Check guest mode first
+    isGuestMode.value = checkGuestMode()
+
+    if (!isGuestMode.value) {
+      // Only wait for auth if not in guest mode
+      await waitForAuth()
+
+      userId.value = localStorage.getItem('firebaseUserId') ||
+        localStorage.getItem('userId') ||
+        auth.currentUser?.uid
+
+      if (!userId.value) {
+        isGuestMode.value = true
+      }
+    }
+
+    // ✅ Load lesson (works for both guests and authenticated users)
+    await loadLesson()
+
+    // ✅ Only proceed if lesson loaded successfully
+    if (!error.value) {
+      // ✅ Load previous progress (works for both)
+      await loadPreviousProgress()
+    }
+  }
+
+  const cleanup = () => {
+    clearTimers()
+    if (started.value && !lessonCompleted.value) {
+      saveProgress(false)
+    }
+  }
+
+  // ✅ Lifecycle hooks
+  onMounted(async () => {
+    await initializeLesson()
   })
-}
 
-// ✅ Utility methods
-const clearTimers = () => {
-  if (timerInterval.value) {
-    clearInterval(timerInterval.value)
-    timerInterval.value = null
+  onUnmounted(() => {
+    cleanup()
+  })
+
+  return {
+    // Core state
+    lesson,
+    steps,
+    currentIndex,
+    started,
+    loading,
+    error,
+    retryCount,
+
+    // Guest mode state
+    isGuestMode,
+    showPaywallModal,
+    guestLessonLimit,
+    guestLessonsViewed,
+
+    // Progress state
+    mistakeCount,
+    stars,
+    earnedPoints,
+    hintsUsed,
+    mistakeLog,
+    previousProgress,
+
+    // Completion state
+    lessonCompleted,
+    elapsedSeconds,
+    showConfetti,
+    showExitModal,
+    medalLabel,
+
+    // User state
+    userId,
+
+    // Computed
+    currentStep,
+    isInteractiveStep,
+    progressPercentage,
+    formattedTime,
+    readableTime,
+    isLastStep,
+    estimatedTime,
+    canAccessLesson,
+    guestAccessMessage,
+
+    // Methods
+    loadLesson,
+    saveProgress,
+    startLesson,
+    continuePreviousProgress,
+    goNext,
+    goPrevious,
+    completeLesson,
+    retryLoad,
+    confirmExit,
+    cancelExit,
+    exitLesson,
+    showRegistrationPrompt,
+    closePaywallModal,
+    redirectToRegistration,
+    checkGuestMode,
+    trackGuestLessonView,
+    checkGuestLimit,
+    getStepIcon,
+    getStepTypeText,
+    getMedalIcon,
+    formatContent,
+    getLocalized,
+    initializeLesson,
+    cleanup
   }
-  if (autosaveTimer.value) {
-    clearInterval(autosaveTimer.value)
-    autosaveTimer.value = null
-  }
-}
-
-const launchConfetti = () => {
-  // Implementation would use confetti library
-  setTimeout(() => (showConfetti.value = false), 5000)
-}
-
-// ✅ MODIFIED: Handle lesson error - add guest-specific messages
-const handleLessonError = (error) => {
-  if (error.message?.includes('not found')) {
-    return 'Lesson not found. Check the link or try reloading the page.'
-  } else if (error.message?.includes('Invalid lesson ID')) {
-    return 'Invalid lesson ID. Please check the link.'
-  } else if (error.message?.includes('Authentication') && !isGuestMode.value) {
-    return 'You need to log in to access this lesson.'
-  } else if (error.message?.includes('premium') || error.message?.includes('subscription')) {
-    return 'This lesson is only available to subscribers. Register to get access!'
-  } else if (error.message?.includes('limit')) {
-    return 'You have reached the limit of free lessons. Register to continue learning!'
-  } else {
-    return error.message || 'An error occurred while loading the lesson.'
-  }
-}
-
-const getStepIcon = (stepType) => {
-  const icons = {
-    explanation: '📚',
-    example: '💡',
-    reading: '📖',
-    exercise: '✏️',
-    practice: '🧪',
-    quiz: '🧩',
-    vocabulary: '📝',
-    video: '🎬',
-    audio: '🎵'
-  }
-  return icons[stepType] || '📄'
-}
-
-const getStepTypeText = (stepType) => {
-  const texts = {
-    explanation: 'Explanation',
-    example: 'Example',
-    reading: 'Reading',
-    exercise: 'Exercise',
-    practice: 'Practice',
-    quiz: 'Quiz',
-    vocabulary: 'Vocabulary',
-    video: 'Video',
-    audio: 'Audio'
-  }
-  return texts[stepType] || 'Content'
-}
-
-const getMedalIcon = () => {
-  if (mistakeCount.value === 0) return '🥇'
-  if (mistakeCount.value <= 2) return '🥈'
-  return '🥉'
-}
-
-const formatContent = (content) => {
-  if (!content) return 'Content unavailable'
-  return content.replace(/\n/g, '<br>')
-}
-
-const getLocalized = (field) => {
-  if (typeof field === 'string') return field
-  return (field?.en || field?.ru || field?.uz || '').replace(/^(en|ru|uz):/i, '').trim()
-}
-
-// ✅ MODIFIED: Lifecycle management - support guest mode
-const initializeLesson = async () => {
-  // ✅ Check guest mode first
-  isGuestMode.value = checkGuestMode()
-
-  if (!isGuestMode.value) {
-    // Only wait for auth if not in guest mode
-    await waitForAuth()
-
-    userId.value = localStorage.getItem('firebaseUserId') ||
-      localStorage.getItem('userId') ||
-      auth.currentUser?.uid
-
-    if (!userId.value) {
-      isGuestMode.value = true
-    }
-  }
-
-  // ✅ Load lesson (works for both guests and authenticated users)
-  await loadLesson()
-
-  // ✅ Only proceed if lesson loaded successfully
-  if (!error.value) {
-    // ✅ Load previous progress (works for both)
-    await loadPreviousProgress()
-  }
-}
-
-const cleanup = () => {
-  clearTimers()
-  if (started.value && !lessonCompleted.value) {
-    saveProgress(false)
-  }
-}
-
-// ✅ Lifecycle hooks
-onMounted(async () => {
-  await initializeLesson()
-})
-
-onUnmounted(() => {
-  cleanup()
-})
-
-return {
-  // Core state
-  lesson,
-  steps,
-  currentIndex,
-  started,
-  loading,
-  error,
-  retryCount,
-
-  // Guest mode state
-  isGuestMode,
-  showPaywallModal,
-  guestLessonLimit,
-  guestLessonsViewed,
-
-  // Progress state
-  mistakeCount,
-  stars,
-  earnedPoints,
-  hintsUsed,
-  mistakeLog,
-  previousProgress,
-
-  // Completion state
-  lessonCompleted,
-  elapsedSeconds,
-  showConfetti,
-  showExitModal,
-  medalLabel,
-
-  // User state
-  userId,
-
-  // Computed
-  currentStep,
-  isInteractiveStep,
-  progressPercentage,
-  formattedTime,
-  readableTime,
-  isLastStep,
-  estimatedTime,
-  canAccessLesson,
-  guestAccessMessage,
-
-  // Methods
-  loadLesson,
-  saveProgress,
-  startLesson,
-  continuePreviousProgress,
-  goNext,
-  goPrevious,
-  completeLesson,
-  retryLoad,
-  confirmExit,
-  cancelExit,
-  exitLesson,
-  showRegistrationPrompt,
-  closePaywallModal,
-  redirectToRegistration,
-  checkGuestMode,
-  trackGuestLessonView,
-  checkGuestLimit,
-  getStepIcon,
-  getStepTypeText,
-  getMedalIcon,
-  formatContent,
-  getLocalized,
-  initializeLesson,
-  cleanup
 }
