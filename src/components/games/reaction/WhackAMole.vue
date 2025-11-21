@@ -174,24 +174,34 @@ const spawnMole = () => {
     const q = currentQuestion.value;
     // 50% chance for correct answer to appear
     isCorrect = Math.random() > 0.5;
+    
     if (isCorrect) {
-      content = q.a || q.correctAnswer;
+      // Ensure we have a valid correct answer
+      content = q.a || q.correctAnswer || "OK";
     } else {
-      const wrong = q.wrong || ["0"];
-      content = wrong[Math.floor(Math.random() * wrong.length)];
+      // Robustly pick a wrong answer
+      const wrong = q.wrong || ["0", "1", "2"];
+      if (Array.isArray(wrong) && wrong.length > 0) {
+        content = wrong[Math.floor(Math.random() * wrong.length)];
+      } else {
+        content = "X"; // Fallback
+      }
     }
   } else {
     // Category Mode (Vocab/Grammar)
     const items = props.gameData.items || [];
     if (items.length === 0) return; 
 
-    const item = items[Math.floor(Math.random() * items.length)];
+    // Ensure we pick a random item each time
+    const randomIndex = Math.floor(Math.random() * items.length);
+    const item = items[randomIndex];
+    
     if (typeof item === 'string') {
       content = item;
       isCorrect = true; 
     } else {
-      content = item.text;
-      isCorrect = item.isCorrect;
+      content = item.text || item.word || "??";
+      isCorrect = item.isCorrect !== undefined ? item.isCorrect : true;
     }
   }
 
@@ -207,8 +217,6 @@ const spawnMole = () => {
   hole.timer = setTimeout(() => {
     if (hole.active && hole.state === 'idle') {
       hole.active = false;
-      // Optional: Penalty for missing a correct mole?
-      // if(hole.isCorrect) emit('life-lost');
     }
   }, speed);
 };
@@ -321,18 +329,21 @@ onUnmounted(stopGame);
 
 /* HUD */
 .hud-glass {
+  /* Relative positioning to take up space in flex container */
+  position: relative; 
   background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(12px);
   margin: 16px;
   padding: 12px 20px;
   border-radius: 24px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  z-index: 20;
+  z-index: 30; /* Higher than grid */
   text-align: center;
   max-width: 600px;
   width: 90%;
   align-self: center;
   border: 1px solid rgba(255,255,255,0.5);
+  flex-shrink: 0; /* Don't shrink */
 }
 
 .hud-stats {
@@ -371,7 +382,7 @@ onUnmounted(stopGame);
 
 /* GRID */
 .game-grid {
-  flex: 1;
+  flex: 1; /* Take remaining space */
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
@@ -380,6 +391,7 @@ onUnmounted(stopGame);
   width: 100%;
   margin: 0 auto;
   align-content: center;
+  overflow-y: auto; /* Allow scroll if screen is very small */
 }
 
 .hole-wrapper {
@@ -389,6 +401,9 @@ onUnmounted(stopGame);
   justify-content: center;
   align-items: flex-end;
   cursor: pointer;
+  /* CRITICAL FIX: Hide mole when it goes down */
+  overflow: hidden;
+  border-radius: 0 0 20px 20px; /* Match mound shape roughly */
 }
 
 /* DIRT MOUNDS */
@@ -399,7 +414,7 @@ onUnmounted(stopGame);
   height: 35%;
   background: linear-gradient(to bottom, #5d4037, #3e2723);
   border-radius: 50% 50% 0 0;
-  z-index: 1;
+  z-index: 1; /* Behind mole */
   box-shadow: inset 0 5px 10px rgba(0,0,0,0.3);
 }
 
@@ -410,7 +425,7 @@ onUnmounted(stopGame);
   height: 25%;
   background: linear-gradient(to bottom, #795548, #5d4037);
   border-radius: 50% 50% 15px 15px;
-  z-index: 10;
+  z-index: 10; /* In front of mole */
   box-shadow: 0 5px 15px rgba(0,0,0,0.2);
 }
 
@@ -432,7 +447,7 @@ onUnmounted(stopGame);
   bottom: 15%;
   width: 75%;
   height: 85%;
-  z-index: 5;
+  z-index: 5; /* Between back and front mounds */
   transform: translateY(110%);
   transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   will-change: transform;
@@ -638,7 +653,7 @@ onUnmounted(stopGame);
     font-size: 0.9rem;
     padding: 4px 8px;
   }
-
+  
   .glass-card { padding: 24px; }
   .icon-bounce { font-size: 3rem; }
   .glass-card h2 { font-size: 1.5rem; }
