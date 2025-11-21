@@ -13,7 +13,6 @@
       :time-remaining="timeRemaining"
       :lives="lives"
       :max-lives="3"
-      :prompt="currentQuestionText"
     />
 
     <div class="game-world">

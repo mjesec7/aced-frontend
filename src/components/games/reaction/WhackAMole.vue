@@ -11,8 +11,6 @@
       :time-remaining="timeRemaining"
       :lives="lives"
       :max-lives="3"
-      :prompt="currentPrompt"
-      :target-score="100"
     />
 
     <!-- Question Banner -->
