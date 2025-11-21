@@ -1,5 +1,29 @@
 <template>
   <div class="game-container" :class="`game-${gameType}`">
+    <!-- Give Up Button -->
+    <button 
+      v-if="gameStarted && !gameComplete && !showGiveUpConfirm" 
+      class="give-up-btn" 
+      @click="showGiveUpConfirm = true"
+      title="Give Up"
+    >
+      ✕
+    </button>
+
+    <!-- Give Up Confirmation Modal -->
+    <transition name="fade">
+      <div v-if="showGiveUpConfirm" class="confirm-overlay" @click.self="showGiveUpConfirm = false">
+        <div class="confirm-modal">
+          <h3>Give Up?</h3>
+          <p>Are you sure you want to give up this game?</p>
+          <div class="confirm-buttons">
+            <button class="confirm-btn cancel" @click="showGiveUpConfirm = false">Cancel</button>
+            <button class="confirm-btn confirm" @click="handleGiveUp">Give Up</button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
     <!-- Game HUD -->
     <GameHUD
       v-if="gameStarted && !gameComplete"
@@ -136,6 +160,7 @@ const wrongItems = ref(0);
 const isPersonalBest = ref(false);
 const timerInterval = ref(null);
 const actions = ref([]);
+const showGiveUpConfirm = ref(false);
 
 // Computed
 const gameComponent = computed(() => {
@@ -344,6 +369,14 @@ const continueLesson = () => {
 const handleShare = (shareData) => {
 };
 
+const handleGiveUp = () => {
+  showGiveUpConfirm.value = false;
+  if (timerInterval.value) {
+    clearInterval(timerInterval.value);
+  }
+  emit('game-exit', { score: score.value, gaveUp: true });
+};
+
 // Lifecycle
 onUnmounted(() => {
   if (timerInterval.value) {
@@ -481,6 +514,106 @@ onUnmounted(() => {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* Give Up Button */
+.give-up-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  background: rgba(239, 68, 68, 0.9);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  z-index: 150;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.give-up-btn:hover {
+  background: rgba(220, 38, 38, 1);
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.5);
+}
+
+/* Confirmation Modal */
+.confirm-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 250;
+}
+
+.confirm-modal {
+  background: white;
+  padding: 24px;
+  border-radius: 16px;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+  max-width: 320px;
+  width: 90%;
+  animation: slideUp 0.3s ease-out;
+}
+
+.confirm-modal h3 {
+  margin: 0 0 12px;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.confirm-modal p {
+  margin: 0 0 20px;
+  color: #64748b;
+  font-size: 1rem;
+}
+
+.confirm-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.confirm-btn {
+  flex: 1;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.confirm-btn.cancel {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.confirm-btn.cancel:hover {
+  background: #e2e8f0;
+}
+
+.confirm-btn.confirm {
+  background: #ef4444;
+  color: white;
+}
+
+.confirm-btn.confirm:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
 .fade-enter-active, .fade-leave-active {

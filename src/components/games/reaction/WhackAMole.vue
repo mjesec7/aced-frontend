@@ -4,34 +4,16 @@
     <div class="bg-decoration circle-1"></div>
     <div class="bg-decoration circle-2"></div>
 
-    <div class="hud-glass">
-      <div class="hud-stats">
-        <div class="stat-pill score-pill">
-          <span class="stat-icon">🎯</span>
-          <span class="stat-value">{{ score }}</span>
-        </div>
-        <div class="stat-pill timer-pill" :class="{ 'low': timeRemaining < 10 }">
-          <span class="stat-icon">⏳</span>
-          <span class="stat-value">{{ timeRemaining }}s</span>
-        </div>
-        <div class="lives-container">
-          <transition-group name="heart-pop">
-            <span 
-              v-for="n in 3" 
-              :key="n" 
-              class="heart" 
-              :class="{ 'lost': n > lives }"
-            >❤️</span>
-          </transition-group>
-        </div>
-      </div>
-
-      <div class="instruction-banner">
-        <transition name="slide-up" mode="out-in">
-          <h2 :key="currentPrompt" class="prompt-text">{{ currentPrompt }}</h2>
-        </transition>
-      </div>
-    </div>
+    <!-- Right Sidebar HUD -->
+    <GameHUDSidebar
+      v-if="gameActive"
+      :score="score"
+      :time-remaining="timeRemaining"
+      :lives="lives"
+      :max-lives="3"
+      :prompt="currentPrompt"
+      :target-score="100"
+    />
 
     <div class="game-grid">
       <div v-for="(hole, index) in holes" :key="index" class="hole-wrapper">
@@ -77,20 +59,23 @@
       </div>
     </div>
 
-    <!-- Start/Game Over Overlay -->
+    <!-- Small Completion Modal -->
     <transition name="fade">
-      <div v-if="!gameActive" class="overlay" @click.self="startGame">
-        <div class="card glass-card">
-          <div class="icon-bounce">🔨</div>
-          <h2>{{ isGameOver ? 'Game Over!' : 'Ready to Whack?' }}</h2>
-          <p>{{ isGameOver ? `Final Score: ${score}` : instructions }}</p>
+      <div v-if="!gameActive" class="modal-overlay" @click.self="startGame">
+        <div class="small-modal">
+          <div class="modal-icon">{{ isGameOver ? (score >= 100 ? '🎉' : '😅') : '🔨' }}</div>
+          <h3 class="modal-title">{{ isGameOver ? (score >= 100 ? 'Perfect!' : 'Game Over') : 'Ready to Whack?' }}</h3>
+          <div class="modal-score">Score: {{ score }}/100</div>
           
-          <div v-if="isGameOver" class="result-stars">
+          <div v-if="isGameOver" class="modal-stars">
             <span v-for="n in 3" :key="n" class="star">{{ n <= earnedStars ? '⭐' : '☆' }}</span>
           </div>
 
-          <button class="play-btn" @click="startGame">
-            {{ isGameOver ? '🔄 Play Again' : '▶ Start Game' }}
+          <button class="modal-btn" @click="startGame">
+            {{ isGameOver ? '🔄 Retry' : '▶ Start' }}
+          </button>
+          <button v-if="isGameOver" class="modal-btn secondary" @click="continueLesson">
+            Continue →
           </button>
         </div>
       </div>
@@ -100,6 +85,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import GameHUDSidebar from '../base/GameHUDSidebar.vue';
 
 const props = defineProps({
   gameData: { type: Object, required: true },
@@ -111,7 +97,7 @@ const props = defineProps({
 const emit = defineEmits(['score-change', 'life-lost', 'game-complete', 'item-collected']);
 
 // Config
-const GRID_SIZE = 9;
+const GRID_SIZE = 4; // Reduced from 9 to 4
 const BASE_SPEED = 1500; // Slightly slower for better playability
 const MIN_SPEED = 700;
 
@@ -268,12 +254,18 @@ const finishGame = () => {
   stopGame();
   isGameOver.value = true;
   
-  // Calculate stars
-  if (props.lives >= 3) earnedStars.value = 3;
-  else if (props.lives === 2) earnedStars.value = 2;
-  else earnedStars.value = 1;
+  // Calculate stars based on score (100 is target)
+  const percentage = (props.score / 100) * 100;
+  if (percentage >= 100) earnedStars.value = 3;
+  else if (percentage >= 70) earnedStars.value = 2;
+  else if (percentage >= 50) earnedStars.value = 1;
+  else earnedStars.value = 0;
   
-  emit('game-complete', { score: props.score + (props.lives * 10) });
+  emit('game-complete', { score: props.score, completed: props.score >= 100 });
+};
+
+const continueLesson = () => {
+  emit('game-complete', { score: props.score, completed: props.score >= 50 });
 };
 
 // --- Lifecycle ---
@@ -294,6 +286,8 @@ const stopGame = () => {
   holes.value.forEach(h => clearTimeout(h.timer));
 };
 
+// Watch for win condition (100 points) or loss conditions
+watch(() => props.score, (val) => { if(val >= 100) finishGame(); });
 watch(() => props.lives, (val) => { if(val <= 0) finishGame(); });
 watch(() => props.timeRemaining, (val) => { if(val <= 0) finishGame(); });
 
@@ -316,6 +310,7 @@ onUnmounted(stopGame);
   display: flex;
   flex-direction: column;
   box-shadow: inset 0 0 60px rgba(0,0,0,0.1);
+  padding-right: 200px; /* Space for sidebar */
 }
 
 .bg-decoration {
@@ -327,72 +322,18 @@ onUnmounted(stopGame);
 .circle-1 { width: 300px; height: 300px; top: -50px; left: -50px; }
 .circle-2 { width: 200px; height: 200px; bottom: 50px; right: -20px; }
 
-/* HUD */
-.hud-glass {
-  /* Relative positioning to take up space in flex container */
-  position: relative; 
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
-  margin: 16px;
-  padding: 12px 20px;
-  border-radius: 24px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  z-index: 30; /* Higher than grid */
-  text-align: center;
-  max-width: 600px;
-  width: 90%;
-  align-self: center;
-  border: 1px solid rgba(255,255,255,0.5);
-  flex-shrink: 0; /* Don't shrink */
-}
-
-.hud-stats {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.stat-pill {
-  background: white;
-  padding: 6px 16px;
-  border-radius: 30px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-  font-weight: 700;
-  color: #475569;
-}
-
-.stat-value { font-size: 1.1rem; }
-.timer-pill.low { color: #ef4444; animation: pulse 1s infinite; }
-
-.lives-container { display: flex; gap: 4px; }
-.heart { font-size: 1.5rem; transition: all 0.3s; }
-.heart.lost { opacity: 0.3; filter: grayscale(1) blur(1px); transform: scale(0.8); }
-
-.prompt-text {
-  margin: 0;
-  font-size: 1.6rem;
-  color: #1e293b;
-  font-weight: 800;
-  text-shadow: 0 2px 0 rgba(255,255,255,0.5);
-}
 
 /* GRID */
 .game-grid {
-  flex: 1; /* Take remaining space */
+  flex: 1;
   display: grid;
-  grid-template-columns: repeat(9, 1fr);
-  gap: 16px;
-  padding: 10px 20px 30px;
-  max-width: 100%; /* Allow full width for single row */
+  grid-template-columns: repeat(4, 1fr); /* Changed from 9 to 4 */
+  gap: 20px;
+  padding: 40px;
+  max-width: 800px;
   width: 100%;
   margin: 0 auto;
   align-content: center;
-  overflow-x: auto; /* Allow horizontal scroll if needed */
-  overflow-y: hidden;
 }
 
 .hole-wrapper {
@@ -539,77 +480,89 @@ onUnmounted(stopGame);
   pointer-events: none;
 }
 
-/* OVERLAY */
-.overlay {
+/* SMALL MODAL */
+.modal-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 50;
+  z-index: 200;
 }
 
-.glass-card {
-  background: rgba(255, 255, 255, 0.95);
-  padding: 40px;
-  border-radius: 32px;
+.small-modal {
+  background: white;
+  padding: 24px;
+  border-radius: 20px;
   text-align: center;
-  box-shadow: 0 20px 50px rgba(0,0,0,0.15);
-  border: 1px solid white;
-  max-width: 90%;
-  width: 400px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+  max-width: 350px;
+  width: 90%;
+  animation: slideUp 0.3s ease-out;
 }
 
-.icon-bounce { 
-  font-size: 4rem; 
-  margin-bottom: 16px;
-  animation: bounce 2s infinite;
+@keyframes slideUp {
+  from { transform: translateY(30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
-.glass-card h2 { 
-  font-size: 2rem; 
-  font-weight: 800; 
-  color: #1e293b; 
-  margin: 0 0 12px; 
+.modal-icon {
+  font-size: 3.5rem;
+  margin-bottom: 12px;
 }
 
-.glass-card p { 
-  font-size: 1.1rem; 
-  color: #64748b; 
-  margin-bottom: 24px; 
-  line-height: 1.5;
+.modal-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 0 0 8px;
 }
 
-.play-btn {
-  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-  color: white; 
-  border: none;
-  padding: 16px 40px; 
-  border-radius: 20px; 
-  font-weight: 800; 
-  cursor: pointer;
+.modal-score {
   font-size: 1.2rem;
-  transition: all 0.3s;
-  box-shadow: 0 10px 20px rgba(34, 197, 94, 0.3);
+  font-weight: 700;
+  color: #64748b;
+  margin-bottom: 16px;
+}
+
+.modal-stars {
+  font-size: 2rem;
+  margin-bottom: 16px;
+  letter-spacing: 4px;
+}
+
+.modal-btn {
   width: 100%;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-bottom: 8px;
 }
 
-.play-btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 15px 30px rgba(34, 197, 94, 0.4);
+.modal-btn:not(.secondary) {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
 }
 
-.play-btn:active {
-  transform: translateY(-1px);
+.modal-btn:not(.secondary):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(34, 197, 94, 0.4);
 }
 
-.result-stars {
-  font-size: 2.5rem;
-  color: #fbbf24;
-  margin-bottom: 20px;
-  letter-spacing: 8px;
+.modal-btn.secondary {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.modal-btn.secondary:hover {
+  background: #e2e8f0;
 }
 
 /* ANIMATIONS */

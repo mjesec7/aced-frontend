@@ -6,29 +6,15 @@
     @touchmove="handleTouchMove"
     @click="handleGameClick"
   >
-    <div class="hud-glass-panel">
-        <div class="hud-top-row">
-            <div class="progress-pill">
-                <span class="pill-icon">🧩</span>
-                <span class="pill-text">Q{{ currentQuestionIndex + 1 }} / {{ questions.length }}</span>
-            </div>
-            <div class="timer-pill" :class="{ 'pulse-red': timeRemaining < 10 }">
-                <span>⏳ {{ timeRemaining }}s</span>
-            </div>
-            <div class="lives-container">
-                <span v-for="i in 3" :key="i" class="heart" :class="{ 'lost': i > lives }">❤️</span>
-            </div>
-            <button class="pause-btn" @click.stop="$emit('pause')">⏸️</button>
-        </div>
-
-        <div class="question-banner">
-            <transition name="slide-up" mode="out-in">
-                <div :key="currentQuestionIndex" class="q-content">
-                    <h1 class="math-text">{{ currentQuestionText }}</h1>
-                </div>
-            </transition>
-        </div>
-    </div>
+    <!-- Right Sidebar HUD -->
+    <GameHUDSidebar
+      v-if="gameActive"
+      :score="score"
+      :time-remaining="timeRemaining"
+      :lives="lives"
+      :max-lives="3"
+      :prompt="currentQuestionText"
+    />
 
     <div class="game-world">
       <div
@@ -59,12 +45,13 @@
       </div>
     </transition>
 
-    <div v-if="!gameActive" class="start-overlay" @click="startGame">
-        <div class="start-card">
-            <div class="start-icon">🎮</div>
-            <h2>Ready?</h2>
-            <p>Drag the basket to catch the correct answer!</p>
-            <button class="start-btn">▶ Play Now</button>
+    <!-- Small Start/Complete Modal -->
+    <div v-if="!gameActive" class="modal-overlay" @click="startGame">
+        <div class="small-modal">
+            <div class="modal-icon">🎮</div>
+            <h3 class="modal-title">Ready?</h3>
+            <p class="modal-text">Drag the basket to catch the correct answer!</p>
+            <button class="modal-btn" @click="startGame">▶ Play Now</button>
         </div>
     </div>
   </div>
@@ -72,6 +59,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import GameHUDSidebar from '../base/GameHUDSidebar.vue';
 
 const props = defineProps({
   gameData: { type: Object, required: true },
@@ -267,52 +255,10 @@ onUnmounted(stopGame);
   border: 4px solid white;
   box-shadow: inset 0 0 30px rgba(0,0,0,0.05);
   cursor: none;
+  padding-right: 200px; /* Space for sidebar */
 }
 
-/* HUD */
-.hud-glass-panel {
-    position: absolute;
-    top: 0; /* Move to very top */
-    left: 50%;
-    transform: translateX(-50%);
-    width: 100%; /* Full width */
-    max-width: 600px; /* Slightly wider */
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(8px);
-    border-bottom-left-radius: 20px;
-    border-bottom-right-radius: 20px;
-    padding: 8px 16px; /* Reduced padding */
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-    z-index: 100;
-    display: flex;
-    flex-direction: column;
-    gap: 4px; /* Reduced gap */
-}
 
-.hud-top-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.progress-pill, .timer-pill {
-    background: #F1F5F9;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-weight: 700;
-    color: #475569;
-    font-size: 0.85rem;
-}
-
-.timer-pill.pulse-red { color: #ef4444; animation: pulse 1s infinite; }
-.lives-container { display: flex; gap: 4px; }
-.heart { font-size: 1.1rem; }
-.heart.lost { opacity: 0.3; filter: grayscale(1); }
-.pause-btn { background: none; border: none; font-size: 1.2rem; cursor: pointer; opacity: 0.6; }
-
-.question-banner { text-align: center; }
-.math-text { font-size: 2.2rem; font-weight: 900; color: #1e293b; margin: 0; line-height: 1.1; }
-.solve-label { font-size: 0.7rem; font-weight: 800; color: #64748b; letter-spacing: 1px; }
 
 /* FALLING ITEMS (CSS ANIMATION) */
 .falling-orb {
@@ -356,24 +302,66 @@ onUnmounted(stopGame);
 .basket-body { font-size: 4.5rem; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.15)); }
 .basket-label { font-size: 0.7rem; background: rgba(255,255,255,0.9); padding: 2px 8px; border-radius: 8px; font-weight: 700; color: #64748b; margin-top: -10px; }
 
-/* OVERLAYS */
-.start-overlay {
-    position: absolute; inset: 0; background: rgba(255,255,255,0.8);
-    backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; z-index: 300;
+/* SMALL MODAL */
+.modal-overlay {
+    position: absolute; 
+    inset: 0; 
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(5px); 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    z-index: 300;
 }
-.start-card {
-    background: white; padding: 30px 50px; border-radius: 24px;
-    text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+
+.small-modal {
+    background: white; 
+    padding: 24px; 
+    border-radius: 20px;
+    text-align: center; 
+    box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+    max-width: 350px;
+    width: 90%;
+    animation: slideUp 0.3s ease-out;
 }
-.start-icon { font-size: 3rem; margin-bottom: 10px; }
-.start-card h2 { margin: 0 0 10px 0; color: #0f172a; font-size: 1.8rem; font-weight: 800; }
-.start-card p { color: #64748b; margin-bottom: 20px; font-size: 1rem; }
-.start-btn {
-    background: #3b82f6; color: white; border: none; padding: 12px 32px;
-    border-radius: 12px; font-weight: 700; font-size: 1.1rem; cursor: pointer;
+
+@keyframes slideUp {
+  from { transform: translateY(30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.modal-icon { 
+    font-size: 3.5rem; 
+    margin-bottom: 12px; 
+}
+
+.modal-title { 
+    margin: 0 0 8px 0; 
+    color: #0f172a; 
+    font-size: 1.5rem; 
+    font-weight: 800; 
+}
+
+.modal-text { 
+    color: #64748b; 
+    margin-bottom: 16px; 
+    font-size: 1rem; 
+}
+
+.modal-btn {
+    background: #3b82f6; 
+    color: white; 
+    border: none; 
+    padding: 12px 24px;
+    border-radius: 12px; 
+    font-weight: 700; 
+    font-size: 1rem; 
+    cursor: pointer;
     transition: all 0.3s;
+    width: 100%;
 }
-.start-btn:hover {
+
+.modal-btn:hover {
     background: #2563eb;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
