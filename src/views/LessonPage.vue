@@ -832,11 +832,12 @@ return guestProgress[lessonId]
         return;
       }
 
-      // Try to go back if history exists, otherwise default to Catalogue
-      if (window.history.state && window.history.state.back) {
-        router.back();
+      // Try to go back if history exists and we didn't come from an external site
+      // window.history.length > 1 suggests there is history
+      if (window.history.length > 1) {
+        router.go(-1);
       } else {
-        // Use router.replace to prevent back-button loops
+        // Default to Catalogue if no history
         router.replace({ name: 'CataloguePage' }).catch(err => {
            console.warn('Router navigation failed, trying path:', err);
            // Fallback to explicit path defined in router
@@ -914,15 +915,16 @@ window.location.href = '/profile/homeworks'
        addToMyCourses(); // Fire and forget
     };
 
-    const exitLesson = () => {
-try {
+    const exitLesson = async () => {
+      try {
         // Save progress before exit
         if (isGuestMode.value) {
           saveGuestProgress()
         } else if (lessonOrchestrator.saveProgress) {
           // Don't await for faster exit
           lessonOrchestrator.saveProgress().catch(err => {
-})
+            console.error('Error saving progress on exit:', err)
+          })
         }
 
         if (lessonOrchestrator.cleanup) {
@@ -944,13 +946,14 @@ try {
         }
 
       } catch (error) {
-lessonOrchestrator.showExitModal.value = false
+        console.error('Error during exit:', error)
+        lessonOrchestrator.showExitModal.value = false
 
-        // Fallback navigation
+        // Fallback navigation using router to avoid reload
         if (isGuestMode.value) {
-          window.location.href = '/'
+          router.push('/')
         } else {
-          window.location.href = '/profile/catalogue'
+          router.push('/profile/catalogue')
         }
       }
     }
@@ -1238,6 +1241,8 @@ sound.pronounceWord?.(word)
          const specificGameType = step.gameType ||
                                   (step.gameConfig && step.gameConfig.type) ||
                                   (step.gameConfig && step.gameConfig.gameType) ||
+                                  (step.data && step.data.gameType) ||
+                                  (step.data && step.data.type) ||
                                   (step.type === 'whack-a-mole' ? 'whack-a-mole' : null) || 
                                   (step.type === 'basket-catch' ? 'basket-catch' : null) ||
                                   'basket-catch'; // Only fallback if absolutely nothing else exists

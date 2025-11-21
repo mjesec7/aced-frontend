@@ -18,7 +18,7 @@
             <span class="btn-icon">⏭️</span>
             <span class="btn-text">Skip</span>
           </button>
-          <button @click="$emit('close')" class="vocab-close-btn" title="Exit lesson">
+          <button @click="$emit('close')" class="vocab-close-btn" title="Close vocabulary">
             ✕
           </button>
         </div>
