@@ -696,24 +696,13 @@ export function useLessonOrchestrator() {
       saveProgress()
     }
 
-    // ✅ MODIFIED: Only redirect to Home if TRULY a guest (no auth)
-    // Logged in users playing free lessons should go back to catalogue/previous page
-    const isTrueGuest = isGuestMode.value && !localStorage.getItem('authToken') && !auth.currentUser
-
-    if (isTrueGuest) {
-      router.push({
-        name: 'HomePage',
-        query: { message: 'guest_lesson_exit' }
-      })
+    // ✅ MODIFIED: Always try to go back or to catalogue
+    // This fixes the issue where guests were forced to the landing page
+    if (window.history.length > 1) {
+      router.back()
     } else {
-      // Try to go back to previous page first
-      // Check if we have a valid history to go back to
-      if (window.history.length > 1) {
-        router.back()
-      } else {
-        // Fallback to catalogue if no history
-        router.push('/profile/catalogue')
-      }
+      // Fallback to catalogue if no history
+      router.push('/profile/catalogue')
     }
   }
 
