@@ -509,7 +509,7 @@ watch(() => props.currentExercise, (newEx) => {
               });
               q.sentenceParts.push({ text: remainingSentence, blank: null });
           });
-```
+
           // If it was a single question, update the clone
           if (!exerciseClone.questions) {
               exerciseClone.questions = questionsArray;
