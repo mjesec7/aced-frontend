@@ -59,150 +59,113 @@
         <div v-else-if="exerciseType === 'geometry'" class="p-6 md:p-8">
           
           <!-- Calculate Mode (Split View) -->
-          <div v-if="geometryData.mode === 'calculate'" class="grid lg:grid-cols-2 gap-8 items-start">
+          <div v-if="geometryData.mode === 'calculate'" class="grid lg:grid-cols-2 gap-6">
             
             <!-- Left: Shape & Given Info -->
-            <div class="space-y-6">
-              <div class="bg-white rounded-xl border border-purple-100 shadow-sm p-6">
-                <div class="mb-6">
-                  <h3 class="text-purple-600 font-semibold mb-1">Given Information</h3>
-                  <div class="flex flex-col gap-1 text-slate-700">
-                    <p>Side a = <span class="font-mono font-bold">{{ geometryData.given.side_a }}</span> units</p>
-                    <p>Angle = <span class="font-mono font-bold">{{ geometryData.given.angle }}°</span></p>
-                  </div>
-                </div>
+            <div class="bg-white rounded-2xl border border-gray-100 p-8 shadow-sm">
+              <h3 class="text-purple-600 font-semibold text-lg mb-6">Given Information</h3>
+              
+              <div class="space-y-1 mb-8">
+                <p class="text-gray-700">Side a = <span class="font-semibold">{{ geometryData.given.side_a }}</span> units</p>
+                <p class="text-purple-600 font-medium">Angle = {{ geometryData.given.angle }}°</p>
+              </div>
 
-                <!-- Interactive SVG -->
-                <div class="relative flex justify-center items-center py-8 bg-slate-50/50 rounded-lg border border-slate-100">
-                  <svg width="300" height="300" viewBox="0 0 300 300" class="overflow-visible">
+              <!-- Square with Rainbow Gradient Border -->
+              <div class="flex justify-center items-center py-12">
+                <div class="relative">
+                  <svg width="280" height="280" viewBox="0 0 280 280">
                     <defs>
-                      <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-                        <feGaussianBlur stdDeviation="4" result="coloredBlur" />
-                        <feMerge>
-                          <feMergeNode in="coloredBlur" />
-                          <feMergeNode in="SourceGraphic" />
-                        </feMerge>
-                      </filter>
-                      <linearGradient id="neonGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#a855f7" />
-                        <stop offset="50%" stopColor="#ec4899" />
-                        <stop offset="100%" stopColor="#fbbf24" />
+                      <!-- Rainbow gradient for border -->
+                      <linearGradient id="rainbowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#ec4899" />
+                        <stop offset="33%" stop-color="#f97316" />
+                        <stop offset="66%" stop-color="#eab308" />
+                        <stop offset="100%" stop-color="#22c55e" />
                       </linearGradient>
                     </defs>
-
-                    <!-- Square Shape -->
+                    
+                    <!-- Square with gradient border -->
                     <rect 
-                      x="50" y="50" width="200" height="200" 
-                      fill="none" 
-                      stroke="url(#neonGradient)" 
-                      stroke-width="4"
-                      filter="url(#glow)"
-                      class="transition-all duration-1000 ease-out"
+                      x="40" y="40" 
+                      width="200" height="200" 
+                      fill="white" 
+                      stroke="url(#rainbowGradient)" 
+                      stroke-width="6"
+                      rx="4"
                     />
-
-                    <!-- Side A Label (Given) -->
-                    <g>
-                      <text x="150" y="280" text-anchor="middle" class="fill-green-500 font-bold text-sm">side a = {{ geometryData.given.side_a }}</text>
-                    </g>
-
-                    <!-- Side B Label (Interactive) -->
-                    <g 
-                      @click="activeSide = 'b'" 
-                      class="cursor-pointer transition-opacity hover:opacity-80"
-                    >
-                      <text 
-                        x="270" y="150" 
-                        text-anchor="middle" 
-                        class="font-bold text-sm transition-colors"
-                        :class="activeSide === 'b' ? 'fill-yellow-500' : 'fill-pink-500'"
-                        style="writing-mode: vertical-rl; text-orientation: mixed;"
-                      >
-                        side b {{ activeSide === 'b' || userAnswer.side_b ? '= ?' : '' }}
-                      </text>
-                      
-                      <!-- Selection Indicator -->
-                      <circle 
-                        v-if="activeSide === 'b'"
-                        cx="260" cy="150" r="15" 
-                        fill="none" stroke="#eab308" stroke-width="2"
-                        class="animate-pulse"
-                      />
-                    </g>
-
-                    <!-- 90 Degree Angle -->
-                    <path d="M 50 230 L 70 230 L 70 250" fill="none" stroke="#eab308" stroke-width="2" />
-                    <text x="80" y="240" class="fill-yellow-500 text-xs">90°</text>
+                    
+                    <!-- 90° angle marker -->
+                    <path d="M 40 220 L 60 220 L 60 240" fill="none" stroke="#eab308" stroke-width="2" />
+                    <text x="70" y="235" class="text-xs fill-yellow-500 font-medium">90°</text>
+                    
+                    <!-- Side a label (bottom) -->
+                    <text x="140" y="270" text-anchor="middle" class="fill-green-500 font-semibold text-sm">
+                      side a = {{ geometryData.given.side_a }}
+                    </text>
+                    
+                    <!-- Side b label (right) - with input -->
+                    <text x="260" y="140" text-anchor="start" class="fill-pink-500 font-semibold text-sm">
+                      side b = ?
+                    </text>
                   </svg>
                 </div>
-
-                <!-- Input Field (Revealed on Click) -->
-                <transition
-                  enter-active-class="transition duration-300 ease-out"
-                  enter-from-class="transform translate-y-4 opacity-0"
-                  enter-to-class="transform translate-y-0 opacity-100"
-                  leave-active-class="transition duration-200 ease-in"
-                  leave-from-class="transform translate-y-0 opacity-100"
-                  leave-to-class="transform translate-y-4 opacity-0"
-                >
-                  <div v-if="activeSide === 'b'" class="mt-6">
-                    <label class="block text-sm font-medium text-purple-700 mb-2">Enter length for side b:</label>
-                    <input 
-                      type="number" 
-                      v-model="userAnswer.side_b"
-                      placeholder="Enter value..."
-                      class="w-full p-3 rounded-lg border border-purple-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
-                    />
-                  </div>
-                </transition>
               </div>
             </div>
 
-            <!-- Right: Formulas & Interaction -->
-            <div class="space-y-6">
-              <div class="bg-white rounded-xl border border-purple-100 shadow-sm p-6">
-                <h3 class="text-purple-600 font-semibold mb-4">Select the Formula You Used</h3>
-                
-                <div class="space-y-3">
-                  <button 
-                    v-for="formula in geometryData.formulas" 
-                    :key="formula.id"
-                    @click="selectFormula(formula.id)"
-                    class="w-full text-left p-4 rounded-xl border-2 transition-all duration-200 group relative overflow-hidden"
-                    :class="selectedFormula === formula.id 
-                      ? 'border-purple-500 bg-purple-50 shadow-md' 
-                      : 'border-slate-100 hover:border-purple-200 hover:bg-slate-50'"
-                  >
-                    <div class="relative z-10">
-                      <p class="font-medium text-slate-900 mb-1">{{ formula.name }}</p>
-                      <p class="font-mono text-sm text-purple-600 bg-purple-100/50 inline-block px-2 py-1 rounded">{{ formula.formula }}</p>
-                    </div>
-                  </button>
-                </div>
-
-                <!-- Submit Button -->
-                <div class="mt-8">
-                  <button 
-                    @click="submitGeometry"
-                    :disabled="!canSubmitGeometry"
-                    class="w-full py-4 rounded-xl font-bold text-white shadow-lg transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                    :class="canSubmitGeometry ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 hover:shadow-purple-500/25' : 'bg-slate-300'"
-                  >
-                    Submit Answer
-                  </button>
-                </div>
-
-                <!-- Feedback Area -->
-                <transition
-                  enter-active-class="transition duration-500 ease-out"
-                  enter-from-class="transform scale-95 opacity-0"
-                  enter-to-class="transform scale-100 opacity-100"
+            <!-- Right: Formulas & Submit -->
+            <div class="bg-white rounded-2xl border border-gray-100 p-8 shadow-sm space-y-6">
+              <h3 class="text-purple-600 font-semibold text-lg mb-6">Select the Formula You Used</h3>
+              
+              <!-- Formula Cards -->
+              <div class="space-y-3">
+                <button 
+                  v-for="formula in geometryData.formulas" 
+                  :key="formula.id"
+                  @click="selectFormula(formula.id)"
+                  class="w-full text-left p-5 rounded-xl border-2 transition-all duration-200"
+                  :class="selectedFormula === formula.id 
+                    ? 'border-purple-500 bg-purple-50' 
+                    : 'border-gray-200 hover:border-purple-200 bg-white'"
                 >
-                  <div v-if="showFeedback" class="mt-6 p-4 rounded-xl border-2 flex items-start gap-4"
-                    :class="isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'"
-                  >
-                    <div class="p-2 rounded-full shrink-0" :class="isCorrect ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'">
-                      <span v-if="isCorrect" class="text-xl">✓</span>
-                      <span v-else class="text-xl">✕</span>
+                  <p class="font-semibold text-gray-900 mb-1.5">{{ formula.name }}</p>
+                  <p class="font-mono text-purple-600 text-sm">{{ formula.formula }}</p>
+                </button>
+              </div>
+
+              <!-- Input for side b -->
+              <div class="pt-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Enter value for side b:</label>
+                <input 
+                  type="number" 
+                  v-model="userAnswer.side_b"
+                  placeholder="Enter value..."
+                  class="w-full p-3 rounded-lg border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 outline-none transition-all"
+                />
+              </div>
+
+              <!-- Submit Button -->
+              <button 
+                @click="submitGeometry"
+                :disabled="!canSubmitGeometry"
+                class="w-full py-3.5 rounded-xl font-semibold text-white shadow-md transition-all transform active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed mt-6"
+                :class="canSubmitGeometry ? 'bg-purple-600 hover:bg-purple-700' : 'bg-gray-300'"
+              >
+                Submit Answer
+              </button>
+
+              <!-- Feedback -->
+              <transition
+                enter-active-class="transition duration-300 ease-out"
+                enter-from-class="transform scale-95 opacity-0"
+                enter-to-class="transform scale-100 opacity-100"
+              >
+                <div v-if="showFeedback" class="mt-4 p-4 rounded-xl border-2"
+                  :class="isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'"
+                >
+                  <div class="flex items-start gap-3">
+                    <div class="mt-0.5">
+                      <span v-if="isCorrect" class="text-green-600 text-xl">✓</span>
+                      <span v-else class="text-red-600 text-xl">✕</span>
                     </div>
                     <div>
                       <h4 class="font-bold" :class="isCorrect ? 'text-green-800' : 'text-red-800'">
@@ -213,18 +176,20 @@
                       </p>
                     </div>
                   </div>
-                </transition>
-              </div>
-
-              <!-- Hint Card -->
-              <div class="bg-amber-50 rounded-xl border border-amber-100 p-5 shadow-sm">
-                <div class="flex items-center gap-2 text-amber-600 font-semibold mb-2">
-                  <span>💡</span>
-                  <span>Hint</span>
                 </div>
-                <p class="text-slate-700 text-sm leading-relaxed">
-                  {{ geometryData.hint }}
-                </p>
+              </transition>
+
+              <!-- Hint Section -->
+              <div class="mt-6 bg-amber-50 rounded-xl border border-amber-200 p-4">
+                <div class="flex items-start gap-2">
+                  <span class="text-xl">💡</span>
+                  <div>
+                    <p class="font-semibold text-amber-900 mb-1">Hint</p>
+                    <p class="text-sm text-gray-700 leading-relaxed">
+                      {{ geometryData.hint }}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
