@@ -162,8 +162,8 @@
           <div v-else-if="exerciseType === 'geometry'" class="exercise-type-container geometry-container">
             <article class="exercise-card geometry-card">
               <div class="geometry-header">
-                <h3 class="card-subtitle">{{ currentExercise.title || 'Geometry Explorer' }}</h3>
-                <p class="instruction-text">{{ currentExercise.instruction || 'Interact with the shape below.' }}</p>
+                <h3 class="card-subtitle">{{ geometryData.title || currentExercise.title || 'Geometry Explorer' }}</h3>
+                <p class="instruction-text">{{ geometryData.instruction || currentExercise.instruction || 'Interact with the shape below.' }}</p>
               </div>
 
               <div class="canvas-wrapper" ref="canvasWrapper">
@@ -179,7 +179,7 @@
 
                   <!-- Circle -->
                   <circle 
-                    v-if="currentExercise.shape === 'circle'" 
+                    v-if="geometryData.shape === 'circle'" 
                     cx="150" cy="150" r="100" 
                     :fill="shapeFillColor" 
                     :stroke="shapeStrokeColor" 
@@ -189,7 +189,7 @@
 
                   <!-- Triangle -->
                   <polygon 
-                    v-if="currentExercise.shape === 'triangle'" 
+                    v-if="geometryData.shape === 'triangle'" 
                     points="150,50 250,250 50,250"
                     :fill="shapeFillColor" 
                     :stroke="shapeStrokeColor" 
@@ -199,7 +199,7 @@
 
                   <!-- Square -->
                   <rect 
-                    v-if="currentExercise.shape === 'square'" 
+                    v-if="geometryData.shape === 'square'" 
                     x="50" y="50" width="200" height="200"
                     :fill="shapeFillColor" 
                     :stroke="shapeStrokeColor" 
@@ -209,7 +209,7 @@
 
                   <!-- Center Point (for Circle/Diameter) -->
                   <circle 
-                    v-if="currentExercise.shape === 'circle'" 
+                    v-if="geometryData.shape === 'circle'" 
                     cx="150" cy="150" r="4" 
                     fill="#1e293b" 
                     filter="url(#sketchy)"
@@ -253,7 +253,7 @@
               </div>
 
               <!-- Identify Mode Input -->
-              <div v-if="currentExercise.mode === 'identify'" class="identify-input">
+              <div v-if="geometryData.mode === 'identify'" class="identify-input">
                 <input 
                   v-model="userAnswer" 
                   placeholder="What shape is this?" 
@@ -469,7 +469,21 @@ watch(() => props.currentExercise, (newEx) => {
   normalizedExercise.value = exerciseClone;
 }, { immediate: true, deep: true });
 
-const exerciseType = computed(() => props.currentExercise?.type || 'short-answer');
+const exerciseType = computed(() => {
+  // If the exercise is a generic 'exercise' type, look into its data for specific type
+  if (props.currentExercise?.type === 'exercise' && props.currentExercise?.data?.type) {
+    console.log('🔍 Exercise Type (nested):', props.currentExercise.data.type, 'Full exercise:', props.currentExercise);
+    return props.currentExercise.data.type;
+  }
+  console.log('🔍 Exercise Type (direct):', props.currentExercise?.type || 'short-answer', 'Full exercise:', props.currentExercise);
+  return props.currentExercise?.type || 'short-answer';
+});
+// Geometry specific data shortcut
+const geometryData = computed(() => {
+  const data = props.currentExercise?.data || {};
+  console.log('📐 Geometry Data:', data);
+  return data;
+});
 
 const submit = () => {
   // Copy local matching answers to the global state right before submitting
