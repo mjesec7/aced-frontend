@@ -81,6 +81,7 @@ import MemoryCards from '../matching/MemoryCards.vue';
 import WhackAMole from '../reaction/WhackAMole.vue';
 import LightningRound from '../reaction/LightningRound.vue';
 import PatternBuilder from '../strategy/PatternBuilder.vue';
+import MazeRunner from '../maze/MazeRunner.vue';
 
 const props = defineProps({
   gameData: {
@@ -134,7 +135,8 @@ const gameComponent = computed(() => {
     'memory-cards': MemoryCards,
     'whack-a-mole': WhackAMole,
     'lightning-round': LightningRound,
-    'pattern-builder': PatternBuilder
+    'pattern-builder': PatternBuilder,
+    'maze-runner': MazeRunner
   };
   return components[props.gameType] || BasketCatch;
 });
@@ -145,7 +147,8 @@ const gameTitle = computed(() => {
     'memory-cards': '🎴 Memory Cards',
     'whack-a-mole': '🔨 Whack-a-Mole',
     'lightning-round': '⚡ Lightning Round',
-    'pattern-builder': '🔵 Pattern Builder'
+    'pattern-builder': '🔵 Pattern Builder',
+    'maze-runner': '🏃 Maze Runner'
   };
   return titles[props.gameType] || 'Game';
 });
@@ -156,7 +159,8 @@ const gameIcon = computed(() => {
     'memory-cards': '🎴',
     'whack-a-mole': '🔨',
     'lightning-round': '⚡',
-    'pattern-builder': '🔵'
+    'pattern-builder': '🔵',
+    'maze-runner': '🏃'
   };
   return icons[props.gameType] || '🎮';
 });
