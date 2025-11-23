@@ -179,7 +179,7 @@
               </transition>
 
               <!-- Next Button -->
-              <button 
+              <button
                 v-if="isCorrect"
                 @click="emit('next-exercise')"
                 class="w-full py-3.5 rounded-xl font-semibold text-white shadow-md bg-purple-600 hover:bg-purple-700 transition-all mt-4"
@@ -190,7 +190,7 @@
           </div>
 
           <!-- Hint Card (Separate) -->
-          <div class="mt-6 bg-white rounded-2xl border border-purple-200 p-6 shadow-lg">
+          <div v-if="geometryData.mode === 'calculate'" class="mt-6 bg-white rounded-2xl border border-purple-200 p-6 shadow-lg">
             <h3 class="text-purple-600 font-semibold mb-2">💡 Hint</h3>
             <p class="text-slate-700">
               {{ geometryData.hint }}
@@ -198,7 +198,7 @@
           </div>
 
           <!-- Identify Mode -->
-          <div v-else-if="geometryData.mode === 'identify'" class="max-w-lg mx-auto space-y-8">
+          <div v-if="geometryData.mode === 'identify'" class="max-w-lg mx-auto space-y-8">
             <div class="bg-white rounded-xl border border-purple-100 shadow-sm p-8">
               <h3 class="text-purple-600 font-semibold mb-6 text-center">Identify the Shape</h3>
               
