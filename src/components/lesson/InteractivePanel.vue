@@ -109,7 +109,7 @@
           </div>
           
           <div v-else-if="exerciseType === 'matching'" class="exercise-type-container">
-            <article v-for="(pair, index) in currentExercise.pairs" :key="pair.id || index" class="exercise-card matching-pair-card">
+            <article v-for="(pair, index) in (currentExercise.pairs || currentExercise.data?.pairs || [])" :key="pair.id || index" class="exercise-card matching-pair-card">
               <p class="matching-text-left">{{ pair.left }}</p>
               <div class="matching-select-wrapper">
                 <select 
