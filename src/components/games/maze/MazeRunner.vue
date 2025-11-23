@@ -9,9 +9,43 @@
       :max-lives="3"
     />
 
-    <!-- Current Question Banner -->
-    <div v-if="gameActive && currentQuestion" class="question-banner">
-      <p class="question-text">{{ currentQuestion.q }}</p>
+    <!-- Answer Panel (Left Side) -->
+    <div v-if="gameActive" class="answer-panel">
+      <div class="panel-header">
+        <div class="question-icon">❓</div>
+        <h3 class="panel-title">Answer Question</h3>
+      </div>
+      
+      <div class="current-question">
+        <p class="question-text">{{ currentQuestion?.q || 'Navigate to a gate!' }}</p>
+      </div>
+      
+      <div class="answer-input-group">
+        <input
+          v-model="userAnswer"
+          type="text"
+          class="answer-input"
+          placeholder="Type your answer..."
+          @keyup.enter="submitAnswer"
+          ref="answerInput"
+        />
+        <button 
+          class="submit-btn"
+          @click="submitAnswer"
+          :disabled="!userAnswer.trim()"
+        >
+          ✓
+        </button>
+      </div>
+      
+      <div v-if="feedbackMessage" class="feedback-message" :class="feedbackType">
+        <span class="feedback-icon">{{ feedbackIcon }}</span>
+        <span class="feedback-text">{{ feedbackMessage }}</span>
+      </div>
+      
+      <div class="panel-hint">
+        <p>💡 Move to a locked gate (🔒) to unlock it with the correct answer!</p>
+      </div>
     </div>
 
     <!-- Maze Grid -->
@@ -31,7 +65,8 @@
               'path': cell === 'path',
               'gate': cell === 'gate',
               'goal': cell === 'goal',
-              'player': playerPos.row === rowIndex && playerPos.col === colIndex
+              'player': playerPos.row === rowIndex && playerPos.col === colIndex,
+              'near-gate': isNearGate(rowIndex, colIndex)
             }"
           >
             <span v-if="cell === 'gate'" class="gate-icon">🔒</span>
@@ -42,35 +77,13 @@
       </div>
     </div>
 
-    <!-- Question Modal -->
-    <transition name="fade">
-      <div v-if="showQuestionModal" class="modal-overlay" @click.self="closeQuestionModal">
-        <div class="question-modal">
-          <div class="modal-icon">❓</div>
-          <h3 class="modal-title">Answer to Unlock Path</h3>
-          <p class="modal-question">{{ currentQuestion?.q }}</p>
-          
-          <div class="answer-options">
-            <button
-              v-for="(answer, index) in currentAnswers"
-              :key="index"
-              class="answer-btn"
-              @click="checkAnswer(answer)"
-            >
-              {{ answer }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </transition>
-
     <!-- Start/Complete Modal -->
     <transition name="fade">
       <div v-if="!gameActive" class="modal-overlay">
         <div class="small-modal">
           <div class="modal-icon">{{ isGameOver ? (reachedGoal ? '🎉' : '😅') : '🏃' }}</div>
           <h3 class="modal-title">{{ isGameOver ? (reachedGoal ? 'You Won!' : 'Game Over') : 'Maze Runner' }}</h3>
-          <p class="modal-text">{{ isGameOver ? `Score: ${score}` : 'Navigate the maze and answer questions to unlock paths!' }}</p>
+          <p class="modal-text">{{ isGameOver ? `Score: ${score}` : 'Navigate the maze and answer questions to unlock gates!' }}</p>
           
           <div v-if="isGameOver" class="modal-stars">
             <span v-for="n in 3" :key="n" class="star">{{ n <= earnedStars ? '⭐' : '☆' }}</span>
@@ -89,7 +102,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import GameHUDSidebar from '../base/GameHUDSidebar.vue';
 
 const props = defineProps({
@@ -109,21 +122,19 @@ const isGameOver = ref(false);
 const reachedGoal = ref(false);
 const earnedStars = ref(0);
 const currentQuestionIndex = ref(0);
-const showQuestionModal = ref(false);
 const unlockedGates = ref(new Set());
+const userAnswer = ref('');
+const feedbackMessage = ref('');
+const feedbackType = ref('');
+const feedbackIcon = ref('');
+const answerInput = ref(null);
 
 // Questions
 const questions = computed(() => props.gameData.questions || []);
 const currentQuestion = computed(() => questions.value[currentQuestionIndex.value]);
-const currentAnswers = computed(() => {
-  if (!currentQuestion.value) return [];
-  const answers = [currentQuestion.value.a, ...(currentQuestion.value.wrong || [])];
-  return shuffleArray(answers);
-});
 
 // Maze generation
 const generateMaze = () => {
-  // Simple 5x5 maze with predefined layout
   const layout = [
     ['path', 'path', 'wall', 'path', 'path'],
     ['wall', 'path', 'wall', 'path', 'wall'],
@@ -134,13 +145,23 @@ const generateMaze = () => {
   maze.value = layout;
 };
 
-const shuffleArray = (array) => {
-  const shuffled = [...array];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+// Check if cell is near a gate
+const isNearGate = (row, col) => {
+  const directions = [
+    { row: -1, col: 0 }, { row: 1, col: 0 },
+    { row: 0, col: -1 }, { row: 0, col: 1 }
+  ];
+  
+  for (const dir of directions) {
+    const checkRow = row + dir.row;
+    const checkCol = col + dir.col;
+    if (checkRow >= 0 && checkRow < 5 && checkCol >= 0 && checkCol < 5) {
+      if (maze.value[checkRow][checkCol] === 'gate') {
+        return true;
+      }
+    }
   }
-  return shuffled;
+  return false;
 };
 
 // Game controls
@@ -151,23 +172,26 @@ const startGame = () => {
   reachedGoal.value = false;
   isGameOver.value = false;
   earnedStars.value = 0;
+  userAnswer.value = '';
+  feedbackMessage.value = '';
   generateMaze();
   gameActive.value = true;
   
-  // Focus for keyboard controls
   setTimeout(() => {
     document.querySelector('.maze-runner-game')?.focus();
   }, 100);
 };
 
 const handleKeyDown = (e) => {
-  if (!gameActive.value || showQuestionModal.value) return;
+  if (!gameActive.value) return;
+  
+  // Don't handle movement if typing in input
+  if (e.target.tagName === 'INPUT') return;
 
   const key = e.key.toLowerCase();
   let newRow = playerPos.value.row;
   let newCol = playerPos.value.col;
 
-  // Movement
   if (key === 'arrowup' || key === 'w') {
     newRow--;
     e.preventDefault();
@@ -182,46 +206,44 @@ const handleKeyDown = (e) => {
     e.preventDefault();
   }
 
-  // Check bounds
-  if (newRow < 0 || newRow >= 5 || newCol < 0 || newCol >= 5) return;
+  if (newRow < 0 || newRow >= 5 || newCol >= 0 || newCol >= 5) return;
 
   const targetCell = maze.value[newRow][newCol];
 
-  // Check collision
   if (targetCell === 'wall') return;
 
-  // Check gate
   if (targetCell === 'gate') {
     const gateKey = `${newRow}-${newCol}`;
     if (!unlockedGates.value.has(gateKey)) {
-      showQuestionModal.value = true;
-      return;
+      return; // Can't move through locked gate
     }
   }
 
-  // Move player
   playerPos.value = { row: newRow, col: newCol };
 
-  // Check goal
   if (targetCell === 'goal') {
     reachedGoal.value = true;
     finishGame();
   }
 };
 
-const checkAnswer = (answer) => {
-  showQuestionModal.value = false;
+const submitAnswer = () => {
+  if (!userAnswer.value.trim()) return;
 
-  if (answer === currentQuestion.value.a) {
-    // Correct answer
+  const answer = userAnswer.value.trim();
+  const correctAnswer = currentQuestion.value.a;
+
+  if (answer === correctAnswer) {
+    // Correct!
     emit('score-change', 20);
-    
-    // Unlock gate in front of player
+    feedbackMessage.value = 'Correct! Gate unlocked!';
+    feedbackType.value = 'correct';
+    feedbackIcon.value = '✅';
+
+    // Find and unlock nearest gate
     const directions = [
-      { row: -1, col: 0 }, // up
-      { row: 1, col: 0 },  // down
-      { row: 0, col: -1 }, // left
-      { row: 0, col: 1 }   // right
+      { row: -1, col: 0 }, { row: 1, col: 0 },
+      { row: 0, col: -1 }, { row: 0, col: 1 }
     ];
 
     for (const dir of directions) {
@@ -232,30 +254,33 @@ const checkAnswer = (answer) => {
         if (maze.value[checkRow][checkCol] === 'gate') {
           const gateKey = `${checkRow}-${checkCol}`;
           unlockedGates.value.add(gateKey);
-          maze.value[checkRow][checkCol] = 'path'; // Unlock gate
+          maze.value[checkRow][checkCol] = 'path';
           break;
         }
       }
     }
 
-    // Move to next question
     currentQuestionIndex.value = (currentQuestionIndex.value + 1) % questions.value.length;
   } else {
-    // Wrong answer
+    // Wrong
     emit('score-change', -5);
     emit('life-lost');
+    feedbackMessage.value = 'Wrong answer! Try again.';
+    feedbackType.value = 'wrong';
+    feedbackIcon.value = '❌';
   }
-};
 
-const closeQuestionModal = () => {
-  showQuestionModal.value = false;
+  userAnswer.value = '';
+  
+  setTimeout(() => {
+    feedbackMessage.value = '';
+  }, 2000);
 };
 
 const finishGame = () => {
   gameActive.value = false;
   isGameOver.value = true;
 
-  // Calculate stars
   const percentage = (props.score / 100) * 100;
   if (reachedGoal.value && percentage >= 80) earnedStars.value = 3;
   else if (reachedGoal.value && percentage >= 60) earnedStars.value = 2;
@@ -269,17 +294,12 @@ const continueLesson = () => {
   emit('game-complete', { score: props.score, completed: reachedGoal.value });
 };
 
-// Watch for game end conditions
 watch(() => props.lives, (val) => {
-  if (val <= 0 && gameActive.value) {
-    finishGame();
-  }
+  if (val <= 0 && gameActive.value) finishGame();
 });
 
 watch(() => props.timeRemaining, (val) => {
-  if (val <= 0 && gameActive.value) {
-    finishGame();
-  }
+  if (val <= 0 && gameActive.value) finishGame();
 });
 
 onMounted(() => {
@@ -303,29 +323,154 @@ onMounted(() => {
   outline: none;
 }
 
-/* Question Banner */
-.question-banner {
+/* Answer Panel (Left Side) */
+.answer-panel {
   position: absolute;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(240, 240, 255, 0.98));
-  backdrop-filter: blur(12px);
-  padding: 16px 28px;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: white;
   border-radius: 20px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15), 0 0 0 2px rgba(102, 126, 234, 0.2);
-  border: 2px solid rgba(102, 126, 234, 0.3);
-  max-width: 600px;
-  text-align: center;
-  z-index: 10;
+  padding: 20px;
+  width: 280px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  z-index: 50;
 }
 
-.question-text {
-  font-size: 1.3rem;
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.question-icon {
+  font-size: 2rem;
+}
+
+.panel-title {
+  font-size: 1.2rem;
   font-weight: 800;
   color: #1e293b;
   margin: 0;
-  line-height: 1.3;
+}
+
+.current-question {
+  background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  border: 2px solid #3b82f6;
+}
+
+.question-text {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+  text-align: center;
+}
+
+.answer-input-group {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.answer-input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1e293b;
+  outline: none;
+  transition: all 0.3s;
+}
+
+.answer-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.submit-btn {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-size: 1.5rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.submit-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+}
+
+.submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.feedback-message {
+  padding: 12px;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  animation: slideIn 0.3s;
+}
+
+.feedback-message.correct {
+  background: #d1fae5;
+  color: #065f46;
+  border: 2px solid #10b981;
+}
+
+.feedback-message.wrong {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 2px solid #ef4444;
+}
+
+.feedback-icon {
+  font-size: 1.2rem;
+}
+
+.feedback-text {
+  font-size: 0.9rem;
+}
+
+.panel-hint {
+  background: #fef3c7;
+  padding: 12px;
+  border-radius: 12px;
+  border: 2px solid #f59e0b;
+}
+
+.panel-hint p {
+  font-size: 0.85rem;
+  color: #92400e;
+  margin: 0;
+  font-weight: 600;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 /* MAZE */
