@@ -1287,11 +1287,12 @@ sound.pronounceWord?.(word)
         const exerciseId = step.id || `${step.data.type}_${lessonOrchestrator.currentIndex.value}`;
         
         // ✅ CRITICAL FIX: Spread data properties to root level
-        // This allows templates to access properties like currentExercise.pairs
-        // instead of currentExercise.data.pairs
+        // BUT preserve step.type by spreading in correct order
+        // Order matters: data first, then step, so step.type doesn't get overwritten
         const normalizedExercise = {
-          ...step,           // Include all step properties (type, title, instruction, etc.)
-          ...step.data,      // Spread data properties to root level (pairs, shape, mode, etc.)
+          ...step.data,      // Spread data properties first (pairs, shape, mode, etc.)
+          ...step,           // Then spread step properties (type, title, instruction override data.type)
+          exerciseType: step.data.type,  // Explicitly set exerciseType for clarity
           data: step.data    // Keep original data object for reference
         };
         
