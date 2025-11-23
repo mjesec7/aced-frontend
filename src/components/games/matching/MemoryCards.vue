@@ -1,5 +1,19 @@
 <template>
   <div class="memory-cards-game">
+    <!-- Right Sidebar HUD -->
+    <GameHUDSidebar
+      v-if="gameActive"
+      :score="score"
+      :time-remaining="timeRemaining"
+      :lives="lives"
+      :max-lives="3"
+    />
+
+    <!-- Instruction Banner -->
+    <div v-if="gameActive" class="instruction-banner">
+      <p class="instruction-text">{{ instructions }}</p>
+    </div>
+
     <!-- Game Board -->
     <div class="cards-grid" :class="`grid-${gridSize}`">
       <div
@@ -18,16 +32,12 @@
         </div>
       </div>
     </div>
-
-    <!-- Instructions -->
-    <div class="game-instructions">
-      {{ instructions }}
-    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
+import GameHUDSidebar from '../base/GameHUDSidebar.vue';
 
 const props = defineProps({
   gameData: {
@@ -303,21 +313,29 @@ onMounted(() => {
   word-break: break-word;
 }
 
-.game-instructions {
+/* Instruction Banner */
+.instruction-banner {
   position: absolute;
   top: 20px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(255,255,255,0.95);
-  padding: 12px 24px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(240, 240, 255, 0.98));
+  backdrop-filter: blur(12px);
+  padding: 16px 28px;
   border-radius: 20px;
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-  max-width: 80%;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15), 0 0 0 2px rgba(102, 126, 234, 0.2);
+  border: 2px solid rgba(102, 126, 234, 0.3);
+  max-width: 600px;
   text-align: center;
   z-index: 10;
+}
+
+.instruction-text {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+  line-height: 1.3;
 }
 
 /* Responsive */
