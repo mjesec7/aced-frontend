@@ -1279,6 +1279,22 @@ sound.pronounceWord?.(word)
         }
       }
 
+      // ✅ FIX: Handle exercises with type="exercise" and nested data.type (e.g., geometry)
+      // For these exercises, the step itself IS the exercise object
+      if (step.type === 'exercise' && step.data && step.data.type) {
+        console.log(`📐 Detected ${step.data.type} exercise, returning step as exercise`);
+        const exerciseId = step.id || `${step.data.type}_${lessonOrchestrator.currentIndex.value}`;
+        
+        if (initializationTracker.value.currentExerciseId !== exerciseId) {
+          initializationTracker.value = { currentExerciseId: exerciseId, initialized: false };
+          nextTick(() => {
+            exercises.initializeCurrentExerciseData(step);
+            initializationTracker.value.initialized = true;
+          });
+        }
+        return step; // Return the step itself as the exercise
+      }
+
       // Fallback to existing logic (for single-item steps or games)
       const exercise = exercises.getCurrentExercise(step)
       if (exercise) {
