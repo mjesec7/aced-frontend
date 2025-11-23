@@ -113,18 +113,18 @@
             </div>
 
             <!-- Right: Formulas & Submit -->
-            <div class="bg-white rounded-2xl border border-purple-200 p-8 shadow-lg space-y-6">
+            <div class="bg-white rounded-2xl border border-gray-100 p-8 shadow-sm space-y-6">
               <h3 class="text-purple-600 font-semibold text-lg mb-6">Select the Formula You Used</h3>
-              
+
               <!-- Formula Cards -->
               <div class="space-y-3">
-                <button 
-                  v-for="formula in geometryData.formulas" 
+                <button
+                  v-for="formula in geometryData.formulas"
                   :key="formula.id"
                   @click="selectFormula(formula.id)"
                   class="w-full text-left p-5 rounded-xl border-2 transition-all duration-200"
-                  :class="selectedFormula === formula.id 
-                    ? 'border-purple-500 bg-purple-50' 
+                  :class="selectedFormula === formula.id
+                    ? 'border-purple-500 bg-purple-50'
                     : 'border-gray-200 hover:border-purple-200 bg-white'"
                 >
                   <p class="font-semibold text-gray-900 mb-1.5">{{ formula.name }}</p>
@@ -132,11 +132,22 @@
                 </button>
               </div>
 
+              <!-- Hint Section -->
+              <div v-if="geometryData.hint" class="mt-6 bg-purple-50 rounded-xl border border-purple-100 p-5">
+                <h3 class="text-purple-600 font-semibold mb-2 flex items-center gap-2">
+                  <span class="text-xl">💡</span>
+                  Hint
+                </h3>
+                <p class="text-slate-700 text-sm leading-relaxed">
+                  {{ geometryData.hint }}
+                </p>
+              </div>
+
               <!-- Input for side b -->
               <div class="pt-4">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Enter value for side b:</label>
-                <input 
-                  type="number" 
+                <input
+                  type="number"
                   v-model="userAnswer.side_b"
                   placeholder="Enter value..."
                   class="w-full p-3 rounded-lg border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 outline-none transition-all"
@@ -144,7 +155,7 @@
               </div>
 
               <!-- Submit Button -->
-              <button 
+              <button
                 @click="submitGeometry"
                 :disabled="!canSubmitGeometry"
                 class="w-full py-3.5 rounded-xl font-semibold text-white transition-all transform active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed mt-6 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
@@ -187,14 +198,6 @@
                 Next →
               </button>
             </div>
-          </div>
-
-          <!-- Hint Card (Separate) -->
-          <div v-if="geometryData.mode === 'calculate'" class="mt-6 bg-white rounded-2xl border border-purple-200 p-6 shadow-lg">
-            <h3 class="text-purple-600 font-semibold mb-2">💡 Hint</h3>
-            <p class="text-slate-700">
-              {{ geometryData.hint }}
-            </p>
           </div>
 
           <!-- Identify Mode -->
