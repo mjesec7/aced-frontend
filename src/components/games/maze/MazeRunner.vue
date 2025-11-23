@@ -89,14 +89,36 @@
         <div class="small-modal">
           <div class="modal-icon">{{ isGameOver ? (reachedGoal ? '🎉' : '😅') : '🏃' }}</div>
           <h3 class="modal-title">{{ isGameOver ? (reachedGoal ? 'You Won!' : 'Game Over') : 'Maze Runner' }}</h3>
-          <p class="modal-text">{{ isGameOver ? `Score: ${score}` : 'Navigate the maze and answer questions to unlock gates!' }}</p>
+          
+          <!-- Game Stats Display for Start Screen -->
+          <div v-if="!isGameOver" class="game-stats-preview">
+            <div class="stat-item">
+              <span class="stat-icon">🎯</span>
+              <span class="stat-label">Target</span>
+              <span class="stat-value">100</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-icon">⏳</span>
+              <span class="stat-label">Time</span>
+              <span class="stat-value">90s</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-icon">❤️</span>
+              <span class="stat-label">Lives</span>
+              <span class="stat-value">3</span>
+            </div>
+          </div>
+
+          <p v-else class="modal-text">
+            {{ reachedGoal ? `Score: ${score}` : 'Try again to reach the goal!' }}
+          </p>
           
           <div v-if="isGameOver" class="modal-stars">
             <span v-for="n in 3" :key="n" class="star">{{ n <= earnedStars ? '⭐' : '☆' }}</span>
           </div>
 
           <button class="modal-btn" @click="startGame">
-            {{ isGameOver ? '🔄 Retry' : '▶ Start' }}
+            {{ isGameOver ? '🔄 Retry' : '▶ Start Game' }}
           </button>
           <button v-if="isGameOver" class="modal-btn secondary" @click="continueLesson">
             Continue →
@@ -203,14 +225,27 @@ const handleKeyDown = (e) => {
   let newRow = playerPos.value.row;
   let newCol = playerPos.value.col;
 
-  if (key === 'arrowup' || key === 'w') {
-    newRow--;
-    e.preventDefault();
-  } else if (key === 'arrowdown' || key === 's') {
-  }
+  // Movement keys
+  if (key === 'arrowup' || key === 'w') newRow--;
+  else if (key === 'arrowdown' || key === 's') newRow++;
+  else if (key === 'arrowleft' || key === 'a') newCol--;
+  else if (key === 'arrowright' || key === 'd') newCol++;
+  else return;
 
+  e.preventDefault();
+
+  // Check bounds
+  if (newRow < 0 || newRow >= 5 || newCol < 0 || newCol >= 5) return;
+
+  const targetCell = maze.value[newRow][newCol];
+
+  // Check collision
+  if (targetCell === 'wall' || targetCell === 'gate') return;
+
+  // Move player
   playerPos.value = { row: newRow, col: newCol };
 
+  // Check if reached goal
   if (targetCell === 'goal') {
     reachedGoal.value = true;
     finishGame();
@@ -309,7 +344,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Fredoka', sans-serif;
+  font-family: 'Inter', sans-serif; /* Changed from Fredoka to Inter for cleaner look */
   outline: none;
 }
 
@@ -340,7 +375,7 @@ onMounted(() => {
 
 .panel-title {
   font-size: 1.2rem;
-  font-weight: 800;
+  font-weight: 700;
   color: #1e293b;
   margin: 0;
 }
@@ -355,7 +390,7 @@ onMounted(() => {
 
 .question-text {
   font-size: 1.1rem;
-  font-weight: 700;
+  font-weight: 600;
   color: #1e293b;
   margin: 0;
   text-align: center;
@@ -392,7 +427,7 @@ onMounted(() => {
   border: 2px solid #e2e8f0;
   border-radius: 12px;
   font-size: 1.1rem;
-  font-weight: 600;
+  font-weight: 500;
   color: #1e293b;
   outline: none;
   transition: all 0.3s;
@@ -410,7 +445,7 @@ onMounted(() => {
   padding: 12px 20px;
   border-radius: 12px;
   font-size: 1.5rem;
-  font-weight: 800;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.3s;
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
@@ -433,7 +468,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-weight: 700;
+  font-weight: 600;
   animation: slideIn 0.3s;
 }
 
@@ -537,6 +572,7 @@ onMounted(() => {
   background: linear-gradient(135deg, #3b82f6, #2563eb);
   border-color: #1d4ed8;
   box-shadow: 0 0 20px rgba(59, 130, 246, 0.6);
+  z-index: 10; /* Ensure player is above other elements */
 }
 
 .gate-icon,
@@ -554,48 +590,6 @@ onMounted(() => {
 @keyframes bounce {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-5px); }
-}
-
-/* QUESTION MODAL */
-.question-modal {
-  background: white;
-  border-radius: 24px;
-  padding: 30px;
-  text-align: center;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-  max-width: 500px;
-  width: 90%;
-}
-
-.modal-question {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #1e293b;
-  margin: 16px 0 24px;
-}
-
-.answer-options {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-
-.answer-btn {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: white;
-  border: none;
-  padding: 16px;
-  border-radius: 12px;
-  font-size: 1.2rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-}
-
-.answer-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
 }
 
 /* MODAL */
@@ -616,7 +610,7 @@ onMounted(() => {
   padding: 30px;
   text-align: center;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-  width: 350px;
+  width: 400px; /* Slightly wider for stats */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -629,9 +623,46 @@ onMounted(() => {
 
 .modal-title {
   font-size: 1.8rem;
-  font-weight: 800;
+  font-weight: 700;
   color: #1e293b;
-  margin: 0 0 12px;
+  margin: 0 0 20px;
+}
+
+/* Game Stats Preview */
+.game-stats-preview {
+  display: flex;
+  justify-content: space-around;
+  width: 100%;
+  margin-bottom: 24px;
+  background: #f8fafc;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.stat-icon {
+  font-size: 1.5rem;
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1e293b;
 }
 
 .modal-text {
@@ -653,7 +684,7 @@ onMounted(() => {
   border: none;
   padding: 14px 32px;
   border-radius: 16px;
-  font-weight: 800;
+  font-weight: 700;
   cursor: pointer;
   font-size: 1.1rem;
   transition: all 0.3s;
@@ -698,18 +729,17 @@ onMounted(() => {
     font-size: 2rem;
   }
 
-  .question-banner {
-    max-width: 90%;
-    padding: 12px 20px;
-  }
-
-  .question-text {
-    font-size: 1.1rem;
-  }
-
   .small-modal {
     width: 90%;
     padding: 20px;
+  }
+  
+  .game-stats-preview {
+    padding: 12px;
+  }
+  
+  .stat-icon {
+    font-size: 1.2rem;
   }
 }
 </style>
