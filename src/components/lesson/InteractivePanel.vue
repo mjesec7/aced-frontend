@@ -30,122 +30,26 @@
       <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-100">
         
         <!-- Standard Exercises (Reading, etc.) -->
-        <div v-if="!['geometry'].includes(exerciseType)" class="p-6 md:p-8">
-           
-           <!-- Reading & Short Answer - Modern Card Layout -->
-           <div v-if="['reading', 'short-answer'].includes(exerciseType)">
-              
-              <!-- Two Column Layout for Reading Content + Questions -->
-              <div v-if="currentExercise.content" class="grid lg:grid-cols-2 gap-6">
-                
-                <!-- Left: Reading Content -->
-                <div class="bg-white rounded-2xl border border-gray-100 p-8 shadow-sm">
-                  <h3 class="text-purple-600 font-semibold text-lg mb-6">📖 Reading Text</h3>
-                  <div class="prose prose-slate max-w-none">
-                    <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">{{ currentExercise.content }}</p>
-                  </div>
-                </div>
+        <div v-if="!['geometry'].includes(exerciseType)" class="p-6 md:p-10">
+           <!-- Fallback for non-geometry exercises (keeping existing logic simplified for brevity but styled) -->
+           <div v-if="['reading', 'short-answer'].includes(exerciseType)" class="space-y-6">
+              <article v-if="currentExercise.content" class="bg-blue-50 p-6 rounded-xl border border-blue-100">
+                <h3 class="text-blue-800 font-semibold mb-2">Reading Text</h3>
+                <p class="text-slate-700 leading-relaxed">{{ currentExercise.content }}</p>
+              </article>
 
-                <!-- Right: Questions -->
-                <div class="bg-white rounded-2xl border border-gray-100 p-8 shadow-sm space-y-6">
-                  <h3 class="text-purple-600 font-semibold text-lg mb-6">✍️ Answer the Questions</h3>
-                  
-                  <div v-for="(question, qIndex) in (currentExercise.questions || [])" :key="qIndex" class="space-y-3">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                      {{ qIndex + 1 }}. {{ question.question }}
-                    </label>
-                    <textarea 
-                      :value="userAnswer[qIndex] || ''" 
-                      @input="updateMultiAnswer(qIndex, $event.target.value)" 
-                      placeholder="Type your answer..." 
-                      :disabled="showCorrectAnswer" 
-                      class="w-full p-3 rounded-lg border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 outline-none transition-all resize-none h-24"
-                    ></textarea>
-                    
-                    <!-- Feedback for this question -->
-                    <transition
-                      enter-active-class="transition duration-300 ease-out"
-                      enter-from-class="transform scale-95 opacity-0"
-                      enter-to-class="transform scale-100 opacity-100"
-                    >
-                      <div v-if="showCorrectAnswer" class="p-4 rounded-xl border-2 bg-green-50 border-green-200">
-                        <div class="flex items-start gap-3">
-                          <div class="mt-0.5">
-                            <span class="text-green-600 text-xl">✓</span>
-                          </div>
-                          <div>
-                            <h4 class="font-bold text-green-800">Model Answer:</h4>
-                            <p class="text-sm mt-1 text-green-700">{{ question.correctAnswer }}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </transition>
-                  </div>
-
-                  <!-- Hint Section (if hint exists) -->
-                  <div v-if="currentExercise.hint" class="mt-6 bg-amber-50 rounded-xl border border-amber-200 p-4">
-                    <div class="flex items-start gap-2">
-                      <span class="text-xl">💡</span>
-                      <div>
-                        <p class="font-semibold text-amber-900 mb-1">Hint</p>
-                        <p class="text-sm text-gray-700 leading-relaxed">
-                          {{ currentExercise.hint }}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Single Column for Short Answer without Reading Content -->
-              <div v-else class="max-w-3xl mx-auto">
-                <div class="bg-white rounded-2xl border border-gray-100 p-8 shadow-sm space-y-6">
-                  <h3 class="text-purple-600 font-semibold text-lg mb-6">✍️ Answer the Questions</h3>
-                  
-                  <div v-for="(question, qIndex) in (currentExercise.questions || [])" :key="qIndex" class="space-y-3">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                      {{ qIndex + 1 }}. {{ question.question }}
-                    </label>
-                    <textarea 
-                      :value="userAnswer[qIndex] || ''" 
-                      @input="updateMultiAnswer(qIndex, $event.target.value)" 
-                      placeholder="Type your answer..." 
-                      :disabled="showCorrectAnswer" 
-                      class="w-full p-3 rounded-lg border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 outline-none transition-all resize-none h-24"
-                    ></textarea>
-                    
-                    <!-- Feedback -->
-                    <transition
-                      enter-active-class="transition duration-300 ease-out"
-                      enter-from-class="transform scale-95 opacity-0"
-                      enter-to-class="transform scale-100 opacity-100"
-                    >
-                      <div v-if="showCorrectAnswer" class="p-4 rounded-xl border-2 bg-green-50 border-green-200">
-                        <div class="flex items-start gap-3">
-                          <div class="mt-0.5">
-                            <span class="text-green-600 text-xl">✓</span>
-                          </div>
-                          <div>
-                            <h4 class="font-bold text-green-800">Model Answer:</h4>
-                            <p class="text-sm mt-1 text-green-700">{{ question.correctAnswer }}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </transition>
-                  </div>
-
-                  <!-- Hint Section -->
-                  <div v-if="currentExercise.hint" class="mt-6 bg-amber-50 rounded-xl border border-amber-200 p-4">
-                    <div class="flex items-start gap-2">
-                      <span class="text-xl">💡</span>
-                      <div>
-                        <p class="font-semibold text-amber-900 mb-1">Hint</p>
-                        <p class="text-sm text-gray-700 leading-relaxed">
-                          {{ currentExercise.hint }}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+              <div v-for="(question, qIndex) in (currentExercise.questions || [])" :key="qIndex" class="space-y-3">
+                <p class="font-medium text-slate-800">{{ question.question }}</p>
+                <textarea 
+                  :value="userAnswer[qIndex] || ''" 
+                  @input="updateMultiAnswer(qIndex, $event.target.value)" 
+                  placeholder="Type your answer..." 
+                  :disabled="showCorrectAnswer" 
+                  class="w-full p-4 rounded-lg border border-slate-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all outline-none resize-none h-32"
+                ></textarea>
+                <div v-if="showCorrectAnswer" class="p-4 rounded-lg bg-green-50 border border-green-100 text-green-800">
+                  <p class="font-semibold">Correct Answer:</p>
+                  <p>{{ question.correctAnswer }}</p>
                 </div>
               </div>
            </div>
@@ -420,19 +324,19 @@
       </div>
 
       <!-- Footer Actions (Non-Geometry) -->
-      <footer v-if="exerciseType !== 'geometry'" class="mt-8 flex justify-end gap-3">
+      <footer v-if="exerciseType !== 'geometry'" class="mt-8 flex justify-end">
         <button 
           v-if="!showCorrectAnswer" 
           @click="submit" 
           :disabled="!canSubmit"
-          class="px-8 py-3.5 bg-purple-600 text-white rounded-xl font-semibold shadow-md hover:bg-purple-700 transition-all transform active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed"
+          class="px-8 py-3 bg-blue-600 text-white rounded-xl font-semibold shadow-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Check Answers
         </button>
         <button 
           v-else 
           @click="handleNext" 
-          class="px-8 py-3.5 bg-purple-600 text-white rounded-xl font-semibold shadow-md hover:bg-purple-700 transition-all transform active:scale-98"
+          class="px-8 py-3 bg-green-600 text-white rounded-xl font-semibold shadow-lg hover:bg-green-700 transition-colors"
         >
           Next →
         </button>
@@ -552,10 +456,6 @@ const submit = () => {
 };
 
 const resetAndNext = () => {
-    emit('next-exercise');
-};
-
-const handleNext = () => {
     emit('next-exercise');
 };
 
