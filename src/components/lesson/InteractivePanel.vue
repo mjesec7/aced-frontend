@@ -113,7 +113,7 @@
             </div>
 
             <!-- Right: Formulas & Submit -->
-            <div class="bg-white rounded-2xl border border-gray-100 p-8 shadow-sm space-y-6">
+            <div class="bg-white rounded-2xl border border-purple-200 p-8 shadow-lg space-y-6">
               <h3 class="text-purple-600 font-semibold text-lg mb-6">Select the Formula You Used</h3>
               
               <!-- Formula Cards -->
@@ -147,8 +147,7 @@
               <button 
                 @click="submitGeometry"
                 :disabled="!canSubmitGeometry"
-                class="w-full py-3.5 rounded-xl font-semibold text-white shadow-md transition-all transform active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed mt-6"
-                :class="canSubmitGeometry ? 'bg-purple-600 hover:bg-purple-700' : 'bg-gray-300'"
+                class="w-full py-3.5 rounded-xl font-semibold text-white transition-all transform active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed mt-6 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
               >
                 Submit Answer
               </button>
@@ -179,19 +178,23 @@
                 </div>
               </transition>
 
-              <!-- Hint Section -->
-              <div class="mt-6 bg-amber-50 rounded-xl border border-amber-200 p-4">
-                <div class="flex items-start gap-2">
-                  <span class="text-xl">💡</span>
-                  <div>
-                    <p class="font-semibold text-amber-900 mb-1">Hint</p>
-                    <p class="text-sm text-gray-700 leading-relaxed">
-                      {{ geometryData.hint }}
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <!-- Next Button -->
+              <button 
+                v-if="isCorrect"
+                @click="emit('next-exercise')"
+                class="w-full py-3.5 rounded-xl font-semibold text-white shadow-md bg-purple-600 hover:bg-purple-700 transition-all mt-4"
+              >
+                Next →
+              </button>
             </div>
+          </div>
+
+          <!-- Hint Card (Separate) -->
+          <div class="mt-6 bg-white rounded-2xl border border-purple-200 p-6 shadow-lg">
+            <h3 class="text-purple-600 font-semibold mb-2">💡 Hint</h3>
+            <p class="text-slate-700">
+              {{ geometryData.hint }}
+            </p>
           </div>
 
           <!-- Identify Mode -->
