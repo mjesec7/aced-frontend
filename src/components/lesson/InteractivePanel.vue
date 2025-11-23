@@ -36,6 +36,16 @@
       <div class="panel-content-scroll">
         <div class="exercise-wrapper">
           
+          <!-- DEBUG: Show exerciseType -->
+          <div style="background: yellow; padding: 10px; margin-bottom: 10px;">
+            <strong>DEBUG:</strong><br>
+            exerciseType: {{ exerciseType }}<br>
+            currentExercise.type: {{ currentExercise?.type }}<br>
+            currentExercise.data?.type: {{ currentExercise?.data?.type }}<br>
+            Has pairs: {{ !!currentExercise?.pairs }}<br>
+            Has data.pairs: {{ !!currentExercise?.data?.pairs }}
+          </div>
+          
           <div v-if="['reading', 'short-answer', 'sentence-transformation', 'error-correction'].includes(exerciseType)" class="exercise-type-container">
             
             <article v-if="currentExercise.content" class="exercise-card reading-text-card">
