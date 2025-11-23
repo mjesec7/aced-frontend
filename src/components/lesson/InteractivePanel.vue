@@ -158,6 +158,74 @@
              </article>
           </div>
 
+          <!-- GEOMETRY EXPLORER -->
+          <div v-else-if="exerciseType === 'geometry'" class="exercise-type-container geometry-container">
+            <article class="exercise-card geometry-card">
+              <div class="geometry-header">
+                <h3 class="card-subtitle">{{ currentExercise.title || 'Geometry Explorer' }}</h3>
+                <p class="instruction-text">{{ currentExercise.instruction || 'Interact with the shape below.' }}</p>
+              </div>
+
+              <div class="canvas-wrapper" ref="canvasWrapper">
+                <!-- SVG Layer for Shapes -->
+                <svg class="geometry-svg" width="300" height="300" viewBox="0 0 300 300">
+                  <!-- Circle -->
+                  <circle 
+                    v-if="currentExercise.shape === 'circle'" 
+                    cx="150" cy="150" r="100" 
+                    fill="#e0f2fe" stroke="#3b82f6" stroke-width="3"
+                  />
+                  <!-- Center Point -->
+                  <circle cx="150" cy="150" r="4" fill="#1e293b" />
+                  
+                  <!-- Drawn Lines (Feedback) -->
+                  <line 
+                    v-for="(line, idx) in drawnLines" 
+                    :key="idx"
+                    :x1="line.start.x" :y1="line.start.y"
+                    :x2="line.end.x" :y2="line.end.y"
+                    :stroke="line.isCorrect ? '#10b981' : '#ef4444'"
+                    stroke-width="4"
+                    stroke-linecap="round"
+                  />
+                </svg>
+
+                <!-- Canvas Layer for Interaction -->
+                <canvas
+                  ref="canvasRef"
+                  width="300"
+                  height="300"
+                  class="geometry-canvas"
+                  :class="{ 'is-drawing': isDrawing }"
+                  @mousedown="startDrawing"
+                  @mousemove="draw"
+                  @mouseup="stopDrawing"
+                  @mouseleave="stopDrawing"
+                  @touchstart.prevent="startDrawing"
+                  @touchmove.prevent="draw"
+                  @touchend.prevent="stopDrawing"
+                ></canvas>
+
+                <!-- Feedback Overlay -->
+                <transition name="fade">
+                  <div v-if="geometryFeedback" class="geometry-feedback" :class="geometryFeedback.type">
+                    {{ geometryFeedback.message }}
+                  </div>
+                </transition>
+              </div>
+
+              <!-- Identify Mode Input -->
+              <div v-if="currentExercise.mode === 'identify'" class="identify-input">
+                <input 
+                  v-model="userAnswer" 
+                  placeholder="What shape is this?" 
+                  class="answer-input"
+                  :disabled="showCorrectAnswer"
+                />
+              </div>
+            </article>
+          </div>
+
           <!-- Fallback for unknown exercise types (e.g., timed-practice) -->
           <div v-else class="exercise-type-container">
             <article class="exercise-card">
@@ -199,6 +267,7 @@
 import { ref, computed, watch } from 'vue';
 import { useExercises } from '../../composables/useExercises.js';
 import GameContainer from '../games/base/GameContainer.vue';
+import { useGeometry } from '../../composables/useGeometry.js';
 
 const props = defineProps({
   currentExercise: Object,
@@ -219,6 +288,23 @@ const {
     submitAnswer: submitLogic, 
     resetExerciseState 
 } = useExercises();
+
+// Geometry Composable
+const {
+  canvasRef,
+  isDrawing,
+  startPoint,
+  currentPoint,
+  drawnLines,
+  measuredAngle,
+  feedback: geometryFeedback,
+  config: geometryConfig,
+  startDrawing,
+  draw,
+  stopDrawing,
+  updateAngle,
+  resetGeometry
+} = useGeometry();
 
 const localMatchingAnswers = ref({});
 const draggedItem = ref({ questionId: null, wordIndex: null });
@@ -798,6 +884,92 @@ const handleGameExit = () => {
 .reading-text-content {
   background-color: var(--lesson-blue-light);
   padding: 1rem;
+  border-radius: var(--radius);
+  line-height: 1.6;
+  color: var(--card-foreground);
+}
+
+/* ================================ */
+/* ==      GEOMETRY EXPLORER     == */
+/* ================================ */
+.geometry-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.geometry-card {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.geometry-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.canvas-wrapper {
+  position: relative;
+  width: 300px;
+  height: 300px;
+  margin-bottom: 1.5rem;
+  user-select: none;
+}
+
+.geometry-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  pointer-events: none; /* Let clicks pass through to canvas */
+}
+
+.geometry-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 20;
+  cursor: crosshair;
+  touch-action: none; /* Prevent scrolling while drawing */
+}
+
+.geometry-canvas.is-drawing {
+  cursor: none;
+}
+
+.geometry-feedback {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  z-index: 30;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.geometry-feedback.success {
+  background-color: #d1fae5;
+  color: #065f46;
+  border: 1px solid #10b981;
+}
+
+.geometry-feedback.error {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #ef4444;
+}
+
+.identify-input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
   border-radius: 0.5rem;
   color: var(--foreground);
 }

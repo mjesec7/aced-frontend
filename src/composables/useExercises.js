@@ -5,41 +5,41 @@ export function useExercises() {
   // ===================================
   // STATE MANAGEMENT
   // ===================================
-  
+
   // Navigation state
   const currentExerciseIndex = ref(0)
   const currentQuizIndex = ref(0)
   const _currentExercise = ref(null); // Internal reactive reference to the current exercise
-  
+
   // Answer state
   const userAnswer = ref(null)
   const fillBlankAnswers = ref([])
   const matchingPairs = ref([])
   const orderingItems = ref([])
   const dragDropPlacements = reactive({})
-  
+
   // UI state
   const confirmation = ref('')
   const answerWasCorrect = ref(false)
   const currentHint = ref('')
   const smartHint = ref('')
   const selectedMatchingItem = ref(null)
-  
+
   // Drag and drop state
   const availableDragItems = ref([])
   const dropZones = ref([])
   const draggedDragItem = ref(null)
   const dropOverZone = ref(null)
-  
+
   // Attempt tracking
   const attemptCount = ref(0)
   const maxAttempts = ref(2)
   const showCorrectAnswer = ref(false)
-  
+
   // ===================================
   // COMPUTED PROPERTIES
   // ===================================
-  
+
   const isOnSecondChance = computed(() => {
     return attemptCount.value === 1 && attemptCount.value < maxAttempts.value
   })
@@ -47,12 +47,12 @@ export function useExercises() {
   // ===================================
   // NEW: ENHANCED QUESTION DETECTION
   // ===================================
-  
+
   const detectQuestionsFromExercise = (exercise) => {
     if (!exercise) return []
 
     let questions = []
-    
+
     // Strategy 1: Check for explicit questions array
     if (exercise.questions && Array.isArray(exercise.questions)) {
       questions = exercise.questions.map((q, index) => ({
@@ -62,7 +62,7 @@ export function useExercises() {
       }))
       return questions
     }
-    
+
     // Strategy 2: Parse main question field for multiple questions
     const mainQuestion = exercise.question || exercise.content || ''
     if (mainQuestion) {
@@ -89,7 +89,7 @@ export function useExercises() {
           extract: (match) => match.trim()
         }
       ]
-      
+
       for (const pattern of questionPatterns) {
         const matches = [...mainQuestion.matchAll(pattern.regex)]
         if (matches.length > 1) {
@@ -101,12 +101,12 @@ export function useExercises() {
           break
         }
       }
-      
+
       // Strategy 3: Split by line breaks if multiple lines with question marks
       if (questions.length === 0) {
         const lines = mainQuestion.split(/\n+/).filter(line => line.trim().length > 0)
         const questionLines = lines.filter(line => line.includes('?'))
-        
+
         if (questionLines.length > 1) {
           questions = questionLines.map((line, index) => ({
             question: line.trim().replace(/^\d+[\.)]\s*/, ''), // Remove numbering
@@ -116,7 +116,7 @@ export function useExercises() {
         }
       }
     }
-    
+
     // Strategy 4: Check data field for questions
     if (questions.length === 0 && exercise.data) {
       if (Array.isArray(exercise.data)) {
@@ -124,7 +124,7 @@ export function useExercises() {
           if (typeof item === 'string') return item.includes('?')
           return item && (item.question || item.text) && String(item.question || item.text).includes('?')
         })
-        
+
         if (dataQuestions.length > 0) {
           questions = dataQuestions.map((item, index) => ({
             question: typeof item === 'string' ? item : (item.question || item.text || `Question ${index + 1}`),
@@ -143,11 +143,11 @@ export function useExercises() {
 
     return questions
   }
-  
+
   // ===================================
   // UTILITY FUNCTIONS
   // ===================================
-  
+
   const calculateSimilarity = (str1, str2) => {
     if (!str1 || !str2) return 0;
     const longer = str1.length > str2.length ? str1 : str2;
@@ -179,24 +179,24 @@ export function useExercises() {
   // Improved Fisher-Yates shuffle algorithm
   const shuffleArray = (array) => {
     const shuffled = [...array] // Create a copy to avoid mutating original
-    
+
     for (let i = shuffled.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1))
-      ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+        ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
     }
-    
+
     // For arrays with more than 1 element, ensure it's actually shuffled
     if (shuffled.length > 1) {
       let attempts = 0
       while (attempts < 5 && JSON.stringify(shuffled) === JSON.stringify(array)) {
         for (let i = shuffled.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1))
-          ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+            ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
         }
         attempts++
       }
     }
-    
+
     return shuffled
   }
 
@@ -213,11 +213,11 @@ export function useExercises() {
   // ===================================
   // ENHANCED VALIDATION FUNCTIONS
   // ===================================
-  
+
   const validateShortAnswer = (userAnswer, exercise) => {
     // Detect questions from exercise
     const detectedQuestions = detectQuestionsFromExercise(exercise)
-    
+
     // Handle multiple questions (enhanced detection)
     if (detectedQuestions.length > 1) {
       if (!Array.isArray(userAnswer)) {
@@ -225,18 +225,18 @@ export function useExercises() {
       }
 
       const correctAnswers = getCorrectAnswersArray(exercise)
-      
+
       // Validate each detected question
       let validAnswers = 0
       const totalQuestions = detectedQuestions.length
-      
+
       for (let i = 0; i < totalQuestions; i++) {
         const userAnswerItem = userAnswer[i]
         if (!userAnswerItem || typeof userAnswerItem !== 'string') continue
-        
+
         const userTrimmed = userAnswerItem.trim().toLowerCase()
         if (userTrimmed.length < 1) continue
-        
+
         // Get corresponding correct answer
         let correctAnswer = null
         if (correctAnswers[i]) {
@@ -245,10 +245,10 @@ export function useExercises() {
           // If only one correct answer provided, use pattern matching
           correctAnswer = correctAnswers[0]
         }
-        
+
         if (correctAnswer) {
           const correctTrimmed = String(correctAnswer).trim().toLowerCase()
-          
+
           if (userTrimmed === correctTrimmed) {
             validAnswers++
           } else if (correctTrimmed.length > 3) {
@@ -271,27 +271,27 @@ export function useExercises() {
       const successRate = validAnswers / totalQuestions
       return successRate >= 0.7
     }
-    
+
     // Single question validation (existing logic)
     if (!userAnswer || typeof userAnswer !== 'string') {
       return false
     }
-  
+
     const correctAnswers = getCorrectAnswersArray(exercise)
     const userAnswerTrimmed = userAnswer.trim().toLowerCase()
-  
+
     return correctAnswers.some(answer => {
       const correctAnswerTrimmed = String(answer).trim().toLowerCase()
-      
+
       if (userAnswerTrimmed === correctAnswerTrimmed) {
         return true
       }
-      
+
       if (correctAnswerTrimmed.length > 3) {
         const similarity = calculateSimilarity(userAnswerTrimmed, correctAnswerTrimmed)
         return similarity > 0.8
       }
-      
+
       return false
     })
   }
@@ -308,17 +308,17 @@ export function useExercises() {
     if (typeof correctAnswer === 'string' && correctAnswer.length === 1) {
       return userAnswer === correctAnswer.toUpperCase();
     }
-    
+
     // Case 3: Correct answer is the full text of the option
     if (typeof correctAnswer === 'string') {
-        return userAnswer === correctAnswer;
+      return userAnswer === correctAnswer;
     }
 
     // Fallback for array-based correct answers (for multi-select)
     if (Array.isArray(correctAnswer)) {
-        const normalizedUser = Array.isArray(userAnswer) ? [...userAnswer].sort() : [userAnswer];
-        const normalizedCorrect = [...correctAnswer].sort();
-        return JSON.stringify(normalizedUser) === JSON.stringify(normalizedCorrect);
+      const normalizedUser = Array.isArray(userAnswer) ? [...userAnswer].sort() : [userAnswer];
+      const normalizedCorrect = [...correctAnswer].sort();
+      return JSON.stringify(normalizedUser) === JSON.stringify(normalizedCorrect);
     }
 
     return false;
@@ -382,19 +382,19 @@ export function useExercises() {
       return (userAnswer || '').trim().toLowerCase() === (correctAnswer || '').trim().toLowerCase();
     });
   };
-  
+
   const validateMatching = (userPairs, exercise) => {
     if (!userPairs || typeof userPairs !== 'object') return false;
     if (Object.keys(userPairs).length < exercise.pairs.length) return false;
-    return exercise.pairs.every(pair => 
+    return exercise.pairs.every(pair =>
       userPairs[pair.id] === pair.correctMatch
     );
   };
-  
+
   const validateOrdering = (userItems, exercise) => {
     if (!userItems || typeof userItems !== 'object') return false;
     if (Object.keys(userItems).length < exercise.questions.length) return false;
-    return exercise.questions.every(q => 
+    return exercise.questions.every(q =>
       JSON.stringify(userItems[q.id]) === JSON.stringify(q.correctOrder)
     );
   };
@@ -404,8 +404,8 @@ export function useExercises() {
       userPlacements = dragDropPlacements
     }
 
-    const dropZonesArray = Array.isArray(exercise.dropZones) 
-      ? exercise.dropZones 
+    const dropZonesArray = Array.isArray(exercise.dropZones)
+      ? exercise.dropZones
       : Object.values(exercise.dropZones || {}).filter(zone => zone && (zone.label || zone.id))
 
     if (dropZonesArray.length === 0) {
@@ -418,9 +418,9 @@ export function useExercises() {
     for (const zone of dropZonesArray) {
       const zoneId = zone.id || zone.label || String(zone)
       const userItems = userPlacements[zoneId] || []
-      
+
       let correctItems = zone.correctItems || zone.items || []
-      
+
       if (zone.correctItem !== undefined) {
         if (typeof zone.correctItem === 'number' && exercise.dragItems) {
           const dragItems = Array.isArray(exercise.dragItems) ? exercise.dragItems : Object.values(exercise.dragItems)
@@ -434,7 +434,7 @@ export function useExercises() {
 
       for (const correctItem of correctItems) {
         const correctText = typeof correctItem === 'string' ? correctItem : (correctItem?.text || correctItem?.label || String(correctItem))
-        
+
         const isItemPresent = userItems.some(userItem => {
           const userText = typeof userItem === 'string' ? userItem : (userItem?.text || userItem?.label || String(userItem))
           return userText.trim().toLowerCase() === correctText.trim().toLowerCase()
@@ -452,10 +452,10 @@ export function useExercises() {
   // ===================================
   // MAIN VALIDATION FUNCTION
   // ===================================
-  
+
   const validateCurrentAnswer = (exercise) => {
     if (!exercise) return false;
-    
+
     const exerciseType = exercise.type || 'short-answer';
 
     switch (exerciseType) {
@@ -479,9 +479,18 @@ export function useExercises() {
         return validateOrdering(userAnswer.value, exercise);
       case 'drag-drop':
         return validateDragDrop(dragDropPlacements, exercise);
+      case 'geometry':
+        return validateGeometry(userAnswer.value, exercise);
       default:
         return validateShortAnswer(userAnswer.value, exercise);
     }
+  };
+
+  const validateGeometry = (userAnswer, exercise) => {
+    // For geometry, the interaction itself (drawing/measuring) validates the result
+    // and sets userAnswer to { valid: true, ... }
+    if (!userAnswer || typeof userAnswer !== 'object') return false;
+    return userAnswer.valid === true;
   };
 
   const validateQuizAnswer = (quiz) => {
@@ -504,7 +513,7 @@ export function useExercises() {
   // ===================================
   // FEEDBACK MESSAGES
   // ===================================
-  
+
   const getRandomSuccessMessage = () => {
     const messages = [
       '✅ Excellent! Correct answer!',
@@ -546,7 +555,7 @@ export function useExercises() {
     if (isCorrect) {
       return getRandomSuccessMessage()
     }
-    
+
     if (!Array.isArray(userPairs) || userPairs.length === 0) {
       return '🔗 Create at least one pair to check!'
     }
@@ -579,7 +588,7 @@ export function useExercises() {
   // ===================================
   // ENHANCED ANSWER DISPLAY FUNCTIONS
   // ===================================
-  
+
   const getCorrectAnswerDisplay = (exercise) => {
     if (!exercise) return '';
     const { correctAnswer, type = 'short-answer' } = exercise;
@@ -589,32 +598,32 @@ export function useExercises() {
         return exercise.options[correctAnswer]?.text || exercise.options[correctAnswer] || '';
       }
       if (typeof correctAnswer === 'string' && correctAnswer.length === 1) {
-          const foundOption = exercise.options.find(opt => (opt.text || opt).startsWith(correctAnswer));
-          return foundOption?.text || foundOption || '';
+        const foundOption = exercise.options.find(opt => (opt.text || opt).startsWith(correctAnswer));
+        return foundOption?.text || foundOption || '';
       }
     }
 
     if (type === 'matching') {
-        if (exercise.pairs && Array.isArray(exercise.pairs)) {
-          return exercise.pairs.map(pair => `${pair.left} ↔ ${pair.correctMatch}`).join('; ');
-        }
-        return 'Correct pairs shown above';
+      if (exercise.pairs && Array.isArray(exercise.pairs)) {
+        return exercise.pairs.map(pair => `${pair.left} ↔ ${pair.correctMatch}`).join('; ');
+      }
+      return 'Correct pairs shown above';
     }
 
     if (type === 'ordering' || type === 'structure') {
-        if (exercise.questions && Array.isArray(exercise.questions)) {
-            return exercise.questions.map(q => q.correctOrder.join(' ')).join('; ');
-        }
-        return 'Correct order shown above';
+      if (exercise.questions && Array.isArray(exercise.questions)) {
+        return exercise.questions.map(q => q.correctOrder.join(' ')).join('; ');
+      }
+      return 'Correct order shown above';
     }
-    
+
     return Array.isArray(correctAnswer) ? correctAnswer.join('; ') : String(correctAnswer || '');
   };
 
   // ===================================
   // SUBMISSION FUNCTIONS
   // ===================================
-  
+
   const submitAnswer = (exercise) => {
     attemptCount.value++;
     const isCorrect = validateCurrentAnswer(exercise);
@@ -632,10 +641,10 @@ export function useExercises() {
 
   const submitQuizAnswer = (quiz) => {
     attemptCount.value++
-    
+
     const isCorrect = validateQuizAnswer(quiz)
     answerWasCorrect.value = isCorrect
-    
+
     if (isCorrect) {
       confirmation.value = getRandomSuccessMessage()
       showCorrectAnswer.value = false
@@ -647,14 +656,14 @@ export function useExercises() {
       confirmation.value = getFinalFailureMessage(quiz, correctAnswer)
       showCorrectAnswer.value = true
     }
-    
+
     return isCorrect
   }
 
   // ===================================
   // EXERCISE NAVIGATION
   // ===================================
-  
+
   const setCurrentExercise = (exercise) => {
     _currentExercise.value = exercise;
   };
@@ -695,10 +704,10 @@ export function useExercises() {
       } else if (currentStep.exercises && Array.isArray(currentStep.exercises)) {
         console.log('Found exercises in step.exercises');
         exercises = currentStep.exercises;
-      } else if (currentStep.data?.question) {
-        console.log('Found single exercise in data.question');
+      } else if (currentStep.data?.question || currentStep.data?.type) {
+        console.log('Found single exercise in data (by question or type)');
         exercises = [currentStep.data];
-      } else if (currentStep.content?.question) {
+      } else if (currentStep.content?.question || currentStep.content?.type) {
         console.log('Found single exercise in content.question');
         exercises = [currentStep.content];
       } else if (currentStep.question) {
@@ -733,7 +742,7 @@ export function useExercises() {
       return null;
     }
   }
-  
+
   const getCurrentQuiz = (currentStep) => {
     if (!currentStep || currentStep.type !== 'quiz') {
       return null
@@ -766,7 +775,7 @@ export function useExercises() {
       return null
     }
   }
-  
+
   const getTotalExercises = (currentStep) => {
     if (!currentStep || !['exercise', 'practice'].includes(currentStep.type)) {
       return 0
@@ -789,7 +798,7 @@ export function useExercises() {
       return 0
     }
   }
-  
+
   const getTotalQuizzes = (currentStep) => {
     if (!currentStep || currentStep.type !== 'quiz') {
       return 0
@@ -812,17 +821,17 @@ export function useExercises() {
       return 0
     }
   }
-  
+
   const isLastExercise = (currentStep) => {
     const totalExercises = getTotalExercises(currentStep)
     return currentExerciseIndex.value >= totalExercises - 1
   }
-  
+
   const isLastQuiz = (currentStep) => {
     const totalQuizzes = getTotalQuizzes(currentStep)
     return currentQuizIndex.value >= totalQuizzes - 1
   }
-  
+
   const goToNextExercise = (currentStep, onNextStep) => {
     if (isLastExercise(currentStep)) {
       resetExerciseState()
@@ -833,7 +842,7 @@ export function useExercises() {
       initializeCurrentExerciseData(getCurrentExercise(currentStep))
     }
   }
-  
+
   const goToNextQuiz = (currentStep, onNextStep) => {
     if (isLastQuiz(currentStep)) {
       resetExerciseState()
@@ -847,7 +856,7 @@ export function useExercises() {
   // ===================================
   // INITIALIZATION FUNCTIONS
   // ===================================
-  
+
   const initializeCurrentExerciseData = (exercise) => {
     if (!exercise) return
 
@@ -873,34 +882,34 @@ export function useExercises() {
         break
     }
   }
-  
+
   const initializeFillBlankAnswers = (exercise) => {
     if (!exercise) {
       fillBlankAnswers.value = []
       return
     }
-    
+
     let blankCount = 0
-    
+
     if (exercise.blanks && Array.isArray(exercise.blanks)) {
       blankCount = exercise.blanks.length
     } else {
       const template = exercise.template || exercise.question || ''
-      
+
       const underscoreMatches = template.match(/_+/g) || []
       const blankMatches = template.match(/\[blank\]/gi) || []
       const curlyBraceMatches = template.match(/\{[^}]*\}/g) || []
-      
+
       blankCount = Math.max(
-        underscoreMatches.length, 
-        blankMatches.length, 
+        underscoreMatches.length,
+        blankMatches.length,
         curlyBraceMatches.length
       )
     }
-    
+
     fillBlankAnswers.value = new Array(Math.max(1, blankCount)).fill('')
   }
-  
+
   const initializeOrderingItems = (exercise) => {
     if (!exercise || exercise.type !== 'ordering' || !Array.isArray(exercise.items)) {
       orderingItems.value = [];
@@ -915,27 +924,27 @@ export function useExercises() {
 
     let shuffledItems = [...itemsWithMetadata];
     let attempts = 0;
-    
+
     while (attempts < 10 && JSON.stringify(shuffledItems.map(i => i.originalIndex)) === JSON.stringify(itemsWithMetadata.map(i => i.originalIndex))) {
-        shuffledItems.sort(() => Math.random() - 0.5);
-        attempts++;
+      shuffledItems.sort(() => Math.random() - 0.5);
+      attempts++;
     }
-    
+
     orderingItems.value = shuffledItems;
   }
-  
+
   const initializeDragDropItems = (exercise) => {
     Object.keys(dragDropPlacements).forEach(key => {
       delete dragDropPlacements[key]
     })
-    
+
     availableDragItems.value = []
     dropZones.value = []
-    
+
     if (!exercise || exercise.type !== 'drag-drop') {
       return
     }
-    
+
     if (exercise.dragItems && Array.isArray(exercise.dragItems)) {
       availableDragItems.value = exercise.dragItems.map(item => {
         if (typeof item === 'string') {
@@ -947,7 +956,7 @@ export function useExercises() {
         }
       })
     }
-    
+
     if (exercise.dropZones && Array.isArray(exercise.dropZones)) {
       dropZones.value = exercise.dropZones.map(zone => {
         if (typeof zone === 'string') {
@@ -962,17 +971,17 @@ export function useExercises() {
           return { label: String(zone), id: String(zone), correctItems: [] }
         }
       })
-      
+
       dropZones.value.forEach(zone => {
         dragDropPlacements[zone.id] = []
       })
     }
   }
-  
+
   const initializeMatchingItems = () => {
     matchingPairs.value = [];
     selectedMatchingItem.value = null;
-  
+
     if (typeof window !== 'undefined') {
       window.matchingShuffleCache = null;
     }
@@ -981,7 +990,7 @@ export function useExercises() {
   // ===================================
   // UPDATE FUNCTIONS
   // ===================================
-  
+
   const updateUserAnswer = (newAnswer, exercise) => {
     if (!exercise) {
       userAnswer.value = newAnswer
@@ -1016,11 +1025,11 @@ export function useExercises() {
     if (!Array.isArray(fillBlankAnswers.value)) {
       fillBlankAnswers.value = []
     }
-    
+
     while (fillBlankAnswers.value.length <= index) {
       fillBlankAnswers.value.push('')
     }
-    
+
     const newValue = typeof value === 'object' && value?.target ? value.target.value : value
     fillBlankAnswers.value[index] = newValue || ''
     fillBlankAnswers.value = [...fillBlankAnswers.value]
@@ -1033,7 +1042,7 @@ export function useExercises() {
   // ===================================
   // INTERACTION HANDLERS
   // ===================================
-  
+
   const handleMatchingSelection = (selection) => {
     selectedMatchingItem.value = selection
   }
@@ -1049,7 +1058,7 @@ export function useExercises() {
   // ===================================
   // DRAG AND DROP HANDLERS
   // ===================================
-  
+
   const handleDragItemStart = ({ item, event }) => {
     draggedDragItem.value = item
   }
@@ -1066,9 +1075,9 @@ export function useExercises() {
     if (!dragDropPlacements[zoneId]) {
       dragDropPlacements[zoneId] = []
     }
-    
+
     const itemText = typeof item === 'string' ? item : (item?.text || item?.label || String(item))
-    
+
     Object.keys(dragDropPlacements).forEach(otherZoneId => {
       if (otherZoneId !== zoneId && Array.isArray(dragDropPlacements[otherZoneId])) {
         dragDropPlacements[otherZoneId] = dragDropPlacements[otherZoneId].filter(placedItem => {
@@ -1077,16 +1086,16 @@ export function useExercises() {
         })
       }
     })
-    
+
     const isAlreadyInZone = dragDropPlacements[zoneId].some(placedItem => {
       const placedText = typeof placedItem === 'string' ? placedItem : (placedItem?.text || placedItem?.label || String(placedItem))
       return placedText === itemText
     })
-    
+
     if (!isAlreadyInZone) {
       dragDropPlacements[zoneId].push(item)
     }
-    
+
     draggedDragItem.value = null
     dropOverZone.value = null
   }
@@ -1100,7 +1109,7 @@ export function useExercises() {
   // ===================================
   // HINT SYSTEM
   // ===================================
-  
+
   const showHint = () => {
     currentHint.value = "Read the question carefully and think about the correct answer."
   }
@@ -1116,7 +1125,7 @@ export function useExercises() {
   // ===================================
   // RESET FUNCTIONS
   // ===================================
-  
+
   const resetAttemptState = () => {
     attemptCount.value = 0
     showCorrectAnswer.value = false
@@ -1130,7 +1139,7 @@ export function useExercises() {
     smartHint.value = ''
     resetAttemptState()
   }
-  
+
   const resetExerciseData = () => {
     fillBlankAnswers.value = []
     matchingPairs.value = []
@@ -1138,12 +1147,12 @@ export function useExercises() {
     orderingItems.value = []
     availableDragItems.value = []
     dropZones.value = []
-    
+
     Object.keys(dragDropPlacements).forEach(key => {
       delete dragDropPlacements[key]
     })
   }
-  
+
   const resetExerciseState = () => {
     currentExerciseIndex.value = 0
     currentQuizIndex.value = 0
@@ -1155,19 +1164,19 @@ export function useExercises() {
   // ===================================
   // HELPER FUNCTIONS
   // ===================================
-  
+
   const getCurrentExerciseType = (exercise) => {
     return exercise?.type || 'short-answer'
   }
-  
+
   const getFormattedFillBlankTemplate = (exercise) => {
     if (!exercise || exercise.type !== 'fill-blank') {
       return ''
     }
-    
+
     const template = exercise.template || exercise.question || ''
     let blankIndex = 0
-    
+
     return template
       .replace(/\[blank\]/gi, () => `<input data-blank-index="${blankIndex++}">`)
       .replace(/_+/g, () => `<input data-blank-index="${blankIndex++}">`)
@@ -1192,7 +1201,7 @@ export function useExercises() {
     }
     return []
   }
-  
+
   const getRightItemsArray = (exercise) => {
     if (!exercise?.pairs) return []
     const pairs = exercise.pairs
@@ -1208,12 +1217,12 @@ export function useExercises() {
         }
         return { text, originalIndex: index }
       }).filter(item => item.text.trim() !== '')
-      
+
       return shuffleArray(rightItemsWithMetadata)
     }
     return []
   }
-  
+
   const forceReshuffleRightItems = () => {
     return true
   }
@@ -1243,10 +1252,10 @@ export function useExercises() {
     attemptCount,
     maxAttempts,
     showCorrectAnswer,
-    
+
     // Computed
     isOnSecondChance,
-    
+
     // Core Exercise Methods
     getCurrentExercise,
     getCurrentQuiz,
@@ -1257,10 +1266,10 @@ export function useExercises() {
     goToNextExercise,
     goToNextQuiz,
     setCurrentExercise,
-    
+
     // Enhanced: Question Detection Methods
     detectQuestionsFromExercise,
-    
+
     // Validation Methods
     validateCurrentAnswer,
     validateQuizAnswer,
@@ -1271,23 +1280,23 @@ export function useExercises() {
     validateMatching,
     validateOrdering,
     validateDragDrop,
-    
+
     // Submission Methods
     submitAnswer,
     submitQuizAnswer,
-    
+
     // Initialization Methods
     initializeCurrentExerciseData,
     initializeFillBlankAnswers,
     initializeOrderingItems,
     initializeDragDropItems,
     initializeMatchingItems,
-    
+
     // Update Methods
     updateUserAnswer,
     updateFillBlankAnswer,
     getCurrentUserAnswer,
-    
+
     // Interaction Handlers
     handleMatchingSelection,
     removeMatchingPair,
@@ -1296,25 +1305,25 @@ export function useExercises() {
     handleDragLeaveZone,
     handleDropInZone,
     handleRemoveDroppedItem,
-    
+
     // Display Methods
     getCorrectAnswerDisplay,
     getMatchingFeedback,
     getRandomSuccessMessage,
     getSecondChanceMessage,
     getFinalFailureMessage,
-    
+
     // Hint System
     showHint,
     clearSmartHint,
     setSmartHint,
-    
+
     // Reset Methods
     resetExerciseState,
     resetExerciseAnswers,
     resetExerciseData,
     resetAttemptState,
-    
+
     // Helper Methods
     getCurrentExerciseType,
     getFormattedFillBlankTemplate,
