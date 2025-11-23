@@ -169,14 +169,51 @@
               <div class="canvas-wrapper" ref="canvasWrapper">
                 <!-- SVG Layer for Shapes -->
                 <svg class="geometry-svg" width="300" height="300" viewBox="0 0 300 300">
+                  <defs>
+                    <!-- Filter for "Hand-Drawn" Look -->
+                    <filter id="sketchy">
+                      <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="3" result="noise" />
+                      <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" />
+                    </filter>
+                  </defs>
+
                   <!-- Circle -->
                   <circle 
                     v-if="currentExercise.shape === 'circle'" 
                     cx="150" cy="150" r="100" 
-                    fill="#e0f2fe" stroke="#3b82f6" stroke-width="3"
+                    :fill="shapeFillColor" 
+                    :stroke="shapeStrokeColor" 
+                    stroke-width="3"
+                    filter="url(#sketchy)"
                   />
-                  <!-- Center Point -->
-                  <circle cx="150" cy="150" r="4" fill="#1e293b" />
+
+                  <!-- Triangle -->
+                  <polygon 
+                    v-if="currentExercise.shape === 'triangle'" 
+                    points="150,50 250,250 50,250"
+                    :fill="shapeFillColor" 
+                    :stroke="shapeStrokeColor" 
+                    stroke-width="3"
+                    filter="url(#sketchy)"
+                  />
+
+                  <!-- Square -->
+                  <rect 
+                    v-if="currentExercise.shape === 'square'" 
+                    x="50" y="50" width="200" height="200"
+                    :fill="shapeFillColor" 
+                    :stroke="shapeStrokeColor" 
+                    stroke-width="3"
+                    filter="url(#sketchy)"
+                  />
+
+                  <!-- Center Point (for Circle/Diameter) -->
+                  <circle 
+                    v-if="currentExercise.shape === 'circle'" 
+                    cx="150" cy="150" r="4" 
+                    fill="#1e293b" 
+                    filter="url(#sketchy)"
+                  />
                   
                   <!-- Drawn Lines (Feedback) -->
                   <line 
@@ -187,6 +224,7 @@
                     :stroke="line.isCorrect ? '#10b981' : '#ef4444'"
                     stroke-width="4"
                     stroke-linecap="round"
+                    filter="url(#sketchy)"
                   />
                 </svg>
 
@@ -305,6 +343,27 @@ const {
   updateAngle,
   resetGeometry
 } = useGeometry();
+
+// Visuals
+const shapeFillColor = ref('#e0f2fe');
+const shapeStrokeColor = ref('#3b82f6');
+
+const generateRandomColors = () => {
+  const hues = [0, 30, 60, 120, 180, 210, 270, 300]; // Red, Orange, Yellow, Green, Cyan, Blue, Purple, Pink
+  const hue = hues[Math.floor(Math.random() * hues.length)];
+  
+  // Pastel fill
+  shapeFillColor.value = `hsl(${hue}, 70%, 90%)`;
+  // Darker stroke
+  shapeStrokeColor.value = `hsl(${hue}, 70%, 40%)`;
+};
+
+// Watch for exercise changes to randomize color
+watch(() => props.currentExercise, (newVal) => {
+  if (newVal?.data?.type === 'geometry') {
+    generateRandomColors();
+  }
+}, { immediate: true, deep: true });
 
 const localMatchingAnswers = ref({});
 const draggedItem = ref({ questionId: null, wordIndex: null });

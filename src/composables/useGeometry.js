@@ -5,24 +5,6 @@ export function useGeometry() {
     const canvasRef = ref(null);
     const isDrawing = ref(false);
     const startPoint = ref({ x: 0, y: 0 });
-    const currentPoint = ref({ x: 0, y: 0 });
-    const drawnLines = ref([]); // Array of { start: {x,y}, end: {x,y}, isCorrect: boolean }
-    const measuredAngle = ref(0);
-    const feedback = ref(null); // { type: 'success' | 'error', message: string }
-
-    // Configuration (can be set by the component)
-    const config = reactive({
-        tolerance: 20, // pixels for snapping
-        center: { x: 150, y: 150 },
-        radius: 100,
-        targetShape: 'circle' // 'circle', 'triangle', etc.
-    });
-
-    // --- Helper Math Functions ---
-
-    const getDistance = (p1, p2) => {
-        return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
-    };
 
     const getPointOnCircle = (angle, center, radius) => {
         return {
