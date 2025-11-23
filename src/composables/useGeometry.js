@@ -5,6 +5,16 @@ export function useGeometry() {
     const canvasRef = ref(null);
     const isDrawing = ref(false);
     const startPoint = ref({ x: 0, y: 0 });
+    const currentPoint = ref({ x: 0, y: 0 });
+    const feedback = ref(null);
+    const drawnLines = ref([]);
+    const measuredAngle = ref(0);
+
+    const config = reactive({
+        center: { x: 150, y: 150 },
+        radius: 100,
+        tolerance: 20
+    });
 
     const getPointOnCircle = (angle, center, radius) => {
         return {
