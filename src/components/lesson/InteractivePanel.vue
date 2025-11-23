@@ -376,7 +376,7 @@ const normalizedExercise = ref(null);
 
 const canSubmit = computed(() => {
   // For matching exercises, check the local state
-  if (props.currentExercise?.type === 'matching') {
+  if (exerciseType.value === 'matching') {
     return Object.values(localMatchingAnswers.value).some(val => val);
   }
 
@@ -403,7 +403,12 @@ watch(() => props.currentExercise, (newEx) => {
   // Clone the exercise to avoid prop mutation
   const exerciseClone = JSON.parse(JSON.stringify(newEx));
 
-  switch(exerciseClone.type) {
+  // Determine effective type for initialization logic
+  const effectiveType = (exerciseClone.type === 'exercise' && exerciseClone.data?.type) 
+      ? exerciseClone.data.type 
+      : exerciseClone.type;
+
+  switch(effectiveType) {
       case 'reading':
       case 'short-answer':
           if (exerciseClone.questions && exerciseClone.questions.length > 0) {
