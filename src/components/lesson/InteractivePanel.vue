@@ -56,24 +56,35 @@
         </div>
 
         <!-- GEOMETRY REDESIGN -->
-        <div v-else-if="exerciseType === 'geometry'" class="p-6 md:p-8">
-          
+        <div v-else-if="exerciseType === 'geometry'" class="p-6 md:p-10">
+
+          <!-- Back Button -->
+          <button
+            @click="emit('previous-exercise')"
+            class="mb-6 flex items-center gap-2 text-purple-600 hover:text-purple-700 font-medium transition-colors"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+            Back
+          </button>
+
           <!-- Calculate Mode (Split View) -->
-          <div v-if="geometryData.mode === 'calculate'" class="grid lg:grid-cols-2 gap-6">
-            
+          <div v-if="geometryData.mode === 'calculate'" class="grid lg:grid-cols-2 gap-8">
+
             <!-- Left: Shape & Given Info -->
-            <div class="bg-white rounded-2xl border border-gray-100 p-8 shadow-sm">
-              <h3 class="text-purple-600 font-semibold text-lg mb-6">Given Information</h3>
-              
-              <div class="space-y-1 mb-8">
-                <p class="text-gray-700">Side a = <span class="font-semibold">{{ geometryData.given.side_a }}</span> units</p>
-                <p class="text-purple-600 font-medium">Angle = {{ geometryData.given.angle }}°</p>
+            <div class="bg-white rounded-3xl border border-slate-200 p-10 shadow-sm">
+              <h3 class="text-purple-600 font-bold text-xl mb-8">Given Information</h3>
+
+              <div class="space-y-2 mb-10">
+                <p class="text-slate-700 text-base">Side a = <span class="font-bold text-slate-900">{{ geometryData.given.side_a }}</span> units</p>
+                <p class="text-purple-600 font-semibold text-base">Angle = {{ geometryData.given.angle }}°</p>
               </div>
 
               <!-- Square with Rainbow Gradient Border -->
-              <div class="flex justify-center items-center py-12">
+              <div class="flex justify-center items-center py-8">
                 <div class="relative">
-                  <svg width="280" height="280" viewBox="0 0 280 280">
+                  <svg width="320" height="320" viewBox="0 0 320 320">
                     <defs>
                       <!-- Rainbow gradient for border -->
                       <linearGradient id="rainbowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -83,28 +94,28 @@
                         <stop offset="100%" stop-color="#22c55e" />
                       </linearGradient>
                     </defs>
-                    
+
                     <!-- Square with gradient border -->
-                    <rect 
-                      x="40" y="40" 
-                      width="200" height="200" 
-                      fill="white" 
-                      stroke="url(#rainbowGradient)" 
-                      stroke-width="6"
-                      rx="4"
+                    <rect
+                      x="50" y="50"
+                      width="220" height="220"
+                      fill="white"
+                      stroke="url(#rainbowGradient)"
+                      stroke-width="5"
+                      rx="3"
                     />
-                    
+
                     <!-- 90° angle marker -->
-                    <path d="M 40 220 L 60 220 L 60 240" fill="none" stroke="#eab308" stroke-width="2" />
-                    <text x="70" y="235" class="text-xs fill-yellow-500 font-medium">90°</text>
-                    
+                    <path d="M 50 250 L 70 250 L 70 270" fill="none" stroke="#eab308" stroke-width="2.5" />
+                    <text x="80" y="265" class="text-sm fill-yellow-500 font-semibold">90°</text>
+
                     <!-- Side a label (bottom) -->
-                    <text x="140" y="270" text-anchor="middle" class="fill-green-500 font-semibold text-sm">
+                    <text x="160" y="300" text-anchor="middle" class="fill-green-600 font-bold text-base">
                       side a = {{ geometryData.given.side_a }}
                     </text>
-                    
-                    <!-- Side b label (right) - with input -->
-                    <text x="260" y="140" text-anchor="start" class="fill-pink-500 font-semibold text-sm">
+
+                    <!-- Side b label (right) -->
+                    <text x="285" y="160" text-anchor="start" class="fill-pink-600 font-bold text-base">
                       side b = ?
                     </text>
                   </svg>
@@ -112,76 +123,63 @@
               </div>
             </div>
 
-            <!-- Right: Formulas & Submit -->
-            <div class="bg-white rounded-2xl border border-gray-100 p-8 shadow-sm space-y-6">
-              <h3 class="text-purple-600 font-semibold text-lg mb-6">Select the Formula You Used</h3>
+            <!-- Right: Formulas, Input & Submit -->
+            <div class="bg-white rounded-3xl border border-slate-200 p-10 shadow-sm flex flex-col">
+              <h3 class="text-purple-600 font-bold text-xl mb-6">Select the Formula You Used</h3>
 
               <!-- Formula Cards -->
-              <div class="space-y-3">
+              <div class="space-y-4 mb-8">
                 <button
                   v-for="formula in geometryData.formulas"
                   :key="formula.id"
                   @click="selectFormula(formula.id)"
-                  class="w-full text-left p-5 rounded-xl border-2 transition-all duration-200"
+                  class="w-full text-left p-6 rounded-2xl border-2 transition-all duration-200 hover:shadow-md"
                   :class="selectedFormula === formula.id
-                    ? 'border-purple-500 bg-purple-50'
-                    : 'border-gray-200 hover:border-purple-200 bg-white'"
+                    ? 'border-purple-500 bg-purple-50 shadow-sm'
+                    : 'border-slate-200 hover:border-purple-300 bg-white'"
                 >
-                  <p class="font-semibold text-gray-900 mb-1.5">{{ formula.name }}</p>
-                  <p class="font-mono text-purple-600 text-sm">{{ formula.formula }}</p>
+                  <p class="font-bold text-slate-900 mb-2 text-base">{{ formula.name }}</p>
+                  <p class="font-mono text-purple-600 font-medium">{{ formula.formula }}</p>
                 </button>
               </div>
 
               <!-- Hint Section -->
-              <div v-if="geometryData.hint" class="mt-6 bg-purple-50 rounded-xl border border-purple-100 p-5">
-                <h3 class="text-purple-600 font-semibold mb-2 flex items-center gap-2">
-                  <span class="text-xl">💡</span>
-                  Hint
-                </h3>
-                <p class="text-slate-700 text-sm leading-relaxed">
-                  {{ geometryData.hint }}
-                </p>
+              <div v-if="geometryData.hint" class="mb-8 bg-amber-50 rounded-2xl border border-amber-200 p-6">
+                <div class="flex items-start gap-3">
+                  <span class="text-2xl">💡</span>
+                  <div>
+                    <h4 class="text-amber-900 font-bold mb-2">Hint</h4>
+                    <p class="text-slate-700 text-sm leading-relaxed">
+                      {{ geometryData.hint }}
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              <!-- Input for side b -->
-              <div class="pt-4">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Enter value for side b:</label>
-                <input
-                  type="number"
-                  v-model="userAnswer.side_b"
-                  placeholder="Enter value..."
-                  class="w-full p-3 rounded-lg border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 outline-none transition-all"
-                />
-              </div>
+              <!-- Spacer -->
+              <div class="flex-grow"></div>
 
-              <!-- Submit Button -->
-              <button
-                @click="submitGeometry"
-                :disabled="!canSubmitGeometry"
-                class="w-full py-3.5 rounded-xl font-semibold text-white transition-all transform active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed mt-6 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-              >
-                Submit Answer
-              </button>
-
-              <!-- Feedback -->
+              <!-- Feedback (if shown) -->
               <transition
                 enter-active-class="transition duration-300 ease-out"
                 enter-from-class="transform scale-95 opacity-0"
                 enter-to-class="transform scale-100 opacity-100"
               >
-                <div v-if="showFeedback" class="mt-4 p-4 rounded-xl border-2"
-                  :class="isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'"
+                <div v-if="showFeedback" class="mb-6 p-5 rounded-2xl border-2"
+                  :class="isCorrect ? 'bg-green-50 border-green-300' : 'bg-red-50 border-red-300'"
                 >
-                  <div class="flex items-start gap-3">
-                    <div class="mt-0.5">
-                      <span v-if="isCorrect" class="text-green-600 text-xl">✓</span>
-                      <span v-else class="text-red-600 text-xl">✕</span>
+                  <div class="flex items-start gap-4">
+                    <div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
+                      :class="isCorrect ? 'bg-green-100' : 'bg-red-100'"
+                    >
+                      <span v-if="isCorrect" class="text-green-600 text-xl font-bold">✓</span>
+                      <span v-else class="text-red-600 text-xl font-bold">✕</span>
                     </div>
                     <div>
-                      <h4 class="font-bold" :class="isCorrect ? 'text-green-800' : 'text-red-800'">
+                      <h4 class="font-bold text-base mb-1" :class="isCorrect ? 'text-green-800' : 'text-red-800'">
                         {{ isCorrect ? 'Correct!' : 'Not quite right' }}
                       </h4>
-                      <p class="text-sm mt-1" :class="isCorrect ? 'text-green-700' : 'text-red-700'">
+                      <p class="text-sm" :class="isCorrect ? 'text-green-700' : 'text-red-700'">
                         {{ isCorrect ? 'Great job! All sides of a square are equal.' : 'Check your calculation and formula choice.' }}
                       </p>
                     </div>
@@ -189,14 +187,36 @@
                 </div>
               </transition>
 
-              <!-- Next Button -->
+              <!-- Next Button (if correct) -->
               <button
                 v-if="isCorrect"
                 @click="emit('next-exercise')"
-                class="w-full py-3.5 rounded-xl font-semibold text-white shadow-md bg-purple-600 hover:bg-purple-700 transition-all mt-4"
+                class="w-full py-4 rounded-xl font-bold text-white shadow-lg bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 transition-all mb-6"
               >
                 Next →
               </button>
+
+              <!-- Input & Submit (if not correct or no feedback yet) -->
+              <div v-if="!isCorrect" class="space-y-4">
+                <div>
+                  <label class="block text-sm font-bold text-slate-700 mb-3">Enter value for side b:</label>
+                  <input
+                    type="number"
+                    v-model="userAnswer.side_b"
+                    placeholder="Type your answer..."
+                    class="w-full px-4 py-3 text-base rounded-xl border-2 border-slate-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 outline-none transition-all"
+                  />
+                </div>
+
+                <!-- Submit Button -->
+                <button
+                  @click="submitGeometry"
+                  :disabled="!canSubmitGeometry"
+                  class="w-full py-4 rounded-xl font-bold text-white text-base transition-all transform active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:shadow-none"
+                >
+                  Submit Answer
+                </button>
+              </div>
             </div>
           </div>
 
@@ -373,7 +393,7 @@ const props = defineProps({
   stepIndex: Number,
 });
 
-const emit = defineEmits(['submit', 'next-exercise']);
+const emit = defineEmits(['submit', 'next-exercise', 'previous-exercise']);
 
 // Core Composables
 const { 
