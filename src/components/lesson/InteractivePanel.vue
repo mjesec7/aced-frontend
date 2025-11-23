@@ -265,9 +265,21 @@
                   v-model="userAnswer" 
                   placeholder="Type the shape name..." 
                   :disabled="showCorrectAnswer"
+                  @keyup.enter="submit"
                   class="w-full p-4 rounded-lg border border-purple-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all text-center text-lg font-medium"
                   :class="showCorrectAnswer && answerWasCorrect ? 'bg-green-50 border-green-500' : showCorrectAnswer ? 'bg-red-50 border-red-500' : ''"
                 />
+                
+                <!-- Submit Button -->
+                <button 
+                  v-if="!showCorrectAnswer"
+                  @click="submit"
+                  :disabled="!userAnswer || userAnswer.trim() === ''"
+                  class="w-full py-3.5 rounded-xl font-semibold text-white shadow-md transition-all transform active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed"
+                  :class="userAnswer && userAnswer.trim() !== '' ? 'bg-purple-600 hover:bg-purple-700' : 'bg-gray-300'"
+                >
+                  Submit Answer
+                </button>
                 
                 <!-- Feedback -->
                 <transition
@@ -323,10 +335,10 @@
         </button>
         <button 
           v-else 
-          @click="resetAndNext" 
+          @click="handleNext" 
           class="px-8 py-3 bg-green-600 text-white rounded-xl font-semibold shadow-lg hover:bg-green-700 transition-colors"
         >
-          {{ isLastExercise ? 'Complete Lesson' : 'Next Exercise' }}
+          Next →
         </button>
       </footer>
 
