@@ -348,6 +348,14 @@ const {
 const shapeFillColor = ref('#e0f2fe');
 const shapeStrokeColor = ref('#3b82f6');
 
+// Debug: Watch currentExercise prop changes
+watch(() => props.currentExercise, (newVal) => {
+  console.log('🎯 InteractivePanel received currentExercise:', newVal);
+  console.log('🎯 Exercise type:', newVal?.type);
+  console.log('🎯 Exercise data:', newVal?.data);
+  console.log('🎯 Exercise data.type:', newVal?.data?.type);
+}, { immediate: true, deep: true });
+
 const generateRandomColors = () => {
   const hues = [0, 30, 60, 120, 180, 210, 270, 300]; // Red, Orange, Yellow, Green, Cyan, Blue, Purple, Pink
   const hue = hues[Math.floor(Math.random() * hues.length)];
