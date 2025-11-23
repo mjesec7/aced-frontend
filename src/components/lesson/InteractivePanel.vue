@@ -170,82 +170,128 @@
               </div>
 
               <div class="canvas-wrapper" ref="canvasWrapper">
-                <!-- SVG Layer for Shapes -->
-                <svg class="geometry-svg" width="300" height="300" viewBox="0 0 300 300">
-                  <defs>
-                    <!-- Filter for "Hand-Drawn" Look -->
-                    <filter id="sketchy">
-                      <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="3" result="noise" />
-                      <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" />
-                    </filter>
-                  </defs>
 
-                  <!-- Circle -->
-                  <circle 
-                    v-if="geometryData.shape === 'circle'" 
-                    cx="150" cy="150" r="100" 
-                    :fill="shapeFillColor" 
-                    :stroke="shapeStrokeColor" 
-                    stroke-width="3"
-                    filter="url(#sketchy)"
-                  />
+                <div v-if="currentExercise.data?.mode === 'calculate'" class="geometry-calculation-container" style="position: relative; width: 300px; height: 300px;">
+                  <!-- Square SVG -->
+                  <svg width="300" height="300" viewBox="0 0 300 300">
+                    <!-- Square Shape -->
+                    <rect x="50" y="50" width="200" height="200" 
+                          fill="none" 
+                          stroke="#8b5cf6" 
+                          stroke-width="4"
+                          class="neon-square"
+                          style="filter: drop-shadow(0 0 8px #8b5cf6);" />
+                    
+                    <!-- Labels -->
+                    <text x="150" y="40" text-anchor="middle" fill="#666" font-size="14">Side a = {{ currentExercise.data.given.side_a }}</text>
+                    <text x="150" y="270" text-anchor="middle" fill="#666" font-size="14">Perimeter = {{ currentExercise.data.given.perimeter }}</text>
+                    
+                    <!-- Angle Arc -->
+                    <path d="M 230 250 A 20 20 0 0 0 250 230" fill="none" stroke="#666" stroke-width="2" />
+                  </svg>
 
-                  <!-- Triangle -->
-                  <polygon 
-                    v-if="geometryData.shape === 'triangle'" 
-                    points="150,50 250,250 50,250"
-                    :fill="shapeFillColor" 
-                    :stroke="shapeStrokeColor" 
-                    stroke-width="3"
-                    filter="url(#sketchy)"
-                  />
+                  <!-- Input for Side b (Right) -->
+                  <div style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%);">
+                    <label style="display: block; font-size: 12px; color: #666; margin-bottom: 4px;">Side b</label>
+                    <input 
+                      type="number" 
+                      v-model="userAnswer.side_b" 
+                      placeholder="?" 
+                      style="width: 60px; padding: 4px; border: 1px solid #ccc; border-radius: 4px; text-align: center;"
+                    />
+                  </div>
 
-                  <!-- Square -->
-                  <rect 
-                    v-if="geometryData.shape === 'square'" 
-                    x="50" y="50" width="200" height="200"
-                    :fill="shapeFillColor" 
-                    :stroke="shapeStrokeColor" 
-                    stroke-width="3"
-                    filter="url(#sketchy)"
-                  />
+                  <!-- Input for Angle c (Bottom Right) -->
+                  <div style="position: absolute; right: 40px; bottom: 40px;">
+                    <label style="display: block; font-size: 12px; color: #666; margin-bottom: 4px;">Angle C</label>
+                    <input 
+                      type="number" 
+                      v-model="userAnswer.angle_c" 
+                      placeholder="°" 
+                      style="width: 60px; padding: 4px; border: 1px solid #ccc; border-radius: 4px; text-align: center;"
+                    />
+                  </div>
+                </div>
 
-                  <!-- Center Point (for Circle/Diameter) -->
-                  <circle 
-                    v-if="geometryData.shape === 'circle'" 
-                    cx="150" cy="150" r="4" 
-                    fill="#1e293b" 
-                    filter="url(#sketchy)"
-                  />
-                  
-                  <!-- Drawn Lines (Feedback) -->
-                  <line 
-                    v-for="(line, idx) in drawnLines" 
-                    :key="idx"
-                    :x1="line.start.x" :y1="line.start.y"
-                    :x2="line.end.x" :y2="line.end.y"
-                    :stroke="line.isCorrect ? '#10b981' : '#ef4444'"
-                    stroke-width="4"
-                    stroke-linecap="round"
-                    filter="url(#sketchy)"
-                  />
-                </svg>
+                <!-- Mode: Draw/Identify (Existing) -->
+                <template v-else>
+                  <!-- SVG Layer for Shapes -->
+                  <svg class="geometry-svg" width="300" height="300" viewBox="0 0 300 300">
+                    <defs>
+                      <!-- Filter for "Hand-Drawn" Look -->
+                      <filter id="sketchy">
+                        <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="3" result="noise" />
+                        <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" />
+                      </filter>
+                    </defs>
 
-                <!-- Canvas Layer for Interaction -->
-                <canvas
-                  ref="canvasRef"
-                  width="300"
-                  height="300"
-                  class="geometry-canvas"
-                  :class="{ 'is-drawing': isDrawing }"
-                  @mousedown="startDrawing"
-                  @mousemove="draw"
-                  @mouseup="stopDrawing"
-                  @mouseleave="stopDrawing"
-                  @touchstart.prevent="startDrawing"
-                  @touchmove.prevent="draw"
-                  @touchend.prevent="stopDrawing"
-                ></canvas>
+                    <!-- Circle -->
+                    <circle 
+                      v-if="geometryData.shape === 'circle'" 
+                      cx="150" cy="150" r="100" 
+                      :fill="shapeFillColor" 
+                      :stroke="shapeStrokeColor" 
+                      stroke-width="3"
+                      filter="url(#sketchy)"
+                    />
+
+                    <!-- Triangle -->
+                    <polygon 
+                      v-if="geometryData.shape === 'triangle'" 
+                      points="150,50 250,250 50,250"
+                      :fill="shapeFillColor" 
+                      :stroke="shapeStrokeColor" 
+                      stroke-width="3"
+                      filter="url(#sketchy)"
+                    />
+
+                    <!-- Square -->
+                    <rect 
+                      v-if="geometryData.shape === 'square'" 
+                      x="50" y="50" width="200" height="200"
+                      :fill="shapeFillColor" 
+                      :stroke="shapeStrokeColor" 
+                      stroke-width="3"
+                      filter="url(#sketchy)"
+                    />
+
+                    <!-- Center Point (for Circle/Diameter) -->
+                    <circle 
+                      v-if="geometryData.shape === 'circle'" 
+                      cx="150" cy="150" r="4" 
+                      fill="#1e293b" 
+                      filter="url(#sketchy)"
+                    />
+                    
+                    <!-- Drawn Lines (Feedback) -->
+                    <line 
+                      v-for="(line, idx) in drawnLines" 
+                      :key="idx"
+                      :x1="line.start.x" :y1="line.start.y"
+                      :x2="line.end.x" :y2="line.end.y"
+                      :stroke="line.isCorrect ? '#10b981' : '#ef4444'"
+                      stroke-width="4"
+                      stroke-linecap="round"
+                      filter="url(#sketchy)"
+                    />
+                  </svg>
+
+                  <!-- Canvas Layer for Interaction -->
+                  <canvas
+                    ref="canvasRef"
+                    width="300"
+                    height="300"
+                    class="geometry-canvas"
+                    :class="{ 'is-drawing': isDrawing }"
+                    @mousedown="startDrawing"
+                    @mousemove="draw"
+                    @mouseup="stopDrawing"
+                    @mouseleave="stopDrawing"
+                    @touchstart.prevent="startDrawing"
+                    @touchmove.prevent="draw"
+                    @touchend.prevent="stopDrawing"
+                  ></canvas>
+                </template>
 
                 <!-- Feedback Overlay -->
                 <transition name="fade">
@@ -463,10 +509,18 @@ watch(() => props.currentExercise, (newEx) => {
               });
               q.sentenceParts.push({ text: remainingSentence, blank: null });
           });
-
+```
           // If it was a single question, update the clone
           if (!exerciseClone.questions) {
               exerciseClone.questions = questionsArray;
+          }
+          break;
+      case 'geometry':
+          if (exerciseClone.mode === 'calculate') {
+             userAnswer.value = { side_b: '', angle_c: '' };
+          } else {
+             resetGeometry();
+             userAnswer.value = { valid: false };
           }
           break;
       default:

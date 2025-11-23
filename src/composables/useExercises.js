@@ -487,6 +487,16 @@ export function useExercises() {
   };
 
   const validateGeometry = (userAnswer, exercise) => {
+    // For calculation mode
+    if (exercise.mode === 'calculate') {
+      if (!userAnswer || typeof userAnswer !== 'object') return false;
+
+      const sideCorrect = String(userAnswer.side_b) === String(exercise.questions.find(q => q.id === 'side_b').correctAnswer);
+      const angleCorrect = String(userAnswer.angle_c) === String(exercise.questions.find(q => q.id === 'angle_c').correctAnswer);
+
+      return sideCorrect && angleCorrect;
+    }
+
     // For geometry, the interaction itself (drawing/measuring) validates the result
     // and sets userAnswer to { valid: true, ... }
     if (!userAnswer || typeof userAnswer !== 'object') return false;

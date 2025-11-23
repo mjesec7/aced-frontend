@@ -32,42 +32,7 @@
                 "weight": 0
             }
         },
-        {
-            "type": "exercise",
-            "order": 1,
-            "title": "Vocabulary: Shapes",
-            "instruction": "Match the shape names to their definitions.",
-            "difficulty": "beginner",
-            "estimatedDuration": 3,
-            "data": {
-                "type": "matching",
-                "pairs": [
-                    {
-                        "id": "p1",
-                        "left": "Circle",
-                        "right": "A round shape with no corners",
-                        "correctMatch": "A round shape with no corners"
-                    },
-                    {
-                        "id": "p2",
-                        "left": "Triangle",
-                        "right": "A shape with three sides",
-                        "correctMatch": "A shape with three sides"
-                    },
-                    {
-                        "id": "p3",
-                        "left": "Square",
-                        "right": "A shape with four equal sides",
-                        "correctMatch": "A shape with four equal sides"
-                    }
-                ]
-            },
-            "scoring": {
-                "maxPoints": 10,
-                "passingScore": 6,
-                "weight": 1
-            }
-        },
+        {},
         {
             "type": "exercise",
             "order": 2,
