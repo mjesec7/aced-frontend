@@ -36,16 +36,6 @@
       <div class="panel-content-scroll">
         <div class="exercise-wrapper">
           
-          <!-- DEBUG: Show exerciseType -->
-          <div style="background: yellow; padding: 10px; margin-bottom: 10px;">
-            <strong>DEBUG:</strong><br>
-            exerciseType: {{ exerciseType }}<br>
-            currentExercise.type: {{ currentExercise?.type }}<br>
-            currentExercise.data?.type: {{ currentExercise?.data?.type }}<br>
-            Has pairs: {{ !!currentExercise?.pairs }}<br>
-            Has data.pairs: {{ !!currentExercise?.data?.pairs }}
-          </div>
-          
           <div v-if="['reading', 'short-answer', 'sentence-transformation', 'error-correction'].includes(exerciseType)" class="exercise-type-container">
             
             <article v-if="currentExercise.content" class="exercise-card reading-text-card">
@@ -358,14 +348,6 @@ const {
 const shapeFillColor = ref('#e0f2fe');
 const shapeStrokeColor = ref('#3b82f6');
 
-// Debug: Watch currentExercise prop changes
-watch(() => props.currentExercise, (newVal) => {
-  console.log('🎯 InteractivePanel received currentExercise:', newVal);
-  console.log('🎯 Exercise type:', newVal?.type);
-  console.log('🎯 Exercise data:', newVal?.data);
-  console.log('🎯 Exercise data.type:', newVal?.data?.type);
-}, { immediate: true, deep: true });
-
 const generateRandomColors = () => {
   const hues = [0, 30, 60, 120, 180, 210, 270, 300]; // Red, Orange, Yellow, Green, Cyan, Blue, Purple, Pink
   const hue = hues[Math.floor(Math.random() * hues.length)];
@@ -490,18 +472,13 @@ watch(() => props.currentExercise, (newEx) => {
 const exerciseType = computed(() => {
   // If the exercise is a generic 'exercise' type, look into its data for specific type
   if (props.currentExercise?.type === 'exercise' && props.currentExercise?.data?.type) {
-    console.log('🔍 Exercise Type (nested):', props.currentExercise.data.type, 'Full exercise:', props.currentExercise);
     return props.currentExercise.data.type;
   }
-  console.log('🔍 Exercise Type (direct):', props.currentExercise?.type || 'short-answer', 'Full exercise:', props.currentExercise);
   return props.currentExercise?.type || 'short-answer';
 });
+
 // Geometry specific data shortcut
-const geometryData = computed(() => {
-  const data = props.currentExercise?.data || {};
-  console.log('📐 Geometry Data:', data);
-  return data;
-});
+const geometryData = computed(() => props.currentExercise?.data || {});
 
 const submit = () => {
   // Copy local matching answers to the global state right before submitting
