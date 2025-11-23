@@ -173,6 +173,31 @@
                       </h4>
                       <p class="text-sm mt-1" :class="isCorrect ? 'text-green-700' : 'text-red-700'">
                         {{ isCorrect ? 'Great job! All sides of a square are equal.' : 'Check your calculation and formula choice.' }}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </transition>
+
+              <!-- Hint Section -->
+              <div class="mt-6 bg-amber-50 rounded-xl border border-amber-200 p-4">
+                <div class="flex items-start gap-2">
+                  <span class="text-xl">💡</span>
+                  <div>
+                    <p class="font-semibold text-amber-900 mb-1">Hint</p>
+                    <p class="text-sm text-gray-700 leading-relaxed">
+                      {{ geometryData.hint }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Identify Mode -->
+          <div v-else-if="geometryData.mode === 'identify'" class="max-w-lg mx-auto space-y-8">
+            <div class="bg-white rounded-xl border border-purple-100 shadow-sm p-8">
+              <h3 class="text-purple-600 font-semibold mb-6 text-center">Identify the Shape</h3>
               
               <!-- Shape Display -->
               <div class="relative flex justify-center items-center py-12 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border border-purple-100 mb-6">
