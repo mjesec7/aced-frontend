@@ -226,9 +226,10 @@ onMounted(() => {
 
 .cards-grid {
   display: grid;
-  gap: 15px;
-  max-width: 800px;
+  gap: 20px;
+  max-width: 900px;
   margin: 0 auto;
+  padding: 20px;
 }
 
 .cards-grid.grid-4x3 {
@@ -251,6 +252,8 @@ onMounted(() => {
   aspect-ratio: 1;
   perspective: 1000px;
   cursor: pointer;
+  min-width: 100px;
+  min-height: 100px;
 }
 
 .card {
@@ -305,12 +308,13 @@ onMounted(() => {
 }
 
 .card-content {
-  font-size: 18px;
-  font-weight: 700;
-  color: #333;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #1e293b;
   text-align: center;
-  padding: 10px;
+  padding: 15px;
   word-break: break-word;
+  line-height: 1.2;
 }
 
 /* Instruction Banner */
