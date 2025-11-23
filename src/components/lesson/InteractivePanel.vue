@@ -1,7 +1,6 @@
 <template>
   <div class="interactive-panel">
-    <!-- DEBUG PANEL -->
-    <DebugPanel :current-exercise="currentExercise" />
+
     
     <!-- GAME MODE: Display game instead of exercise -->
     <div v-if="isGameMode" class="game-panel-container">
@@ -355,7 +354,7 @@ import { ref, computed, watch } from 'vue';
 import { useExercises } from '../../composables/useExercises.js';
 import GameContainer from '../games/base/GameContainer.vue';
 import { useGeometry } from '../../composables/useGeometry.js';
-import DebugPanel from './DebugPanel.vue';
+
 
 const props = defineProps({
   currentExercise: Object,
