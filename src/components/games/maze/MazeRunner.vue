@@ -207,16 +207,6 @@ const handleKeyDown = (e) => {
     newRow--;
     e.preventDefault();
   } else if (key === 'arrowdown' || key === 's') {
-    newRow++;
-    e.preventDefault();
-  } else if (key === 'arrowleft' || key === 'a') {
-    newCol--;
-    e.preventDefault();
-  if (targetCell === 'gate') {
-    const gateKey = `${newRow}-${newCol}`;
-    if (!unlockedGates.value.has(gateKey)) {
-      return; // Can't move through locked gate
-    }
   }
 
   playerPos.value = { row: newRow, col: newCol };
