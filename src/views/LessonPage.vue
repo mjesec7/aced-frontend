@@ -235,15 +235,6 @@
 
         <div class="split-panel interactive-side" :style="rightPanelStyle">
           
-          <!-- PARENT DEBUG INFO -->
-          <div style="background: #ffebee; padding: 10px; border: 2px solid blue; margin: 10px; font-size: 12px; color: black;">
-            <strong>PARENT DEBUG:</strong><br>
-            isInteractiveStep: {{ isInteractiveStep }}<br>
-            isGameStep: {{ isGameStep }}<br>
-            Current Step Type: {{ currentStep?.type }}<br>
-            Step Data Type: {{ currentStep?.data?.type }}
-          </div>
-
           <div v-if="isInteractiveStep || isGameStep" class="interactive-container">
              <InteractivePanel
                 :key="currentStep?.id || currentStep?._id || currentIndex"
