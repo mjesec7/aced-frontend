@@ -92,7 +92,7 @@ const gridSize = computed(() => {
 // Methods
 const initializeGame = () => {
   if (pairs.value.length === 0) {
-return;
+    return;
   }
 
   // Create pairs of cards
@@ -100,9 +100,17 @@ return;
   let cardId = 0;
 
   pairs.value.forEach((pair, pairIndex) => {
-    // Each pair creates two cards
-    const content = pair.text || pair.word || pair;
+    // Extract content from different formats
+    let content;
+    if (typeof pair === 'object' && pair !== null) {
+      // Handle items format: { id, content, metadata }
+      content = pair.content || pair.text || pair.word || JSON.stringify(pair);
+    } else {
+      // Handle simple string/number format
+      content = pair;
+    }
 
+    // Create two identical cards for matching
     cardPairs.push({
       id: cardId++,
       pairId: pairIndex,
