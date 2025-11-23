@@ -12,15 +12,21 @@
     <!-- Answer Panel (Left Side) -->
     <div v-if="gameActive" class="answer-panel">
       <div class="panel-header">
-        <div class="question-icon">❓</div>
-        <h3 class="panel-title">Answer Question</h3>
+        <div class="question-icon">{{ isNearAnyGate ? '❓' : '🎮' }}</div>
+        <h3 class="panel-title">{{ isNearAnyGate ? 'Answer Question' : 'Controls' }}</h3>
       </div>
       
-      <div class="current-question">
-        <p class="question-text">{{ currentQuestion?.q || 'Navigate to a gate!' }}</p>
+      <div v-if="isNearAnyGate" class="current-question">
+        <p class="question-text">{{ currentQuestion?.q }}</p>
       </div>
       
-      <div class="answer-input-group">
+      <div v-if="!isNearAnyGate" class="controls-info">
+        <p class="control-text">🎯 <strong>Move:</strong> Arrow Keys or WASD</p>
+        <p class="control-text">🔒 <strong>Goal:</strong> Reach the flag!</p>
+        <p class="control-text">💡 <strong>Tip:</strong> Answer questions to unlock gates</p>
+      </div>
+      
+      <div v-if="isNearAnyGate" class="answer-input-group">
         <input
           v-model="userAnswer"
           type="text"
@@ -43,8 +49,8 @@
         <span class="feedback-text">{{ feedbackMessage }}</span>
       </div>
       
-      <div class="panel-hint">
-        <p>💡 Move to a locked gate (🔒) to unlock it with the correct answer!</p>
+      <div v-if="isNearAnyGate" class="panel-hint">
+        <p>💡 Answer correctly to unlock the gate!</p>
       </div>
     </div>
 
@@ -133,13 +139,18 @@ const answerInput = ref(null);
 const questions = computed(() => props.gameData.questions || []);
 const currentQuestion = computed(() => questions.value[currentQuestionIndex.value]);
 
-// Maze generation
+// Check if player is near any gate
+const isNearAnyGate = computed(() => {
+  return isNearGate(playerPos.value.row, playerPos.value.col);
+});
+
+// Maze generation - gates block ALL paths to goal
 const generateMaze = () => {
   const layout = [
-    ['path', 'path', 'wall', 'path', 'path'],
-    ['wall', 'path', 'wall', 'path', 'wall'],
+    ['path', 'path', 'path', 'path', 'path'],
+    ['path', 'wall', 'wall', 'wall', 'path'],
     ['path', 'path', 'gate', 'path', 'path'],
-    ['path', 'wall', 'wall', 'gate', 'wall'],
+    ['wall', 'wall', 'wall', 'gate', 'wall'],
     ['path', 'path', 'path', 'path', 'goal']
   ];
   maze.value = layout;
@@ -201,17 +212,6 @@ const handleKeyDown = (e) => {
   } else if (key === 'arrowleft' || key === 'a') {
     newCol--;
     e.preventDefault();
-  } else if (key === 'arrowright' || key === 'd') {
-    newCol++;
-    e.preventDefault();
-  }
-
-  if (newRow < 0 || newRow >= 5 || newCol >= 0 || newCol >= 5) return;
-
-  const targetCell = maze.value[newRow][newCol];
-
-  if (targetCell === 'wall') return;
-
   if (targetCell === 'gate') {
     const gateKey = `${newRow}-${newCol}`;
     if (!unlockedGates.value.has(gateKey)) {
@@ -369,6 +369,25 @@ onMounted(() => {
   color: #1e293b;
   margin: 0;
   text-align: center;
+}
+
+.controls-info {
+  background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  border: 2px solid #10b981;
+}
+
+.control-text {
+  font-size: 0.95rem;
+  color: #1e293b;
+  margin: 8px 0;
+  line-height: 1.4;
+}
+
+.control-text strong {
+  color: #065f46;
 }
 
 .answer-input-group {
