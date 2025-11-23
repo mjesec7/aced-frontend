@@ -1279,20 +1279,30 @@ sound.pronounceWord?.(word)
         }
       }
 
-      // ✅ FIX: Handle exercises with type="exercise" and nested data.type (e.g., geometry)
+      // ✅ FIX: Handle exercises with type="exercise" and nested data.type (e.g., geometry, matching)
       // For these exercises, the step itself IS the exercise object
+      // BUT we need to normalize the structure so templates can access properties directly
       if (step.type === 'exercise' && step.data && step.data.type) {
         console.log(`📐 Detected ${step.data.type} exercise, returning step as exercise`);
         const exerciseId = step.id || `${step.data.type}_${lessonOrchestrator.currentIndex.value}`;
         
+        // ✅ CRITICAL FIX: Spread data properties to root level
+        // This allows templates to access properties like currentExercise.pairs
+        // instead of currentExercise.data.pairs
+        const normalizedExercise = {
+          ...step,           // Include all step properties (type, title, instruction, etc.)
+          ...step.data,      // Spread data properties to root level (pairs, shape, mode, etc.)
+          data: step.data    // Keep original data object for reference
+        };
+        
         if (initializationTracker.value.currentExerciseId !== exerciseId) {
           initializationTracker.value = { currentExerciseId: exerciseId, initialized: false };
           nextTick(() => {
-            exercises.initializeCurrentExerciseData(step);
+            exercises.initializeCurrentExerciseData(normalizedExercise);
             initializationTracker.value.initialized = true;
           });
         }
-        return step; // Return the step itself as the exercise
+        return normalizedExercise; // Return normalized exercise
       }
 
       // Fallback to existing logic (for single-item steps or games)
