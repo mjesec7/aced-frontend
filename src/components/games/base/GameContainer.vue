@@ -1,15 +1,5 @@
 <template>
   <div class="game-container" :class="`game-${gameType}`">
-    <!-- Game HUD -->
-    <GameHUD
-      v-if="gameStarted && !gameComplete"
-      :score="score"
-      :timer="timeRemaining"
-      :lives="lives"
-      :max-lives="maxLives"
-      :target-score="targetScore"
-      :progress="progress"
-    />
 
     <!-- Instructions Overlay -->
     <transition name="fade">

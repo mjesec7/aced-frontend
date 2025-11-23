@@ -101,8 +101,8 @@ const emit = defineEmits(['score-change', 'life-lost', 'game-complete', 'item-co
 
 // Config
 const GRID_SIZE = 4; // Reduced from 9 to 4
-const BASE_SPEED = 1500; // Slightly slower for better playability
-const MIN_SPEED = 700;
+const BASE_SPEED = 2500; // Slower for better playability (was 1500)
+const MIN_SPEED = 1200; // Slower minimum speed (was 700)
 
 // State
 const holes = ref([]);
@@ -326,23 +326,25 @@ onUnmounted(stopGame);
 
 /* Question Banner */
 .question-banner {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  padding: 16px 24px;
-  margin: 20px auto 0;
-  border-radius: 20px;
-  max-width: 600px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(240, 240, 255, 0.98));
+  backdrop-filter: blur(12px);
+  padding: 20px 32px;
+  margin: 16px auto 0;
+  border-radius: 24px;
+  max-width: 700px;
   text-align: center;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15), 0 0 0 3px rgba(59, 130, 246, 0.2);
   z-index: 50;
+  border: 2px solid rgba(59, 130, 246, 0.3);
 }
 
 .question-text {
-  font-size: 1.8rem;
-  font-weight: 800;
+  font-size: 2rem;
+  font-weight: 900;
   color: #1e293b;
   margin: 0;
-  line-height: 1.2;
+  line-height: 1.3;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
 }
 
 
