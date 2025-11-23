@@ -32,10 +32,9 @@
                 "weight": 0
             }
         },
-        {},
         {
             "type": "exercise",
-            "order": 2,
+            "order": 1,
             "title": "Geometry Challenge 1",
             "instruction": "Identify the shape below. Type its name in English.",
             "difficulty": "beginner",
@@ -50,6 +49,56 @@
                 "maxPoints": 10,
                 "passingScore": 10,
                 "weight": 1
+            }
+        },
+        {
+            "id": "geo_challenge_2",
+            "type": "exercise",
+            "order": 2,
+            "title": "Geometry Challenge 2",
+            "description": "Calculate the missing side and identify the correct formula.",
+            "instruction": "Find the missing side length using the correct formula.",
+            "exerciseType": "geometry",
+            "data": {
+                "type": "geometry",
+                "mode": "calculate",
+                "shape": "square",
+                "title": "Geometry Lesson: Square Properties",
+                "given": {
+                    "side_a": 5,
+                    "angle": 90,
+                    "perimeter": 20
+                },
+                "correctAnswer": {
+                    "side_b": 5,
+                    "formulaId": "1"
+                },
+                "formulas": [
+                    {
+                        "id": "1",
+                        "name": "Square Property",
+                        "formula": "a = b (all sides equal)",
+                        "isCorrect": true
+                    },
+                    {
+                        "id": "2",
+                        "name": "Pythagorean Theorem",
+                        "formula": "a² + b² = c²",
+                        "isCorrect": false
+                    },
+                    {
+                        "id": "3",
+                        "name": "Area Formula",
+                        "formula": "Area = a × b",
+                        "isCorrect": false
+                    }
+                ],
+                "hint": "In a square, all four sides have equal length. The 90° angles confirm this is indeed a square!"
+            },
+            "scoring": {
+                "maxPoints": 20,
+                "passingScore": 20,
+                "weight": 2
             }
         },
         {
@@ -78,7 +127,7 @@
         {
             "type": "exercise",
             "order": 4,
-            "title": "Geometry Challenge 2",
+            "title": "Geometry Challenge 3",
             "instruction": "Now, draw the diameter of this circle! Remember, it must pass through the center.",
             "difficulty": "beginner",
             "estimatedDuration": 3,

@@ -5,6 +5,7 @@ import App from './App.vue';
 import router from './router';
 import store from './store';
 
+import './assets/css/tailwind.css';
 import './assets/css/responsive.css';
 import 'vue-toast-notification/dist/theme-sugar.css';
 import VueToast from 'vue-toast-notification';
@@ -21,10 +22,10 @@ import { setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { eventBus, setupGlobalEventSystem } from './utils/eventBus.js';
 import { authInitPromise, setupAuthStateListener } from './utils/auth.js';
 import { setupGlobalHelpers } from './utils/helpers.js';
-import { 
-  immediateSubscriptionRestore, 
+import {
+  immediateSubscriptionRestore,
   setupAuthSubscriptionMonitoring,
-  setupSubscriptionSystem 
+  setupSubscriptionSystem
 } from './utils/subscription.js';
 import { setupStoreInterceptor } from './utils/storeInterceptor.js';
 import { setupGlobalErrorHandling } from './utils/errorHandling.js';
