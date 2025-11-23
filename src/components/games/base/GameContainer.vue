@@ -385,6 +385,7 @@ onUnmounted(() => {
   width: 100%;
   text-align: center;
   animation: slideUp 0.4s ease-out;
+  font-family: 'Fredoka', sans-serif; /* Applied funny font as requested */
 }
 
 @keyframes slideUp {

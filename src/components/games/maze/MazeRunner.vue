@@ -83,44 +83,25 @@
       </div>
     </div>
 
-    <!-- Start/Complete Modal -->
+    <!-- Game Over Modal (Only shows when game is over, not at start) -->
     <transition name="fade">
-      <div v-if="!gameActive" class="modal-overlay">
+      <div v-if="isGameOver" class="modal-overlay">
         <div class="small-modal">
-          <div class="modal-icon">{{ isGameOver ? (reachedGoal ? '🎉' : '😅') : '🏃' }}</div>
-          <h3 class="modal-title">{{ isGameOver ? (reachedGoal ? 'You Won!' : 'Game Over') : 'Maze Runner' }}</h3>
+          <div class="modal-icon">{{ reachedGoal ? '🎉' : '😅' }}</div>
+          <h3 class="modal-title">{{ reachedGoal ? 'You Won!' : 'Game Over' }}</h3>
           
-          <!-- Game Stats Display for Start Screen -->
-          <div v-if="!isGameOver" class="game-stats-preview">
-            <div class="stat-item">
-              <span class="stat-icon">🎯</span>
-              <span class="stat-label">Target</span>
-              <span class="stat-value">100</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-icon">⏳</span>
-              <span class="stat-label">Time</span>
-              <span class="stat-value">90s</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-icon">❤️</span>
-              <span class="stat-label">Lives</span>
-              <span class="stat-value">3</span>
-            </div>
-          </div>
-
-          <p v-else class="modal-text">
+          <p class="modal-text">
             {{ reachedGoal ? `Score: ${score}` : 'Try again to reach the goal!' }}
           </p>
           
-          <div v-if="isGameOver" class="modal-stars">
+          <div class="modal-stars">
             <span v-for="n in 3" :key="n" class="star">{{ n <= earnedStars ? '⭐' : '☆' }}</span>
           </div>
 
           <button class="modal-btn" @click="startGame">
-            {{ isGameOver ? '🔄 Retry' : '▶ Start Game' }}
+            🔄 Retry
           </button>
-          <button v-if="isGameOver" class="modal-btn secondary" @click="continueLesson">
+          <button class="modal-btn secondary" @click="continueLesson">
             Continue →
           </button>
         </div>
@@ -328,7 +309,8 @@ watch(() => props.timeRemaining, (val) => {
 });
 
 onMounted(() => {
-  generateMaze();
+  // Auto-start since GameContainer already showed the start screen
+  startGame();
 });
 </script>
 
@@ -344,7 +326,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Inter', sans-serif; /* Changed from Fredoka to Inter for cleaner look */
+  font-family: 'Fredoka', sans-serif; /* Restored funny font */
   outline: none;
 }
 
@@ -360,6 +342,7 @@ onMounted(() => {
   width: 280px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
   z-index: 50;
+  transition: all 0.3s ease;
 }
 
 .panel-header {
@@ -523,6 +506,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 20px;
+  transition: all 0.3s ease;
 }
 
 .maze-grid {
@@ -572,7 +556,7 @@ onMounted(() => {
   background: linear-gradient(135deg, #3b82f6, #2563eb);
   border-color: #1d4ed8;
   box-shadow: 0 0 20px rgba(59, 130, 246, 0.6);
-  z-index: 10; /* Ensure player is above other elements */
+  z-index: 10;
 }
 
 .gate-icon,
@@ -610,7 +594,7 @@ onMounted(() => {
   padding: 30px;
   text-align: center;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-  width: 400px; /* Slightly wider for stats */
+  width: 400px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -626,43 +610,6 @@ onMounted(() => {
   font-weight: 700;
   color: #1e293b;
   margin: 0 0 20px;
-}
-
-/* Game Stats Preview */
-.game-stats-preview {
-  display: flex;
-  justify-content: space-around;
-  width: 100%;
-  margin-bottom: 24px;
-  background: #f8fafc;
-  padding: 16px;
-  border-radius: 16px;
-  border: 1px solid #e2e8f0;
-}
-
-.stat-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
-
-.stat-icon {
-  font-size: 1.5rem;
-}
-
-.stat-label {
-  font-size: 0.8rem;
-  color: #64748b;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.stat-value {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #1e293b;
 }
 
 .modal-text {
@@ -717,29 +664,82 @@ onMounted(() => {
 }
 
 /* Responsive */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .maze-cell {
-    width: 55px;
-    height: 55px;
+    width: 60px;
+    height: 60px;
+  }
+  
+  .answer-panel {
+    width: 240px;
+    padding: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .maze-runner-game {
+    flex-direction: column;
+    padding-top: 60px; /* Space for HUD */
+  }
+
+  .maze-container {
+    margin-bottom: 180px; /* Space for bottom panel */
+  }
+
+  .maze-cell {
+    width: 50px;
+    height: 50px;
   }
 
   .gate-icon,
   .goal-icon,
   .player-icon {
-    font-size: 2rem;
+    font-size: 1.8rem;
+  }
+
+  /* Move Answer Panel to Bottom for Mobile */
+  .answer-panel {
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: 0;
+    transform: none;
+    width: 100%;
+    border-radius: 20px 20px 0 0;
+    padding: 16px;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .panel-header {
+    margin-bottom: 8px;
+  }
+
+  .current-question {
+    padding: 10px;
+    margin-bottom: 10px;
+  }
+
+  .controls-info {
+    display: none; /* Hide controls info on mobile to save space */
   }
 
   .small-modal {
     width: 90%;
     padding: 20px;
   }
-  
-  .game-stats-preview {
-    padding: 12px;
+}
+
+@media (max-width: 480px) {
+  .maze-cell {
+    width: 40px;
+    height: 40px;
   }
   
-  .stat-icon {
-    font-size: 1.2rem;
+  .gate-icon,
+  .goal-icon,
+  .player-icon {
+    font-size: 1.4rem;
   }
 }
 </style>
