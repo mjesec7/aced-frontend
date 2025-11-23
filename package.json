@@ -11,9 +11,11 @@
   "dependencies": {
     "@firebasegen/default-connector": "file:dataconnect-generated/js/default-connector",
     "@splinetool/viewer": "^1.9.29",
+    "@tailwindcss/postcss": "^4.1.17",
     "@translate-tools/core": "^2.1.0",
     "@vitalets/google-translate-api": "^9.2.1",
     "@vitejs/plugin-vue": "^5.2.3",
+    "autoprefixer": "^10.4.22",
     "axios": "^1.8.4",
     "canvas-confetti": "^1.9.3",
     "chart.js": "^4.4.8",
@@ -27,7 +29,9 @@
     "jquery": "^3.7.1",
     "mongodb": "^6.14.0",
     "mongoose": "^8.13.2",
+    "postcss": "^8.5.6",
     "serve": "^14.2.4",
+    "tailwindcss": "^4.1.17",
     "three": "^0.175.0",
     "vanta": "^0.5.24",
     "vue": "^3.5.13",
@@ -38,15 +42,11 @@
     "vuex": "^4.0.2"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.17",
     "@vitejs/plugin-vue": "^5.2.3",
-    "autoprefixer": "^10.4.22",
     "eslint": "^7.32.0",
     "eslint-plugin-vue": "^8.0.3",
-    "postcss": "^8.5.6",
     "sass": "^1.79.4",
     "sass-loader": "^16.0.2",
-    "tailwindcss": "^4.1.17",
     "vite": "^6.3.5"
   },
   "eslintConfig": {
