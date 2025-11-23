@@ -229,10 +229,118 @@
             </div>
           </div>
 
-          <!-- Other Geometry Modes (Identify/Draw) - Simplified Fallback -->
-          <div v-else class="text-center py-12">
-             <p class="text-slate-500">Mode not yet fully redesigned: {{ geometryData.mode }}</p>
-             <!-- Keep existing canvas implementation here if needed, or migrate later -->
+          <!-- Identify Mode -->
+          <div v-else-if="geometryData.mode === 'identify'" class="max-w-lg mx-auto space-y-8">
+            <div class="bg-white rounded-xl border border-purple-100 shadow-sm p-8">
+              <h3 class="text-purple-600 font-semibold mb-6 text-center">Identify the Shape</h3>
+              
+              <!-- Shape Display -->
+              <div class="relative flex justify-center items-center py-12 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border border-purple-100 mb-6">
+                <svg width="200" height="200" viewBox="0 0 200 200" class="drop-shadow-lg">
+                  <defs>
+                    <linearGradient id="shapeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="#a855f7" />
+                      <stop offset="100%" stop-color="#ec4899" />
+                    </linearGradient>
+                    <filter id="shapeGlow">
+                      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                      <feMerge>
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                      </feMerge>
+                    </filter>
+                  </defs>
+                  
+                  <!-- Circle -->
+                  <circle 
+                    v-if="geometryData.shape === 'circle'" 
+                    cx="100" cy="100" r="70" 
+                    fill="url(#shapeGradient)" 
+                    opacity="0.8"
+                    filter="url(#shapeGlow)"
+                    class="animate-pulse"
+                  />
+                  
+                  <!-- Triangle -->
+                  <polygon 
+                    v-if="geometryData.shape === 'triangle'" 
+                    points="100,30 170,170 30,170"
+                    fill="url(#shapeGradient)" 
+                    opacity="0.8"
+                    filter="url(#shapeGlow)"
+                    class="animate-pulse"
+                  />
+                  
+                  <!-- Square -->
+                  <rect 
+                    v-if="geometryData.shape === 'square'" 
+                    x="40" y="40" width="120" height="120"
+                    fill="url(#shapeGradient)" 
+                    opacity="0.8"
+                    filter="url(#shapeGlow)"
+                    class="animate-pulse"
+                  />
+                  
+                  <!-- Rectangle -->
+                  <rect 
+                    v-if="geometryData.shape === 'rectangle'" 
+                    x="30" y="60" width="140" height="80"
+                    fill="url(#shapeGradient)" 
+                    opacity="0.8"
+                    filter="url(#shapeGlow)"
+                    class="animate-pulse"
+                  />
+                </svg>
+              </div>
+              
+              <!-- Input Field -->
+              <div class="space-y-4">
+                <label class="block text-sm font-medium text-purple-700">What shape is this?</label>
+                <input 
+                  v-model="userAnswer" 
+                  placeholder="Type the shape name..." 
+                  :disabled="showCorrectAnswer"
+                  class="w-full p-4 rounded-lg border border-purple-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all text-center text-lg font-medium"
+                  :class="showCorrectAnswer && answerWasCorrect ? 'bg-green-50 border-green-500' : showCorrectAnswer ? 'bg-red-50 border-red-500' : ''"
+                />
+                
+                <!-- Feedback -->
+                <transition
+                  enter-active-class="transition duration-300 ease-out"
+                  enter-from-class="transform scale-95 opacity-0"
+                  enter-to-class="transform scale-100 opacity-100"
+                >
+                  <div v-if="showCorrectAnswer" class="p-4 rounded-lg border-2"
+                    :class="answerWasCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'"
+                  >
+                    <div class="flex items-center gap-3">
+                      <div class="p-2 rounded-full shrink-0" 
+                        :class="answerWasCorrect ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'"
+                      >
+                        <span v-if="answerWasCorrect" class="text-xl">✓</span>
+                        <span v-else class="text-xl">✕</span>
+                      </div>
+                      <div>
+                        <h4 class="font-bold" :class="answerWasCorrect ? 'text-green-800' : 'text-red-800'">
+                          {{ answerWasCorrect ? 'Correct!' : 'Not quite right' }}
+                        </h4>
+                        <p v-if="!answerWasCorrect" class="text-sm mt-1 text-red-700">
+                          The correct answer is: <strong>{{ geometryData.correctAnswer }}</strong>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </transition>
+              </div>
+            </div>
+          </div>
+
+          <!-- Draw Mode (Future Implementation) -->
+          <div v-else class="max-w-lg mx-auto text-center py-12">
+             <div class="bg-amber-50 border border-amber-200 rounded-xl p-6">
+               <p class="text-amber-800 font-medium">🚧 Draw mode coming soon!</p>
+               <p class="text-amber-600 text-sm mt-2">This interactive drawing feature is under development.</p>
+             </div>
           </div>
 
         </div>
