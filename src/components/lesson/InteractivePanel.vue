@@ -1,5 +1,15 @@
 <template>
   <div class="interactive-panel">
+    <!-- TEMP DEBUG - MOVED TO TOP LEVEL -->
+    <div style="background: #f0f0f0; padding: 10px; margin-bottom: 10px; border: 2px solid red; font-size: 12px; z-index: 9999; position: relative;">
+      <strong>DEBUG INFO (Top Level):</strong><br>
+      Current Exercise Prop: {{ currentExercise ? 'Present' : 'NULL' }}<br>
+      Type: {{ currentExercise?.type }}<br>
+      Data Type: {{ currentExercise?.data?.type }}<br>
+      Computed ExerciseType: {{ exerciseType }}<br>
+      Is Game Mode: {{ isGameMode }}
+    </div>
+
     <!-- DEBUG PANEL -->
     <DebugPanel :current-exercise="currentExercise" />
     
@@ -18,15 +28,6 @@
 
     <!-- EXERCISE MODE: Display regular exercises -->
     <div v-else-if="currentExercise" class="panel-container">
-      
-      <!-- TEMP DEBUG -->
-      <div style="background: #f0f0f0; padding: 10px; margin-bottom: 10px; border: 1px solid red; font-size: 12px;">
-        <strong>DEBUG INFO:</strong><br>
-        Type: {{ currentExercise.type }}<br>
-        Data Type: {{ currentExercise.data?.type }}<br>
-        Computed ExerciseType: {{ exerciseType }}<br>
-        Is Game Mode: {{ isGameMode }}
-      </div>
 
       <header class="panel-header">
         <div class="header-content">
