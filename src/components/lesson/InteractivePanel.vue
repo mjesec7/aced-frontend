@@ -16,35 +16,35 @@
 
     <!-- SELECTION GAME MODE -->
     <div v-else-if="isSelectionGame && selectionCurrentQuestion" class="w-full max-w-6xl mx-auto">
-      <div class="min-h-screen bg-white p-8">
+      <div class="bg-white p-8">
 
         <!-- Header -->
-        <div class="text-center mb-12">
-          <h1 class="text-4xl md:text-5xl font-bold text-slate-900 mb-2">
+        <div class="text-center mb-8">
+          <h1 class="text-2xl font-bold text-slate-900 mb-2">
             Shape Recognition Lesson
           </h1>
-          <p class="text-lg text-purple-600">
+          <p class="text-base text-purple-600">
             Click on the correct shape!
           </p>
 
           <!-- Score -->
-          <div class="flex items-center justify-center gap-2 mt-4">
+          <div class="flex items-center justify-center gap-2 mt-3">
             <svg class="w-6 h-6 text-yellow-500 fill-yellow-500" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
             </svg>
-            <span class="text-xl font-semibold text-slate-900">
+            <span class="text-base font-semibold text-slate-900">
               Score: {{ selectionScore }} / {{ selectionQuestions.length }}
             </span>
           </div>
         </div>
 
         <!-- Question Card -->
-        <div class="mb-12">
-          <div class="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 shadow-lg rounded-2xl p-8 text-center">
-            <h2 class="text-3xl font-bold text-slate-900 mb-2">
+        <div class="mb-8">
+          <div class="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 shadow-lg rounded-2xl p-6 text-center">
+            <h2 class="text-2xl font-bold text-slate-900 mb-2">
               {{ selectionCurrentQuestion.prompt }}
             </h2>
-            <p class="text-lg text-purple-600">
+            <p class="text-base text-purple-600">
               {{ selectionCurrentQuestion.hint || 'Click on the shape below' }}
             </p>
           </div>
@@ -117,32 +117,32 @@
 
         <!-- Feedback Message -->
         <transition name="slide-up">
-          <div v-if="selectionFeedback" class="text-center mb-8">
+          <div v-if="selectionFeedback" class="text-center mb-6">
             <div
               v-if="selectionFeedback === 'correct'"
-              class="bg-green-50 border-green-500 border-2 shadow-lg rounded-2xl p-8 inline-block"
+              class="bg-green-50 border-green-500 border-2 shadow-lg rounded-2xl p-6 inline-block"
             >
-              <div class="flex items-center gap-4">
-                <svg class="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="flex items-center gap-3">
+                <svg class="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                 </svg>
                 <div class="text-left">
-                  <h3 class="text-2xl font-bold text-green-600 mb-1">Well Done!</h3>
-                  <p class="text-lg text-green-700">You found the correct shape!</p>
+                  <h3 class="text-xl font-bold text-green-600 mb-1">Well Done!</h3>
+                  <p class="text-base text-green-700">You found the correct shape!</p>
                 </div>
               </div>
             </div>
             <div
               v-else
-              class="bg-red-50 border-red-500 border-2 shadow-lg rounded-2xl p-8 inline-block"
+              class="bg-red-50 border-red-500 border-2 shadow-lg rounded-2xl p-6 inline-block"
             >
-              <div class="flex items-center gap-4">
-                <svg class="w-12 h-12 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="flex items-center gap-3">
+                <svg class="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                 </svg>
                 <div class="text-left">
-                  <h3 class="text-2xl font-bold text-red-600 mb-1">Try Again!</h3>
-                  <p class="text-lg text-red-700">That's not the right shape.</p>
+                  <h3 class="text-xl font-bold text-red-600 mb-1">Try Again!</h3>
+                  <p class="text-base text-red-700">That's not the right shape.</p>
                 </div>
               </div>
             </div>
@@ -151,27 +151,27 @@
 
         <!-- Completion Message -->
         <transition name="fade-scale">
-          <div v-if="selectionIsComplete" class="text-center mt-8">
-            <div class="bg-gradient-to-r from-purple-100 to-pink-100 border-purple-300 border-2 shadow-xl rounded-2xl p-12 inline-block">
-              <svg class="w-20 h-20 text-yellow-500 fill-yellow-500 mx-auto mb-4" viewBox="0 0 24 24">
+          <div v-if="selectionIsComplete" class="text-center mt-6">
+            <div class="bg-gradient-to-r from-purple-100 to-pink-100 border-purple-300 border-2 shadow-xl rounded-2xl p-8 inline-block">
+              <svg class="w-16 h-16 text-yellow-500 fill-yellow-500 mx-auto mb-3" viewBox="0 0 24 24">
                 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
               </svg>
-              <h2 class="text-4xl font-bold text-slate-900 mb-2">Excellent Work!</h2>
-              <p class="text-xl text-purple-700 mb-2">You completed all the questions!</p>
-              <p class="text-lg text-slate-700 mt-2">
+              <h2 class="text-2xl font-bold text-slate-900 mb-2">Excellent Work!</h2>
+              <p class="text-base text-purple-700 mb-1">You completed all the questions!</p>
+              <p class="text-base text-slate-700 mt-1">
                 Final Score: {{ selectionScore }} / {{ selectionQuestions.length }}
               </p>
 
-              <div class="flex flex-col sm:flex-row gap-4 justify-center mt-8">
+              <div class="flex flex-col sm:flex-row gap-3 justify-center mt-6">
                 <button
                   @click="selectionResetGame"
-                  class="px-8 py-3 border-2 border-purple-300 text-purple-700 rounded-xl font-semibold hover:border-purple-400 hover:bg-purple-50 transition-all"
+                  class="px-6 py-2 border-2 border-purple-300 text-purple-700 rounded-xl font-semibold hover:border-purple-400 hover:bg-purple-50 transition-all"
                 >
                   Try Again
                 </button>
                 <button
                   @click="emit('next-exercise')"
-                  class="px-8 py-3 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700 shadow-md hover:shadow-lg transition-all"
+                  class="px-6 py-2 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700 shadow-md hover:shadow-lg transition-all"
                 >
                   Continue
                 </button>
