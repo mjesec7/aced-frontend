@@ -14,6 +14,124 @@
       />
     </div>
 
+    <!-- SELECTION GAME MODE -->
+    <div v-else-if="isSelectionGame && selectionCurrentQuestion" class="w-full max-w-6xl mx-auto">
+      <div class="min-h-[600px] w-full bg-white rounded-2xl p-6 relative shadow-xl">
+
+        <!-- Header with Score -->
+        <div class="flex justify-between items-center mb-8">
+          <div>
+            <h2 class="text-2xl font-bold text-slate-900">Interactive Exercise</h2>
+            <p class="text-purple-600">Select the correct answer below</p>
+          </div>
+
+          <div class="flex items-center gap-2 bg-yellow-50 px-4 py-2 rounded-full border border-yellow-200">
+            <span class="text-2xl">⭐</span>
+            <span class="font-bold text-slate-700">
+              {{ selectionScore }} / {{ selectionQuestions.length }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Question Prompt -->
+        <div class="mb-10 text-center">
+          <div class="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-8 shadow-sm">
+            <h3 class="text-3xl font-bold text-slate-800 mb-2">
+              {{ selectionCurrentQuestion.prompt }}
+            </h3>
+            <p v-if="selectionCurrentQuestion.hint" class="text-slate-500">
+              {{ selectionCurrentQuestion.hint }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Selection Grid -->
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+          <div
+            v-for="(item, index) in selectionCurrentQuestion.items"
+            :key="item.id"
+            class="relative group"
+          >
+            <button
+              @click="selectionHandleSelection(item)"
+              :disabled="selectionFeedback !== null"
+              class="w-full aspect-square rounded-2xl border-4 flex flex-col items-center justify-center transition-all duration-300 transform hover:scale-105 active:scale-95 bg-white shadow-sm hover:shadow-md disabled:cursor-not-allowed"
+              :class="[
+                selectionSelectedItemId === item.id && selectionFeedback === 'correct' ? 'border-green-500 bg-green-50' :
+                selectionSelectedItemId === item.id && selectionFeedback === 'incorrect' ? 'border-red-500 bg-red-50' :
+                'border-purple-100 hover:border-purple-300'
+              ]"
+            >
+              <div class="p-4 flex flex-col items-center">
+                <!-- Image Display -->
+                <img
+                  v-if="item.image"
+                  :src="item.image"
+                  :alt="item.name"
+                  class="w-24 h-24 object-contain mb-3 drop-shadow-md"
+                />
+
+                <!-- Shape Display (for SVG or HTML shapes) -->
+                <div v-else-if="item.shape" v-html="item.shape" class="w-24 h-24 mb-3 text-purple-500"></div>
+
+                <!-- Item Name -->
+                <span class="text-lg font-medium text-slate-700">{{ item.name }}</span>
+              </div>
+
+              <!-- Feedback Icon Overlay -->
+              <transition name="bounce">
+                <div v-if="selectionSelectedItemId === item.id && selectionFeedback"
+                     class="absolute inset-0 flex items-center justify-center rounded-xl bg-opacity-20 z-10"
+                     :class="selectionFeedback === 'correct' ? 'bg-green-100' : 'bg-red-100'"
+                >
+                  <div v-if="selectionFeedback === 'correct'" class="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center">
+                    <span class="text-white text-3xl font-bold">✓</span>
+                  </div>
+                  <div v-else class="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center">
+                    <span class="text-white text-3xl font-bold">✕</span>
+                  </div>
+                </div>
+              </transition>
+            </button>
+          </div>
+        </div>
+
+        <!-- Completion Modal -->
+        <transition name="fade">
+          <div v-if="selectionIsComplete" class="absolute inset-0 z-50 bg-white bg-opacity-95 flex items-center justify-center p-4 rounded-2xl">
+            <div class="bg-white border-2 border-purple-200 shadow-2xl rounded-2xl p-12 text-center max-w-md">
+              <div class="mb-6 flex justify-center">
+                <div class="w-24 h-24 text-yellow-400 flex items-center justify-center text-6xl animate-pulse">
+                  ⭐
+                </div>
+              </div>
+              <h2 class="text-3xl font-bold text-slate-900 mb-4">Lesson Complete!</h2>
+              <p class="text-xl text-slate-600 mb-8">
+                You scored {{ selectionScore }} out of {{ selectionQuestions.length }}
+              </p>
+              <div class="flex gap-4 justify-center">
+                <button
+                  @click="selectionResetGame"
+                  class="bg-purple-600 text-white px-8 py-3 rounded-full font-bold hover:bg-purple-700 transition-colors flex items-center gap-2"
+                >
+                  <span>🔄</span>
+                  Play Again
+                </button>
+                <button
+                  @click="emit('next-exercise')"
+                  class="bg-green-600 text-white px-8 py-3 rounded-full font-bold hover:bg-green-700 transition-colors flex items-center gap-2"
+                >
+                  Next
+                  <span>→</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </transition>
+
+      </div>
+    </div>
+
     <!-- EXERCISE MODE -->
     <div v-else-if="currentExercise" class="max-w-6xl mx-auto">
 
@@ -358,6 +476,7 @@
 import { ref, computed, watch } from 'vue';
 import { useExercises } from '@/composables/useExercises';
 import { useGeometry } from '@/composables/useGeometry';
+import { useSelectionGame } from '@/composables/useSelectionGame';
 import GameContainer from '../games/base/GameContainer.vue';
 
 const props = defineProps({
@@ -403,6 +522,37 @@ const exerciseType = computed(() => {
 });
 
 const geometryData = computed(() => props.currentExercise?.data || {});
+
+// Selection Game Mode Detection
+const isSelectionGame = computed(() => {
+  return props.currentExercise?.type === 'selection_game' ||
+         props.currentExercise?.data?.type === 'selection_game';
+});
+
+// Initialize Selection Game (only when in selection game mode)
+const selectionGameData = computed(() => {
+  if (!isSelectionGame.value) return null;
+  return props.currentExercise?.data || props.currentExercise;
+});
+
+const {
+  score: selectionScore,
+  currentQuestion: selectionCurrentQuestion,
+  currentQuestionIndex: selectionQuestionIndex,
+  questions: selectionQuestions,
+  selectedItemId: selectionSelectedItemId,
+  feedback: selectionFeedback,
+  isComplete: selectionIsComplete,
+  handleSelection: selectionHandleSelection,
+  resetGame: selectionResetGame
+} = useSelectionGame(selectionGameData);
+
+// Watch for lesson changes to reset selection game
+watch(() => props.currentExercise, () => {
+  if (isSelectionGame.value) {
+    selectionResetGame();
+  }
+});
 
 const canSubmit = computed(() => {
   if (exerciseType.value === 'matching') {
@@ -1049,5 +1199,47 @@ const handleGameExit = () => {
   justify-content: center;
   height: 100%;
   color: var(--muted-foreground);
+}
+
+/* ================================ */
+/* ==   SELECTION GAME TRANSITIONS == */
+/* ================================ */
+
+/* Bounce animation for feedback icons */
+.bounce-enter-active {
+  animation: bounce-in 0.5s;
+}
+
+.bounce-leave-active {
+  transition: opacity 0.3s;
+}
+
+.bounce-enter-from,
+.bounce-leave-to {
+  opacity: 0;
+  transform: scale(0);
+}
+
+@keyframes bounce-in {
+  0% {
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Fade animation for completion modal */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.5s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>
