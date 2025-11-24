@@ -15,119 +15,163 @@
     </div>
 
     <!-- SELECTION GAME MODE -->
-    <div v-else-if="isSelectionGame && selectionCurrentQuestion" class="w-full max-w-6xl mx-auto">
-      <div class="min-h-[600px] w-full bg-white rounded-2xl p-6 relative shadow-xl">
+    <div v-else-if="isSelectionGame && selectionCurrentQuestion" class="w-full max-w-5xl mx-auto">
+      <!-- Main Panel with Gradient Background -->
+      <div class="min-h-[550px] w-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 rounded-3xl p-8 relative shadow-2xl overflow-hidden">
 
-        <!-- Header with Score -->
-        <div class="flex justify-between items-center mb-8">
-          <div>
-            <h2 class="text-2xl font-bold text-slate-900">Interactive Exercise</h2>
-            <p class="text-purple-600">Select the correct answer below</p>
-          </div>
+        <!-- Decorative Background Elements -->
+        <div class="absolute top-0 right-0 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+        <div class="absolute bottom-0 left-0 w-96 h-96 bg-yellow-300 opacity-10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
 
-          <div class="flex items-center gap-2 bg-yellow-50 px-4 py-2 rounded-full border border-yellow-200">
-            <span class="text-2xl">⭐</span>
-            <span class="font-bold text-slate-700">
-              {{ selectionScore }} / {{ selectionQuestions.length }}
-            </span>
-          </div>
-        </div>
+        <div class="relative z-10">
+          <!-- Header with Score -->
+          <div class="flex justify-between items-center mb-6">
+            <div>
+              <h2 class="text-2xl md:text-3xl font-black text-white drop-shadow-lg">Interactive Challenge</h2>
+              <p class="text-white/90 font-medium text-sm md:text-base">Pick the correct answer!</p>
+            </div>
 
-        <!-- Question Prompt -->
-        <div class="mb-10 text-center">
-          <div class="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-8 shadow-sm">
-            <h3 class="text-3xl font-bold text-slate-800 mb-2">
-              {{ selectionCurrentQuestion.prompt }}
-            </h3>
-            <p v-if="selectionCurrentQuestion.hint" class="text-slate-500">
-              {{ selectionCurrentQuestion.hint }}
-            </p>
-          </div>
-        </div>
-
-        <!-- Selection Grid -->
-        <div class="grid grid-cols-2 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-          <div
-            v-for="(item, index) in selectionCurrentQuestion.items"
-            :key="item.id"
-            class="relative group"
-          >
-            <button
-              @click="selectionHandleSelection(item)"
-              :disabled="selectionFeedback !== null"
-              class="w-full aspect-square rounded-2xl border-4 flex flex-col items-center justify-center transition-all duration-300 transform hover:scale-105 active:scale-95 bg-white shadow-sm hover:shadow-md disabled:cursor-not-allowed"
-              :class="[
-                selectionSelectedItemId === item.id && selectionFeedback === 'correct' ? 'border-green-500 bg-green-50' :
-                selectionSelectedItemId === item.id && selectionFeedback === 'incorrect' ? 'border-red-500 bg-red-50' :
-                'border-purple-100 hover:border-purple-300'
-              ]"
-            >
-              <div class="p-4 flex flex-col items-center">
-                <!-- Image Display -->
-                <img
-                  v-if="item.image"
-                  :src="item.image"
-                  :alt="item.name"
-                  class="w-24 h-24 object-contain mb-3 drop-shadow-md"
-                />
-
-                <!-- Shape Display (for SVG or HTML shapes) -->
-                <div v-else-if="item.shape" v-html="item.shape" class="w-24 h-24 mb-3 text-purple-500"></div>
-
-                <!-- Item Name -->
-                <span class="text-lg font-medium text-slate-700">{{ item.name }}</span>
-              </div>
-
-              <!-- Feedback Icon Overlay -->
-              <transition name="bounce">
-                <div v-if="selectionSelectedItemId === item.id && selectionFeedback"
-                     class="absolute inset-0 flex items-center justify-center rounded-xl bg-opacity-20 z-10"
-                     :class="selectionFeedback === 'correct' ? 'bg-green-100' : 'bg-red-100'"
-                >
-                  <div v-if="selectionFeedback === 'correct'" class="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center">
-                    <span class="text-white text-3xl font-bold">✓</span>
-                  </div>
-                  <div v-else class="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center">
-                    <span class="text-white text-3xl font-bold">✕</span>
-                  </div>
-                </div>
-              </transition>
-            </button>
-          </div>
-        </div>
-
-        <!-- Completion Modal -->
-        <transition name="fade">
-          <div v-if="selectionIsComplete" class="absolute inset-0 z-50 bg-white bg-opacity-95 flex items-center justify-center p-4 rounded-2xl">
-            <div class="bg-white border-2 border-purple-200 shadow-2xl rounded-2xl p-12 text-center max-w-md">
-              <div class="mb-6 flex justify-center">
-                <div class="w-24 h-24 text-yellow-400 flex items-center justify-center text-6xl animate-pulse">
-                  ⭐
-                </div>
-              </div>
-              <h2 class="text-3xl font-bold text-slate-900 mb-4">Lesson Complete!</h2>
-              <p class="text-xl text-slate-600 mb-8">
-                You scored {{ selectionScore }} out of {{ selectionQuestions.length }}
-              </p>
-              <div class="flex gap-4 justify-center">
-                <button
-                  @click="selectionResetGame"
-                  class="bg-purple-600 text-white px-8 py-3 rounded-full font-bold hover:bg-purple-700 transition-colors flex items-center gap-2"
-                >
-                  <span>🔄</span>
-                  Play Again
-                </button>
-                <button
-                  @click="emit('next-exercise')"
-                  class="bg-green-600 text-white px-8 py-3 rounded-full font-bold hover:bg-green-700 transition-colors flex items-center gap-2"
-                >
-                  Next
-                  <span>→</span>
-                </button>
-              </div>
+            <div class="flex items-center gap-2 bg-white/95 backdrop-blur-sm px-5 py-2.5 rounded-full shadow-lg border-2 border-white/50">
+              <span class="text-2xl animate-pulse">⭐</span>
+              <span class="font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 text-lg">
+                {{ selectionScore }} / {{ selectionQuestions.length }}
+              </span>
             </div>
           </div>
-        </transition>
+
+          <!-- Question Prompt -->
+          <div class="mb-8 text-center">
+            <div class="bg-white/95 backdrop-blur-sm border-2 border-white/50 rounded-2xl p-6 md:p-8 shadow-xl">
+              <h3 class="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 mb-2">
+                {{ selectionCurrentQuestion.prompt }}
+              </h3>
+              <p v-if="selectionCurrentQuestion.hint" class="text-slate-600 font-medium">
+                💡 {{ selectionCurrentQuestion.hint }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Selection Grid - Smaller Cards -->
+          <div class="grid grid-cols-3 md:grid-cols-4 gap-3 md:gap-4 max-w-3xl mx-auto mb-6">
+            <div
+              v-for="(item, index) in selectionCurrentQuestion.items"
+              :key="item.id"
+              class="relative group"
+            >
+              <button
+                @click="selectionHandleSelection(item)"
+                :disabled="selectionFeedback !== null"
+                class="w-full aspect-square rounded-xl border-3 flex flex-col items-center justify-center transition-all duration-300 transform hover:scale-110 active:scale-95 shadow-lg hover:shadow-xl disabled:cursor-not-allowed selection-card"
+                :class="[
+                  selectionSelectedItemId === item.id && selectionFeedback === 'correct' ? 'border-green-400 bg-gradient-to-br from-green-400 to-emerald-500 scale-105' :
+                  selectionSelectedItemId === item.id && selectionFeedback === 'incorrect' ? 'border-red-400 bg-gradient-to-br from-red-400 to-rose-500 scale-105' :
+                  'border-white/50 bg-white/95 backdrop-blur-sm hover:border-white hover:bg-white'
+                ]"
+                :style="!selectionSelectedItemId || selectionSelectedItemId !== item.id ? getCardGradient(index) : ''"
+              >
+                <div class="p-2 flex flex-col items-center justify-center h-full">
+                  <!-- Image Display - Smaller -->
+                  <img
+                    v-if="item.image"
+                    :src="item.image"
+                    :alt="item.name"
+                    class="w-12 h-12 md:w-16 md:h-16 object-contain mb-1.5 drop-shadow-lg"
+                  />
+
+                  <!-- Shape Display (for SVG or HTML shapes) - Smaller -->
+                  <div v-else-if="item.shape" v-html="item.shape" class="w-12 h-12 md:w-16 md:h-16 mb-1.5 drop-shadow-lg"></div>
+
+                  <!-- Icon fallback with gradient -->
+                  <div v-else class="w-12 h-12 md:w-16 md:h-16 mb-1.5 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white text-xl md:text-2xl font-bold shadow-lg">
+                    {{ item.name.charAt(0) }}
+                  </div>
+
+                  <!-- Item Name - Smaller Text -->
+                  <span class="text-xs md:text-sm font-bold text-slate-700 text-center leading-tight">{{ item.name }}</span>
+                </div>
+
+                <!-- Feedback Icon Overlay -->
+                <transition name="bounce">
+                  <div v-if="selectionSelectedItemId === item.id && selectionFeedback"
+                       class="absolute inset-0 flex items-center justify-center rounded-xl z-10"
+                  >
+                    <div v-if="selectionFeedback === 'correct'" class="w-12 h-12 md:w-16 md:h-16 rounded-full bg-white flex items-center justify-center shadow-2xl animate-bounce-once">
+                      <span class="text-green-500 text-2xl md:text-4xl font-black">✓</span>
+                    </div>
+                    <div v-else class="w-12 h-12 md:w-16 md:h-16 rounded-full bg-white flex items-center justify-center shadow-2xl animate-shake">
+                      <span class="text-red-500 text-2xl md:text-4xl font-black">✕</span>
+                    </div>
+                  </div>
+                </transition>
+              </button>
+            </div>
+          </div>
+
+          <!-- Next Question Button (appears after correct answer before auto-advance) -->
+          <transition name="slide-up">
+            <div v-if="selectionFeedback === 'correct' && !selectionIsComplete" class="text-center">
+              <button
+                @click="selectionQuestionIndex < selectionQuestions.length - 1 ? null : emit('next-exercise')"
+                class="bg-white text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-3 rounded-full font-black shadow-xl hover:shadow-2xl transition-all transform hover:scale-105 border-2 border-white"
+              >
+                {{ selectionQuestionIndex < selectionQuestions.length - 1 ? 'Moving to next...' : 'Continue' }} →
+              </button>
+            </div>
+          </transition>
+
+          <!-- Completion Modal -->
+          <transition name="fade">
+            <div v-if="selectionIsComplete" class="absolute inset-0 z-50 bg-gradient-to-br from-purple-600/95 via-pink-600/95 to-orange-500/95 backdrop-blur-sm flex items-center justify-center p-4 rounded-3xl">
+              <div class="bg-white rounded-3xl p-8 md:p-12 text-center max-w-md shadow-2xl transform scale-100 animate-scale-in">
+                <!-- Success Animation -->
+                <div class="mb-6 flex justify-center relative">
+                  <div class="w-24 h-24 flex items-center justify-center">
+                    <div class="absolute w-24 h-24 bg-yellow-400 rounded-full animate-ping opacity-75"></div>
+                    <span class="text-7xl relative z-10 animate-bounce-slow">🎉</span>
+                  </div>
+                </div>
+
+                <h2 class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 mb-3">
+                  Amazing Work!
+                </h2>
+
+                <p class="text-2xl font-bold text-slate-700 mb-2">
+                  {{ selectionScore }} / {{ selectionQuestions.length }} Correct
+                </p>
+
+                <div class="mb-8">
+                  <div class="flex justify-center gap-1 mb-2">
+                    <span v-for="star in 3" :key="star" class="text-4xl">
+                      {{ selectionScore >= star ? '⭐' : '☆' }}
+                    </span>
+                  </div>
+                  <p class="text-slate-500 font-medium">
+                    {{ selectionScore === selectionQuestions.length ? 'Perfect Score!' :
+                       selectionScore >= selectionQuestions.length * 0.7 ? 'Great Job!' :
+                       'Keep Practicing!' }}
+                  </p>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                  <button
+                    @click="selectionResetGame"
+                    class="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-8 py-3.5 rounded-full font-black hover:from-purple-600 hover:to-pink-600 transition-all transform hover:scale-105 shadow-xl flex items-center justify-center gap-2"
+                  >
+                    <span>🔄</span>
+                    Try Again
+                  </button>
+                  <button
+                    @click="emit('next-exercise')"
+                    class="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-8 py-3.5 rounded-full font-black hover:from-green-600 hover:to-emerald-600 transition-all transform hover:scale-105 shadow-xl flex items-center justify-center gap-2"
+                  >
+                    Next Lesson
+                    <span>→</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </transition>
+        </div>
 
       </div>
     </div>
@@ -596,6 +640,25 @@ const submitGeometry = () => {
   showFeedback.value = true;
   answerWasCorrect.value = isCorrect.value;
   showCorrectAnswer.value = true;
+};
+
+// Selection Game - Generate colorful gradients for cards
+const getCardGradient = (index) => {
+  const gradients = [
+    'background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);',
+    'background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);',
+    'background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);',
+    'background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);',
+    'background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);',
+    'background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);',
+    'background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);',
+    'background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);',
+    'background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);',
+    'background: linear-gradient(135deg, #ff6e7f 0%, #bfe9ff 100%);',
+    'background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);',
+    'background: linear-gradient(135deg, #f8b500 0%, #fceabb 100%);',
+  ];
+  return gradients[index % gradients.length];
 };
 
 const submit = () => {
@@ -1208,11 +1271,11 @@ const handleGameExit = () => {
 
 /* Bounce animation for feedback icons */
 .bounce-enter-active {
-  animation: bounce-in 0.5s;
+  animation: bounce-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
 .bounce-leave-active {
-  transition: opacity 0.3s;
+  transition: opacity 0.3s ease;
 }
 
 .bounce-enter-from,
@@ -1224,23 +1287,141 @@ const handleGameExit = () => {
 @keyframes bounce-in {
   0% {
     transform: scale(0);
+    opacity: 0;
   }
   50% {
-    transform: scale(1.2);
+    transform: scale(1.3);
+  }
+  70% {
+    transform: scale(0.9);
   }
   100% {
     transform: scale(1);
+    opacity: 1;
   }
 }
 
 /* Fade animation for completion modal */
-.fade-enter-active,
+.fade-enter-active {
+  transition: opacity 0.4s ease;
+}
+
 .fade-leave-active {
-  transition: opacity 0.5s ease;
+  transition: opacity 0.3s ease;
 }
 
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+/* Slide up animation for next button */
+.slide-up-enter-active {
+  animation: slide-up 0.4s ease-out;
+}
+
+.slide-up-leave-active {
+  animation: slide-down 0.3s ease-in;
+}
+
+@keyframes slide-up {
+  0% {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-down {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+}
+
+/* Enhanced animations for selection game */
+@keyframes bounce-once {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+@keyframes bounce-slow {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-15px);
+  }
+}
+
+@keyframes scale-in {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-bounce-once {
+  animation: bounce-once 0.6s ease-in-out;
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 2s ease-in-out infinite;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* Selection card hover effect */
+.selection-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.selection-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s;
+}
+
+.selection-card:hover::before {
+  left: 100%;
 }
 </style>
