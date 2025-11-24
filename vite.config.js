@@ -10,6 +10,9 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  optimizeDeps: {
+    include: ['vue', 'vue-router', 'chart.js', 'vue-chartjs']
+  },
   build: {
     outDir: 'dist',
     sourcemap: false, // 🛑 Added to disable source maps
