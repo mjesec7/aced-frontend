@@ -49,18 +49,6 @@
                 ></textarea>
                 <div v-if="showCorrectAnswer" class="p-4 rounded-lg bg-green-50 border border-green-100 text-green-800">
                   <p class="font-semibold">Correct Answer:</p>
-                  <p>{{ question.correctAnswer }}</p>
-                </div>
-              </div>
-           </div>
-        </div>
-
-        <!-- GEOMETRY REDESIGN -->
-        <div v-else-if="exerciseType === 'geometry'" class="p-6 md:p-8">
-          
-          <!-- Calculate Mode (Split View) -->
-          <div v-if="geometryData.mode === 'calculate'" class="grid lg:grid-cols-2 gap-6">
-            
             <!-- Left: Shape & Given Info -->
             <div class="bg-white rounded-2xl border border-gray-100 p-8 shadow-sm">
               <h3 class="text-purple-600 font-semibold text-lg mb-6">Given Information</h3>
@@ -354,19 +342,6 @@
     <div v-else class="flex items-center justify-center min-h-[60vh]">
       <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
     </div>
-
-  </div>
-</template>
-
-<script setup>
-import { ref, computed, watch } from 'vue';
-import { useExercises } from '../../composables/useExercises.js';
-import GameContainer from '../games/base/GameContainer.vue';
-import { useGeometry } from '../../composables/useGeometry.js';
-
-const props = defineProps({
-  currentExercise: Object,
-  exerciseIndex: Number,
   totalExercises: Number,
   userId: String,
   lessonId: String,
@@ -427,34 +402,6 @@ const isLastExercise = computed(() => props.exerciseIndex >= props.totalExercise
 // --- METHODS ---
 
 // Geometry Specific
-const selectFormula = (id) => {
-  selectedFormula.value = id;
-  showFeedback.value = false;
-};
-
-const submitGeometry = () => {
-  // Validate
-  const correctSide = geometryData.value.correctAnswer.side_b;
-  const correctFormulaId = geometryData.value.correctAnswer.formulaId;
-  
-  const userSide = parseFloat(userAnswer.value.side_b);
-  const userFormula = selectedFormula.value;
-
-  isCorrect.value = (userSide === correctSide && userFormula === correctFormulaId);
-  showFeedback.value = true;
-
-  // Emit success if correct (optional, depends on how you want to handle progression)
-  if (isCorrect.value) {
-    // You might want to wait a bit before enabling "Next"
-    setTimeout(() => {
-       // emit('submit'); // Or handle internal state
-    }, 1500);
-  }
-};
-
-// General Submit
-const submit = () => {
-  if (exerciseType.value === 'matching') {
     userAnswer.value = localMatchingAnswers.value;
   }
   submitLogic(props.currentExercise);
