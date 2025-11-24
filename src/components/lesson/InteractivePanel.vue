@@ -224,9 +224,9 @@
            </div>
         </div>
 
-        <!-- NEW INTERACTIVES -->
+        <!-- NEW MODERN INTERACTIVES -->
         <div v-else-if="exerciseType === 'histogram'" class="p-6 md:p-10">
-          <HistogramExercise
+          <ModernHistogram
             :title="currentExercise.data.title || currentExercise.title"
             :description="currentExercise.data.description || currentExercise.description"
             :data="currentExercise.data.data"
@@ -240,7 +240,7 @@
         </div>
 
         <div v-else-if="exerciseType === 'map'" class="p-6 md:p-10">
-          <MapExercise
+          <ModernMap
             :title="currentExercise.data.title || currentExercise.title"
             :description="currentExercise.data.description || currentExercise.description"
             :image="currentExercise.data.image"
@@ -251,7 +251,7 @@
         </div>
 
         <div v-else-if="exerciseType === 'block-coding'" class="p-6 md:p-10">
-          <BlockCodingExercise
+          <ModernBlockCoding
             :type="currentExercise.data.subtype || currentExercise.data.type"
             :title="currentExercise.data.title || currentExercise.title"
             :description="currentExercise.data.description || currentExercise.description"
@@ -566,10 +566,12 @@ import { ref, computed, watch } from 'vue';
 import { useExercises } from '@/composables/useExercises';
 import { useGeometry } from '@/composables/useGeometry';
 import { useSelectionGame } from '@/composables/useSelectionGame';
-import GameContainer from '../games/base/GameContainer.vue';
-import HistogramExercise from './interactives/HistogramExercise.vue';
-import MapExercise from './interactives/MapExercise.vue';
-import BlockCodingExercise from './interactives/BlockCodingExercise.vue';
+import GeometryExercise from './GeometryExercise.vue';
+import SelectionGame from './SelectionGame.vue';
+// Modern Brilliant-style interactives with dark theme
+import ModernHistogram from './interactives/ModernHistogram.vue';
+import ModernMap from './interactives/ModernMap.vue';
+import ModernBlockCoding from './interactives/ModernBlockCoding.vue';
 
 const props = defineProps({
   currentExercise: Object,
