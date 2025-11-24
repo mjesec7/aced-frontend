@@ -181,8 +181,8 @@ export function useExercises() {
     const shuffled = [...array] // Create a copy to avoid mutating original
 
     for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1))
-        ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
     }
 
     // For arrays with more than 1 element, ensure it's actually shuffled
@@ -190,8 +190,8 @@ export function useExercises() {
       let attempts = 0
       while (attempts < 5 && JSON.stringify(shuffled) === JSON.stringify(array)) {
         for (let i = shuffled.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1))
-            ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
         }
         attempts++
       }

@@ -358,7 +358,7 @@
 import { ref, computed, watch } from 'vue';
 import { useExercises } from '@/composables/useExercises';
 import { useGeometry } from '@/composables/useGeometry';
-import GameContainer from './games/GameContainer.vue';
+import GameContainer from '../games/base/GameContainer.vue';
 
 const props = defineProps({
   currentExercise: Object,
@@ -428,12 +428,20 @@ const selectFormula = (formulaId) => {
 };
 
 const submitGeometry = () => {
-  const correctAnswer = geometryData.value.correctAnswer;
+  // Handle both data structure formats
+  const correctAnswerData = geometryData.value.correctAnswer;
+  const correctSide = typeof correctAnswerData === 'object'
+    ? correctAnswerData.side_b
+    : correctAnswerData;
+  const correctFormulaId = typeof correctAnswerData === 'object'
+    ? correctAnswerData.formulaId
+    : geometryData.value.correctFormulaId;
+
   const userSideB = parseFloat(userAnswer.value.side_b);
-  
-  isCorrect.value = Math.abs(userSideB - correctAnswer) < 0.01 && 
-                    selectedFormula.value === geometryData.value.correctFormulaId;
-  
+
+  isCorrect.value = Math.abs(userSideB - correctSide) < 0.01 &&
+                    selectedFormula.value === correctFormulaId;
+
   showFeedback.value = true;
   answerWasCorrect.value = isCorrect.value;
   showCorrectAnswer.value = true;
