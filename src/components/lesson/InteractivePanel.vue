@@ -227,7 +227,13 @@
         <!-- NEW INTERACTIVES -->
         <div v-else-if="exerciseType === 'histogram'" class="p-6 md:p-10">
           <HistogramExercise
-            v-bind="currentExercise.data"
+            :title="currentExercise.data.title || currentExercise.title"
+            :description="currentExercise.data.description || currentExercise.description"
+            :data="currentExercise.data.data"
+            :correctValue="currentExercise.data.correctValue"
+            :min="currentExercise.data.min"
+            :max="currentExercise.data.max"
+            :step="currentExercise.data.step"
             @complete="handleInteractiveComplete"
             @next="emit('next-exercise')"
           />
@@ -235,7 +241,10 @@
 
         <div v-else-if="exerciseType === 'map'" class="p-6 md:p-10">
           <MapExercise
-            v-bind="currentExercise.data"
+            :title="currentExercise.data.title || currentExercise.title"
+            :description="currentExercise.data.description || currentExercise.description"
+            :image="currentExercise.data.image"
+            :markers="currentExercise.data.markers"
             @complete="handleInteractiveComplete"
             @next="emit('next-exercise')"
           />
@@ -243,7 +252,11 @@
 
         <div v-else-if="exerciseType === 'block-coding'" class="p-6 md:p-10">
           <BlockCodingExercise
-            v-bind="currentExercise.data"
+            :type="currentExercise.data.subtype || currentExercise.data.type"
+            :title="currentExercise.data.title || currentExercise.title"
+            :description="currentExercise.data.description || currentExercise.description"
+            :availableBlocks="currentExercise.data.availableBlocks"
+            :config="currentExercise.data.config"
             @complete="handleInteractiveComplete"
             @next="emit('next-exercise')"
           />
