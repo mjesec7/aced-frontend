@@ -1,5 +1,5 @@
 // src/composables/useSelectionGame.js
-import { ref, computed } from 'vue';
+import { ref, computed, unref } from 'vue';
 
 export function useSelectionGame(lessonData) {
   // State
@@ -10,7 +10,11 @@ export function useSelectionGame(lessonData) {
 
   // Extract questions from the lesson data
   // Expected structure: lessonData.questions = [{ targetId: '1', items: [...] }]
-  const questions = computed(() => lessonData?.questions || []);
+  // Use unref to handle both refs and plain values
+  const questions = computed(() => {
+    const data = unref(lessonData);
+    return data?.questions || [];
+  });
   const currentQuestion = computed(() => questions.value[currentQuestionIndex.value]);
 
   // Check if the game is finished

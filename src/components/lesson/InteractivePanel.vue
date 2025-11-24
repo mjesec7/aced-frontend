@@ -525,13 +525,14 @@ const geometryData = computed(() => props.currentExercise?.data || {});
 
 // Selection Game Mode Detection
 const isSelectionGame = computed(() => {
+  if (!props.currentExercise) return false;
   return props.currentExercise?.type === 'selection_game' ||
          props.currentExercise?.data?.type === 'selection_game';
 });
 
 // Initialize Selection Game (only when in selection game mode)
 const selectionGameData = computed(() => {
-  if (!isSelectionGame.value) return null;
+  if (!isSelectionGame.value || !props.currentExercise) return { questions: [] };
   return props.currentExercise?.data || props.currentExercise;
 });
 
@@ -552,7 +553,7 @@ watch(() => props.currentExercise, () => {
   if (isSelectionGame.value) {
     selectionResetGame();
   }
-});
+}, { immediate: false });
 
 const canSubmit = computed(() => {
   if (exerciseType.value === 'matching') {
