@@ -15,162 +15,170 @@
     </div>
 
     <!-- SELECTION GAME MODE -->
-    <div v-else-if="isSelectionGame && selectionCurrentQuestion" class="w-full max-w-7xl mx-auto">
-      <!-- Main Panel - Clean Brilliant.org Style -->
-      <div class="min-h-[600px] w-full bg-white rounded-2xl p-8 md:p-12 relative shadow-sm border border-gray-100">
+    <div v-else-if="isSelectionGame && selectionCurrentQuestion" class="w-full max-w-6xl mx-auto">
+      <div class="min-h-screen bg-white p-8">
 
-        <div class="max-w-5xl mx-auto">
-          <!-- Clean Header with Score -->
-          <div class="flex justify-between items-start mb-10">
-            <div class="flex-1">
-              <div class="inline-block px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-semibold mb-3">
-                Question {{ selectionQuestionIndex + 1 }} of {{ selectionQuestions.length }}
-              </div>
-              <h2 class="text-2xl md:text-3xl font-bold text-gray-900 leading-tight">
-                {{ selectionCurrentQuestion.prompt }}
-              </h2>
-              <p v-if="selectionCurrentQuestion.hint" class="text-gray-500 text-sm md:text-base mt-2">
-                {{ selectionCurrentQuestion.hint }}
-              </p>
-            </div>
+        <!-- Header -->
+        <div class="text-center mb-12">
+          <h1 class="text-4xl md:text-5xl font-bold text-slate-900 mb-2">
+            Shape Recognition Lesson
+          </h1>
+          <p class="text-lg text-purple-600">
+            Click on the correct shape!
+          </p>
 
-            <div class="ml-6 flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-xl border border-gray-200">
-              <span class="text-lg">🏆</span>
-              <span class="font-bold text-gray-700 text-sm">
-                {{ selectionScore }}/{{ selectionQuestions.length }}
-              </span>
-            </div>
+          <!-- Score -->
+          <div class="flex items-center justify-center gap-2 mt-4">
+            <svg class="w-6 h-6 text-yellow-500 fill-yellow-500" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+            <span class="text-xl font-semibold text-slate-900">
+              Score: {{ selectionScore }} / {{ selectionQuestions.length }}
+            </span>
           </div>
-
-          <!-- Selection Grid - Brilliant.org Style with Better Gaps -->
-          <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6 mb-8">
-            <div
-              v-for="(item, index) in selectionCurrentQuestion.items"
-              :key="item.id"
-              class="relative group"
-            >
-              <button
-                @click="selectionHandleSelection(item)"
-                :disabled="selectionFeedback !== null"
-                class="w-full aspect-square rounded-2xl border-2 flex flex-col items-center justify-center transition-all duration-200 hover:shadow-lg disabled:cursor-not-allowed relative overflow-hidden"
-                :class="[
-                  selectionSelectedItemId === item.id && selectionFeedback === 'correct'
-                    ? 'border-green-500 bg-green-50 shadow-lg'
-                    : selectionSelectedItemId === item.id && selectionFeedback === 'incorrect'
-                    ? 'border-red-500 bg-red-50 shadow-lg'
-                    : 'border-gray-200 bg-white hover:border-blue-400 hover:bg-blue-50/50'
-                ]"
-              >
-                <div class="p-4 flex flex-col items-center justify-center w-full h-full gap-2">
-                  <!-- Image Display -->
-                  <img
-                    v-if="item.image"
-                    :src="item.image"
-                    :alt="item.name"
-                    class="w-12 h-12 md:w-16 md:h-16 object-contain"
-                  />
-
-                  <!-- SVG Shape Display -->
-                  <div v-else-if="item.shape" v-html="item.shape" class="w-12 h-12 md:w-16 md:h-16"></div>
-
-                  <!-- Generated Shape from Name -->
-                  <div v-else v-html="getShapeSVG(item.name)" class="w-12 h-12 md:w-16 md:h-16"></div>
-
-                  <!-- Item Name -->
-                  <span class="text-xs md:text-sm font-semibold text-gray-700 text-center leading-tight">
-                    {{ item.name }}
-                  </span>
-                </div>
-
-                <!-- Feedback Icon Overlay -->
-                <transition name="bounce">
-                  <div v-if="selectionSelectedItemId === item.id && selectionFeedback"
-                       class="absolute inset-0 flex items-center justify-center bg-white/90 backdrop-blur-sm rounded-2xl"
-                  >
-                    <div v-if="selectionFeedback === 'correct'" class="w-14 h-14 md:w-16 md:h-16 rounded-full bg-green-500 flex items-center justify-center shadow-xl">
-                      <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
-                      </svg>
-                    </div>
-                    <div v-else class="w-14 h-14 md:w-16 md:h-16 rounded-full bg-red-500 flex items-center justify-center shadow-xl">
-                      <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path>
-                      </svg>
-                    </div>
-                  </div>
-                </transition>
-
-                <!-- Hover Effect -->
-                <div class="absolute inset-0 bg-blue-400 opacity-0 group-hover:opacity-5 transition-opacity rounded-2xl pointer-events-none"></div>
-              </button>
-            </div>
-          </div>
-
-          <!-- Next Question Button -->
-          <transition name="slide-up">
-            <div v-if="selectionFeedback === 'correct' && !selectionIsComplete" class="text-center">
-              <button
-                @click="selectionQuestionIndex < selectionQuestions.length - 1 ? null : emit('next-exercise')"
-                class="px-8 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 shadow-md hover:shadow-lg transition-all transform hover:scale-105"
-              >
-                {{ selectionQuestionIndex < selectionQuestions.length - 1 ? 'Next question →' : 'Continue →' }}
-              </button>
-            </div>
-          </transition>
-
-          <!-- Completion Modal -->
-          <transition name="fade">
-            <div v-if="selectionIsComplete" class="absolute inset-0 bg-white/95 backdrop-blur-sm flex items-center justify-center p-6 rounded-2xl">
-              <div class="bg-white rounded-3xl p-8 md:p-12 text-center max-w-md shadow-2xl border border-gray-100">
-                <!-- Success Icon -->
-                <div class="mb-6 flex justify-center">
-                  <div class="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center">
-                    <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                    </svg>
-                  </div>
-                </div>
-
-                <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
-                  {{ selectionScore === selectionQuestions.length ? 'Perfect!' : 'Great work!' }}
-                </h2>
-
-                <p class="text-lg text-gray-600 mb-2">
-                  You got <span class="font-bold text-gray-900">{{ selectionScore }}</span> out of <span class="font-bold text-gray-900">{{ selectionQuestions.length }}</span> correct
-                </p>
-
-                <!-- Score Bar -->
-                <div class="w-full bg-gray-100 rounded-full h-3 mb-6">
-                  <div
-                    class="bg-gradient-to-r from-green-500 to-emerald-500 h-3 rounded-full transition-all duration-500"
-                    :style="{ width: `${(selectionScore / selectionQuestions.length) * 100}%` }"
-                  ></div>
-                </div>
-
-                <p class="text-sm text-gray-500 mb-8">
-                  {{ selectionScore === selectionQuestions.length ? 'Outstanding performance!' :
-                     selectionScore >= selectionQuestions.length * 0.7 ? 'You\'re doing great!' :
-                     'Keep practicing to improve!' }}
-                </p>
-
-                <div class="flex flex-col sm:flex-row gap-3 justify-center">
-                  <button
-                    @click="selectionResetGame"
-                    class="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:border-gray-400 hover:bg-gray-50 transition-all"
-                  >
-                    Try Again
-                  </button>
-                  <button
-                    @click="emit('next-exercise')"
-                    class="px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 shadow-md hover:shadow-lg transition-all"
-                  >
-                    Continue
-                  </button>
-                </div>
-              </div>
-            </div>
-          </transition>
         </div>
+
+        <!-- Question Card -->
+        <div class="mb-12">
+          <div class="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 shadow-lg rounded-2xl p-8 text-center">
+            <h2 class="text-3xl font-bold text-slate-900 mb-2">
+              {{ selectionCurrentQuestion.prompt }}
+            </h2>
+            <p class="text-lg text-purple-600">
+              {{ selectionCurrentQuestion.hint || 'Click on the shape below' }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Shapes Grid -->
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-8">
+          <div
+            v-for="(item, index) in selectionCurrentQuestion.items"
+            :key="item.id"
+          >
+            <button
+              @click="selectionHandleSelection(item)"
+              :disabled="selectionFeedback !== null"
+              class="relative w-full aspect-square rounded-2xl border-4 transition-all duration-200"
+              :class="[
+                selectionSelectedItemId === item.id && selectionFeedback === 'correct'
+                  ? 'border-green-500 bg-green-50'
+                  : selectionSelectedItemId === item.id && selectionFeedback === 'incorrect'
+                  ? 'border-red-500 bg-red-50'
+                  : 'border-purple-200 bg-white hover:border-purple-400 hover:shadow-lg',
+                selectionFeedback !== null ? 'cursor-not-allowed' : 'cursor-pointer'
+              ]"
+            >
+              <div class="flex flex-col items-center justify-center h-full p-4">
+                <!-- Image Display -->
+                <img
+                  v-if="item.image"
+                  :src="item.image"
+                  :alt="item.name"
+                  class="w-24 h-24 md:w-28 md:h-28 object-contain mb-2"
+                />
+
+                <!-- SVG Shape Display -->
+                <div v-else-if="item.shape" v-html="item.shape" class="w-24 h-24 md:w-28 md:h-28 mb-2"></div>
+
+                <!-- Generated Shape from Name -->
+                <div v-else v-html="getShapeSVG(item.name, 120)" class="w-24 h-24 md:w-28 md:h-28 mb-2"></div>
+
+                <!-- Item Name -->
+                <p class="text-sm md:text-base font-medium text-slate-700">
+                  {{ item.name }}
+                </p>
+              </div>
+
+              <!-- Correct/Incorrect Overlay -->
+              <transition name="fade-scale">
+                <div
+                  v-if="selectionSelectedItemId === item.id && selectionFeedback === 'correct'"
+                  class="absolute inset-0 flex items-center justify-center bg-green-500/10 rounded-2xl"
+                >
+                  <svg class="w-16 h-16 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+                  </svg>
+                </div>
+              </transition>
+              <transition name="fade-scale">
+                <div
+                  v-if="selectionSelectedItemId === item.id && selectionFeedback === 'incorrect'"
+                  class="absolute inset-0 flex items-center justify-center bg-red-500/10 rounded-2xl"
+                >
+                  <svg class="w-16 h-16 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+                  </svg>
+                </div>
+              </transition>
+            </button>
+          </div>
+        </div>
+
+        <!-- Feedback Message -->
+        <transition name="slide-up">
+          <div v-if="selectionFeedback" class="text-center mb-8">
+            <div
+              v-if="selectionFeedback === 'correct'"
+              class="bg-green-50 border-green-500 border-2 shadow-lg rounded-2xl p-8 inline-block"
+            >
+              <div class="flex items-center gap-4">
+                <svg class="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <div class="text-left">
+                  <h3 class="text-2xl font-bold text-green-600 mb-1">Well Done!</h3>
+                  <p class="text-lg text-green-700">You found the correct shape!</p>
+                </div>
+              </div>
+            </div>
+            <div
+              v-else
+              class="bg-red-50 border-red-500 border-2 shadow-lg rounded-2xl p-8 inline-block"
+            >
+              <div class="flex items-center gap-4">
+                <svg class="w-12 h-12 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+                <div class="text-left">
+                  <h3 class="text-2xl font-bold text-red-600 mb-1">Try Again!</h3>
+                  <p class="text-lg text-red-700">That's not the right shape.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </transition>
+
+        <!-- Completion Message -->
+        <transition name="fade-scale">
+          <div v-if="selectionIsComplete" class="text-center mt-8">
+            <div class="bg-gradient-to-r from-purple-100 to-pink-100 border-purple-300 border-2 shadow-xl rounded-2xl p-12 inline-block">
+              <svg class="w-20 h-20 text-yellow-500 fill-yellow-500 mx-auto mb-4" viewBox="0 0 24 24">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+              </svg>
+              <h2 class="text-4xl font-bold text-slate-900 mb-2">Excellent Work!</h2>
+              <p class="text-xl text-purple-700 mb-2">You completed all the questions!</p>
+              <p class="text-lg text-slate-700 mt-2">
+                Final Score: {{ selectionScore }} / {{ selectionQuestions.length }}
+              </p>
+
+              <div class="flex flex-col sm:flex-row gap-4 justify-center mt-8">
+                <button
+                  @click="selectionResetGame"
+                  class="px-8 py-3 border-2 border-purple-300 text-purple-700 rounded-xl font-semibold hover:border-purple-400 hover:bg-purple-50 transition-all"
+                >
+                  Try Again
+                </button>
+                <button
+                  @click="emit('next-exercise')"
+                  class="px-8 py-3 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700 shadow-md hover:shadow-lg transition-all"
+                >
+                  Continue
+                </button>
+              </div>
+            </div>
+          </div>
+        </transition>
 
       </div>
     </div>
@@ -660,94 +668,203 @@ const getCardGradient = (index) => {
   return gradients[index % gradients.length];
 };
 
-// Selection Game - Generate SVG shapes based on item name (Brilliant.org style)
-const getShapeSVG = (name) => {
+// Selection Game - Generate SVG shapes with outline and glow effect
+const getShapeSVG = (name, size = 120) => {
   const shapeName = name.toLowerCase();
-  // Clean, professional color palette inspired by Brilliant.org
-  const colors = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444', '#06b6d4'];
+  // Vibrant color palette for outlined shapes
+  const colors = ['#a855f7', '#ec4899', '#fbbf24', '#22c55e', '#3b82f6', '#f97316'];
   const color = colors[Math.floor(Math.random() * colors.length)];
+  const glowId = `glow-${Math.random().toString(36).substr(2, 9)}`;
 
   // Circle
   if (shapeName.includes('circle') || shapeName.includes('round')) {
-    return `<svg viewBox="0 0 100 100" class="w-full h-full">
-      <circle cx="50" cy="50" r="35" fill="${color}" opacity="0.9"/>
+    return `<svg width="${size}" height="${size}" viewBox="0 0 120 120">
+      <defs>
+        <filter id="${glowId}">
+          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+      <circle cx="60" cy="60" r="40" fill="none" stroke="${color}" stroke-width="4" filter="url(#${glowId})"/>
     </svg>`;
   }
 
   // Triangle
   if (shapeName.includes('triangle')) {
-    return `<svg viewBox="0 0 100 100" class="w-full h-full">
-      <polygon points="50,20 80,80 20,80" fill="${color}" opacity="0.9"/>
+    return `<svg width="${size}" height="${size}" viewBox="0 0 120 120">
+      <defs>
+        <filter id="${glowId}">
+          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+      <polygon points="60,20 100,100 20,100" fill="none" stroke="${color}" stroke-width="4" filter="url(#${glowId})"/>
     </svg>`;
   }
 
   // Square
   if (shapeName.includes('square')) {
-    return `<svg viewBox="0 0 100 100" class="w-full h-full">
-      <rect x="20" y="20" width="60" height="60" fill="${color}" opacity="0.9" rx="2"/>
+    return `<svg width="${size}" height="${size}" viewBox="0 0 120 120">
+      <defs>
+        <filter id="${glowId}">
+          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+      <rect x="20" y="20" width="80" height="80" fill="none" stroke="${color}" stroke-width="4" filter="url(#${glowId})"/>
     </svg>`;
   }
 
   // Rectangle
   if (shapeName.includes('rectangle')) {
-    return `<svg viewBox="0 0 100 100" class="w-full h-full">
-      <rect x="15" y="30" width="70" height="40" fill="${color}" opacity="0.9" rx="2"/>
+    return `<svg width="${size}" height="${size}" viewBox="0 0 120 120">
+      <defs>
+        <filter id="${glowId}">
+          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+      <rect x="15" y="35" width="90" height="50" fill="none" stroke="${color}" stroke-width="4" filter="url(#${glowId})"/>
     </svg>`;
   }
 
   // Pentagon
   if (shapeName.includes('pentagon')) {
-    return `<svg viewBox="0 0 100 100" class="w-full h-full">
-      <polygon points="50,15 85,40 70,80 30,80 15,40" fill="${color}" opacity="0.9"/>
+    return `<svg width="${size}" height="${size}" viewBox="0 0 120 120">
+      <defs>
+        <filter id="${glowId}">
+          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+      <polygon points="60,20 95,50 80,95 40,95 25,50" fill="none" stroke="${color}" stroke-width="4" filter="url(#${glowId})"/>
     </svg>`;
   }
 
   // Hexagon
   if (shapeName.includes('hexagon')) {
-    return `<svg viewBox="0 0 100 100" class="w-full h-full">
-      <polygon points="50,15 80,35 80,65 50,85 20,65 20,35" fill="${color}" opacity="0.9"/>
+    return `<svg width="${size}" height="${size}" viewBox="0 0 120 120">
+      <defs>
+        <filter id="${glowId}">
+          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+      <polygon points="60,15 95,37.5 95,82.5 60,105 25,82.5 25,37.5" fill="none" stroke="${color}" stroke-width="4" filter="url(#${glowId})"/>
     </svg>`;
   }
 
   // Octagon
   if (shapeName.includes('octagon')) {
-    return `<svg viewBox="0 0 100 100" class="w-full h-full">
-      <polygon points="35,15 65,15 85,35 85,65 65,85 35,85 15,65 15,35" fill="${color}" opacity="0.9"/>
+    return `<svg width="${size}" height="${size}" viewBox="0 0 120 120">
+      <defs>
+        <filter id="${glowId}">
+          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+      <polygon points="40,15 80,15 105,40 105,80 80,105 40,105 15,80 15,40" fill="none" stroke="${color}" stroke-width="4" filter="url(#${glowId})"/>
     </svg>`;
   }
 
   // Star
   if (shapeName.includes('star')) {
-    return `<svg viewBox="0 0 100 100" class="w-full h-full">
-      <polygon points="50,15 58,38 82,38 63,52 71,75 50,61 29,75 37,52 18,38 42,38" fill="${color}" opacity="0.9"/>
+    return `<svg width="${size}" height="${size}" viewBox="0 0 120 120">
+      <defs>
+        <filter id="${glowId}">
+          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+      <polygon points="60,15 70,45 102,45 76,63 86,93 60,75 34,93 44,63 18,45 50,45" fill="none" stroke="${color}" stroke-width="4" filter="url(#${glowId})"/>
     </svg>`;
   }
 
   // Heart
   if (shapeName.includes('heart')) {
-    return `<svg viewBox="0 0 100 100" class="w-full h-full">
-      <path d="M50,80 C50,80 20,60 20,40 C20,28 28,20 36,20 C42,20 46,24 50,30 C54,24 58,20 64,20 C72,20 80,28 80,40 C80,60 50,80 50,80 Z" fill="${color}" opacity="0.9"/>
+    return `<svg width="${size}" height="${size}" viewBox="0 0 120 120">
+      <defs>
+        <filter id="${glowId}">
+          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+      <path d="M60,100 C60,100 20,75 20,50 C20,35 30,25 40,25 C47,25 53,30 60,38 C67,30 73,25 80,25 C90,25 100,35 100,50 C100,75 60,100 60,100 Z" fill="none" stroke="${color}" stroke-width="4" filter="url(#${glowId})"/>
     </svg>`;
   }
 
   // Diamond / Rhombus
   if (shapeName.includes('diamond') || shapeName.includes('rhombus')) {
-    return `<svg viewBox="0 0 100 100" class="w-full h-full">
-      <polygon points="50,15 85,50 50,85 15,50" fill="${color}" opacity="0.9"/>
+    return `<svg width="${size}" height="${size}" viewBox="0 0 120 120">
+      <defs>
+        <filter id="${glowId}">
+          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+      <polygon points="60,15 105,60 60,105 15,60" fill="none" stroke="${color}" stroke-width="4" filter="url(#${glowId})"/>
     </svg>`;
   }
 
   // Oval / Ellipse
   if (shapeName.includes('oval') || shapeName.includes('ellipse')) {
-    return `<svg viewBox="0 0 100 100" class="w-full h-full">
-      <ellipse cx="50" cy="50" rx="35" ry="25" fill="${color}" opacity="0.9"/>
+    return `<svg width="${size}" height="${size}" viewBox="0 0 120 120">
+      <defs>
+        <filter id="${glowId}">
+          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+      <ellipse cx="60" cy="60" rx="45" ry="30" fill="none" stroke="${color}" stroke-width="4" filter="url(#${glowId})"/>
     </svg>`;
   }
 
   // Default: simple colored circle with letter
-  return `<svg viewBox="0 0 100 100" class="w-full h-full">
-    <circle cx="50" cy="50" r="35" fill="${color}" opacity="0.9"/>
-    <text x="50" y="62" text-anchor="middle" fill="white" font-size="36" font-weight="bold">${name.charAt(0).toUpperCase()}</text>
+  return `<svg width="${size}" height="${size}" viewBox="0 0 120 120">
+    <defs>
+      <filter id="${glowId}">
+        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+        <feMerge>
+          <feMergeNode in="coloredBlur"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+    </defs>
+    <circle cx="60" cy="60" r="40" fill="none" stroke="${color}" stroke-width="4" filter="url(#${glowId})"/>
+    <text x="60" y="72" text-anchor="middle" fill="${color}" font-size="40" font-weight="bold">${name.charAt(0).toUpperCase()}</text>
   </svg>`;
 };
 
