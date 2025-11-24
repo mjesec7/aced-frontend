@@ -49,6 +49,16 @@
                 ></textarea>
                 <div v-if="showCorrectAnswer" class="p-4 rounded-lg bg-green-50 border border-green-100 text-green-800">
                   <p class="font-semibold">Correct Answer:</p>
+                  <p>{{ question.correctAnswer }}</p>
+                </div>
+              </div>
+           </div>
+        </div>
+
+        <!-- Geometry Exercise -->
+        <div v-else-if="exerciseType === 'geometry'" class="p-6 md:p-10">
+          <!-- Calculate Mode -->
+          <div v-if="geometryData.mode === 'calculate'" class="grid md:grid-cols-2 gap-8">
             <!-- Left: Shape & Given Info -->
             <div class="bg-white rounded-2xl border border-gray-100 p-8 shadow-sm">
               <h3 class="text-purple-600 font-semibold text-lg mb-6">Given Information</h3>
@@ -313,7 +323,6 @@
                <p class="text-amber-600 text-sm mt-2">This interactive drawing feature is under development.</p>
              </div>
           </div>
-
         </div>
       </div>
 
@@ -342,6 +351,18 @@
     <div v-else class="flex items-center justify-center min-h-[60vh]">
       <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
     </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, watch } from 'vue';
+import { useExercises } from '@/composables/useExercises';
+import { useGeometry } from '@/composables/useGeometry';
+import GameContainer from './games/GameContainer.vue';
+
+const props = defineProps({
+  currentExercise: Object,
+  exerciseIndex: Number,
   totalExercises: Number,
   userId: String,
   lessonId: String,
@@ -402,10 +423,32 @@ const isLastExercise = computed(() => props.exerciseIndex >= props.totalExercise
 // --- METHODS ---
 
 // Geometry Specific
+const selectFormula = (formulaId) => {
+  selectedFormula.value = formulaId;
+};
+
+const submitGeometry = () => {
+  const correctAnswer = geometryData.value.correctAnswer;
+  const userSideB = parseFloat(userAnswer.value.side_b);
+  
+  isCorrect.value = Math.abs(userSideB - correctAnswer) < 0.01 && 
+                    selectedFormula.value === geometryData.value.correctFormulaId;
+  
+  showFeedback.value = true;
+  answerWasCorrect.value = isCorrect.value;
+  showCorrectAnswer.value = true;
+};
+
+const submit = () => {
+  if (exerciseType.value === 'matching') {
     userAnswer.value = localMatchingAnswers.value;
   }
   submitLogic(props.currentExercise);
   emit('submit');
+};
+
+const handleNext = () => {
+  emit('next-exercise');
 };
 
 const resetAndNext = () => {
