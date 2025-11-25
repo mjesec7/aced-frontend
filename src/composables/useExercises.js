@@ -720,8 +720,11 @@ export function useExercises() {
       console.log('Processing step:', currentStep);
       console.log('Step.data:', currentStep.data);
       console.log('Step.data is array?', Array.isArray(currentStep.data));
+      console.log('Step.data.length:', currentStep.data?.length);
+      console.log('Step.data contents:', currentStep.data ? JSON.stringify(currentStep.data, null, 2) : 'N/A');
       console.log('Step.content:', currentStep.content);
       console.log('Step.content.type:', currentStep.content?.type);
+      console.log('Step keys:', Object.keys(currentStep));
 
       // Priority order for finding exercises
       if (Array.isArray(currentStep.data) && currentStep.data.length > 0) {
