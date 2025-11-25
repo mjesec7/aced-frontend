@@ -196,11 +196,11 @@
       </header>
 
       <!-- Main Content Area -->
-      <div class="overflow-hidden">
+      <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-100">
         
-        <!-- Standard Exercises (Reading, etc.) - Keep white background -->
-        <div v-if="!['geometry', 'histogram', 'map', 'block-coding'].includes(exerciseType)" class="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 md:p-10">
-           <!-- Fallback for non-geometry exercises (keeping existing logic simplified for brevity but styled) -->
+        <!-- Standard Exercises (Reading, etc.) -->
+        <div v-if="!['geometry', 'histogram', 'map', 'block-coding'].includes(exerciseType)" class="p-6 md:p-10">
+           <!-- Fallback for non-geometry exercises -->
            <div v-if="['reading', 'short-answer'].includes(exerciseType)" class="space-y-6">
               <article v-if="currentExercise.content" class="bg-blue-50 p-6 rounded-xl border border-blue-100">
                 <h3 class="text-blue-800 font-semibold mb-2">Reading Text</h3>
@@ -224,9 +224,9 @@
            </div>
         </div>
 
-        <!-- NEW MODERN INTERACTIVES - NO white background wrapper -->
-        <div v-else-if="exerciseType === 'histogram'" class="min-h-[400px]">
-          <ModernHistogram
+        <!-- BRILLIANT-STYLE INTERACTIVES (Light Theme) -->
+        <div v-else-if="exerciseType === 'histogram'" class="p-6 md:p-10">
+          <HistogramExercise
             :title="currentExercise.data.title || currentExercise.title"
             :description="currentExercise.data.description || currentExercise.description"
             :data="currentExercise.data.data"
@@ -239,8 +239,8 @@
           />
         </div>
 
-        <div v-else-if="exerciseType === 'map'" class="min-h-[400px]">
-          <ModernMap
+        <div v-else-if="exerciseType === 'map'" class="p-6 md:p-10">
+          <MapExercise
             :title="currentExercise.data.title || currentExercise.title"
             :description="currentExercise.data.description || currentExercise.description"
             :image="currentExercise.data.image"
@@ -250,8 +250,8 @@
           />
         </div>
 
-        <div v-else-if="exerciseType === 'block-coding'" class="min-h-[400px]">
-          <ModernBlockCoding
+        <div v-else-if="exerciseType === 'block-coding'" class="p-6 md:p-10">
+          <BlockCodingExercise
             :type="currentExercise.data.subtype || currentExercise.data.type"
             :title="currentExercise.data.title || currentExercise.title"
             :description="currentExercise.data.description || currentExercise.description"
@@ -262,8 +262,8 @@
           />
         </div>
 
-        <!-- Geometry Exercise - Keep white background -->
-        <div v-else-if="exerciseType === 'geometry'" class="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 md:p-10">
+        <!-- Geometry Exercise -->
+        <div v-else-if="exerciseType === 'geometry'" class="p-6 md:p-10">
           <!-- Calculate Mode -->
           <div v-if="geometryData.mode === 'calculate'" class="grid md:grid-cols-2 gap-8">
             <!-- Left: Shape & Given Info -->
@@ -566,10 +566,10 @@ import { ref, computed, watch } from 'vue';
 import { useExercises } from '@/composables/useExercises';
 import { useGeometry } from '@/composables/useGeometry';
 import GeometryExercise from './GeometryExercise.vue';
-// Modern Brilliant-style interactives with dark theme
-import ModernHistogram from './interactives/ModernHistogram.vue';
-import ModernMap from './interactives/ModernMap.vue';
-import ModernBlockCoding from './interactives/ModernBlockCoding.vue';
+// Light-themed Brilliant-style interactives
+import HistogramExercise from './interactives/HistogramExercise.vue';
+import MapExercise from './interactives/MapExercise.vue';
+import BlockCodingExercise from './interactives/BlockCodingExercise.vue';
 
 const props = defineProps({
   currentExercise: Object,
