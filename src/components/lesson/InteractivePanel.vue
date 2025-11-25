@@ -196,10 +196,10 @@
       </header>
 
       <!-- Main Content Area -->
-      <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-100">
+      <div class="overflow-hidden">
         
-        <!-- Standard Exercises (Reading, etc.) -->
-        <div v-if="!['geometry', 'histogram', 'map', 'block-coding'].includes(exerciseType)" class="p-6 md:p-10">
+        <!-- Standard Exercises (Reading, etc.) - Keep white background -->
+        <div v-if="!['geometry', 'histogram', 'map', 'block-coding'].includes(exerciseType)" class="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 md:p-10">
            <!-- Fallback for non-geometry exercises (keeping existing logic simplified for brevity but styled) -->
            <div v-if="['reading', 'short-answer'].includes(exerciseType)" class="space-y-6">
               <article v-if="currentExercise.content" class="bg-blue-50 p-6 rounded-xl border border-blue-100">
@@ -224,8 +224,8 @@
            </div>
         </div>
 
-        <!-- NEW MODERN INTERACTIVES -->
-        <div v-else-if="exerciseType === 'histogram'" class="p-6 md:p-10">
+        <!-- NEW MODERN INTERACTIVES - NO white background wrapper -->
+        <div v-else-if="exerciseType === 'histogram'" class="min-h-[400px]">
           <ModernHistogram
             :title="currentExercise.data.title || currentExercise.title"
             :description="currentExercise.data.description || currentExercise.description"
@@ -239,7 +239,7 @@
           />
         </div>
 
-        <div v-else-if="exerciseType === 'map'" class="p-6 md:p-10">
+        <div v-else-if="exerciseType === 'map'" class="min-h-[400px]">
           <ModernMap
             :title="currentExercise.data.title || currentExercise.title"
             :description="currentExercise.data.description || currentExercise.description"
@@ -250,7 +250,7 @@
           />
         </div>
 
-        <div v-else-if="exerciseType === 'block-coding'" class="p-6 md:p-10">
+        <div v-else-if="exerciseType === 'block-coding'" class="min-h-[400px]">
           <ModernBlockCoding
             :type="currentExercise.data.subtype || currentExercise.data.type"
             :title="currentExercise.data.title || currentExercise.title"
@@ -262,8 +262,8 @@
           />
         </div>
 
-        <!-- Geometry Exercise -->
-        <div v-else-if="exerciseType === 'geometry'" class="p-6 md:p-10">
+        <!-- Geometry Exercise - Keep white background -->
+        <div v-else-if="exerciseType === 'geometry'" class="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 md:p-10">
           <!-- Calculate Mode -->
           <div v-if="geometryData.mode === 'calculate'" class="grid md:grid-cols-2 gap-8">
             <!-- Left: Shape & Given Info -->
