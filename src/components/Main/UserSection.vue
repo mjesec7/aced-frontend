@@ -1,0 +1,1154 @@
+<template>
+  <div>
+    <div v-if="!currentUser" class="auth-buttons">
+      <button class="auth-btn login-btn" @click="openModal('Login')">
+        <span class="btn-text">Login</span>
+        <span class="btn-icon">→</span>
+      </button>
+      <button class="auth-btn register-btn" @click="openModal('register')">
+        <span class="btn-text">Register</span>
+        <span class="btn-glow"></span>
+      </button>
+    </div>
+
+    <div v-else class="user-section">
+      <button class="auth-btn profile-btn" @click="$router.push('/profile')">
+        <span class="profile-icon">👤</span>
+        <span>Profile</span>
+      </button>
+      
+      <div class="user-menu">
+        <button 
+          class="user-button" 
+          :class="{ active: dropdownOpen }"
+          @click="toggleDropdown"
+        >
+          <span class="user-greeting">Hello, {{ currentUser.name }}</span>
+          <span class="badge" :class="planClass">
+            {{ displayPlan }}
+          </span>
+          <span class="dropdown-arrow" :class="{ rotated: dropdownOpen }">▼</span>
+        </button>
+        <div 
+          v-if="dropdownOpen" 
+          class="dropdown-menu show"
+          @click.stop
+        >
+          <ul>
+            <li @click="$router.push('/settings')">
+              <span class="menu-icon">⚙️</span>
+              <span>Settings</span>
+            </li>
+            <li @click="logout">
+              <span class="menu-icon">🚪</span>
+              <span>Logout</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="isModalOpen" class="global-auth-modal" @click="closeModal">
+      <div class="modal-content" @click.stop>
+        <button class="close-btn" @click="closeModal">
+          <span>×</span>
+        </button>
+
+        <div v-if="isLoading" class="loading-state">
+          <div class="loader-spinner"></div>
+          <p>{{ loadingMessage }}</p>
+        </div>
+
+        <div v-else-if="authMode === 'register'" class="auth-form">
+          <div class="modal-header">
+            <h2>Create an Account</h2>
+            <p class="modal-subtitle">Start your learning journey</p>
+          </div>
+
+          <div class="form-group">
+            <input v-model="user.name" placeholder="First Name" :disabled="isLoading" class="form-input" />
+          </div>
+          <div class="form-group">
+            <input v-model="user.surname" placeholder="Last Name" :disabled="isLoading" class="form-input" />
+          </div>
+          <div class="form-group">
+            <input v-model="user.email" type="email" placeholder="Email" :disabled="isLoading" class="form-input" />
+          </div>
+          <div class="form-group">
+            <input v-model="user.password" type="password" placeholder="Password" :disabled="isLoading" class="form-input" />
+          </div>
+          <div class="form-group">
+            <input v-model="user.confirmPassword" type="password" placeholder="Confirm Password" :disabled="isLoading" class="form-input" />
+          </div>
+
+          <button class="auth-submit" @click="register" :disabled="isLoading">
+            <span>{{ isLoading ? 'Registering...' : 'Sign Up' }}</span>
+            <span class="submit-glow"></span>
+          </button>
+
+          <div class="divider">
+            <span>or</span>
+          </div>
+
+          <button class="google-auth" @click="LoginWithGoogle" :disabled="isLoading">
+            <svg class="google-icon" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            <span>{{ isLoading ? 'Loading...' : 'Continue with Google' }}</span>
+          </button>
+
+          <p class="switch-text">
+            Already have an account? 
+            <span class="switch-link" @click="switchAuth('Login')">Sign In</span>
+          </p>
+        </div>
+
+        <div v-else class="auth-form">
+          <div class="modal-header">
+            <h2>Welcome Back!</h2>
+            <p class="modal-subtitle">Continue your learning</p>
+          </div>
+
+          <div class="form-group">
+            <input v-model="Login.email" type="email" placeholder="Email" :disabled="isLoading" class="form-input" />
+          </div>
+          <div class="form-group">
+            <input v-model="Login.password" type="password" placeholder="Password" :disabled="isLoading" class="form-input" />
+          </div>
+
+          <button class="auth-submit" @click="handleEmailLogin" :disabled="isLoading">
+            <span>{{ isLoading ? 'Signing in...' : 'Sign In' }}</span>
+            <span class="submit-glow"></span>
+          </button>
+
+          <div class="divider">
+            <span>or</span>
+          </div>
+
+          <button class="google-auth" @click="LoginWithGoogle" :disabled="isLoading">
+            <svg class="google-icon" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            <span>{{ isLoading ? 'Loading...' : 'Continue with Google' }}</span>
+          </button>
+
+          <p class="switch-text">
+            Don't have an account? 
+            <span class="switch-link" @click="switchAuth('register')">Sign Up</span>
+          </p>
+        </div>
+
+        <div v-if="errorMessage" class="error-message">
+          <span class="message-icon">⚠️</span>
+          <span>{{ errorMessage }}</span>
+        </div>
+        
+        <div v-if="successMessage" class="success-message">
+          <span class="message-icon">✓</span>
+          <span>{{ successMessage }}</span>
+        </div>
+      </div>
+    </div>
+
+    <AcedSettings v-if="showSettings" @close-settings="showSettings = false" />
+  </div>
+</template>
+
+<script>
+import axios from 'axios';
+import { auth } from "@/firebase";
+import {
+  signInWithPopup,
+  GoogleAuthProvider,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  onAuthStateChanged
+} from "firebase/auth";
+import { mapMutations, mapActions, mapGetters } from "vuex";
+import AcedSettings from "@/components/Main/AcedSettings.vue";
+
+export default {
+  components: { AcedSettings },
+
+  data() {
+    return {
+      isModalOpen: false,
+      authMode: "register",
+      dropdownOpen: false,
+      showSettings: false,
+      isLoading: false,
+      errorMessage: '',
+      successMessage: '',
+      loadingMessage: 'Loading...',
+      user: { name: "", surname: "", email: "", password: "", confirmPassword: "" },
+      Login: { email: "", password: "" },
+    };
+  },
+
+  computed: {
+    ...mapGetters(["getUser"]),
+    currentUser() {
+      return this.getUser;
+    },
+    displayPlan() {
+      const plan = this.currentUser?.subscriptionPlan || localStorage.getItem("plan") || 'free';
+      return plan.toUpperCase();
+    },
+    planClass() {
+      const plan = (this.currentUser?.subscriptionPlan || localStorage.getItem("plan") || 'free').toLowerCase();
+      return `badge-${plan}`;
+    }
+  },
+
+  mounted() {
+    onAuthStateChanged(auth, (user) => {
+      if (user && !this.currentUser) {
+        this.handleAuthStateChange(user);
+      }
+    });
+
+    window.addEventListener("open-Login-modal", () => {
+      this.openModal("Login");
+    });
+
+    document.addEventListener('click', (event) => {
+      if (!this.$el.contains(event.target)) {
+        this.dropdownOpen = false;
+      }
+    });
+  },
+
+  methods: {
+    ...mapMutations(["setUser", "setFirebaseUserId", "setToken"]),
+    ...mapActions(["LoginUser", "logoutUser"]),
+
+    getApiBase() {
+      const envUrl = import.meta.env.VITE_API_BASE_URL;
+      
+      if (window.location.hostname === 'aced.live') {
+        return 'https://api.aced.live';
+      }
+      
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        return envUrl || 'http://localhost:5000';
+      }
+      
+      return envUrl || 'https://api.aced.live';
+    },
+
+    async saveUserToBackend(firebaseUser, token, additionalData = {}) {
+      try {
+        const apiBase = this.getApiBase();
+        
+        const userData = {
+          uid: firebaseUser.uid,
+          firebaseId: firebaseUser.uid,
+          name: additionalData.name || 
+                firebaseUser.displayName || 
+                firebaseUser.email?.split('@')[0] || 
+                'User',
+          email: firebaseUser.email,
+          Login: firebaseUser.email,
+          token: token,
+          subscriptionPlan: additionalData.subscriptionPlan || 'free',
+          emailVerified: firebaseUser.emailVerified || false,
+          photoURL: firebaseUser.photoURL || null,
+          lastLoginAt: new Date().toISOString(),
+          authProvider: firebaseUser.providerData?.[0]?.providerId || 'firebase',
+          ...additionalData
+        };
+
+        const response = await axios({
+          method: 'POST',
+          url: `${apiBase}/api/users/save`,
+          data: userData,
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 8000
+        });
+
+        if (response.data && response.data.success !== false) {
+          const savedUser = response.data.user || response.data.data || response.data;
+          return {
+            success: true,
+            user: savedUser,
+            source: 'backend'
+          };
+        } else {
+          throw new Error('Backend returned unsuccessful response');
+        }
+
+      } catch (error) {
+        const message = error.response?.data?.message || error.message;
+        const fallbackUser = {
+          uid: firebaseUser.uid,
+          _id: firebaseUser.uid,
+          firebaseId: firebaseUser.uid,
+          email: firebaseUser.email,
+          name: additionalData.name || 
+                firebaseUser.displayName || 
+                firebaseUser.email?.split('@')[0] || 
+                'User',
+          displayName: firebaseUser.displayName || '',
+          subscriptionPlan: additionalData.subscriptionPlan || 'free',
+          userStatus: additionalData.subscriptionPlan || 'free',
+          emailVerified: firebaseUser.emailVerified || false,
+          photoURL: firebaseUser.photoURL || null,
+          createdAt: new Date().toISOString(),
+          lastLoginAt: new Date().toISOString(),
+          authProvider: 'firebase',
+          backendSyncFailed: true,
+          syncError: message
+        };
+
+        return {
+          success: true,
+          user: fallbackUser,
+          source: 'firebase-only',
+          warning: 'Backend synchronization failed, using Firebase-only mode'
+        };
+      }
+    },
+
+    async handleAuthStateChange(firebaseUser) {
+      try {
+        this.loadingMessage = 'Setting up account...';
+        const token = await firebaseUser.getIdToken(true);
+        const saveResult = await this.saveUserToBackend(firebaseUser, token);
+
+        const userData = {
+          name: saveResult.user.name,
+          email: firebaseUser.email,
+          uid: firebaseUser.uid,
+          subscriptionPlan: saveResult.user.subscriptionPlan || 'free',
+          ...saveResult.user
+        };
+
+        this.setUserData(userData, firebaseUser.uid, token);
+        
+      } catch (error) {
+try {
+          const fallbackUserData = {
+            name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+            email: firebaseUser.email,
+            uid: firebaseUser.uid,
+            subscriptionPlan: 'free',
+            authMode: 'fallback'
+          };
+          const token = await firebaseUser.getIdToken(true);
+          this.setUserData(fallbackUserData, firebaseUser.uid, token);
+        } catch (fallbackError) {
+this.showError('Login system error');
+        }
+      }
+    },
+
+    async handleEmailLogin() {
+      if (!this.Login.email || !this.Login.password) {
+        this.showError("Please enter email and password");
+        return;
+      }
+      this.isLoading = true;
+      this.clearMessages();
+      this.loadingMessage = 'Signing in...';
+      try {
+        const result = await signInWithEmailAndPassword(auth, this.Login.email, this.Login.password);
+        this.loadingMessage = 'Setting up profile...';
+        await this.handleAuthStateChange(result.user);
+        this.showSuccess('Successfully signed in!');
+        setTimeout(() => {
+          this.closeModal();
+        }, 1000);
+      } catch (error) {
+        let errorMsg = "Login error";
+        if (error.code === 'auth/user-not-found') {
+          errorMsg = "User not found";
+        } else if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+          errorMsg = "Invalid password or email";
+        } else if (error.code === 'auth/invalid-email') {
+          errorMsg = "Invalid email format";
+        } else if (error.code === 'auth/too-many-requests') {
+          errorMsg = "Too many attempts. Please try later";
+        } else if (error.code === 'auth/user-disabled') {
+          errorMsg = "Account disabled";
+        } else if (error.code === 'auth/network-request-failed') {
+          errorMsg = "Internet connection problem";
+        }
+        this.showError(errorMsg);
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    async LoginWithGoogle() {
+      if (this.isLoading) return;
+      this.isLoading = true;
+      this.clearMessages();
+      this.loadingMessage = 'Connecting to Google...';
+      try {
+        const provider = new GoogleAuthProvider();
+        const result = await signInWithPopup(auth, provider);
+        this.loadingMessage = 'Setting up profile...';
+        await this.handleAuthStateChange(result.user);
+        this.showSuccess('Successfully signed in with Google!');
+        setTimeout(() => {
+          this.closeModal();
+          this.$router.push("/profile");
+        }, 1000);
+      } catch (error) {
+        let errorMsg = "Google sign-in error";
+        if (error.code === 'auth/popup-closed-by-user') {
+          errorMsg = "Sign-in window was closed";
+        } else if (error.code === 'auth/popup-blocked') {
+          errorMsg = "Popup window blocked";
+        } else if (error.code === 'auth/network-request-failed') {
+          errorMsg = "Internet connection problem";
+        }
+        this.showError(errorMsg);
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    async register() {
+      if (!this.user.name || !this.user.email || !this.user.password) {
+        this.showError("Please fill all required fields");
+        return;
+      }
+      if (this.user.password !== this.user.confirmPassword) {
+        this.showError("Passwords don't match");
+        return;
+      }
+      if (this.user.password.length < 6) {
+        this.showError("Password must be at least 6 characters");
+        return;
+      }
+      this.isLoading = true;
+      this.clearMessages();
+      this.loadingMessage = 'Creating account...';
+      try {
+        const result = await createUserWithEmailAndPassword(auth, this.user.email, this.user.password);
+        const firebaseUser = result.user;
+        this.loadingMessage = 'Setting up profile...';
+        const registrationData = {
+          name: this.user.name,
+          surname: this.user.surname,
+          subscriptionPlan: 'free'
+        };
+        const token = await firebaseUser.getIdToken(true);
+        const saveResult = await this.saveUserToBackend(firebaseUser, token, registrationData);
+        const userData = {
+          name: saveResult.user.name || this.user.name,
+          email: firebaseUser.email,
+          uid: firebaseUser.uid,
+          subscriptionPlan: saveResult.user.subscriptionPlan || 'free',
+          ...saveResult.user
+        };
+        this.setUserData(userData, firebaseUser.uid, token);
+        this.showSuccess("Registration successful!");
+        setTimeout(() => {
+          this.closeModal();
+        }, 1500);
+      } catch (error) {
+        let errorMsg = "Registration error";
+        if (error.code === 'auth/email-already-in-use') {
+          errorMsg = "Email already in use";
+        } else if (error.code === 'auth/invalid-email') {
+          errorMsg = "Invalid email format";
+        } else if (error.code === 'auth/weak-password') {
+          errorMsg = "Password too weak";
+        } else if (error.code === 'auth/network-request-failed') {
+          errorMsg = "Internet connection problem";
+        }
+        this.showError(errorMsg);
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    setUserData(userData, firebaseUserId, token) {
+      this.setUser(userData);
+      this.setFirebaseUserId(firebaseUserId);
+      this.setToken(token);
+      localStorage.setItem("user", JSON.stringify(userData));
+      localStorage.setItem("firebaseUserId", firebaseUserId);
+      localStorage.setItem("token", token);
+      localStorage.setItem("plan", userData.subscriptionPlan || 'free');
+    },
+
+    openModal(mode) {
+      this.authMode = mode;
+      this.isModalOpen = true;
+      this.clearMessages();
+    },
+
+    closeModal() {
+      this.isModalOpen = false;
+      this.resetForms();
+      this.clearMessages();
+    },
+
+    switchAuth(mode) {
+      this.authMode = mode;
+      this.resetForms();
+      this.clearMessages();
+    },
+
+    toggleDropdown() {
+      this.dropdownOpen = !this.dropdownOpen;
+    },
+
+    clearMessages() {
+      this.errorMessage = '';
+      this.successMessage = '';
+    },
+
+    showError(message) {
+      this.errorMessage = message;
+      this.successMessage = '';
+      setTimeout(() => this.clearMessages(), 5000);
+    },
+
+    showSuccess(message) {
+      this.successMessage = message;
+      this.errorMessage = '';
+      setTimeout(() => this.clearMessages(), 3000);
+    },
+
+    async logout() {
+      try {
+        await auth.signOut();
+        this.logoutUser();
+        this.dropdownOpen = false;
+        localStorage.clear();
+        if (this.$route.path !== '/') {
+          this.$router.push('/');
+        }
+      } catch (error) {
+}
+    },
+
+    resetForms() {
+      this.user = { name: "", surname: "", email: "", password: "", confirmPassword: "" };
+      this.Login = { email: "", password: "" };
+    },
+  },
+};
+</script>
+
+<style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+* {
+  font-family: 'Inter', sans-serif;
+}
+
+/* Auth Buttons */
+.auth-buttons {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.auth-btn {
+  position: relative;
+  padding: 10px 24px;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.login-btn {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  color: #0a0a0a;
+  border: 1.5px solid rgba(139, 92, 246, 0.2);
+}
+
+.login-btn:hover {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(139, 92, 246, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.15);
+}
+
+.login-btn .btn-icon {
+  transition: transform 0.3s ease;
+}
+
+.login-btn:hover .btn-icon {
+  transform: translateX(4px);
+}
+
+.register-btn {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  color: white;
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
+}
+
+.register-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.4);
+}
+
+.btn-glow {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.register-btn:hover .btn-glow {
+  opacity: 1;
+}
+
+/* User Section */
+.user-section {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.profile-btn {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  color: #0a0a0a;
+  border: 1.5px solid rgba(139, 92, 246, 0.2);
+}
+
+.profile-btn:hover {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(139, 92, 246, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.15);
+}
+
+.profile-icon {
+  font-size: 1.125rem;
+}
+
+/* User Menu */
+.user-menu {
+  position: relative;
+}
+
+.user-button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(25px);
+  border: 1.5px solid rgba(139, 92, 246, 0.25);
+  border-radius: 12px;
+  color: #0a0a0a;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 12px rgba(139, 92, 246, 0.1);
+}
+
+.user-button:hover {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(139, 92, 246, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.2);
+}
+
+.user-button.active {
+  border-color: rgba(139, 92, 246, 0.5);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.25);
+}
+
+.user-greeting {
+  font-weight: 600;
+}
+
+.badge {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.badge-free {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.15));
+  color: #7c3aed;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.badge-premium,
+.badge-pro {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: #78350f;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.2);
+}
+
+.dropdown-arrow {
+  font-size: 0.625rem;
+  transition: transform 0.3s ease;
+  color: #737373;
+}
+
+.dropdown-arrow.rotated {
+  transform: rotate(180deg);
+}
+
+/* Dropdown Menu */
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 200px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(30px);
+  border: 1.5px solid rgba(139, 92, 246, 0.2);
+  border-radius: 12px;
+  box-shadow: 0 12px 48px rgba(139, 92, 246, 0.2);
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-10px);
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1000;
+}
+
+.dropdown-menu.show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: all;
+}
+
+.dropdown-menu ul {
+  list-style: none;
+  padding: 8px;
+  margin: 0;
+}
+
+.dropdown-menu li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  cursor: pointer;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #404040;
+  transition: all 0.2s ease;
+}
+
+.dropdown-menu li:hover {
+  background: rgba(139, 92, 246, 0.08);
+  color: #7c3aed;
+  transform: translateX(4px);
+}
+
+.menu-icon {
+  font-size: 1.125rem;
+}
+
+/* Global Auth Modal */
+.global-auth-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-content {
+  position: relative;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(40px);
+  border: 2px solid rgba(139, 92, 246, 0.15);
+  border-radius: 24px;
+  padding: 48px;
+  max-width: 480px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 
+    0 24px 80px rgba(139, 92, 246, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.close-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 36px;
+  height: 36px;
+  background: rgba(139, 92, 246, 0.08);
+  border: 1.5px solid rgba(139, 92, 246, 0.2);
+  border-radius: 10px;
+  color: #737373;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.close-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #dc2626;
+  transform: rotate(90deg);
+}
+
+/* Loading State */
+.loading-state {
+  text-align: center;
+  padding: 3rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.loader-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(139, 92, 246, 0.15);
+  border-top-color: #8b5cf6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-state p {
+  font-size: 1rem;
+  color: #525252;
+  font-weight: 500;
+}
+
+/* Auth Form */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.modal-header {
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.modal-header h2 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #0a0a0a;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.02em;
+}
+
+.modal-subtitle {
+  font-size: 0.9375rem;
+  color: #737373;
+  margin: 0;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-input {
+  padding: 14px 18px;
+  border: 2px solid rgba(139, 92, 246, 0.15);
+  border-radius: 12px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #0a0a0a;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.form-input::placeholder {
+  color: #a3a3a3;
+}
+
+.form-input:focus {
+  border-color: #8b5cf6;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.08);
+}
+
+.form-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Submit Button */
+.auth-submit {
+  position: relative;
+  padding: 16px 24px;
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  border: none;
+  border-radius: 12px;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
+  margin-top: 8px;
+}
+
+.auth-submit:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.4);
+}
+
+.auth-submit:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.auth-submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.submit-glow {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.auth-submit:hover:not(:disabled) .submit-glow {
+  opacity: 1;
+}
+
+/* Divider */
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 8px 0;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1.5px solid rgba(139, 92, 246, 0.15);
+}
+
+.divider span {
+  padding: 0 16px;
+  font-size: 0.8125rem;
+  color: #a3a3a3;
+  font-weight: 500;
+}
+
+/* Google Auth Button */
+.google-auth {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 14px 24px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid rgba(139, 92, 246, 0.2);
+  border-radius: 12px;
+  color: #404040;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.google-auth:hover:not(:disabled) {
+  background: white;
+  border-color: rgba(139, 92, 246, 0.35);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.15);
+}
+
+.google-auth:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.google-icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* Switch Text */
+.switch-text {
+  text-align: center;
+  font-size: 0.875rem;
+  color: #737373;
+  margin-top: 8px;
+}
+
+.switch-link {
+  color: #7c3aed;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  border-bottom: 1.5px solid transparent;
+}
+
+.switch-link:hover {
+  color: #6d28d9;
+  border-bottom-color: #7c3aed;
+}
+
+/* Messages */
+.error-message,
+.success-message {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-top: 16px;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.error-message {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1.5px solid rgba(239, 68, 68, 0.25);
+  color: #dc2626;
+}
+
+.success-message {
+  background: rgba(34, 197, 94, 0.08);
+  border: 1.5px solid rgba(34, 197, 94, 0.25);
+  color: #15803d;
+}
+
+.message-icon {
+  font-size: 1.125rem;
+  flex-shrink: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .modal-content {
+    padding: 32px 24px;
+    border-radius: 20px;
+  }
+
+  .modal-header h2 {
+    font-size: 1.5rem;
+  }
+
+  .auth-buttons {
+    gap: 8px;
+  }
+
+  .auth-btn {
+    padding: 9px 18px;
+    font-size: 0.875rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-content {
+    padding: 28px 20px;
+    width: 95%;
+  }
+
+  .user-button {
+    padding: 9px 16px;
+    font-size: 0.875rem;
+  }
+
+  .user-greeting {
+    display: none;
+  }
+
+  .badge {
+    padding: 4px 8px;
+    font-size: 0.625rem;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+</style>
