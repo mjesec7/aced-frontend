@@ -718,10 +718,14 @@ export function useExercises() {
 
     try {
       console.log('Processing step:', currentStep);
+      console.log('Step.data:', currentStep.data);
+      console.log('Step.data is array?', Array.isArray(currentStep.data));
+      console.log('Step.content:', currentStep.content);
+      console.log('Step.content.type:', currentStep.content?.type);
 
       // Priority order for finding exercises
       if (Array.isArray(currentStep.data)) {
-        console.log('Found exercises directly in data array');
+        console.log('Found exercises directly in data array, length:', currentStep.data.length);
         exercises = currentStep.data;
       } else if (currentStep.data?.exercises && Array.isArray(currentStep.data.exercises)) {
         console.log('Found exercises in data.exercises');
