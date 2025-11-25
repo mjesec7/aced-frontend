@@ -690,9 +690,27 @@ export function useExercises() {
       return null;
     }
 
-    // Only process exercise and practice steps
-    if (!['exercise', 'practice'].includes(currentStep.type)) {
-      console.log(`Step type ${currentStep.type} is not exercise or practice`);
+    // Define all valid exercise types (including new interactive types)
+    const validExerciseTypes = [
+      'exercise',
+      'practice',
+      // New interactive exercise types
+      'data_analysis',
+      'fraction_visual',
+      'geometry_poly',
+      'chem_mixing',
+      'chem_matching',
+      'english_sentence_fix',
+      'english_sentence_order',
+      'language_noun_bag',
+      'histogram',
+      'map',
+      'block-coding'
+    ];
+
+    // Only process valid exercise types
+    if (!validExerciseTypes.includes(currentStep.type)) {
+      console.log(`Step type ${currentStep.type} is not a recognized exercise type`);
       return null;
     }
 
@@ -718,10 +736,14 @@ export function useExercises() {
         console.log('Found single exercise in data (by question or type)');
         exercises = [currentStep.data];
       } else if (currentStep.content?.question || currentStep.content?.type) {
-        console.log('Found single exercise in content.question');
+        console.log('Found single exercise in content (by question or type)');
         exercises = [currentStep.content];
       } else if (currentStep.question) {
         console.log('Found single exercise as step itself');
+        exercises = [currentStep];
+      } else {
+        // For new interactive exercise types, the step itself IS the exercise
+        console.log('Step is the exercise itself (new interactive type)');
         exercises = [currentStep];
       }
 
@@ -787,7 +809,24 @@ export function useExercises() {
   }
 
   const getTotalExercises = (currentStep) => {
-    if (!currentStep || !['exercise', 'practice'].includes(currentStep.type)) {
+    // Define all valid exercise types
+    const validExerciseTypes = [
+      'exercise',
+      'practice',
+      'data_analysis',
+      'fraction_visual',
+      'geometry_poly',
+      'chem_mixing',
+      'chem_matching',
+      'english_sentence_fix',
+      'english_sentence_order',
+      'language_noun_bag',
+      'histogram',
+      'map',
+      'block-coding'
+    ];
+
+    if (!currentStep || !validExerciseTypes.includes(currentStep.type)) {
       return 0
     }
 
@@ -801,6 +840,9 @@ export function useExercises() {
         exercises = stepData.exercises
       } else if (stepData && stepData.content && Array.isArray(stepData.content.exercises)) {
         exercises = stepData.content.exercises
+      } else {
+        // For new interactive types, there's always 1 exercise (the step itself)
+        return 1
       }
 
       return exercises.length
