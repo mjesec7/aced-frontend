@@ -724,7 +724,7 @@ export function useExercises() {
       console.log('Step.content.type:', currentStep.content?.type);
 
       // Priority order for finding exercises
-      if (Array.isArray(currentStep.data)) {
+      if (Array.isArray(currentStep.data) && currentStep.data.length > 0) {
         console.log('Found exercises directly in data array, length:', currentStep.data.length);
         exercises = currentStep.data;
       } else if (currentStep.data?.exercises && Array.isArray(currentStep.data.exercises)) {
