@@ -565,9 +565,7 @@
 import { ref, computed, watch } from 'vue';
 import { useExercises } from '@/composables/useExercises';
 import { useGeometry } from '@/composables/useGeometry';
-import { useSelectionGame } from '@/composables/useSelectionGame';
 import GeometryExercise from './GeometryExercise.vue';
-import SelectionGame from './SelectionGame.vue';
 // Modern Brilliant-style interactives with dark theme
 import ModernHistogram from './interactives/ModernHistogram.vue';
 import ModernMap from './interactives/ModernMap.vue';
