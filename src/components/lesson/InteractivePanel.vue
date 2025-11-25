@@ -199,7 +199,7 @@
       <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-100">
         
         <!-- Standard Exercises (Reading, etc.) -->
-        <div v-if="!['geometry', 'histogram', 'map', 'block-coding'].includes(exerciseType)" class="p-6 md:p-10">
+        <div v-if="!['geometry', 'histogram', 'map', 'block-coding', 'data_analysis', 'fraction_visual', 'geometry_poly', 'chem_mixing', 'chem_matching', 'english_sentence_fix', 'english_sentence_order', 'language_noun_bag'].includes(exerciseType)" class="p-6 md:p-10">
            <!-- Fallback for non-geometry exercises -->
            <div v-if="['reading', 'short-answer'].includes(exerciseType)" class="space-y-6">
               <article v-if="currentExercise.content" class="bg-blue-50 p-6 rounded-xl border border-blue-100">
@@ -259,6 +259,72 @@
             :config="currentExercise.data.config"
             @complete="handleInteractiveComplete"
             @next="emit('next-exercise')"
+          />
+        </div>
+
+        <!-- NEW INTERACTIVE STEP TYPES -->
+        
+        <!-- Data Analysis -->
+        <div v-else-if="exerciseType === 'data_analysis'" class="p-6 md:p-10">
+          <DataAnalysisStep
+            :step="currentExercise.data || currentExercise"
+            @complete="handleInteractiveComplete"
+          />
+        </div>
+
+        <!-- Fraction Visual -->
+        <div v-else-if="exerciseType === 'fraction_visual'" class="p-6 md:p-10">
+          <FractionVisualStep
+            :step="currentExercise.data || currentExercise"
+            @complete="handleInteractiveComplete"
+          />
+        </div>
+
+        <!-- Geometry Poly -->
+        <div v-else-if="exerciseType === 'geometry_poly'" class="p-6 md:p-10">
+          <GeometryPolyStep
+            :step="currentExercise.data || currentExercise"
+            @complete="handleInteractiveComplete"
+          />
+        </div>
+
+        <!-- Chemistry Mixing -->
+        <div v-else-if="exerciseType === 'chem_mixing'" class="p-6 md:p-10">
+          <ChemMixingStep
+            :step="currentExercise.data || currentExercise"
+            @complete="handleInteractiveComplete"
+          />
+        </div>
+
+        <!-- Chemistry Matching -->
+        <div v-else-if="exerciseType === 'chem_matching'" class="p-6 md:p-10">
+          <ChemMatchingStep
+            :step="currentExercise.data || currentExercise"
+            @complete="handleInteractiveComplete"
+          />
+        </div>
+
+        <!-- English Sentence Fix -->
+        <div v-else-if="exerciseType === 'english_sentence_fix'" class="p-6 md:p-10">
+          <EnglishSentenceFixStep
+            :step="currentExercise.data || currentExercise"
+            @complete="handleInteractiveComplete"
+          />
+        </div>
+
+        <!-- English Sentence Order -->
+        <div v-else-if="exerciseType === 'english_sentence_order'" class="p-6 md:p-10">
+          <EnglishSentenceOrderStep
+            :step="currentExercise.data || currentExercise"
+            @complete="handleInteractiveComplete"
+          />
+        </div>
+
+        <!-- Language Noun Bag -->
+        <div v-else-if="exerciseType === 'language_noun_bag'" class="p-6 md:p-10">
+          <LanguageNounBagStep
+            :step="currentExercise.data || currentExercise"
+            @complete="handleInteractiveComplete"
           />
         </div>
 
@@ -571,6 +637,16 @@ import HistogramExercise from './interactives/HistogramExercise.vue';
 import MapExercise from './interactives/MapExercise.vue';
 import BlockCodingExercise from './interactives/BlockCodingExercise.vue';
 
+// NEW: Import interactive step components
+import DataAnalysisStep from './interactives/DataAnalysisStep.vue';
+import FractionVisualStep from './interactives/FractionVisualStep.vue';
+import GeometryPolyStep from './interactives/GeometryPolyStep.vue';
+import ChemMixingStep from './interactives/ChemMixingStep.vue';
+import ChemMatchingStep from './interactives/ChemMatchingStep.vue';
+import EnglishSentenceFixStep from './interactives/EnglishSentenceFixStep.vue';
+import EnglishSentenceOrderStep from './interactives/EnglishSentenceOrderStep.vue';
+import LanguageNounBagStep from './interactives/LanguageNounBagStep.vue';
+
 const props = defineProps({
   currentExercise: Object,
   exerciseIndex: Number,
@@ -609,6 +685,15 @@ const normalizedExercise = ref(null);
 const exerciseType = computed(() => {
   if (props.currentExercise?.type === 'exercise' && props.currentExercise?.data?.type) {
     return props.currentExercise.data.type;
+  }
+  // NEW: Direct type matching for interactive steps
+  if ([
+    'data_analysis', 'fraction_visual', 'geometry_poly',
+    'chem_mixing', 'chem_matching', 
+    'english_sentence_fix', 'english_sentence_order',
+    'language_noun_bag'
+  ].includes(props.currentExercise?.type)) {
+    return props.currentExercise.type;
   }
   return props.currentExercise?.type || 'short-answer';
 });

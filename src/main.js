@@ -7,6 +7,7 @@ import store from './store';
 
 import './assets/css/tailwind.css';
 import './assets/css/responsive.css';
+import './assets/interactives.css';
 import 'vue-toast-notification/dist/theme-sugar.css';
 import VueToast from 'vue-toast-notification';
 
