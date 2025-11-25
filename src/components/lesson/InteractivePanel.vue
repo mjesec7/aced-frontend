@@ -631,6 +631,7 @@
 import { ref, computed, watch } from 'vue';
 import { useExercises } from '@/composables/useExercises';
 import { useGeometry } from '@/composables/useGeometry';
+import { useSelectionGame } from '@/composables/useSelectionGame';
 import GeometryExercise from './GeometryExercise.vue';
 // Light-themed Brilliant-style interactives
 import HistogramExercise from './interactives/HistogramExercise.vue';
