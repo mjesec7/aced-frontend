@@ -632,7 +632,7 @@ import { useGeometry } from '@/composables/useGeometry';
 import { useSelectionGame } from '@/composables/useSelectionGame';
 
 // Game Components
-import GameContainer from './GameContainer.vue';
+import GameContainer from '@/components/games/base/GameContainer.vue';
 
 // Interactive Components
 import HistogramExercise from './interactives/HistogramExercise.vue';
