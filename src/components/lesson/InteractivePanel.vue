@@ -227,13 +227,13 @@
         <!-- BRILLIANT-STYLE INTERACTIVES (Light Theme) -->
         <div v-else-if="exerciseType === 'histogram'" class="p-6 md:p-10">
           <HistogramExercise
-            :title="currentExercise.data.title || currentExercise.title"
-            :description="currentExercise.data.description || currentExercise.description"
-            :data="currentExercise.data.data"
-            :correctValue="currentExercise.data.correctValue"
-            :min="currentExercise.data.min"
-            :max="currentExercise.data.max"
-            :step="currentExercise.data.step"
+            :title="currentExercise.content?.data?.title || currentExercise.data?.title || currentExercise.title"
+            :description="currentExercise.content?.data?.description || currentExercise.data?.description || currentExercise.description"
+            :data="currentExercise.content?.data?.data || currentExercise.data?.data"
+            :correctValue="currentExercise.content?.data?.correctValue || currentExercise.data?.correctValue"
+            :min="currentExercise.content?.data?.min || currentExercise.data?.min"
+            :max="currentExercise.content?.data?.max || currentExercise.data?.max"
+            :step="currentExercise.content?.data?.step || currentExercise.data?.step"
             @complete="handleInteractiveComplete"
             @next="emit('next-exercise')"
           />
@@ -241,10 +241,10 @@
 
         <div v-else-if="exerciseType === 'map'" class="p-6 md:p-10">
           <MapExercise
-            :title="currentExercise.data.title || currentExercise.title"
-            :description="currentExercise.data.description || currentExercise.description"
-            :image="currentExercise.data.image"
-            :markers="currentExercise.data.markers"
+            :title="currentExercise.content?.data?.title || currentExercise.data?.title || currentExercise.title"
+            :description="currentExercise.content?.data?.description || currentExercise.data?.description || currentExercise.description"
+            :image="currentExercise.content?.data?.image || currentExercise.data?.image"
+            :markers="currentExercise.content?.data?.markers || currentExercise.data?.markers"
             @complete="handleInteractiveComplete"
             @next="emit('next-exercise')"
           />
@@ -252,11 +252,11 @@
 
         <div v-else-if="exerciseType === 'block-coding'" class="p-6 md:p-10">
           <BlockCodingExercise
-            :type="currentExercise.data.subtype || currentExercise.data.type"
-            :title="currentExercise.data.title || currentExercise.title"
-            :description="currentExercise.data.description || currentExercise.description"
-            :availableBlocks="currentExercise.data.availableBlocks"
-            :config="currentExercise.data.config"
+            :type="currentExercise.content?.data?.subtype || currentExercise.data?.subtype || currentExercise.content?.data?.type || currentExercise.data?.type"
+            :title="currentExercise.content?.data?.title || currentExercise.data?.title || currentExercise.title"
+            :description="currentExercise.content?.data?.description || currentExercise.data?.description || currentExercise.description"
+            :availableBlocks="currentExercise.content?.data?.availableBlocks || currentExercise.data?.availableBlocks"
+            :config="currentExercise.content?.data?.config || currentExercise.data?.config"
             @complete="handleInteractiveComplete"
             @next="emit('next-exercise')"
           />
@@ -684,15 +684,20 @@ const normalizedExercise = ref(null);
 
 // --- COMPUTED ---
 const exerciseType = computed(() => {
+  // Check for content.type first (lesson JSON structure)
+  if (props.currentExercise?.type === 'exercise' && props.currentExercise?.content?.type) {
+    return props.currentExercise.content.type;
+  }
+  // Fallback to data.type
   if (props.currentExercise?.type === 'exercise' && props.currentExercise?.data?.type) {
     return props.currentExercise.data.type;
   }
-  // NEW: Direct type matching for interactive steps
+  // Direct type matching for interactive steps
   if ([
     'data_analysis', 'fraction_visual', 'geometry_poly',
     'chem_mixing', 'chem_matching', 
     'english_sentence_fix', 'english_sentence_order',
-    'language_noun_bag'
+    'language_noun_bag', 'histogram', 'map', 'block-coding'
   ].includes(props.currentExercise?.type)) {
     return props.currentExercise.type;
   }
