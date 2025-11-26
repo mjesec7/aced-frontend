@@ -343,19 +343,23 @@ const checkAnswer = () => {
 .slider-track {
   position: absolute;
   width: 100%;
-  height: 10px;
-  background: #E2E8F0;
-  border-radius: 5px;
+  height: 12px;
+  background: #CBD5E1;
+  border-radius: 6px;
   overflow: hidden;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 
+    inset 0 2px 4px rgba(0, 0, 0, 0.15),
+    0 1px 2px rgba(0, 0, 0, 0.1);
   z-index: 1;
+  border: 1px solid #94A3B8;
 }
 
 .slider-fill {
   height: 100%;
   background: linear-gradient(90deg, #8B5CF6 0%, #A855F7 100%);
-  border-radius: 5px;
+  border-radius: 6px;
   transition: width 0.1s ease-out;
+  box-shadow: 0 1px 3px rgba(139, 92, 246, 0.5);
 }
 
 .slider-input {

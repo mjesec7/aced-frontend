@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-slate-50 p-4 md:p-8 font-sans">
+  <div class="interactive-panel-wrapper">
     
     <!-- GAME MODE -->
     <div v-if="isGameMode" class="w-full max-w-6xl mx-auto">
@@ -1322,5 +1322,49 @@ input[type="range"]:disabled::-moz-range-thumb {
   .interactive-container > div {
     border-radius: 16px;
   }
+}
+
+/* ============================================
+   INTERACTIVE PANEL WRAPPER - SCROLLING FIX
+   ============================================ */
+.interactive-panel-wrapper {
+  width: 100%;
+  height: 100vh;
+  max-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: #F8FAFC;
+  padding: 16px;
+}
+
+@media (min-width: 768px) {
+  .interactive-panel-wrapper {
+    padding: 24px;
+  }
+}
+
+/* Smooth scrolling */
+.interactive-panel-wrapper {
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: #CBD5E1 #F1F5F9;
+}
+
+.interactive-panel-wrapper::-webkit-scrollbar {
+  width: 8px;
+}
+
+.interactive-panel-wrapper::-webkit-scrollbar-track {
+  background: #F1F5F9;
+  border-radius: 4px;
+}
+
+.interactive-panel-wrapper::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 4px;
+}
+
+.interactive-panel-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
 }
 </style>
