@@ -1194,73 +1194,42 @@ sound.pronounceWord?.(word)
       console.log('Current Step Type:', step.type, 'Index:', lessonOrchestrator.currentIndex.value)
 
       // ✅ CRITICAL FIX: Force Game Object Creation
-      // GAME RENDERING EXPLANATION:
-      // Games in the lesson JSON have type='game' or gameType property (e.g., 'basket-catch', 'whack-a-mole')
-      // Previously, games were returning null because useExercises.getCurrentExercise() skipped game steps
-      // This caused InteractivePanel to show "Loading..." indefinitely
-      //
-      // SOLUTION: Detect game steps early and construct a standardized game object
-      // This object gets passed to InteractivePanel which triggers v-if="isGameMode"
-      // The GameContainer component then receives gameData and gameType props to render the game
-      //
-      // EXPECTED JSON STRUCTURE:
-      // {
-      //   type: 'game',
-      //   gameType: 'basket-catch' | 'whack-a-mole',
-      //   gameConfig: { targetScore, timeLimit, items, correctAnswers, wrongAnswers, questions },
-      //   instructions: 'Play the game to practice!',
-      //   description: 'Catch falling items'
-      // }
-      //
-      // We check for 'game' type OR if gameConfig exists in data
       if (step.type === 'game' || step.gameType || (step.data && step.data.gameConfig)) {
-          // ✅ FIX: Explicitly handle Game Steps
-         // Extract game type, prioritizing specific overrides
-         const specificGameType = step.gameType ||
-                                  (step.gameConfig && step.gameConfig.type) ||
-                                  (step.gameConfig && step.gameConfig.gameType) ||
-                                  (step.data && step.data.gameType) ||
-                                  (step.data && step.data.type) ||
-                                  (step.type === 'whack-a-mole' ? 'whack-a-mole' : null) || 
-                                  (step.type === 'basket-catch' ? 'basket-catch' : null) ||
-                                  'basket-catch'; // Only fallback if absolutely nothing else exists
+        const specificGameType = step.gameType ||
+                                (step.gameConfig && step.gameConfig.type) ||
+                                (step.gameConfig && step.gameConfig.gameType) ||
+                                (step.data && step.data.gameType) ||
+                                (step.data && step.data.type) ||
+                                (step.type === 'whack-a-mole' ? 'whack-a-mole' : null) || 
+                                (step.type === 'basket-catch' ? 'basket-catch' : null) ||
+                                'basket-catch';
 
-         console.log(`🎮 Game Step Detected! Type: ${specificGameType}`);
+        console.log(`🎮 Game Step Detected! Type: ${specificGameType}`);
 
-         // Construct a standardized game object that InteractivePanel expects
-         // CRITICAL: Spread step FIRST, then override with our corrected values
-         return {
-            ...step, // Spread original step data first
-            _id: step._id || `game_${lessonOrchestrator.currentIndex.value}`,
-            id: step.id || `game_${lessonOrchestrator.currentIndex.value}`,
-            type: 'game', // Force type to 'game'
-            title: step.title || 'Game',
-            description: step.instructions || step.description || '',
-
-            // ✅ CRITICAL: Override gameType AFTER spreading step
+        return {
+          ...step,
+          _id: step._id || `game_${lessonOrchestrator.currentIndex.value}`,
+          id: step.id || `game_${lessonOrchestrator.currentIndex.value}`,
+          type: 'game',
+          title: step.title || 'Game',
+          description: step.instructions || step.description || '',
+          gameType: specificGameType,
+          gameConfig: {
+            ...(step.gameConfig || {}),
+            ...(step.data || {}),
             gameType: specificGameType,
-
-            // Ensure config is flattened and accessible
-            gameConfig: {
-               ...(step.gameConfig || {}),
-               ...(step.data || {}),
-               gameType: specificGameType, // redundancy for safety
-               questions: step.gameConfig?.questions || step.data?.questions || step.questions || []
-            },
-            questions: step.questions || step.gameConfig?.questions || step.data?.questions || [],
-            instructions: step.instructions || step.description || "Play the game!",
-         };
+            questions: step.gameConfig?.questions || step.data?.questions || step.questions || []
+          },
+          questions: step.questions || step.gameConfig?.questions || step.data?.questions || [],
+          instructions: step.instructions || step.description || "Play the game!",
+        };
       }
 
       // ✅ FIX: Handle Steps with Data Arrays (Exercises/Quizzes)
-      // If step.data is an array, pick the specific item based on currentExerciseIndex
-      // Only proceed here if it is NOT a game
       if (['exercise', 'quiz', 'practice'].includes(step.type) && Array.isArray(step.data)) {
-        // Use the index from exercises composable, default to 0
         const index = exercises.currentExerciseIndex.value || 0
         const specificExercise = step.data[index]
 
-        // Ensure we return a valid object and trigger initialization if it changes
         if (specificExercise) {
           const exerciseId = specificExercise.id || `${step.id}_${index}`
 
@@ -1279,21 +1248,35 @@ sound.pronounceWord?.(word)
         }
       }
 
-      // ✅ FIX: Handle exercises with type="exercise" and nested data.type (e.g., geometry, matching)
-      // For these exercises, the step itself IS the exercise object
-      // BUT we need to normalize the structure so templates can access properties directly
-      if (step.type === 'exercise' && step.data && step.data.type) {
-        console.log(`📐 Detected ${step.data.type} exercise, returning step as exercise`);
-        const exerciseId = step.id || `${step.data.type}_${lessonOrchestrator.currentIndex.value}`;
+      // ✅✅✅ CRITICAL FIX: Handle exercises with CONTENT.type (your lesson structure)
+      // This handles: histogram, map, block-coding, data_analysis, fraction_visual, etc.
+      if (step.type === 'exercise' && step.content && step.content.type) {
+        console.log(`📊 Detected ${step.content.type} exercise via content.type`);
+        const exerciseId = step.id || step._id || `${step.content.type}_${lessonOrchestrator.currentIndex.value}`;
         
-        // ✅ CRITICAL FIX: Spread data properties to root level
-        // BUT preserve step.type by spreading in correct order
-        // Order matters: data first, then step, so step.type doesn't get overwritten
+        // Build normalized exercise object
+        // The key is to merge content.data into the exercise while preserving step metadata
         const normalizedExercise = {
-          ...step.data,      // Spread data properties first (pairs, shape, mode, etc.)
-          ...step,           // Then spread step properties (type, title, instruction override data.type)
-          exerciseType: step.data.type,  // Explicitly set exerciseType for clarity
-          data: step.data    // Keep original data object for reference
+          // Step-level properties
+          _id: step._id,
+          id: step.id,
+          type: 'exercise',  // Keep as 'exercise' for InteractivePanel routing
+          order: step.order,
+          title: step.title,
+          instructions: step.instructions,
+          description: step.instructions || step.description,
+          difficulty: step.difficulty,
+          estimatedDuration: step.estimatedDuration,
+          scoring: step.scoring,
+          
+          // Content structure (what InteractivePanel needs)
+          content: step.content,  // Keep original content object
+          
+          // Also provide data for backwards compatibility
+          data: step.content.data || step.content,
+          
+          // Exercise-specific type for InteractivePanel's exerciseType computed
+          exerciseType: step.content.type,
         };
         
         if (initializationTracker.value.currentExerciseId !== exerciseId) {
@@ -1303,10 +1286,64 @@ sound.pronounceWord?.(word)
             initializationTracker.value.initialized = true;
           });
         }
-        return normalizedExercise; // Return normalized exercise
+        
+        console.log('Returning normalized exercise:', normalizedExercise);
+        return normalizedExercise;
       }
 
-      // Fallback to existing logic (for single-item steps or games)
+      // ✅ FIX: Handle exercises with DATA.type (alternative structure)
+      if (step.type === 'exercise' && step.data && typeof step.data === 'object' && !Array.isArray(step.data) && step.data.type) {
+        console.log(`📐 Detected ${step.data.type} exercise via data.type`);
+        const exerciseId = step.id || `${step.data.type}_${lessonOrchestrator.currentIndex.value}`;
+        
+        const normalizedExercise = {
+          ...step.data,
+          ...step,
+          exerciseType: step.data.type,
+          data: step.data,
+          content: step.data  // Also set content for consistency
+        };
+        
+        if (initializationTracker.value.currentExerciseId !== exerciseId) {
+          initializationTracker.value = { currentExerciseId: exerciseId, initialized: false };
+          nextTick(() => {
+            exercises.initializeCurrentExerciseData(normalizedExercise);
+            initializationTracker.value.initialized = true;
+          });
+        }
+        return normalizedExercise;
+      }
+
+      // ✅ Handle direct interactive step types (data_analysis, fraction_visual, etc.)
+      const directInteractiveTypes = [
+        'data_analysis', 'fraction_visual', 'geometry_poly',
+        'chem_mixing', 'chem_matching',
+        'english_sentence_fix', 'english_sentence_order',
+        'language_noun_bag', 'histogram', 'map', 'block-coding'
+      ];
+      
+      if (directInteractiveTypes.includes(step.type)) {
+        console.log(`🎯 Direct interactive step type: ${step.type}`);
+        const exerciseId = step.id || step._id || `${step.type}_${lessonOrchestrator.currentIndex.value}`;
+        
+        const normalizedExercise = {
+          ...step,
+          exerciseType: step.type,
+          content: step.content || step,
+          data: step.content?.data || step.data || step
+        };
+        
+        if (initializationTracker.value.currentExerciseId !== exerciseId) {
+          initializationTracker.value = { currentExerciseId: exerciseId, initialized: false };
+          nextTick(() => {
+            exercises.initializeCurrentExerciseData(normalizedExercise);
+            initializationTracker.value.initialized = true;
+          });
+        }
+        return normalizedExercise;
+      }
+
+      // Fallback to existing logic (for single-item steps)
       const exercise = exercises.getCurrentExercise(step)
       if (exercise) {
         const exerciseId = exercise.id || `${exercise.type}_${exercise.question?.substring(0, 20)}`
