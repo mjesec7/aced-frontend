@@ -41,12 +41,6 @@
           class="slider-input"
           :disabled="isCorrect"
         />
-        <div 
-          class="slider-thumb-indicator"
-          :style="{ left: `calc(${((currentValue - min) / (max - min)) * 100}% - 12px)` }"
-        >
-          <div class="thumb-circle"></div>
-        </div>
       </div>
       
       <p class="slider-hint">Drag the slider to select the value</p>
@@ -270,22 +264,22 @@ const checkAnswer = () => {
 
 /* Header */
 .exercise-header {
-  padding: 28px 32px 20px;
+  padding: 24px 28px 18px;
   text-align: center;
   background: linear-gradient(180deg, #FAFBFC 0%, #FFFFFF 100%);
   border-bottom: 1px solid rgba(226, 232, 240, 0.6);
 }
 
 .exercise-title {
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   font-weight: 700;
   color: #1E293B;
-  margin: 0 0 8px 0;
+  margin: 0 0 6px 0;
   letter-spacing: -0.02em;
 }
 
 .exercise-description {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   color: #64748B;
   margin: 0;
   line-height: 1.5;
@@ -294,8 +288,8 @@ const checkAnswer = () => {
 /* Chart Container */
 .chart-container {
   position: relative;
-  height: 280px;
-  padding: 24px 24px 16px;
+  height: 240px;
+  padding: 20px 20px 14px;
   background: #FFFFFF;
 }
 
@@ -349,28 +343,96 @@ const checkAnswer = () => {
 .slider-track {
   position: absolute;
   width: 100%;
-  height: 8px;
+  height: 10px;
   background: #E2E8F0;
-  border-radius: 4px;
+  border-radius: 5px;
   overflow: hidden;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 1;
 }
 
 .slider-fill {
   height: 100%;
   background: linear-gradient(90deg, #8B5CF6 0%, #A855F7 100%);
-  border-radius: 4px;
+  border-radius: 5px;
   transition: width 0.1s ease-out;
 }
 
 .slider-input {
-  position: absolute;
+  position: relative;
   width: 100%;
   height: 48px;
-  opacity: 0;
   cursor: pointer;
-  z-index: 10;
+  z-index: 20;
   margin: 0;
+  background: transparent;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+.slider-input::-webkit-slider-runnable-track {
+  height: 10px;
+  background: transparent;
+  border: none;
+}
+
+.slider-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 26px;
+  height: 26px;
+  background: #FFFFFF;
+  border: 4px solid #8B5CF6;
+  border-radius: 50%;
+  margin-top: -8px;
+  cursor: grab;
+  box-shadow: 
+    0 2px 8px rgba(139, 92, 246, 0.4),
+    0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.slider-input::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 
+    0 3px 12px rgba(139, 92, 246, 0.5),
+    0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.slider-input::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.1);
+}
+
+.slider-input::-moz-range-track {
+  height: 10px;
+  background: transparent;
+  border: none;
+}
+
+.slider-input::-moz-range-thumb {
+  width: 26px;
+  height: 26px;
+  background: #FFFFFF;
+  border: 4px solid #8B5CF6;
+  border-radius: 50%;
+  cursor: grab;
+  box-shadow: 
+    0 2px 8px rgba(139, 92, 246, 0.4),
+    0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.slider-input::-moz-range-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 
+    0 3px 12px rgba(139, 92, 246, 0.5),
+    0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.slider-input::-moz-range-thumb:active {
+  cursor: grabbing;
 }
 
 .slider-input:disabled {
@@ -378,36 +440,7 @@ const checkAnswer = () => {
 }
 
 .slider-thumb-indicator {
-  position: absolute;
-  width: 24px;
-  height: 24px;
-  pointer-events: none;
-  z-index: 5;
-  transition: left 0.1s ease-out;
-}
-
-.thumb-circle {
-  width: 24px;
-  height: 24px;
-  background: #FFFFFF;
-  border: 3px solid #8B5CF6;
-  border-radius: 50%;
-  box-shadow: 
-    0 2px 8px rgba(139, 92, 246, 0.3),
-    0 4px 12px rgba(0, 0, 0, 0.1);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.slider-input:hover + .slider-thumb-indicator .thumb-circle,
-.slider-input:focus + .slider-thumb-indicator .thumb-circle {
-  transform: scale(1.1);
-  box-shadow: 
-    0 2px 12px rgba(139, 92, 246, 0.4),
-    0 6px 16px rgba(0, 0, 0, 0.15);
-}
-
-.slider-input:active + .slider-thumb-indicator .thumb-circle {
-  transform: scale(1.05);
+  display: none; /* Hide the custom indicator since browser native works better */
 }
 
 .slider-hint {
@@ -534,32 +567,36 @@ const checkAnswer = () => {
 }
 
 /* Responsive */
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .histogram-exercise {
     border-radius: 16px;
-    margin: 0 8px;
+    margin: 0;
   }
 
   .exercise-header {
-    padding: 20px 20px 16px;
+    padding: 18px 18px 14px;
   }
 
   .exercise-title {
-    font-size: 1.25rem;
+    font-size: 1.15rem;
+  }
+
+  .exercise-description {
+    font-size: 0.85rem;
   }
 
   .chart-container {
-    height: 220px;
-    padding: 16px 12px;
+    height: 200px;
+    padding: 14px 12px;
   }
 
   .slider-section {
-    padding: 20px 20px 24px;
+    padding: 18px 18px 20px;
   }
 
   .slider-header {
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 10px;
   }
 
   .slider-label {
@@ -570,18 +607,55 @@ const checkAnswer = () => {
     order: -1;
     width: 100%;
     text-align: center;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
+    padding: 6px 16px;
+  }
+
+  .value-number {
+    font-size: 1.1rem;
   }
 
   .action-section {
-    padding: 20px 20px 28px;
+    padding: 18px 18px 24px;
   }
 
   .btn-check,
   .btn-continue {
     width: 100%;
     justify-content: center;
-    padding: 16px 24px;
+    padding: 14px 20px;
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .chart-container {
+    height: 180px;
+    padding: 12px 8px;
+  }
+
+  .slider-section {
+    padding: 16px 16px 18px;
+  }
+
+  .slider-wrapper {
+    height: 40px;
+  }
+
+  .slider-track {
+    height: 8px;
+  }
+
+  .slider-input::-webkit-slider-thumb {
+    width: 22px;
+    height: 22px;
+    border: 3px solid #8B5CF6;
+  }
+
+  .slider-input::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+    border: 3px solid #8B5CF6;
   }
 }
 </style>

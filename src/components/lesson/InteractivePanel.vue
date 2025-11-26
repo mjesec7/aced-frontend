@@ -184,10 +184,13 @@
     </div>
 
     <!-- EXERCISE MODE -->
-    <div v-else-if="currentExercise" class="max-w-6xl mx-auto">
+    <div v-else-if="currentExercise" class="max-w-6xl mx-auto h-full overflow-y-auto px-2 md:px-4">
 
-      <!-- Header -->
-      <header class="mb-8 text-center">
+      <!-- Header (hidden for interactive types that manage their own header) -->
+      <header 
+        v-if="!['histogram', 'map', 'block-coding', 'data_analysis', 'fraction_visual', 'geometry_poly', 'chem_mixing', 'chem_matching', 'english_sentence_fix', 'english_sentence_order', 'language_noun_bag'].includes(exerciseType)"
+        class="mb-8 text-center"
+      >
         <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-purple-100 text-purple-600 font-bold text-xl mb-4 shadow-sm">
           {{ exerciseIndex + 1 }}
         </div>
