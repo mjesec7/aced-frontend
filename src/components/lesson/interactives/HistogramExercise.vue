@@ -1,78 +1,86 @@
 <template>
-  <div class="w-full max-w-4xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-100">
-    <div class="p-6 md:p-10">
-      <!-- Header -->
-      <div class="text-center mb-8">
-        <h2 class="text-2xl font-bold text-slate-900 mb-2">{{ title }}</h2>
-        <p class="text-slate-600">{{ description }}</p>
+  <div class="histogram-exercise">
+    <!-- Header - Only show once -->
+    <div class="exercise-header">
+      <h2 class="exercise-title">{{ title }}</h2>
+      <p class="exercise-description">{{ description }}</p>
+    </div>
+
+    <!-- Chart Container -->
+    <div class="chart-container">
+      <Bar
+        v-if="chartData"
+        :data="chartData"
+        :options="chartOptions"
+      />
+    </div>
+
+    <!-- Interactive Slider Section -->
+    <div class="slider-section">
+      <div class="slider-header">
+        <span class="slider-label">{{ minLabel || 'Population' }}</span>
+        <div class="current-value-display">
+          <span class="value-number">{{ currentValue }}</span>
+        </div>
+        <span class="slider-label">{{ maxLabel || max + 'k' }}</span>
       </div>
 
-      <!-- Chart Container -->
-      <div class="relative h-64 md:h-80 w-full mb-8">
-        <Bar
-          v-if="chartData"
-          :data="chartData"
-          :options="chartOptions"
+      <div class="slider-wrapper">
+        <div class="slider-track">
+          <div 
+            class="slider-fill" 
+            :style="{ width: `${((currentValue - min) / (max - min)) * 100}%` }"
+          ></div>
+        </div>
+        <input
+          type="range"
+          :min="min"
+          :max="max"
+          :step="step"
+          v-model.number="currentValue"
+          class="slider-input"
+          :disabled="isCorrect"
         />
-      </div>
-
-      <!-- Interactive Slider Section -->
-      <div class="bg-slate-50 rounded-xl p-6 border border-slate-200">
-        <div class="flex justify-between items-center mb-4">
-          <span class="text-sm font-semibold text-slate-500">{{ minLabel }}</span>
-          <div class="bg-slate-900 text-white px-3 py-1 rounded-lg font-mono font-bold text-lg">
-            {{ currentValue }}
-          </div>
-          <span class="text-sm font-semibold text-slate-500">{{ maxLabel }}</span>
-        </div>
-
-        <div class="relative w-full h-12 flex items-center">
-          <input
-            type="range"
-            :min="min"
-            :max="max"
-            :step="step"
-            v-model.number="currentValue"
-            class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-purple-600 hover:accent-purple-700 transition-all"
-            :disabled="isCorrect"
-          />
-        </div>
-        
-        <p class="text-center text-sm text-slate-500 mt-2">
-          Drag the slider to select the value
-        </p>
-      </div>
-
-      <!-- Feedback & Action -->
-      <div class="mt-8 flex flex-col items-center">
-        <transition name="fade-scale" mode="out-in">
-          <div v-if="showFeedback" class="mb-6 text-center">
-            <div 
-              class="inline-flex items-center gap-2 px-6 py-3 rounded-full border-2"
-              :class="isCorrect ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'"
-            >
-              <span class="text-xl font-bold">{{ isCorrect ? '✓' : '✕' }}</span>
-              <span class="font-semibold">{{ isCorrect ? 'Correct!' : 'Try Again' }}</span>
-            </div>
-          </div>
-        </transition>
-
-        <button
-          v-if="!isCorrect"
-          @click="checkAnswer"
-          class="px-8 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-all transform active:scale-95 shadow-lg hover:shadow-xl"
+        <div 
+          class="slider-thumb-indicator"
+          :style="{ left: `calc(${((currentValue - min) / (max - min)) * 100}% - 12px)` }"
         >
-          Check Answer
-        </button>
-        
-        <button
-          v-else
-          @click="$emit('next')"
-          class="px-8 py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition-all transform active:scale-95 shadow-lg hover:shadow-xl flex items-center gap-2"
-        >
-          Continue <span class="text-xl">→</span>
-        </button>
+          <div class="thumb-circle"></div>
+        </div>
       </div>
+      
+      <p class="slider-hint">Drag the slider to select the value</p>
+    </div>
+
+    <!-- Feedback & Action -->
+    <div class="action-section">
+      <transition name="feedback-transition" mode="out-in">
+        <div v-if="showFeedback" class="feedback-container">
+          <div :class="['feedback-badge', isCorrect ? 'feedback-success' : 'feedback-error']">
+            <span class="feedback-icon">{{ isCorrect ? '✓' : '✕' }}</span>
+            <span class="feedback-text">{{ isCorrect ? 'Correct!' : 'Try Again' }}</span>
+          </div>
+        </div>
+      </transition>
+
+      <button
+        v-if="!isCorrect"
+        @click="checkAnswer"
+        class="btn-check"
+      >
+        Check Answer
+      </button>
+      
+      <button
+        v-else
+        @click="$emit('next')"
+        class="btn-continue"
+      >
+        Continue
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </button>
     </div>
   </div>
 </template>
@@ -100,11 +108,11 @@ const props = defineProps({
   },
   title: {
     type: String,
-    default: 'Data Analysis'
+    default: 'City Population Distribution'
   },
   description: {
     type: String,
-    default: 'Analyze the histogram and find the specific value.'
+    default: 'Use the slider to find the median population value'
   },
   correctValue: {
     type: Number,
@@ -116,19 +124,19 @@ const props = defineProps({
   },
   max: {
     type: Number,
-    default: 100
+    default: 100000
   },
   step: {
     type: Number,
-    default: 1
+    default: 100
   },
   minLabel: {
     type: String,
-    default: '0'
+    default: 'Population'
   },
   maxLabel: {
     type: String,
-    default: '100'
+    default: '80k'
   }
 });
 
@@ -144,9 +152,10 @@ const chartData = computed(() => ({
   datasets: [
     {
       label: 'Frequency',
-      backgroundColor: '#eab308', // Yellow-500 matching the reference
-      hoverBackgroundColor: '#ca8a04',
-      borderRadius: 4,
+      backgroundColor: '#FBBF24', // Amber/Yellow matching screenshot
+      hoverBackgroundColor: '#F59E0B',
+      borderRadius: 6,
+      borderSkipped: false,
       data: props.data.values
     }
   ]
@@ -159,39 +168,78 @@ const chartOptions = {
     legend: {
       display: false
     },
+    title: {
+      display: false // We have our own header
+    },
     tooltip: {
-      backgroundColor: '#1e293b',
+      backgroundColor: 'rgba(15, 23, 42, 0.9)',
       padding: 12,
-      titleFont: { size: 14 },
-      bodyFont: { size: 14 },
+      titleFont: { 
+        size: 13, 
+        weight: '600',
+        family: "'Inter', 'Segoe UI', sans-serif" 
+      },
+      bodyFont: { 
+        size: 14,
+        family: "'Inter', 'Segoe UI', sans-serif" 
+      },
       cornerRadius: 8,
-      displayColors: false
+      displayColors: false,
+      callbacks: {
+        label: function(context) {
+          return `Count: ${context.raw}`;
+        }
+      }
     }
   },
   scales: {
     y: {
       beginAtZero: true,
       grid: {
-        color: '#f1f5f9'
+        color: 'rgba(148, 163, 184, 0.1)',
+        drawBorder: false
+      },
+      border: {
+        display: false
       },
       ticks: {
-        font: { family: "'Inter', sans-serif" }
+        font: { 
+          family: "'Inter', 'Segoe UI', sans-serif",
+          size: 12 
+        },
+        color: '#64748B',
+        padding: 8
       }
     },
     x: {
       grid: {
         display: false
       },
+      border: {
+        display: false
+      },
       ticks: {
-        font: { family: "'Inter', sans-serif" }
+        font: { 
+          family: "'Inter', 'Segoe UI', sans-serif",
+          size: 11 
+        },
+        color: '#64748B',
+        padding: 8
       }
+    }
+  },
+  layout: {
+    padding: {
+      top: 10,
+      bottom: 10
     }
   }
 };
 
 const checkAnswer = () => {
-  // Allow for a small margin of error if needed, but for exact values:
-  if (currentValue.value === props.correctValue) {
+  // Allow for a tolerance based on step size
+  const tolerance = props.step * 2;
+  if (Math.abs(currentValue.value - props.correctValue) <= tolerance) {
     isCorrect.value = true;
     showFeedback.value = true;
     emit('complete', true);
@@ -206,49 +254,334 @@ const checkAnswer = () => {
 </script>
 
 <style scoped>
-/* Custom Range Slider Styling */
-input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  height: 24px;
-  width: 24px;
-  border-radius: 50%;
+.histogram-exercise {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
   background: #ffffff;
-  border: 4px solid #7c3aed; /* purple-600 */
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-  margin-top: -8px; /* You need to specify a margin in Chrome, but in Firefox and IE it is automatic */
+  border-radius: 20px;
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.05),
+    0 10px 15px -3px rgba(0, 0, 0, 0.08),
+    0 20px 25px -5px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  border: 1px solid rgba(226, 232, 240, 0.8);
 }
 
-input[type=range]::-moz-range-thumb {
-  height: 24px;
-  width: 24px;
-  border-radius: 50%;
-  background: #ffffff;
-  border: 4px solid #7c3aed;
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+/* Header */
+.exercise-header {
+  padding: 28px 32px 20px;
+  text-align: center;
+  background: linear-gradient(180deg, #FAFBFC 0%, #FFFFFF 100%);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.6);
 }
 
-input[type=range]::-webkit-slider-runnable-track {
+.exercise-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1E293B;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.02em;
+}
+
+.exercise-description {
+  font-size: 0.95rem;
+  color: #64748B;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Chart Container */
+.chart-container {
+  position: relative;
+  height: 280px;
+  padding: 24px 24px 16px;
+  background: #FFFFFF;
+}
+
+/* Slider Section */
+.slider-section {
+  padding: 24px 32px 28px;
+  background: linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%);
+  border-top: 1px solid rgba(226, 232, 240, 0.6);
+}
+
+.slider-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.slider-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #94A3B8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.current-value-display {
+  background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
+  padding: 8px 20px;
+  border-radius: 12px;
+  box-shadow: 
+    0 4px 12px rgba(30, 41, 59, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.value-number {
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  letter-spacing: 0.02em;
+}
+
+/* Custom Slider */
+.slider-wrapper {
+  position: relative;
+  height: 48px;
+  display: flex;
+  align-items: center;
+}
+
+.slider-track {
+  position: absolute;
   width: 100%;
   height: 8px;
-  cursor: pointer;
-  background: #e2e8f0;
+  background: #E2E8F0;
   border-radius: 4px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
-input[type=range]:focus::-webkit-slider-runnable-track {
-  background: #cbd5e1;
+.slider-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #8B5CF6 0%, #A855F7 100%);
+  border-radius: 4px;
+  transition: width 0.1s ease-out;
 }
 
-.fade-scale-enter-active,
-.fade-scale-leave-active {
+.slider-input {
+  position: absolute;
+  width: 100%;
+  height: 48px;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 10;
+  margin: 0;
+}
+
+.slider-input:disabled {
+  cursor: not-allowed;
+}
+
+.slider-thumb-indicator {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  pointer-events: none;
+  z-index: 5;
+  transition: left 0.1s ease-out;
+}
+
+.thumb-circle {
+  width: 24px;
+  height: 24px;
+  background: #FFFFFF;
+  border: 3px solid #8B5CF6;
+  border-radius: 50%;
+  box-shadow: 
+    0 2px 8px rgba(139, 92, 246, 0.3),
+    0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.slider-input:hover + .slider-thumb-indicator .thumb-circle,
+.slider-input:focus + .slider-thumb-indicator .thumb-circle {
+  transform: scale(1.1);
+  box-shadow: 
+    0 2px 12px rgba(139, 92, 246, 0.4),
+    0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+.slider-input:active + .slider-thumb-indicator .thumb-circle {
+  transform: scale(1.05);
+}
+
+.slider-hint {
+  text-align: center;
+  font-size: 0.85rem;
+  color: #94A3B8;
+  margin: 16px 0 0 0;
+}
+
+/* Action Section */
+.action-section {
+  padding: 24px 32px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  background: #FFFFFF;
+}
+
+.feedback-container {
+  margin-bottom: 8px;
+}
+
+.feedback-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 24px;
+  border-radius: 100px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  border: 2px solid;
   transition: all 0.3s ease;
 }
 
-.fade-scale-enter-from,
-.fade-scale-leave-to {
+.feedback-success {
+  background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%);
+  border-color: #6EE7B7;
+  color: #047857;
+}
+
+.feedback-error {
+  background: linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 100%);
+  border-color: #FCA5A5;
+  color: #DC2626;
+}
+
+.feedback-icon {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+/* Buttons */
+.btn-check,
+.btn-continue {
+  padding: 14px 32px;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-check {
+  background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
+  color: #FFFFFF;
+  box-shadow: 
+    0 4px 14px rgba(30, 41, 59, 0.25),
+    0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-check:hover {
+  background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+  transform: translateY(-2px);
+  box-shadow: 
+    0 6px 20px rgba(30, 41, 59, 0.3),
+    0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-check:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.btn-continue {
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  color: #FFFFFF;
+  box-shadow: 
+    0 4px 14px rgba(16, 185, 129, 0.3),
+    0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-continue:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  transform: translateY(-2px);
+  box-shadow: 
+    0 6px 20px rgba(16, 185, 129, 0.35),
+    0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-continue:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.btn-icon {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.5;
+}
+
+/* Transitions */
+.feedback-transition-enter-active,
+.feedback-transition-leave-active {
+  transition: all 0.3s ease;
+}
+
+.feedback-transition-enter-from,
+.feedback-transition-leave-to {
   opacity: 0;
-  transform: scale(0.9);
+  transform: scale(0.9) translateY(-10px);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .histogram-exercise {
+    border-radius: 16px;
+    margin: 0 8px;
+  }
+
+  .exercise-header {
+    padding: 20px 20px 16px;
+  }
+
+  .exercise-title {
+    font-size: 1.25rem;
+  }
+
+  .chart-container {
+    height: 220px;
+    padding: 16px 12px;
+  }
+
+  .slider-section {
+    padding: 20px 20px 24px;
+  }
+
+  .slider-header {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .slider-label {
+    font-size: 0.7rem;
+  }
+
+  .current-value-display {
+    order: -1;
+    width: 100%;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+
+  .action-section {
+    padding: 20px 20px 28px;
+  }
+
+  .btn-check,
+  .btn-continue {
+    width: 100%;
+    justify-content: center;
+    padding: 16px 24px;
+  }
 }
 </style>

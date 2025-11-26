@@ -199,21 +199,21 @@
       <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-100">
         
         <!-- HISTOGRAM EXERCISE -->
-        <div v-if="exerciseType === 'histogram'" class="p-6 md:p-10">
+        <template v-if="exerciseType === 'histogram'">
           <HistogramExercise
             :title="exerciseContentData.title || exerciseTitle"
             :description="exerciseContentData.description || exerciseDescription"
             :data="exerciseContentData.data"
             :correctValue="exerciseContentData.correctValue"
             :min="exerciseContentData.min || 0"
-            :max="exerciseContentData.max || 100"
-            :step="exerciseContentData.step || 1"
-            :minLabel="exerciseContentData.minLabel"
-            :maxLabel="exerciseContentData.maxLabel"
+            :max="exerciseContentData.max || 100000"
+            :step="exerciseContentData.step || 100"
+            :minLabel="exerciseContentData.minLabel || 'Population'"
+            :maxLabel="exerciseContentData.maxLabel || '80k'"
             @complete="handleInteractiveComplete"
             @next="emit('next-exercise')"
           />
-        </div>
+        </template>
 
         <!-- MAP EXERCISE -->
         <div v-else-if="exerciseType === 'map'" class="p-6 md:p-10">
@@ -1037,5 +1037,287 @@ const handleGameExit = () => {
 /* Button active state */
 .active\:scale-98:active {
   transform: scale(0.98);
+}
+
+/* Exercise content wrapper - minimal styling, let components handle their own */
+.exercise-content-wrapper {
+  width: 100%;
+}
+
+/* Inner padding for exercises that don't have their own container */
+.exercise-inner-padding {
+  padding: 24px;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.05),
+    0 10px 15px -3px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+@media (max-width: 768px) {
+  .exercise-inner-padding {
+    padding: 16px;
+    border-radius: 16px;
+  }
+}
+
+/* ============================================
+   HISTOGRAM EXERCISE CONTAINER FIX
+   Prevents duplicate headers when HistogramExercise 
+   is rendered inside InteractivePanel
+   ============================================ */
+
+/* Hide the outer exercise header when histogram has its own */
+.split-panel.interactive-side .interactive-container > div[class*="histogram"] header,
+.split-panel.interactive-side .bg-white.rounded-2xl > header {
+  display: none;
+}
+
+/* Let HistogramExercise manage its own header */
+.histogram-exercise .exercise-header {
+  display: block !important;
+}
+
+/* ============================================
+   GENERAL INTERACTIVE PANEL IMPROVEMENTS
+   ============================================ */
+
+/* Modern card styling for exercise containers */
+.interactive-container {
+  background: transparent;
+  padding: 0;
+}
+
+.interactive-container > div {
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+/* Remove redundant borders/shadows when component has its own */
+.interactive-container .bg-white.rounded-2xl.shadow-xl {
+  box-shadow: none;
+  border: none;
+  background: transparent;
+}
+
+/* ============================================
+   SLIDER FIXES (Cross-browser)
+   ============================================ */
+
+/* Base slider reset */
+input[type="range"] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* Webkit (Chrome, Safari, Edge) Track */
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 8px;
+  background: #E2E8F0;
+  border-radius: 4px;
+  border: none;
+}
+
+/* Webkit Thumb */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  background: #FFFFFF;
+  border: 3px solid #8B5CF6;
+  border-radius: 50%;
+  margin-top: -8px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+}
+
+input[type="range"]::-webkit-slider-thumb:active {
+  transform: scale(1.05);
+}
+
+/* Firefox Track */
+input[type="range"]::-moz-range-track {
+  height: 8px;
+  background: #E2E8F0;
+  border-radius: 4px;
+  border: none;
+}
+
+/* Firefox Thumb */
+input[type="range"]::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  background: #FFFFFF;
+  border: 3px solid #8B5CF6;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+}
+
+input[type="range"]::-moz-range-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+}
+
+/* Firefox Progress (filled part) */
+input[type="range"]::-moz-range-progress {
+  height: 8px;
+  background: linear-gradient(90deg, #8B5CF6 0%, #A855F7 100%);
+  border-radius: 4px;
+}
+
+/* Focus states */
+input[type="range"]:focus {
+  outline: none;
+}
+
+input[type="range"]:focus::-webkit-slider-thumb {
+  box-shadow: 
+    0 0 0 3px rgba(139, 92, 246, 0.2),
+    0 2px 8px rgba(139, 92, 246, 0.3);
+}
+
+input[type="range"]:focus::-moz-range-thumb {
+  box-shadow: 
+    0 0 0 3px rgba(139, 92, 246, 0.2),
+    0 2px 8px rgba(139, 92, 246, 0.3);
+}
+
+/* Disabled state */
+input[type="range"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+input[type="range"]:disabled::-webkit-slider-thumb {
+  background: #CBD5E1;
+  border-color: #94A3B8;
+  cursor: not-allowed;
+}
+
+input[type="range"]:disabled::-moz-range-thumb {
+  background: #CBD5E1;
+  border-color: #94A3B8;
+  cursor: not-allowed;
+}
+
+/* ============================================
+   SPLIT PANEL LAYOUT IMPROVEMENTS
+   ============================================ */
+
+.split-panel.interactive-side {
+  background: #F8FAFC;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #CBD5E1 transparent;
+}
+
+.split-panel.interactive-side::-webkit-scrollbar {
+  width: 6px;
+}
+
+.split-panel.interactive-side::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.split-panel.interactive-side::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 3px;
+}
+
+.split-panel.interactive-side::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+/* Sidebar compact stats */
+.sidebar-compact {
+  padding: 16px;
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0) 0%, #F8FAFC 100%);
+}
+
+.stats-row {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.stat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #FFFFFF;
+  border-radius: 100px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #475569;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.ai-tip-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%);
+  border-radius: 16px;
+  border: 1px solid rgba(199, 210, 254, 0.5);
+}
+
+.tip-icon {
+  font-size: 1.5rem;
+}
+
+.tip-text {
+  font-size: 0.875rem;
+  color: #4338CA;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* ============================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================ */
+
+@media (max-width: 1024px) {
+  .split-panel.interactive-side {
+    padding: 16px;
+  }
+  
+  .sidebar-compact {
+    padding: 12px;
+  }
+  
+  .stats-row {
+    gap: 8px;
+  }
+  
+  .stat-pill {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .split-panel.interactive-side {
+    padding: 12px;
+  }
+  
+  .interactive-container > div {
+    border-radius: 16px;
+  }
 }
 </style>
