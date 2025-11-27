@@ -2250,3 +2250,246 @@
     height: 4px;
   }
 }
+
+/* =====================================================
+   QUICK FIX: Quiz/Exercise Styling Override
+   Add this to your LessonPage.css or as a separate file
+   ===================================================== */
+
+/* Fix the ugly table-like quiz rendering */
+.interactive-panel-wrapper table,
+.interactive-side table,
+.split-panel.interactive-side table {
+  border-collapse: separate !important;
+  border-spacing: 0 12px !important;
+  width: 100% !important;
+  margin: 0 !important;
+  border: none !important;
+}
+
+.interactive-panel-wrapper table tr,
+.interactive-side table tr {
+  background: white !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
+  display: block !important;
+  margin-bottom: 12px !important;
+  border: 2px solid #e2e8f0 !important;
+}
+
+.interactive-panel-wrapper table tr:hover,
+.interactive-side table tr:hover {
+  border-color: #a78bfa !important;
+  background: linear-gradient(135deg, #faf5ff 0%, #f5f3ff 100%) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15) !important;
+}
+
+.interactive-panel-wrapper table td,
+.interactive-side table td {
+  padding: 16px 20px !important;
+  border: none !important;
+  font-size: 16px !important;
+  font-weight: 500 !important;
+  color: #334155 !important;
+  display: inline-block !important;
+}
+
+.interactive-panel-wrapper table td:first-child,
+.interactive-side table td:first-child {
+  width: 40px !important;
+  height: 40px !important;
+  background: #f1f5f9 !important;
+  color: #64748b !important;
+  font-weight: 700 !important;
+  border-radius: 12px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-right: 16px !important;
+  padding: 0 !important;
+}
+
+/* Selected option styling */
+.interactive-panel-wrapper table tr.selected,
+.interactive-side table tr.selected,
+.interactive-panel-wrapper table tr[class*='selected'],
+.interactive-side table tr[class*='selected'] {
+  border-color: #8b5cf6 !important;
+  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%) !important;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2) !important;
+}
+
+.interactive-panel-wrapper table tr.selected td:first-child,
+.interactive-side table tr.selected td:first-child {
+  background: #8b5cf6 !important;
+  color: white !important;
+}
+
+/* Correct answer styling */
+.interactive-panel-wrapper table tr.correct,
+.interactive-side table tr.correct,
+.interactive-panel-wrapper table tr[class*='correct'],
+.interactive-side table tr[class*='correct'] {
+  border-color: #10b981 !important;
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%) !important;
+}
+
+.interactive-panel-wrapper table tr.correct td:first-child,
+.interactive-side table tr.correct td:first-child {
+  background: #10b981 !important;
+  color: white !important;
+}
+
+/* Incorrect answer styling */
+.interactive-panel-wrapper table tr.incorrect,
+.interactive-side table tr.incorrect,
+.interactive-panel-wrapper table tr[class*='incorrect'],
+.interactive-side table tr[class*='incorrect'] {
+  border-color: #ef4444 !important;
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%) !important;
+}
+
+.interactive-panel-wrapper table tr.incorrect td:first-child,
+.interactive-side table tr.incorrect td:first-child {
+  background: #ef4444 !important;
+  color: white !important;
+}
+
+/* Hide ugly borders */
+.interactive-panel-wrapper table,
+.interactive-panel-wrapper table *,
+.interactive-side table,
+.interactive-side table * {
+  border-color: transparent !important;
+}
+
+/* Fix the MULTIPLE CHOICE header */
+.interactive-panel-wrapper [class*='MULTIPLE'],
+.interactive-side [class*='MULTIPLE'],
+.interactive-panel-wrapper h3:contains('MULTIPLE'),
+.interactive-side h3:contains('MULTIPLE') {
+  display: inline-flex !important;
+  align-items: center !important;
+  padding: 8px 20px !important;
+  border-radius: 100px !important;
+  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%) !important;
+  color: #7c3aed !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  margin-bottom: 20px !important;
+  border: 1px solid #e9d5ff !important;
+}
+
+/* Fix the question text */
+.interactive-panel-wrapper h2,
+.interactive-panel-wrapper h3,
+.interactive-side h2,
+.interactive-side h3 {
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  color: #1e293b !important;
+  margin-bottom: 24px !important;
+  line-height: 1.4 !important;
+}
+
+/* Improve the exercise container */
+.interactive-panel-wrapper > div,
+.interactive-side > div {
+  background: white !important;
+  border-radius: 24px !important;
+  padding: 32px !important;
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.05),
+    0 10px 15px -3px rgba(0, 0, 0, 0.08) !important;
+  border: 1px solid rgba(226, 232, 240, 0.8) !important;
+}
+
+/* Check Answers button styling */
+button[class*='check'],
+button:contains('Check'),
+.interactive-panel-wrapper button,
+.interactive-side button:not(.tab-btn) {
+  padding: 14px 32px !important;
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 14px !important;
+  font-size: 16px !important;
+  font-weight: 600;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.3) !important;
+  margin-top: 24px !important;
+}
+
+button[class*='check']:hover,
+.interactive-panel-wrapper button:hover,
+.interactive-side button:not(.tab-btn):hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4) !important;
+}
+
+/* Good luck message styling */
+.interactive-panel-wrapper [class*='good-luck'],
+.interactive-side [class*='good-luck'],
+.interactive-panel-wrapper p:last-child,
+.interactive-side p:last-child {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 16px 20px !important;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%) !important;
+  border: 1px solid #fcd34d !important;
+  border-radius: 12px !important;
+  color: #92400e !important;
+  font-weight: 500 !important;
+  margin-top: 24px !important;
+}
+
+/* Exercise number badge */
+.exercise-number,
+[class*='exercise-number'],
+.interactive-panel-wrapper .number-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 48px !important;
+  height: 48px !important;
+  background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%) !important;
+  color: white !important;
+  font-weight: 700 !important;
+  font-size: 20px !important;
+  border-radius: 14px !important;
+  margin-bottom: 16px !important;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3) !important;
+}
+
+/* =====================================================
+   RESPONSIVE FIXES
+   ===================================================== */
+
+@media (max-width: 768px) {
+  .interactive-panel-wrapper > div,
+  .interactive-side > div {
+    padding: 20px !important;
+    border-radius: 20px !important;
+  }
+  
+  .interactive-panel-wrapper table tr,
+  .interactive-side table tr {
+    padding: 12px 16px !important;
+  }
+  
+  .interactive-panel-wrapper h2,
+  .interactive-panel-wrapper h3,
+  .interactive-side h2,
+  .interactive-side h3 {
+    font-size: 20px !important;
+  }
+}
+
