@@ -559,58 +559,70 @@
         </div>
 
         <!-- STANDARD EXERCISES (Reading, Short Answer, etc.) -->
-        <div v-else class="p-6 md:p-10">
-          <div class="space-y-8">
+        <div v-else class="p-6 md:p-12">
+          <div class="space-y-10">
             
             <!-- Reading Text Card -->
-            <article v-if="currentExercise.content?.text || currentExercise.text" class="bg-gradient-to-br from-blue-50 to-indigo-50 p-8 rounded-2xl border border-blue-100 shadow-sm relative overflow-hidden">
-              <div class="absolute top-0 right-0 p-4 opacity-10">
-                <svg class="w-24 h-24 text-blue-600" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+            <article v-if="currentExercise.content?.text || currentExercise.text" class="relative group overflow-hidden rounded-3xl bg-white/80 backdrop-blur-xl border border-white/20 shadow-xl hover:shadow-2xl transition-all duration-500">
+              <div class="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-indigo-50/30 to-purple-50/50 opacity-100 group-hover:opacity-90 transition-opacity"></div>
+              <div class="absolute -right-20 -top-20 w-64 h-64 bg-blue-400/10 rounded-full blur-3xl group-hover:bg-blue-400/20 transition-all duration-700"></div>
+              
+              <div class="relative p-8 md:p-10">
+                <div class="flex items-center gap-4 mb-6">
+                  <div class="p-3 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                  </div>
+                  <h3 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700">Reading Material</h3>
+                </div>
+                <p class="text-slate-700 leading-loose text-lg md:text-xl font-medium font-serif tracking-wide">{{ currentExercise.content?.text || currentExercise.text }}</p>
               </div>
-              <h3 class="text-blue-900 font-bold text-lg mb-4 flex items-center gap-2">
-                <span class="bg-blue-100 p-2 rounded-lg text-blue-600">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
-                </span>
-                Reading Material
-              </h3>
-              <p class="text-slate-700 leading-loose text-lg font-medium font-serif">{{ currentExercise.content?.text || currentExercise.text }}</p>
             </article>
 
             <!-- Questions Section -->
-            <div v-for="(question, qIndex) in (currentExercise.questions || [])" :key="qIndex" class="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden">
-              <div class="p-6 md:p-8">
-                <div class="flex items-start gap-4 mb-6">
-                  <div class="flex-shrink-0 w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-sm">
+            <div v-for="(question, qIndex) in (currentExercise.questions || [])" :key="qIndex" class="relative group rounded-3xl bg-white border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300">
+              <div class="p-8 md:p-10">
+                <div class="flex items-start gap-5 mb-8">
+                  <div class="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 text-white flex items-center justify-center font-bold text-lg shadow-lg shadow-purple-500/20">
                     {{ qIndex + 1 }}
                   </div>
-                  <h4 class="text-xl font-bold text-slate-900 leading-snug pt-1">{{ question.question }}</h4>
+                  <h4 class="text-xl md:text-2xl font-bold text-slate-800 leading-snug pt-1">{{ question.question }}</h4>
                 </div>
 
-                <div class="relative group">
+                <div class="relative">
+                  <div class="absolute inset-0 bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl transform scale-[0.99] translate-y-1 opacity-0 group-focus-within:opacity-100 group-focus-within:scale-100 group-focus-within:translate-y-2 transition-all duration-500 -z-10"></div>
                   <textarea 
                     :value="userAnswer[qIndex] || ''" 
                     @input="updateMultiAnswer(qIndex, $event.target.value)" 
                     placeholder="Type your answer here..." 
                     :disabled="showCorrectAnswer" 
-                    class="w-full p-5 rounded-xl border-2 border-slate-200 bg-slate-50 focus:bg-white focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none resize-none h-40 text-lg text-slate-800 placeholder-slate-400"
+                    class="w-full p-6 rounded-2xl border-2 border-slate-100 bg-slate-50/50 focus:bg-white focus:border-purple-500 focus:ring-0 transition-all duration-300 outline-none resize-none h-48 text-lg md:text-xl text-slate-800 placeholder-slate-400 font-medium"
                   ></textarea>
-                  <div class="absolute bottom-4 right-4 text-slate-400 text-sm pointer-events-none opacity-0 group-focus-within:opacity-100 transition-opacity">
-                    Press Enter to submit
-                  </div>
                 </div>
 
                 <!-- Feedback -->
-                <transition name="fade-scale">
-                  <div v-if="showCorrectAnswer" class="mt-6 p-5 rounded-xl border-l-4"
-                    :class="answerWasCorrect ? 'bg-green-50 border-green-500 text-green-900' : 'bg-red-50 border-red-500 text-red-900'"
+                <transition 
+                  enter-active-class="transition duration-500 ease-out"
+                  enter-from-class="transform translate-y-4 opacity-0"
+                  enter-to-class="transform translate-y-0 opacity-100"
+                  leave-active-class="transition duration-300 ease-in"
+                  leave-from-class="transform translate-y-0 opacity-100"
+                  leave-to-class="transform translate-y-4 opacity-0"
+                >
+                  <div v-if="showCorrectAnswer" class="mt-8 overflow-hidden rounded-2xl border-2"
+                    :class="answerWasCorrect ? 'bg-green-50/50 border-green-200' : 'bg-red-50/50 border-red-200'"
                   >
-                    <div class="flex items-start gap-3">
-                      <div class="text-2xl">
-                        {{ answerWasCorrect ? '🎉' : '💡' }}
+                    <div class="p-6 flex items-start gap-4">
+                      <div class="p-2 rounded-full" :class="answerWasCorrect ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'">
+                        <svg v-if="answerWasCorrect" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                        <svg v-else class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/></svg>
                       </div>
                       <div>
-                        <p class="font-bold text-lg mb-1">{{ answerWasCorrect ? 'Correct!' : 'Correct Answer:' }}</p>
-                        <p class="text-base opacity-90">{{ question.correctAnswer }}</p>
+                        <p class="font-bold text-lg mb-1" :class="answerWasCorrect ? 'text-green-800' : 'text-red-800'">
+                          {{ answerWasCorrect ? 'Excellent Work!' : 'Correct Answer' }}
+                        </p>
+                        <p class="text-lg font-medium opacity-90" :class="answerWasCorrect ? 'text-green-700' : 'text-red-700'">
+                          {{ answerWasCorrect ? 'Your answer is correct.' : question.correctAnswer }}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -619,36 +631,45 @@
             </div>
 
             <!-- Fallback for simple single-question exercises -->
-            <div v-if="!currentExercise.questions?.length && !isInteractiveType" class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 md:p-8">
-              <div v-if="currentExercise.question" class="mb-6">
-                <h3 class="text-2xl font-bold text-slate-900 mb-2">Question</h3>
-                <p class="text-xl text-slate-700 font-medium">{{ currentExercise.question }}</p>
+            <div v-if="!currentExercise.questions?.length && !isInteractiveType" class="relative group rounded-3xl bg-white border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300 p-8 md:p-12">
+              <div v-if="currentExercise.question" class="mb-8">
+                <div class="inline-block px-4 py-1.5 rounded-full bg-purple-100 text-purple-700 font-bold text-sm mb-4 tracking-wide uppercase">Question</div>
+                <h3 class="text-2xl md:text-3xl font-bold text-slate-900 leading-tight">{{ currentExercise.question }}</h3>
               </div>
               
               <div class="relative">
+                <div class="absolute inset-0 bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl transform scale-[0.99] translate-y-1 opacity-0 group-focus-within:opacity-100 group-focus-within:scale-100 group-focus-within:translate-y-2 transition-all duration-500 -z-10"></div>
                 <textarea 
                   v-model="userAnswer"
                   placeholder="Type your answer here..." 
                   :disabled="showCorrectAnswer" 
-                  class="w-full p-5 rounded-xl border-2 border-slate-200 bg-slate-50 focus:bg-white focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none resize-none h-48 text-lg text-slate-800 placeholder-slate-400"
+                  class="w-full p-6 rounded-2xl border-2 border-slate-100 bg-slate-50/50 focus:bg-white focus:border-purple-500 focus:ring-0 transition-all duration-300 outline-none resize-none h-64 text-lg md:text-xl text-slate-800 placeholder-slate-400 font-medium"
                 ></textarea>
               </div>
 
               <!-- Feedback for single question -->
-              <transition name="fade-scale">
-                <div v-if="showCorrectAnswer" class="mt-6 p-5 rounded-xl border-l-4"
-                  :class="answerWasCorrect ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500'"
+              <transition 
+                enter-active-class="transition duration-500 ease-out"
+                enter-from-class="transform translate-y-4 opacity-0"
+                enter-to-class="transform translate-y-0 opacity-100"
+                leave-active-class="transition duration-300 ease-in"
+                leave-from-class="transform translate-y-0 opacity-100"
+                leave-to-class="transform translate-y-4 opacity-0"
+              >
+                <div v-if="showCorrectAnswer" class="mt-8 overflow-hidden rounded-2xl border-2"
+                  :class="answerWasCorrect ? 'bg-green-50/50 border-green-200' : 'bg-red-50/50 border-red-200'"
                 >
-                   <div class="flex items-start gap-3">
-                      <div class="text-2xl">
-                        {{ answerWasCorrect ? '🎉' : '💡' }}
+                   <div class="p-6 flex items-start gap-4">
+                      <div class="p-2 rounded-full" :class="answerWasCorrect ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'">
+                        <svg v-if="answerWasCorrect" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                        <svg v-else class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/></svg>
                       </div>
                       <div>
-                        <p class="font-bold text-lg mb-1" :class="answerWasCorrect ? 'text-green-900' : 'text-red-900'">
-                          {{ answerWasCorrect ? 'Excellent!' : 'Correct Answer:' }}
+                        <p class="font-bold text-lg mb-1" :class="answerWasCorrect ? 'text-green-800' : 'text-red-800'">
+                          {{ answerWasCorrect ? 'Excellent!' : 'Correct Answer' }}
                         </p>
-                        <p v-if="!answerWasCorrect" class="text-base text-red-800 font-medium">
-                          {{ currentExercise.correctAnswer }}
+                        <p class="text-lg font-medium opacity-90" :class="answerWasCorrect ? 'text-green-700' : 'text-red-700'">
+                          {{ answerWasCorrect ? 'Great job! You got it right.' : currentExercise.correctAnswer }}
                         </p>
                       </div>
                     </div>
