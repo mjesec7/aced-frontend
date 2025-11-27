@@ -560,38 +560,100 @@
 
         <!-- STANDARD EXERCISES (Reading, Short Answer, etc.) -->
         <div v-else class="p-6 md:p-10">
-          <div class="space-y-6">
-            <article v-if="currentExercise.content?.text || currentExercise.text" class="bg-blue-50 p-6 rounded-xl border border-blue-100">
-              <h3 class="text-blue-800 font-semibold mb-2">Reading Text</h3>
-              <p class="text-slate-700 leading-relaxed">{{ currentExercise.content?.text || currentExercise.text }}</p>
+          <div class="space-y-8">
+            
+            <!-- Reading Text Card -->
+            <article v-if="currentExercise.content?.text || currentExercise.text" class="bg-gradient-to-br from-blue-50 to-indigo-50 p-8 rounded-2xl border border-blue-100 shadow-sm relative overflow-hidden">
+              <div class="absolute top-0 right-0 p-4 opacity-10">
+                <svg class="w-24 h-24 text-blue-600" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+              </div>
+              <h3 class="text-blue-900 font-bold text-lg mb-4 flex items-center gap-2">
+                <span class="bg-blue-100 p-2 rounded-lg text-blue-600">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                </span>
+                Reading Material
+              </h3>
+              <p class="text-slate-700 leading-loose text-lg font-medium font-serif">{{ currentExercise.content?.text || currentExercise.text }}</p>
             </article>
 
-            <div v-for="(question, qIndex) in (currentExercise.questions || [])" :key="qIndex" class="space-y-3">
-              <p class="font-medium text-slate-800">{{ question.question }}</p>
-              <textarea 
-                :value="userAnswer[qIndex] || ''" 
-                @input="updateMultiAnswer(qIndex, $event.target.value)" 
-                placeholder="Type your answer..." 
-                :disabled="showCorrectAnswer" 
-                class="w-full p-4 rounded-lg border border-slate-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all outline-none resize-none h-32"
-              ></textarea>
-              <div v-if="showCorrectAnswer" class="p-4 rounded-lg bg-green-50 border border-green-100 text-green-800">
-                <p class="font-semibold">Correct Answer:</p>
-                <p>{{ question.correctAnswer }}</p>
+            <!-- Questions Section -->
+            <div v-for="(question, qIndex) in (currentExercise.questions || [])" :key="qIndex" class="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden">
+              <div class="p-6 md:p-8">
+                <div class="flex items-start gap-4 mb-6">
+                  <div class="flex-shrink-0 w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-sm">
+                    {{ qIndex + 1 }}
+                  </div>
+                  <h4 class="text-xl font-bold text-slate-900 leading-snug pt-1">{{ question.question }}</h4>
+                </div>
+
+                <div class="relative group">
+                  <textarea 
+                    :value="userAnswer[qIndex] || ''" 
+                    @input="updateMultiAnswer(qIndex, $event.target.value)" 
+                    placeholder="Type your answer here..." 
+                    :disabled="showCorrectAnswer" 
+                    class="w-full p-5 rounded-xl border-2 border-slate-200 bg-slate-50 focus:bg-white focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none resize-none h-40 text-lg text-slate-800 placeholder-slate-400"
+                  ></textarea>
+                  <div class="absolute bottom-4 right-4 text-slate-400 text-sm pointer-events-none opacity-0 group-focus-within:opacity-100 transition-opacity">
+                    Press Enter to submit
+                  </div>
+                </div>
+
+                <!-- Feedback -->
+                <transition name="fade-scale">
+                  <div v-if="showCorrectAnswer" class="mt-6 p-5 rounded-xl border-l-4"
+                    :class="answerWasCorrect ? 'bg-green-50 border-green-500 text-green-900' : 'bg-red-50 border-red-500 text-red-900'"
+                  >
+                    <div class="flex items-start gap-3">
+                      <div class="text-2xl">
+                        {{ answerWasCorrect ? '🎉' : '💡' }}
+                      </div>
+                      <div>
+                        <p class="font-bold text-lg mb-1">{{ answerWasCorrect ? 'Correct!' : 'Correct Answer:' }}</p>
+                        <p class="text-base opacity-90">{{ question.correctAnswer }}</p>
+                      </div>
+                    </div>
+                  </div>
+                </transition>
               </div>
             </div>
 
-            <!-- Fallback for simple exercises -->
-            <div v-if="!currentExercise.questions?.length && !isInteractiveType" class="space-y-4">
-              <p v-if="currentExercise.question" class="font-medium text-slate-800 text-lg">
-                {{ currentExercise.question }}
-              </p>
-              <textarea 
-                v-model="userAnswer"
-                placeholder="Type your answer..." 
-                :disabled="showCorrectAnswer" 
-                class="w-full p-4 rounded-lg border border-slate-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all outline-none resize-none h-32"
-              ></textarea>
+            <!-- Fallback for simple single-question exercises -->
+            <div v-if="!currentExercise.questions?.length && !isInteractiveType" class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 md:p-8">
+              <div v-if="currentExercise.question" class="mb-6">
+                <h3 class="text-2xl font-bold text-slate-900 mb-2">Question</h3>
+                <p class="text-xl text-slate-700 font-medium">{{ currentExercise.question }}</p>
+              </div>
+              
+              <div class="relative">
+                <textarea 
+                  v-model="userAnswer"
+                  placeholder="Type your answer here..." 
+                  :disabled="showCorrectAnswer" 
+                  class="w-full p-5 rounded-xl border-2 border-slate-200 bg-slate-50 focus:bg-white focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none resize-none h-48 text-lg text-slate-800 placeholder-slate-400"
+                ></textarea>
+              </div>
+
+              <!-- Feedback for single question -->
+              <transition name="fade-scale">
+                <div v-if="showCorrectAnswer" class="mt-6 p-5 rounded-xl border-l-4"
+                  :class="answerWasCorrect ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500'"
+                >
+                   <div class="flex items-start gap-3">
+                      <div class="text-2xl">
+                        {{ answerWasCorrect ? '🎉' : '💡' }}
+                      </div>
+                      <div>
+                        <p class="font-bold text-lg mb-1" :class="answerWasCorrect ? 'text-green-900' : 'text-red-900'">
+                          {{ answerWasCorrect ? 'Excellent!' : 'Correct Answer:' }}
+                        </p>
+                        <p v-if="!answerWasCorrect" class="text-base text-red-800 font-medium">
+                          {{ currentExercise.correctAnswer }}
+                        </p>
+                      </div>
+                    </div>
+                </div>
+              </transition>
             </div>
           </div>
         </div>
