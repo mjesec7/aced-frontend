@@ -552,17 +552,22 @@ export default {
         return amt;
       }
       
+      // Get duration from route query or default to 1 month
+      const duration = parseInt(this.$route.query.duration) || 1;
+      
+      // Pro plan amounts in tiyin (UZS * 100)
       const amounts = {
-        start: 26000000,
-        pro: 45500000
+        1: 25000000,   // 250,000 UZS
+        3: 67500000,   // 675,000 UZS
+        6: 120000000   // 1,200,000 UZS
       };
       
-      return amounts[this.finalPlan] || amounts.start;
+      return amounts[duration] || amounts[1];
     },
     
     planName() {
-      const plan = this.finalPlan;
-      return plan === 'start' ? 'Start Plan' : plan === 'pro' ? 'Pro Plan' : '';
+      const duration = parseInt(this.$route.query.duration) || 1;
+      return `Pro Plan (${duration} ${duration === 1 ? 'Month' : 'Months'})`;
     },
     
     canProceedToPayment() {

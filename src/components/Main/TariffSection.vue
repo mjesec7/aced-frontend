@@ -3,28 +3,45 @@
     <div class="container">
       <div class="header">
         <h2 class="title">Simple and Transparent Pricing</h2>
-        <p class="subtitle">Choose the plan that's right for you</p>
+        <p class="subtitle">Choose the duration that works best for you</p>
       </div>
 
-      <div class="plans">
-        <!-- Basic Plan -->
-        <div class="plan-card">
+      <!-- Pro Plan Card -->
+      <div class="pro-plan-wrapper">
+        <div class="plan-card pro">
+          <div class="badge">Most Popular</div>
+          
           <div class="plan-top">
-            <h3 class="plan-name">Basic</h3>
-            <p class="plan-description">Perfect to get started</p>
+            <h3 class="plan-name">Pro Plan</h3>
+            <p class="plan-description">Full access to all features</p>
           </div>
 
+          <!-- Duration Selector -->
+          <div class="duration-selector">
+            <button
+              v-for="option in durationOptions"
+              :key="option.months"
+              @click="selectedDuration = option.months"
+              :class="['duration-btn', { active: selectedDuration === option.months }]"
+            >
+              <div class="duration-period">{{ option.label }}</div>
+              <div v-if="option.savings" class="duration-savings">Save {{ option.savings }}</div>
+            </button>
+          </div>
+
+          <!-- Pricing Display -->
           <div class="plan-price">
             <div class="price-main">
-              <span class="amount">260,000</span>
-              <span class="currency">sum</span>
+              <span class="amount">{{ formatPrice(currentPrice) }}</span>
+              <span class="currency">UZS</span>
             </div>
-            <div class="price-note">
-              <span class="original">520,000 sum</span>
-              <span class="save">-50%</span>
+            <div v-if="selectedDuration > 1" class="price-note">
+              <span class="per-month">{{ formatPrice(pricePerMonth) }} UZS/month</span>
+              <span class="save">{{ savingsPercentage }}% OFF</span>
             </div>
           </div>
 
+          <!-- Features -->
           <div class="plan-features">
             <div class="feature">
               <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -36,70 +53,30 @@
               <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
+              <span>Unlimited tests and analytics</span>
+            </div>
+            <div class="feature">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
               <span>AI homework help</span>
             </div>
             <div class="feature">
               <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-              <span>Progress and statistics</span>
-            </div>
-          </div>
-
-          <button class="plan-button" @click="handleClick('start')">
-            Start Learning
-          </button>
-        </div>
-
-        <!-- Pro Plan -->
-        <div class="plan-card premium">
-          <div class="badge">Recommended</div>
-          
-          <div class="plan-top">
-            <h3 class="plan-name">Professional</h3>
-            <p class="plan-description">Maximum capabilities</p>
-          </div>
-
-          <div class="plan-price">
-            <div class="price-main">
-              <span class="amount">450,000</span>
-              <span class="currency">sum</span>
-            </div>
-            <div class="price-note">
-              <span class="original">900,000 sum</span>
-              <span class="save premium">-50%</span>
-            </div>
-          </div>
-
-          <div class="plan-features">
-            <div class="feature">
-              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
-              <span>Everything in Basic</span>
+              <span>Personal vocabulary</span>
             </div>
             <div class="feature">
               <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-              <span>Personal AI tutor</span>
-            </div>
-            <div class="feature">
-              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
-              <span>Advanced analytics</span>
-            </div>
-            <div class="feature">
-              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
-              <span>Personalized learning path</span>
+              <span>Priority support</span>
             </div>
           </div>
 
-          <button class="plan-button premium" @click="handleClick('pro')">
-            Start Now
+          <button class="plan-button" @click="handleSubscribe">
+            Subscribe Now
           </button>
         </div>
       </div>
@@ -112,15 +89,49 @@ import { getAuth } from "firebase/auth";
 
 export default {
   name: 'TariffSection',
+  
+  data() {
+    return {
+      selectedDuration: 1,
+      durationOptions: [
+        { months: 1, label: '1 Month', price: 250000, savings: null },
+        { months: 3, label: '3 Months', price: 675000, savings: '10%' },
+        { months: 6, label: '6 Months', price: 1200000, savings: '20%' }
+      ]
+    };
+  },
+  
+  computed: {
+    currentPrice() {
+      const option = this.durationOptions.find(opt => opt.months === this.selectedDuration);
+      return option ? option.price : 250000;
+    },
+    
+    pricePerMonth() {
+      return Math.round(this.currentPrice / this.selectedDuration);
+    },
+    
+    savingsPercentage() {
+      if (this.selectedDuration === 1) return 0;
+      const basePrice = 250000 * this.selectedDuration;
+      return Math.round(((basePrice - this.currentPrice) / basePrice) * 100);
+    }
+  },
+  
   methods: {
-    handleClick(plan) {
+    formatPrice(price) {
+      return price.toLocaleString('en-US');
+    },
+    
+    handleSubscribe() {
       const auth = getAuth();
       const user = auth.currentUser;
 
       if (!user) {
         window.dispatchEvent(new CustomEvent("open-Login-modal"));
       } else {
-        this.$router.push(`/pay/${plan}`);
+        // Pass duration instead of plan name
+        this.$router.push(`/pay/pro?duration=${this.selectedDuration}`);
       }
     }
   }
@@ -164,38 +175,24 @@ export default {
   font-weight: 400;
 }
 
-/* Plans Grid */
-.plans {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 24px;
-  max-width: 800px;
+/* Pro Plan Wrapper */
+.pro-plan-wrapper {
+  max-width: 480px;
   margin: 0 auto;
 }
 
 /* Plan Card */
 .plan-card {
-  background: #fafafa;
-  border-radius: 16px;
-  padding: 32px 28px;
-  position: relative;
-  transition: all 0.2s ease;
-  border: 1.5px solid transparent;
-}
-
-.plan-card:hover {
-  border-color: #e0e0e0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
-}
-
-.plan-card.premium {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  border-color: transparent;
+  border-radius: 20px;
+  padding: 40px 32px;
+  position: relative;
+  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
 }
 
-.plan-card.premium:hover {
-  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.2);
+.plan-card.pro {
+  border: 2px solid rgba(255, 255, 255, 0.2);
 }
 
 /* Badge */
@@ -206,7 +203,7 @@ export default {
   transform: translateX(-50%);
   background: #000000;
   color: #ffffff;
-  padding: 4px 16px;
+  padding: 6px 20px;
   border-radius: 12px;
   font-size: 11px;
   font-weight: 600;
@@ -216,42 +213,87 @@ export default {
 
 /* Plan Top */
 .plan-top {
-  margin-bottom: 24px;
+  margin-bottom: 28px;
+  text-align: center;
 }
 
 .plan-name {
-  font-size: 22px;
+  font-size: 28px;
   font-weight: 700;
-  margin: 0 0 6px 0;
+  margin: 0 0 8px 0;
   color: inherit;
 }
 
 .plan-description {
-  font-size: 14px;
+  font-size: 15px;
   margin: 0;
-  opacity: 0.7;
+  opacity: 0.9;
+}
+
+/* Duration Selector */
+.duration-selector {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  background: rgba(0, 0, 0, 0.15);
+  padding: 6px;
+  border-radius: 12px;
+}
+
+.duration-btn {
+  flex: 1;
+  padding: 12px 8px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  position: relative;
+}
+
+.duration-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.duration-btn.active {
+  background: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.duration-period {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.duration-savings {
+  font-size: 10px;
+  font-weight: 600;
+  color: #fbbf24;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 /* Pricing */
 .plan-price {
   margin-bottom: 28px;
   padding-bottom: 28px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-}
-
-.plan-card.premium .plan-price {
-  border-bottom-color: rgba(255, 255, 255, 0.2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  text-align: center;
 }
 
 .price-main {
   display: flex;
   align-items: baseline;
-  gap: 6px;
+  gap: 8px;
   margin-bottom: 10px;
+  justify-content: center;
 }
 
 .amount {
-  font-size: 42px;
+  font-size: 44px;
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.02em;
@@ -260,32 +302,30 @@ export default {
 .currency {
   font-size: 18px;
   font-weight: 600;
-  opacity: 0.8;
+  opacity: 0.9;
 }
 
 .price-note {
   display: flex;
   align-items: center;
   gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
-.original {
-  font-size: 14px;
-  text-decoration: line-through;
-  opacity: 0.5;
+.per-month {
+  font-size: 13px;
+  opacity: 0.8;
 }
 
 .save {
-  background: #000000;
-  color: #ffffff;
-  padding: 2px 10px;
-  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.25);
+  color: #fbbf24;
+  padding: 3px 12px;
+  border-radius: 6px;
   font-size: 11px;
-  font-weight: 600;
-}
-
-.save.premium {
-  background: rgba(0, 0, 0, 0.2);
+  font-weight: 700;
+  letter-spacing: 0.5px;
 }
 
 /* Features */
@@ -297,54 +337,46 @@ export default {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
   font-size: 14px;
   line-height: 1.5;
 }
 
 .feature .icon {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
   margin-top: 2px;
-  color: #667eea;
-}
-
-.plan-card.premium .feature .icon {
   color: #ffffff;
 }
 
 .feature span {
-  opacity: 0.9;
+  opacity: 0.95;
 }
 
 /* Button */
 .plan-button {
   width: 100%;
-  padding: 14px 24px;
-  background: #000000;
-  color: #ffffff;
+  padding: 16px 24px;
+  background: #ffffff;
+  color: #764ba2;
   border: none;
-  border-radius: 10px;
-  font-size: 15px;
-  font-weight: 600;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
   font-family: inherit;
-}
-
-.plan-button:hover {
-  background: #1a1a1a;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.plan-button.premium {
-  background: #ffffff;
-  color: #764ba2;
+.plan-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 255, 255, 0.3);
 }
 
-.plan-button.premium:hover {
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.25);
+.plan-button:active {
+  transform: translateY(0);
 }
 
 /* Responsive */
@@ -361,17 +393,24 @@ export default {
     font-size: 15px;
   }
 
-  .plans {
-    grid-template-columns: 1fr;
-    gap: 20px;
+  .plan-card {
+    padding: 32px 24px;
   }
 
-  .plan-card {
-    padding: 28px 24px;
+  .plan-name {
+    font-size: 24px;
   }
 
   .amount {
     font-size: 38px;
+  }
+
+  .duration-selector {
+    flex-direction: column;
+  }
+
+  .duration-btn {
+    padding: 14px 12px;
   }
 }
 
@@ -389,7 +428,7 @@ export default {
   }
 
   .plan-card {
-    padding: 24px 20px;
+    padding: 28px 20px;
   }
 
   .amount {

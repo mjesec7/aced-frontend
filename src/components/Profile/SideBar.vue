@@ -126,32 +126,13 @@
                 </svg>
               </div>
               <div class="unlock-text">
-                <h5>{{ currentUserStatus === 'free' ? 'Unlock Premium' : 'Unlock Pro' }}</h5>
-                <p>{{ currentUserStatus === 'free' ? 'Get all features and capabilities' : 'Upgrade to Pro plan' }}</p>
+                <h5>Upgrade to Pro</h5>
+                <p>Get all features and capabilities</p>
               </div>
               <button @click="goToUpgrade" class="unlock-arrow">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M5 12h14M12 5l7 7-7 7"/>
                 </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Premium CTA with metallic purple -->
-        <div v-if="currentUserStatus === 'free'" class="premium-cta">
-          <div class="cta-card">
-            <div class="shine-overlay"></div>
-            <div class="cta-content">
-              <div class="cta-header">
-                <svg class="sparkle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 3v18M3 12h18M6.5 6.5l11 11M6.5 17.5l11-11"/>
-                </svg>
-                <h4>Unlock Premium</h4>
-              </div>
-              <p class="cta-text">Get tests, analytics and much more! ✨</p>
-              <button @click="goToUpgrade" class="cta-button">
-                View Plans
               </button>
             </div>
           </div>
