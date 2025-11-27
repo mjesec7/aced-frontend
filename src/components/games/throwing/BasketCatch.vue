@@ -6,6 +6,11 @@
     @touchmove="handleTouchMove"
     @click="handleGameClick"
   >
+    <!-- Floating clouds background -->
+    <div class="cloud cloud-1">☁️</div>
+    <div class="cloud cloud-2">☁️</div>
+    <div class="cloud cloud-3">☁️</div>
+
     <!-- Right Sidebar HUD -->
     <GameHUDSidebar
       v-if="gameActive"
@@ -14,6 +19,12 @@
       :lives="lives"
       :max-lives="3"
     />
+
+    <!-- Question Display -->
+    <div v-if="gameActive" class="question-display">
+      <div class="question-icon">❓</div>
+      <div class="question-text">{{ currentQuestionText }}</div>
+    </div>
 
     <div class="game-world">
       <div
@@ -43,16 +54,6 @@
          <div class="splash-text">{{ feedbackText }}</div>
       </div>
     </transition>
-
-    <!-- Small Start/Complete Modal -->
-    <div v-if="!gameActive" class="modal-overlay" @click="startGame">
-        <div class="small-modal">
-            <div class="modal-icon">🎮</div>
-            <h3 class="modal-title">Ready?</h3>
-            <p class="modal-text">Drag the basket to catch the correct answer!</p>
-            <button class="modal-btn" @click="startGame">▶ Play Now</button>
-        </div>
-    </div>
   </div>
 </template>
 
@@ -234,8 +235,12 @@ const stopGame = () => {
 
 watch(() => props.lives, (val) => { if(val <= 0) stopGame(); });
 onMounted(() => {
-    // Clean start state
+    // Clean start state and auto-start game
     fallingItems.value = [];
+    // Auto-start the game
+    setTimeout(() => {
+        startGame();
+    }, 100);
 });
 onUnmounted(stopGame);
 </script>
@@ -247,7 +252,7 @@ onUnmounted(stopGame);
   width: 100%;
   height: 100%;
   min-height: 500px;
-  background: linear-gradient(180deg, #E3F2FD 0%, #F3E5F5 100%);
+  background: linear-gradient(180deg, #87CEEB 0%, #B0E0E6 50%, #FFE4B5 100%);
   overflow: hidden;
   border-radius: 16px;
   font-family: 'Inter', sans-serif;
@@ -255,6 +260,78 @@ onUnmounted(stopGame);
   border: 4px solid white;
   box-shadow: inset 0 0 30px rgba(0,0,0,0.05);
   cursor: none;
+}
+
+/* FLOATING CLOUDS */
+.cloud {
+  position: absolute;
+  font-size: 3rem;
+  opacity: 0.7;
+  animation: float 20s infinite ease-in-out;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.cloud-1 {
+  top: 10%;
+  left: -10%;
+  animation-delay: 0s;
+}
+
+.cloud-2 {
+  top: 30%;
+  left: -15%;
+  animation-delay: 7s;
+  font-size: 2.5rem;
+}
+
+.cloud-3 {
+  top: 20%;
+  left: -12%;
+  animation-delay: 14s;
+  font-size: 3.5rem;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateX(0) translateY(0);
+  }
+  50% {
+    transform: translateX(120vw) translateY(-20px);
+  }
+}
+
+/* QUESTION DISPLAY */
+.question-display {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.95);
+  padding: 16px 32px;
+  border-radius: 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 100;
+  border: 3px solid #3b82f6;
+  animation: bounce 2s infinite ease-in-out;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-5px); }
+}
+
+.question-icon {
+  font-size: 2rem;
+}
+
+.question-text {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #1e293b;
 }
 
 
