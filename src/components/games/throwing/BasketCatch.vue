@@ -6,10 +6,14 @@
     @touchmove="handleTouchMove"
     @click="handleGameClick"
   >
-    <!-- Floating clouds background -->
+    <!-- Fun Background Elements -->
+    <div class="sun">☀️</div>
     <div class="cloud cloud-1">☁️</div>
     <div class="cloud cloud-2">☁️</div>
     <div class="cloud cloud-3">☁️</div>
+    <div class="cloud cloud-4">☁️</div>
+    <div class="cloud cloud-5">☁️</div>
+    <div class="cloud cloud-6">☁️</div>
 
     <!-- Right Sidebar HUD -->
     <GameHUDSidebar
@@ -266,39 +270,39 @@ onUnmounted(stopGame);
 .cloud {
   position: absolute;
   font-size: 3rem;
-  opacity: 0.7;
-  animation: float 20s infinite ease-in-out;
+  opacity: 0.8;
+  animation: float 60s infinite linear; /* Much slower */
   pointer-events: none;
   z-index: 1;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
 }
 
-.cloud-1 {
-  top: 10%;
-  left: -10%;
-  animation-delay: 0s;
-}
-
-.cloud-2 {
-  top: 30%;
-  left: -15%;
-  animation-delay: 7s;
-  font-size: 2.5rem;
-}
-
-.cloud-3 {
-  top: 20%;
-  left: -12%;
-  animation-delay: 14s;
-  font-size: 3.5rem;
-}
+.cloud-1 { top: 10%; left: -10%; animation-delay: 0s; font-size: 4rem; }
+.cloud-2 { top: 25%; left: -20%; animation-delay: 15s; font-size: 3rem; }
+.cloud-3 { top: 15%; left: -15%; animation-delay: 30s; font-size: 5rem; opacity: 0.6; }
+.cloud-4 { top: 40%; left: -10%; animation-delay: 45s; font-size: 3.5rem; }
+.cloud-5 { top: 5%; left: -25%; animation-delay: 22s; font-size: 2.5rem; opacity: 0.5; }
+.cloud-6 { top: 35%; left: -30%; animation-delay: 7s; font-size: 4.5rem; }
 
 @keyframes float {
-  0%, 100% {
-    transform: translateX(0) translateY(0);
-  }
-  50% {
-    transform: translateX(120vw) translateY(-20px);
-  }
+  0% { transform: translateX(-150px); }
+  100% { transform: translateX(120vw); }
+}
+
+/* SUN */
+.sun {
+  position: absolute;
+  top: 40px;
+  right: 40px;
+  font-size: 5rem;
+  animation: spin 120s infinite linear;
+  z-index: 0;
+  filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.6));
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 /* QUESTION DISPLAY */
