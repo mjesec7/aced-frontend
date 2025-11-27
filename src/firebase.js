@@ -12,7 +12,7 @@ import { getAnalytics, isSupported as isAnalyticsSupported } from "firebase/anal
 // 🔧 Firebase config for aced-9cf72 (public-safe)
 const firebaseConfig = {
   apiKey: "AIzaSyDg032Kbbm2NbSYgYiwu_xgQDUZ1vHf1jA",
-  authDomain: "aced-9cf72.firebaseapp.com",
+  authDomain: "aced.live",
   projectId: "aced-9cf72",
   storageBucket: "aced-9cf72.appspot.com",
   messagingSenderId: "295500018562",
