@@ -575,7 +575,7 @@
                 </h3>
 
                 <!-- Options Grid -->
-                <div class="grid gap-4 md:grid-cols-2">
+                <div class="grid gap-4 md:grid-cols-2" style="display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
                   <button
                     v-for="(option, idx) in (currentExercise.options || [])"
                     :key="idx"
@@ -588,10 +588,11 @@
                         : 'border-slate-100 bg-white/60 hover:border-purple-200 hover:bg-white'
                     ]"
                   >
-                    <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-4" style="display: flex; align-items: center; gap: 1rem;">
                       <div 
                         class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg transition-colors duration-300"
                         :class="userAnswer === idx ? 'bg-purple-500 text-white' : 'bg-slate-100 text-slate-500 group-hover/btn:bg-purple-100 group-hover/btn:text-purple-600'"
+                        style="min-width: 2.5rem; min-height: 2.5rem; display: flex; align-items: center; justify-content: center;"
                       >
                         {{ String.fromCharCode(65 + idx) }}
                       </div>

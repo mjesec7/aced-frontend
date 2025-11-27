@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+    // Force rebuild: 2025-11-27
     content: [
         "./index.html",
         "./src/**/*.{vue,js,ts,jsx,tsx}",
