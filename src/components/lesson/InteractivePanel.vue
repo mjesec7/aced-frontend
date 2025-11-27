@@ -559,7 +559,7 @@
         </div>
 
         <!-- MULTIPLE CHOICE EXERCISE -->
-        <div v-else-if="exerciseType === 'multiple-choice' || exerciseType === 'abc' || exerciseType === 'dialogue-completion'" class="p-6 md:p-12">
+        <div v-else-if="exerciseType === 'multiple-choice' || exerciseType === 'abc' || exerciseType === 'dialogue-completion' || exerciseType === 'quiz'" class="p-6 md:p-12">
           <div class="space-y-10">
             
             <!-- Question Card -->
@@ -568,7 +568,7 @@
               
               <div class="relative">
                 <div class="inline-block px-4 py-1.5 rounded-full bg-purple-100 text-purple-700 font-bold text-sm mb-6 tracking-wide uppercase shadow-sm">
-                  Multiple Choice
+                  {{ exerciseType === 'quiz' ? 'Quiz' : 'Multiple Choice' }}
                 </div>
                 <h3 class="text-2xl md:text-3xl font-bold text-slate-900 leading-tight mb-8">
                   {{ currentExercise.question || currentExercise.content?.question || 'Select the correct answer' }}
@@ -641,7 +641,7 @@
         </div>
 
         <!-- TRUE/FALSE EXERCISE -->
-        <div v-else-if="exerciseType === 'true-false'" class="p-6 md:p-12">
+        <div v-else-if="exerciseType === 'true-false' || exerciseType === 'true_false'" class="p-6 md:p-12">
           <div class="space-y-10">
             
             <!-- Question Card -->
