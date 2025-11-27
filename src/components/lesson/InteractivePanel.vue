@@ -558,7 +558,167 @@
           </div>
         </div>
 
-        <!-- STANDARD EXERCISES (Reading, Short Answer, etc.) -->
+        <!-- MULTIPLE CHOICE EXERCISE -->
+        <div v-else-if="exerciseType === 'multiple-choice' || exerciseType === 'abc' || exerciseType === 'dialogue-completion'" class="p-6 md:p-12">
+          <div class="space-y-10">
+            
+            <!-- Question Card -->
+            <div class="relative group overflow-hidden rounded-3xl bg-white/80 backdrop-blur-xl border border-white/20 shadow-xl hover:shadow-2xl transition-all duration-500 p-8 md:p-12">
+              <div class="absolute inset-0 bg-gradient-to-br from-purple-50/50 via-pink-50/30 to-rose-50/50 opacity-100 group-hover:opacity-90 transition-opacity"></div>
+              
+              <div class="relative">
+                <div class="inline-block px-4 py-1.5 rounded-full bg-purple-100 text-purple-700 font-bold text-sm mb-6 tracking-wide uppercase shadow-sm">
+                  Multiple Choice
+                </div>
+                <h3 class="text-2xl md:text-3xl font-bold text-slate-900 leading-tight mb-8">
+                  {{ currentExercise.question || currentExercise.content?.question || 'Select the correct answer' }}
+                </h3>
+
+                <!-- Options Grid -->
+                <div class="grid gap-4 md:grid-cols-2">
+                  <button
+                    v-for="(option, idx) in (currentExercise.options || [])"
+                    :key="idx"
+                    @click="userAnswer = idx"
+                    :disabled="showCorrectAnswer"
+                    class="relative group/btn text-left p-6 rounded-2xl border-2 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg"
+                    :class="[
+                      userAnswer === idx 
+                        ? 'border-purple-500 bg-purple-50/80 shadow-purple-500/20' 
+                        : 'border-slate-100 bg-white/60 hover:border-purple-200 hover:bg-white'
+                    ]"
+                  >
+                    <div class="flex items-center gap-4">
+                      <div 
+                        class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg transition-colors duration-300"
+                        :class="userAnswer === idx ? 'bg-purple-500 text-white' : 'bg-slate-100 text-slate-500 group-hover/btn:bg-purple-100 group-hover/btn:text-purple-600'"
+                      >
+                        {{ String.fromCharCode(65 + idx) }}
+                      </div>
+                      <span class="text-lg font-medium text-slate-700 group-hover/btn:text-slate-900 transition-colors">
+                        {{ option.text || option }}
+                      </span>
+                    </div>
+                    
+                    <!-- Selection Indicator -->
+                    <div v-if="userAnswer === idx" class="absolute top-4 right-4 text-purple-500">
+                      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Feedback -->
+            <transition 
+              enter-active-class="transition duration-500 ease-out"
+              enter-from-class="transform translate-y-4 opacity-0"
+              enter-to-class="transform translate-y-0 opacity-100"
+              leave-active-class="transition duration-300 ease-in"
+              leave-from-class="transform translate-y-0 opacity-100"
+              leave-to-class="transform translate-y-4 opacity-0"
+            >
+              <div v-if="showCorrectAnswer" class="overflow-hidden rounded-3xl border-2 shadow-lg"
+                :class="answerWasCorrect ? 'bg-green-50/80 border-green-200 backdrop-blur-md' : 'bg-red-50/80 border-red-200 backdrop-blur-md'"
+              >
+                 <div class="p-8 flex items-center gap-6">
+                    <div class="p-4 rounded-full shadow-inner" :class="answerWasCorrect ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'">
+                      <svg v-if="answerWasCorrect" class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                      <svg v-else class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </div>
+                    <div>
+                      <h4 class="text-2xl font-bold mb-2" :class="answerWasCorrect ? 'text-green-800' : 'text-red-800'">
+                        {{ answerWasCorrect ? 'Correct!' : 'Incorrect' }}
+                      </h4>
+                      <p class="text-lg opacity-90" :class="answerWasCorrect ? 'text-green-700' : 'text-red-700'">
+                        {{ answerWasCorrect ? 'Well done! That is the right answer.' : `The correct answer is option ${String.fromCharCode(65 + (typeof currentExercise.correctAnswer === 'number' ? currentExercise.correctAnswer : 0))}` }}
+                      </p>
+                    </div>
+                  </div>
+              </div>
+            </transition>
+          </div>
+        </div>
+
+        <!-- TRUE/FALSE EXERCISE -->
+        <div v-else-if="exerciseType === 'true-false'" class="p-6 md:p-12">
+          <div class="space-y-10">
+            
+            <!-- Question Card -->
+            <div class="relative group overflow-hidden rounded-3xl bg-white/80 backdrop-blur-xl border border-white/20 shadow-xl hover:shadow-2xl transition-all duration-500 p-8 md:p-12 text-center">
+              <div class="absolute inset-0 bg-gradient-to-br from-cyan-50/50 via-sky-50/30 to-blue-50/50 opacity-100 group-hover:opacity-90 transition-opacity"></div>
+              
+              <div class="relative">
+                <div class="inline-block px-4 py-1.5 rounded-full bg-cyan-100 text-cyan-700 font-bold text-sm mb-8 tracking-wide uppercase shadow-sm">
+                  True or False
+                </div>
+                <h3 class="text-3xl md:text-4xl font-bold text-slate-900 leading-tight mb-12">
+                  {{ currentExercise.question || currentExercise.content?.question || 'Is the following statement true?' }}
+                </h3>
+
+                <!-- True/False Toggles -->
+                <div class="flex flex-col sm:flex-row justify-center gap-6 md:gap-10">
+                  <button
+                    @click="userAnswer = true"
+                    :disabled="showCorrectAnswer"
+                    class="relative group/btn flex-1 max-w-xs p-8 rounded-3xl border-2 transition-all duration-300 transform hover:-translate-y-2 hover:shadow-xl"
+                    :class="[
+                      userAnswer === true 
+                        ? 'border-green-500 bg-green-50/90 shadow-green-500/30' 
+                        : 'border-slate-100 bg-white/80 hover:border-green-200 hover:bg-green-50/30'
+                    ]"
+                  >
+                    <div class="text-5xl mb-4 transition-transform duration-300 group-hover/btn:scale-110">👍</div>
+                    <div class="text-2xl font-bold transition-colors" :class="userAnswer === true ? 'text-green-700' : 'text-slate-700'">True</div>
+                  </button>
+
+                  <button
+                    @click="userAnswer = false"
+                    :disabled="showCorrectAnswer"
+                    class="relative group/btn flex-1 max-w-xs p-8 rounded-3xl border-2 transition-all duration-300 transform hover:-translate-y-2 hover:shadow-xl"
+                    :class="[
+                      userAnswer === false 
+                        ? 'border-red-500 bg-red-50/90 shadow-red-500/30' 
+                        : 'border-slate-100 bg-white/80 hover:border-red-200 hover:bg-red-50/30'
+                    ]"
+                  >
+                    <div class="text-5xl mb-4 transition-transform duration-300 group-hover/btn:scale-110">👎</div>
+                    <div class="text-2xl font-bold transition-colors" :class="userAnswer === false ? 'text-red-700' : 'text-slate-700'">False</div>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Feedback -->
+            <transition 
+              enter-active-class="transition duration-500 ease-out"
+              enter-from-class="transform translate-y-4 opacity-0"
+              enter-to-class="transform translate-y-0 opacity-100"
+              leave-active-class="transition duration-300 ease-in"
+              leave-from-class="transform translate-y-0 opacity-100"
+              leave-to-class="transform translate-y-4 opacity-0"
+            >
+              <div v-if="showCorrectAnswer" class="overflow-hidden rounded-3xl border-2 shadow-lg"
+                :class="answerWasCorrect ? 'bg-green-50/80 border-green-200 backdrop-blur-md' : 'bg-red-50/80 border-red-200 backdrop-blur-md'"
+              >
+                 <div class="p-8 flex items-center justify-center gap-6 text-center">
+                    <div>
+                      <div class="inline-flex p-4 rounded-full shadow-inner mb-4" :class="answerWasCorrect ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'">
+                        <svg v-if="answerWasCorrect" class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                        <svg v-else class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/></svg>
+                      </div>
+                      <h4 class="text-3xl font-bold mb-2" :class="answerWasCorrect ? 'text-green-800' : 'text-red-800'">
+                        {{ answerWasCorrect ? 'That\'s Right!' : 'Not Quite' }}
+                      </h4>
+                      <p class="text-xl opacity-90" :class="answerWasCorrect ? 'text-green-700' : 'text-red-700'">
+                        {{ answerWasCorrect ? 'You nailed it!' : `The statement is actually ${currentExercise.correctAnswer ? 'True' : 'False'}.` }}
+                      </p>
+                    </div>
+                  </div>
+              </div>
+            </transition>
+          </div>
+        </div>
         <div v-else class="p-6 md:p-12">
           <div class="space-y-10">
             
