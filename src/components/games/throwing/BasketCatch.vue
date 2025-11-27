@@ -246,6 +246,7 @@ onUnmounted(stopGame);
   position: relative;
   width: 100%;
   height: 100%;
+  min-height: 500px;
   background: linear-gradient(180deg, #E3F2FD 0%, #F3E5F5 100%);
   overflow: hidden;
   border-radius: 16px;
