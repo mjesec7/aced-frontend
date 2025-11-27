@@ -14,6 +14,8 @@
     <div class="cloud cloud-4">☁️</div>
     <div class="cloud cloud-5">☁️</div>
     <div class="cloud cloud-6">☁️</div>
+    <div class="cloud cloud-7">☁️</div>
+    <div class="cloud cloud-8">☁️</div>
 
     <!-- Right Sidebar HUD -->
     <GameHUDSidebar
@@ -271,18 +273,21 @@ onUnmounted(stopGame);
   position: absolute;
   font-size: 3rem;
   opacity: 0.8;
-  animation: float 60s infinite linear; /* Much slower */
+  animation: float 60s infinite linear;
   pointer-events: none;
   z-index: 1;
   filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
 }
 
-.cloud-1 { top: 10%; left: -10%; animation-delay: 0s; font-size: 4rem; }
-.cloud-2 { top: 25%; left: -20%; animation-delay: 15s; font-size: 3rem; }
-.cloud-3 { top: 15%; left: -15%; animation-delay: 30s; font-size: 5rem; opacity: 0.6; }
-.cloud-4 { top: 40%; left: -10%; animation-delay: 45s; font-size: 3.5rem; }
-.cloud-5 { top: 5%; left: -25%; animation-delay: 22s; font-size: 2.5rem; opacity: 0.5; }
-.cloud-6 { top: 35%; left: -30%; animation-delay: 7s; font-size: 4.5rem; }
+/* Use negative delays to have clouds visible immediately */
+.cloud-1 { top: 10%; left: -10%; animation-delay: -5s; font-size: 4rem; }
+.cloud-2 { top: 25%; left: -20%; animation-delay: -25s; font-size: 3rem; }
+.cloud-3 { top: 15%; left: -15%; animation-delay: -45s; font-size: 5rem; opacity: 0.6; }
+.cloud-4 { top: 40%; left: -10%; animation-delay: -15s; font-size: 3.5rem; }
+.cloud-5 { top: 5%; left: -25%; animation-delay: -35s; font-size: 2.5rem; opacity: 0.5; }
+.cloud-6 { top: 35%; left: -30%; animation-delay: -55s; font-size: 4.5rem; }
+.cloud-7 { top: 20%; left: -15%; animation-delay: -10s; font-size: 3.2rem; opacity: 0.7; }
+.cloud-8 { top: 45%; left: -20%; animation-delay: -40s; font-size: 4.2rem; }
 
 @keyframes float {
   0% { transform: translateX(-150px); }
@@ -293,7 +298,7 @@ onUnmounted(stopGame);
 .sun {
   position: absolute;
   top: 40px;
-  right: 40px;
+  left: 40px; /* Moved to left */
   font-size: 5rem;
   animation: spin 120s infinite linear;
   z-index: 0;
