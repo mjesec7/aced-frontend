@@ -263,8 +263,8 @@
                     </svg>
                   </div>
                   <div>
-                    <h2 class="card-title">Subscription Plans</h2>
-                    <p class="card-description">Choose the right plan for you</p>
+                    <h2 class="card-title">Subscription Tiers</h2>
+                    <p class="card-description">Choose your subscription duration</p>
                   </div>
                 </div>
               </div>
@@ -272,12 +272,12 @@
               <div class="card-body">
                 <div class="pricing-cards">
                   
-                  <!-- START PLAN -->
+                  <!-- 1 MONTH -->
                   <div 
-                    :class="['pricing-card', { selected: currentPlan === 'start' }]"
-                    @click="selectPaymentPlan('start')"
+                    :class="['pricing-card', { selected: selectedDuration === 1 }]"
+                    @click="selectedDuration = 1"
                   >
-                    <div v-if="currentPlan === 'start'" class="current-badge">
+                    <div v-if="subscriptionDuration === 1 && currentPlan === 'pro'" class="current-badge">
                       <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="20 6 9 17 4 12"/>
                       </svg>
@@ -285,13 +285,12 @@
                     </div>
                     
                     <div class="pricing-header">
-                      <h3>Start</h3>
+                      <h3>1 Month</h3>
                       <div class="pricing-price">
                         <span class="price-currency">UZS</span>
-                        <span class="price-amount">260K</span>
-                        <span class="price-period">/month</span>
+                        <span class="price-amount">250K</span>
                       </div>
-                      <p class="pricing-tagline">For beginners</p>
+                      <p class="pricing-tagline">Monthly subscription</p>
                     </div>
 
                     <ul class="feature-list">
@@ -305,57 +304,43 @@
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                           <polyline points="20 6 9 17 4 12"/>
                         </svg>
-                        Dictionary access
-                      </li>
-                      <li>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                          <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                        Basic courses
-                      </li>
-                      <li>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                          <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                        Homework support
-                      </li>
-                      <li class="disabled">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                          <line x1="18" y1="6" x2="6" y2="18"/>
-                          <line x1="6" y1="6" x2="18" y2="18"/>
-                        </svg>
                         Unlimited images
+                      </li>
+                      <li>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        All pro features
                       </li>
                     </ul>
 
                     <button 
                       class="pricing-button"
-                      :disabled="currentPlan === 'start' || currentPlan === 'pro'"
+                      :disabled="subscriptionDuration === 1 && currentPlan === 'pro'"
                     >
-                      {{ currentPlan === 'start' ? 'Current Plan' : 'Select' }}
+                      {{ (subscriptionDuration === 1 && currentPlan === 'pro') ? 'Current Tier' : 'Select' }}
                     </button>
                   </div>
 
-                  <!-- PRO PLAN -->
+                  <!-- 3 MONTHS - MOST POPULAR -->
                   <div 
-                    :class="['pricing-card', 'featured', { selected: currentPlan === 'pro' || paymentPlan === 'pro' }]"
-                    @click="selectPaymentPlan('pro')"
+                    :class="['pricing-card', 'featured', { selected: selectedDuration === 3 }]"
+                    @click="selectedDuration = 3"
                   >
                     <div class="popular-badge">
                       <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                       </svg>
-                      {{ currentPlan === 'pro' ? 'Current' : 'Popular' }}
+                      {{ (subscriptionDuration === 3 && currentPlan === 'pro') ? 'Current' : 'Most Popular' }}
                     </div>
                     
                     <div class="pricing-header">
-                      <h3>Pro</h3>
+                      <h3>3 Months</h3>
                       <div class="pricing-price">
                         <span class="price-currency">UZS</span>
-                        <span class="price-amount">455K</span>
-                        <span class="price-period">/month</span>
+                        <span class="price-amount">675K</span>
                       </div>
-                      <p class="pricing-tagline">For professionals</p>
+                      <p class="pricing-tagline">225K/month • Save 10%</p>
                     </div>
 
                     <ul class="feature-list">
@@ -363,7 +348,7 @@
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                           <polyline points="20 6 9 17 4 12"/>
                         </svg>
-                        Everything in Start
+                        Unlimited messages
                       </li>
                       <li>
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -375,27 +360,65 @@
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                           <polyline points="20 6 9 17 4 12"/>
                         </svg>
-                        Advanced courses
-                      </li>
-                      <li>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                          <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                        Personal analytics
-                      </li>
-                      <li>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                          <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                        Exclusive content
+                        All pro features
                       </li>
                     </ul>
 
                     <button 
                       class="pricing-button"
-                      :disabled="currentPlan === 'pro'"
+                      :disabled="subscriptionDuration === 3 && currentPlan === 'pro'"
                     >
-                      {{ currentPlan === 'pro' ? 'Current Plan' : 'Upgrade to Pro' }}
+                      {{ (subscriptionDuration === 3 && currentPlan === 'pro') ? 'Current Tier' : 'Select' }}
+                    </button>
+                  </div>
+
+                  <!-- 6 MONTHS -->
+                  <div 
+                    :class="['pricing-card', { selected: selectedDuration === 6 }]"
+                    @click="selectedDuration = 6"
+                  >
+                    <div v-if="subscriptionDuration === 6 && currentPlan === 'pro'" class="current-badge">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      Current
+                    </div>
+                    
+                    <div class="pricing-header">
+                      <h3>6 Months</h3>
+                      <div class="pricing-price">
+                        <span class="price-currency">UZS</span>
+                        <span class="price-amount">1.2M</span>
+                      </div>
+                      <p class="pricing-tagline">200K/month • Save 20%</p>
+                    </div>
+
+                    <ul class="feature-list">
+                      <li>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        Unlimited messages
+                      </li>
+                      <li>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        Unlimited images
+                      </li>
+                      <li>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        All pro features
+                      </li>
+                    </ul>
+
+                    <button 
+                      class="pricing-button"
+                      :disabled="subscriptionDuration === 6 && currentPlan === 'pro'"
+                    >
+                      {{ (subscriptionDuration === 6 && currentPlan === 'pro') ? 'Current Tier' : 'Select' }}
                     </button>
                   </div>
                 </div>
@@ -403,14 +426,14 @@
                 <button 
                   class="btn btn-large btn-primary"
                   @click="goToPayment"
-                  :disabled="!paymentPlan || loading"
+                  :disabled="!selectedDuration || loading"
                   style="margin-top: 24px;"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
                     <line x1="1" y1="10" x2="23" y2="10"/>
                   </svg>
-                  {{ getPaymentButtonText() }}
+                  {{ selectedDuration ? `Subscribe for ${selectedDuration} Month${selectedDuration > 1 ? 's' : ''}` : 'Select a duration' }}
                 </button>
               </div>
             </div>
@@ -625,6 +648,7 @@ export default {
       promoCode: "",
       selectedPlan: "",
       paymentPlan: "",
+      selectedDuration: null, // Selected subscription duration (1, 3, or 6 months)
       
       promoValidation: null,
       promoValidationTimeout: null,
@@ -783,6 +807,16 @@ return 0;
     userId() {
       try {
         return this.currentUser?.uid || null;
+      } catch (e) {
+        return null;
+      }
+    },
+    
+    subscriptionDuration() {
+      try {
+        // Get duration from Vuex store or user details
+        const duration = this.getUser?.subscriptionDuration || this.subscriptionDetails?.duration;
+        return duration || null;
       } catch (e) {
         return null;
       }
@@ -1138,41 +1172,24 @@ this.showNotification('Error applying promo code', 'error');
 },
 
     async goToPayment() {
-      if (!this.paymentPlan) {
-        this.showNotification('Please select a plan for payment', 'warning');
-        return;
-      }
-
-      if (!this.userId) {
-        this.showNotification('Error: User ID not found.', 'error');
-        return;
-      }
-
       try {
-        const amounts = {
-          start: 260000,
-          pro: 455000
-        };
-await this.$router.push({
-          name: 'PaymentSelection',
-          params: { 
-            plan: this.paymentPlan 
-          },
-          query: {
-            userId: this.userId,
-            plan: this.paymentPlan,
-            amount: amounts[this.paymentPlan] || amounts.start,
-            userName: this.user.name || 'User',
-            userEmail: this.user.email || '',
-            currentPlan: this.currentPlan || 'free',
-            provider: 'multicard',
-            source: 'settings',
-            timestamp: Date.now()
+        if (!this.selectedDuration) {
+          this.showNotification('Please select a subscription duration', 'warning');
+          return;
+        }
+
+        // Navigate to payment page with duration parameter
+        await this.$router.push({
+          path: '/pay/pro',
+          query: { 
+            duration: this.selectedDuration,
+            from: 'settings'
           }
         });
       } catch (error) {
-if (error.name !== 'NavigationDuplicated') {
-          this.showNotification('Error navigating to payment.', 'error');
+        if (error.name !== 'NavigationDuplicated') {
+          console.error('Error navigating to payment:', error);
+          this.showNotification('Failed to navigate to payment page', 'error');
         }
       }
     },

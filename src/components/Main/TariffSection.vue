@@ -6,42 +6,24 @@
         <p class="subtitle">Choose the duration that works best for you</p>
       </div>
 
-      <!-- Pro Plan Card -->
-      <div class="pro-plan-wrapper">
-        <div class="plan-card pro">
-          <div class="badge">Most Popular</div>
-          
+      <!-- Three Pricing Cards -->
+      <div class="pricing-cards-grid">
+        
+        <!-- 1 Month Card -->
+        <div class="plan-card">
           <div class="plan-top">
-            <h3 class="plan-name">Pro Plan</h3>
-            <p class="plan-description">Full access to all features</p>
+            <h3 class="plan-name">1 Month</h3>
+            <p class="plan-description">Perfect for trying out</p>
           </div>
 
-          <!-- Duration Selector -->
-          <div class="duration-selector">
-            <button
-              v-for="option in durationOptions"
-              :key="option.months"
-              @click="selectedDuration = option.months"
-              :class="['duration-btn', { active: selectedDuration === option.months }]"
-            >
-              <div class="duration-period">{{ option.label }}</div>
-              <div v-if="option.savings" class="duration-savings">Save {{ option.savings }}</div>
-            </button>
-          </div>
-
-          <!-- Pricing Display -->
           <div class="plan-price">
             <div class="price-main">
-              <span class="amount">{{ formatPrice(currentPrice) }}</span>
+              <span class="amount">250,000</span>
               <span class="currency">UZS</span>
             </div>
-            <div v-if="selectedDuration > 1" class="price-note">
-              <span class="per-month">{{ formatPrice(pricePerMonth) }} UZS/month</span>
-              <span class="save">{{ savingsPercentage }}% OFF</span>
-            </div>
+            <div class="price-period">per month</div>
           </div>
 
-          <!-- Features -->
           <div class="plan-features">
             <div class="feature">
               <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -53,7 +35,13 @@
               <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-              <span>Unlimited tests and analytics</span>
+              <span>Unlimited messages</span>
+            </div>
+            <div class="feature">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>Unlimited images</span>
             </div>
             <div class="feature">
               <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -65,7 +53,59 @@
               <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-              <span>Personal vocabulary</span>
+              <span>Priority support</span>
+            </div>
+          </div>
+
+          <button class="plan-button" @click="handleSubscribe(1)">
+            Subscribe Now
+          </button>
+        </div>
+
+        <!-- 3 Months Card - MOST POPULAR -->
+        <div class="plan-card featured">
+          <div class="badge">Most Popular</div>
+          
+          <div class="plan-top">
+            <h3 class="plan-name">3 Months</h3>
+            <p class="plan-description">Best value for learners</p>
+          </div>
+
+          <div class="plan-price">
+            <div class="price-main">
+              <span class="amount">675,000</span>
+              <span class="currency">UZS</span>
+            </div>
+            <div class="price-note">
+              <span class="per-month">225,000 UZS/month</span>
+              <span class="save">10% OFF</span>
+            </div>
+          </div>
+
+          <div class="plan-features">
+            <div class="feature">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>Access to all subjects</span>
+            </div>
+            <div class="feature">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>Unlimited messages</span>
+            </div>
+            <div class="feature">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>Unlimited images</span>
+            </div>
+            <div class="feature">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>AI homework help</span>
             </div>
             <div class="feature">
               <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -75,10 +115,67 @@
             </div>
           </div>
 
-          <button class="plan-button" @click="handleSubscribe">
+          <button class="plan-button" @click="handleSubscribe(3)">
             Subscribe Now
           </button>
         </div>
+
+        <!-- 6 Months Card -->
+        <div class="plan-card">
+          <div class="plan-top">
+            <h3 class="plan-name">6 Months</h3>
+            <p class="plan-description">Maximum savings</p>
+          </div>
+
+          <div class="plan-price">
+            <div class="price-main">
+              <span class="amount">1,200,000</span>
+              <span class="currency">UZS</span>
+            </div>
+            <div class="price-note">
+              <span class="per-month">200,000 UZS/month</span>
+              <span class="save">20% OFF</span>
+            </div>
+          </div>
+
+          <div class="plan-features">
+            <div class="feature">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>Access to all subjects</span>
+            </div>
+            <div class="feature">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>Unlimited messages</span>
+            </div>
+            <div class="feature">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>Unlimited images</span>
+            </div>
+            <div class="feature">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>AI homework help</span>
+            </div>
+            <div class="feature">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>Priority support</span>
+            </div>
+          </div>
+
+          <button class="plan-button" @click="handleSubscribe(6)">
+            Subscribe Now
+          </button>
+        </div>
+
       </div>
     </div>
   </section>
@@ -90,48 +187,16 @@ import { getAuth } from "firebase/auth";
 export default {
   name: 'TariffSection',
   
-  data() {
-    return {
-      selectedDuration: 1,
-      durationOptions: [
-        { months: 1, label: '1 Month', price: 250000, savings: null },
-        { months: 3, label: '3 Months', price: 675000, savings: '10%' },
-        { months: 6, label: '6 Months', price: 1200000, savings: '20%' }
-      ]
-    };
-  },
-  
-  computed: {
-    currentPrice() {
-      const option = this.durationOptions.find(opt => opt.months === this.selectedDuration);
-      return option ? option.price : 250000;
-    },
-    
-    pricePerMonth() {
-      return Math.round(this.currentPrice / this.selectedDuration);
-    },
-    
-    savingsPercentage() {
-      if (this.selectedDuration === 1) return 0;
-      const basePrice = 250000 * this.selectedDuration;
-      return Math.round(((basePrice - this.currentPrice) / basePrice) * 100);
-    }
-  },
-  
   methods: {
-    formatPrice(price) {
-      return price.toLocaleString('en-US');
-    },
-    
-    handleSubscribe() {
+    handleSubscribe(duration) {
       const auth = getAuth();
       const user = auth.currentUser;
 
       if (!user) {
         window.dispatchEvent(new CustomEvent("open-Login-modal"));
       } else {
-        // Pass duration instead of plan name
-        this.$router.push(`/pay/pro?duration=${this.selectedDuration}`);
+        // Navigate to payment page with duration parameter
+        this.$router.push(`/pay/pro?duration=${duration}`);
       }
     }
   }
@@ -149,7 +214,7 @@ export default {
 }
 
 .container {
-  max-width: 960px;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
@@ -175,24 +240,45 @@ export default {
   font-weight: 400;
 }
 
-/* Pro Plan Wrapper */
-.pro-plan-wrapper {
-  max-width: 480px;
+/* Cards Grid */
+.pricing-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+  max-width: 1000px;
   margin: 0 auto;
 }
 
 /* Plan Card */
 .plan-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: #ffffff;
+  border: 2px solid #e5e7eb;
   border-radius: 20px;
-  padding: 40px 32px;
+  padding: 32px 24px;
   position: relative;
-  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
 }
 
-.plan-card.pro {
-  border: 2px solid rgba(255, 255, 255, 0.2);
+.plan-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+  border-color: #667eea;
+}
+
+/* Featured Card (3 months) */
+.plan-card.featured {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+  transform: scale(1.05);
+}
+
+.plan-card.featured:hover {
+  transform: scale(1.08) translateY(-4px);
+  box-shadow: 0 16px 40px rgba(102, 126, 234, 0.4);
 }
 
 /* Badge */
@@ -213,104 +299,71 @@ export default {
 
 /* Plan Top */
 .plan-top {
-  margin-bottom: 28px;
+  margin-bottom: 24px;
   text-align: center;
 }
 
 .plan-name {
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
   margin: 0 0 8px 0;
-  color: inherit;
+}
+
+.plan-card.featured .plan-name {
+  color: white;
 }
 
 .plan-description {
-  font-size: 15px;
-  margin: 0;
-  opacity: 0.9;
-}
-
-/* Duration Selector */
-.duration-selector {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 24px;
-  background: rgba(0, 0, 0, 0.15);
-  padding: 6px;
-  border-radius: 12px;
-}
-
-.duration-btn {
-  flex: 1;
-  padding: 12px 8px;
-  background: transparent;
-  border: none;
-  border-radius: 8px;
-  color: white;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-family: inherit;
-  position: relative;
-}
-
-.duration-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.duration-btn.active {
-  background: rgba(255, 255, 255, 0.25);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.duration-period {
   font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 2px;
-}
-
-.duration-savings {
-  font-size: 10px;
-  font-weight: 600;
-  color: #fbbf24;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  margin: 0;
+  opacity: 0.8;
 }
 
 /* Pricing */
 .plan-price {
-  margin-bottom: 28px;
-  padding-bottom: 28px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   text-align: center;
+}
+
+.plan-card.featured .plan-price {
+  border-bottom-color: rgba(255, 255, 255, 0.2);
 }
 
 .price-main {
   display: flex;
   align-items: baseline;
-  gap: 8px;
-  margin-bottom: 10px;
+  gap: 6px;
+  margin-bottom: 8px;
   justify-content: center;
 }
 
 .amount {
-  font-size: 44px;
+  font-size: 36px;
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.02em;
 }
 
 .currency {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
-  opacity: 0.9;
+  opacity: 0.8;
+}
+
+.price-period {
+  font-size: 13px;
+  opacity: 0.7;
 }
 
 .price-note {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   justify-content: center;
   flex-wrap: wrap;
+  margin-top: 8px;
 }
 
 .per-month {
@@ -319,8 +372,8 @@ export default {
 }
 
 .save {
-  background: rgba(0, 0, 0, 0.25);
-  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.2);
+  color: #f59e0b;
   padding: 3px 12px;
   border-radius: 6px;
   font-size: 11px;
@@ -328,25 +381,35 @@ export default {
   letter-spacing: 0.5px;
 }
 
+.plan-card.featured .save {
+  background: rgba(0, 0, 0, 0.25);
+  color: #fbbf24;
+}
+
 /* Features */
 .plan-features {
-  margin-bottom: 28px;
+  margin-bottom: 24px;
+  flex-grow: 1;
 }
 
 .feature {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
   font-size: 14px;
   line-height: 1.5;
 }
 
 .feature .icon {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
   margin-top: 2px;
+  color: #667eea;
+}
+
+.plan-card.featured .feature .icon {
   color: #ffffff;
 }
 
@@ -357,32 +420,55 @@ export default {
 /* Button */
 .plan-button {
   width: 100%;
-  padding: 16px 24px;
-  background: #ffffff;
-  color: #764ba2;
+  padding: 14px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
   border: none;
   border-radius: 12px;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
   font-family: inherit;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
 .plan-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(255, 255, 255, 0.3);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
 }
 
 .plan-button:active {
   transform: translateY(0);
 }
 
+.plan-card.featured .plan-button {
+  background: #ffffff;
+  color: #764ba2;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.plan-card.featured .plan-button:hover {
+  box-shadow: 0 6px 16px rgba(255, 255, 255, 0.3);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .pricing-section {
     padding: 64px 20px;
+  }
+
+  .pricing-cards-grid {
+    grid-template-columns: 1fr;
+    max-width: 400px;
+  }
+
+  .plan-card.featured {
+    transform: scale(1);
+  }
+
+  .plan-card.featured:hover {
+    transform: scale(1.02) translateY(-4px);
   }
 
   .title {
@@ -393,24 +479,8 @@ export default {
     font-size: 15px;
   }
 
-  .plan-card {
-    padding: 32px 24px;
-  }
-
-  .plan-name {
-    font-size: 24px;
-  }
-
   .amount {
-    font-size: 38px;
-  }
-
-  .duration-selector {
-    flex-direction: column;
-  }
-
-  .duration-btn {
-    padding: 14px 12px;
+    font-size: 32px;
   }
 }
 
@@ -432,7 +502,7 @@ export default {
   }
 
   .amount {
-    font-size: 36px;
+    font-size: 30px;
   }
 }
 
