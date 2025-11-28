@@ -926,7 +926,8 @@ this.otpError = err.message || 'Invalid verification code';
     formatAmount(amount) {
       if (!amount) return '';
       
-      const uzs = Math.floor(amount);
+      // Convert from tiyin (amount is multiplied by 100) to UZS
+      const uzs = Math.floor(amount / 100);
       
       try {
         return new Intl.NumberFormat('en-US', {
