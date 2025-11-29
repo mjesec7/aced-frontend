@@ -88,6 +88,14 @@
                 Continue <span class="text-xl">→</span>
               </button>
             </div>
+            <div v-else-if="attemptCount >= maxAttempts">
+              <button
+                @click="skipExercise"
+                class="px-8 py-3 bg-orange-500 text-white rounded-xl font-bold hover:bg-orange-600 transition-all transform active:scale-95 shadow-lg hover:shadow-xl flex items-center gap-2 mx-auto"
+              >
+                Skip → Continue Anyway
+              </button>
+            </div>
           </div>
           <div v-else class="text-slate-400 text-sm font-medium">
             Select a marker on the map to answer
@@ -127,10 +135,13 @@ const emit = defineEmits(['next', 'complete']);
 const selectedMarkerId = ref(null);
 const showFeedback = ref(false);
 const isCorrect = ref(false);
+const attemptCount = ref(0);
+const maxAttempts = 3;
 
 const handleMarkerClick = (marker) => {
   if (isCorrect.value) return; // Prevent clicking after success
 
+  attemptCount.value++;
   selectedMarkerId.value = marker.id;
   showFeedback.value = true;
   
@@ -147,6 +158,11 @@ const handleMarkerClick = (marker) => {
       }
     }, 2000);
   }
+};
+
+const skipExercise = () => {
+  emit('complete', false);
+  emit('next');
 };
 </script>
 

@@ -64,12 +64,20 @@
           @input="resetStatus"
         />
         <button
+          v-if="attemptCount < maxAttempts"
           @click="checkAnswer"
           :disabled="status === 'correct' || !userAnswer"
           class="px-6 py-3 rounded-lg font-bold transition-all"
           :class="buttonClass"
         >
           {{ buttonText }}
+        </button>
+        <button
+          v-else
+          @click="skipExercise"
+          class="px-6 py-3 rounded-lg font-bold transition-all bg-orange-500 text-white hover:bg-orange-600"
+        >
+          Skip → Continue Anyway
         </button>
       </div>
     </div>
@@ -96,6 +104,8 @@ const emit = defineEmits(['complete']);
 const userAnswer = ref('');
 const status = ref('idle'); // 'idle' | 'correct' | 'incorrect'
 const feedback = ref('');
+const attemptCount = ref(0);
+const maxAttempts = 3;
 
 const labelColumn = computed(() => {
   // Auto-detect first non-numeric column name
@@ -130,6 +140,7 @@ const resetStatus = () => {
 };
 
 const checkAnswer = () => {
+  attemptCount.value++;
   const val = parseFloat(userAnswer.value);
   if (isNaN(val)) {
     feedback.value = 'Please enter a valid number';
@@ -148,5 +159,9 @@ const checkAnswer = () => {
     feedback.value = '❌ Not quite. Try calculating again.';
     emit('complete', false);
   }
+};
+
+const skipExercise = () => {
+  emit('complete', false);
 };
 </script>

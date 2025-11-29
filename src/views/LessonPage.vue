@@ -279,19 +279,6 @@
                 @remove-dropped-item="handleRemoveDroppedItem"
               />
           </div>
-
-          <div v-if="!isGameStep" class="sidebar-compact">
-             <div class="stats-row">
-                <div class="stat-pill">🏆 {{ earnedPoints }}</div>
-                <div class="stat-pill">⚡ {{ consecutiveCorrect }}</div>
-             </div>
-             <div class="ai-tip-card">
-                <div class="tip-icon">💡</div>
-                <div class="tip-text">
-                   {{ currentStep?.type === 'explanation' ? 'Read carefully!' : 'Good luck!' }}
-                </div>
-             </div>
-          </div>
         </div>
       </div>
     </div>

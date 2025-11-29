@@ -679,18 +679,19 @@ watch(() => props.currentExercise, (newEx) => {
   width: 100%;
   height: 100%;
   overflow-y: auto;
-  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
 }
 
 /* Exercise Card */
 .exercise-card {
-  background: white;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
   border-radius: 24px;
   padding: 32px;
   box-shadow: 
-    0 4px 6px -1px rgba(0, 0, 0, 0.05),
-    0 10px 15px -3px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(226, 232, 240, 0.8);
+    0 8px 32px rgba(31, 38, 135, 0.15),
+    0 4px 16px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.4);
 }
 
 /* Option Button Styles */
@@ -720,9 +721,9 @@ watch(() => props.currentExercise, (newEx) => {
 }
 
 .option-selected {
-  border-color: #8b5cf6;
-  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+  border-color: #a855f7;
+  background: linear-gradient(135deg, #fae8ff 0%, #f3e8ff 100%);
+  box-shadow: 0 4px 16px rgba(168, 85, 247, 0.3);
 }
 
 .option-correct {
@@ -762,7 +763,7 @@ watch(() => props.currentExercise, (newEx) => {
 }
 
 .letter-selected {
-  background: #8b5cf6;
+  background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
   color: white;
 }
 

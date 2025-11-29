@@ -58,11 +58,20 @@
       </transition>
 
       <button
-        v-if="!isCorrect"
+        v-if="!isCorrect && attemptCount < maxAttempts"
         @click="checkAnswer"
         class="btn-check"
       >
         Check Answer
+      </button>
+      
+      <!-- Skip button after 3 attempts -->
+      <button
+        v-else-if="!isCorrect && attemptCount >= maxAttempts"
+        @click="skipExercise"
+        class="btn-skip"
+      >
+        Skip → Continue Anyway
       </button>
       
       <button
@@ -139,6 +148,8 @@ const emit = defineEmits(['next', 'complete']);
 const currentValue = ref(Math.floor((props.max - props.min) / 2));
 const showFeedback = ref(false);
 const isCorrect = ref(false);
+const attemptCount = ref(0);
+const maxAttempts = 3;
 
 // Chart Configuration
 const chartData = computed(() => ({
@@ -146,9 +157,16 @@ const chartData = computed(() => ({
   datasets: [
     {
       label: 'Frequency',
-      backgroundColor: '#FBBF24', // Amber/Yellow matching screenshot
-      hoverBackgroundColor: '#F59E0B',
-      borderRadius: 6,
+      backgroundColor: (context) => {
+        const ctx = context.chart.ctx;
+        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, '#06b6d4'); // Cyan
+        gradient.addColorStop(0.5, '#8b5cf6'); // Purple
+        gradient.addColorStop(1, '#ec4899'); // Pink
+        return gradient;
+      },
+      hoverBackgroundColor: '#f59e0b',
+      borderRadius: 8,
       borderSkipped: false,
       data: props.data.values
     }
@@ -231,6 +249,7 @@ const chartOptions = {
 };
 
 const checkAnswer = () => {
+  attemptCount.value++;
   // Allow for a tolerance based on step size
   const tolerance = props.step * 2;
   if (Math.abs(currentValue.value - props.correctValue) <= tolerance) {
@@ -244,6 +263,11 @@ const checkAnswer = () => {
       showFeedback.value = false;
     }, 2000);
   }
+};
+
+const skipExercise = () => {
+  emit('complete', false);
+  emit('next');
 };
 </script>
 
@@ -356,10 +380,10 @@ const checkAnswer = () => {
 
 .slider-fill {
   height: 100%;
-  background: linear-gradient(90deg, #8B5CF6 0%, #A855F7 100%);
+  background: linear-gradient(90deg, #06b6d4 0%, #8b5cf6 50%, #ec4899 100%);
   border-radius: 6px;
   transition: width 0.1s ease-out;
-  box-shadow: 0 1px 3px rgba(139, 92, 246, 0.5);
+  box-shadow: 0 2px 6px rgba(139, 92, 246, 0.6);
 }
 
 .slider-input {
@@ -556,6 +580,37 @@ const checkAnswer = () => {
   width: 18px;
   height: 18px;
   stroke-width: 2.5;
+}
+
+/* Skip Button */
+.btn-skip {
+  padding: 14px 32px;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+  color: #FFFFFF;
+  box-shadow: 
+    0 4px 14px rgba(245, 158, 11, 0.3),
+    0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-skip:hover {
+  background: linear-gradient(135deg, #ea580c 0%, #dc2626 100%);
+  transform: translateY(-2px);
+  box-shadow: 
+    0 6px 20px rgba(245, 158, 11, 0.4),
+    0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-skip:active {
+  transform: translateY(0) scale(0.98);
 }
 
 /* Transitions */
