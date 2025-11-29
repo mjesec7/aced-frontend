@@ -1,29 +1,30 @@
 <template>
-  <div class="w-full mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-100">
-    <div class="p-6 md:p-10">
+  <div class="w-full mx-auto bg-white rounded-xl shadow-lg overflow-hidden border border-slate-100">
+    <div class="p-4 md:p-5">
       <!-- Header -->
-      <div class="text-center mb-8">
-        <h2 class="text-2xl font-bold text-slate-900 mb-2">{{ title }}</h2>
-        <p class="text-slate-600">{{ description }}</p>
+      <div class="text-center mb-4">
+        <h2 class="text-xl font-bold text-slate-900 mb-1">{{ title }}</h2>
+        <p class="text-sm text-slate-600">{{ description }}</p>
       </div>
 
       <!-- Map Container -->
-      <div class="relative w-full aspect-video bg-slate-100 rounded-xl overflow-hidden shadow-inner border border-slate-200">
-        <!-- Map Image -->
-        <img 
-          :src="image" 
-          alt="Map" 
-          class="w-full h-full object-cover"
-        />
+      <div class="relative w-full" style="height: 400px;">
+        <div class="absolute inset-0 bg-slate-100 rounded-lg overflow-hidden shadow-inner border border-slate-200">
+          <!-- Map Image -->
+          <img 
+            :src="image" 
+            alt="Map" 
+            class="w-full h-full object-contain"
+          />
 
-        <!-- Markers -->
-        <div 
-          v-for="marker in markers" 
-          :key="marker.id"
-          class="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-all duration-300"
-          :style="{ left: marker.x + '%', top: marker.y + '%' }"
-          @click="handleMarkerClick(marker)"
-        >
+          <!-- Markers -->
+          <div 
+            v-for="marker in markers" 
+            :key="marker.id"
+            class="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-all duration-300"
+            :style="{ left: marker.x + '%', top: marker.y + '%' }"
+            @click="handleMarkerClick(marker)"
+          >
           <!-- Marker Pin -->
           <div 
             class="relative group"
@@ -34,7 +35,7 @@
           >
             <!-- Pin Icon -->
             <div 
-              class="w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center shadow-lg border-2 transition-colors"
+              class="w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center shadow-lg border-2 transition-colors"
               :class="[
                 selectedMarkerId === marker.id
                   ? (isCorrect && marker.isCorrect ? 'bg-green-500 border-white text-white' : 'bg-red-500 border-white text-white')
@@ -55,12 +56,13 @@
               {{ marker.label }}
               <div class="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900"></div>
             </div>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- Feedback & Action -->
-      <div class="mt-8 flex flex-col items-center min-h-[100px]">
+      <div class="mt-4 flex flex-col items-center min-h-[80px]">
         <transition name="fade-scale" mode="out-in">
           <div v-if="showFeedback" class="text-center w-full">
             <div 

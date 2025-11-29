@@ -54,36 +54,36 @@
                     "title": "World Geography",
                     "description": "Locate the city on the map",
                     "data": {
-                        "title": "Find Bergen, Norway",
-                        "description": "Click on the correct marker to identify Bergen",
-                        "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Asia_%28orthographic_projection%29.svg/800px-Asia_%28orthographic_projection%29.svg.png",
+                        "title": "Find Tokyo, Japan",
+                        "description": "Click on the correct marker to identify Tokyo",
+                        "image": "https://i.imgur.com/2yQjKZD.png",
                         "markers": [
                             {
                                 "id": 1,
-                                "x": 60.4,
-                                "y": 18.2,
-                                "label": "Bergen",
+                                "x": 82,
+                                "y": 42,
+                                "label": "Tokyo",
                                 "isCorrect": true
                             },
                             {
                                 "id": 2,
-                                "x": 45.3,
-                                "y": 35.6,
-                                "label": "Paris",
+                                "x": 65,
+                                "y": 45,
+                                "label": "Beijing",
                                 "isCorrect": false
                             },
                             {
                                 "id": 3,
-                                "x": 70.2,
-                                "y": 25.4,
-                                "label": "Moscow",
+                                "x": 50,
+                                "y": 55,
+                                "label": "Mumbai",
                                 "isCorrect": false
                             },
                             {
                                 "id": 4,
-                                "x": 52.8,
-                                "y": 42.1,
-                                "label": "Rome",
+                                "x": 75,
+                                "y": 35,
+                                "label": "Seoul",
                                 "isCorrect": false
                             }
                         ]
