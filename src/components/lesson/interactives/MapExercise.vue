@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full max-w-4xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-100">
+  <div class="w-full mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-100">
     <div class="p-6 md:p-10">
       <!-- Header -->
       <div class="text-center mb-8">

@@ -1,11 +1,11 @@
 <template>
-  <div class="interactive-step step-animate-in">
-    <p class="text-lg text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
+  <div class="interactive-step step-animate-in w-full">
+    <p class="text-lg text-gray-600 dark:text-gray-300 mb-8 leading-relaxed">
       {{ step.prompt }}
     </p>
 
     <!-- Data Table -->
-    <div class="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm mb-6">
+    <div class="overflow-x-auto overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm mb-8">
       <table class="w-full text-left bg-white dark:bg-gray-800">
         <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
           <tr>
@@ -46,7 +46,7 @@
     </div>
 
     <!-- Answer Input -->
-    <div class="bg-gray-50 dark:bg-gray-800 p-6 rounded-xl">
+    <div class="bg-gray-50 dark:bg-gray-800 p-6 rounded-xl max-w-2xl mx-auto">
       <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
         Enter the Mean (Average):
       </label>

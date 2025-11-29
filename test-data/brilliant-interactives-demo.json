@@ -56,7 +56,7 @@
                     "data": {
                         "title": "Find Bergen, Norway",
                         "description": "Click on the correct marker to identify Bergen",
-                        "image": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/10m_physical/ne_10m_geography_regions_polys.dbf",
+                        "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Asia_%28orthographic_projection%29.svg/800px-Asia_%28orthographic_projection%29.svg.png",
                         "markers": [
                             {
                                 "id": 1,

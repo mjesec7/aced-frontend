@@ -89,7 +89,7 @@
     </div>
 
     <!-- EXERCISE MODE -->
-    <div v-else-if="currentExercise" class="max-w-4xl mx-auto h-full overflow-y-auto px-4 py-6">
+    <div v-else-if="currentExercise" class="w-full mx-auto px-4 py-6">
 
       <!-- Exercise Header -->
       <header 
