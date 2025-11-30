@@ -1,48 +1,98 @@
 <template>
-  <div class="w-full space-y-6">
+  <div class="w-full max-w-6xl mx-auto">
     <!-- Challenge Header -->
-    <div class="bg-gradient-to-r from-indigo-500/20 to-purple-500/20 backdrop-blur-xl rounded-2xl border border-white/20 p-6">
-      <h3 class="text-white font-bold text-lg mb-2">{{ title || 'Coding Challenge' }}</h3>
-      <p class="text-white/70 text-sm">{{ description || 'Program the robot to reach the goal.' }}</p>
+    <div class="bg-[linear-gradient(135deg,rgb(139,92,246),rgb(219,39,119))] rounded-3xl p-8 mb-8 shadow-2xl">
+      <h3 class="text-white font-black text-2xl mb-3">{{ title || '🎮 Maze Challenge' }}</h3>
+      <p class="text-white/90 text-base">{{ description || 'Use the arrow buttons to navigate the robot to the golden star!' }}</p>
     </div>
 
-    <div class="grid md:grid-cols-2 gap-6">
-      <!-- Left: Direct Controls -->
-      <div class="space-y-4">
+    <div class="flex flex-col lg:flex-row gap-8 items-start">
+      <!-- Maze Grid - Now Larger and Primary -->
+      <div class="flex-1 order-2 lg:order-1">
+        <div class="bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-8 shadow-2xl border-4 border-purple-500/30">
+          <h4 class="text-purple-300 font-bold text-sm uppercase tracking-wider mb-6 text-center">🗺️ Maze Grid</h4>
+          
+          <!-- Maze Visualization -->
+          <div v-if="type === 'maze' || config?.type === 'maze'">
+            <div class="grid grid-cols-5 gap-3 bg-slate-950/50 p-4 rounded-2xl">
+              <div 
+                v-for="(cell, index) in 25" 
+                :key="index"
+                class="aspect-square rounded-xl flex items-center justify-center text-4xl transition-all duration-300 shadow-lg"
+                :class="getCellClass(index)"
+              >
+                {{ getCellContent(index) }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Geometry/Turtle Visualization -->
+          <div v-else class="aspect-square bg-white rounded-2xl relative shadow-inner">
+            <svg class="w-full h-full" viewBox="0 0 200 200">
+              <path 
+                v-for="(line, index) in drawnLines" 
+                :key="index"
+                :d="`M ${line.from.x} ${line.from.y} L ${line.to.x} ${line.to.y}`"
+                stroke="#8b5cf6"
+                stroke-width="2"
+                fill="none"
+                class="animate-draw"
+              />
+              <circle 
+                v-if="turtlePosition"
+                :cx="turtlePosition.x" 
+                :cy="turtlePosition.y" 
+                r="4" 
+                fill="#ec4899"
+                class="animate-pulse"
+              />
+            </svg>
+          </div>
+
+          <!-- Status -->
+          <div v-if="statusMessage" class="mt-6 p-4 rounded-2xl backdrop-blur-md shadow-lg"
+               :class="success ? 'bg-emerald-500/30 border-2 border-emerald-400 text-emerald-100' : 'bg-rose-500/30 border-2 border-rose-400 text-rose-100'">
+            <p class="text-base font-bold text-center">{{ statusMessage }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Controls - Now Sidebar -->
+      <div class="w-full lg:w-80 order-1 lg:order-2 space-y-6">
         <!-- Movement Controls -->
-        <div class="bg-black/30 backdrop-blur-xl rounded-2xl border border-white/20 p-6">
-          <h4 class="text-white/70 text-xs uppercase tracking-wide mb-4 text-center">Move the Robot</h4>
-          <div class="flex flex-col items-center gap-2">
+        <div class="bg-gradient-to-br from-purple-600 to-pink-600 rounded-3xl p-8 shadow-2xl">
+          <h4 class="text-white font-bold text-base uppercase tracking-wide mb-6 text-center">🎮 Controls</h4>
+          <div class="flex flex-col items-center gap-3">
             <!-- Up Arrow -->
             <button
               @click="moveDirection('up')"
               :disabled="running"
-              class="w-16 h-16 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl hover:shadow-lg hover:scale-110 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-2xl"
+              class="w-20 h-20 bg-white/95 hover:bg-white text-purple-600 font-black rounded-2xl hover:shadow-2xl hover:scale-110 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed text-3xl active:scale-95 shadow-xl"
             >
-              ⬆️
+              ⬆
             </button>
             <!-- Left, Down, Right Arrows -->
-            <div class="flex gap-2">
+            <div class="flex gap-3">
               <button
                 @click="moveDirection('left')"
                 :disabled="running"
-                class="w-16 h-16 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl hover:shadow-lg hover:scale-110 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-2xl"
+                class="w-20 h-20 bg-white/95 hover:bg-white text-purple-600 font-black rounded-2xl hover:shadow-2xl hover:scale-110 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed text-3xl active:scale-95 shadow-xl"
               >
-                ⬅️
+                ⬅
               </button>
               <button
                 @click="moveDirection('down')"
                 :disabled="running"
-                class="w-16 h-16 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl hover:shadow-lg hover:scale-110 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-2xl"
+                class="w-20 h-20 bg-white/95 hover:bg-white text-purple-600 font-black rounded-2xl hover:shadow-2xl hover:scale-110 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed text-3xl active:scale-95 shadow-xl"
               >
-                ⬇️
+                ⬇
               </button>
               <button
                 @click="moveDirection('right')"
                 :disabled="running"
-                class="w-16 h-16 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl hover:shadow-lg hover:scale-110 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-2xl"
+                class="w-20 h-20 bg-white/95 hover:bg-white text-purple-600 font-black rounded-2xl hover:shadow-2xl hover:scale-110 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed text-3xl active:scale-95 shadow-xl"
               >
-                ➡️
+                ➡
               </button>
             </div>
           </div>
@@ -51,58 +101,10 @@
         <!-- Reset Button -->
         <button
           @click="resetVisualization"
-          class="w-full py-3 bg-white/10 backdrop-blur-md text-white font-bold rounded-xl hover:bg-white/20 transition-all duration-200"
+          class="w-full py-5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black text-lg rounded-2xl hover:shadow-2xl hover:scale-105 transition-all duration-200 active:scale-95 shadow-xl"
         >
-          ⟲ Reset Position
+          🔄 Reset
         </button>
-      </div>
-
-      <!-- Right: Visualization -->
-      <div class="bg-black/30 backdrop-blur-xl rounded-2xl border border-white/20 p-6">
-        <h4 class="text-white/70 text-xs uppercase tracking-wide mb-4">Preview</h4>
-        
-        <!-- Maze Visualization -->
-        <div v-if="type === 'maze' || config?.type === 'maze'" class="space-y-4">
-          <div class="grid grid-cols-5 gap-1">
-            <div 
-              v-for="(cell, index) in  25" 
-              :key="index"
-              class="aspect-square rounded flex items-center justify-center text-2xl transition-all duration-300"
-              :class="getCellClass(index)"
-            >
-              {{ getCellContent(index) }}
-            </div>
-          </div>
-        </div>
-
-        <!-- Geometry/Turtle Visualization -->
-        <div v-else class="aspect-square bg-white rounded-lg relative">
-          <svg class="w-full h-full" viewBox="0 0 200 200">
-            <path 
-              v-for="(line, index) in drawnLines" 
-              :key="index"
-              :d="`M ${line.from.x} ${line.from.y} L ${line.to.x} ${line.to.y}`"
-              stroke="#8b5cf6"
-              stroke-width="2"
-              fill="none"
-              class="animate-draw"
-            />
-            <circle 
-              v-if="turtlePosition"
-              :cx="turtlePosition.x" 
-              :cy="turtlePosition.y" 
-              r="4" 
-              fill="#ec4899"
-              class="animate-pulse"
-            />
-          </svg>
-        </div>
-
-        <!-- Status -->
-        <div v-if="statusMessage" class="mt-4 p-3 rounded-lg backdrop-blur-md"
-             :class="success ? 'bg-green-500/20 border border-green-400/50 text-green-300' : 'bg-blue-500/20 border border-blue-400/50 text-blue-300'">
-          <p class="text-sm font-medium">{{ statusMessage }}</p>
-        </div>
       </div>
     </div>
   </div>
@@ -165,15 +167,15 @@ const getCellClass = (index) => {
   const y = Math.floor(index / 5);
   
   if (robotPosition.value.x === x && robotPosition.value.y === y) {
-    return 'bg-[linear-gradient(to_bottom_right,rgb(74,222,128),rgb(16,185,129))] shadow-lg shadow-green-500/50';
+    return 'bg-[linear-gradient(135deg,rgb(34,211,238),rgb(59,130,246))] shadow-2xl shadow-cyan-400/60 border-2 border-cyan-300/50';
   }
   if (goalPosition.value.x === x && goalPosition.value.y === y) {
-    return 'bg-[linear-gradient(to_bottom_right,rgb(250,204,21),rgb(249,115,22))] shadow-lg shadow-yellow-500/50';
+    return 'bg-[linear-gradient(135deg,rgb(251,191,36),rgb(245,158,11))] shadow-2xl shadow-amber-400/60 border-2 border-amber-300/50 animate-pulse';
   }
   if (walls.value.some(w => w.x === x && w.y === y)) {
-    return 'bg-slate-700';
+    return 'bg-[linear-gradient(135deg,rgb(88,28,135),rgb(126,34,206))] border-2 border-purple-700/30';
   }
-  return 'bg-white/5';
+  return 'bg-slate-800/40 border border-slate-700/30 hover:bg-slate-700/40 transition-colors';
 };
 
 const getCellContent = (index) => {
@@ -181,8 +183,7 @@ const getCellContent = (index) => {
   const y = Math.floor(index / 5);
   
   if (robotPosition.value.x === x && robotPosition.value.y === y) {
-    const arrows = ['➡️', '⬇️', '⬅️', '⬆️'];
-    return arrows[robotDirection.value];
+    return '🤖';
   }
   if (goalPosition.value.x === x && goalPosition.value.y === y) {
     return '⭐';
