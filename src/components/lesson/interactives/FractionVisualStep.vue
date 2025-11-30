@@ -20,7 +20,7 @@
             class="w-12 h-12 rounded-lg border-2 transition-all duration-300"
             :class="i < step.targetNumerator 
               ? 'bg-blue-500 border-blue-600' 
-              : 'bg-white border-gray-200
+              : 'bg-white border-gray-200'"
           />
         </div>
       </div>
@@ -112,7 +112,7 @@ const buttonClass = computed(() => {
   if (status.value === 'incorrect') {
     return 'bg-red-100 text-red-700 ring-2 ring-red-500 ring-offset-2';
   }
-  return 'bg-gray-100 text-gray-900 hover:bg-gray-200
+  return 'bg-gray-100 text-gray-900 hover:bg-gray-200';
 });
 
 const toggleCell = (index) => {
