@@ -7,7 +7,7 @@
     <!-- Drag Container -->
     <div 
       class="bg-gray-50 p-6 rounded-xl border border-gray-200 min-h-[100px] flex flex-wrap gap-3 items-center"
-      :class="{ 'bg-blue-50 border-blue-200 dragging }"
+      :class="{ 'bg-blue-50 border-blue-200': dragging }"
       @dragover.prevent="dragging = true"
       @dragleave="dragging = false"
       @drop="dragging = false"

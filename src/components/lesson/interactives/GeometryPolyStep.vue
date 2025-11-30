@@ -80,7 +80,7 @@
       leave-to-class="max-h-0 opacity-0"
     >
       <div v-if="sliderVal > 0.5" class="flex flex-col gap-4 mt-4">
-        <p class="font-semibold text-gray-800
+        <p class="font-semibold text-gray-800">
           What shape do the exterior angles form?
         </p>
         <div class="flex gap-3 flex-wrap">
@@ -107,7 +107,7 @@
           :class="{
             'bg-green-500 cursor-default': status === 'correct',
             'bg-red-500 hover:bg-red-600': status === 'incorrect',
-            'bg-zinc-900 hover:bg-zinc-800 status === 'idle'
+            'bg-zinc-900 hover:bg-zinc-800': status === 'idle'
           }"
         >
           {{ status === 'correct' ? 'Correct!' : status === 'incorrect' ? 'Incorrect, look closer!' : 'Confirm' }}

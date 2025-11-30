@@ -34,7 +34,7 @@
             :disabled="mixingState === 'mixing'"
             class="p-2 border border-gray-200 rounded-lg text-center font-mono font-bold 
                    focus:ring-2 focus:ring-purple-400 outline-none
-                   bg-white text-gray-900
+                   bg-white text-gray-900"
             @input="resetMixing"
           />
         </div>
@@ -112,7 +112,7 @@
             :disabled="mixingState === 'mixing'"
             class="p-2 border border-gray-200 rounded-lg text-center font-mono font-bold 
                    focus:ring-2 focus:ring-purple-400 outline-none
-                   bg-white text-gray-900
+                   bg-white text-gray-900"
             @input="resetMixing"
           />
         </div>
@@ -120,7 +120,7 @@
     </div>
 
     <!-- Info Panel -->
-    <div class="bg-gray-50 rounded-xl p-4 text-sm flex flex-col sm:flex-row justify-between gap-2 border border-gray-100
+    <div class="bg-gray-50 rounded-xl p-4 text-sm flex flex-col sm:flex-row justify-between gap-2 border border-gray-100">
       <div>
         <span class="font-semibold">Target:</span> 
         {{ substanceA.targetVolume }}ml + {{ substanceB.targetVolume }}ml 

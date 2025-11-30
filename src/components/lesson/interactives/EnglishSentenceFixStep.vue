@@ -36,7 +36,7 @@
             class="px-4 py-2 rounded-lg border font-medium transition-colors"
             :class="{
               'bg-purple-100 text-purple-700 border-purple-300': currentWords[selectedErrorIndex] === opt,
-              'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 currentWords[selectedErrorIndex] !== opt
+              'bg-white text-gray-700 border-gray-200 hover:bg-gray-50': currentWords[selectedErrorIndex] !== opt
             }"
           >
             {{ opt }}
@@ -109,7 +109,7 @@ const originalWord = computed(() => {
 
 const getTokenClass = (idx) => {
   const isError = errorIndices.value.has(idx);
-  if (!isError) return 'border-transparent bg-white cursor-default text-gray-800
+  if (!isError) return 'border-transparent bg-white cursor-default text-gray-800';
 
   const isSelected = idx === selectedErrorIndex.value;
   const errorDef = props.step.errors.find(e => e.index === idx);
@@ -122,9 +122,9 @@ const getTokenClass = (idx) => {
   }
 
   if (isFixed) {
-    classes += 'bg-green-100 text-green-800 border-green-200
+    classes += 'bg-green-100 text-green-800 border-green-200';
   } else {
-    classes += 'bg-orange-100 text-orange-800 border-orange-200
+    classes += 'bg-orange-100 text-orange-800 border-orange-200';
   }
 
   return classes;

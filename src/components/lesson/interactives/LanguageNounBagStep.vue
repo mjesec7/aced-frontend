@@ -8,8 +8,8 @@
     <div 
       class="bg-gray-50 p-4 rounded-xl border-2 transition-all duration-200 min-h-[120px]"
       :class="{
-        'border-blue-300 bg-blue-50 ring-2 ring-blue-100 draggedItem?.source === 'bag',
-        'border-gray-200 draggedItem?.source !== 'bag'
+        'border-blue-300 bg-blue-50 ring-2 ring-blue-100': draggedItem?.source === 'bag',
+        'border-gray-200': draggedItem?.source !== 'bag'
       }"
       @dragover.prevent
       @drop="onDrop('available')"
@@ -49,7 +49,7 @@
           class="relative z-10 bg-indigo-50 border-4 rounded-2xl p-6 min-h-[160px] shadow-lg flex flex-col items-center transition-all duration-200"
           :class="{
             'border-indigo-400 bg-indigo-100 ring-4 ring-indigo-200 scale-[1.02]': draggedItem?.source === 'available',
-            'border-indigo-200 draggedItem?.source !== 'available'
+            'border-indigo-200': draggedItem?.source !== 'available'
           }"
           @dragover.prevent
           @drop="onDrop('bag')"
@@ -73,12 +73,12 @@
               @click="removeFromBag(idx)"
               class="px-4 py-2 rounded-full border border-indigo-300 bg-indigo-100 text-indigo-800 font-medium transition-all active:scale-95 select-none cursor-grab active:cursor-grabbing group relative"
               :class="{
-                'hover:bg-red-50 hover:text-red-600 hover:border-red-200 status !== 'correct',
+                'hover:bg-red-50 hover:text-red-600 hover:border-red-200': status !== 'correct',
                 'opacity-80 cursor-not-allowed': status === 'correct'
               }"
             >
               {{ word.text }}
-              <span class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 font-bold text-xs pointer-events-none text-red-500
+              <span class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 font-bold text-xs pointer-events-none text-red-500">
                 ✕
               </span>
             </div>

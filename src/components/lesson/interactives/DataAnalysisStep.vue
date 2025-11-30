@@ -59,7 +59,7 @@
           class="flex-1 p-3 border border-gray-300 rounded-lg 
                  focus:ring-2 focus:ring-purple-500 focus:border-purple-500 
                  outline-none transition-all bg-white
-                 text-gray-900
+                 text-gray-900"
           @keyup.enter="checkAnswer"
           @input="resetStatus"
         />
