@@ -1,11 +1,11 @@
 <template>
   <div class="interactive-step step-animate-in">
-    <p class="text-lg text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
+    <p class="text-lg text-gray-600 mb-6 leading-relaxed">
       {{ step.prompt }}
     </p>
 
     <!-- SVG Canvas -->
-    <div class="bg-gray-100 dark:bg-gray-800 rounded-xl overflow-hidden shadow-inner border border-gray-200 dark:border-gray-700 select-none">
+    <div class="bg-gray-100 rounded-xl overflow-hidden shadow-inner border border-gray-200 select-none">
       <svg viewBox="0 0 400 300" class="w-full h-auto">
         <!-- Guide Rays -->
         <line
@@ -56,8 +56,8 @@
     </div>
 
     <!-- Slider Control -->
-    <div class="flex items-center gap-4 bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm mt-6">
-      <span class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Large</span>
+    <div class="flex items-center gap-4 bg-white p-4 rounded-lg border border-gray-200 shadow-sm mt-6">
+      <span class="text-xs font-bold text-gray-500 uppercase">Large</span>
       <input
         type="range"
         min="0"
@@ -65,9 +65,9 @@
         step="0.01"
         v-model.number="sliderVal"
         @input="handleSliderChange"
-        class="flex-1 h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-blue-500"
+        class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
       />
-      <span class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Point</span>
+      <span class="text-xs font-bold text-gray-500 uppercase">Point</span>
     </div>
 
     <!-- Question Block - Only appears when shrunk -->
@@ -80,7 +80,7 @@
       leave-to-class="max-h-0 opacity-0"
     >
       <div v-if="sliderVal > 0.5" class="flex flex-col gap-4 mt-4">
-        <p class="font-semibold text-gray-800 dark:text-gray-200">
+        <p class="font-semibold text-gray-800
           What shape do the exterior angles form?
         </p>
         <div class="flex gap-3 flex-wrap">
@@ -91,8 +91,8 @@
             :disabled="status === 'correct'"
             class="flex-1 min-w-[80px] py-3 px-2 rounded-lg border font-medium transition-all"
             :class="{
-              'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 shadow-sm': selectedShape === opt,
-              'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 hover:border-gray-300': selectedShape !== opt
+              'border-blue-500 bg-blue-50 text-blue-700 shadow-sm': selectedShape === opt,
+              'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 hover:border-gray-300': selectedShape !== opt
             }"
           >
             {{ opt }}
@@ -107,7 +107,7 @@
           :class="{
             'bg-green-500 cursor-default': status === 'correct',
             'bg-red-500 hover:bg-red-600': status === 'incorrect',
-            'bg-zinc-900 dark:bg-zinc-700 hover:bg-zinc-800 dark:hover:bg-zinc-600': status === 'idle'
+            'bg-zinc-900 hover:bg-zinc-800 status === 'idle'
           }"
         >
           {{ status === 'correct' ? 'Correct!' : status === 'incorrect' ? 'Incorrect, look closer!' : 'Confirm' }}

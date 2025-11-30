@@ -1,20 +1,20 @@
 <template>
   <div class="interactive-step step-animate-in">
-    <p class="text-lg text-gray-600 dark:text-gray-300 mb-8 leading-relaxed">
+    <p class="text-lg text-gray-600 mb-8 leading-relaxed">
       {{ step.prompt }}
     </p>
 
     <!-- Available Words Area -->
     <div 
-      class="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border-2 transition-all duration-200 min-h-[120px]"
+      class="bg-gray-50 p-4 rounded-xl border-2 transition-all duration-200 min-h-[120px]"
       :class="{
-        'border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-100 dark:ring-blue-800': draggedItem?.source === 'bag',
-        'border-gray-200 dark:border-gray-700': draggedItem?.source !== 'bag'
+        'border-blue-300 bg-blue-50 ring-2 ring-blue-100 draggedItem?.source === 'bag',
+        'border-gray-200 draggedItem?.source !== 'bag'
       }"
       @dragover.prevent
       @drop="onDrop('available')"
     >
-      <h3 class="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+      <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">
         {{ availableLabel }}
       </h3>
       <div class="flex flex-wrap gap-2">
@@ -24,15 +24,15 @@
           :draggable="status !== 'correct'"
           @dragstart="onDragStart($event, 'available', idx)"
           @click="moveToBag(idx)"
-          class="px-4 py-2 rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-medium transition-all active:scale-95 select-none cursor-grab active:cursor-grabbing"
+          class="px-4 py-2 rounded-full border border-gray-300 bg-white text-gray-700 font-medium transition-all active:scale-95 select-none cursor-grab active:cursor-grabbing"
           :class="{
-            'hover:bg-gray-100 dark:hover:bg-gray-600 hover:border-gray-400 dark:hover:border-gray-500 hover:shadow-sm': status !== 'correct',
+            'hover:bg-gray-100 hover:border-gray-400 hover:shadow-sm': status !== 'correct',
             'opacity-50 cursor-not-allowed': status === 'correct'
           }"
         >
           {{ word.text }}
         </div>
-        <span v-if="availableWords.length === 0" class="text-gray-400 dark:text-gray-500 italic text-sm self-center">
+        <span v-if="availableWords.length === 0" class="text-gray-400 italic text-sm self-center">
           {{ emptyAvailableMessage }}
         </span>
       </div>
@@ -42,26 +42,26 @@
     <div class="flex flex-col items-center mt-8">
       <div class="relative w-full max-w-sm">
         <!-- Handle -->
-        <div class="absolute -top-4 left-1/2 transform -translate-x-1/2 w-16 h-8 border-4 border-gray-400 dark:border-gray-500 rounded-t-xl z-0" />
+        <div class="absolute -top-4 left-1/2 transform -translate-x-1/2 w-16 h-8 border-4 border-gray-400 rounded-t-xl z-0" />
         
         <!-- Case Body -->
         <div 
-          class="relative z-10 bg-indigo-50 dark:bg-indigo-900/20 border-4 rounded-2xl p-6 min-h-[160px] shadow-lg flex flex-col items-center transition-all duration-200"
+          class="relative z-10 bg-indigo-50 border-4 rounded-2xl p-6 min-h-[160px] shadow-lg flex flex-col items-center transition-all duration-200"
           :class="{
-            'border-indigo-400 dark:border-indigo-500 bg-indigo-100 dark:bg-indigo-900/40 ring-4 ring-indigo-200 dark:ring-indigo-800 scale-[1.02]': draggedItem?.source === 'available',
-            'border-indigo-200 dark:border-indigo-700': draggedItem?.source !== 'available'
+            'border-indigo-400 bg-indigo-100 ring-4 ring-indigo-200 scale-[1.02]': draggedItem?.source === 'available',
+            'border-indigo-200 draggedItem?.source !== 'available'
           }"
           @dragover.prevent
           @drop="onDrop('bag')"
         >
-          <h3 class="text-sm font-bold text-indigo-400 dark:text-indigo-300 uppercase tracking-wider mb-4">
+          <h3 class="text-sm font-bold text-indigo-400 uppercase tracking-wider mb-4">
             {{ bagLabel }}
           </h3>
           
           <div class="flex flex-wrap gap-2 justify-center w-full">
             <div 
               v-if="bagWords.length === 0"
-              class="text-indigo-300 dark:text-indigo-500 text-sm italic py-4 border-2 border-dashed border-indigo-200 dark:border-indigo-700 rounded-lg w-full text-center pointer-events-none"
+              class="text-indigo-300 text-sm italic py-4 border-2 border-dashed border-indigo-200 rounded-lg w-full text-center pointer-events-none"
             >
               {{ emptyBagMessage }}
             </div>
@@ -71,14 +71,14 @@
               :draggable="status !== 'correct'"
               @dragstart="onDragStart($event, 'bag', idx)"
               @click="removeFromBag(idx)"
-              class="px-4 py-2 rounded-full border border-indigo-300 dark:border-indigo-600 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-200 font-medium transition-all active:scale-95 select-none cursor-grab active:cursor-grabbing group relative"
+              class="px-4 py-2 rounded-full border border-indigo-300 bg-indigo-100 text-indigo-800 font-medium transition-all active:scale-95 select-none cursor-grab active:cursor-grabbing group relative"
               :class="{
-                'hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-700': status !== 'correct',
+                'hover:bg-red-50 hover:text-red-600 hover:border-red-200 status !== 'correct',
                 'opacity-80 cursor-not-allowed': status === 'correct'
               }"
             >
               {{ word.text }}
-              <span class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 font-bold text-xs pointer-events-none text-red-500 dark:text-red-400">
+              <span class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 font-bold text-xs pointer-events-none text-red-500
                 ✕
               </span>
             </div>
@@ -87,8 +87,8 @@
 
         <!-- Wheels -->
         <div class="flex justify-between px-8 -mt-3 relative z-20">
-          <div class="w-6 h-6 bg-gray-800 dark:bg-gray-700 rounded-full shadow-md" />
-          <div class="w-6 h-6 bg-gray-800 dark:bg-gray-700 rounded-full shadow-md" />
+          <div class="w-6 h-6 bg-gray-800 rounded-full shadow-md" />
+          <div class="w-6 h-6 bg-gray-800 rounded-full shadow-md" />
         </div>
       </div>
     </div>

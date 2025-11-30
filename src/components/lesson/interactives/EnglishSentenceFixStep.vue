@@ -1,11 +1,11 @@
 <template>
   <div class="interactive-step step-animate-in">
-    <p class="text-lg text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
+    <p class="text-lg text-gray-600 mb-6 leading-relaxed">
       {{ step.prompt }}
     </p>
 
     <!-- Sentence Display -->
-    <div class="bg-gray-50 dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 flex flex-wrap gap-2 items-center leading-loose mb-6">
+    <div class="bg-gray-50 p-6 rounded-xl border border-gray-200 flex flex-wrap gap-2 items-center leading-loose mb-6">
       <button
         v-for="(word, idx) in currentWords"
         :key="idx"
@@ -21,11 +21,11 @@
     <transition name="slide-fade">
       <div 
         v-if="selectedError" 
-        class="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm mb-6 animate-fade-in"
+        class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-6 animate-fade-in"
       >
-        <p class="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3">
+        <p class="text-sm font-semibold text-gray-500 mb-3">
           Choose the correct form for: 
-          <span class="text-gray-900 dark:text-white font-bold">"{{ originalWord }}"</span>
+          <span class="text-gray-900 font-bold">"{{ originalWord }}"</span>
         </p>
         
         <div class="flex flex-wrap gap-2 mb-3">
@@ -36,14 +36,14 @@
             class="px-4 py-2 rounded-lg border font-medium transition-colors"
             :class="{
               'bg-purple-100 text-purple-700 border-purple-300': currentWords[selectedErrorIndex] === opt,
-              'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600': currentWords[selectedErrorIndex] !== opt
+              'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 currentWords[selectedErrorIndex] !== opt
             }"
           >
             {{ opt }}
           </button>
         </div>
         
-        <p class="text-xs text-gray-500 dark:text-gray-400 italic flex items-center gap-2">
+        <p class="text-xs text-gray-500 italic flex items-center gap-2">
           <span class="text-lg">💡</span>
           {{ selectedError.explanation }}
         </p>
@@ -109,7 +109,7 @@ const originalWord = computed(() => {
 
 const getTokenClass = (idx) => {
   const isError = errorIndices.value.has(idx);
-  if (!isError) return 'border-transparent bg-white dark:bg-gray-700 cursor-default text-gray-800 dark:text-gray-200';
+  if (!isError) return 'border-transparent bg-white cursor-default text-gray-800
 
   const isSelected = idx === selectedErrorIndex.value;
   const errorDef = props.step.errors.find(e => e.index === idx);
@@ -122,9 +122,9 @@ const getTokenClass = (idx) => {
   }
 
   if (isFixed) {
-    classes += 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-200 dark:border-green-700';
+    classes += 'bg-green-100 text-green-800 border-green-200
   } else {
-    classes += 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 border-orange-200 dark:border-orange-700';
+    classes += 'bg-orange-100 text-orange-800 border-orange-200
   }
 
   return classes;

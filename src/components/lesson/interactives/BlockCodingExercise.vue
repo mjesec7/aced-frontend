@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full max-w-6xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-100 flex flex-col md:flex-row h-[600px] md:h-[700px]">
+  <div class="w-full max-w-5xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden border border-slate-200 flex flex-col md:flex-row h-[500px] md:h-[600px]">
     
     <!-- Left Panel: Toolbox & Workspace -->
     <div class="w-full md:w-1/2 flex flex-col border-r border-slate-100 bg-slate-50">
@@ -115,23 +115,22 @@
     </div>
 
     <!-- Right Panel: Visualizer -->
-    <div class="w-full md:w-1/2 bg-slate-900 relative overflow-hidden flex items-center justify-center">
+    <div class="w-full md:w-1/2 bg-blue-50 relative overflow-hidden flex items-center justify-center p-4">
       
       <!-- Maze Visualizer -->
-      <div v-if="type === 'maze'" class="relative w-[300px] h-[300px] bg-slate-800 rounded-xl shadow-2xl overflow-hidden grid grid-cols-5 grid-rows-5 gap-1 p-1">
+      <div v-if="type === 'maze'" class="relative w-[280px] h-[280px] md:w-[300px] md:h-[300px] bg-white rounded-lg shadow-md overflow-hidden grid grid-cols-5 grid-rows-5 gap-0.5 p-0.5 border-2 border-slate-300">
         <!-- Grid Cells -->
         <div 
           v-for="(cell, i) in mazeGrid" 
           :key="i"
-          class="bg-slate-700/50 rounded flex items-center justify-center relative"
-          :class="{'border-2 border-slate-600': true}"
+          class="bg-white rounded-sm flex items-center justify-center relative border border-slate-200"
         >
           <!-- Wall -->
           <div v-if="cell.isWall" class="absolute inset-0 bg-slate-600 rounded-sm"></div>
           
           <!-- Goal -->
-          <div v-if="cell.isGoal" class="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center animate-pulse">
-            <span class="text-xl">⭐</span>
+          <div v-if="cell.isGoal" class="w-full h-full bg-yellow-100 rounded-sm flex items-center justify-center">
+            <span class="text-2xl">⭐</span>
           </div>
         </div>
 
@@ -139,8 +138,8 @@
         <div 
           class="absolute w-[50px] h-[50px] transition-all duration-300 z-10 flex items-center justify-center"
           :style="{ 
-            left: `${robotState.x * 60 + 5}px`, 
-            top: `${robotState.y * 60 + 5}px`,
+            left: `${robotState.x * 56 + 2}px`, 
+            top: `${robotState.y * 56 + 2}px`,
             transform: `rotate(${robotState.rotation}deg)`
           }"
         >

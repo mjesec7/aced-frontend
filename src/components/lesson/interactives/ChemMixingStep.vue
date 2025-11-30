@@ -1,6 +1,6 @@
 <template>
   <div class="interactive-step step-animate-in">
-    <p class="text-lg text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
+    <p class="text-lg text-gray-600 mb-6 leading-relaxed">
       {{ step.prompt }}
     </p>
 
@@ -9,7 +9,7 @@
       
       <!-- Substance A -->
       <div class="flex flex-col gap-3 w-full max-w-[150px]">
-        <h3 class="text-sm font-bold text-gray-500 dark:text-gray-400 text-center truncate" :title="substanceA.name">
+        <h3 class="text-sm font-bold text-gray-500 text-center truncate" :title="substanceA.name">
           {{ substanceA.name }}
         </h3>
         <div class="flex justify-center">
@@ -32,9 +32,9 @@
             :max="substanceA.maxVolume"
             :min="0"
             :disabled="mixingState === 'mixing'"
-            class="p-2 border border-gray-200 dark:border-gray-600 rounded-lg text-center font-mono font-bold 
+            class="p-2 border border-gray-200 rounded-lg text-center font-mono font-bold 
                    focus:ring-2 focus:ring-purple-400 outline-none
-                   bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                   bg-white text-gray-900
             @input="resetMixing"
           />
         </div>
@@ -87,7 +87,7 @@
 
       <!-- Substance B -->
       <div class="flex flex-col gap-3 w-full max-w-[150px]">
-        <h3 class="text-sm font-bold text-gray-500 dark:text-gray-400 text-center truncate" :title="substanceB.name">
+        <h3 class="text-sm font-bold text-gray-500 text-center truncate" :title="substanceB.name">
           {{ substanceB.name }}
         </h3>
         <div class="flex justify-center">
@@ -110,9 +110,9 @@
             :max="substanceB.maxVolume"
             :min="0"
             :disabled="mixingState === 'mixing'"
-            class="p-2 border border-gray-200 dark:border-gray-600 rounded-lg text-center font-mono font-bold 
+            class="p-2 border border-gray-200 rounded-lg text-center font-mono font-bold 
                    focus:ring-2 focus:ring-purple-400 outline-none
-                   bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                   bg-white text-gray-900
             @input="resetMixing"
           />
         </div>
@@ -120,7 +120,7 @@
     </div>
 
     <!-- Info Panel -->
-    <div class="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 text-sm flex flex-col sm:flex-row justify-between gap-2 border border-gray-100 dark:border-gray-700">
+    <div class="bg-gray-50 rounded-xl p-4 text-sm flex flex-col sm:flex-row justify-between gap-2 border border-gray-100
       <div>
         <span class="font-semibold">Target:</span> 
         {{ substanceA.targetVolume }}ml + {{ substanceB.targetVolume }}ml 
