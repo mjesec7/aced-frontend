@@ -237,7 +237,7 @@
       <!-- ======================= -->
       <template v-else-if="isSpecialInteractiveType">
         <!-- HISTOGRAM -->
-        <HistogramExercise
+        <ModernHistogram
           v-if="exerciseType === 'histogram'"
           :title="exerciseContentData.title || exerciseTitle"
           :description="exerciseContentData.description || exerciseDescription"
@@ -246,13 +246,11 @@
           :min="exerciseContentData.min || 0"
           :max="exerciseContentData.max || 100000"
           :step="exerciseContentData.step || 100"
-          :minLabel="exerciseContentData.minLabel || 'Population'"
-          :maxLabel="exerciseContentData.maxLabel || '80k'"
           @complete="handleInteractiveComplete"
           @next="emit('next-exercise')"
         />
 
-        <!-- MAP - REMOVED
+        <!-- MAP -->
         <ModernMap
           v-else-if="exerciseType === 'map'"
           :title="exerciseContentData.title || exerciseTitle"
@@ -262,10 +260,9 @@
           @complete="handleInteractiveComplete"
           @next="emit('next-exercise')"
         />
-        -->
 
         <!-- BLOCK CODING -->
-        <BlockCodingExercise
+        <ModernBlockCoding
           v-else-if="exerciseType === 'block-coding'"
           :type="exerciseContentData.subtype || exerciseContentData.type || 'maze'"
           :title="exerciseContentData.title || exerciseTitle"
@@ -365,9 +362,9 @@ import { useSelectionGame } from '@/composables/useSelectionGame';
 import GameContainer from '@/components/games/base/GameContainer.vue';
 
 // Interactive Components
-import HistogramExercise from './interactives/HistogramExercise.vue';
-// import ModernMap from './interactives/ModernMap.vue'; // REMOVED - Geography features
-import BlockCodingExercise from './interactives/BlockCodingExercise.vue';
+import ModernHistogram from './interactives/ModernHistogram.vue';
+import ModernMap from './interactives/ModernMap.vue';
+import ModernBlockCoding from './interactives/ModernBlockCoding.vue';
 import DataAnalysisStep from './interactives/DataAnalysisStep.vue';
 import FractionVisualStep from './interactives/FractionVisualStep.vue';
 import GeometryPolyStep from './interactives/GeometryPolyStep.vue';
