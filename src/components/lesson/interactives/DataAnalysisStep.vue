@@ -23,10 +23,10 @@
             :key="idx"
             class="hover:bg-gray-50 transition-colors"
           >
-            <td class="px-6 py-4 text-sm font-medium text-gray-900
+            <td class="px-6 py-4 text-sm font-medium text-gray-900">
               {{ row.label }}
             </td>
-            <td class="px-6 py-4 text-sm text-right font-mono text-purple-600
+            <td class="px-6 py-4 text-sm text-right font-mono text-purple-600">
               {{ row[step.numericKey] }}
             </td>
           </tr>
@@ -35,7 +35,7 @@
     </div>
 
     <!-- Calculation Hint -->
-    <div class="bg-blue-50 rounded-xl p-4 mb-6 border border-blue-100
+    <div class="bg-blue-50 rounded-xl p-4 mb-6 border border-blue-100">
       <p class="text-sm text-blue-700 flex items-center gap-2">
         <span class="text-lg">💡</span>
         <span>
