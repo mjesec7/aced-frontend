@@ -1,25 +1,26 @@
 <template>
-  <div class="w-full">
-    <!-- Map Container -->
-    <div class="relative rounded-2xl overflow-hidden shadow-2xl border border-white/20">
-      <!-- Animated Background Grid -->
-      <div class="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-pink-900/20">
-        <div class="absolute inset-0 opacity-50 grid-pattern"></div>
+  <div class="w-full max-w-4xl mx-auto">
+    <div class="text-center mb-6">
+      <h2 class="text-2xl font-bold text-slate-800 mb-2">{{ title }}</h2>
+      <p class="text-slate-600">{{ description }}</p>
+    </div>
+
+    <div class="relative rounded-2xl overflow-hidden shadow-2xl border border-slate-200 bg-slate-900 aspect-video">
+      <div class="absolute inset-0 bg-slate-900">
+        <div class="absolute inset-0 opacity-20 grid-pattern"></div>
       </div>
 
-      <!-- Map Image -->
       <img 
-        :src="image" 
+        :src="displayImage" 
         alt="Interactive Map" 
-        class="relative z-10 w-full h-auto"
+        class="relative z-10 w-full h-full object-cover transition-opacity duration-500"
+        @error="handleImageError"
       />
 
-      <!-- Radar Sweep Effect -->
-      <div class="absolute inset-0 z-20 pointer-events-none">
+      <div class="absolute inset-0 z-20 pointer-events-none overflow-hidden rounded-2xl">
         <div class="radar-sweep"></div>
       </div>
 
-      <!-- Interactive Markers -->
       <div 
         v-for="marker in markers" 
         :key="marker.id"
@@ -28,122 +29,68 @@
         @click="selectMarker(marker)"
       >
         <div class="relative group">
-          <!-- Ripple Effect -->
           <div v-if="!marker.clicked" class="absolute inset-0 -m-4">
-            <div class="w-16 h-16 rounded-full border-2 border-purple-400 animate-ping"></div>
-            <div class="absolute inset-0 w-16 h-16 rounded-full border-2 border-purple-400 animate-ping animation-delay-500"></div>
+            <div class="w-12 h-12 rounded-full border-2 border-white/30 animate-ping"></div>
           </div>
 
-          <!-- Marker Pin -->
           <div 
             class="relative transition-all duration-300 transform"
             :class="[
               marker.clicked 
                 ? (marker.isCorrect ? 'scale-125' : 'scale-110 animate-shake') 
-                : 'hover:scale-110'
+                : 'hover:scale-125 hover:-translate-y-1'
             ]"
           >
-            <!-- Outer Glow -->
-            <div 
-              class="absolute inset-0 rounded-full blur-xl"
-              :class="[
-                marker.clicked
-                  ? (marker.isCorrect ? 'bg-green-400' : 'bg-red-400')
-                  : 'bg-purple-400'
-              ]"
-              :style="{ opacity: marker.clicked ? 0.5 : 0.3 }"
-            ></div>
-
-            <!-- Pin SVG -->
-            <div class="relative">
-              <svg width="40" height="48" viewBox="0 0 40 48" class="drop-shadow-2xl">
-                <defs>
-                  <linearGradient :id="`gradient-${marker.id}`" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" :style="`stop-color:${getMarkerColor(marker, 'light')}`" />
-                    <stop offset="100%" :style="`stop-color:${getMarkerColor(marker, 'dark')}`" />
-                  </linearGradient>
-                </defs>
-                <path 
-                  d="M20 0C8.95 0 0 8.95 0 20C0 25 2 29.5 5 33L20 48L35 33C38 29.5 40 25 40 20C40 8.95 31.05 0 20 0Z" 
-                  :fill="`url(#gradient-${marker.id})`"
-                />
-                <circle cx="20" cy="20" r="8" fill="white" opacity="0.9"/>
-                <text 
-                  v-if="marker.clicked"
-                  x="20" 
-                  y="25" 
-                  text-anchor="middle" 
-                  fill="currentColor"
-                  :class="marker.isCorrect ? 'text-green-600' : 'text-red-600'"
-                  font-weight="bold"
-                  font-size="16"
-                >
-                  {{ marker.isCorrect ? '✓' : '✗' }}
-                </text>
-                <circle 
-                  v-else
-                  cx="20" 
-                  cy="20" 
-                  r="4" 
-                  :fill="getMarkerColor(marker, 'dark')"
-                />
-              </svg>
-            </div>
+            <svg width="32" height="42" viewBox="0 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg" class="drop-shadow-lg">
+              <path d="M16 0C7.164 0 0 7.164 0 16C0 26.5 16 42 16 42C16 42 32 26.5 32 16C32 7.164 24.836 0 16 0Z" 
+                :fill="getMarkerColor(marker)" />
+              <circle cx="16" cy="16" r="6" fill="white" fill-opacity="0.9"/>
+              <text 
+                v-if="marker.clicked"
+                x="16" 
+                y="20" 
+                text-anchor="middle" 
+                fill="#333"
+                font-weight="bold"
+                font-size="12"
+              >
+                {{ marker.isCorrect ? '✓' : '✕' }}
+              </text>
+            </svg>
           </div>
 
-          <!-- Hover Label -->
           <transition name="fade-slide">
             <div 
               v-if="!marker.clicked"
-              class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none whitespace-nowrap"
+              class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none whitespace-nowrap z-40"
             >
-              <div class="bg-slate-900/90 backdrop-blur-md text-white px-3 py-2 rounded-lg shadow-2xl border border-white/20">
-                <p class="font-bold text-sm">{{ marker.label }}</p>
-                <p class="text-xs text-white/70">Click to select</p>
+              <div class="bg-slate-800 text-white px-3 py-1.5 rounded-lg shadow-xl border border-slate-600 text-sm font-semibold">
+                {{ marker.label }}
               </div>
-              <div class="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900/90"></div>
-            </div>
-          </transition>
-
-          <!-- Result Label -->
-          <transition name="bounce">
-            <div 
-              v-if="marker.clicked"
-              class="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 whitespace-nowrap"
-            >
-              <div 
-                class="px-4 py-2 rounded-lg shadow-2xl border backdrop-blur-md font-bold"
-                :class="marker.isCorrect 
-                  ? 'bg-green-500/20 border-green-400/50 text-green-300'
-                  : 'bg-red-500/20 border-red-400/50 text-red-300'"
-              >
-                {{ marker.isCorrect ? '🎯 Correct!' : '❌ Wrong' }}
-              </div>
+              <div class="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-800"></div>
             </div>
           </transition>
         </div>
       </div>
 
-      <!-- Success Overlay -->
       <transition name="fade">
         <div 
           v-if="isComplete"
-          class="absolute inset-0 z-40 bg-black/60 backdrop-blur-sm flex items-center justify-center"
+          class="absolute inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center"
         >
-          <div class="bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-xl p-8 rounded-2xl border border-green-400/50 text-center transform scale-110">
-            <div class="text-6xl mb-4">🌟</div>
-            <h3 class="text-2xl font-bold text-green-300 mb-2">Perfect!</h3>
-            <p class="text-green-200">You found {{ correctMarker?.label }}!</p>
+          <div class="bg-white p-8 rounded-3xl shadow-2xl text-center transform scale-110 animate-bounce-slight">
+            <div class="text-6xl mb-4">🌍</div>
+            <h3 class="text-2xl font-bold text-slate-800 mb-2">Excellent!</h3>
+            <p class="text-slate-600">You found {{ correctMarker?.label }}!</p>
           </div>
         </div>
       </transition>
     </div>
 
-    <!-- Hint Section -->
-    <div v-if="attempts > 0 && !isComplete" class="mt-4 p-4 bg-white/5 backdrop-blur-md rounded-xl border border-white/20">
-      <p class="text-white/70 text-sm">
-        <span class="text-yellow-400">💡</span>
-        {{ attempts === 1 ? 'First try! ' : `Attempt ${attempts}. ` }}
+    <div v-if="attempts > 0 && !isComplete" class="mt-4 p-4 bg-blue-50 text-blue-800 rounded-xl border border-blue-100 flex items-center justify-center gap-2">
+      <span class="text-xl">💡</span>
+      <p class="font-medium">
+        {{ attempts === 1 ? 'Keep looking! ' : `Attempt ${attempts}. ` }}
         {{ getHint() }}
       </p>
     </div>
@@ -154,16 +101,10 @@
 import { ref, computed } from 'vue';
 
 const props = defineProps({
-  title: String,
-  description: String,
-  image: {
-    type: String,
-    required: true
-  },
-  markers: {
-    type: Array,
-    required: true
-  }
+  title: { type: String, default: 'Geography Task' },
+  description: { type: String, default: 'Locate the correct place on the map.' },
+  image: { type: String, default: '' },
+  markers: { type: Array, required: true }
 });
 
 const emit = defineEmits(['complete', 'next']);
@@ -171,22 +112,31 @@ const emit = defineEmits(['complete', 'next']);
 // State
 const attempts = ref(0);
 const isComplete = ref(false);
+const imageError = ref(false);
+
+// Default high-quality map if none provided or error occurs
+const DEFAULT_MAP = 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1920&auto=format&fit=crop';
 
 // Computed
-const correctMarker = computed(() => {
-  return props.markers.find(m => m.isCorrect);
+const displayImage = computed(() => {
+  if (imageError.value || !props.image || props.image.includes('<svg')) {
+    return DEFAULT_MAP;
+  }
+  return props.image;
 });
 
+const correctMarker = computed(() => props.markers.find(m => m.isCorrect));
+
 // Methods
-const getMarkerColor = (marker, shade) => {
+const handleImageError = () => {
+  imageError.value = true;
+};
+
+const getMarkerColor = (marker) => {
   if (marker.clicked) {
-    if (marker.isCorrect) {
-      return shade === 'light' ? '#10b981' : '#059669';
-    } else {
-      return shade === 'light' ? '#ef4444' : '#dc2626';
-    }
+    return marker.isCorrect ? '#22c55e' : '#ef4444'; // Green or Red
   }
-  return shade === 'light' ? '#a855f7' : '#7c3aed';
+  return '#6366f1'; // Indigo default
 };
 
 const selectMarker = (marker) => {
@@ -200,21 +150,20 @@ const selectMarker = (marker) => {
     setTimeout(() => {
       emit('complete', true);
       emit('next');
-    }, 2000);
+    }, 2500);
   } else {
-    // Reset wrong marker after delay
+    // Reset wrong marker after delay to allow retry
     setTimeout(() => {
       marker.clicked = false;
-    }, 2000);
+    }, 1500);
   }
 };
 
 const getHint = () => {
   const hints = [
-    'Look for geographical features mentioned in the description.',
-    'Consider the climate and region.',
-    'Think about neighboring locations.',
-    'Check the cardinal directions.'
+    'Try looking in a different region.',
+    'Remember the climate and geography.',
+    'Check the cardinal directions (North, South...).'
   ];
   return hints[Math.min(attempts.value - 1, hints.length - 1)];
 };
@@ -223,87 +172,45 @@ const getHint = () => {
 <style scoped>
 .grid-pattern {
   background-image: 
-    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-  background-size: 20px 20px;
-}
-
-@keyframes radar-sweep {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
+    linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 40px 40px;
 }
 
 .radar-sweep {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 200%;
-  height: 200%;
+  width: 150%;
+  height: 150%;
   transform: translate(-50%, -50%);
-  background: conic-gradient(
-    from 0deg,
-    transparent 0deg,
-    rgba(168, 85, 247, 0.1) 30deg,
-    transparent 90deg
-  );
-  animation: radar-sweep 4s linear infinite;
-  pointer-events: none;
+  background: conic-gradient(from 0deg, transparent 0deg, rgba(255, 255, 255, 0.05) 60deg, transparent 120deg);
+  animation: radar-spin 8s linear infinite;
+}
+
+@keyframes radar-spin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
 }
 
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  75% { transform: translateX(5px); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+.animate-shake { animation: shake 0.4s ease-in-out; }
+
+.animate-bounce-slight {
+  animation: bounce-slight 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+@keyframes bounce-slight {
+  0% { transform: scale(0.9); opacity: 0; }
+  100% { transform: scale(1.1); opacity: 1; }
 }
 
-.animate-shake {
-  animation: shake 0.5s ease-in-out;
-}
+.fade-slide-enter-active, .fade-slide-leave-active { transition: all 0.3s ease; }
+.fade-slide-enter-from, .fade-slide-leave-to { opacity: 0; transform: translate(-50%, 10px); }
 
-.animation-delay-500 {
-  animation-delay: 0.5s;
-}
-
-.fade-slide-enter-active,
-.fade-slide-leave-active {
-  transition: all 0.3s ease;
-}
-
-.fade-slide-enter-from,
-.fade-slide-leave-to {
-  opacity: 0;
-  transform: translateX(-50%) translateY(10px);
-}
-
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.5s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
-.bounce-enter-active {
-  animation: bounce-in 0.5s;
-}
-
-@keyframes bounce-in {
-  0% {
-    transform: translateX(-50%) scale(0.5);
-    opacity: 0;
-  }
-  60% {
-    transform: translateX(-50%) scale(1.1);
-  }
-  100% {
-    transform: translateX(-50%) scale(1);
-    opacity: 1;
-  }
-}
+.fade-enter-active, .fade-leave-active { transition: opacity 0.5s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>

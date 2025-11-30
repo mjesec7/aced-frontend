@@ -253,7 +253,7 @@
         />
 
         <!-- MAP -->
-        <MapExercise
+        <ModernMap
           v-else-if="exerciseType === 'map'"
           :title="exerciseContentData.title || exerciseTitle"
           :description="exerciseContentData.description || exerciseDescription"
@@ -365,7 +365,7 @@ import GameContainer from '@/components/games/base/GameContainer.vue';
 
 // Interactive Components
 import HistogramExercise from './interactives/HistogramExercise.vue';
-import MapExercise from './interactives/MapExercise.vue';
+import ModernMap from './interactives/ModernMap.vue';
 import BlockCodingExercise from './interactives/BlockCodingExercise.vue';
 import DataAnalysisStep from './interactives/DataAnalysisStep.vue';
 import FractionVisualStep from './interactives/FractionVisualStep.vue';
