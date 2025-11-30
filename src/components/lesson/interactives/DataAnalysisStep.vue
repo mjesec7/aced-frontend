@@ -129,7 +129,7 @@ const buttonClass = computed(() => {
   if (status.value === 'incorrect') {
     return 'bg-red-100 text-red-700 hover:bg-red-200';
   }
-  return 'bg-zinc-900 text-white hover:bg-zinc-800
+  return 'bg-zinc-900 text-white hover:bg-zinc-800';
 });
 
 const resetStatus = () => {
