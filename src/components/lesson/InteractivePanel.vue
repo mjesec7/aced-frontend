@@ -441,7 +441,9 @@ const exerciseType = computed(() => {
     return 'multiple-choice';
   }
   
-  return possibleTypes[0] || ex.type || 'short-answer';
+  const type = possibleTypes[0] || ex.type || 'short-answer';
+  console.log('InteractivePanel: Detected exercise type:', type);
+  return type;
 });
 
 // --- COMPUTED: TYPE CHECKS ---
@@ -474,6 +476,8 @@ const exerciseContentData = computed(() => {
   if (ex.content?.data) return ex.content.data;
   if (ex.content && typeof ex.content === 'object') return ex.content;
   if (ex.data && typeof ex.data === 'object' && !Array.isArray(ex.data)) return ex.data;
+  if (ex.data && typeof ex.data === 'object' && !Array.isArray(ex.data)) return ex.data;
+  console.log('InteractivePanel: Computed content data:', ex);
   return ex;
 });
 
