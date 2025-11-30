@@ -46,10 +46,16 @@
 
         <div v-else-if="isInteractiveStep && !isExerciseStep && !isGameStep" class="interactive-instruction-card">
           <div class="instruction-icon">
-            {{ currentStep?.type === 'practice' ? '🧪' : '🧩' }}
+            {{ currentStep?.type === 'practice' ? '\ud83e\uddea' : '\ud83e\udde9' }}
           </div>
           <h3 class="instruction-heading">Complete the {{ getStepTypeText(currentStep?.type).toLowerCase() }} on the right</h3>
           <p class="instruction-text">Use the interactive panel to answer the question and continue with the lesson.</p>
+        </div>
+
+        <div v-else-if="isSpecialInteractive" class="interactive-instruction-card">
+          <div class="instruction-icon">\ud83c\udfae</div>
+          <h3 class="instruction-heading">Interactive Exercise</h3>
+          <p class="instruction-text">Complete the interactive exercise on the right to continue.</p>
         </div>
 
         <div v-else-if="['explanation', 'example', 'reading'].includes(currentStep?.type)" class="content-text" v-html="formatContent(getStepContent(currentStep))"></div>
@@ -162,6 +168,19 @@ export default {
     },
     isGameStep() {
       return this.currentStep?.type === 'game' || Boolean(this.currentStep?.gameType);
+    },
+    // List of special interactive step types that render in InteractivePanel
+    specialInteractiveTypes() {
+      return [
+        'histogram', 'map', 'block-coding',
+        'data_analysis', 'fraction_visual', 'geometry_poly',
+        'chem_mixing', 'chem_matching',
+        'english_sentence_fix', 'english_sentence_order',
+        'language_noun_bag', 'geometry', 'selection_game'
+      ];
+    },
+    isSpecialInteractive() {
+      return this.specialInteractiveTypes().includes(this.currentStep?.type);
     },
     totalExercisesInStep() {
       if (!this.currentStep) return 0;
