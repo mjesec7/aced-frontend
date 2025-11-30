@@ -679,19 +679,16 @@ watch(() => props.currentExercise, (newEx) => {
   width: 100%;
   height: 100%;
   overflow-y: auto;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  background: #f8fafc;
 }
 
 /* Exercise Card */
 .exercise-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
+  background: white;
   border-radius: 24px;
   padding: 32px;
-  box-shadow: 
-    0 8px 32px rgba(31, 38, 135, 0.15),
-    0 4px 16px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e2e8f0;
 }
 
 /* Option Button Styles */
