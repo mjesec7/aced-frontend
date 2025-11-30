@@ -7,70 +7,54 @@
     </div>
 
     <div class="grid md:grid-cols-2 gap-6">
-      <!-- Left: Toolbox & Workspace -->
+      <!-- Left: Direct Controls -->
       <div class="space-y-4">
-        <!-- Available Blocks -->
-        <div class="bg-black/30 backdrop-blur-xl rounded-2xl border border-white/20 p-4">
-          <h4 class="text-white/70 text-xs uppercase tracking-wide mb-3">Available Blocks</h4>
-          <div class="space-y-2">
-            <div 
-              v-for="block in availableBlocks" 
-              :key="block"
-              @click="addBlock(block)"
-              class="px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200 font-medium"
+        <!-- Movement Controls -->
+        <div class="bg-black/30 backdrop-blur-xl rounded-2xl border border-white/20 p-6">
+          <h4 class="text-white/70 text-xs uppercase tracking-wide mb-4 text-center">Move the Robot</h4>
+          <div class="flex flex-col items-center gap-2">
+            <!-- Up Arrow -->
+            <button
+              @click="moveDirection('up')"
+              :disabled="running"
+              class="w-16 h-16 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl hover:shadow-lg hover:scale-110 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-2xl"
             >
-              {{ getBlockLabel(block) }}
-            </div>
-          </div>
-        </div>
-
-        <!-- Workspace -->
-        <div class="bg-black/30 backdrop-blur-xl rounded-2xl border border-white/20 p-4">
-          <div class="flex items-center justify-between mb-3">
-            <h4 class="text-white/70 text-xs uppercase tracking-wide">Your Program</h4>
-            <button 
-              @click="workspaceBlocks = []"
-              class="text-xs text-red-400 hover:text-red-300 transition-colors"
-            >
-              Clear All
+              ⬆️
             </button>
-          </div>
-          <div class="space-y-2 min-h-[200px]">
-            <div 
-              v-for="(block, index) in workspaceBlocks" 
-              :key="index"
-              class="group relative px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg cursor-move"
-            >
-              {{ getBlockLabel(block) }}
-              <button 
-                @click="removeBlock(index)"
-                class="absolute right-2 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-white/70 hover:text-white"
+            <!-- Left, Down, Right Arrows -->
+            <div class="flex gap-2">
+              <button
+                @click="moveDirection('left')"
+                :disabled="running"
+                class="w-16 h-16 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl hover:shadow-lg hover:scale-110 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-2xl"
               >
-                ×
+                ⬅️
+              </button>
+              <button
+                @click="moveDirection('down')"
+                :disabled="running"
+                class="w-16 h-16 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl hover:shadow-lg hover:scale-110 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-2xl"
+              >
+                ⬇️
+              </button>
+              <button
+                @click="moveDirection('right')"
+                :disabled="running"
+                class="w-16 h-16 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl hover:shadow-lg hover:scale-110 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-2xl"
+              >
+                ➡️
               </button>
             </div>
-            <div v-if="workspaceBlocks.length === 0" class="text-white/40 text-center py-8 text-sm">
-              Click blocks to build your program
-            </div>
           </div>
         </div>
 
-        <!-- Controls -->
-        <div class="flex gap-3">
-          <button
-            @click="runCode"
-            :disabled="running ||workspaceBlocks.length === 0"
-            class="flex-1 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {{ running ? '▶ Running...' : '▶ Run Code' }}
-          </button>
-          <button
-            @click="resetVisualization"
-            class="px-6 py-3 bg-white/10 backdrop-blur-md text-white font-bold rounded-xl hover:bg-white/20 transition-all duration-200"
-          >
-            ⟲ Reset
-          </button>
-        </div>
+        <!-- Reset Button -->
+        <button
+          @click="resetVisualization"
+          class="w-full py-3 bg-white/10 backdrop-blur-md text-white font-bold rounded-xl hover:bg-white/20 transition-all duration-200"
+        >
+          ⟲ Reset Position
+        </button>
       </div>
 
       <!-- Right: Visualization -->
@@ -181,10 +165,10 @@ const getCellClass = (index) => {
   const y = Math.floor(index / 5);
   
   if (robotPosition.value.x === x && robotPosition.value.y === y) {
-    return 'bg-gradient-to-br from-green-400 to-emerald-500 shadow-lg shadow-green-500/50';
+    return 'bg-[linear-gradient(to_bottom_right,rgb(74,222,128),rgb(16,185,129))] shadow-lg shadow-green-500/50';
   }
   if (goalPosition.value.x === x && goalPosition.value.y === y) {
-    return 'bg-gradient-to-br from-yellow-400 to-orange-500 shadow-lg shadow-yellow-500/50';
+    return 'bg-[linear-gradient(to_bottom_right,rgb(250,204,21),rgb(249,115,22))] shadow-lg shadow-yellow-500/50';
   }
   if (walls.value.some(w => w.x === x && w.y === y)) {
     return 'bg-slate-700';
@@ -206,63 +190,45 @@ const getCellContent = (index) => {
   return '';
 };
 
-const runCode = async () => {
+const moveDirection = async (direction) => {
   running.value = true;
-  statusMessage.value = 'Running...';
-  success.value = false;
   
-  for (const block of workspaceBlocks.value) {
-    await executeBlock(block);
-    await new Promise(resolve => setTimeout(resolve, 500));
-  }
+  const directionMap = {
+    'up': { dx: 0, dy: -1 },
+    'down': { dx: 0, dy: 1 },
+    'left': { dx: -1, dy: 0 },
+    'right': { dx: 1, dy: 0 }
+  };
   
-  // Check if goal reached
-  if (isMaze.value) {
-    if (robotPosition.value.x === goalPosition.value.x && 
-        robotPosition.value.y === goalPosition.value.y) {
-      statusMessage.value = '🎉 Goal reached! Perfect!';
-      success.value = true;
-      setTimeout(() => {
-        emit('complete', true);
-        emit('next');
-      }, 2000);
+  const dir = directionMap[direction];
+  const newX = robotPosition.value.x + dir.dx;
+  const newY = robotPosition.value.y + dir.dy;
+  
+  // Check bounds and walls
+  if (newX >= 0 && newX < 5 && newY >= 0 && newY < 5) {
+    if (!walls.value.some(w => w.x === newX && w.y === newY)) {
+      robotPosition.value = { x: newX, y: newY };
+      
+      // Check if goal reached
+      if (robotPosition.value.x === goalPosition.value.x && 
+          robotPosition.value.y === goalPosition.value.y) {
+        statusMessage.value = '🎉 Goal reached! Perfect!';
+        success.value = true;
+        setTimeout(() => {
+          emit('complete', true);
+          emit('next');
+        }, 1500);
+      }
     } else {
-      statusMessage.value = '❌ Not quite. Try again!';
+      statusMessage.value = '🚫 Can\'t move there - wall!';
+      setTimeout(() => statusMessage.value = '', 1000);
     }
   } else {
-    statusMessage.value = '✅ Code executed!';
-    success.value = true;
-    setTimeout(() => {
-      emit('complete', true);
-      emit('next');
-    }, 2000);
+    statusMessage.value = '🚫 Can\'t move outside the maze!';
+    setTimeout(() => statusMessage.value = '', 1000);
   }
   
-  running.value = false;
-};
-
-const executeBlock = async (block) => {
-  if (block === 'move_forward') {
-    const directions = [
-      { dx: 1, dy: 0 },  // right
-      { dx: 0, dy: 1 },  // down
-      { dx: -1, dy: 0 }, // left
-      { dx: 0, dy: -1 }  // up
-    ];
-    const dir = directions[robotDirection.value];
-    const newX = robotPosition.value.x + dir.dx;
-    const newY = robotPosition.value.y + dir.dy;
-    
-    if (newX >= 0 && newX < 5 && newY >= 0 && newY < 5) {
-      if (!walls.value.some(w => w.x === newX && w.y === newY)) {
-        robotPosition.value = { x: newX, y: newY };
-      }
-    }
-  } else if (block === 'turn_left') {
-    robotDirection.value = (robotDirection.value + 3) % 4;
-  } else if (block === 'turn_right') {
-    robotDirection.value = (robotDirection.value + 1) % 4;
-  }
+  setTimeout(() => running.value = false, 300);
 };
 
 const resetVisualization = () => {
