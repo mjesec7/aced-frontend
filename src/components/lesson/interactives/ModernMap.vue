@@ -1,11 +1,11 @@
 <template>
-  <div class="w-full max-w-4xl mx-auto">
+  <div class="w-full max-w-5xl mx-auto">
     <div class="text-center mb-6">
       <h2 class="text-2xl font-bold text-slate-800 mb-2">{{ title }}</h2>
       <p class="text-slate-600">{{ description }}</p>
     </div>
 
-    <div class="relative rounded-2xl overflow-hidden shadow-2xl border border-slate-200 bg-slate-900 aspect-video">
+    <div class="relative rounded-2xl overflow-hidden shadow-2xl border border-slate-200 bg-slate-900 aspect-video group">
       <div class="absolute inset-0 bg-slate-900">
         <div class="absolute inset-0 opacity-20 grid-pattern"></div>
       </div>
@@ -13,7 +13,7 @@
       <img 
         :src="displayImage" 
         alt="Interactive Map" 
-        class="relative z-10 w-full h-full object-cover transition-opacity duration-500"
+        class="relative z-10 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
         @error="handleImageError"
       />
 
@@ -28,7 +28,7 @@
         :style="{ left: marker.x + '%', top: marker.y + '%' }"
         @click="selectMarker(marker)"
       >
-        <div class="relative group">
+        <div class="relative group/marker">
           <div v-if="!marker.clicked" class="absolute inset-0 -m-4">
             <div class="w-12 h-12 rounded-full border-2 border-white/30 animate-ping"></div>
           </div>
@@ -41,28 +41,26 @@
                 : 'hover:scale-125 hover:-translate-y-1'
             ]"
           >
-            <svg width="32" height="42" viewBox="0 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg" class="drop-shadow-lg">
+            <svg width="32" height="42" viewBox="0 0 32 42" fill="none" class="drop-shadow-lg filter">
               <path d="M16 0C7.164 0 0 7.164 0 16C0 26.5 16 42 16 42C16 42 32 26.5 32 16C32 7.164 24.836 0 16 0Z" 
                 :fill="getMarkerColor(marker)" />
               <circle cx="16" cy="16" r="6" fill="white" fill-opacity="0.9"/>
               <text 
                 v-if="marker.clicked"
                 x="16" 
-                y="20" 
+                y="21" 
                 text-anchor="middle" 
                 fill="#333"
-                font-weight="bold"
-                font-size="12"
-              >
-                {{ marker.isCorrect ? '✓' : '✕' }}
-              </text>
+                font-weight="900"
+                font-size="14"
+              >{{ marker.isCorrect ? '✓' : '✕' }}</text>
             </svg>
           </div>
 
           <transition name="fade-slide">
             <div 
               v-if="!marker.clicked"
-              class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none whitespace-nowrap z-40"
+              class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 opacity-0 group-hover/marker:opacity-100 transition-all duration-200 pointer-events-none whitespace-nowrap z-40"
             >
               <div class="bg-slate-800 text-white px-3 py-1.5 rounded-lg shadow-xl border border-slate-600 text-sm font-semibold">
                 {{ marker.label }}
@@ -87,7 +85,7 @@
       </transition>
     </div>
 
-    <div v-if="attempts > 0 && !isComplete" class="mt-4 p-4 bg-blue-50 text-blue-800 rounded-xl border border-blue-100 flex items-center justify-center gap-2">
+    <div v-if="attempts > 0 && !isComplete" class="mt-4 p-4 bg-blue-50 text-blue-800 rounded-xl border border-blue-100 flex items-center justify-center gap-2 shadow-sm">
       <span class="text-xl">💡</span>
       <p class="font-medium">
         {{ attempts === 1 ? 'Keep looking! ' : `Attempt ${attempts}. ` }}
@@ -114,14 +112,18 @@ const attempts = ref(0);
 const isComplete = ref(false);
 const imageError = ref(false);
 
-// Default high-quality map if none provided or error occurs
+// A high-quality default map used when the provided one is "ugly" (SVG data) or fails
 const DEFAULT_MAP = 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1920&auto=format&fit=crop';
 
 // Computed
 const displayImage = computed(() => {
-  if (imageError.value || !props.image || props.image.includes('<svg')) {
+  if (imageError.value || !props.image) return DEFAULT_MAP;
+  
+  // FIX: Detect the ugly base64 SVG or raw SVG string and replace it
+  if (props.image.startsWith('data:image/svg+xml') || props.image.includes('<svg')) {
     return DEFAULT_MAP;
   }
+  
   return props.image;
 });
 
@@ -150,9 +152,8 @@ const selectMarker = (marker) => {
     setTimeout(() => {
       emit('complete', true);
       emit('next');
-    }, 2500);
+    }, 2000);
   } else {
-    // Reset wrong marker after delay to allow retry
     setTimeout(() => {
       marker.clicked = false;
     }, 1500);
