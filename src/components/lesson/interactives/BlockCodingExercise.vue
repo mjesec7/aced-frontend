@@ -109,11 +109,41 @@
       </div>
 
       <!-- Right Panel: Maze Visualizer -->
-      <div class="w-full lg:w-1/2 bg-gradient-to-br from-blue-50 to-purple-50 relative overflow-hidden flex items-center justify-center p-8 min-h-[500px]">
+      <div class="w-full lg:w-1/2 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 relative overflow-hidden flex flex-col items-center justify-center p-8 min-h-[500px]">
+        
+        <!-- Direct Controls -->
+        <div class="mb-6 flex flex-col items-center gap-3">
+          <p class="text-sm font-bold text-gray-600 uppercase tracking-wide">Control Robot</p>
+          <div class="flex flex-col items-center gap-2">
+            <button
+              @click="moveRobotDirect('forward')"
+              :disabled="isRunning"
+              class="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg hover:shadow-xl hover:scale-110 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-2xl font-bold border-2 border-blue-400"
+            >
+              ⬆
+            </button>
+            <div class="flex gap-2">
+              <button
+                @click="moveRobotDirect('left')"
+                :disabled="isRunning"
+                class="w-16 h-16 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-lg hover:shadow-xl hover:scale-110 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-2xl font-bold border-2 border-purple-400"
+              >
+                ⬅
+              </button>
+              <button
+                @click="moveRobotDirect('right')"
+                :disabled="isRunning"
+                class="w-16 h-16 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-lg hover:shadow-xl hover:scale-110 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-2xl font-bold border-2 border-purple-400"
+              >
+                ⮕
+              </button>
+            </div>
+          </div>
+        </div>
         
         <!-- Maze Grid -->
-        <div v-if="type === 'maze'" class="relative w-full max-w-[340px] aspect-square">
-          <div class="absolute inset-0 bg-white rounded-2xl shadow-xl border-4 border-gray-200 grid grid-cols-5 grid-rows-5 gap-2 p-3">
+        <div v-if="type === 'maze'" class="relative w-full max-w-[360px] aspect-square">
+          <div class="absolute inset-0 bg-white rounded-3xl shadow-2xl border-4 border-indigo-200 grid grid-cols-5 grid-rows-5 gap-3 p-4">
             
             <!-- Grid Cells -->
             <div 
@@ -297,6 +327,24 @@ const executeBlock = async (block) => {
     robotState.value.rotation -= 90;
   } else if (block.type === 'turn_right') {
     robotState.value.rotation += 90;
+  }
+};
+
+// NEW: Real-time robot control with arrow buttons
+const moveRobotDirect = async (direction) => {
+  const block = {
+    type: direction === 'forward' ? 'move_forward' : direction === 'left' ? 'turn_left' : 'turn_right'
+  };
+  await executeBlock(block);
+  
+  // Check if goal reached after each move
+  const { x, y } = robotState.value;
+  const idx = y * 5 + x;
+  if (mazeGrid.value[idx]?.isGoal) {
+    isCorrect.value = true;
+    feedbackMessage.value = "You reached the goal!";
+    showFeedback.value = true;
+    emit('complete', true);
   }
 };
 
