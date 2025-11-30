@@ -10,7 +10,7 @@
       <img 
         :src="displayImage" 
         alt="Geographic Map" 
-        class="relative z-10 w-full h-full object-cover"
+        class="relative z-10 w-full h-full object-contain p-4" 
         @error="handleImageError"
       />
 
@@ -39,8 +39,8 @@
               />
               <circle cx="192" cy="192" r="64" fill="white" />
               <g v-if="marker.clicked" transform="translate(142, 142) scale(2)">
-                <path v-if="marker.isCorrect" d="M10 15l-5-5 1.41-1.41L10 12.17l7.59-7.59L19 6l-9 9z" fill="#15803d"/>
-                <path v-else d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="#b91c1c"/>
+                 <path v-if="marker.isCorrect" d="M10 15l-5-5 1.41-1.41L10 12.17l7.59-7.59L19 6l-9 9z" fill="#15803d"/>
+                 <path v-else d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="#b91c1c"/>
               </g>
             </svg>
           </div>
@@ -82,6 +82,8 @@
 
 <script setup>
 import { ref, computed } from 'vue';
+// IMPORT LOCAL MAP ASSET - This is 100% reliable
+import localWorldMap from '@/assets/icons/world.svg';
 
 const props = defineProps({
   title: { type: String, default: '' },
@@ -92,52 +94,21 @@ const props = defineProps({
 
 const emit = defineEmits(['complete', 'next']);
 
-// --- REAL FLAT MAP SOURCES (Wikimedia Commons - Political Maps) ---
-const MAP_REGIONS = {
-  asia: {
-    keywords: ['tokyo', 'japan', 'china', 'beijing', 'asia', 'india', 'mumbai', 'bangkok', 'thailand', 'korea', 'seoul', 'vietnam', 'singapore', 'malaysia', 'philippines', 'indonesia', 'taiwan', 'hong kong'],
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Asia_orthographic_Caucasus_Urals_boundary_%28with_borders%29.svg/1024px-Asia_orthographic_Caucasus_Urals_boundary_%28with_borders%29.svg.png' 
-  },
-  europe: {
-    keywords: ['paris', 'france', 'london', 'uk', 'britain', 'germany', 'berlin', 'rome', 'italy', 'europe', 'spain', 'madrid', 'barcelona', 'portugal', 'amsterdam', 'netherlands', 'greece', 'athens', 'norway', 'sweden', 'denmark', 'poland', 'belgium'],
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Europe_orthographic_Caucasus_Urals_boundary_%28with_borders%29.svg/1024px-Europe_orthographic_Caucasus_Urals_boundary_%28with_borders%29.svg.png'
-  },
-  northamerica: {
-    keywords: ['usa', 'america', 'united states', 'new york', 'california', 'texas', 'chicago', 'canada', 'toronto', 'mexico', 'north america', 'us'],
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Map_of_USA_with_state_names_2.svg/1024px-Map_of_USA_with_state_names_2.svg.png'
-  },
-  world: {
-    keywords: ['world', 'earth', 'global', 'international'],
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/World_map_-_low_resolution.svg/1200px-World_map_-_low_resolution.svg.png'
-  }
-};
-
-const DEFAULT_MAP = MAP_REGIONS.world.url;
-
 // State
 const attempts = ref(0);
 const isComplete = ref(false);
 const imageError = ref(false);
 
-// --- SMART REGION DETECTION ---
-const detectedRegion = computed(() => {
-  const text = (props.title + ' ' + props.description).toLowerCase();
-  
-  if (MAP_REGIONS.asia.keywords.some(k => text.includes(k))) return 'asia';
-  if (MAP_REGIONS.europe.keywords.some(k => text.includes(k))) return 'europe';
-  if (MAP_REGIONS.northamerica.keywords.some(k => text.includes(k))) return 'northamerica';
-  
-  return 'world';
-});
-
 const displayImage = computed(() => {
-  // If JSON has ugly SVG placeholder or is missing, use our real flat map
+  // 1. If loading failed previously, fallback to local map
+  if (imageError.value) return localWorldMap;
+
+  // 2. If the JSON provides that specific "ugly" placeholder or is missing
   if (!props.image || props.image.startsWith('data:image/svg+xml') || props.image.includes('<svg')) {
-    return MAP_REGIONS[detectedRegion.value].url;
+    return localWorldMap;
   }
-  // If loading failed, fallback to real map
-  if (imageError.value) return MAP_REGIONS[detectedRegion.value].url;
   
+  // 3. Otherwise, try the provided image
   return props.image;
 });
 
@@ -145,58 +116,39 @@ const correctMarker = computed(() => props.markers.find(m => m.isCorrect));
 
 // Methods
 const handleImageError = () => { 
+  console.warn('Map image failed to load, switching to local fallback.');
   imageError.value = true; 
 };
 
 const getMarkerColor = (marker) => {
   if (marker.clicked) {
-    return marker.isCorrect ? '#22c55e' : '#ef4444'; // Green or Red
+    return marker.isCorrect ? '#15803d' : '#b91c1c'; // Green-700 or Red-700
   }
-  return '#ef4444'; // Standard Red Map Pin
+  return '#ef4444'; // Red-500
 };
 
 const selectMarker = (marker) => {
   if (isComplete.value || marker.clicked) return;
-  
   attempts.value++;
   marker.clicked = true;
-  
   if (marker.isCorrect) {
     isComplete.value = true;
-    setTimeout(() => { 
-      emit('complete', true); 
-      emit('next'); 
-    }, 2000);
+    setTimeout(() => { emit('complete', true); emit('next'); }, 2000);
   } else {
-    setTimeout(() => { 
-      marker.clicked = false; 
-    }, 1500);
+    setTimeout(() => { marker.clicked = false; }, 1500);
   }
 };
 
 const getHint = () => {
-  const hints = [
-    'Check the general region.',
-    'Look for country borders.',
-    'Think about North, South, East, West.'
-  ];
+  const hints = ['Check the general region.', 'Look for country borders.', 'Think about North, South, East, West.'];
   return hints[Math.min(attempts.value - 1, hints.length - 1)];
 };
 </script>
 
 <style scoped>
-.fade-slide-enter-active, .fade-slide-leave-active { 
-  transition: all 0.2s ease; 
-}
-.fade-slide-enter-from, .fade-slide-leave-to { 
-  opacity: 0; 
-  transform: translate(-50%, 5px); 
-}
+.fade-slide-enter-active, .fade-slide-leave-active { transition: all 0.2s ease; }
+.fade-slide-enter-from, .fade-slide-leave-to { opacity: 0; transform: translate(-50%, 5px); }
 
-.fade-enter-active, .fade-leave-active { 
-  transition: opacity 0.4s ease; 
-}
-.fade-enter-from, .fade-leave-to { 
-  opacity: 0; 
-}
+.fade-enter-active, .fade-leave-active { transition: opacity 0.4s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>
