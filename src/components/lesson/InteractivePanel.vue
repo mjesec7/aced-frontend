@@ -252,7 +252,7 @@
           @next="emit('next-exercise')"
         />
 
-        <!-- MAP -->
+        <!-- MAP - REMOVED
         <ModernMap
           v-else-if="exerciseType === 'map'"
           :title="exerciseContentData.title || exerciseTitle"
@@ -262,6 +262,7 @@
           @complete="handleInteractiveComplete"
           @next="emit('next-exercise')"
         />
+        -->
 
         <!-- BLOCK CODING -->
         <BlockCodingExercise
@@ -365,7 +366,7 @@ import GameContainer from '@/components/games/base/GameContainer.vue';
 
 // Interactive Components
 import HistogramExercise from './interactives/HistogramExercise.vue';
-import ModernMap from './interactives/ModernMap.vue';
+// import ModernMap from './interactives/ModernMap.vue'; // REMOVED - Geography features
 import BlockCodingExercise from './interactives/BlockCodingExercise.vue';
 import DataAnalysisStep from './interactives/DataAnalysisStep.vue';
 import FractionVisualStep from './interactives/FractionVisualStep.vue';
@@ -679,7 +680,7 @@ watch(() => props.currentExercise, (newEx) => {
   width: 100%;
   height: 100%;
   overflow-y: auto;
-  background: #0f172a;
+  background: #f8fafc;
 }
 
 /* Exercise Card */
