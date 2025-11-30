@@ -16,6 +16,9 @@ export default {
                 'lesson-green-light': '#dcfce7',
                 'lesson-yellow': '#eab308',
                 'lesson-yellow-light': '#fef9c3',
+                'tech-primary': '#6366f1', // Indigo-500 (Modern "Fun" Color)
+                'tech-surface': '#f8fafc', // Slate-50 (Professional Background)
+                'tech-dark': '#1e293b',    // Slate-800 (Strong Text)
             }
         },
     },
