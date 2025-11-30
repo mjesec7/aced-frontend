@@ -161,9 +161,6 @@ const checkAnswer = () => {
   }
 };
 
-  emit('complete', false);
-};
-
 import { onMounted } from 'vue';
 onMounted(() => {
   console.log('DataAnalysisStep mounted with props:', props.step);
