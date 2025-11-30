@@ -697,6 +697,7 @@ export function useExercises() {
       // New interactive exercise types
       'data_analysis',
       'fraction_visual',
+      'geometry',
       'geometry_poly',
       'chem_mixing',
       'chem_matching',
@@ -822,6 +823,7 @@ export function useExercises() {
       'practice',
       'data_analysis',
       'fraction_visual',
+      'geometry',
       'geometry_poly',
       'chem_mixing',
       'chem_matching',
