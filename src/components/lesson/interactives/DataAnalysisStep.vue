@@ -6,8 +6,8 @@
 
     <!-- Data Table -->
     <div class="overflow-x-auto overflow-hidden rounded-xl border border-gray-200 shadow-sm mb-8">
-      <table class="w-full text-left bg-white
-        <thead class="bg-gray-50 border-b border-gray-200
+      <table class="w-full text-left bg-white">
+        <thead class="bg-gray-50 border-b border-gray-200">
           <tr>
             <th class="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
               {{ labelColumn }}
@@ -17,7 +17,7 @@
             </th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-gray-100
+        <tbody class="divide-y divide-gray-100">
           <tr 
             v-for="(row, idx) in step.data" 
             :key="idx"
