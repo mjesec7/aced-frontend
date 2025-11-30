@@ -21,6 +21,11 @@
         <div class="radar-sweep"></div>
       </div>
 
+      <!-- Region Badge -->
+      <div class="absolute bottom-4 right-4 z-20 px-3 py-1.5 bg-black/50 backdrop-blur-md rounded-full border border-white/20 text-xs text-white/80 font-semibold">
+        📍 {{ currentRegionName }}
+      </div>
+
       <div 
         v-for="marker in markers" 
         :key="marker.id"
@@ -99,37 +104,97 @@
 import { ref, computed } from 'vue';
 
 const props = defineProps({
-  title: { type: String, default: 'Geography Task' },
-  description: { type: String, default: 'Locate the correct place on the map.' },
+  title: { type: String, default: '' },
+  description: { type: String, default: '' },
   image: { type: String, default: '' },
   markers: { type: Array, required: true }
 });
 
 const emit = defineEmits(['complete', 'next']);
 
+// --- SMART MAP REGION DETECTION SYSTEM ---
+const MAP_REGIONS = {
+  asia: {
+    keywords: ['tokyo', 'japan', 'china', 'beijing', 'asia', 'india', 'mumbai', 'bangkok', 'thailand', 'korea', 'seoul', 'vietnam', 'singapore', 'malaysia', 'philippines', 'indonesia', 'taiwan', 'hong kong'],
+    url: 'https://images.unsplash.com/photo-1535139262971-c51845709a48?q=80&w=1920&auto=format&fit=crop', // Asia satellite view
+    name: 'Asia'
+  },
+  europe: {
+    keywords: ['paris', 'france', 'london', 'uk', 'britain', 'germany', 'berlin', 'rome', 'italy', 'europe', 'spain', 'madrid', 'barcelona', 'portugal', 'amsterdam', 'netherlands', 'greece', 'athens', 'norway', 'sweden', 'denmark', 'poland', 'belgium'],
+    url: 'https://images.unsplash.com/photo-1473163928189-364b2c4e1135?q=80&w=1920&auto=format&fit=crop', // Europe map
+    name: 'Europe'
+  },
+  northamerica: {
+    keywords: ['usa', 'america', 'united states', 'new york', 'california', 'texas', 'chicago', 'canada', 'toronto', 'mexico', 'north america'],
+    url: 'https://images.unsplash.com/photo-1547476547-82f7f9999441?q=80&w=1920&auto=format&fit=crop', // North America
+    name: 'North America'
+  },
+  africa: {
+    keywords: ['africa', 'egypt', 'cairo', 'south africa', 'kenya', 'nigeria', 'morocco', 'ethiopia'],
+    url: 'https://images.unsplash.com/photo-1489392191049-fc10c97e64b6?q=80&w=1920&auto=format&fit=crop', // Africa
+    name: 'Africa'
+  },
+  southamerica: {
+    keywords: ['brazil', 'argentina', 'chile', 'peru', 'colombia', 'south america', 'latin america'],
+    url: 'https://images.unsplash.com/photo-1483729558449-99ef09a8c325?q=80&w=1920&auto=format&fit=crop', // South America
+    name: 'South America'
+  },
+  oceania: {
+    keywords: ['australia', 'sydney', 'melbourne', 'new zealand', 'oceania', 'pacific'],
+    url: 'https://images.unsplash.com/photo-1523482580672-f109ba8cb9be?q=80&w=1920&auto=format&fit=crop', // Oceania
+    name: 'Oceania'
+  },
+  world: {
+    keywords: ['world', 'earth', 'global', 'international'],
+    url: 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1920&auto=format&fit=crop', // World map
+    name: 'World'
+  }
+};
+
 // State
 const attempts = ref(0);
 const isComplete = ref(false);
 const imageError = ref(false);
 
-// A high-quality default map used when the provided one is "ugly" (SVG data) or fails
-const DEFAULT_MAP = 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1920&auto=format&fit=crop';
-
-// Computed
-const displayImage = computed(() => {
-  if (imageError.value || !props.image) return DEFAULT_MAP;
+// --- SMART REGION DETECTION ---
+const detectedRegion = computed(() => {
+  const text = (props.title + ' ' + props.description).toLowerCase();
   
-  // FIX: Detect the ugly base64 SVG or raw SVG string and replace it
-  if (props.image.startsWith('data:image/svg+xml') || props.image.includes('<svg')) {
-    return DEFAULT_MAP;
+  // Check each region's keywords
+  for (const [regionKey, regionData] of Object.entries(MAP_REGIONS)) {
+    if (regionData.keywords.some(keyword => text.includes(keyword))) {
+      return regionKey;
+    }
   }
   
+  // Default to world if no match
+  return 'world';
+});
+
+const displayImage = computed(() => {
+  // 1. If image failed to load, use smart regional fallback
+  if (imageError.value) {
+    return MAP_REGIONS[detectedRegion.value].url;
+  }
+
+  // 2. If JSON provides ugly SVG placeholder or is missing, use smart fallback
+  if (!props.image || 
+      props.image.startsWith('data:image/svg+xml') || 
+      props.image.includes('<svg')) {
+    return MAP_REGIONS[detectedRegion.value].url;
+  }
+  
+  // 3. Otherwise, trust the JSON (custom map provided by content creator)
   return props.image;
 });
 
+const currentRegionName = computed(() => {
+  return MAP_REGIONS[detectedRegion.value].name;
+});
+
+// --- EXISTING METHODS ---
 const correctMarker = computed(() => props.markers.find(m => m.isCorrect));
 
-// Methods
 const handleImageError = () => {
   imageError.value = true;
 };
@@ -162,9 +227,10 @@ const selectMarker = (marker) => {
 
 const getHint = () => {
   const hints = [
-    'Try looking in a different region.',
-    'Remember the climate and geography.',
-    'Check the cardinal directions (North, South...).'
+    'Look for geographical features mentioned in the description.',
+    'Consider the climate and region.',
+    'Think about neighboring locations.',
+    'Check the cardinal directions.'
   ];
   return hints[Math.min(attempts.value - 1, hints.length - 1)];
 };
