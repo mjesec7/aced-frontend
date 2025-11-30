@@ -273,6 +273,16 @@
           @next="emit('next-exercise')"
         />
 
+        <!-- GEOMETRY EXERCISE -->
+        <GeometryExercise
+          v-else-if="exerciseType === 'geometry'"
+          :geometryData="exerciseContentData"
+          :userAnswer="geometryUserAnswer"
+          @update:userAnswer="geometryUserAnswer = $event"
+          @submit="handleGeometrySubmit"
+          @next-exercise="emit('next-exercise')"
+        />
+
         <!-- Other interactive types... -->
         <DataAnalysisStep v-else-if="exerciseType === 'data_analysis'" :step="exerciseContentData" @complete="handleInteractiveComplete" />
         <FractionVisualStep v-else-if="exerciseType === 'fraction_visual'" :step="exerciseContentData" @complete="handleInteractiveComplete" />
@@ -365,6 +375,7 @@ import GameContainer from '@/components/games/base/GameContainer.vue';
 import ModernHistogram from './interactives/ModernHistogram.vue';
 import ModernMap from './interactives/ModernMap.vue';
 import ModernBlockCoding from './interactives/ModernBlockCoding.vue';
+import GeometryExercise from './GeometryExercise.vue';
 import DataAnalysisStep from './interactives/DataAnalysisStep.vue';
 import FractionVisualStep from './interactives/FractionVisualStep.vue';
 import GeometryPolyStep from './interactives/GeometryPolyStep.vue';
@@ -616,6 +627,17 @@ const handleInteractiveComplete = (success) => {
   if (success) {
     answerWasCorrect.value = true;
     showCorrectAnswer.value = true;
+  }
+};
+
+// --- GEOMETRY EXERCISE ---
+const geometryUserAnswer = ref({ side_b: null });
+
+const handleGeometrySubmit = (result) => {
+  answerWasCorrect.value = result.isCorrect;
+  showCorrectAnswer.value = true;
+  if (result.isCorrect) {
+    setTimeout(() => emit('next-exercise'), 1500);
   }
 };
 
