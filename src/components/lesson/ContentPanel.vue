@@ -12,60 +12,65 @@
       </h3>
     </header>
     
-    <div class="content-step-container">
-      <div class="content-padding">
-        
-        <div v-if="isExerciseStep" class="interactive-instruction-card">
-          <div class="instruction-icon">✏️</div>
-          <h3 class="instruction-heading">Complete the exercise on the right</h3>
-          <p class="instruction-text">
-            Use the interactive panel to answer {{ totalExercisesInStep }} question(s) and continue with the lesson.
-          </p>
-        </div>
-
-        <div v-else-if="isGameStep" class="game-context-view">
-            <div class="game-intro-card">
-                <div class="intro-header">
-                    <span class="game-icon">🎮</span>
-                    <h3>Game Time: {{ currentStep.title || 'Interactive Challenge' }}</h3>
-                </div>
-
-                <div class="game-instructions-box">
-                    <h4>How to Play:</h4>
-                    <ul class="instruction-list">
-                        <li>Solve the math problem shown at the top.</li>
-                        <li>Catch the <strong>correct answer</strong> in your basket.</li>
-                        <li>Avoid the wrong numbers!</li>
-                        <li>Complete all questions to win.</li>
-                    </ul>
-                </div>
+      <div class="content-step-container">
+        <div class="content-padding">
+          
+          <!-- EXPLANATION/EXAMPLE/READING STEPS (Check FIRST) -->
+          <div v-if="['explanation', 'example', 'reading'].includes(currentStep?.type)">
+            <div v-if="hasEmptyContent" class="empty-content-card">
+              <div class="empty-icon">📭</div>
+              <h3 class="empty-heading">Content Not Available</h3>
+              <p class="empty-text">This step doesn't have content yet. Click Next to continue with the lesson.</p>
             </div>
-
-            <div class="content-text-faded" v-html="formatContent(getStepContent(currentStep))"></div>
-        </div>
-
-        <div v-else-if="isInteractiveStep && !isExerciseStep && !isGameStep" class="interactive-instruction-card">
-          <div class="instruction-icon">
-            {{ currentStep?.type === 'practice' ? '\ud83e\uddea' : '\ud83e\udde9' }}
+            <div v-else class="content-text" v-html="formatContent(getStepContent(currentStep))"></div>
           </div>
-          <h3 class="instruction-heading">Complete the {{ getStepTypeText(currentStep?.type).toLowerCase() }} on the right</h3>
-          <p class="instruction-text">Use the interactive panel to answer the question and continue with the lesson.</p>
-        </div>
-
-        <div v-else-if="isSpecialInteractive" class="interactive-instruction-card">
-          <div class="instruction-icon">\ud83c\udfae</div>
-          <h3 class="instruction-heading">Interactive Exercise</h3>
-          <p class="instruction-text">Complete the interactive exercise on the right to continue.</p>
-        </div>
-
-        <div v-else-if="['explanation', 'example', 'reading'].includes(currentStep?.type)">
-          <div v-if="hasEmptyContent" class="empty-content-card">
-            <div class="empty-icon">📭</div>
-            <h3 class="empty-heading">Content Not Available</h3>
-            <p class="empty-text">This step doesn't have content yet. Click Next to continue with the lesson.</p>
+          
+          <!-- EXERCISE STEPS -->
+          <div v-else-if="isExerciseStep" class="interactive-instruction-card">
+            <div class="instruction-icon">✏️</div>
+            <h3 class="instruction-heading">Complete the exercise on the right</h3>
+            <p class="instruction-text">
+              Use the interactive panel to answer {{ totalExercisesInStep }} question(s) and continue with the lesson.
+            </p>
           </div>
-          <div v-else class="content-text" v-html="formatContent(getStepContent(currentStep))"></div>
-        </div>
+
+          <!-- GAME STEPS -->
+          <div v-else-if="isGameStep" class="game-context-view">
+              <div class="game-intro-card">
+                  <div class="intro-header">
+                      <span class="game-icon">🎮</span>
+                      <h3>Game Time: {{ currentStep.title || 'Interactive Challenge' }}</h3>
+                  </div>
+
+                  <div class="game-instructions-box">
+                      <h4>How to Play:</h4>
+                      <ul class="instruction-list">
+                          <li>Solve the math problem shown at the top.</li>
+                          <li>Catch the <strong>correct answer</strong> in your basket.</li>
+                          <li>Avoid the wrong numbers!</li>
+                          <li>Complete all questions to win.</li>
+                      </ul>
+                  </div>
+              </div>
+
+              <div class="content-text-faded" v-html="formatContent(getStepContent(currentStep))"></div>
+          </div>
+
+          <!-- SPECIAL INTERACTIVE STEPS -->
+          <div v-else-if="isSpecialInteractive" class="interactive-instruction-card">
+            <div class="instruction-icon">🎮</div>
+            <h3 class="instruction-heading">Interactive Exercise</h3>
+            <p class="instruction-text">Complete the interactive exercise on the right to continue.</p>
+          </div>
+
+          <!-- OTHER INTERACTIVE STEPS (practice, quiz, etc.) -->
+          <div v-else-if="isInteractiveStep && !isExerciseStep && !isGameStep" class="interactive-instruction-card">
+            <div class="instruction-icon">
+              {{ currentStep?.type === 'practice' ? '🧪' : '🧩' }}
+            </div>
+            <h3 class="instruction-heading">Complete the {{ getStepTypeText(currentStep?.type).toLowerCase() }} on the right</h3>
+            <p class="instruction-text">Use the interactive panel to answer the question and continue with the lesson.</p>
+          </div>
 
         <div v-else-if="currentStep?.type === 'vocabulary'" class="vocabulary-content">
           <div v-if="!currentStep?.data?.modalCompleted" class="vocabulary-trigger">
@@ -178,7 +183,9 @@ export default {
     },
     hasEmptyContent() {
       const content = this.getStepContent(this.currentStep);
-      return !content || content.includes('is not available');
+      if (!content || typeof content !== 'string') return true;
+      const trimmed = content.trim();
+      return !trimmed || trimmed.includes('is not available') || trimmed.includes('not found') || trimmed.length < 3;
     },
     // List of special interactive step types that render in InteractivePanel
     specialInteractiveTypes() {
