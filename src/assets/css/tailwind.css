@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 @theme {
+    /* Lesson Colors */
     --color-lesson-purple: #a855f7;
     --color-lesson-purple-light: #f3e8ff;
     --color-lesson-blue: #3b82f6;
@@ -9,6 +10,8 @@
     --color-lesson-green-light: #dcfce7;
     --color-lesson-yellow: #eab308;
     --color-lesson-yellow-light: #fef9c3;
+
+    /* Tech Colors */
     --color-tech-primary: #6366f1;
     --color-tech-surface: #f8fafc;
     --color-tech-dark: #1e293b;
