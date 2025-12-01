@@ -373,6 +373,9 @@ import AIHelpPanel from '@/components/lesson/AIHelpPanel.vue'
 import CompletionScreen from '@/components/lesson/CompletionScreen.vue'
 import FloatingAIAssistant from '@/components/lesson/FloatingAIAssistant.vue'
 
+// Import CSS
+import '@/assets/css/LessonPage.css'
+
 export default {
   name: 'LessonPage',
 

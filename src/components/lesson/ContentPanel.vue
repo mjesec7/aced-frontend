@@ -199,6 +199,20 @@ export default {
     }
   },
 
+  mounted() {
+    console.log('🚀 ContentPanel Mounted');
+    console.log('Current Step:', this.currentStep);
+    console.log('Step Type:', this.currentStep?.type);
+    console.log('Is Interactive:', this.isInteractiveStep);
+    console.log('Is Game:', this.isGameStep);
+    console.log('Extracted Content:', this.getStepContent(this.currentStep));
+  },
+
+  updated() {
+    console.log('🔄 ContentPanel Updated');
+    console.log('Current Step:', this.currentStep);
+  },
+
   methods: {
     getStepIcon(stepType) {
       const icons = {
