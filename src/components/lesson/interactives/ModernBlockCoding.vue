@@ -9,7 +9,7 @@
     <div class="flex flex-col lg:flex-row gap-8 items-start">
       <!-- Maze Grid - Now Larger and Primary -->
       <div class="flex-1 order-2 lg:order-1">
-        <div class="bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-8 shadow-2xl border-4 border-purple-500/30">
+        <div class="bg-linear-to-br from-slate-900 to-slate-800 rounded-3xl p-8 shadow-2xl border-4 border-purple-500/30">
           <h4 class="text-purple-300 font-bold text-sm uppercase tracking-wider mb-6 text-center">🗺️ Maze Grid</h4>
           
           <!-- Maze Visualization -->
@@ -60,7 +60,7 @@
       <!-- Controls - Now Sidebar -->
       <div class="w-full lg:w-80 order-1 lg:order-2 space-y-6">
         <!-- Movement Controls -->
-        <div class="bg-gradient-to-br from-purple-600 to-pink-600 rounded-3xl p-8 shadow-2xl">
+        <div class="bg-linear-to-br from-purple-600 to-pink-600 rounded-3xl p-8 shadow-2xl">
           <h4 class="text-white font-bold text-base uppercase tracking-wide mb-6 text-center">🎮 Controls</h4>
           <div class="flex flex-col items-center gap-3">
             <!-- Up Arrow -->
@@ -101,7 +101,7 @@
         <!-- Reset Button -->
         <button
           @click="resetVisualization"
-          class="w-full py-5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black text-lg rounded-2xl hover:shadow-2xl hover:scale-105 transition-all duration-200 active:scale-95 shadow-xl"
+          class="w-full py-5 bg-linear-to-r from-amber-500 to-orange-500 text-white font-black text-lg rounded-2xl hover:shadow-2xl hover:scale-105 transition-all duration-200 active:scale-95 shadow-xl"
         >
           🔄 Reset
         </button>

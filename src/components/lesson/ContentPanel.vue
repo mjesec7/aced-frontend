@@ -58,7 +58,14 @@
           <p class="instruction-text">Complete the interactive exercise on the right to continue.</p>
         </div>
 
-        <div v-else-if="['explanation', 'example', 'reading'].includes(currentStep?.type)" class="content-text" v-html="formatContent(getStepContent(currentStep))"></div>
+        <div v-else-if="['explanation', 'example', 'reading'].includes(currentStep?.type)">
+          <div v-if="hasEmptyContent" class="empty-content-card">
+            <div class="empty-icon">📭</div>
+            <h3 class="empty-heading">Content Not Available</h3>
+            <p class="empty-text">This step doesn't have content yet. Click Next to continue with the lesson.</p>
+          </div>
+          <div v-else class="content-text" v-html="formatContent(getStepContent(currentStep))"></div>
+        </div>
 
         <div v-else-if="currentStep?.type === 'vocabulary'" class="vocabulary-content">
           <div v-if="!currentStep?.data?.modalCompleted" class="vocabulary-trigger">
@@ -135,7 +142,7 @@
         ⬅️ Back
       </button>
       <button
-        v-if="!isInteractiveStep"
+        v-if="!isInteractiveStep || hasEmptyContent"
         class="nav-button next-button"
         @click="$emit('next')"
       >
@@ -168,6 +175,10 @@ export default {
     },
     isGameStep() {
       return this.currentStep?.type === 'game' || Boolean(this.currentStep?.gameType);
+    },
+    hasEmptyContent() {
+      const content = this.getStepContent(this.currentStep);
+      return !content || content.includes('is not available');
     },
     // List of special interactive step types that render in InteractivePanel
     specialInteractiveTypes() {
@@ -536,6 +547,36 @@ export default {
   font-weight: 600;
 }
 .instruction-text {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+/* ================================ */
+/* ==    EMPTY CONTENT CARD      == */
+/* ================================ */
+.empty-content-card {
+  background: var(--secondary);
+  border: 2px dashed var(--border);
+  border-radius: 1rem;
+  padding: 3rem 2rem;
+  text-align: center;
+  max-width: 500px;
+  margin: 2rem auto;
+}
+.empty-icon {
+  font-size: 3rem;
+  margin-bottom: 1.25rem;
+  opacity: 0.7;
+}
+.empty-heading {
+  margin: 0 0 1rem 0;
+  color: var(--foreground);
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+.empty-text {
   margin: 0;
   color: var(--muted-foreground);
   font-size: 1rem;
