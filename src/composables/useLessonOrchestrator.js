@@ -103,7 +103,24 @@ export function useLessonOrchestrator() {
   const currentStep = computed(() => steps.value[currentIndex.value] || null)
 
   const isInteractiveStep = computed(() => {
-    return currentStep.value && ['exercise', 'practice', 'quiz'].includes(currentStep.value.type)
+    return currentStep.value && [
+      'exercise',
+      'practice',
+      'quiz',
+      // New interactive types
+      'data_analysis',
+      'fraction_visual',
+      'geometry',
+      'geometry_poly',
+      'chem_mixing',
+      'chem_matching',
+      'english_sentence_fix',
+      'english_sentence_order',
+      'language_noun_bag',
+      'histogram',
+      'map',
+      'block-coding'
+    ].includes(currentStep.value.type)
   })
 
   const progressPercentage = computed(() => {
