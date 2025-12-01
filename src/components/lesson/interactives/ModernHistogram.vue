@@ -1,132 +1,95 @@
 <template>
-  <div class="w-full">
-    <!-- 3D Histogram Visualization -->
-    <div class="relative mb-8">
-      <div class="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-pink-500/20 blur-3xl"></div>
-      <div class="relative bg-black/30 backdrop-blur-xl rounded-2xl border border-white/20 p-6">
-        
-        <!-- Chart Title -->
-        <h3 class="text-white font-bold text-lg mb-6">{{ title || 'Data Visualization' }}</h3>
-        
-        <!-- Histogram Bars -->
-        <div class="relative h-64">
-          <div class="absolute inset-0 flex items-end justify-between gap-2">
-            <div 
-              v-for="(value, index) in chartData.values" 
-              :key="index"
-              class="flex-1 group relative"
-              @click="selectValue(chartData.labels[index])"
-            >
-              <!-- Bar -->
-              <div 
-                class="relative bg-gradient-to-t from-purple-600 to-pink-500 rounded-t-lg transition-all duration-300 hover:from-purple-500 hover:to-pink-400 cursor-pointer"
-                :style="{ 
-                  height: `${(value / Math.max(...chartData.values)) * 100}%`,
-                  boxShadow: selectedIndex === index ? '0 0 30px rgba(168, 85, 247, 0.5)' : ''
-                }"
-                :class="selectedIndex === index ? 'scale-105' : ''"
-              >
-                <!-- Value Label -->
-                <div class="absolute -top-8 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <div class="bg-white/90 text-slate-900 px-2 py-1 rounded text-sm font-bold whitespace-nowrap">
-                    {{ value }}
-                  </div>
-                </div>
+  <div class="histogram-wrapper">
+    <!-- Title Section -->
+    <div class="histogram-header">
+      <h3 class="histogram-title">{{ title || 'Data Visualization' }}</h3>
+      <p v-if="description" class="histogram-description">{{ description }}</p>
+    </div>
 
-                <!-- Glow Effect -->
-                <div v-if="selectedIndex === index" class="absolute inset-0 bg-gradient-to-t from-purple-400/50 to-pink-400/50 rounded-t-lg animate-pulse"></div>
-              </div>
-
-              <!-- Label -->
-              <div class="text-center mt-2">
-                <span class="text-white/70 text-sm font-medium">{{ chartData.labels[index] }}</span>
-              </div>
-            </div>
+    <!-- Chart Visualization -->
+    <div class="chart-container">
+      <div class="chart-inner">
+        <!-- Y-axis Grid Lines -->
+        <div class="chart-grid">
+          <div v-for="i in 5" :key="i" class="grid-line">
+            <span class="grid-label">{{ Math.round((maxValue / 4) * (5 - i)) }}</span>
           </div>
+        </div>
 
-          <!-- Grid Lines -->
-          <div class="absolute inset-0 pointer-events-none">
-            <div v-for="i in 5" :key="i" 
-                 class="absolute w-full border-t border-white/10"
-                 :style="{ bottom: `${(i - 1) * 25}%` }">
+        <!-- Bars -->
+        <div class="bars-container">
+          <div 
+            v-for="(value, index) in chartData.values" 
+            :key="index"
+            class="bar-wrapper"
+            @click="selectValue(chartData.labels[index])"
+          >
+            <!-- Bar -->
+            <div 
+              class="bar"
+              :class="{ 'bar-selected': selectedIndex === index }"
+              :style="{ 
+                height: `${(value / maxValue) * 100}%`,
+              }"
+            >
+              <!-- Value Label on Hover -->
+              <div class="bar-value">{{ value }}</div>
             </div>
+
+            <!-- Label -->
+            <div class="bar-label">{{ chartData.labels[index] }}</div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Interactive Slider -->
-    <div class="bg-gradient-to-r from-purple-500/10 to-pink-500/10 backdrop-blur-xl rounded-2xl border border-white/20 p-6">
-      <div class="mb-4">
-        <p class="text-white/70 text-sm uppercase tracking-wide mb-2">Select Value</p>
-        <div class="flex items-center justify-between">
-          <span class="text-white/50 text-sm">{{ min }}</span>
-          <div class="flex-1 mx-4">
-            <div class="relative">
-              <!-- Custom Slider Track -->
-              <div class="h-3 bg-black/30 rounded-full shadow-inner">
-                <div 
-                  class="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-200"
-                  :style="{ width: `${((currentValue - min) / (max - min)) * 100}%` }"
-                ></div>
-              </div>
-              
-              <!-- Slider Input -->
-              <input
-                type="range"
-                :min="min"
-                :max="max"
-                :step="step"
-                v-model.number="currentValue"
-                class="absolute inset-0 w-full opacity-0 cursor-pointer"
-                :disabled="isLocked"
-              />
-              
-              <!-- Custom Thumb -->
-              <div 
-                class="absolute top-1/2 transform -translate-y-1/2 -translate-x-1/2 pointer-events-none transition-all duration-200"
-                :style="{ left: `${((currentValue - min) / (max - min)) * 100}%` }"
-              >
-                <div class="relative">
-                  <div class="w-6 h-6 bg-white rounded-full shadow-xl border-2 border-purple-500"></div>
-                  <!-- Value Tooltip -->
-                  <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 bg-white text-slate-900 px-3 py-1 rounded-lg text-sm font-bold whitespace-nowrap shadow-xl">
-                    {{ currentValue }}
-                    <div class="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1 border-4 border-transparent border-t-white"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
+    <!-- Slider Section -->
+    <div class="slider-section">
+      <div class="slider-header">
+        <span class="slider-label">Select Value</span>
+        <span class="slider-current-value">{{ currentValue }}</span>
+      </div>
+
+      <div class="slider-container">
+        <span class="slider-min">{{ min }}</span>
+        
+        <div class="slider-track-wrapper">
+          <input
+            type="range"
+            :min="min"
+            :max="max"
+            :step="step"
+            v-model.number="currentValue"
+            class="slider-input"
+            :disabled="isLocked"
+            @input="handleSliderInput"
+          />
+          <div class="slider-track">
+            <div 
+              class="slider-fill" 
+              :style="{ width: sliderPercentage + '%' }"
+            ></div>
           </div>
-          <span class="text-white/50 text-sm">{{ max }}</span>
         </div>
+        
+        <span class="slider-max">{{ max }}</span>
       </div>
 
       <!-- Submit Button -->
       <button
         @click="checkAnswer"
         :disabled="isLocked"
-        class="w-full py-4 rounded-xl font-bold text-white transition-all duration-300 relative overflow-hidden group"
-        :class="isLocked 
-          ? 'bg-green-500 cursor-not-allowed' 
-          : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:shadow-xl hover:scale-105'"
+        class="submit-button"
+        :class="{ 'submit-button-success': isLocked }"
       >
-        <div v-if="!isLocked" class="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity"></div>
-        <span class="relative z-10">
-          {{ isLocked ? '✓ Correct!' : 'Submit Answer' }}
-        </span>
+        {{ isLocked ? '✓ Correct!' : 'Submit Answer' }}
       </button>
 
       <!-- Feedback -->
-      <transition name="bounce">
-        <div v-if="feedback" class="mt-4 p-4 rounded-xl border backdrop-blur-md"
-             :class="isCorrect 
-               ? 'bg-green-500/20 border-green-400/50 text-green-300' 
-               : 'bg-red-500/20 border-red-400/50 text-red-300'">
-          <p class="font-medium flex items-center gap-2">
-            <span class="text-2xl">{{ isCorrect ? '🎯' : '💫' }}</span>
-            {{ isCorrect ? 'Perfect! You found the correct value!' : `Not quite. Try again!` }}
-          </p>
+      <transition name="fade-slide">
+        <div v-if="feedback" class="feedback" :class="{ 'feedback-success': isCorrect, 'feedback-error': !isCorrect }">
+          <span class="feedback-icon">{{ isCorrect ? '🎯' : '💫' }}</span>
+          <span class="feedback-text">{{ feedback }}</span>
         </div>
       </transition>
     </div>
@@ -172,21 +135,28 @@ const isLocked = ref(false);
 
 // Computed
 const chartData = computed(() => props.data || { labels: [], values: [] });
+const maxValue = computed(() => Math.max(...chartData.value.values));
+const sliderPercentage = computed(() => ((currentValue.value - props.min) / (props.max - props.min)) * 100);
 
 // Methods
+const handleSliderInput = (event) => {
+  // Smooth slider update
+  currentValue.value = Number(event.target.value);
+};
+
 const selectValue = (label) => {
   const index = chartData.value.labels.indexOf(label);
   selectedIndex.value = index;
-  currentValue.value = parseInt(label);
+  currentValue.value = parseInt(label.replace('k', '000'));
 };
 
 const checkAnswer = () => {
   if (isLocked.value) return;
   
-  const tolerance = props.step || 1;
+  const tolerance = props.step || 100;
   if (Math.abs(currentValue.value - props.correctValue) <= tolerance) {
     isCorrect.value = true;
-    feedback.value = 'Correct!';
+    feedback.value = 'Perfect! You found the correct value!';
     isLocked.value = true;
     emit('complete', true);
     setTimeout(() => {
@@ -194,7 +164,7 @@ const checkAnswer = () => {
     }, 2000);
   } else {
     isCorrect.value = false;
-    feedback.value = 'Try again';
+    feedback.value = 'Not quite. Try again!';
     setTimeout(() => {
       feedback.value = '';
     }, 2000);
@@ -212,21 +182,390 @@ watch(() => props.correctValue, () => {
 </script>
 
 <style scoped>
-.bounce-enter-active {
-  animation: bounce-in 0.5s;
+.histogram-wrapper {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 24px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-@keyframes bounce-in {
-  0% {
-    transform: scale(0.9);
-    opacity: 0;
+/* Header */
+.histogram-header {
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.histogram-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 8px 0;
+}
+
+.histogram-description {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Chart Container */
+.chart-container {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 32px;
+  border: 1px solid #e2e8f0;
+}
+
+.chart-inner {
+  position: relative;
+  height: 300px;
+}
+
+/* Grid Lines */
+.chart-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 30px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.grid-line {
+  width: 100%;
+  height: 1px;
+  background: #e2e8f0;
+  position: relative;
+}
+
+.grid-label {
+  position: absolute;
+  left: -40px;
+  top: -8px;
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+/* Bars Container */
+.bars-container {
+  position: absolute;
+  bottom: 0;
+  left: 40px;
+  right: 0;
+  height: calc(100% - 30px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  gap: 8px;
+}
+
+.bar-wrapper {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  cursor: pointer;
+}
+
+.bar {
+  width: 100%;
+  max-width: 60px;
+  background: linear-gradient(180deg, #8b5cf6 0%, #7c3aed 100%);
+  border-radius: 8px 8px 0 0;
+  transition: all 0.3s ease;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
+}
+
+.bar:hover {
+  background: linear-gradient(180deg, #7c3aed 0%, #6d28d9 100%);
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.bar-selected {
+  background: linear-gradient(180deg, #ec4899 0%, #db2777 100%) !important;
+  box-shadow: 0 4px 16px rgba(236, 72, 153, 0.4) !important;
+  transform: scale(1.05) !important;
+}
+
+.bar-value {
+  position: absolute;
+  top: -28px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1e293b;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.bar:hover .bar-value {
+  opacity: 1;
+}
+
+.bar-label {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #475569;
+  font-weight: 500;
+}
+
+/* Slider Section */
+.slider-section {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid #e2e8f0;
+}
+
+.slider-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.slider-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.slider-current-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #8b5cf6;
+}
+
+.slider-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.slider-min,
+.slider-max {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 600;
+  min-width: 50px;
+}
+
+.slider-min {
+  text-align: right;
+}
+
+.slider-max {
+  text-align: left;
+}
+
+.slider-track-wrapper {
+  position: relative;
+  flex: 1;
+  height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+.slider-track {
+  position: absolute;
+  width: 100%;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.slider-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #8b5cf6 0%, #ec4899 100%);
+  transition: width 0.05s linear;
+  border-radius: 999px;
+}
+
+.slider-input {
+  position: relative;
+  width: 100%;
+  height: 8px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  outline: none;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.slider-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  background: white;
+  border: 3px solid #8b5cf6;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+  transition: all 0.2s ease;
+}
+
+.slider-input::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+}
+
+.slider-input::-webkit-slider-thumb:active {
+  transform: scale(1.1);
+}
+
+.slider-input::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  background: white;
+  border: 3px solid #8b5cf6;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+  transition: all 0.2s ease;
+}
+
+.slider-input::-moz-range-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+}
+
+.slider-input:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Submit Button */
+.submit-button {
+  width: 100%;
+  padding: 14px 24px;
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.submit-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(139, 92, 246, 0.4);
+}
+
+.submit-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.submit-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.submit-button-success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+/* Feedback */
+.feedback {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.feedback-success {
+  background: #d1fae5;
+  color: #065f46;
+  border: 2px solid #10b981;
+}
+
+.feedback-error {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 2px solid #ef4444;
+}
+
+.feedback-icon {
+  font-size: 20px;
+}
+
+.feedback-text {
+  flex: 1;
+}
+
+/* Transitions */
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all 0.3s ease;
+}
+
+.fade-slide-enter-from {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .histogram-wrapper {
+    padding: 16px;
   }
-  50% {
-    transform: scale(1.05);
+
+  .chart-inner {
+    height: 250px;
   }
-  100% {
-    transform: scale(1);
-    opacity: 1;
+
+  .bars-container {
+    left: 30px;
+  }
+
+  .grid-label {
+    left: -30px;
+    font-size: 10px;
+  }
+
+  .histogram-title {
+    font-size: 20px;
+  }
+
+  .slider-current-value {
+    font-size: 18px;
   }
 }
 </style>
