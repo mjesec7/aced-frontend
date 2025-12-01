@@ -2639,3 +2639,289 @@ button[class*='check']:hover,
     font-size: 20px !important;
   }
 }
+
+/* ================================
+   CONTENT PANEL INTERNALS
+   ================================ */
+
+.content-step-header {
+  padding: 20px 32px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  font-size: 1.1rem;
+  color: #0f172a;
+}
+
+.step-number {
+  background: #f1f5f9;
+  color: #64748b;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.step-text {
+  font-weight: 600;
+}
+
+.content-step-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+  position: relative;
+}
+
+.content-padding {
+  padding: 32px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.content-text {
+  font-size: 1.1rem;
+  line-height: 1.7;
+  color: #334155;
+}
+
+.content-text p {
+  margin-bottom: 1.5em;
+}
+
+.content-h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 2em 0 1em;
+}
+
+.content-h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 1.5em 0 0.75em;
+}
+
+.content-navigation {
+  padding: 20px 32px;
+  border-top: 1px solid #e2e8f0;
+  background: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.nav-button {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  font-size: 0.95rem;
+}
+
+.prev-button {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.prev-button:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.next-button {
+  background: #3b82f6;
+  color: white;
+}
+
+.next-button:hover {
+  background: #2563eb;
+}
+
+/* ================================
+   ADDITIONAL CONTENT STYLES
+   ================================ */
+
+/* Instruction Card */
+.interactive-instruction-card {
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.instruction-icon {
+  font-size: 2.5rem;
+  margin-bottom: 16px;
+}
+
+.instruction-heading {
+  color: #0369a1;
+  font-size: 1.25rem;
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.instruction-text {
+  color: #334155;
+  line-height: 1.5;
+}
+
+/* Game Context */
+.game-context-view {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.game-intro-card {
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+  color: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25);
+}
+
+.intro-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.game-icon {
+  font-size: 2rem;
+}
+
+.intro-header h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.game-instructions-box {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.game-instructions-box h4 {
+  margin: 0 0 12px 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.instruction-list {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.content-text-faded {
+  opacity: 0.8;
+  font-size: 0.95rem;
+}
+
+/* Vocabulary Styles */
+.vocabulary-content {
+  padding: 20px;
+}
+
+.vocabulary-trigger {
+  text-align: center;
+  padding: 40px;
+  background: #f8fafc;
+  border-radius: 16px;
+  border: 2px dashed #cbd5e1;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.vocabulary-trigger:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.trigger-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+}
+
+.trigger-heading {
+  font-size: 1.5rem;
+  color: #0f172a;
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.trigger-subheading {
+  color: #64748b;
+  margin-bottom: 24px;
+}
+
+.trigger-button {
+  background: #3b82f6;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.trigger-button:hover {
+  background: #2563eb;
+}
+
+/* Media Styles */
+.media-placeholder {
+  text-align: center;
+  padding: 40px;
+  background: #f8fafc;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+}
+
+.media-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+}
+
+.media-title {
+  font-size: 1.25rem;
+  color: #0f172a;
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.media-description {
+  color: #64748b;
+  margin-bottom: 16px;
+}
+
+.media-url {
+  font-family: monospace;
+  background: #e2e8f0;
+  padding: 8px 12px;
+  border-radius: 6px;
+  display: inline-block;
+  color: #475569;
+  word-break: break-all;
+}

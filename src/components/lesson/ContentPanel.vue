@@ -1,5 +1,5 @@
 <template>
-  <div class="content-panel-wrapper">
+  <div class="content-panel">
     <header class="content-step-header">
       <h3 class="header-title">
         <span class="step-number">{{ currentIndex + 1 }}</span>
