@@ -1,121 +1,194 @@
 <template>
   <div class="map-wrapper">
-    <!-- Header -->
-    <div class="map-header">
-      <h2 class="map-title">{{ title }}</h2>
-      <p class="map-description">{{ description }}</p>
-    </div>
+    <!-- Map Container with Better Background -->
+    <div class="map-card">
+      <!-- Header with modern styling -->
+      <div class="map-header">
+        <div class="header-badge">
+          <span class="badge-icon">🗺️</span>
+          <span class="badge-text">Geography Challenge</span>
+        </div>
+        <h2 class="map-title">{{ title }}</h2>
+        <p class="map-description">{{ description }}</p>
+      </div>
 
-    <!-- Map Container -->
-    <div class="map-container" ref="mapContainer">
-      <!-- Map Image -->
-      <img 
-        :src="displayImage" 
-        alt="Map" 
-        class="map-image"
-        @error="handleImageError"
-        @load="handleImageLoad"
-      />
+      <!-- Map Container with realistic styling -->
+      <div class="map-container" ref="mapContainer">
+        <!-- Grid background for geographic feel -->
+        <div class="map-grid"></div>
+        
+        <!-- Map content area -->
+        <div class="map-content">
+          <!-- Decorative map elements -->
+          <div class="map-decoration">
+            <!-- Latitude/Longitude lines -->
+            <div class="lat-lines">
+              <div v-for="i in 8" :key="'lat-' + i" class="lat-line" 
+                   :style="{ top: (i * 12.5) + '%' }"></div>
+            </div>
+            <div class="lon-lines">
+              <div v-for="i in 12" :key="'lon-' + i" class="lon-line" 
+                   :style="{ left: (i * 8.33) + '%' }"></div>
+            </div>
+          </div>
 
-      <!-- Markers -->
-      <div 
-        v-for="marker in markers" 
-        :key="marker.id"
-        class="marker"
-        :class="{ 
-          'marker-selected': selectedMarkerId === marker.id,
-          'marker-correct': selectedMarkerId === marker.id && marker.isCorrect && showFeedback,
-          'marker-incorrect': selectedMarkerId === marker.id && !marker.isCorrect && showFeedback
-        }"
-        :style="{ left: marker.x + '%', top: marker.y + '%' }"
-        @click="handleMarkerClick(marker)"
-      >
-        <!-- Marker Pin -->
-        <div class="marker-pin">
-          <!-- Icon based on state -->
-          <svg v-if="selectedMarkerId === marker.id && showFeedback && marker.isCorrect" 
-               class="marker-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
-          </svg>
-          <svg v-else-if="selectedMarkerId === marker.id && showFeedback && !marker.isCorrect" 
-               class="marker-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/>
-          </svg>
-          <div v-else class="marker-dot"></div>
+          <!-- Continents/Region visualization -->
+          <div class="region-display">
+            <svg viewBox="0 0 800 500" class="region-svg">
+              <!-- Simple continent shapes for visual context -->
+              <defs>
+                <linearGradient id="landGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color:#10b981;stop-opacity:0.1" />
+                  <stop offset="100%" style="stop-color:#059669;stop-opacity:0.15" />
+                </linearGradient>
+              </defs>
+              
+              <!-- Asia region outline (simplified) -->
+              <path d="M 200,100 L 700,100 L 700,400 L 500,450 L 200,400 Z" 
+                    fill="url(#landGradient)" 
+                    stroke="#10b981" 
+                    stroke-width="2" 
+                    stroke-dasharray="10,5"
+                    opacity="0.6"/>
+              
+              <!-- Decorative elements -->
+              <text x="450" y="260" font-size="48" fill="#94a3b8" opacity="0.3" 
+                    text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold">
+                ASIA
+              </text>
+            </svg>
+          </div>
+
+          <!-- Location Markers -->
+          <div 
+            v-for="marker in markers" 
+            :key="marker.id"
+            class="marker"
+            :class="{ 
+              'marker-selected': selectedMarkerId === marker.id,
+              'marker-correct': selectedMarkerId === marker.id && marker.isCorrect && showFeedback,
+              'marker-incorrect': selectedMarkerId === marker.id && !marker.isCorrect && showFeedback,
+              'marker-pulse': selectedMarkerId === marker.id
+            }"
+            :style="{ left: marker.x + '%', top: marker.y + '%' }"
+            @click="handleMarkerClick(marker)"
+          >
+            <!-- Marker pin with modern design -->
+            <div class="marker-pin">
+              <div class="pin-head">
+                <!-- Status icon -->
+                <svg v-if="selectedMarkerId === marker.id && showFeedback && marker.isCorrect" 
+                     class="pin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                </svg>
+                <svg v-else-if="selectedMarkerId === marker.id && showFeedback && !marker.isCorrect" 
+                     class="pin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+                <div v-else class="pin-dot"></div>
+              </div>
+              <div class="pin-spike"></div>
+            </div>
+
+            <!-- Location label -->
+            <div class="marker-label">
+              {{ marker.label }}
+            </div>
+          </div>
+
+          <!-- Click ripple effect -->
+          <div 
+            v-if="ripple.show" 
+            class="click-ripple"
+            :style="{ left: ripple.x + 'px', top: ripple.y + 'px' }"
+          ></div>
         </div>
 
-        <!-- Label Tooltip -->
-        <div class="marker-tooltip">
-          {{ marker.label }}
+        <!-- Compass rose -->
+        <div class="compass">
+          <div class="compass-rose">
+            <div class="compass-n">N</div>
+            <div class="compass-arrows">
+              <div class="compass-arrow compass-arrow-n">▲</div>
+              <div class="compass-arrow compass-arrow-e">▶</div>
+              <div class="compass-arrow compass-arrow-s">▼</div>
+              <div class="compass-arrow compass-arrow-w">◀</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scale indicator -->
+        <div class="scale-indicator">
+          <div class="scale-line"></div>
+          <span class="scale-text">~ 1000 km</span>
         </div>
       </div>
 
-      <!-- Click Ripple Effect -->
-      <div 
-        v-if="ripple.show" 
-        class="click-ripple"
-        :style="{ left: ripple.x + 'px', top: ripple.y + 'px' }"
-      ></div>
-    </div>
-
-    <!-- Feedback Section -->
-    <div class="feedback-section">
-      <transition name="slide-up" mode="out-in">
-        <div v-if="showFeedback" class="feedback" :class="{ 'feedback-success': isCorrect, 'feedback-error': !isCorrect }">
-          <div class="feedback-icon-wrapper">
-            <span class="feedback-emoji">{{ isCorrect ? '🎉' : '🤔' }}</span>
+      <!-- Feedback Section -->
+      <div class="feedback-section">
+        <transition name="slide-up" mode="out-in">
+          <div v-if="showFeedback" 
+               class="feedback" 
+               :class="{ 'feedback-success': isCorrect, 'feedback-error': !isCorrect }">
+            <div class="feedback-icon-wrapper">
+              <span class="feedback-emoji">{{ isCorrect ? '🎯' : '🧭' }}</span>
+            </div>
+            <div class="feedback-content">
+              <h3 class="feedback-title">
+                {{ isCorrect ? 'Perfect! You found it!' : 'Not quite the right location' }}
+              </h3>
+              <p class="feedback-message">
+                {{ isCorrect ? 'Excellent geographic knowledge! +15 XP' : 'Try selecting another marker on the map.' }}
+              </p>
+            </div>
           </div>
-          <div class="feedback-content">
-            <h3 class="feedback-title">{{ isCorrect ? 'Correct!' : 'Not quite.' }}</h3>
-            <p class="feedback-message">
-              {{ isCorrect ? '+15 XP' : 'Try looking for another location.' }}
-            </p>
+
+          <div v-else class="feedback-idle">
+            <span class="feedback-idle-icon">📍</span>
+            <span class="feedback-idle-text">Click on a location marker to make your selection</span>
           </div>
-        </div>
+        </transition>
 
-        <div v-else class="feedback-idle">
-          <span class="feedback-idle-icon">📍</span>
-          <span class="feedback-idle-text">Select a marker on the map to answer</span>
+        <!-- Action Buttons -->
+        <div v-if="showFeedback" class="action-buttons">
+          <button
+            v-if="isCorrect"
+            @click="handleContinue"
+            class="action-button action-button-success"
+          >
+            <svg class="button-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+            </svg>
+            Continue
+          </button>
+          <button
+            v-else-if="attemptCount >= maxAttempts"
+            @click="skipExercise"
+            class="action-button action-button-skip"
+          >
+            <svg class="button-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            Skip & Continue
+          </button>
         </div>
-      </transition>
-
-      <!-- Action Buttons -->
-      <div v-if="showFeedback" class="action-buttons">
-        <button
-          v-if="isCorrect"
-          @click="handleContinue"
-          class="action-button action-button-success"
-        >
-          Continue →
-        </button>
-        <button
-          v-else-if="attemptCount >= maxAttempts"
-          @click="skipExercise"
-          class="action-button action-button-skip"
-        >
-          Skip → Continue Anyway
-        </button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import localWorldMap from '@/assets/icons/world.svg';
+import { ref } from 'vue';
 
 const props = defineProps({
-  image: {
-    type: String,
-    required: true
-  },
+  image: String,
   title: {
     type: String,
-    default: 'Geography Challenge'
+    default: 'Find the Location'
   },
   description: {
     type: String,
-    default: 'Find the correct location on the map.'
+    default: 'Select the correct location marker on the map'
   },
   markers: {
     type: Array,
@@ -130,41 +203,25 @@ const selectedMarkerId = ref(null);
 const showFeedback = ref(false);
 const isCorrect = ref(false);
 const attemptCount = ref(0);
-const maxAttempts = 3;
-const imageError = ref(false);
+const maxAttempts = 5;
 const mapContainer = ref(null);
 const ripple = ref({ show: false, x: 0, y: 0 });
 
-// Computed
-const displayImage = computed(() => {
-  if (imageError.value) return localWorldMap;
-  if (!props.image || props.image.startsWith('data:image/svg+xml') || props.image.includes('<svg')) {
-    return localWorldMap;
-  }
-  return props.image;
-});
-
 // Methods
-const handleImageError = () => {
-  imageError.value = true;
-};
-
-const handleImageLoad = () => {
-  console.log('Map image loaded successfully');
-};
-
 const handleMarkerClick = (marker) => {
   if (isCorrect.value) return;
 
   // Show ripple effect
-  const rect = mapContainer.value.getBoundingClientRect();
-  const x = (marker.x / 100) * rect.width;
-  const y = (marker.y / 100) * rect.height;
-  
-  ripple.value = { show: true, x, y };
-  setTimeout(() => {
-    ripple.value.show = false;
-  }, 600);
+  if (mapContainer.value) {
+    const rect = mapContainer.value.getBoundingClientRect();
+    const x = (marker.x / 100) * rect.width;
+    const y = (marker.y / 100) * rect.height;
+    
+    ripple.value = { show: true, x, y };
+    setTimeout(() => {
+      ripple.value.show = false;
+    }, 600);
+  }
 
   attemptCount.value++;
   selectedMarkerId.value = marker.id;
@@ -182,7 +239,7 @@ const handleMarkerClick = (marker) => {
         showFeedback.value = false;
         selectedMarkerId.value = null;
       }
-    }, 2000);
+    }, 2500);
   }
 };
 
@@ -199,31 +256,58 @@ const skipExercise = () => {
 <style scoped>
 .map-wrapper {
   width: 100%;
-  max-width: 1200px;
+  max-width: 1000px;
   margin: 0 auto;
-  background: #ffffff;
-  border-radius: 16px;
+  padding: 20px;
+}
+
+.map-card {
+  background: white;
+  border-radius: 24px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
 }
 
 /* Header */
 .map-header {
-  padding: 24px;
+  padding: 32px;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border-bottom: 2px solid #e2e8f0;
   text-align: center;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  border-bottom: 1px solid #e2e8f0;
+}
+
+.header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: white;
+  border-radius: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.badge-icon {
+  font-size: 20px;
+}
+
+.badge-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .map-title {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 700;
   color: #1e293b;
   margin: 0 0 8px 0;
 }
 
 .map-description {
-  font-size: 14px;
+  font-size: 15px;
   color: #64748b;
   margin: 0;
 }
@@ -232,108 +316,190 @@ const skipExercise = () => {
 .map-container {
   position: relative;
   width: 100%;
-  height: 500px;
-  background: #f8fafc;
+  height: 550px;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
   overflow: hidden;
 }
 
-.map-image {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  padding: 20px;
+.map-grid {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(148, 163, 184, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.1) 1px, transparent 1px);
+  background-size: 50px 50px;
+  pointer-events: none;
 }
 
-/* Markers */
+.map-content {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* Map decoration */
+.map-decoration {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.lat-lines,
+.lon-lines {
+  position: absolute;
+  inset: 0;
+}
+
+.lat-line,
+.lon-line {
+  position: absolute;
+  background: rgba(16, 185, 129, 0.15);
+}
+
+.lat-line {
+  width: 100%;
+  height: 1px;
+  left: 0;
+}
+
+.lon-line {
+  width: 1px;
+  height: 100%;
+  top: 0;
+}
+
+/* Region display */
+.region-display {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.region-svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* LocationMarkers */
 .marker {
   position: absolute;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -100%);
   cursor: pointer;
   z-index: 10;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .marker:hover {
   z-index: 20;
-  transform: translate(-50%, -50%) scale(1.2);
+  transform: translate(-50%, -100%) scale(1.15);
 }
 
+.marker-pulse {
+  animation: marker-pulse 0.6s ease-out;
+}
+
+@keyframes marker-pulse {
+  0%, 100% {
+    transform: translate(-50%, -100%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -100%) scale(1.2);
+  }
+}
+
+/* Marker pin */
 .marker-pin {
-  width: 40px;
-  height: 40px;
-  background: white;
-  border: 3px solid #8b5cf6;
-  border-radius: 50%;
+  position: relative;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+}
+
+.pin-head {
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  border: 3px solid white;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
   transition: all 0.3s ease;
 }
 
-.marker:hover .marker-pin {
-  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+.marker:hover .pin-head {
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.6);
 }
 
-.marker-selected .marker-pin {
-  animation: pulse 0.6s ease-out;
+.marker-correct .pin-head {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
 }
 
-@keyframes pulse {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.2);
-  }
-  100% {
-    transform: scale(1);
-  }
+.marker-incorrect .pin-head {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
 }
 
-.marker-correct .marker-pin {
-  background: #10b981;
-  border-color: #059669;
+.pin-head > * {
+  transform: rotate(45deg);
 }
 
-.marker-incorrect .marker-pin {
-  background: #ef4444;
-  border-color: #dc2626;
-}
-
-.marker-dot {
-  width: 12px;
-  height: 12px;
-  background: #8b5cf6;
+.pin-dot {
+  width: 16px;
+  height: 16px;
+  background: white;
   border-radius: 50%;
 }
 
-.marker-icon {
-  width: 24px;
-  height: 24px;
+.pin-icon {
+  width: 26px;
+  height: 26px;
   color: white;
+  stroke-width: 3;
 }
 
-/* Marker Tooltip */
-.marker-tooltip {
+.pin-spike {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 12px solid #4f46e5;
+}
+
+.marker-correct .pin-spike {
+  border-top-color: #059669;
+}
+
+.marker-incorrect .pin-spike {
+  border-top-color: #dc2626;
+}
+
+/* Marker label */
+.marker-label {
   position: absolute;
   bottom: 100%;
   left: 50%;
   transform: translateX(-50%);
-  margin-bottom: 8px;
-  padding: 6px 12px;
+  margin-bottom: 12px;
+  padding: 8px 14px;
   background: #1e293b;
   color: white;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
-  border-radius: 6px;
+  border-radius: 8px;
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-.marker-tooltip::after {
+.marker-label::after {
   content: '';
   position: absolute;
   top: 100%;
@@ -343,17 +509,18 @@ const skipExercise = () => {
   border-top-color: #1e293b;
 }
 
-.marker:hover .marker-tooltip {
+.marker:hover .marker-label,
+.marker-selected .marker-label {
   opacity: 1;
 }
 
-/* Click Ripple */
+/* Click ripple */
 .click-ripple {
   position: absolute;
-  width: 20px;
-  height: 20px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
-  background: #8b5cf6;
+  background: rgba(99, 102, 241, 0.4);
   transform: translate(-50%, -50%);
   animation: ripple-effect 0.6s ease-out;
   pointer-events: none;
@@ -361,54 +528,161 @@ const skipExercise = () => {
 
 @keyframes ripple-effect {
   0% {
-    opacity: 0.6;
+    opacity: 1;
     transform: translate(-50%, -50%) scale(0);
   }
   100% {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(4);
+    transform: translate(-50%, -50%) scale(3);
   }
+}
+
+/* Compass */
+.compass {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 60px;
+  height: 60px;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+}
+
+.compass-rose {
+  position: relative;
+  width: 50px;
+  height: 50px;
+}
+
+.compass-n {
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 14px;
+  font-weight: 700;
+  color: #ef4444;
+}
+
+.compass-arrows {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.compass-arrow {
+  position: absolute;
+  font-size: 10px;
+  color: #94a3b8;
+}
+
+.compass-arrow-n {
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.compass-arrow-e {
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.compass-arrow-s {
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.compass-arrow-w {
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* Scale indicator */
+.scale-indicator {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  background: white;
+  padding: 8px 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 5;
+}
+
+.scale-line {
+  width: 80px;
+  height: 3px;
+  background: linear-gradient(to right, #1e293b 0%, #1e293b 50%, transparent 50%);
+  background-size: 20px 100%;
+  margin-bottom: 4px;
+}
+
+.scale-text {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
 }
 
 /* Feedback Section */
 .feedback-section {
-  padding: 24px;
-  background: white;
-  border-top: 1px solid #e2e8f0;
+  padding: 28px 32px;
+  background: #f8fafc;
+  border-top: 2px solid #e2e8f0;
 }
 
 .feedback {
   display: flex;
   align-items: flex-start;
-  gap: 16px;
-  padding: 20px;
-  border-radius: 12px;
-  margin-bottom: 16px;
+  gap: 20px;
+  padding: 24px;
+  border-radius: 16px;
+  margin-bottom: 20px;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .feedback-success {
-  background: #d1fae5;
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
   border: 2px solid #10b981;
 }
 
 .feedback-error {
-  background: #fee2e2;
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
   border: 2px solid #ef4444;
 }
 
 .feedback-icon-wrapper {
   flex-shrink: 0;
-  width: 48px;
-  height: 48px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   background: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .feedback-emoji {
-  font-size: 28px;
+  font-size: 32px;
 }
 
 .feedback-content {
@@ -416,9 +690,9 @@ const skipExercise = () => {
 }
 
 .feedback-title {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
-  margin: 0 0 4px 0;
+  margin: 0 0 6px 0;
 }
 
 .feedback-success .feedback-title {
@@ -430,8 +704,9 @@ const skipExercise = () => {
 }
 
 .feedback-message {
-  font-size: 14px;
+  font-size: 15px;
   margin: 0;
+  line-height: 1.5;
 }
 
 .feedback-success .feedback-message {
@@ -442,24 +717,27 @@ const skipExercise = () => {
   color: #b91c1c;
 }
 
-/* Idle State */
+/* Idle state */
 .feedback-idle {
   text-align: center;
-  padding: 20px;
+  padding: 24px;
   color: #94a3b8;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 12px;
+  background: white;
+  border-radius: 12px;
+  border: 2px dashed #cbd5e1;
 }
 
 .feedback-idle-icon {
-  font-size: 20px;
+  font-size: 24px;
 }
 
-/* Action Buttons */
+/* Action buttons */
 .action-buttons {
   display: flex;
   gap: 12px;
@@ -467,39 +745,45 @@ const skipExercise = () => {
 
 .action-button {
   flex: 1;
-  padding: 14px 24px;
+  padding: 16px 28px;
   border: none;
-  border-radius: 10px;
+  border-radius: 14px;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .action-button-success {
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
 }
 
 .action-button-success:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
 }
 
 .action-button-skip {
   background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
   color: white;
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.3);
 }
 
 .action-button-skip:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+}
+
+.button-icon {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2.5;
 }
 
 /* Transitions */
@@ -520,31 +804,46 @@ const skipExercise = () => {
 
 /* Responsive */
 @media (max-width: 768px) {
-  .map-container {
-    height: 400px;
+  .map-wrapper {
+    padding: 12px;
+  }
+
+  .map-header {
+    padding: 24px 20px;
   }
 
   .map-title {
-    font-size: 20px;
+    font-size: 22px;
   }
 
-  .marker-pin {
-    width: 36px;
-    height: 36px;
+  .map-container {
+    height: 450px;
   }
 
-  .marker-dot {
-    width: 10px;
-    height: 10px;
+  .pin-head {
+    width: 38px;
+    height: 38px;
   }
 
-  .marker-icon {
-    width: 20px;
-    height: 20px;
+  .compass {
+    width: 50px;
+    height: 50px;
+    top: 12px;
+    right: 12px;
   }
 
-  .feedback-title {
-    font-size: 16px;
+  .compass-rose {
+    width: 40px;
+    height: 40px;
+  }
+
+  .scale-indicator {
+    bottom: 12px;
+    left: 12px;
+  }
+
+  .feedback-section {
+    padding: 20px 16px;
   }
 
   .action-buttons {
