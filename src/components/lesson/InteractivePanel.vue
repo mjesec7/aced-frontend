@@ -484,7 +484,7 @@ const exerciseContentData = computed(() => {
   if (!props.currentExercise) return {};
   const ex = props.currentExercise;
   
-  if (ex.content?.data) return ex.content.data;
+
   if (ex.content && typeof ex.content === 'object') return ex.content;
   if (ex.data && typeof ex.data === 'object' && !Array.isArray(ex.data)) return ex.data;
   if (ex.data && typeof ex.data === 'object' && !Array.isArray(ex.data)) return ex.data;
