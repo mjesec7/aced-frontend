@@ -335,6 +335,21 @@ export function useLessonOrchestrator() {
           case 'game':
             processedStep = processGameStep(step, index)
             break
+          // ✅ NEW: Handle new interactive types explicitly to preserve data
+          case 'data_analysis':
+          case 'fraction_visual':
+          case 'geometry':
+          case 'geometry_poly':
+          case 'chem_mixing':
+          case 'chem_matching':
+          case 'english_sentence_fix':
+          case 'english_sentence_order':
+          case 'language_noun_bag':
+          case 'histogram':
+          case 'map':
+          case 'block-coding':
+            processedStep = processInteractiveStep(step, index)
+            break
           case 'explanation':
           case 'example':
           case 'reading':
@@ -348,7 +363,36 @@ export function useLessonOrchestrator() {
           }
         }
 
-        steps.value.push(processedStep)
+        // DEBUG LOGGING
+        console.log(`Step ${index}: type=${processedStep.type}`, processedStep);
+
+        // Filter out geography/map steps as requested
+        let isMapStep = processedStep.type === 'map' || processedStep.type === 'geography'
+
+        // Check title/prompt for "Geography" or "Map" as fallback
+        if (!isMapStep && (processedStep.title?.includes('Geography') || processedStep.prompt?.includes('Geography'))) {
+          isMapStep = true;
+          console.log('Filtered map by title/prompt');
+        }
+
+        if (!isMapStep && processedStep.type === 'exercise') {
+          if (Array.isArray(processedStep.data)) {
+            isMapStep = processedStep.data.some(ex => {
+              const isMap = ex.type === 'map' || ex.type === 'geography' || ex.content?.type === 'map';
+              if (isMap) console.log('Found map in array:', ex);
+              return isMap;
+            })
+          } else if (processedStep.data && typeof processedStep.data === 'object') {
+            isMapStep = processedStep.data.type === 'map' || processedStep.data.type === 'geography' || processedStep.data.content?.type === 'map'
+            if (isMapStep) console.log('Found map in object:', processedStep.data);
+          }
+        }
+
+        if (!isMapStep) {
+          steps.value.push(processedStep)
+        } else {
+          console.log('Filtered out map step:', processedStep);
+        }
 
       } catch (stepError) {
         steps.value.push({
@@ -389,6 +433,25 @@ export function useLessonOrchestrator() {
     return {
       type: 'vocabulary',
       data: step.data || step.words || []
+    }
+  }
+
+  // ✅ NEW: Process interactive steps to preserve all data
+  const processInteractiveStep = (step, index) => {
+    let data = step.data || step;
+
+    // Wrap array data for single-step interactives to prevent getCurrentExercise from splitting it
+    if (Array.isArray(data)) {
+      data = {
+        data: data,
+        ...step
+      }
+    }
+
+    return {
+      type: step.type,
+      data: data,
+      ...step
     }
   }
 

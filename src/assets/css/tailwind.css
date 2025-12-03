@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+@layer base {
+    html {
+        font-size: 14px;
+        /* Reduce base size from 16px to 14px (~87.5%) */
+    }
+}
+
 @theme {
     /* Lesson Colors */
     --color-lesson-purple: #a855f7;

@@ -1,13 +1,13 @@
 <template>
   <div class="interactive-step step-animate-in">
-    <p class="text-lg text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
+    <p class="text-lg text-gray-600 mb-6 leading-relaxed">
       {{ step.prompt }}
     </p>
 
     <div class="grid grid-cols-2 gap-4 sm:gap-8">
       <!-- Names Column -->
-      <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
-        <h3 class="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Names</h3>
+      <div class="bg-gray-50 p-4 rounded-xl border border-gray-100">
+        <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">Names</h3>
         <div class="flex flex-col gap-2">
           <button
             v-for="pair in step.pairs"
@@ -22,8 +22,8 @@
       </div>
 
       <!-- Formulas Column -->
-      <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
-        <h3 class="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Formulas</h3>
+      <div class="bg-gray-50 p-4 rounded-xl border border-gray-100">
+        <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">Formulas</h3>
         <div class="flex flex-col gap-2">
           <button
             v-for="pair in shuffledPairs"
@@ -45,7 +45,7 @@
       </span>
     </div>
 
-    <div v-if="isComplete" class="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 p-4 rounded-xl text-center font-bold mt-4">
+    <div v-if="isComplete" class="bg-green-100 text-green-800 p-4 rounded-xl text-center font-bold mt-4">
       🎉 Great job! You matched all correctly.
     </div>
   </div>
@@ -128,14 +128,14 @@ const getItemClass = (id, type) => {
   const isError = feedback.value.type === 'wrong' && isSelected;
 
   if (isMatched) {
-    return "border-green-500 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 cursor-default shadow-none";
+    return "border-green-500 bg-green-50 text-green-700 cursor-default shadow-none";
   }
   if (isError) {
-    return "border-red-500 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 animate-pulse";
+    return "border-red-500 bg-red-50 text-red-700 animate-pulse";
   }
   if (isSelected) {
-    return "border-purple-500 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 shadow-sm ring-1 ring-purple-200";
+    return "border-purple-500 bg-purple-50 text-purple-700 shadow-sm ring-1 ring-purple-200";
   }
-  return "border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-600";
+  return "border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50";
 };
 </script>
