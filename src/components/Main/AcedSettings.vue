@@ -1045,12 +1045,40 @@ this.showNotification("Error loading user data", 'error');
           return;
         }
 
+        // 1. Update Firestore
         const userRef = doc(db, "users", this.currentUser.uid);
         await updateDoc(userRef, {
           name: this.tempUser.name,
           surname: this.tempUser.surname,
           updatedAt: new Date().toISOString()
         });
+
+        // 2. Update Firebase Auth Profile
+        try {
+          const { updateProfile } = await import("firebase/auth");
+          await updateProfile(this.currentUser, {
+            displayName: `${this.tempUser.name} ${this.tempUser.surname}`.trim()
+          });
+        } catch (authError) {
+          console.error('Error updating auth profile:', authError);
+        }
+
+        // 3. Sync with Backend (MongoDB)
+        try {
+          const token = await this.currentUser.getIdToken(true);
+          const userData = {
+            uid: this.currentUser.uid,
+            email: this.currentUser.email,
+            displayName: `${this.tempUser.name} ${this.tempUser.surname}`.trim(),
+            name: this.tempUser.name,
+            surname: this.tempUser.surname,
+            photoURL: this.currentUser.photoURL
+          };
+          
+          await this.$store.dispatch('user/saveUser', { userData, token });
+        } catch (syncError) {
+          console.error('Error syncing with backend:', syncError);
+        }
 
         this.user.name = this.tempUser.name;
         this.user.surname = this.tempUser.surname;

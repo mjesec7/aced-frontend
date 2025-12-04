@@ -29,11 +29,11 @@ export const authInitPromise = new Promise((resolve) => {
           localStorage.setItem('userPlan', subscription.plan);
           localStorage.setItem('subscriptionPlan', subscription.plan);
           localStorage.setItem('authPreserveStatus', subscription.plan);
-return subscription.plan;
+          return subscription.plan;
         }
       }
     } catch (error) {
-}
+    }
     return 'free';
   };
 
@@ -46,7 +46,7 @@ return subscription.plan;
       unsubscribe();
 
       try {
-// Ensure store is initialized
+        // Ensure store is initialized
         await ensureStoreInitialized();
 
         if (firebaseUser) {
@@ -74,11 +74,11 @@ return subscription.plan;
           });
         }, 50);
       } catch (error) {
-try {
+        try {
           // Try basic mount as fallback
           await mountVueApplicationBasic();
         } catch (mountError) {
-}
+        }
 
         // Resolve with error state
         setTimeout(() => {
@@ -98,7 +98,7 @@ try {
   // Timeout fallback (8 seconds)
   setTimeout(() => {
     if (!authStateResolved) {
-authStateResolved = true;
+      authStateResolved = true;
       unsubscribe();
 
       // Fallback initialization
@@ -137,7 +137,7 @@ async function ensureStoreInitialized() {
 
   try {
     if (store.getters['user/isInitialized']) {
-const lastServerLoad = localStorage.getItem('lastServerLoad');
+      const lastServerLoad = localStorage.getItem('lastServerLoad');
       const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
 
       if (!lastServerLoad || parseInt(lastServerLoad) < fiveMinutesAgo) {
@@ -145,15 +145,15 @@ const lastServerLoad = localStorage.getItem('lastServerLoad');
       }
       return true;
     }
-await store.dispatch('user/initialize');
+    await store.dispatch('user/initialize');
 
     const currentUser = auth.currentUser;
     if (currentUser) {
-await store.dispatch('user/loadUserFromServer');
+      await store.dispatch('user/loadUserFromServer');
     }
-return true;
+    return true;
   } catch (error) {
-throw error;
+    throw error;
   }
 }
 
@@ -162,7 +162,7 @@ throw error;
 // ============================================================================
 async function handleUserAuthenticated(firebaseUser) {
   const { default: store } = await import('../store');
-try {
+  try {
     const token = await firebaseUser.getIdToken(true);
     const userId = firebaseUser.uid;
 
@@ -184,7 +184,7 @@ try {
         const userData = await response.json();
         serverUser = userData.user || userData;
         userStatus = serverUser.subscriptionPlan || serverUser.userStatus || 'free';
-// ✅ CRITICAL: Immediately update localStorage with server status
+        // ✅ CRITICAL: Immediately update localStorage with server status
         localStorage.setItem('userStatus', userStatus);
         localStorage.setItem('userPlan', userStatus);
         localStorage.setItem('subscriptionPlan', userStatus);
@@ -192,14 +192,23 @@ try {
         localStorage.setItem('serverStatus', userStatus);
         localStorage.setItem('serverStatusConfirmed', 'true');
         localStorage.setItem('lastServerFetch', Date.now().toString());
+
+        // ✅ CRITICAL: Background sync to ensure lastLoginAt and profile are up to date
+        const syncData = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName || serverUser.name,
+          photoURL: firebaseUser.photoURL
+        };
+        store.dispatch('user/saveUser', { userData: syncData, token }).catch(err => console.error('Background sync failed', err));
       } else {
-}
+      }
     } catch (fetchError) {
-}
+    }
 
     // ✅ CRITICAL: If server fetch failed, try saveUser as fallback
     if (!serverUser) {
-const userData = {
+      const userData = {
         uid: firebaseUser.uid,
         email: firebaseUser.email,
         displayName: firebaseUser.displayName,
@@ -214,14 +223,14 @@ const userData = {
         if (saveResult && saveResult.success && saveResult.user) {
           serverUser = saveResult.user;
           userStatus = serverUser.subscriptionPlan || serverUser.userStatus || 'free';
-// ✅ CRITICAL: Update localStorage with saved user status
+          // ✅ CRITICAL: Update localStorage with saved user status
           localStorage.setItem('userStatus', userStatus);
           localStorage.setItem('userPlan', userStatus);
           localStorage.setItem('subscriptionPlan', userStatus);
           localStorage.setItem('plan', userStatus);
         }
       } catch (saveError) {
-}
+      }
     }
 
     // ✅ CRITICAL: Create enhanced user object with server status
@@ -241,7 +250,7 @@ const userData = {
       serverStatusConfirmed: true,
       lastServerSync: new Date().toISOString()
     };
-// ✅ CRITICAL: Update store with server status
+    // ✅ CRITICAL: Update store with server status
     store.commit('setUser', enhancedUser);
     store.commit('setFirebaseUserId', enhancedUser.firebaseId);
     store.commit('setToken', token);
@@ -294,15 +303,15 @@ const userData = {
       try {
         window.triggerGlobalEvent(eventType, { ...eventData, eventType });
       } catch (eventError) {
-}
+      }
     });
 
     // ✅ CRITICAL: Delayed propagation for stubborn components
     setTimeout(() => {
       window.triggerGlobalEvent('delayedStatusSync', eventData);
     }, 100);
-} catch (error) {
-await handleBasicUserAuthentication(firebaseUser, null, 'free');
+  } catch (error) {
+    await handleBasicUserAuthentication(firebaseUser, null, 'free');
   }
 }
 
@@ -311,7 +320,7 @@ await handleBasicUserAuthentication(firebaseUser, null, 'free');
 // ============================================================================
 async function handleBasicUserAuthentication(firebaseUser, token = null, serverStatus = 'free') {
   const { default: store } = await import('../store');
-try {
+  try {
     let existingStatus = serverStatus;
 
     if (existingStatus === 'free') {
@@ -319,7 +328,7 @@ try {
       const subscription = getStoredSubscription();
       if (subscription && subscription.plan !== 'free' && isSubscriptionValid()) {
         existingStatus = subscription.plan;
-}
+      }
     }
 
     const basicUser = {
@@ -375,7 +384,7 @@ try {
       localStorage.setItem('authMode', 'basic-with-server');
       localStorage.setItem('serverStatusConfirmed', serverStatus !== 'free' ? 'true' : 'false');
     } catch (storageError) {
-}
+    }
 
     // Trigger events
     const eventData = {
@@ -406,8 +415,8 @@ try {
         timestamp: Date.now()
       });
     }, 100);
-} catch (error) {
-throw error;
+  } catch (error) {
+    throw error;
   }
 }
 
@@ -416,24 +425,24 @@ throw error;
 // ============================================================================
 async function handleUserNotAuthenticated() {
   const { default: store } = await import('../store');
-try {
+  try {
     // 🛡️ CRITICAL: Check for valid subscription BEFORE clearing anything
     const validSubscription = localStorage.getItem('validSubscriptionDetected');
     const preserveStatus = localStorage.getItem('preserveStatusDuringAuth');
 
     if (validSubscription === 'true' && preserveStatus && preserveStatus !== 'free') {
-// Don't clear subscription-related data, but clear other auth data
+      // Don't clear subscription-related data, but clear other auth data
       const keysToRemove = ['user', 'firebaseUserId', 'userId', 'token', 'lastLoginTime'];
       keysToRemove.forEach(key => {
         try {
           localStorage.removeItem(key);
         } catch (error) {
-}
+        }
       });
 
       // Set preserved status in store
       store.commit('user/SET_USER_STATUS', preserveStatus);
-      
+
       // Clean up preservation flags
       localStorage.removeItem('validSubscriptionDetected');
       localStorage.removeItem('preserveStatusDuringAuth');
@@ -447,14 +456,14 @@ try {
         try {
           localStorage.removeItem(key);
         } catch (error) {
-}
+        }
       });
 
       store.commit('user/SET_USER_STATUS', 'free');
     }
 
     const currentStatus = localStorage.getItem('userStatus') || 'free';
-    
+
     // Trigger events with current status (might be preserved subscription)
     setTimeout(() => {
       window.triggerGlobalEvent('userStatusChanged', {
@@ -464,8 +473,8 @@ try {
         timestamp: Date.now()
       });
     }, 100);
-} catch (error) {
-// Force basic state but preserve subscriptions
+  } catch (error) {
+    // Force basic state but preserve subscriptions
     try {
       const preserveStatus = localStorage.getItem('preserveStatusDuringAuth');
       if (preserveStatus && preserveStatus !== 'free') {
@@ -476,7 +485,7 @@ try {
         localStorage.setItem('userStatus', 'free');
       }
     } catch (clearError) {
-}
+    }
   }
 }
 
@@ -484,5 +493,5 @@ try {
 // 🔧 SETUP AUTH STATE LISTENER (EXPOSED FOR MAIN.JS)
 // ============================================================================
 export function setupAuthStateListener(store, router, i18n, VueToast) {
-// Auth state listener is already setup in authInitPromise above
+  // Auth state listener is already setup in authInitPromise above
 }
