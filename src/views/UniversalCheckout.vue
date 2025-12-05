@@ -770,7 +770,8 @@ this.error = this.formatError(error);
         this.finalPlan, 
         { 
           lang: this.selectedLanguage,
-          amount: this.finalAmount
+          amount: this.finalAmount,
+          duration: parseInt(this.$route.query.duration) || 1
         }
       );
       
