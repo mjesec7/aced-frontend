@@ -87,7 +87,7 @@ export default {
           this.triggerComponentUpdate();
           
           // Update page title based on status
-          const planLabel = data.newStatus === 'pro' ? 'Pro' : data.newStatus === 'start' ? 'Start' : 'Free';
+          const planLabel = (data.newStatus === 'pro' || data.newStatus === 'start' || data.newStatus === 'premium') ? 'Pro' : 'Free';
           if (document.title && !document.title.includes('|')) {
             document.title = `ACED Profile | ${planLabel}`;
           }

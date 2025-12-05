@@ -420,8 +420,8 @@ export default {
       const plan = this.enhancedUserPlan;
       const labels = {
         'pro': 'Pro',
-        'start': 'Start',
-        'premium': 'Start',
+        'start': 'Pro',
+        'premium': 'Pro',
         'free': 'Free'
       };
       return labels[plan] || 'Free';

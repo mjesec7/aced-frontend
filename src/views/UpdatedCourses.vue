@@ -1363,7 +1363,7 @@ this.triggerReactivityUpdate();
 
       // Show success message for upgrades
       if (newStatus && newStatus !== 'free' && oldStatus === 'free') {
-        const planLabel = newStatus === 'pro' ? 'Pro' : 'Start';
+        const planLabel = 'Pro';
         this.showToast(`🎉 ${planLabel} подписка активирована!`, 'success');
       }
     }

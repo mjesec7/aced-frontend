@@ -271,23 +271,7 @@
         <div v-if="!plan" class="plan-selection">
           <h3 class="section-title">Choose Your Plan</h3>
           <div class="plans-grid">
-            <label :class="['plan-card', { active: selectedPlan === 'start' }]">
-              <input type="radio" v-model="selectedPlan" value="start" class="plan-radio" />
-              <div class="plan-header">
-                <span class="plan-name">Start Plan</span>
-                <span class="plan-price">260,000 <span class="currency">UZS</span></span>
-              </div>
-              <ul class="plan-features">
-                <li>Access to basic courses</li>
-                <li>Monthly updates</li>
-                <li>Email support</li>
-              </ul>
-              <div v-if="selectedPlan === 'start'" class="plan-check">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
-                </svg>
-              </div>
-            </label>
+            <!-- Start Plan Removed -->
             
             <label :class="['plan-card featured', { active: selectedPlan === 'pro' }]">
               <div class="plan-badge">Most Popular</div>
@@ -468,7 +452,7 @@ export default {
       failureReason: '',
       
       selectedLanguage: 'en',
-      selectedPlan: '',
+      selectedPlan: 'pro',
       loadingMessage: 'Preparing payment...',
 
       paymentProvider: 'multicard',
