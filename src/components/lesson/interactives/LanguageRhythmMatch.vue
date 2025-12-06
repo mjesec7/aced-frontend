@@ -204,6 +204,7 @@ watch(() => props.step, () => {
 
 // Methods
 const selectOption = (idx) => {
+  console.log('Selected option:', idx);
   if (showResult.value) return;
   selectedOption.value = idx;
   feedback.value = '';
@@ -214,7 +215,14 @@ const isCorrectOption = (idx) => {
 };
 
 const checkAnswer = () => {
-  if (selectedOption.value === null) return;
+  console.log('Check Answer clicked');
+  console.log('Selected Option:', selectedOption.value);
+  console.log('Correct Index:', props.step.correctIndex);
+
+  if (selectedOption.value === null) {
+    console.log('No option selected');
+    return;
+  }
 
   showResult.value = true;
   
@@ -222,7 +230,11 @@ const checkAnswer = () => {
   const correctIdx = parseInt(props.step.correctIndex);
   const selectedIdx = parseInt(selectedOption.value);
   
+  console.log('Parsed Correct Index:', correctIdx);
+  console.log('Parsed Selected Index:', selectedIdx);
+
   isCorrect.value = !isNaN(correctIdx) && selectedIdx === correctIdx;
+  console.log('Is Correct:', isCorrect.value);
 
   if (isCorrect.value) {
     feedback.value = '🎵 Perfect! You matched the rhythm correctly!';

@@ -457,6 +457,10 @@ const exerciseType = computed(() => {
     if (ex.content?.type) return ex.content.type;
     if (ex.data?.type) return ex.data.type;
   }
+
+  // Check if any found type is a special interactive type
+  const foundSpecialType = possibleTypes.find(t => specialInteractiveTypes.includes(t));
+  if (foundSpecialType) return foundSpecialType;
   
   // Check if it has options array (likely multiple choice)
   if (ex.options && Array.isArray(ex.options) && ex.options.length > 0) {
@@ -476,6 +480,10 @@ const exerciseType = computed(() => {
 // --- COMPUTED: TYPE CHECKS ---
 const isMultipleChoiceType = computed(() => {
   const type = exerciseType.value?.toLowerCase();
+  
+  // Explicitly exclude special interactive types
+  if (specialInteractiveTypes.includes(type)) return false;
+
   if (multipleChoiceTypes.some(t => type?.includes(t))) return true;
   
   // Also check if exercise has options array
