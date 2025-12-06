@@ -119,7 +119,13 @@ export function useLessonOrchestrator() {
       'language_noun_bag',
       'histogram',
       'map',
-      'block-coding'
+      'block-coding',
+      // New innovative language exercises
+      'language_tone_transformer',
+      'language_idiom_bridge',
+      'language_word_constellation',
+      'language_rhythm_match',
+      'language_false_friends'
     ].includes(currentStep.value.type)
   })
 
