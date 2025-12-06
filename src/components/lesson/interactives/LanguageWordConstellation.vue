@@ -47,7 +47,7 @@
     <!-- Central Word -->
     <div class="text-center mb-4">
       <span class="inline-block px-6 py-3 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-xl shadow-lg">
-        {{ step.centralWord }}
+        {{ centralWordText }}
       </span>
     </div>
 
@@ -139,7 +139,7 @@
       <div class="central-star" :style="getCentralStyle()">
         <div class="star-rays"></div>
         <div class="star-core">
-          <span>{{ step.centralWord }}</span>
+          <span>{{ centralWordText }}</span>
         </div>
       </div>
     </div>
@@ -246,6 +246,13 @@ const relationshipTypes = [
 ];
 
 // Computed
+const centralWordText = computed(() => {
+  if (typeof props.step.centralWord === 'object' && props.step.centralWord !== null) {
+    return props.step.centralWord.text || 'Center';
+  }
+  return props.step.centralWord;
+});
+
 const correctConnections = computed(() => {
   return connections.value.filter(conn => {
     const required = props.step.requiredConnections || [];
