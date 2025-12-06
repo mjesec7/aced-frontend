@@ -1,0 +1,36 @@
+{
+  "_id": { "$oid": "679a1234567890abcdef5555" },
+  "subject": "Game Testing",
+  "level": 1,
+  "topic": "Whack-a-Mole Test",
+  "topicId": { "$oid": "679a1234567890abcdef9999" },
+  "lessonName": "Whack-a-Mole V1",
+  "description": "Testing the specific Whack-a-Mole game type",
+  "type": "free",
+  "isActive": true,
+  "steps": [
+    {
+      "type": "introduction",
+      "title": "Test Start",
+      "content": "## Whack-a-Mole Test\n\nClick Next to start the Whack-a-Mole game."
+    },
+    {
+      "type": "game",
+      "title": "Whack Math",
+      "gameType": "whack-a-mole",
+      "instructions": "Hit the correct answer!",
+      "gameConfig": {
+        "gameType": "whack-a-mole",
+        "targetScore": 100,
+        "lives": 3,
+        "timeLimit": 60,
+        "questions": [
+          { "q": "5 + 5 = ?", "a": "10", "wrong": ["11", "9", "15", "50"] },
+          { "q": "2 x 3 = ?", "a": "6", "wrong": ["5", "8", "9", "12"] },
+          { "q": "10 - 3 = ?", "a": "7", "wrong": ["13", "6", "8", "4"] },
+          { "q": "4 + 4 = ?", "a": "8", "wrong": ["6", "9", "7", "10"] }
+        ]
+      }
+    }
+  ]
+}
