@@ -175,7 +175,11 @@ export default {
         'data_analysis', 'fraction_visual', 'geometry_poly',
         'chem_mixing', 'chem_matching',
         'english_sentence_fix', 'english_sentence_order',
-        'language_noun_bag', 'geometry', 'selection_game'
+        'language_noun_bag', 'geometry', 'selection_game',
+        // New innovative language exercises
+        'language_tone_transformer', 'language_idiom_bridge',
+        'language_word_constellation', 'language_rhythm_match',
+        'language_false_friends'
       ];
     },
     isSpecialInteractive() {
