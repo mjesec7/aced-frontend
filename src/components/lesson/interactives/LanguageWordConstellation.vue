@@ -1,13 +1,46 @@
 <template>
   <div class="interactive-step step-animate-in">
     <!-- Header -->
-    <div class="text-center mb-6">
+    <!-- Header -->
+    <div class="text-center mb-6 relative">
       <div class="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-gradient-to-r from-indigo-100 to-purple-100 border border-indigo-200 mb-4">
         <span class="text-2xl">✨</span>
         <span class="font-bold text-indigo-700">Word Constellation</span>
       </div>
+      
+      <button 
+        @click="showHelp = !showHelp" 
+        class="absolute right-0 top-0 p-2 text-indigo-400 hover:text-indigo-600 transition-colors"
+        title="How to play"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </button>
+
+      <div v-if="showHelp" class="absolute top-12 right-0 w-72 bg-white p-5 rounded-xl shadow-xl border border-indigo-100 z-50 text-left">
+        <h4 class="font-bold text-indigo-700 mb-2 flex items-center gap-2">
+          <span>🎮</span> How to Play
+        </h4>
+        <ul class="space-y-2 text-sm text-gray-600">
+          <li class="flex gap-2">
+            <span class="text-indigo-500 font-bold">1.</span>
+            <span>Look for words related to the <strong>Central Word</strong>.</span>
+          </li>
+          <li class="flex gap-2">
+            <span class="text-indigo-500 font-bold">2.</span>
+            <span><strong>Drag</strong> from one word to another to connect them.</span>
+          </li>
+          <li class="flex gap-2">
+            <span class="text-indigo-500 font-bold">3.</span>
+            <span>Find all connections to reveal the full constellation!</span>
+          </li>
+        </ul>
+        <button @click="showHelp = false" class="mt-3 w-full py-1 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-bold hover:bg-indigo-100">Got it!</button>
+      </div>
+
       <p class="text-lg text-gray-600 leading-relaxed max-w-xl mx-auto">
-        {{ step.prompt || 'Build connections between related words to reveal the constellation' }}
+        {{ step.prompt || 'Drag to connect words that are synonyms, antonyms, or related to the central concept.' }}
       </p>
     </div>
 
@@ -185,6 +218,7 @@ const dragEnd = ref(null);
 const hoveringWord = ref(null);
 const feedback = ref('');
 const showTypes = ref(true);
+const showHelp = ref(false);
 const backgroundStars = ref([]);
 
 // Generate background stars

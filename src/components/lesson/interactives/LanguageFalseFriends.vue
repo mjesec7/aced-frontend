@@ -142,7 +142,7 @@
       </button>
       <button
         v-if="isComplete"
-        @click="$emit('complete', correctCount >= step.words.length / 2)"
+        @click="showResults = true"
         class="px-8 py-3 rounded-full font-bold text-white bg-gradient-to-r from-green-500 to-emerald-600 shadow-md hover:shadow-lg transition-all"
       >
         {{ correctCount >= step.words.length / 2 ? 'Case Closed! →' : 'Review Results →' }}

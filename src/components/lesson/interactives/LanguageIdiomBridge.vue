@@ -224,7 +224,30 @@ const isTargetIncorrect = (idx) => connections.value.some(c => c.targetIdx === i
 // Initialize
 watch(() => props.step, () => {
   // Shuffle target idioms
-  shuffledTargets.value = [...props.step.targetIdioms].sort(() => Math.random() - 0.5);
+  // Shuffle target idioms with check to avoid direct alignment
+  let shuffled = [...props.step.targetIdioms];
+  let attempts = 0;
+  
+  // Try to shuffle until we don't have too many direct matches
+  do {
+    shuffled.sort(() => Math.random() - 0.5);
+    attempts++;
+    
+    // Check for direct alignment (source[i] matches target[i])
+    const directMatches = shuffled.filter((item, index) => 
+      props.step.sourceIdioms[index] && item.matchId === props.step.sourceIdioms[index].matchId
+    ).length;
+    
+    // Accept if fewer than 30% are directly aligned, or if we tried enough times
+    // For small arrays (length < 4), we just accept any shuffle that isn't 100% match
+    if (shuffled.length < 4) {
+       if (directMatches < shuffled.length || attempts > 5) break;
+    } else {
+       if (directMatches <= Math.max(1, shuffled.length * 0.3) || attempts > 10) break;
+    }
+  } while (true);
+
+  shuffledTargets.value = shuffled;
   connections.value = [];
   completedConnections.value = [];
   revealedMeanings.value = [];

@@ -210,14 +210,19 @@ const selectOption = (idx) => {
 };
 
 const isCorrectOption = (idx) => {
-  return props.step.correctIndex === idx;
+  return parseInt(props.step.correctIndex) === idx;
 };
 
 const checkAnswer = () => {
   if (selectedOption.value === null) return;
 
   showResult.value = true;
-  isCorrect.value = selectedOption.value === props.step.correctIndex;
+  
+  // Robust comparison
+  const correctIdx = parseInt(props.step.correctIndex);
+  const selectedIdx = parseInt(selectedOption.value);
+  
+  isCorrect.value = !isNaN(correctIdx) && selectedIdx === correctIdx;
 
   if (isCorrect.value) {
     feedback.value = '🎵 Perfect! You matched the rhythm correctly!';
