@@ -348,6 +348,12 @@ export function useLessonOrchestrator() {
           case 'histogram':
           case 'map':
           case 'block-coding':
+          // New innovative language exercises
+          case 'language_tone_transformer':
+          case 'language_idiom_bridge':
+          case 'language_word_constellation':
+          case 'language_rhythm_match':
+          case 'language_false_friends':
             processedStep = processInteractiveStep(step, index)
             break
           case 'explanation':
