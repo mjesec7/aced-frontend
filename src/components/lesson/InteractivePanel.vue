@@ -292,6 +292,13 @@
         <EnglishSentenceFixStep v-else-if="exerciseType === 'english_sentence_fix'" :step="exerciseContentData" @complete="handleInteractiveComplete" />
         <EnglishSentenceOrderStep v-else-if="exerciseType === 'english_sentence_order'" :step="exerciseContentData" @complete="handleInteractiveComplete" />
         <LanguageNounBagStep v-else-if="exerciseType === 'language_noun_bag'" :step="exerciseContentData" @complete="handleInteractiveComplete" />
+
+        <!-- New Innovative Language Exercises -->
+        <LanguageToneTransformer v-else-if="exerciseType === 'language_tone_transformer'" :step="exerciseContentData" @complete="handleInteractiveComplete" />
+        <LanguageIdiomBridge v-else-if="exerciseType === 'language_idiom_bridge'" :step="exerciseContentData" @complete="handleInteractiveComplete" />
+        <LanguageWordConstellation v-else-if="exerciseType === 'language_word_constellation'" :step="exerciseContentData" @complete="handleInteractiveComplete" />
+        <LanguageRhythmMatch v-else-if="exerciseType === 'language_rhythm_match'" :step="exerciseContentData" @complete="handleInteractiveComplete" />
+        <LanguageFalseFriends v-else-if="exerciseType === 'language_false_friends'" :step="exerciseContentData" @complete="handleInteractiveComplete" />
       </template>
 
       <!-- ======================= -->
@@ -384,6 +391,11 @@ import ChemMatchingStep from './interactives/ChemMatchingStep.vue';
 import EnglishSentenceFixStep from './interactives/EnglishSentenceFixStep.vue';
 import EnglishSentenceOrderStep from './interactives/EnglishSentenceOrderStep.vue';
 import LanguageNounBagStep from './interactives/LanguageNounBagStep.vue';
+import LanguageToneTransformer from './interactives/LanguageToneTransformer.vue';
+import LanguageIdiomBridge from './interactives/LanguageIdiomBridge.vue';
+import LanguageWordConstellation from './interactives/LanguageWordConstellation.vue';
+import LanguageRhythmMatch from './interactives/LanguageRhythmMatch.vue';
+import LanguageFalseFriends from './interactives/LanguageFalseFriends.vue';
 
 const props = defineProps({
   currentExercise: Object,
@@ -412,7 +424,11 @@ const specialInteractiveTypes = [
   'data_analysis', 'fraction_visual', 'geometry_poly',
   'chem_mixing', 'chem_matching',
   'english_sentence_fix', 'english_sentence_order',
-  'language_noun_bag', 'geometry'
+  'language_noun_bag', 'geometry',
+  // New innovative language exercises
+  'language_tone_transformer', 'language_idiom_bridge',
+  'language_word_constellation', 'language_rhythm_match',
+  'language_false_friends'
 ];
 
 const multipleChoiceTypes = [
