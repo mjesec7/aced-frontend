@@ -1326,6 +1326,7 @@ sound.pronounceWord?.(word)
           content: step.content || step,
           data: step.content?.data || step.data || step
         };
+        console.log('Normalized Exercise for ' + step.type + ':', JSON.stringify(normalizedExercise, null, 2));
         
         if (initializationTracker.value.currentExerciseId !== exerciseId) {
           initializationTracker.value = { currentExerciseId: exerciseId, initialized: false };
