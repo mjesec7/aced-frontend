@@ -492,7 +492,9 @@ const isTrueFalseType = computed(() => {
 });
 
 const isSpecialInteractiveType = computed(() => {
-  return specialInteractiveTypes.includes(exerciseType.value);
+  const isSpecial = specialInteractiveTypes.includes(exerciseType.value);
+  console.log(`InteractivePanel: Is special type '${exerciseType.value}'?`, isSpecial);
+  return isSpecial;
 });
 
 // --- COMPUTED: EXERCISE CONTENT DATA ---
@@ -500,11 +502,18 @@ const exerciseContentData = computed(() => {
   if (!props.currentExercise) return {};
   const ex = props.currentExercise;
   
+  console.log('InteractivePanel: Computing content data for:', ex.type);
 
-  if (ex.content && typeof ex.content === 'object') return ex.content;
-  if (ex.data && typeof ex.data === 'object' && !Array.isArray(ex.data)) return ex.data;
-  if (ex.data && typeof ex.data === 'object' && !Array.isArray(ex.data)) return ex.data;
-  console.log('InteractivePanel: Computed content data:', ex);
+  if (ex.content && typeof ex.content === 'object') {
+    console.log('InteractivePanel: Using ex.content');
+    return ex.content;
+  }
+  if (ex.data && typeof ex.data === 'object' && !Array.isArray(ex.data)) {
+    console.log('InteractivePanel: Using ex.data');
+    return ex.data;
+  }
+  
+  console.log('InteractivePanel: Using ex directly');
   return ex;
 });
 
