@@ -1,223 +1,266 @@
 <template>
   <div class="sidebar-wrapper">
     <!-- Sidebar -->
-    <div 
-      class="sidebar" 
-      :class="{ open: isOpen }"
-    >
+    <aside class="sidebar" :class="{ open: isOpen }">
+      <!-- Glass overlay effect -->
+      <div class="sidebar-glass"></div>
+
       <div class="sidebar-content">
-        <!-- Header with subtle shine effect -->
-        <div class="sidebar-header">
-          <div class="shine-overlay"></div>
-          <div class="header-top">
-            <button class="close-btn" @click="closeSidebar">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M18 6L6 18M6 6l12 12"/>
-              </svg>
-            </button>
+        <!-- Logo & Brand -->
+        <div class="sidebar-brand">
+          <div class="brand-logo">
+            <span class="logo-text">A</span>
+            <div class="logo-glow"></div>
           </div>
-          
-          <!-- User Card with metallic effect -->
-          <div class="user-card">
-            <div class="user-avatar">
-              {{ getUserInitials }}
+          <div class="brand-info">
+            <h1 class="brand-name">ACED</h1>
+            <span class="brand-tagline">Learning Platform</span>
+          </div>
+          <button class="close-btn" @click="closeSidebar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- User Profile Card -->
+        <div class="user-card">
+          <div class="user-avatar">
+            <span class="avatar-text">{{ getUserInitials }}</span>
+            <div class="avatar-ring"></div>
+          </div>
+          <div class="user-info">
+            <h3 class="user-name">{{ userDisplayName }}</h3>
+            <span class="user-plan" :class="planClass">{{ planLabel }}</span>
+          </div>
+          <div class="user-stats">
+            <div class="stat-item">
+              <span class="stat-value">{{ userLevel }}</span>
+              <span class="stat-label">Level</span>
             </div>
-            <div class="user-info">
-              <p class="user-name">{{ userDisplayName }}</p>
-              <span class="user-badge" :class="getBadgeClass">
-                {{ planLabel }}
-              </span>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+              <span class="stat-value">{{ userStreak }}</span>
+              <span class="stat-label">Streak</span>
             </div>
           </div>
         </div>
 
-        <!-- Mode Selection (when no mode selected) -->
-        <div v-if="!hasSelectedMode" class="mode-selection-card">
-          <div class="mode-selection-header">
-            <h4>Choose Learning Path</h4>
-            <p>Select your preferred mode</p>
-          </div>
-          <div class="mode-selection-options">
+        <!-- Mode Selector -->
+        <div class="mode-selector" v-if="hasSelectedMode">
+          <div class="mode-label">Learning Mode</div>
+          <div class="mode-toggle">
             <button
-              class="mode-selection-btn"
+              class="mode-option"
+              :class="{ active: isSchoolMode }"
+              @click="switchToSchool"
+            >
+              <span class="mode-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                  <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+                </svg>
+              </span>
+              <span class="mode-text">School</span>
+            </button>
+            <button
+              class="mode-option"
+              :class="{ active: isStudyCentreMode }"
+              @click="switchToStudyCentre"
+            >
+              <span class="mode-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                </svg>
+              </span>
+              <span class="mode-text">Study Centre</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Initial Mode Selection -->
+        <div class="mode-selection" v-if="!hasSelectedMode">
+          <div class="selection-header">
+            <h4>Choose Your Path</h4>
+            <p>Select how you want to learn</p>
+          </div>
+          <div class="selection-options">
+            <button
+              class="selection-card"
               :class="{ selected: tempSelectedMode === 'school' }"
               @click="selectInitialMode('school')"
               :disabled="isSelectingMode"
             >
-              <span class="mode-emoji-large">🎓</span>
-              <span class="mode-name">School</span>
-              <span class="mode-desc">Structured curriculum</span>
+              <div class="card-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                  <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+                </svg>
+              </div>
+              <h5>School Mode</h5>
+              <p>Structured curriculum</p>
             </button>
             <button
-              class="mode-selection-btn"
+              class="selection-card"
               :class="{ selected: tempSelectedMode === 'study_centre' }"
               @click="selectInitialMode('study_centre')"
               :disabled="isSelectingMode"
             >
-              <span class="mode-emoji-large">🌟</span>
-              <span class="mode-name">Study Centre</span>
-              <span class="mode-desc">Free exploration</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Mode Switcher (when mode already selected) -->
-        <div v-if="hasSelectedMode" class="mode-switcher">
-          <div class="mode-label">Learning Mode</div>
-          <div class="mode-buttons">
-            <button
-              class="mode-btn"
-              :class="{ active: isSchoolMode }"
-              @click="switchToSchool"
-            >
-              <span class="mode-emoji">🎓</span>
-              <span>School</span>
-            </button>
-            <button
-              class="mode-btn"
-              :class="{ active: isStudyCentreMode }"
-              @click="switchToStudyCentre"
-            >
-              <span class="mode-emoji">🌟</span>
-              <span>Study Centre</span>
+              <div class="card-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                </svg>
+              </div>
+              <h5>Study Centre</h5>
+              <p>Free exploration</p>
             </button>
           </div>
         </div>
 
         <!-- Navigation -->
         <nav class="nav-menu">
-          <button
-            v-for="link in navigationLinks"
-            :key="link.name"
-            @click="handleNavClick(link)"
-            class="nav-link"
-            :class="{
-              active: isActive(link.name),
-              locked: link.premium && !hasAccess(link)
-            }"
-          >
-            <div class="icon-wrapper" :class="{ 'active-icon': isActive(link.name) }">
-              <component :is="link.icon" class="link-icon" />
-            </div>
-            <div class="link-content">
-              <div class="link-title">{{ link.label }}</div>
-              <div class="link-description">{{ link.description }}</div>
-            </div>
-            <svg 
-              v-if="link.premium && !hasAccess(link)" 
-              class="crown-icon"
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
-              stroke-width="2"
+          <div class="nav-section">
+            <span class="nav-section-title">Menu</span>
+            <button
+              v-for="link in navigationLinks"
+              :key="link.name"
+              @click="handleNavClick(link)"
+              class="nav-item"
+              :class="{
+                active: isActive(link.name),
+                locked: link.premium && !hasAccess(link)
+              }"
             >
-              <path d="M2 20h20M4 16V8l4 4 4-6 4 6 4-4v8M4 16h16"/>
-            </svg>
-          </button>
+              <div class="nav-icon">
+                <component :is="link.icon" />
+              </div>
+              <div class="nav-content">
+                <span class="nav-title">{{ link.label }}</span>
+                <span class="nav-desc">{{ link.description }}</span>
+              </div>
+              <div class="nav-badge" v-if="link.premium && !hasAccess(link)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M2 20h20M4 16V8l4 4 4-6 4 6 4-4v8"/>
+                </svg>
+              </div>
+              <div class="nav-arrow" v-else>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 18l6-6-6-6"/>
+                </svg>
+              </div>
+            </button>
+          </div>
         </nav>
 
-        <!-- Premium Unlock Card -->
-        <div v-if="currentUserStatus !== 'pro'" class="premium-unlock-section">
-          <div class="unlock-card">
-            <div class="unlock-content">
-              <div class="unlock-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M2 20h20M4 16V8l4 4 4-6 4 6 4-4v8M4 16h16"/>
-                </svg>
-              </div>
-              <div class="unlock-text">
-                <h5>Upgrade to Pro</h5>
-                <p>Get all features and capabilities</p>
-              </div>
-              <button @click="goToUpgrade" class="unlock-arrow">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M5 12h14M12 5l7 7-7 7"/>
-                </svg>
-              </button>
+        <!-- Upgrade Card -->
+        <div class="upgrade-card" v-if="currentUserStatus !== 'pro'">
+          <div class="upgrade-glow"></div>
+          <div class="upgrade-content">
+            <div class="upgrade-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+              </svg>
             </div>
+            <div class="upgrade-text">
+              <h4>Upgrade to Pro</h4>
+              <p>Unlock all features</p>
+            </div>
+            <button class="upgrade-btn" @click="goToUpgrade">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </button>
           </div>
         </div>
 
-        <!-- Logout -->
+        <!-- Footer Actions -->
         <div class="sidebar-footer">
-          <button class="logout-btn" @click="showLogoutModal = true">
+          <button class="footer-btn logout-btn" @click="showLogoutModal = true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
             </svg>
-            Log Out
+            <span>Log Out</span>
           </button>
         </div>
       </div>
-    </div>
+    </aside>
 
     <!-- Mobile Overlay -->
-    <div 
+    <div
       v-if="isOpen && isMobile"
       class="sidebar-overlay"
       @click="closeSidebar"
     ></div>
 
     <!-- Logout Modal -->
-    <div v-if="showLogoutModal" class="modal-overlay" @click="showLogoutModal = false">
-      <div class="modal-content logout-modal" @click.stop>
-        <h3 class="modal-title">Log Out</h3>
-        <p class="modal-text">Are you sure you want to log out?</p>
-        <div class="modal-actions">
-          <button class="btn-secondary" @click="showLogoutModal = false">
-            Cancel
-          </button>
-          <button class="btn-danger" @click="logout">
-            Log Out
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Premium Modal with metallic purple -->
-    <div v-if="showPremiumModal" class="modal-overlay" @click="showPremiumModal = false">
-      <div class="modal-content premium-modal" @click.stop>
-        <div class="premium-header">
-          <div class="shine-overlay"></div>
-          <div class="premium-header-content">
-            <div class="premium-icon-wrapper">
-              <svg class="crown-icon-large" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M2 20h20M4 16V8l4 4 4-6 4 6 4-4v8M4 16h16"/>
-              </svg>
-            </div>
-            <h3 class="premium-title">Premium Feature</h3>
-            <p class="premium-subtitle">Available in Start and Pro plans</p>
+    <Teleport to="body">
+      <div v-if="showLogoutModal" class="modal-overlay" @click="showLogoutModal = false">
+        <div class="modal-card" @click.stop>
+          <div class="modal-icon warning">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+          </div>
+          <h3 class="modal-title">Log Out</h3>
+          <p class="modal-text">Are you sure you want to log out of your account?</p>
+          <div class="modal-actions">
+            <button class="modal-btn secondary" @click="showLogoutModal = false">Cancel</button>
+            <button class="modal-btn danger" @click="logout">Log Out</button>
           </div>
         </div>
-        <div class="premium-body">
-          <div class="benefits-list">
-            <div class="benefit-item">
-              <span class="benefit-emoji">🎯</span>
-              <span class="benefit-text">Unlimited tests</span>
+      </div>
+    </Teleport>
+
+    <!-- Premium Modal -->
+    <Teleport to="body">
+      <div v-if="showPremiumModal" class="modal-overlay" @click="showPremiumModal = false">
+        <div class="modal-card premium" @click.stop>
+          <div class="premium-header">
+            <div class="premium-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M2 20h20M4 16V8l4 4 4-6 4 6 4-4v8"/>
+              </svg>
             </div>
-            <div class="benefit-item">
-              <span class="benefit-emoji">📊</span>
-              <span class="benefit-text">Detailed analytics</span>
+            <h3>Premium Feature</h3>
+            <p>Unlock with Start or Pro plan</p>
+          </div>
+          <div class="premium-benefits">
+            <div class="benefit">
+              <span class="benefit-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              </span>
+              <span>Unlimited practice tests</span>
             </div>
-            <div class="benefit-item">
-              <span class="benefit-emoji">💡</span>
-              <span class="benefit-text">Homework help</span>
+            <div class="benefit">
+              <span class="benefit-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              </span>
+              <span>Detailed analytics</span>
             </div>
-            <div class="benefit-item">
-              <span class="benefit-emoji">📖</span>
-              <span class="benefit-text">Personal vocabulary</span>
+            <div class="benefit">
+              <span class="benefit-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              </span>
+              <span>AI-powered homework help</span>
             </div>
           </div>
           <div class="modal-actions">
-            <button class="btn-secondary" @click="showPremiumModal = false">
-              Maybe Later
-            </button>
-            <button class="btn-premium" @click="goToUpgrade">
-              Upgrade Now ✨
-            </button>
+            <button class="modal-btn secondary" @click="showPremiumModal = false">Maybe Later</button>
+            <button class="modal-btn primary" @click="goToUpgrade">Upgrade Now</button>
           </div>
         </div>
       </div>
-    </div>
+    </Teleport>
   </div>
 </template>
 
@@ -228,7 +271,7 @@ import { mapState, mapMutations, mapGetters } from 'vuex';
 import { userStatusMixin } from '@/composables/useUserStatus';
 import { switchLearningMode } from '@/api/user';
 
-// Icon components (inline SVG)
+// Icon components
 const HomeIcon = {
   template: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>`
 };
@@ -242,16 +285,16 @@ const FileTextIcon = {
 };
 
 const ClipboardCheckIcon = {
-  template: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 14l2 2 4-4"/></svg>`
+  template: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 14l2 2 4-4"/></svg>`
 };
 
 const SettingsIcon = {
-  template: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"/></svg>`
+  template: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`
 };
 
 export default {
-  name: 'ProfessionalSideBar',
-  
+  name: 'ModernSideBar',
+
   components: {
     HomeIcon,
     BookOpenIcon,
@@ -259,16 +302,16 @@ export default {
     ClipboardCheckIcon,
     SettingsIcon
   },
-  
+
   mixins: [userStatusMixin],
-  
+
   props: {
     isOpen: {
       type: Boolean,
       default: true
     }
   },
-  
+
   data() {
     return {
       showLogoutModal: false,
@@ -277,13 +320,15 @@ export default {
       isMobile: false,
       tempSelectedMode: null,
       isSelectingMode: false,
+      userLevel: 12,
+      userStreak: 7,
 
       navigationLinks: [
         {
           name: 'main',
-          label: 'Home',
+          label: 'Dashboard',
           icon: 'HomeIcon',
-          description: 'Your progress and stats',
+          description: 'Overview & stats',
           path: '/profile/main',
           premium: false
         },
@@ -291,7 +336,7 @@ export default {
           name: 'catalogue',
           label: 'My Courses',
           icon: 'BookOpenIcon',
-          description: 'All available lessons',
+          description: 'Browse lessons',
           path: '/profile/catalogue',
           premium: false
         },
@@ -299,7 +344,7 @@ export default {
           name: 'homeworks',
           label: 'Assignments',
           icon: 'FileTextIcon',
-          description: 'Practice and homework',
+          description: 'Practice & homework',
           path: '/profile/homeworks',
           premium: false
         },
@@ -307,7 +352,7 @@ export default {
           name: 'tests',
           label: 'Tests',
           icon: 'ClipboardCheckIcon',
-          description: 'Knowledge assessment',
+          description: 'Assessment & analytics',
           path: '/profile/tests',
           premium: true,
           requiredPlans: ['start', 'pro']
@@ -316,55 +361,50 @@ export default {
           name: 'settings',
           label: 'Settings',
           icon: 'SettingsIcon',
-          description: 'Profile and subscription',
+          description: 'Account & preferences',
           path: '/settings',
           premium: false
         }
       ]
     };
   },
-  
+
   computed: {
     ...mapState(['user']),
     ...mapGetters(['getUser']),
-    
+
     currentUser() {
       return this.getUser || this.user || {};
     },
-    
+
     currentUserStatus() {
-      return this.currentUser?.subscriptionPlan || 
-             localStorage.getItem('userStatus') || 
+      return this.currentUser?.subscriptionPlan ||
+             localStorage.getItem('userStatus') ||
              'free';
     },
-    
+
     planLabel() {
       const status = this.currentUserStatus;
       if (status === 'pro') return 'Pro';
       if (status === 'start') return 'Start';
       return 'Free';
     },
-    
+
+    planClass() {
+      return `plan-${this.currentUserStatus}`;
+    },
+
     userDisplayName() {
       if (!this.user) return 'User';
-      return this.user.name || 
-             this.user.displayName || 
-             this.user.email?.split('@')[0] || 
+      return this.user.name ||
+             this.user.displayName ||
+             this.user.email?.split('@')[0] ||
              'User';
     },
-    
+
     getUserInitials() {
       const name = this.userDisplayName;
       return name.substring(0, 2).toUpperCase();
-    },
-    
-    getBadgeClass() {
-      const status = this.currentUserStatus;
-      return {
-        'badge-free': status === 'free',
-        'badge-start': status === 'start',
-        'badge-pro': status === 'pro'
-      };
     },
 
     hasSelectedMode() {
@@ -379,11 +419,11 @@ export default {
       return this.$store.getters['platformMode/isStudyCentreMode'];
     }
   },
-  
+
   mounted() {
     this.checkMobile();
     window.addEventListener('resize', this.checkMobile);
-    
+
     onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
         const userData = {
@@ -398,21 +438,21 @@ export default {
       }
     });
   },
-  
+
   beforeUnmount() {
     window.removeEventListener('resize', this.checkMobile);
   },
-  
+
   methods: {
     ...mapMutations(['setUser', 'clearUser']),
-    
+
     hasAccess(link) {
       if (!link.premium) return true;
       const status = this.currentUserStatus;
       if (!link.requiredPlans) return true;
       return link.requiredPlans.includes(status);
     },
-    
+
     handleNavClick(link) {
       if (link.premium && !this.hasAccess(link)) {
         this.selectedFeature = link;
@@ -422,7 +462,7 @@ export default {
       this.$router.push(link.path);
       this.closeSidebarOnMobile();
     },
-    
+
     goToUpgrade() {
       this.showPremiumModal = false;
       this.$router.push('/settings');
@@ -437,17 +477,14 @@ export default {
 
       try {
         const userId = this.$store.getters.getFirebaseUserId;
-        if (!userId) {
-return;
-        }
+        if (!userId) return;
 
-        // Save to backend
         try {
           await switchLearningMode(userId, mode, 'Initial mode selection');
         } catch (apiError) {
-}
+          // Handle silently
+        }
 
-        // Update Vuex store
         await this.$store.dispatch('platformMode/switchMode', {
           newMode: mode,
           reason: 'Initial mode selection'
@@ -455,7 +492,7 @@ return;
 
         this.closeSidebarOnMobile();
       } catch (error) {
-this.tempSelectedMode = null;
+        this.tempSelectedMode = null;
       } finally {
         this.isSelectingMode = false;
       }
@@ -471,7 +508,8 @@ this.tempSelectedMode = null;
         });
         this.closeSidebarOnMobile();
       } catch (error) {
-}
+        // Handle silently
+      }
     },
 
     async switchToStudyCentre() {
@@ -484,23 +522,24 @@ this.tempSelectedMode = null;
         });
         this.closeSidebarOnMobile();
       } catch (error) {
-}
+        // Handle silently
+      }
     },
 
     checkMobile() {
       this.isMobile = window.innerWidth <= 768;
     },
-    
+
     closeSidebar() {
       this.$emit('toggle-sidebar', false);
     },
-    
+
     closeSidebarOnMobile() {
       if (this.isMobile) {
         this.closeSidebar();
       }
     },
-    
+
     async logout() {
       try {
         await signOut(auth);
@@ -508,20 +547,21 @@ this.tempSelectedMode = null;
         localStorage.clear();
         this.$router.push('/');
       } catch (error) {
-}
+        // Handle silently
+      }
     },
-    
+
     isActive(name) {
       const path = this.$route.path;
-      
+
       if (name === 'main') {
         return path === '/profile/main' || path === '/profile' || path === '/profile/';
       }
-      
+
       if (name === 'settings') {
         return path === '/settings';
       }
-      
+
       return path.includes(`/profile/${name}`);
     }
   }
@@ -529,654 +569,671 @@ this.tempSelectedMode = null;
 </script>
 
 <style scoped>
-* {
-  box-sizing: border-box;
-}
-
-/* Sidebar */
+/* === SIDEBAR WRAPPER === */
 .sidebar-wrapper {
   position: relative;
 }
 
+/* === SIDEBAR === */
 .sidebar {
   width: 280px;
   height: 100vh;
   position: fixed;
   left: 0;
   top: 0;
-  background: #ffffff;
-  border-right: 1px solid #e9d5ff;
   z-index: 1000;
   transform: translateX(-100%);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex;
-  flex-direction: column;
+  overflow: hidden;
 }
 
 .sidebar.open {
   transform: translateX(0);
 }
 
-.sidebar-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 999;
-  backdrop-filter: blur(4px);
+.sidebar-glass {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 15, 35, 0.95);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .sidebar-content {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   height: 100%;
+  padding: 20px 16px;
   overflow-y: auto;
 }
 
-/* Header */
-.sidebar-header {
-  padding: 24px 24px 32px;
-  border-bottom: 1px solid #e9d5ff;
+.sidebar-content::-webkit-scrollbar {
+  width: 4px;
 }
 
-.shine-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(168, 85, 247, 0.1), transparent);
-  transform: translateX(-100%) skewX(-12deg);
-  animation: shine 3s infinite;
-  pointer-events: none;
-  z-index: 0;
+.sidebar-content::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-@keyframes shine {
-  0% {
-    transform: translateX(-100%) skewX(-12deg);
-  }
-  100% {
-    transform: translateX(200%) skewX(-12deg);
-  }
+.sidebar-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
 }
 
-.header-top {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  margin-bottom: 32px;
-}
-
-.close-btn {
-  width: 28px;
-  height: 28px;
-  display: none;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #6b7280;
-}
-
-.close-btn svg {
-  width: 20px;
-  height: 20px;
-}
-
-/* User Card */
-.user-card {
-  position: relative;
-  z-index: 1;
+/* === BRAND === */
+.sidebar-brand {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px;
-  background: white;
-  border: 1px solid #e9d5ff;
-  border-radius: 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  padding: 8px 8px 20px;
+  margin-bottom: 8px;
 }
 
-.user-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #c084fc 0%, #a855f7 50%, #9333ea 100%);
+.brand-logo {
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  font-weight: 600;
-  font-size: 14px;
-  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.4);
-  border: 2px solid #e9d5ff;
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  border-radius: 12px;
+  position: relative;
   flex-shrink: 0;
 }
 
-.user-info {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.user-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1f2937;
-  margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  line-height: 1.2;
-}
-
-.user-badge {
-  display: inline-block;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 3px 10px;
-  border-radius: 9999px;
-  letter-spacing: 0.5px;
-  align-self: flex-start;
-  will-change: auto;
-  transform: translateZ(0);
-}
-
-.user-badge.badge-free {
-  background: #f3f4f6;
-  color: #6b7280;
-}
-
-.user-badge.badge-start {
-  background: linear-gradient(90deg, #e9d5ff 0%, #ddd6fe 100%);
-  color: #7e22ce;
-}
-
-.user-badge.badge-pro {
-  background: linear-gradient(90deg, #c084fc 0%, #a855f7 100%);
+.logo-text {
+  font-size: 1.5rem;
+  font-weight: 800;
   color: white;
 }
 
-/* Mode Selection Card (initial selection) */
-.mode-selection-card {
-  padding: 16px;
-  margin-bottom: 8px;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(168, 85, 247, 0.02) 100%);
-  border-radius: 12px;
-  border: 1px solid #e9d5ff;
+.logo-glow {
+  position: absolute;
+  inset: -4px;
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  border-radius: 16px;
+  opacity: 0.3;
+  filter: blur(8px);
+  z-index: -1;
 }
 
-.mode-selection-header {
-  text-align: center;
-  margin-bottom: 12px;
+.brand-info {
+  flex: 1;
+  min-width: 0;
 }
 
-.mode-selection-header h4 {
-  font-size: 14px;
-  font-weight: 700;
-  color: #1f2937;
-  margin: 0 0 4px 0;
-}
-
-.mode-selection-header p {
-  font-size: 12px;
-  color: #6b7280;
+.brand-name {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #f8fafc;
   margin: 0;
+  letter-spacing: -0.02em;
 }
 
-.mode-selection-options {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.brand-tagline {
+  font-size: 0.75rem;
+  color: #64748b;
 }
 
-.mode-selection-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 14px 12px;
-  background: white;
-  border: 2px solid #e5e7eb;
-  border-radius: 12px;
+.close-btn {
+  display: none;
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #94a3b8;
   cursor: pointer;
   transition: all 0.2s ease;
-  width: 100%;
 }
 
-.mode-selection-btn:hover:not(:disabled) {
-  border-color: #8b5cf6;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+.close-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
 }
 
-.mode-selection-btn.selected {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(168, 85, 247, 0.05) 100%);
-  border-color: #8b5cf6;
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+.close-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
-.mode-selection-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+/* === USER CARD === */
+.user-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 20px;
 }
 
-.mode-emoji-large {
-  font-size: 32px;
-  line-height: 1;
+.user-avatar {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  border-radius: 14px;
+  margin: 0 auto 12px;
+  position: relative;
 }
 
-.mode-name {
-  font-size: 14px;
+.avatar-text {
+  font-size: 1.25rem;
   font-weight: 700;
-  color: #1f2937;
+  color: white;
 }
 
-.mode-selection-btn.selected .mode-name {
-  color: #8b5cf6;
+.avatar-ring {
+  position: absolute;
+  inset: -3px;
+  border: 2px solid rgba(139, 92, 246, 0.5);
+  border-radius: 16px;
+  animation: ringPulse 3s ease-in-out infinite;
 }
 
-.mode-desc {
-  font-size: 11px;
-  color: #6b7280;
+@keyframes ringPulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
+}
+
+.user-info {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.user-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #f8fafc;
+  margin: 0 0 6px;
+}
+
+.user-plan {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.user-plan.plan-free {
+  background: rgba(100, 116, 139, 0.2);
+  color: #94a3b8;
+}
+
+.user-plan.plan-start {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(139, 92, 246, 0.1) 100%);
+  color: #a78bfa;
+}
+
+.user-plan.plan-pro {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(6, 182, 212, 0.3) 100%);
+  color: #22d3ee;
+}
+
+.user-stats {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+.stat-item {
   text-align: center;
 }
 
-.mode-selection-btn.selected .mode-desc {
-  color: #7e22ce;
+.stat-value {
+  display: block;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #f8fafc;
 }
 
-/* Mode Switcher */
-.mode-switcher {
-  padding: 12px 16px 0;
-  margin-bottom: 8px;
+.stat-label {
+  font-size: 0.6875rem;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.stat-divider {
+  width: 1px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* === MODE SELECTOR === */
+.mode-selector {
+  margin-bottom: 20px;
 }
 
 .mode-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 600;
-  color: #6b7280;
+  color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+  padding-left: 4px;
 }
 
-.mode-buttons {
+.mode-toggle {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
 
-.mode-btn {
+.mode-option {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 10px 8px;
-  background: white;
-  border: 2px solid #e5e7eb;
-  border-radius: 10px;
+  gap: 6px;
+  padding: 14px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 12px;
+  transition: all 0.25s ease;
+  color: #94a3b8;
+}
+
+.mode-option:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.mode-option.active {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(139, 92, 246, 0.08) 100%);
+  border-color: rgba(139, 92, 246, 0.4);
+  color: #a78bfa;
+}
+
+.mode-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.mode-text {
+  font-size: 0.8125rem;
   font-weight: 600;
+}
+
+/* === MODE SELECTION === */
+.mode-selection {
+  margin-bottom: 20px;
+}
+
+.selection-header {
+  text-align: center;
+  margin-bottom: 14px;
+}
+
+.selection-header h4 {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #f8fafc;
+  margin: 0 0 4px;
+}
+
+.selection-header p {
+  font-size: 0.8125rem;
   color: #64748b;
+  margin: 0;
 }
 
-.mode-btn:hover {
+.selection-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.selection-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 2px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  text-align: center;
+  color: inherit;
+}
+
+.selection-card:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(139, 92, 246, 0.4);
+  transform: translateY(-2px);
+}
+
+.selection-card.selected {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(139, 92, 246, 0.08) 100%);
   border-color: #8b5cf6;
-  transform: translateY(-1px);
 }
 
-.mode-btn.active {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(168, 85, 247, 0.05) 100%);
-  border-color: #8b5cf6;
-  color: #8b5cf6;
-  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
+.selection-card:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
-.mode-emoji {
-  font-size: 20px;
-  line-height: 1;
+.card-icon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(139, 92, 246, 0.15);
+  border-radius: 12px;
 }
 
-/* Navigation */
+.card-icon svg {
+  width: 22px;
+  height: 22px;
+  color: #a78bfa;
+}
+
+.selection-card h5 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #f8fafc;
+  margin: 0;
+}
+
+.selection-card p {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin: 0;
+}
+
+/* === NAVIGATION === */
 .nav-menu {
   flex: 1;
-  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.nav-section {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.nav-link {
+.nav-section-title {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 0 12px 8px;
+}
+
+.nav-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 14px;
-  background: white;
+  padding: 12px;
+  background: transparent;
   border: none;
   border-radius: 12px;
-  text-align: left;
   cursor: pointer;
   transition: all 0.2s ease;
-  color: #374151;
   width: 100%;
+  text-align: left;
+  color: #94a3b8;
 }
 
-.nav-link:hover {
-  background: #faf5ff;
-  transform: scale(1.01);
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #f8fafc;
 }
 
-.nav-link.active {
-  background: linear-gradient(90deg, #a855f7 0%, #9333ea 100%);
-  color: white;
-  box-shadow: 0 4px 14px rgba(168, 85, 247, 0.3);
-  transform: scale(1.02);
+.nav-item.active {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(139, 92, 246, 0.1) 100%);
+  color: #f8fafc;
 }
 
-.nav-link.locked {
-  color: #9ca3af;
+.nav-item.locked {
+  opacity: 0.6;
 }
 
-.nav-link.locked:hover {
-  background: #faf5ff;
-}
-
-.icon-wrapper {
-  width: 32px;
-  height: 32px;
+.nav-icon {
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  background: #f3e8ff;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
   flex-shrink: 0;
   transition: all 0.2s ease;
 }
 
-.icon-wrapper.active-icon {
-  background: rgba(255, 255, 255, 0.2);
+.nav-item.active .nav-icon {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
 }
 
-.link-icon {
-  width: 16px;
-  height: 16px;
-  color: #9333ea;
+.nav-icon svg {
+  width: 18px;
+  height: 18px;
 }
 
-.nav-link.active .link-icon {
+.nav-item.active .nav-icon svg {
   color: white;
 }
 
-.nav-link.locked .link-icon {
-  opacity: 0.5;
-}
-
-.link-content {
+.nav-content {
   flex: 1;
   min-width: 0;
 }
 
-.link-title {
-  font-size: 14px;
-  font-weight: 600;
+.nav-title {
+  display: block;
+  font-size: 0.9375rem;
+  font-weight: 500;
   margin-bottom: 2px;
 }
 
-.nav-link.locked .link-title {
-  opacity: 0.5;
+.nav-desc {
+  display: block;
+  font-size: 0.75rem;
+  color: #64748b;
 }
 
-.link-description {
-  font-size: 12px;
-  opacity: 0.7;
+.nav-badge {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f59e0b;
 }
 
-.nav-link.active .link-description {
-  color: #e9d5ff;
-}
-
-.nav-link.locked .link-description {
-  opacity: 0.5;
-}
-
-.crown-icon {
+.nav-badge svg {
   width: 16px;
   height: 16px;
-  color: #f59e0b;
-  flex-shrink: 0;
-  animation: pulse 2s infinite;
 }
 
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
+.nav-arrow {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: all 0.2s ease;
 }
 
-/* Premium Unlock Card */
-.premium-unlock-section {
-  padding: 16px;
-  border-bottom: 1px solid #e9d5ff;
+.nav-item:hover .nav-arrow,
+.nav-item.active .nav-arrow {
+  opacity: 1;
 }
 
-.unlock-card {
-  background: linear-gradient(135deg, #a855f7 0%, #9333ea 50%, #7e22ce 100%);
-  border-radius: 12px;
-  padding: 16px 18px;
+.nav-arrow svg {
+  width: 14px;
+  height: 14px;
 }
 
-.unlock-content {
+/* === UPGRADE CARD === */
+.upgrade-card {
+  position: relative;
+  margin-bottom: 16px;
+  overflow: hidden;
+  border-radius: 14px;
+}
+
+.upgrade-glow {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  opacity: 0.9;
+}
+
+.upgrade-content {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: 12px;
+  padding: 16px;
 }
 
-.unlock-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.2);
+.upgrade-icon {
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
   flex-shrink: 0;
 }
 
-.unlock-icon svg {
-  width: 22px;
-  height: 22px;
+.upgrade-icon svg {
+  width: 20px;
+  height: 20px;
   color: white;
-  stroke-width: 2.5;
 }
 
-.unlock-text {
+.upgrade-text {
   flex: 1;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
 }
 
-.unlock-text h5 {
-  font-size: 15px;
-  font-weight: 700;
+.upgrade-text h4 {
+  font-size: 0.9375rem;
+  font-weight: 600;
   color: white;
-  margin: 0;
-  line-height: 1.4;
-  letter-spacing: -0.01em;
+  margin: 0 0 2px;
 }
 
-.unlock-text p {
-  font-size: 12px;
+.upgrade-text p {
+  font-size: 0.8125rem;
   color: rgba(255, 255, 255, 0.8);
   margin: 0;
-  line-height: 1.4;
 }
 
-.unlock-arrow {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.25);
-  border: none;
+.upgrade-btn {
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: rgba(255, 255, 255, 0.25);
+  border: none;
+  border-radius: 8px;
+  color: white;
   cursor: pointer;
   transition: all 0.2s ease;
   flex-shrink: 0;
 }
 
-.unlock-arrow:hover {
+.upgrade-btn:hover {
   background: rgba(255, 255, 255, 0.35);
   transform: translateX(3px);
 }
 
-.unlock-arrow:active {
-  transform: translateX(1px);
+.upgrade-btn svg {
+  width: 18px;
+  height: 18px;
 }
 
-.unlock-arrow svg {
-  width: 20px;
-  height: 20px;
-  color: white;
-  stroke-width: 2.5;
-}
-
-/* Premium CTA */
-.premium-cta {
-  padding: 16px;
-  border-top: 1px solid #e9d5ff;
-}
-
-.cta-card {
-  position: relative;
-  background: linear-gradient(135deg, #a855f7 0%, #9333ea 50%, #7e22ce 100%);
-  border-radius: 12px;
-  padding: 16px;
-  color: white;
-  box-shadow: 0 10px 24px rgba(168, 85, 247, 0.4);
-}
-
-.cta-content {
-  position: relative;
-  z-index: 1;
-}
-
-.cta-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.cta-header h4 {
-  font-size: 16px;
-  font-weight: 700;
-  margin: 0;
-}
-
-.sparkle-icon {
-  width: 16px;
-  height: 16px;
-}
-
-.cta-text {
-  font-size: 13px;
-  color: #e9d5ff;
-  margin: 0 0 12px 0;
-}
-
-.cta-button {
-  width: 100%;
-  background: white;
-  color: #9333ea;
-  border: none;
-  padding: 10px 16px;
-  border-radius: 8px;
-  font-weight: 700;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.cta-button:hover {
-  transform: scale(1.02);
-  background: #faf5ff;
-}
-
-/* Sidebar Footer */
+/* === FOOTER === */
 .sidebar-footer {
-  padding: 16px;
-  border-top: 1px solid #e9d5ff;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.logout-btn {
-  width: 100%;
+.footer-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 10px 16px;
-  background: white;
-  color: #dc2626;
-  border: none;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 14px;
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  color: #94a3b8;
+  font-size: 0.9375rem;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.logout-btn:hover {
-  background: #fef2f2;
-  transform: scale(1.01);
+.footer-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
 }
 
-.logout-btn svg {
-  width: 16px;
-  height: 16px;
+.footer-btn svg {
+  width: 18px;
+  height: 18px;
 }
 
-/* Modal Overlay */
+/* === OVERLAY === */
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 999;
+}
+
+/* === MODALS === */
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 10000;
-  backdrop-filter: blur(4px);
-  padding: 16px;
+  padding: 20px;
 }
 
-.modal-content {
-  background: white;
-  border-radius: 16px;
-  max-width: 420px;
+.modal-card {
+  background: #1a1a2e;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 32px;
+  max-width: 400px;
   width: 100%;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  animation: modalAppear 0.3s ease-out;
+  text-align: center;
+  animation: modalPop 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-@keyframes modalAppear {
+@keyframes modalPop {
   from {
     opacity: 0;
-    transform: scale(0.9) translateY(-20px);
+    transform: scale(0.95) translateY(10px);
   }
   to {
     opacity: 1;
@@ -1184,22 +1241,37 @@ this.tempSelectedMode = null;
   }
 }
 
-/* Logout Modal */
-.logout-modal {
-  padding: 24px;
-  border: 1px solid #e9d5ff;
+.modal-icon {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  border-radius: 16px;
+}
+
+.modal-icon.warning {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.modal-icon svg {
+  width: 28px;
+  height: 28px;
 }
 
 .modal-title {
-  font-size: 18px;
+  font-size: 1.25rem;
   font-weight: 700;
-  color: #1f2937;
-  margin: 0 0 8px 0;
+  color: #f8fafc;
+  margin: 0 0 8px;
 }
 
 .modal-text {
-  color: #6b7280;
-  margin: 0 0 24px 0;
+  font-size: 0.9375rem;
+  color: #94a3b8;
+  margin: 0 0 28px;
   line-height: 1.5;
 }
 
@@ -1208,157 +1280,151 @@ this.tempSelectedMode = null;
   gap: 12px;
 }
 
-.btn-secondary,
-.btn-danger,
-.btn-premium {
+.modal-btn {
   flex: 1;
-  padding: 10px 20px;
+  padding: 14px 20px;
   border: none;
   border-radius: 12px;
+  font-size: 0.9375rem;
   font-weight: 600;
-  font-size: 14px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
 }
 
-.btn-secondary {
-  background: #f3f4f6;
-  color: #374151;
-  border: 1px solid #e5e7eb;
+.modal-btn.secondary {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
 }
 
-.btn-secondary:hover {
-  background: #e5e7eb;
+.modal-btn.secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
 }
 
-.btn-danger {
-  background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
+.modal-btn.danger {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   color: white;
-  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
 }
 
-.btn-danger:hover {
-  background: linear-gradient(90deg, #dc2626 0%, #b91c1c 100%);
+.modal-btn.danger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4);
 }
 
-.btn-premium {
-  background: linear-gradient(90deg, #a855f7 0%, #9333ea 100%);
+.modal-btn.primary {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
   color: white;
-  box-shadow: 0 4px 14px rgba(168, 85, 247, 0.3);
 }
 
-.btn-premium:hover {
-  background: linear-gradient(90deg, #9333ea 0%, #7e22ce 100%);
+.modal-btn.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
 }
 
-/* Premium Modal */
-.premium-modal {
+/* === PREMIUM MODAL === */
+.modal-card.premium {
+  padding: 0;
   overflow: hidden;
-  border: 1px solid #e9d5ff;
 }
 
 .premium-header {
-  position: relative;
-  overflow: hidden;
-  background: linear-gradient(135deg, #a855f7 0%, #9333ea 50%, #7e22ce 100%);
-  padding: 32px 24px;
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  padding: 32px;
   text-align: center;
+}
+
+.premium-icon {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 14px;
+  margin: 0 auto 16px;
+}
+
+.premium-icon svg {
+  width: 28px;
+  height: 28px;
   color: white;
 }
 
-.premium-header-content {
-  position: relative;
-}
-
-.premium-icon-wrapper {
-  display: inline-flex;
-  padding: 12px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  margin-bottom: 12px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
-}
-
-.crown-icon-large {
-  width: 32px;
-  height: 32px;
-}
-
-.premium-title {
-  font-size: 24px;
+.premium-header h3 {
+  font-size: 1.375rem;
   font-weight: 700;
-  margin: 0 0 4px 0;
+  color: white;
+  margin: 0 0 6px;
 }
 
-.premium-subtitle {
-  color: #e9d5ff;
-  font-size: 13px;
+.premium-header p {
+  font-size: 0.9375rem;
+  color: rgba(255, 255, 255, 0.8);
   margin: 0;
 }
 
-.premium-body {
-  padding: 24px;
-}
-
-.benefits-list {
+.premium-benefits {
+  padding: 24px 32px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-bottom: 24px;
+  gap: 14px;
 }
 
-.benefit-item {
+.benefit {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px;
-  background: #faf5ff;
-  border: 1px solid #e9d5ff;
-  border-radius: 12px;
 }
 
-.benefit-emoji {
-  font-size: 18px;
+.benefit-icon {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(16, 185, 129, 0.15);
+  border-radius: 8px;
+  flex-shrink: 0;
 }
 
-.benefit-text {
-  font-size: 14px;
-  font-weight: 500;
-  color: #374151;
+.benefit-icon svg {
+  width: 14px;
+  height: 14px;
+  color: #10b981;
 }
 
-/* Desktop */
+.benefit span:last-child {
+  font-size: 0.9375rem;
+  color: #f8fafc;
+}
+
+.modal-card.premium .modal-actions {
+  padding: 24px 32px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* === RESPONSIVE === */
 @media (min-width: 769px) {
   .sidebar {
     transform: translateX(0) !important;
   }
-  
+
   .sidebar-overlay {
     display: none !important;
   }
 }
 
-/* Mobile */
 @media (max-width: 768px) {
   .sidebar {
     width: 100%;
     max-width: 320px;
   }
-  
+
   .close-btn {
-    display: block;
-  }
-  
-  .nav-link {
-    padding: 10px 12px;
-  }
-  
-  .link-title {
-    font-size: 13px;
-  }
-  
-  .link-description {
-    font-size: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 }
 </style>
