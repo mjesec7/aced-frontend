@@ -1,27 +1,42 @@
 /* responsive.css */
 
-/* 🌐 Responsive Layout Variables */
+/* 🌐 Responsive Layout Variables - Compact Sizing */
 :root {
-  --font-sm: 0.875rem;
-  --font-md: 1rem;
-  --font-lg: 1.25rem;
-  --font-xl: 1.75rem;
+  /* Smaller font scale */
+  --font-xs: 0.75rem;     /* 9.75px at 13px base */
+  --font-sm: 0.8125rem;   /* 10.5px */
+  --font-md: 0.875rem;    /* 11.4px */
+  --font-base: 0.9375rem; /* 12.2px */
+  --font-lg: 1rem;        /* 13px */
+  --font-xl: 1.25rem;     /* 16.25px */
+  --font-2xl: 1.5rem;     /* 19.5px */
+  --font-3xl: 1.75rem;    /* 22.75px */
 
-  --container-padding: 1rem;
-  --max-width: 1400px; /* updated from 1200px */
+  /* Compact spacing */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 0.75rem;
+  --space-lg: 1rem;
+  --space-xl: 1.5rem;
+  --space-2xl: 2rem;
+
+  --container-padding: 0.75rem;
+  --max-width: 1400px;
 }
 
-/* 🧼 No spacing, just width, font & overflow control */
+/* 🧼 Base styles */
 html, body {
   margin: 0;
   padding: 0;
-  font-family: 'Unbounded', sans-serif;
-  font-size: var(--font-md);
-  line-height: 1.6;
+  font-family: 'Inter', 'Unbounded', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: var(--font-base);
+  line-height: 1.5;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* ✅ Layout wrapper (used in navs, sections, footers, etc.) */
+/* ✅ Layout wrapper */
 .container {
   max-width: var(--max-width);
   padding: 0 var(--container-padding);
@@ -30,49 +45,64 @@ html, body {
   box-sizing: border-box;
 }
 
-/* ✨ Typography only */
-h1, h2, p {
+/* ✨ Typography - Compact */
+h1, h2, h3, h4, h5, h6, p {
   margin: 0;
   font-family: 'Unbounded', sans-serif;
 }
 
-/* 🔁 Responsive Typography */
+h1 { font-size: var(--font-2xl); font-weight: 700; }
+h2 { font-size: var(--font-xl); font-weight: 600; }
+h3 { font-size: var(--font-lg); font-weight: 600; }
+h4 { font-size: var(--font-base); font-weight: 500; }
+p { font-size: var(--font-md); }
+
+/* 🔁 Responsive Typography - Tablet */
 @media (max-width: 1024px) {
-  h1 {
-    font-size: 1.75rem;
+  :root {
+    --container-padding: 1rem;
   }
-  h2 {
-    font-size: 1.5rem;
-  }
-  p {
-    font-size: 0.95rem;
-  }
+
+  h1 { font-size: var(--font-xl); }
+  h2 { font-size: var(--font-lg); }
+  h3 { font-size: var(--font-base); }
+  p { font-size: var(--font-sm); }
 }
 
+/* 🔁 Responsive Typography - Mobile */
 @media (max-width: 768px) {
-  h1 {
-    font-size: var(--font-xl);
+  :root {
+    --container-padding: 0.75rem;
   }
 
-  h2 {
-    font-size: var(--font-lg);
+  h1 { font-size: var(--font-lg); }
+  h2 { font-size: var(--font-base); }
+  h3 { font-size: var(--font-md); }
+  p { font-size: var(--font-sm); }
+}
+
+/* 🔁 Small Mobile */
+@media (max-width: 480px) {
+  :root {
+    --container-padding: 0.5rem;
   }
 
-  p {
-    font-size: var(--font-sm);
-  }
+  h1 { font-size: var(--font-base); }
+  h2 { font-size: var(--font-md); }
+  p { font-size: var(--font-xs); }
 }
 
 /* 📐 Smart Grid: 2 cols > 1 col */
 .grid-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 2rem;
+  gap: var(--space-xl);
 }
 
 @media (max-width: 900px) {
   .grid-2 {
     grid-template-columns: 1fr;
+    gap: var(--space-lg);
   }
 }
 
@@ -81,15 +111,37 @@ h1, h2, p {
   .top-nav,
   .nav-inner,
   .hero-text {
-    padding: 0 1rem !important;
+    padding: 0 var(--space-md) !important;
   }
 
   .hero-title {
-    font-size: 1.5rem;
+    font-size: var(--font-xl);
   }
 
   .hero-buttons {
     flex-direction: column;
-    gap: 1rem;
+    gap: var(--space-md);
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-title {
+    font-size: var(--font-lg);
+  }
+
+  .hero-buttons {
+    gap: var(--space-sm);
+  }
+}
+
+/* Touch-friendly tap targets */
+@media (hover: none) and (pointer: coarse) {
+  button,
+  .btn,
+  a,
+  input[type="button"],
+  input[type="submit"] {
+    min-height: 44px;
+    min-width: 44px;
   }
 }
