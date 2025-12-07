@@ -1,0 +1,32 @@
+{
+  "_id": { "$oid": "679a1234567890abcdef7777" },
+  "subject": "Mathematics",
+  "level": 1,
+  "topic": "Addition",
+  "topicId": { "$oid": "679a1234567890abcdef0002" },
+  "lessonName": "Whack-a-Math Test",
+  "description": "Reaction Math Game - Hit the correct answers!",
+  "type": "free",
+  "isActive": true,
+  "steps": [
+    {
+      "type": "game",
+      "title": "Whack Addition",
+      "gameType": "whack-a-mole",
+      "instructions": "Hit the mole with the correct sum!",
+      "gameConfig": {
+        "targetScore": 100,
+        "lives": 3,
+        "timeLimit": 60,
+        "questions": [
+          { "q": "5 + 3 = ?", "a": "8", "wrong": ["7", "9", "6", "10"] },
+          { "q": "10 + 10 = ?", "a": "20", "wrong": ["10", "30", "100", "12"] },
+          { "q": "2 + 2 = ?", "a": "4", "wrong": ["22", "5", "3", "0"] },
+          { "q": "6 + 4 = ?", "a": "10", "wrong": ["11", "9", "64", "12"] },
+          { "q": "15 + 5 = ?", "a": "20", "wrong": ["25", "10", "155", "18"] },
+          { "q": "7 + 8 = ?", "a": "15", "wrong": ["14", "16", "78", "17"] }
+        ]
+      }
+    }
+  ]
+}
