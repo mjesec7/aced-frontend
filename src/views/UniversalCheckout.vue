@@ -158,20 +158,25 @@
         </div>
 
         <!-- Duration Selection -->
-        <div class="duration-selection">
+        <div class="mb-6">
           <h3 class="section-title">Select Duration</h3>
-          <div class="duration-grid">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
             <label
-              :class="['duration-card', { active: selectedDuration === 1 }]"
+              :class="[
+                'relative p-5 bg-white border-2 rounded-xl cursor-pointer transition-all text-center',
+                selectedDuration === 1
+                  ? 'border-indigo-500 bg-indigo-50 shadow-md'
+                  : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+              ]"
               @click="selectDuration(1)"
             >
-              <input type="radio" v-model="selectedDuration" :value="1" class="duration-radio" />
-              <div class="duration-header">
-                <span class="duration-period">1 Month</span>
-                <span class="duration-price">250,000 sum</span>
+              <input type="radio" v-model="selectedDuration" :value="1" class="hidden" />
+              <div class="mb-2">
+                <span class="block text-base font-bold text-gray-800 mb-1">1 Month</span>
+                <span class="block text-lg font-extrabold text-indigo-500">250,000 sum</span>
               </div>
-              <div class="duration-desc">Monthly subscription</div>
-              <div v-if="selectedDuration === 1" class="duration-check">
+              <div class="text-xs text-gray-500">Monthly subscription</div>
+              <div v-if="selectedDuration === 1" class="absolute top-2 right-2 w-5 h-5 text-indigo-500">
                 <svg viewBox="0 0 24 24" fill="currentColor">
                   <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
                 </svg>
@@ -179,17 +184,22 @@
             </label>
 
             <label
-              :class="['duration-card popular', { active: selectedDuration === 3 }]"
+              :class="[
+                'relative p-5 bg-white border-2 rounded-xl cursor-pointer transition-all text-center',
+                selectedDuration === 3
+                  ? 'border-indigo-500 bg-indigo-50 shadow-md'
+                  : 'border-indigo-500 hover:shadow-sm'
+              ]"
               @click="selectDuration(3)"
             >
-              <div class="popular-tag">Save 10%</div>
-              <input type="radio" v-model="selectedDuration" :value="3" class="duration-radio" />
-              <div class="duration-header">
-                <span class="duration-period">3 Months</span>
-                <span class="duration-price">675,000 sum</span>
+              <div class="absolute -top-2.5 left-1/2 -translate-x-1/2 px-3 py-1 bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-[10px] font-bold rounded-full uppercase tracking-wide whitespace-nowrap">Save 10%</div>
+              <input type="radio" v-model="selectedDuration" :value="3" class="hidden" />
+              <div class="mb-2">
+                <span class="block text-base font-bold text-gray-800 mb-1">3 Months</span>
+                <span class="block text-lg font-extrabold text-indigo-500">675,000 sum</span>
               </div>
-              <div class="duration-desc">225K/month</div>
-              <div v-if="selectedDuration === 3" class="duration-check">
+              <div class="text-xs text-gray-500">225K/month</div>
+              <div v-if="selectedDuration === 3" class="absolute top-2 right-2 w-5 h-5 text-indigo-500">
                 <svg viewBox="0 0 24 24" fill="currentColor">
                   <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
                 </svg>
@@ -197,17 +207,22 @@
             </label>
 
             <label
-              :class="['duration-card', { active: selectedDuration === 6 }]"
+              :class="[
+                'relative p-5 bg-white border-2 rounded-xl cursor-pointer transition-all text-center',
+                selectedDuration === 6
+                  ? 'border-indigo-500 bg-indigo-50 shadow-md'
+                  : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+              ]"
               @click="selectDuration(6)"
             >
-              <div class="best-value-tag">Save 20%</div>
-              <input type="radio" v-model="selectedDuration" :value="6" class="duration-radio" />
-              <div class="duration-header">
-                <span class="duration-period">6 Months</span>
-                <span class="duration-price">1,200,000 sum</span>
+              <div class="absolute -top-2.5 left-1/2 -translate-x-1/2 px-3 py-1 bg-gradient-to-r from-emerald-500 to-green-600 text-white text-[10px] font-bold rounded-full uppercase tracking-wide whitespace-nowrap">Save 20%</div>
+              <input type="radio" v-model="selectedDuration" :value="6" class="hidden" />
+              <div class="mb-2">
+                <span class="block text-base font-bold text-gray-800 mb-1">6 Months</span>
+                <span class="block text-lg font-extrabold text-indigo-500">1,200,000 sum</span>
               </div>
-              <div class="duration-desc">200K/month</div>
-              <div v-if="selectedDuration === 6" class="duration-check">
+              <div class="text-xs text-gray-500">200K/month</div>
+              <div v-if="selectedDuration === 6" class="absolute top-2 right-2 w-5 h-5 text-indigo-500">
                 <svg viewBox="0 0 24 24" fill="currentColor">
                   <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
                 </svg>
@@ -217,36 +232,42 @@
         </div>
 
         <!-- Promo Code Section -->
-        <div class="promo-section">
+        <div class="mb-6 bg-gray-50 rounded-xl p-5">
           <h3 class="section-title">Promo Code</h3>
-          <div class="promo-input-wrapper">
+          <div class="flex flex-col sm:flex-row gap-2 mb-2">
             <input
               type="text"
               v-model="promoCode"
               @input="handlePromoInput"
-              class="promo-input"
+              class="flex-1 px-4 py-3 border-2 border-gray-200 rounded-lg text-sm font-semibold uppercase tracking-wide transition-all focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
               placeholder="Enter promo code"
               :disabled="promoApplied || validatingPromo"
             />
             <button
               @click="applyPromoCode"
               :disabled="!canApplyPromo || validatingPromo || promoApplied"
-              class="promo-btn"
+              class="px-5 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg text-sm font-semibold cursor-pointer transition-all hover:shadow-lg hover:-translate-y-0.5 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none min-w-[80px]"
             >
-              <span v-if="validatingPromo" class="promo-loading">
-                <span class="loading-dot"></span>
-                <span class="loading-dot"></span>
-                <span class="loading-dot"></span>
+              <span v-if="validatingPromo" class="flex gap-1 justify-center">
+                <span class="w-1.5 h-1.5 bg-white rounded-full animate-bounce"></span>
+                <span class="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style="animation-delay: 0.1s"></span>
+                <span class="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style="animation-delay: 0.2s"></span>
               </span>
               <span v-else-if="promoApplied">Applied</span>
               <span v-else>Apply</span>
             </button>
           </div>
-          <div v-if="promoStatus" :class="['promo-status', promoStatus.type]">
-            <svg v-if="promoStatus.type === 'success'" viewBox="0 0 24 24" fill="currentColor">
+          <div
+            v-if="promoStatus"
+            :class="[
+              'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium',
+              promoStatus.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+            ]"
+          >
+            <svg v-if="promoStatus.type === 'success'" class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
               <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
             </svg>
-            <svg v-else viewBox="0 0 24 24" fill="currentColor">
+            <svg v-else class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
             </svg>
             {{ promoStatus.message }}
@@ -267,7 +288,7 @@
             </div>
             <div class="summary-item">
               <span class="summary-label">User ID</span>
-              <span class="summary-value user-id">{{ finalUserId || 'Not specified' }}</span>
+              <span class="summary-value font-mono text-xs text-gray-500 break-all">{{ finalUserId || 'Not specified' }}</span>
             </div>
             <div class="summary-item highlight">
               <span class="summary-label">Current Plan</span>
@@ -283,14 +304,14 @@
             </div>
           </div>
 
-          <div v-if="promoApplied && promoDiscount > 0" class="discount-display">
-            <div class="discount-row">
-              <span class="discount-label">Original Price</span>
-              <span class="discount-original">{{ formatAmount(originalAmount) }}</span>
+          <div v-if="promoApplied && promoDiscount > 0" class="bg-green-50 border border-green-200 rounded-lg p-3 mb-3">
+            <div class="flex justify-between items-center py-1">
+              <span class="text-sm text-gray-600">Original Price</span>
+              <span class="text-sm text-gray-500 line-through">{{ formatAmount(originalAmount) }}</span>
             </div>
-            <div class="discount-row highlight">
-              <span class="discount-label">Promo Discount</span>
-              <span class="discount-savings">-{{ formatAmount(promoDiscount) }}</span>
+            <div class="flex justify-between items-center py-1">
+              <span class="text-sm text-green-700 font-semibold">Promo Discount</span>
+              <span class="text-base font-bold text-green-600">-{{ formatAmount(promoDiscount) }}</span>
             </div>
           </div>
 
@@ -2494,270 +2515,5 @@ this.otpError = err.message || 'Invalid verification code';
     font-size: 1.125rem;
   }
 
-  .duration-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ========================================
-   DURATION SELECTION
-   ======================================== */
-
-.duration-selection {
-  margin-bottom: 1.5rem;
-}
-
-.duration-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.75rem;
-}
-
-.duration-card {
-  position: relative;
-  padding: 1.25rem;
-  background: white;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-  text-align: center;
-}
-
-.duration-card:hover {
-  border-color: #cbd5e0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-}
-
-.duration-card.active {
-  border-color: #667eea;
-  background: #f8f9ff;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
-}
-
-.duration-card.popular {
-  border-color: #667eea;
-}
-
-.duration-radio {
-  display: none;
-}
-
-.duration-header {
-  margin-bottom: 0.5rem;
-}
-
-.duration-period {
-  display: block;
-  font-size: 1rem;
-  font-weight: 700;
-  color: #2d3748;
-  margin-bottom: 0.25rem;
-}
-
-.duration-price {
-  display: block;
-  font-size: 1.125rem;
-  font-weight: 800;
-  color: #667eea;
-}
-
-.duration-desc {
-  font-size: 0.75rem;
-  color: #718096;
-}
-
-.duration-check {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  width: 20px;
-  height: 20px;
-  color: #667eea;
-}
-
-.popular-tag,
-.best-value-tag {
-  position: absolute;
-  top: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 0.25rem 0.75rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  font-size: 0.625rem;
-  font-weight: 700;
-  border-radius: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  white-space: nowrap;
-}
-
-.best-value-tag {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-}
-
-/* ========================================
-   PROMO CODE SECTION
-   ======================================== */
-
-.promo-section {
-  margin-bottom: 1.5rem;
-  background: #f7fafc;
-  border-radius: 12px;
-  padding: 1.25rem;
-}
-
-.promo-input-wrapper {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.promo-input {
-  flex: 1;
-  padding: 0.75rem 1rem;
-  border: 2px solid #e2e8f0;
-  border-radius: 10px;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  transition: all 0.2s;
-}
-
-.promo-input:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-.promo-input:disabled {
-  background: #edf2f7;
-  color: #a0aec0;
-  cursor: not-allowed;
-}
-
-.promo-btn {
-  padding: 0.75rem 1.25rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  min-width: 80px;
-}
-
-.promo-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-}
-
-.promo-btn:disabled {
-  background: #cbd5e0;
-  cursor: not-allowed;
-}
-
-.promo-loading {
-  display: flex;
-  gap: 0.25rem;
-  justify-content: center;
-}
-
-.promo-status {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
-  font-size: 0.8125rem;
-  font-weight: 500;
-}
-
-.promo-status svg {
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
-}
-
-.promo-status.success {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.promo-status.error {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-/* ========================================
-   DISCOUNT DISPLAY
-   ======================================== */
-
-.discount-display {
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
-  border-radius: 8px;
-  padding: 0.75rem 1rem;
-  margin-bottom: 0.75rem;
-}
-
-.discount-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.25rem 0;
-}
-
-.discount-label {
-  font-size: 0.8125rem;
-  color: #4a5568;
-}
-
-.discount-original {
-  font-size: 0.8125rem;
-  color: #718096;
-  text-decoration: line-through;
-}
-
-.discount-row.highlight .discount-label {
-  color: #065f46;
-  font-weight: 600;
-}
-
-.discount-savings {
-  font-size: 0.9375rem;
-  font-weight: 700;
-  color: #059669;
-}
-
-/* User ID display */
-.summary-value.user-id {
-  font-family: 'Courier New', monospace;
-  font-size: 0.75rem;
-  color: #718096;
-  word-break: break-all;
-}
-
-@media (max-width: 768px) {
-  .duration-grid {
-    grid-template-columns: 1fr;
-    gap: 0.5rem;
-  }
-
-  .duration-card {
-    padding: 1rem;
-  }
-
-  .promo-input-wrapper {
-    flex-direction: column;
-  }
-
-  .promo-btn {
-    width: 100%;
-  }
 }
 </style>
