@@ -580,7 +580,7 @@
                   </div>
                 </div>
               </div>
-              
+
               <div class="card-body">
                 <div class="usage-item">
                   <div class="usage-header">
@@ -604,8 +604,158 @@
               </div>
             </div>
 
+            <!-- INBOX / NOTIFICATIONS -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-header-left">
+                  <div class="card-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                      <polyline points="22,6 12,13 2,6"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 class="card-title">Inbox</h2>
+                    <p class="card-description">Your payment notifications</p>
+                  </div>
+                </div>
+                <span v-if="unreadMessagesCount > 0" class="unread-badge">{{ unreadMessagesCount }}</span>
+              </div>
+
+              <div class="card-body">
+                <div v-if="loadingInbox" class="inbox-loading">
+                  <div class="spinner-mini"></div>
+                  <span>Loading messages...</span>
+                </div>
+
+                <div v-else-if="inboxMessages.length === 0" class="inbox-empty">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 12h-6l-2 3h-4l-2-3H2"/>
+                    <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
+                  </svg>
+                  <p>No messages yet</p>
+                  <span>Payment confirmations will appear here</span>
+                </div>
+
+                <div v-else class="inbox-list">
+                  <div
+                    v-for="message in inboxMessages.slice(0, 5)"
+                    :key="message.id"
+                    :class="['inbox-item', { unread: !message.read }]"
+                    @click="openMessage(message)"
+                  >
+                    <div :class="['message-icon', message.type]">
+                      <svg v-if="message.type === 'payment'" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      <svg v-else-if="message.type === 'warning'" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                        <line x1="12" y1="9" x2="12" y2="13"/>
+                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                      </svg>
+                      <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="16" x2="12" y2="12"/>
+                        <line x1="12" y1="8" x2="12.01" y2="8"/>
+                      </svg>
+                    </div>
+                    <div class="message-content">
+                      <h4 class="message-title">{{ message.title }}</h4>
+                      <p class="message-preview">{{ message.content.substring(0, 60) }}...</p>
+                      <span class="message-date">{{ formatMessageDate(message.createdAt) }}</span>
+                    </div>
+                    <button
+                      class="message-delete"
+                      @click.stop="deleteInboxMessage(message.id)"
+                      title="Delete message"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                      </svg>
+                    </button>
+                  </div>
+
+                  <button
+                    v-if="inboxMessages.length > 5"
+                    class="btn btn-text view-all-btn"
+                    @click="showAllMessages = true"
+                  >
+                    View all {{ inboxMessages.length }} messages
+                  </button>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
+
+        <!-- MESSAGE DETAIL MODAL -->
+        <transition name="modal">
+          <div v-if="selectedMessage" class="modal-overlay" @click.self="closeMessage">
+            <div class="modal-card message-modal">
+              <div class="modal-header">
+                <div :class="['modal-icon', selectedMessage.type]">
+                  <svg v-if="selectedMessage.type === 'payment'" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  <svg v-else-if="selectedMessage.type === 'warning'" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                  </svg>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="16" x2="12" y2="12"/>
+                    <line x1="12" y1="8" x2="12.01" y2="8"/>
+                  </svg>
+                </div>
+                <h3 class="modal-title">{{ selectedMessage.title }}</h3>
+                <button @click="closeMessage" class="modal-close">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
+
+              <div class="modal-body">
+                <p class="message-date-full">{{ formatMessageDate(selectedMessage.createdAt) }}</p>
+                <div class="message-full-content">{{ selectedMessage.content }}</div>
+
+                <!-- Payment Details if available -->
+                <div v-if="selectedMessage.data && selectedMessage.type === 'payment'" class="payment-details-card">
+                  <h4>Payment Details</h4>
+                  <div class="payment-detail-row" v-if="selectedMessage.data.transactionId">
+                    <span>Transaction ID:</span>
+                    <code>{{ selectedMessage.data.transactionId }}</code>
+                  </div>
+                  <div class="payment-detail-row" v-if="selectedMessage.data.paymentMethod">
+                    <span>Payment Method:</span>
+                    <span>{{ selectedMessage.data.paymentMethod }}</span>
+                  </div>
+                  <div class="payment-detail-row" v-if="selectedMessage.data.startDate">
+                    <span>Start Date:</span>
+                    <span>{{ formatMessageDate(selectedMessage.data.startDate) }}</span>
+                  </div>
+                  <div class="payment-detail-row" v-if="selectedMessage.data.endDate">
+                    <span>End Date:</span>
+                    <span>{{ formatMessageDate(selectedMessage.data.endDate) }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="modal-footer">
+                <button class="btn btn-secondary" @click="deleteInboxMessage(selectedMessage.id); closeMessage();">
+                  Delete
+                </button>
+                <button class="btn btn-primary" @click="closeMessage">
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </transition>
 
       </div>
     </main>
@@ -631,6 +781,12 @@ import {
   sendPasswordResetEmail,
 } from "firebase/auth";
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import {
+  getUserMessages,
+  markMessageAsRead,
+  deleteMessage,
+  getUnreadCount
+} from '@/api/inbox';
 
 export default {
   name: 'AcedSettings',
@@ -666,7 +822,14 @@ export default {
       lastUpdateTime: Date.now(),
       componentMounted: false,
       statusEventListeners: [],
-      storeUnsubscribe: null
+      storeUnsubscribe: null,
+
+      // Inbox related
+      inboxMessages: [],
+      loadingInbox: false,
+      selectedMessage: null,
+      unreadMessagesCount: 0,
+      showAllMessages: false
     };
   },
   
@@ -899,8 +1062,10 @@ return 0;
   },
   
   async mounted() {
-await this.initializeComponent();
+    await this.initializeComponent();
     this.componentMounted = true;
+    // Load inbox messages
+    this.loadInboxMessages();
   },
   
   beforeUnmount() {
@@ -908,6 +1073,99 @@ this.cleanup();
   },
   
   methods: {
+    // =============================================
+    // INBOX METHODS
+    // =============================================
+
+    async loadInboxMessages() {
+      if (!this.currentUser?.uid) return;
+
+      this.loadingInbox = true;
+      try {
+        const result = await getUserMessages(this.currentUser.uid);
+        if (result.success) {
+          this.inboxMessages = result.messages;
+          this.unreadMessagesCount = result.messages.filter(m => !m.read).length;
+        }
+      } catch (error) {
+        console.error('Failed to load inbox messages:', error);
+      } finally {
+        this.loadingInbox = false;
+      }
+    },
+
+    async openMessage(message) {
+      this.selectedMessage = message;
+
+      // Mark as read if not already
+      if (!message.read && this.currentUser?.uid) {
+        try {
+          await markMessageAsRead(this.currentUser.uid, message.id);
+          // Update local state
+          const msgIndex = this.inboxMessages.findIndex(m => m.id === message.id);
+          if (msgIndex !== -1) {
+            this.inboxMessages[msgIndex].read = true;
+            this.unreadMessagesCount = Math.max(0, this.unreadMessagesCount - 1);
+          }
+        } catch (error) {
+          console.error('Failed to mark message as read:', error);
+        }
+      }
+    },
+
+    closeMessage() {
+      this.selectedMessage = null;
+    },
+
+    async deleteInboxMessage(messageId) {
+      if (!this.currentUser?.uid) return;
+
+      try {
+        await deleteMessage(this.currentUser.uid, messageId);
+        // Remove from local state
+        const msgIndex = this.inboxMessages.findIndex(m => m.id === messageId);
+        if (msgIndex !== -1) {
+          if (!this.inboxMessages[msgIndex].read) {
+            this.unreadMessagesCount = Math.max(0, this.unreadMessagesCount - 1);
+          }
+          this.inboxMessages.splice(msgIndex, 1);
+        }
+      } catch (error) {
+        console.error('Failed to delete message:', error);
+        this.showNotification('Failed to delete message', 'error');
+      }
+    },
+
+    formatMessageDate(dateStr) {
+      if (!dateStr) return '';
+
+      const date = new Date(dateStr);
+      const now = new Date();
+      const diffTime = now - date;
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays === 0) {
+        // Today - show time
+        return date.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      } else if (diffDays === 1) {
+        return 'Yesterday';
+      } else if (diffDays < 7) {
+        return date.toLocaleDateString('en-US', { weekday: 'short' });
+      } else {
+        return date.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric'
+        });
+      }
+    },
+
+    // =============================================
+    // USER STATUS METHODS
+    // =============================================
+
     handleUserStatusChange(newStatus, oldStatus) {
       if (!newStatus || newStatus === oldStatus) return;
 
@@ -2296,5 +2554,259 @@ let errorMessage = 'Error sending email';
   .form-actions .btn {
     width: 100%;
   }
+}
+
+/* ==================== INBOX SECTION ==================== */
+
+.unread-badge {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 12px;
+  min-width: 22px;
+  text-align: center;
+}
+
+.inbox-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.spinner-mini {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #e5e7eb;
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.inbox-empty {
+  text-align: center;
+  padding: 32px 16px;
+  color: #9ca3af;
+}
+
+.inbox-empty svg {
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+.inbox-empty p {
+  font-size: 15px;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.inbox-empty span {
+  font-size: 13px;
+}
+
+.inbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inbox-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  background: white;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+
+.inbox-item:hover {
+  background: #f9fafb;
+  border-color: #e5e7eb;
+}
+
+.inbox-item.unread {
+  background: #f0f4ff;
+  border-color: #c7d2fe;
+}
+
+.message-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.message-icon.payment {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.message-icon.warning {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.message-icon.info {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.message-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.message-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.message-preview {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.message-date {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.message-delete {
+  padding: 6px;
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s;
+  opacity: 0;
+}
+
+.inbox-item:hover .message-delete {
+  opacity: 1;
+}
+
+.message-delete:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.view-all-btn {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #667eea;
+}
+
+/* Message Modal */
+.message-modal {
+  max-width: 500px;
+}
+
+.modal-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16px;
+}
+
+.modal-icon.payment {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.modal-icon.warning {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.modal-icon.info {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.message-date-full {
+  font-size: 13px;
+  color: #9ca3af;
+  margin-bottom: 16px;
+}
+
+.message-full-content {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #374151;
+  white-space: pre-wrap;
+  background: #f9fafb;
+  padding: 16px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+
+.payment-details-card {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.payment-details-card h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #065f46;
+  margin-bottom: 12px;
+}
+
+.payment-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  font-size: 13px;
+  border-bottom: 1px dashed #d1fae5;
+}
+
+.payment-detail-row:last-child {
+  border-bottom: none;
+}
+
+.payment-detail-row span:first-child {
+  color: #6b7280;
+}
+
+.payment-detail-row span:last-child,
+.payment-detail-row code {
+  color: #111827;
+  font-weight: 500;
+}
+
+.payment-detail-row code {
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  background: #f0fdf4;
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 </style>
