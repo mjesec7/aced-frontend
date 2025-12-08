@@ -55,6 +55,9 @@ import * as VocabularyAPI from './api/vocabulary';
 // Games (gamified exercises)
 import * as GamesAPI from './api/games';
 
+// Inbox/Messages
+import * as InboxAPI from './api/inbox';
+
 // =============================================
 // 📤 RE-EXPORT EVERYTHING FOR EASY IMPORTS
 // =============================================
@@ -299,6 +302,20 @@ export const {
 } = GamesAPI;
 
 // =============================================
+// 📬 INBOX API
+// =============================================
+export const {
+  getUserMessages,
+  sendMessage,
+  markMessageAsRead,
+  markAllMessagesAsRead,
+  deleteMessage,
+  getUnreadCount,
+  sendPaymentConfirmationMessage,
+  sendExpiryReminderMessage
+} = InboxAPI;
+
+// =============================================
 // 🔧 UTILITY API
 // =============================================
 export const {
@@ -374,6 +391,7 @@ export {
   PaymentsAPI,
   MulticardAPI,
   VocabularyAPI,
+  InboxAPI,
   Utils,
   ContentProcessors
 };

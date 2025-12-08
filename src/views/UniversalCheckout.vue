@@ -157,6 +157,123 @@
           <p class="checkout-subtitle">Subscribe to ACED and unlock premium features</p>
         </div>
 
+        <!-- Duration Selection -->
+        <div class="mb-6">
+          <h3 class="section-title">Select Duration</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <label
+              :class="[
+                'relative p-5 bg-white border-2 rounded-xl cursor-pointer transition-all text-center',
+                selectedDuration === 1
+                  ? 'border-indigo-500 bg-indigo-50 shadow-md'
+                  : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+              ]"
+              @click="selectDuration(1)"
+            >
+              <input type="radio" v-model="selectedDuration" :value="1" class="hidden" />
+              <div class="mb-2">
+                <span class="block text-base font-bold text-gray-800 mb-1">1 Month</span>
+                <span class="block text-lg font-extrabold text-indigo-500">250,000 sum</span>
+              </div>
+              <div class="text-xs text-gray-500">Monthly subscription</div>
+              <div v-if="selectedDuration === 1" class="absolute top-2 right-2 w-5 h-5 text-indigo-500">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                </svg>
+              </div>
+            </label>
+
+            <label
+              :class="[
+                'relative p-5 bg-white border-2 rounded-xl cursor-pointer transition-all text-center',
+                selectedDuration === 3
+                  ? 'border-indigo-500 bg-indigo-50 shadow-md'
+                  : 'border-indigo-500 hover:shadow-sm'
+              ]"
+              @click="selectDuration(3)"
+            >
+              <div class="absolute -top-2.5 left-1/2 -translate-x-1/2 px-3 py-1 bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-[10px] font-bold rounded-full uppercase tracking-wide whitespace-nowrap">Save 10%</div>
+              <input type="radio" v-model="selectedDuration" :value="3" class="hidden" />
+              <div class="mb-2">
+                <span class="block text-base font-bold text-gray-800 mb-1">3 Months</span>
+                <span class="block text-lg font-extrabold text-indigo-500">675,000 sum</span>
+              </div>
+              <div class="text-xs text-gray-500">225K/month</div>
+              <div v-if="selectedDuration === 3" class="absolute top-2 right-2 w-5 h-5 text-indigo-500">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                </svg>
+              </div>
+            </label>
+
+            <label
+              :class="[
+                'relative p-5 bg-white border-2 rounded-xl cursor-pointer transition-all text-center',
+                selectedDuration === 6
+                  ? 'border-indigo-500 bg-indigo-50 shadow-md'
+                  : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+              ]"
+              @click="selectDuration(6)"
+            >
+              <div class="absolute -top-2.5 left-1/2 -translate-x-1/2 px-3 py-1 bg-gradient-to-r from-emerald-500 to-green-600 text-white text-[10px] font-bold rounded-full uppercase tracking-wide whitespace-nowrap">Save 20%</div>
+              <input type="radio" v-model="selectedDuration" :value="6" class="hidden" />
+              <div class="mb-2">
+                <span class="block text-base font-bold text-gray-800 mb-1">6 Months</span>
+                <span class="block text-lg font-extrabold text-indigo-500">1,200,000 sum</span>
+              </div>
+              <div class="text-xs text-gray-500">200K/month</div>
+              <div v-if="selectedDuration === 6" class="absolute top-2 right-2 w-5 h-5 text-indigo-500">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                </svg>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Promo Code Section -->
+        <div class="mb-6 bg-gray-50 rounded-xl p-5">
+          <h3 class="section-title">Promo Code</h3>
+          <div class="flex flex-col sm:flex-row gap-2 mb-2">
+            <input
+              type="text"
+              v-model="promoCode"
+              @input="handlePromoInput"
+              class="flex-1 px-4 py-3 border-2 border-gray-200 rounded-lg text-sm font-semibold uppercase tracking-wide transition-all focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+              placeholder="Enter promo code"
+              :disabled="promoApplied || validatingPromo"
+            />
+            <button
+              @click="applyPromoCode"
+              :disabled="!canApplyPromo || validatingPromo || promoApplied"
+              class="px-5 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg text-sm font-semibold cursor-pointer transition-all hover:shadow-lg hover:-translate-y-0.5 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none min-w-[80px]"
+            >
+              <span v-if="validatingPromo" class="flex gap-1 justify-center">
+                <span class="w-1.5 h-1.5 bg-white rounded-full animate-bounce"></span>
+                <span class="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style="animation-delay: 0.1s"></span>
+                <span class="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style="animation-delay: 0.2s"></span>
+              </span>
+              <span v-else-if="promoApplied">Applied</span>
+              <span v-else>Apply</span>
+            </button>
+          </div>
+          <div
+            v-if="promoStatus"
+            :class="[
+              'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium',
+              promoStatus.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+            ]"
+          >
+            <svg v-if="promoStatus.type === 'success'" class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+            </svg>
+            <svg v-else class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+            </svg>
+            {{ promoStatus.message }}
+          </div>
+        </div>
+
         <!-- Payment Summary -->
         <div class="payment-summary">
           <h3 class="section-title">Payment Details</h3>
@@ -169,6 +286,10 @@
               <span class="summary-label">Email</span>
               <span class="summary-value">{{ finalUserEmail || 'Not specified' }}</span>
             </div>
+            <div class="summary-item">
+              <span class="summary-label">User ID</span>
+              <span class="summary-value font-mono text-xs text-gray-500 break-all">{{ finalUserId || 'Not specified' }}</span>
+            </div>
             <div class="summary-item highlight">
               <span class="summary-label">Current Plan</span>
               <span class="summary-badge current">{{ currentPlan || 'Free' }}</span>
@@ -177,8 +298,23 @@
               <span class="summary-label">Upgrading To</span>
               <span class="summary-badge upgrade">{{ planName }}</span>
             </div>
+            <div class="summary-item">
+              <span class="summary-label">Duration</span>
+              <span class="summary-value">{{ selectedDuration }} {{ selectedDuration === 1 ? 'Month' : 'Months' }}</span>
+            </div>
           </div>
-          
+
+          <div v-if="promoApplied && promoDiscount > 0" class="bg-green-50 border border-green-200 rounded-lg p-3 mb-3">
+            <div class="flex justify-between items-center py-1">
+              <span class="text-sm text-gray-600">Original Price</span>
+              <span class="text-sm text-gray-500 line-through">{{ formatAmount(originalAmount) }}</span>
+            </div>
+            <div class="flex justify-between items-center py-1">
+              <span class="text-sm text-green-700 font-semibold">Promo Discount</span>
+              <span class="text-base font-bold text-green-600">-{{ formatAmount(promoDiscount) }}</span>
+            </div>
+          </div>
+
           <div class="amount-display">
             <span class="amount-label">Total Amount</span>
             <span class="amount-value">{{ formatAmount(finalAmount) }}</span>
@@ -401,12 +537,14 @@
 
 <script>
 import { auth } from '@/firebase';
-import { 
-  initiatePaymePayment, 
+import {
+  initiatePaymePayment,
   initiateMulticardPayment,
   createPaymentByToken,
-  confirmPayment
+  confirmPayment,
+  applyPromoCode as apiApplyPromoCode
 } from '@/api';
+import { sendPaymentConfirmationMessage } from '@/api/inbox';
 
 export default {
   name: 'UniversalCheckout',
@@ -446,14 +584,24 @@ export default {
       loading: false,
       processing: false,
       error: '',
-      
+
       paymentStatus: null,
       transactionId: null,
       failureReason: '',
-      
+
       selectedLanguage: 'en',
       selectedPlan: 'pro',
+      selectedDuration: 1,
       loadingMessage: 'Preparing payment...',
+
+      // Promo code
+      promoCode: '',
+      promoApplied: false,
+      promoDiscount: 0,
+      promoStatus: null,
+      validatingPromo: false,
+      promoValidationTimeout: null,
+      appliedPromoData: null,
 
       paymentProvider: 'multicard',
       providers: {
@@ -529,29 +677,36 @@ export default {
              '';
     },
     
-    finalAmount() {
-      let amt = parseInt(this.amount) || 0;
-      
-      if (amt > 0) {
-        return amt;
-      }
-      
-      // Get duration from route query or default to 1 month
-      const duration = parseInt(this.$route.query.duration) || 1;
-      
-      // Pro plan amounts in tiyin (UZS * 100)
+    originalAmount() {
+      // Pro plan amounts in tiyin (UZS * 100) based on selected duration
       const amounts = {
         1: 25000000,   // 250,000 UZS
         3: 67500000,   // 675,000 UZS
         6: 120000000   // 1,200,000 UZS
       };
-      
-      return amounts[duration] || amounts[1];
+
+      return amounts[this.selectedDuration] || amounts[1];
     },
-    
+
+    finalAmount() {
+      let amt = parseInt(this.amount) || 0;
+
+      if (amt > 0) {
+        // Apply promo discount if available
+        return Math.max(0, amt - this.promoDiscount);
+      }
+
+      // Calculate based on duration and apply promo discount
+      return Math.max(0, this.originalAmount - this.promoDiscount);
+    },
+
     planName() {
-      const duration = parseInt(this.$route.query.duration) || 1;
+      const duration = this.selectedDuration || 1;
       return `Pro Plan (${duration} ${duration === 1 ? 'Month' : 'Months'})`;
+    },
+
+    canApplyPromo() {
+      return this.promoCode.trim().length >= 4 && !this.promoApplied && !this.validatingPromo;
     },
     
     canProceedToPayment() {
@@ -665,24 +820,110 @@ this.error = 'Payment initialization error';
     
     loadPaymentData() {
       const query = this.$route.query;
-      
+
       this.internalUserId = this.userId || query.userId || '';
       this.internalUserName = this.userName || query.userName || '';
       this.internalUserEmail = this.userEmail || query.userEmail || '';
-      
+
       if (this.plan) {
         this.selectedPlan = this.plan;
       } else if (query.plan) {
         this.selectedPlan = query.plan;
       }
-      
+
+      // Load duration from query params
+      if (query.duration) {
+        this.selectedDuration = parseInt(query.duration) || 1;
+      }
+
       this.selectedLanguage = query.lang || 'en';
-      
+
       if (this.provider && this.providers[this.provider]) {
         this.paymentProvider = this.provider;
       } else if (query.provider && this.providers[query.provider]) {
         this.paymentProvider = query.provider;
       }
+    },
+
+    selectDuration(duration) {
+      this.selectedDuration = duration;
+      // Reset promo when duration changes if promo was applied
+      if (this.promoApplied) {
+        this.resetPromo();
+      }
+    },
+
+    handlePromoInput() {
+      // Clear previous validation timeout
+      if (this.promoValidationTimeout) {
+        clearTimeout(this.promoValidationTimeout);
+      }
+
+      // Convert to uppercase
+      this.promoCode = this.promoCode.toUpperCase();
+
+      // Clear status if input is too short
+      if (this.promoCode.length < 4) {
+        this.promoStatus = null;
+        return;
+      }
+    },
+
+    async applyPromoCode() {
+      if (!this.canApplyPromo || !this.finalUserId) {
+        return;
+      }
+
+      this.validatingPromo = true;
+      this.promoStatus = null;
+
+      try {
+        const result = await apiApplyPromoCode(
+          this.finalUserId,
+          this.finalPlan,
+          this.promoCode.trim()
+        );
+
+        if (result.success) {
+          this.promoApplied = true;
+          this.appliedPromoData = result.data;
+
+          // Calculate discount based on promo response
+          if (result.data?.discountPercent) {
+            this.promoDiscount = Math.floor(this.originalAmount * (result.data.discountPercent / 100));
+          } else if (result.data?.discountAmount) {
+            this.promoDiscount = result.data.discountAmount;
+          } else if (result.data?.grantsPlan) {
+            // Full discount for free plan grants
+            this.promoDiscount = this.originalAmount;
+          }
+
+          this.promoStatus = {
+            type: 'success',
+            message: result.message || 'Promo code applied successfully!'
+          };
+        } else {
+          this.promoStatus = {
+            type: 'error',
+            message: result.error || 'Invalid promo code'
+          };
+        }
+      } catch (error) {
+        this.promoStatus = {
+          type: 'error',
+          message: error.message || 'Error validating promo code'
+        };
+      } finally {
+        this.validatingPromo = false;
+      }
+    },
+
+    resetPromo() {
+      this.promoCode = '';
+      this.promoApplied = false;
+      this.promoDiscount = 0;
+      this.promoStatus = null;
+      this.appliedPromoData = null;
     },
 
     async loadSavedCards() {
@@ -766,15 +1007,21 @@ this.error = this.formatError(error);
 
     async processPaymePayment() {
       const result = await initiatePaymePayment(
-        this.finalUserId, 
-        this.finalPlan, 
-        { 
+        this.finalUserId,
+        this.finalPlan,
+        {
           lang: this.selectedLanguage,
           amount: this.finalAmount,
-          duration: parseInt(this.$route.query.duration) || 1
+          duration: this.selectedDuration,
+          userId: this.finalUserId,
+          userEmail: this.finalUserEmail,
+          userName: this.finalUserName,
+          promoCode: this.promoApplied ? this.promoCode : null,
+          promoDiscount: this.promoDiscount,
+          originalAmount: this.originalAmount
         }
       );
-      
+
       if (result.paymentUrl) {
         window.location.href = result.paymentUrl;
       } else {
@@ -784,7 +1031,7 @@ this.error = this.formatError(error);
 
     async processMulticardNewCardPayment() {
       const ofdData = this.createOfdData();
-      
+
       const result = await initiateMulticardPayment({
         userId: this.finalUserId,
         plan: this.finalPlan,
@@ -792,9 +1039,13 @@ this.error = this.formatError(error);
         lang: this.selectedLanguage,
         userName: this.finalUserName,
         userEmail: this.finalUserEmail,
+        duration: this.selectedDuration,
+        promoCode: this.promoApplied ? this.promoCode : null,
+        promoDiscount: this.promoDiscount,
+        originalAmount: this.originalAmount,
         ofd: ofdData
       });
-      
+
       if (result.data?.checkoutUrl) {
         window.location.href = result.data.checkoutUrl;
       } else {
@@ -804,7 +1055,7 @@ this.error = this.formatError(error);
 
     async processMulticardTokenPayment() {
       const ofdData = this.createOfdData();
-      
+
       const result = await createPaymentByToken({
         card: {
           token: this.selectedCardToken
@@ -813,6 +1064,13 @@ this.error = this.formatError(error);
         storeId: process.env.VUE_APP_MULTICARD_STORE_ID,
         invoiceId: `aced_${this.finalPlan}_${this.finalUserId}_${Date.now()}`,
         callbackUrl: `${process.env.VUE_APP_API_BASE_URL}/api/payments/multicard/webhook`,
+        userId: this.finalUserId,
+        userEmail: this.finalUserEmail,
+        userName: this.finalUserName,
+        duration: this.selectedDuration,
+        promoCode: this.promoApplied ? this.promoCode : null,
+        promoDiscount: this.promoDiscount,
+        originalAmount: this.originalAmount,
         ofd: ofdData
       });
 
@@ -879,11 +1137,38 @@ this.otpError = err.message || 'Invalid verification code';
       this.otpError = null;
     },
 
-    handlePaymentSuccess(paymentData) {
+    async handlePaymentSuccess(paymentData) {
       this.paymentStatus = 'success';
       this.transactionId = paymentData.uuid || paymentData.transactionId;
       this.loading = false;
       this.processing = false;
+
+      // Calculate subscription period dates
+      const startDate = new Date();
+      const endDate = new Date();
+      endDate.setMonth(endDate.getMonth() + this.selectedDuration);
+
+      // Send payment confirmation message to user's inbox
+      try {
+        await sendPaymentConfirmationMessage({
+          userId: this.finalUserId,
+          amount: this.finalAmount,
+          originalAmount: this.originalAmount,
+          discount: this.promoDiscount,
+          promoCode: this.promoApplied ? this.promoCode : null,
+          plan: this.planName,
+          duration: this.selectedDuration,
+          transactionId: this.transactionId,
+          paymentMethod: this.providers[this.paymentProvider]?.name || this.paymentProvider,
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString(),
+          userEmail: this.finalUserEmail,
+          userName: this.finalUserName
+        });
+      } catch (inboxError) {
+        // Don't fail the payment if inbox message fails
+        console.error('Failed to send inbox message:', inboxError);
+      }
     },
 
     formatError(error) {
@@ -2229,5 +2514,6 @@ this.otpError = err.message || 'Invalid verification code';
     height: 46px;
     font-size: 1.125rem;
   }
+
 }
 </style>
