@@ -6,6 +6,7 @@ import router from './router';
 import store from './store';
 
 import './assets/css/tailwind.css';
+import './assets/css/tw-utilities.css';
 import './assets/css/responsive.css';
 import './assets/interactives.css';
 import 'vue-toast-notification/dist/theme-sugar.css';
