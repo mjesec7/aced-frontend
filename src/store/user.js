@@ -1968,6 +1968,7 @@ return finalResult;
 
   // ✅ ENHANCED: Validate promocode
   async validatePromocode({ state, commit }, promoCode) {
+  console.log('🎟️ [Store] validatePromocode called with:', promoCode);
   try {
     if (!promoCode || typeof promoCode !== 'string' || promoCode.trim().length < 3) {
       return { valid: false, error: 'Промокод должен содержать не менее 3 символов' };
@@ -1975,64 +1976,92 @@ return finalResult;
 
     const normalizedCode = promoCode.trim().toUpperCase();
 
-    // Check cache first
-    if (state.promocodes.validationCache.has(normalizedCode)) {
-      const cached = state.promocodes.validationCache.get(normalizedCode);
-      const age = Date.now() - cached.timestamp;
-      if (age < 300000) { // 5 minutes cache
-        return cached.result;
+    // Check cache first (handle both Map and Object)
+    const cache = state.promocodes?.validationCache;
+    if (cache) {
+      const cached = cache instanceof Map ? cache.get(normalizedCode) : cache[normalizedCode];
+      if (cached) {
+        const age = Date.now() - cached.timestamp;
+        if (age < 300000) { // 5 minutes cache
+          console.log('🎟️ [Store] Returning cached result');
+          return cached.result;
+        }
       }
     }
 
-    const baseUrl = import.meta.env.VITE_API_BASE_URL;
-    if (!baseUrl) {
-      return { valid: false, error: 'Ошибка конфигурации приложения' };
-    }
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live';
+    console.log('🎟️ [Store] Calling API:', `${baseUrl}/api/promocodes/validate/${normalizedCode}`);
 
     const response = await Promise.race([
-      fetch(`${baseUrl}/api/promocodes/validate/${normalizedCode}`),
+      fetch(`${baseUrl}/api/promocodes/validate/${normalizedCode}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      }),
       new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Validation timeout')), 5000)
+        setTimeout(() => reject(new Error('Validation timeout')), 10000)
       )
     ]);
 
+    console.log('🎟️ [Store] Response status:', response.status);
+
     const result = await response.json();
+    console.log('🎟️ [Store] API response:', JSON.stringify(result, null, 2));
+
+    // Check if promo code is valid: either explicit valid flag, or success with data
+    const isValid = result?.valid === true || (result?.success === true && result?.data);
 
     const validationResult = {
-      valid: result?.success && result.valid,
-      data: result.data || null,
-      error: result?.error || null,
-      message: result?.success && result.valid
-        ? `Промокод действителен! Предоставляет: ${result.data?.grantsPlan?.toUpperCase()} план`
-        : result?.error || 'Промокод недействителен'
+      valid: isValid,
+      data: result?.data || null,
+      error: isValid ? null : (result?.error || result?.message || null),
+      message: isValid
+        ? `Промокод действителен! Предоставляет: ${result?.data?.grantsPlan?.toUpperCase()} план`
+        : result?.error || result?.message || 'Промокод недействителен'
     };
 
-    // Cache the result
-    state.promocodes.validationCache.set(normalizedCode, {
-      result: validationResult,
-      timestamp: Date.now()
-    });
+    console.log('🎟️ [Store] Validation result:', validationResult);
 
-    // Limit cache size
-    if (state.promocodes.validationCache.size > 50) {
-      const firstKey = state.promocodes.validationCache.keys().next().value;
-      state.promocodes.validationCache.delete(firstKey);
+    // Cache the result (handle both Map and Object)
+    if (state.promocodes) {
+      if (!state.promocodes.validationCache) {
+        state.promocodes.validationCache = {};
+      }
+      if (state.promocodes.validationCache instanceof Map) {
+        state.promocodes.validationCache.set(normalizedCode, {
+          result: validationResult,
+          timestamp: Date.now()
+        });
+        // Limit cache size
+        if (state.promocodes.validationCache.size > 50) {
+          const firstKey = state.promocodes.validationCache.keys().next().value;
+          state.promocodes.validationCache.delete(firstKey);
+        }
+      } else {
+        state.promocodes.validationCache[normalizedCode] = {
+          result: validationResult,
+          timestamp: Date.now()
+        };
+        // Limit cache size
+        const keys = Object.keys(state.promocodes.validationCache);
+        if (keys.length > 50) {
+          delete state.promocodes.validationCache[keys[0]];
+        }
+      }
     }
 
     return validationResult;
 
   } catch (error) {
+    console.error('🎟️ [Store] validatePromocode error:', error);
     let userFriendlyError = 'Ошибка проверки промокода';
 
     if (error.message === 'Validation timeout') {
       userFriendlyError = 'Истекло время ожидания проверки';
-    } else if (error.status) {
-      const errorMessages = {
-        404: 'Промокод не найден',
-        400: 'Неверный формат промокода',
-        429: 'Слишком много запросов проверки'
-      };
-      userFriendlyError = errorMessages[error.status] || userFriendlyError;
+    } else if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
+      userFriendlyError = 'Ошибка сети. Проверьте подключение к интернету.';
     }
 
     return {
