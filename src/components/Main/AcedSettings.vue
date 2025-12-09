@@ -498,12 +498,13 @@
                 </div>
 
                 <div class="form-group">
-                  <label class="form-label">Select plan</label>
-                  <select v-model="selectedPlan" class="form-select" :disabled="loading">
-                    <option value="">Choose plan...</option>
-                    <option value="start">Start plan</option>
-                    <option value="pro">Pro plan</option>
-                  </select>
+                  <label class="form-label">Plan Type</label>
+                  <div class="pro-plan-display" style="display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white; font-weight: 600;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                    </svg>
+                    Pro Plan
+                  </div>
                 </div>
 
                 <button 

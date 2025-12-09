@@ -638,20 +638,6 @@ export default {
         return amt;
       }
       
-      // Use selected duration (in months)
-      const duration = this.selectedDuration || 3;
-      
-      // Pro plan amounts in tiyin (UZS * 100)
-      // 1 month = 250,000 UZS, 6 months = 675,000 UZS, 12 months = 1,200,000 UZS
-      const amounts = {
-        1: 25000000,    // 250,000 UZS (30 days)
-        6: 135000000,   // 675,000 UZS (180 days) - 10% discount
-        12: 240000000   // 1,200,000 UZS (365 days) - 20% discount
-      };
-      
-      return amounts[duration] || amounts[3];
-    },
-    
     planName() {
       if (this.promoApplied && this.promoData) {
         return `Pro Plan (via Promocode - ${this.promoData.durationText})`;
