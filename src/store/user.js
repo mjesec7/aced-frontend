@@ -1879,7 +1879,56 @@ const actions = {
         )
       ]);
 
-      const result = await response.json();
+      // Handle HTTP errors with specific messages
+      if (!response.ok) {
+        const httpErrorMessages = {
+          400: 'Неверный формат промокода',
+          401: 'Необходимо войти в систему',
+          403: 'Промокод недоступен или уже использован',
+          404: 'Промокод не найден',
+          409: 'Промокод уже был применён',
+          410: 'Срок действия промокода истёк',
+          422: 'Промокод нельзя применить к вашему аккаунту',
+          429: 'Слишком много запросов. Попробуйте позже.',
+          500: 'Ошибка сервера. Попробуйте позже.',
+          502: 'Сервер временно недоступен. Попробуйте позже.',
+          503: 'Сервис временно недоступен. Попробуйте позже.'
+        };
+
+        // Try to get error message from response body
+        let serverMessage = null;
+        try {
+          const errorBody = await response.json();
+          serverMessage = errorBody?.message || errorBody?.error;
+        } catch {
+          // Response body is not JSON, use HTTP status message
+        }
+
+        const httpError = serverMessage || httpErrorMessages[response.status] || `Ошибка сервера (${response.status})`;
+
+        commit('SET_ERROR', {
+          message: httpError,
+          context: 'applyPromocode-http',
+          statusCode: response.status,
+          promocode: normalizedCode
+        });
+
+        return { success: false, error: httpError, statusCode: response.status };
+      }
+
+      // Safely parse JSON response
+      let result;
+      try {
+        result = await response.json();
+      } catch (parseError) {
+        const parseErrorMsg = 'Ошибка обработки ответа сервера';
+        commit('SET_ERROR', {
+          message: parseErrorMsg,
+          context: 'applyPromocode-parse',
+          originalError: parseError.message
+        });
+        return { success: false, error: parseErrorMsg };
+      }
 
       if (result?.success) {
         const oldStatus = state.userStatus;
@@ -1944,28 +1993,25 @@ const actions = {
       return { success: false, error: serverError };
 
     } catch (error) {
-      let userFriendlyError = 'Произошла ошибка при применении промокода';
+      // Handle network and other errors (HTTP errors already handled above)
+      let userFriendlyError;
 
       if (error.message === 'Request timeout') {
         userFriendlyError = 'Истекло время ожидания. Попробуйте снова.';
-      } else if (error.status) {
-        const errorMessages = {
-          404: 'Промокод не найден',
-          400: 'Неверный формат промокода',
-          401: 'Необходимо войти в систему',
-          403: 'Промокод недоступен или уже использован',
-          409: 'Промокод уже был применён',
-          429: 'Слишком много запросов. Попробуйте позже.',
-          500: 'Ошибка сервера. Попробуйте позже.'
-        };
-        userFriendlyError = errorMessages[error.status] || userFriendlyError;
+      } else if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
+        userFriendlyError = 'Не удалось подключиться к серверу. Проверьте интернет-соединение.';
+      } else if (error.message?.includes('network') || error.message?.includes('Network')) {
+        userFriendlyError = 'Ошибка сети. Проверьте интернет-соединение.';
+      } else {
+        // Log unexpected errors for debugging
+        console.error('🎟️ Unexpected promo code error:', error);
+        userFriendlyError = 'Не удалось применить промокод. Попробуйте позже.';
       }
 
       commit('SET_ERROR', {
         message: userFriendlyError,
         context: 'applyPromocode-exception',
-        originalError: error.message,
-        statusCode: error.status
+        originalError: error.message
       });
 
       return {
@@ -2017,7 +2063,37 @@ const actions = {
 
       console.log('🎟️ [Store] Response status:', response.status);
 
-      const result = await response.json();
+      // Handle HTTP errors
+      if (!response.ok) {
+        const httpErrorMessages = {
+          400: 'Неверный формат промокода',
+          404: 'Промокод не найден',
+          410: 'Срок действия промокода истёк',
+          429: 'Слишком много запросов. Попробуйте позже.',
+          500: 'Ошибка сервера при проверке промокода'
+        };
+
+        // Try to get error message from response body
+        let serverMessage = null;
+        try {
+          const errorBody = await response.json();
+          serverMessage = errorBody?.message || errorBody?.error;
+        } catch {
+          // Response body is not JSON
+        }
+
+        const errorMsg = serverMessage || httpErrorMessages[response.status] || `Ошибка проверки (${response.status})`;
+        return { valid: false, error: errorMsg, message: errorMsg };
+      }
+
+      // Safely parse JSON response
+      let result;
+      try {
+        result = await response.json();
+      } catch (parseError) {
+        return { valid: false, error: 'Ошибка обработки ответа сервера', message: 'Ошибка обработки ответа сервера' };
+      }
+
       console.log('🎟️ [Store] API response:', JSON.stringify(result, null, 2));
 
       // Check if promo code is valid: either explicit valid flag, or success with data
