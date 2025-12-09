@@ -1017,9 +1017,13 @@ return 0;
     
     canApplyPromo() {
       try {
-        return this.promoCode && 
-               this.promoCode.trim().length > 3 && 
-               this.selectedPlan && 
+        // If promo grants a plan directly, don't require selectedPlan
+        const promoGrantsPlan = this.promoValidation?.data?.grantsPlan;
+        const hasPlan = this.selectedPlan || promoGrantsPlan;
+
+        return this.promoCode &&
+               this.promoCode.trim().length > 3 &&
+               hasPlan &&
                this.promoValidation &&
                this.promoValidation.valid === true &&
                !this.loading &&

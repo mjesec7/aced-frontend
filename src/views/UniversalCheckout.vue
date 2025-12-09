@@ -649,7 +649,16 @@ export default {
     },
     planName() {
       if (this.promoApplied && this.promoData) {
-        return `Pro Plan (via Promocode - ${this.promoData.durationText})`;
+        // Calculate duration text from subscriptionDays
+        const days = this.promoData.subscriptionDays || 30;
+        let durationText = this.promoData.durationText;
+        if (!durationText) {
+          if (days <= 31) durationText = '1 Month';
+          else if (days <= 95) durationText = '3 Months';
+          else if (days <= 185) durationText = '6 Months';
+          else durationText = `${days} Days`;
+        }
+        return `${(this.promoData.grantsPlan || 'Pro').toUpperCase()} Plan (via Promocode - ${durationText})`;
       }
       const duration = this.selectedDuration || 3;
       if (duration === 1) return 'Pro Plan (1 Month)';

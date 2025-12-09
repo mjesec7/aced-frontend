@@ -1932,75 +1932,82 @@ const actions = {
       }
 
       if (result?.success) {
+        console.log('🎟️ [Store] Promo code API success:', JSON.stringify(result, null, 2));
+
         const oldStatus = state.userStatus;
         // Backend returns plan in various formats - check all possibilities
         const newPlan = result.plan || result.promocode?.grantsPlan || result.user?.subscriptionPlan || plan;
+        const expiryDate = result.user?.subscriptionEndDate || result.user?.subscriptionExpiryDate ||
+                          result.expiryDate || result.subscriptionEndDate;
 
-        // ✅ CRITICAL: Fetch updated user status from server (server-authoritative)
-        // The backend's grantSubscription() already updated MongoDB and Firebase
-        const serverStatusResult = await dispatch('loadUserStatus');
+        console.log('🎟️ [Store] Extracted newPlan:', newPlan, 'expiryDate:', expiryDate);
 
-        if (serverStatusResult?.success) {
-          // Use server-authoritative data
-          const serverPlan = serverStatusResult.status || newPlan;
-
-          // Track promocode application
-          commit('ADD_PROMOCODE', {
-            code: normalizedCode,
-            plan: serverPlan,
-            oldPlan: oldStatus,
-            source: 'api',
-            details: result.data || result.user || {}
-          });
-
-          // Force global update
-          commit('FORCE_UPDATE');
-
-          const duration = Date.now() - startTime;
-
-          return {
-            success: true,
-            message: result.message || `Промокод успешно применён! Подписка "${serverPlan.toUpperCase()}" активирована.`,
-            oldPlan: oldStatus,
-            newPlan: serverPlan,
-            duration,
-            serverSync: true,
-            expiryDate: result.user?.subscriptionEndDate || result.user?.subscriptionExpiryDate
-          };
+        // ✅ CRITICAL: Force token refresh to clear Firebase cache, then fetch status
+        try {
+          const { auth } = await import('@/firebase');
+          if (auth.currentUser) {
+            await auth.currentUser.getIdToken(true); // Force refresh
+          }
+        } catch (e) {
+          console.warn('Token refresh failed:', e);
         }
 
-        // Fallback: Server sync failed but promo was applied - update locally
-        const updateResult = await dispatch('updateSubscription', {
-          plan: newPlan,
+        // Fetch updated user status from server
+        const serverStatusResult = await dispatch('loadUserStatus');
+        console.log('🎟️ [Store] Server status after promo:', serverStatusResult);
+
+        // Determine final plan - prefer server data, fallback to API response
+        const serverPlan = serverStatusResult?.status;
+        const finalPlan = (serverPlan && serverPlan !== 'free') ? serverPlan : newPlan;
+
+        console.log('🎟️ [Store] Final plan decision:', { serverPlan, newPlan, finalPlan });
+
+        // Always update local state with the granted plan
+        commit('SET_USER_STATUS', finalPlan);
+        commit('UPDATE_SUBSCRIPTION', {
+          plan: finalPlan,
+          status: 'active',
+          expiryDate: expiryDate,
           source: 'promocode',
-          details: {
-            promocode: normalizedCode,
-            appliedAt: new Date().toISOString(),
-            expiryDate: result.user?.subscriptionEndDate || result.user?.subscriptionExpiryDate,
-            ...result.data?.subscriptionDetails
-          }
+          lastSync: new Date().toISOString()
         });
 
+        // Update localStorage for persistence
+        try {
+          localStorage.setItem('userStatus', finalPlan);
+          localStorage.setItem('subscriptionPlan', finalPlan);
+          if (expiryDate) localStorage.setItem('subscriptionExpiry', expiryDate);
+        } catch (e) {}
+
+        // Track promocode application
         commit('ADD_PROMOCODE', {
           code: normalizedCode,
-          plan: newPlan,
+          plan: finalPlan,
           oldPlan: oldStatus,
           source: 'api',
-          details: result.data || {}
+          details: result.data || result.user || {}
         });
 
+        // Force global update
         commit('FORCE_UPDATE');
+
+        // Emit global events for all components
+        if (typeof window !== 'undefined') {
+          const eventData = { oldStatus, newStatus: finalPlan, source: 'promocode', timestamp: Date.now() };
+          window.dispatchEvent(new CustomEvent('userStatusChanged', { detail: eventData }));
+          window.dispatchEvent(new CustomEvent('subscriptionUpdated', { detail: eventData }));
+        }
 
         const duration = Date.now() - startTime;
 
         return {
           success: true,
-          message: result.message || `Промокод успешно применён! Подписка "${newPlan.toUpperCase()}" активирована.`,
+          message: result.message || `Промокод успешно применён! Подписка "${finalPlan.toUpperCase()}" активирована.`,
           oldPlan: oldStatus,
-          newPlan: newPlan,
+          newPlan: finalPlan,
           duration,
-          serverSync: false,
-          updateResult
+          serverSync: serverPlan === finalPlan,
+          expiryDate
         };
       }
 
