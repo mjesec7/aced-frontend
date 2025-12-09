@@ -980,6 +980,16 @@ const mutations = {
   SET_ERROR(state, error) {
     const timestamp = Date.now();
 
+    // Ensure system object exists
+    if (!state.system) {
+      state.system = { errors: { lastError: null, errorCount: 0 } };
+    }
+
+    // Ensure errors object exists
+    if (!state.system.errors) {
+      state.system.errors = { lastError: null, errorCount: 0 };
+    }
+
     state.system.errors.lastError = {
       message: error.message || error,
       timestamp,
@@ -1328,1266 +1338,1266 @@ const actions = {
 
       // ✅ CRITICAL: API call with comprehensive error handling and timeout
       let response;
-    const apiStartTime = Date.now();
+      const apiStartTime = Date.now();
 
-    try {
-      const requestConfig = {
-        timeout: 15000,
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'X-Request-ID': `save_user_${Date.now()}`,
-          'X-App-Version': '2.0'
+      try {
+        const requestConfig = {
+          timeout: 15000,
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'X-Request-ID': `save_user_${Date.now()}`,
+            'X-App-Version': '2.0'
+          }
+        };
+
+
+        const requestPromise = api.post('/users/save', payload, requestConfig);
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Request timeout')), 20000)
+        );
+
+        response = await Promise.race([requestPromise, timeoutPromise]);
+
+        // Track API response time
+        const apiResponseTime = Date.now() - apiStartTime;
+
+
+      } catch (networkError) {
+        // ✅ CRITICAL: Detailed network error handling
+        let userFriendlyError = 'Network error occurred';
+        let statusCode = null;
+        let errorDetails = { isNetworkError: true };
+
+        if (networkError.message === 'Request timeout') {
+          userFriendlyError = 'Request timed out. Please check your connection and try again.';
+          errorDetails.isTimeout = true;
+        } else if (networkError.code === 'ECONNABORTED') {
+          userFriendlyError = 'Request timed out. Please check your connection and try again.';
+          errorDetails.isTimeout = true;
+        } else if (networkError.message === 'Network Error') {
+          userFriendlyError = 'Network error. Please check your internet connection.';
+          errorDetails.isConnectionError = true;
+        } else if (networkError.response) {
+          statusCode = networkError.response.status;
+          const serverError = networkError.response.data || {};
+          errorDetails.statusCode = statusCode;
+
+          switch (statusCode) {
+            case 400:
+              userFriendlyError = serverError.message || serverError.error || 'Invalid user data provided';
+              errorDetails.isBadRequest = true;
+              break;
+            case 401:
+              userFriendlyError = 'Authentication failed. Please log in again.';
+              errorDetails.isAuthError = true;
+              break;
+            case 403:
+              userFriendlyError = 'Access denied. Please check your permissions.';
+              errorDetails.isAuthError = true;
+              break;
+            case 404:
+              userFriendlyError = 'User service not found. Please contact support.';
+              errorDetails.isServiceError = true;
+              break;
+            case 409:
+              userFriendlyError = serverError.message || serverError.error || 'User already exists with different data';
+              errorDetails.isConflict = true;
+              break;
+            case 429:
+              userFriendlyError = 'Too many requests. Please wait and try again.';
+              errorDetails.isRateLimit = true;
+              break;
+            case 500:
+            case 502:
+            case 503:
+            case 504:
+              userFriendlyError = 'Server error. Please try again later.';
+              errorDetails.isServerError = true;
+              break;
+            default:
+              userFriendlyError = serverError.message || serverError.error || `Server error (${statusCode})`;
+              errorDetails.isUnknownServerError = true;
+          }
+        } else {
+          userFriendlyError = 'Unable to connect to server. Please try again.';
+          errorDetails.isConnectionError = true;
+        }
+
+        commit('SET_ERROR', {
+          message: userFriendlyError,
+          context: 'saveUser-network',
+          originalError: networkError.message,
+          statusCode
+        });
+
+        return createErrorResult(userFriendlyError, errorDetails);
+      }
+
+      // ✅ CRITICAL: Response validation
+      if (!response || typeof response !== 'object') {
+        const error = 'Invalid response from server';
+        commit('SET_ERROR', { message: error, context: 'saveUser-response-validation' });
+        return createErrorResult(error, { responseValidationError: true });
+      }
+
+      const responseData = response.data;
+      if (!responseData || typeof responseData !== 'object') {
+        const error = 'Empty or invalid response from server';
+        commit('SET_ERROR', { message: error, context: 'saveUser-response-data' });
+        return createErrorResult(error, { responseDataError: true });
+      }
+
+
+      // ✅ CRITICAL: Handle different response structures
+      let savedUser = null;
+
+      if (responseData.success === true) {
+        if (responseData.data && typeof responseData.data === 'object') {
+          savedUser = responseData.data;
+        } else if (responseData.user && typeof responseData.user === 'object') {
+          savedUser = responseData.user;
+        } else {
+          const error = 'Server returned success but no user data';
+          commit('SET_ERROR', { message: error, context: 'saveUser-response-structure' });
+          return createErrorResult(error, { responseStructureError: true });
+        }
+      } else if (responseData.user && typeof responseData.user === 'object') {
+        savedUser = responseData.user;
+      } else if ((responseData._id || responseData.firebaseId || responseData.firebaseUserId) && responseData.email) {
+        savedUser = responseData;
+      } else if (!responseData.success && !responseData.error && responseData.email) {
+        // Handle case where server returns user data directly without success wrapper
+        savedUser = responseData;
+      } else if (responseData.success === false) {
+        const error = responseData.message || responseData.error || 'Server returned failure status';
+        commit('SET_ERROR', { message: error, context: 'saveUser-server-failure' });
+        return createErrorResult(error, { serverFailure: true, serverResponse: responseData });
+      } else {
+        const error = 'Server returned unrecognized response format';
+        commit('SET_ERROR', { message: error, context: 'saveUser-unknown-response' });
+        return createErrorResult(error, { unknownResponseError: true, rawResponse: responseData });
+      }
+
+      // ✅ CRITICAL: Validate saved user object
+      if (!savedUser || typeof savedUser !== 'object') {
+        const error = 'Server returned invalid user data';
+        commit('SET_ERROR', { message: error, context: 'saveUser-user-validation' });
+        return createErrorResult(error, { userValidationError: true });
+      }
+
+      // ✅ CRITICAL: Ensure user has all required fields
+      const completeUser = {
+        ...savedUser,
+        firebaseId: savedUser.firebaseId || savedUser.firebaseUserId || savedUser._id || userData.uid,
+        _id: savedUser._id || savedUser.firebaseId || savedUser.firebaseUserId,
+        uid: savedUser.uid || savedUser.firebaseId || savedUser.firebaseUserId || userData.uid,
+        email: savedUser.email || userData.email,
+        name: savedUser.name || userData.displayName || userData.email?.split('@')[0] || 'User',
+        displayName: savedUser.displayName || savedUser.name || userData.displayName || '',
+        subscriptionPlan: savedUser.subscriptionPlan || 'free',
+        lastLoginAt: savedUser.lastLoginAt || new Date().toISOString(),
+        updatedAt: savedUser.updatedAt || new Date().toISOString(),
+        metadata: {
+          ...savedUser.metadata,
+          lastSync: new Date().toISOString(),
+          syncSource: 'saveUser'
         }
       };
 
-
-      const requestPromise = api.post('/users/save', payload, requestConfig);
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Request timeout')), 20000)
-      );
-
-      response = await Promise.race([requestPromise, timeoutPromise]);
-
-      // Track API response time
-      const apiResponseTime = Date.now() - apiStartTime;
+      // ✅ CRITICAL: Final validation of complete user
+      if (!completeUser.firebaseId || !completeUser.email) {
+        const error = 'Server user data missing essential fields';
+        commit('SET_ERROR', { message: error, context: 'saveUser-final-validation' });
+        return createErrorResult(error, { finalValidationError: true });
+      }
 
 
-    } catch (networkError) {
-      // ✅ CRITICAL: Detailed network error handling
-      let userFriendlyError = 'Network error occurred';
-      let statusCode = null;
-      let errorDetails = { isNetworkError: true };
 
-      if (networkError.message === 'Request timeout') {
-        userFriendlyError = 'Request timed out. Please check your connection and try again.';
-        errorDetails.isTimeout = true;
-      } else if (networkError.code === 'ECONNABORTED') {
-        userFriendlyError = 'Request timed out. Please check your connection and try again.';
-        errorDetails.isTimeout = true;
-      } else if (networkError.message === 'Network Error') {
-        userFriendlyError = 'Network error. Please check your internet connection.';
-        errorDetails.isConnectionError = true;
-      } else if (networkError.response) {
-        statusCode = networkError.response.status;
-        const serverError = networkError.response.data || {};
-        errorDetails.statusCode = statusCode;
+      // ✅ CRITICAL: Update local store with server data
+      try {
+        commit('SET_USER', completeUser);
+        commit('SET_USER_STATUS', completeUser.subscriptionPlan || 'free');
 
-        switch (statusCode) {
-          case 400:
-            userFriendlyError = serverError.message || serverError.error || 'Invalid user data provided';
-            errorDetails.isBadRequest = true;
-            break;
-          case 401:
-            userFriendlyError = 'Authentication failed. Please log in again.';
-            errorDetails.isAuthError = true;
-            break;
-          case 403:
-            userFriendlyError = 'Access denied. Please check your permissions.';
-            errorDetails.isAuthError = true;
-            break;
-          case 404:
-            userFriendlyError = 'User service not found. Please contact support.';
-            errorDetails.isServiceError = true;
-            break;
-          case 409:
-            userFriendlyError = serverError.message || serverError.error || 'User already exists with different data';
-            errorDetails.isConflict = true;
-            break;
-          case 429:
-            userFriendlyError = 'Too many requests. Please wait and try again.';
-            errorDetails.isRateLimit = true;
-            break;
-          case 500:
-          case 502:
-          case 503:
-          case 504:
-            userFriendlyError = 'Server error. Please try again later.';
-            errorDetails.isServerError = true;
-            break;
-          default:
-            userFriendlyError = serverError.message || serverError.error || `Server error (${statusCode})`;
-            errorDetails.isUnknownServerError = true;
+        // Store user ID for future API calls
+        const userId = completeUser.firebaseId || completeUser._id;
+        if (userId) {
+          localStorage.setItem('userId', userId);
+          localStorage.setItem('firebaseUserId', userId);
+          localStorage.setItem('lastUserSync', Date.now().toString());
         }
-      } else {
-        userFriendlyError = 'Unable to connect to server. Please try again.';
-        errorDetails.isConnectionError = true;
+
+      } catch (storeError) {
+        commit('SET_ERROR', { message: 'Store update failed', context: 'saveUser-store-update', originalError: storeError.message });
+        // Don't fail the entire operation if store update fails
+      }
+
+      // ✅ CRITICAL: ALWAYS return success result
+      const finalResult = createSuccessResult(completeUser, 'User saved and synchronized successfully');
+      return finalResult;
+
+    } catch (error) {
+      // ✅ CRITICAL: Comprehensive error categorization
+      let userFriendlyError = 'An unexpected error occurred while saving user data.';
+      let errorCategory = 'unexpected';
+
+      if (error.message?.includes('API module')) {
+        userFriendlyError = 'Application configuration error. Please refresh the page.';
+        errorCategory = 'config';
+      } else if (error.message?.includes('environment')) {
+        userFriendlyError = 'Application not properly configured. Please contact support.';
+        errorCategory = 'config';
+      } else if (error.message?.includes('fetch') || error.message?.includes('network')) {
+        userFriendlyError = 'Network connection failed. Please check your internet connection.';
+        errorCategory = 'network';
+      } else if (error.message?.includes('timeout')) {
+        userFriendlyError = 'Request timed out. Please try again.';
+        errorCategory = 'timeout';
+      } else if (error.message?.includes('JSON')) {
+        userFriendlyError = 'Server returned invalid response. Please try again.';
+        errorCategory = 'parsing';
       }
 
       commit('SET_ERROR', {
         message: userFriendlyError,
-        context: 'saveUser-network',
-        originalError: networkError.message,
-        statusCode
+        context: 'saveUser-unexpected',
+        originalError: error.message,
+        stack: error.stack,
+        category: errorCategory
       });
 
-      return createErrorResult(userFriendlyError, errorDetails);
-    }
+      // ✅ CRITICAL: ALWAYS return error result
+      const finalResult = createErrorResult(userFriendlyError, {
+        isUnexpectedError: true,
+        originalError: error.message,
+        category: errorCategory
+      });
+      return finalResult;
 
-    // ✅ CRITICAL: Response validation
-    if (!response || typeof response !== 'object') {
-      const error = 'Invalid response from server';
-      commit('SET_ERROR', { message: error, context: 'saveUser-response-validation' });
-      return createErrorResult(error, { responseValidationError: true });
-    }
-
-    const responseData = response.data;
-    if (!responseData || typeof responseData !== 'object') {
-      const error = 'Empty or invalid response from server';
-      commit('SET_ERROR', { message: error, context: 'saveUser-response-data' });
-      return createErrorResult(error, { responseDataError: true });
-    }
-
-
-    // ✅ CRITICAL: Handle different response structures
-    let savedUser = null;
-
-    if (responseData.success === true) {
-      if (responseData.data && typeof responseData.data === 'object') {
-        savedUser = responseData.data;
-      } else if (responseData.user && typeof responseData.user === 'object') {
-        savedUser = responseData.user;
-      } else {
-        const error = 'Server returned success but no user data';
-        commit('SET_ERROR', { message: error, context: 'saveUser-response-structure' });
-        return createErrorResult(error, { responseStructureError: true });
+    } finally {
+      // ✅ CRITICAL: Always clear loading state
+      try {
+        commit('SET_LOADING', { type: 'saving', loading: false });
+      } catch (loadingError) {
       }
-    } else if (responseData.user && typeof responseData.user === 'object') {
-      savedUser = responseData.user;
-    } else if ((responseData._id || responseData.firebaseId || responseData.firebaseUserId) && responseData.email) {
-      savedUser = responseData;
-    } else if (!responseData.success && !responseData.error && responseData.email) {
-      // Handle case where server returns user data directly without success wrapper
-      savedUser = responseData;
-    } else if (responseData.success === false) {
-      const error = responseData.message || responseData.error || 'Server returned failure status';
-      commit('SET_ERROR', { message: error, context: 'saveUser-server-failure' });
-      return createErrorResult(error, { serverFailure: true, serverResponse: responseData });
-    } else {
-      const error = 'Server returned unrecognized response format';
-      commit('SET_ERROR', { message: error, context: 'saveUser-unknown-response' });
-  return createErrorResult(error, { unknownResponseError: true, rawResponse: responseData });
-}
-
-// ✅ CRITICAL: Validate saved user object
-if (!savedUser || typeof savedUser !== 'object') {
-  const error = 'Server returned invalid user data';
-  commit('SET_ERROR', { message: error, context: 'saveUser-user-validation' });
-  return createErrorResult(error, { userValidationError: true });
-}
-
-// ✅ CRITICAL: Ensure user has all required fields
-const completeUser = {
-  ...savedUser,
-  firebaseId: savedUser.firebaseId || savedUser.firebaseUserId || savedUser._id || userData.uid,
-  _id: savedUser._id || savedUser.firebaseId || savedUser.firebaseUserId,
-  uid: savedUser.uid || savedUser.firebaseId || savedUser.firebaseUserId || userData.uid,
-  email: savedUser.email || userData.email,
-  name: savedUser.name || userData.displayName || userData.email?.split('@')[0] || 'User',
-  displayName: savedUser.displayName || savedUser.name || userData.displayName || '',
-  subscriptionPlan: savedUser.subscriptionPlan || 'free',
-  lastLoginAt: savedUser.lastLoginAt || new Date().toISOString(),
-  updatedAt: savedUser.updatedAt || new Date().toISOString(),
-  metadata: {
-    ...savedUser.metadata,
-    lastSync: new Date().toISOString(),
-    syncSource: 'saveUser'
-  }
-};
-
-// ✅ CRITICAL: Final validation of complete user
-if (!completeUser.firebaseId || !completeUser.email) {
-  const error = 'Server user data missing essential fields';
-  commit('SET_ERROR', { message: error, context: 'saveUser-final-validation' });
-  return createErrorResult(error, { finalValidationError: true });
-}
-
-
-
-// ✅ CRITICAL: Update local store with server data
-try {
-  commit('SET_USER', completeUser);
-  commit('SET_USER_STATUS', completeUser.subscriptionPlan || 'free');
-
-  // Store user ID for future API calls
-  const userId = completeUser.firebaseId || completeUser._id;
-  if (userId) {
-    localStorage.setItem('userId', userId);
-    localStorage.setItem('firebaseUserId', userId);
-    localStorage.setItem('lastUserSync', Date.now().toString());
-  }
-
-} catch (storeError) {
-  commit('SET_ERROR', { message: 'Store update failed', context: 'saveUser-store-update', originalError: storeError.message });
-  // Don't fail the entire operation if store update fails
-}
-
-// ✅ CRITICAL: ALWAYS return success result
-const finalResult = createSuccessResult(completeUser, 'User saved and synchronized successfully');
-return finalResult;
-
-    } catch (error) {
-  // ✅ CRITICAL: Comprehensive error categorization
-  let userFriendlyError = 'An unexpected error occurred while saving user data.';
-  let errorCategory = 'unexpected';
-
-  if (error.message?.includes('API module')) {
-    userFriendlyError = 'Application configuration error. Please refresh the page.';
-    errorCategory = 'config';
-  } else if (error.message?.includes('environment')) {
-    userFriendlyError = 'Application not properly configured. Please contact support.';
-    errorCategory = 'config';
-  } else if (error.message?.includes('fetch') || error.message?.includes('network')) {
-    userFriendlyError = 'Network connection failed. Please check your internet connection.';
-    errorCategory = 'network';
-  } else if (error.message?.includes('timeout')) {
-    userFriendlyError = 'Request timed out. Please try again.';
-    errorCategory = 'timeout';
-  } else if (error.message?.includes('JSON')) {
-    userFriendlyError = 'Server returned invalid response. Please try again.';
-    errorCategory = 'parsing';
-  }
-
-  commit('SET_ERROR', {
-    message: userFriendlyError,
-    context: 'saveUser-unexpected',
-    originalError: error.message,
-    stack: error.stack,
-    category: errorCategory
-  });
-
-  // ✅ CRITICAL: ALWAYS return error result
-  const finalResult = createErrorResult(userFriendlyError, {
-    isUnexpectedError: true,
-    originalError: error.message,
-    category: errorCategory
-  });
-  return finalResult;
-
-} finally {
-  // ✅ CRITICAL: Always clear loading state
-  try {
-    commit('SET_LOADING', { type: 'saving', loading: false });
-  } catch (loadingError) {
-  }
-}
+    }
   },
 
   // ✅ ENHANCED: Other actions remain the same but with better error handling
   async loadUserStatus({ commit, state }) {
-  const startTime = Date.now();
+    const startTime = Date.now();
 
-  try {
-    commit('SET_LOADING', { type: 'status', loading: true });
+    try {
+      commit('SET_LOADING', { type: 'status', loading: true });
 
-    const userId = getUserId(state);
-    if (!userId) {
-      commit('SET_USER_STATUS', 'free');
-      return { success: false, error: 'No user ID', defaulted: true };
-    }
-
-
-    const { getUserStatus } = await import('@/api');
-    const result = await getUserStatus(userId);
-
-    if (result?.success) {
-      const status = result.status || result.data?.subscriptionPlan || 'free';
-
-      commit('SET_USER_STATUS', status);
-
-      if (result.data?.subscriptionDetails) {
-        commit('UPDATE_SUBSCRIPTION', {
-          ...result.data.subscriptionDetails,
-          plan: status,
-          status: status !== 'free' ? 'active' : 'inactive',
-          lastSync: new Date().toISOString()
-        });
+      const userId = getUserId(state);
+      if (!userId) {
+        commit('SET_USER_STATUS', 'free');
+        return { success: false, error: 'No user ID', defaulted: true };
       }
 
-      const duration = Date.now() - startTime;
 
-      return { success: true, status, duration };
-    } else {
+      const { getUserStatus } = await import('@/api');
+      const result = await getUserStatus(userId);
+
+      if (result?.success) {
+        const status = result.status || result.data?.subscriptionPlan || 'free';
+
+        commit('SET_USER_STATUS', status);
+
+        if (result.data?.subscriptionDetails) {
+          commit('UPDATE_SUBSCRIPTION', {
+            ...result.data.subscriptionDetails,
+            plan: status,
+            status: status !== 'free' ? 'active' : 'inactive',
+            lastSync: new Date().toISOString()
+          });
+        }
+
+        const duration = Date.now() - startTime;
+
+        return { success: true, status, duration };
+      } else {
+        commit('SET_USER_STATUS', 'free');
+        commit('SET_ERROR', {
+          message: 'Failed to load user status',
+          context: 'loadUserStatus',
+          originalError: result?.error
+        });
+        return { success: false, error: result?.error || 'Unknown error', defaulted: true };
+      }
+
+    } catch (error) {
       commit('SET_USER_STATUS', 'free');
       commit('SET_ERROR', {
-        message: 'Failed to load user status',
+        message: 'User status loading failed',
         context: 'loadUserStatus',
-        originalError: result?.error
+        originalError: error.message
       });
-      return { success: false, error: result?.error || 'Unknown error', defaulted: true };
+      return { success: false, error: error.message, defaulted: true };
+
+    } finally {
+      commit('SET_LOADING', { type: 'status', loading: false });
     }
-
-  } catch (error) {
-    commit('SET_USER_STATUS', 'free');
-    commit('SET_ERROR', {
-      message: 'User status loading failed',
-      context: 'loadUserStatus',
-      originalError: error.message
-    });
-    return { success: false, error: error.message, defaulted: true };
-
-  } finally {
-    commit('SET_LOADING', { type: 'status', loading: false });
-  }
-},
+  },
 
   // ✅ CRITICAL: updateSubscription that ALWAYS returns a result
   async updateSubscription({ commit, dispatch, state }, { plan, source = 'payment', details = {} }) {
-  const startTime = Date.now();
+    const startTime = Date.now();
 
 
-  try {
-    // Validate plan
-    const validPlans = ['free', 'start', 'pro', 'premium'];
-    const validatedPlan = validPlans.includes(plan) ? plan : 'free';
+    try {
+      // Validate plan
+      const validPlans = ['free', 'start', 'pro', 'premium'];
+      const validatedPlan = validPlans.includes(plan) ? plan : 'free';
 
-    if (plan !== validatedPlan) {
-    }
-
-    // Get old status for comparison
-    const oldStatus = state.userStatus || 'free';
-
-    // Calculate expiry dates based on source
-    let expiryDate = null;
-    if (validatedPlan !== 'free') {
-      const now = new Date();
-      switch (source) {
-        case 'promocode':
-          expiryDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
-          break;
-        case 'payment':
-          expiryDate = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000); // 1 year
-          break;
-        case 'gift':
-          expiryDate = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000); // 90 days
-          break;
-        default:
-          expiryDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // Default 30 days
+      if (plan !== validatedPlan) {
       }
-    }
 
-    const subscriptionData = {
-      plan: validatedPlan,
-      status: (validatedPlan !== 'free') ? 'active' : 'inactive',
-      startDate: new Date().toISOString(),
-      expiryDate: expiryDate ? expiryDate.toISOString() : null,
-      isAutoRenew: source === 'payment',
-      details: {
-        ...details,
-        updatedAt: new Date().toISOString(),
-        updatedBy: 'updateSubscription'
-      },
-      lastSync: new Date().toISOString()
-    };
+      // Get old status for comparison
+      const oldStatus = state.userStatus || 'free';
 
-
-    // ✅ CRITICAL: Update all related state atomically with error handling
-    try {
-      commit('SET_USER_STATUS', validatedPlan);
-    } catch (statusError) {
-      return {
-        success: false,
-        error: 'Failed to update user status',
-        originalError: statusError.message,
-        duration: Date.now() - startTime
-      };
-    }
-
-    try {
-      commit('UPDATE_SUBSCRIPTION', subscriptionData);
-    } catch (subscriptionError) {
-      return {
-        success: false,
-        error: 'Failed to update subscription',
-        originalError: subscriptionError.message,
-        duration: Date.now() - startTime
-      };
-    }
-
-    try {
-      commit('UPDATE_FEATURES'); // Recalculate features based on new plan
-    } catch (featuresError) {
-      // Don't fail for features update
-    }
-
-    try {
-      commit('FORCE_UPDATE');
-    } catch (forceError) {
-      // Don't fail for force update
-    }
-
-
-    // ✅ CRITICAL: Persistent storage (don't let this fail the whole operation)
-    try {
-      localStorage.setItem('userStatus', validatedPlan);
-      localStorage.setItem('subscriptionDetails', JSON.stringify(subscriptionData));
-      localStorage.setItem('lastSubscriptionUpdate', Date.now().toString());
-    } catch (storageError) {
-      // Don't fail the operation due to storage issues
-    }
-
-    // ✅ CRITICAL: Enhanced global event broadcasting
-    const eventData = {
-      oldStatus,
-      newStatus: validatedPlan,
-      source,
-      subscriptionData: { ...subscriptionData },
-      timestamp: Date.now(),
-      duration: Date.now() - startTime
-    };
-
-    // Multiple event types for different listeners
-    const events = [
-      'userStatusChanged',
-      'subscriptionUpdated',
-      'userSubscriptionChanged', // Legacy compatibility
-      'planChanged'
-    ];
-
-    events.forEach(eventName => {
-      try {
-        if (typeof window !== 'undefined') {
-          // Method 1: triggerGlobalEvent function
-          if (window.triggerGlobalEvent) {
-            window.triggerGlobalEvent(eventName, eventData);
-          }
-
-          // Method 2: eventBus
-          if (window.eventBus?.emit) {
-            window.eventBus.emit(eventName, eventData);
-          }
-
-          // Method 3: DOM events
-          const customEvent = new CustomEvent(eventName, {
-            detail: eventData,
-            bubbles: true
-          });
-          window.dispatchEvent(customEvent);
+      // Calculate expiry dates based on source
+      let expiryDate = null;
+      if (validatedPlan !== 'free') {
+        const now = new Date();
+        switch (source) {
+          case 'promocode':
+            expiryDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
+            break;
+          case 'payment':
+            expiryDate = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000); // 1 year
+            break;
+          case 'gift':
+            expiryDate = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000); // 90 days
+            break;
+          default:
+            expiryDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // Default 30 days
         }
-      } catch (eventError) {
       }
-    });
 
-
-    const duration = Date.now() - startTime;
-    const successResult = {
-      success: true,
-      subscriptionData: { ...subscriptionData },
-      oldStatus,
-      newStatus: validatedPlan,
-      duration,
-      message: `Subscription updated successfully from ${oldStatus} to ${validatedPlan}`,
-      timestamp: Date.now()
-    };
-
-
-    // ✅ CRITICAL: ALWAYS return the success result
-    return successResult;
-
-  } catch (error) {
-    const duration = Date.now() - startTime;
-    try {
-      commit('SET_ERROR', {
-        message: 'Subscription update failed',
-        context: 'updateSubscription',
-        originalError: error.message,
-        plan,
-        source
-      });
-    } catch (commitError) {
-    }
-
-    const errorResult = {
-      success: false,
-      error: error.message || 'Subscription update failed',
-      duration,
-      plan,
-      source,
-      timestamp: Date.now(),
-      stack: error.stack
-    };
-
-
-    // ✅ CRITICAL: ALWAYS return the error result
-    return errorResult;
-  }
-},
-
-  // ✅ ENHANCED: Apply promocode with comprehensive validation and error handling
-  async applyPromocode({ commit, state, dispatch }, { promoCode, plan }) {
-  const startTime = Date.now();
-
-  try {
-    // Input validation
-    if (!promoCode || typeof promoCode !== 'string' || promoCode.trim().length < 3) {
-      return { success: false, error: 'Промокод должен содержать не менее 3 символов' };
-    }
-
-    if (!plan || !['start', 'pro', 'premium'].includes(plan)) {
-      return { success: false, error: 'Неверный план подписки' };
-    }
-
-    const userId = getUserId(state);
-    if (!userId) {
-      return { success: false, error: 'Пользователь не найден' };
-    }
-
-    const normalizedCode = promoCode.trim().toUpperCase();
-
-    // Check if already applied
-    const existingPromocode = state.promocodes.applied.find(p => p.code === normalizedCode);
-    if (existingPromocode) {
-      return {
-        success: false,
-        error: 'Этот промокод уже был применён',
-        alreadyApplied: true
-      };
-    }
-
-
-    const token = await getUserToken();
-    const headers = { 'Content-Type': 'application/json' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live';
-    if (!baseUrl) {
-      commit('SET_ERROR', { message: 'API configuration error', context: 'applyPromocode' });
-      return { success: false, error: 'Ошибка конфигурации приложения' };
-    }
-
-    // Use the correct application endpoint
-    const response = await Promise.race([
-      fetch(`${baseUrl}/api/promocodes/apply`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          code: normalizedCode // Backend expects 'code'
-        })
-      }),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Request timeout')), 10000)
-      )
-    ]);
-
-    const result = await response.json();
-
-    if (result?.success) {
-      const oldStatus = state.userStatus;
-      const newPlan = result.promocode?.grantsPlan || plan;
-
-      // ✅ CRITICAL: Update subscription through dedicated action
-      const updateResult = await dispatch('updateSubscription', {
-        plan: newPlan,
-        source: 'promocode',
+      const subscriptionData = {
+        plan: validatedPlan,
+        status: (validatedPlan !== 'free') ? 'active' : 'inactive',
+        startDate: new Date().toISOString(),
+        expiryDate: expiryDate ? expiryDate.toISOString() : null,
+        isAutoRenew: source === 'payment',
         details: {
-          promocode: normalizedCode,
-          appliedAt: new Date().toISOString(),
-          originalResponse: result.data || {},
-          ...result.data?.subscriptionDetails
-        }
-      });
+          ...details,
+          updatedAt: new Date().toISOString(),
+          updatedBy: 'updateSubscription'
+        },
+        lastSync: new Date().toISOString()
+      };
 
-      // ✅ CRITICAL: Check if update was successful
-      if (!updateResult || updateResult.success !== true) {
+
+      // ✅ CRITICAL: Update all related state atomically with error handling
+      try {
+        commit('SET_USER_STATUS', validatedPlan);
+      } catch (statusError) {
         return {
           success: false,
-          error: 'Промокод применён на сервере, но локальное обновление не удалось',
-          serverSuccess: true,
-          updateResult
+          error: 'Failed to update user status',
+          originalError: statusError.message,
+          duration: Date.now() - startTime
         };
       }
 
-      // Track promocode application
-      commit('ADD_PROMOCODE', {
-        code: normalizedCode,
-        plan: newPlan,
-        oldPlan: oldStatus,
-        source: 'api',
-        details: result.data || {}
-      });
-
-      // Force global update
-      commit('FORCE_UPDATE');
-
-      const duration = Date.now() - startTime;
-
-      return {
-        success: true,
-        message: result.message || `Промокод успешно применён! Подписка "${newPlan.toUpperCase()}" активирована.`,
-        oldPlan: oldStatus,
-        newPlan: newPlan,
-        duration,
-        updateResult
-      };
-    }
-
-    // Handle server errors
-    const serverError = result?.message || result?.error || 'Не удалось применить промокод';
-
-    commit('SET_ERROR', {
-      message: serverError,
-      context: 'applyPromocode-server',
-      promocode: normalizedCode,
-      plan
-    });
-
-    return { success: false, error: serverError };
-
-  } catch (error) {
-    let userFriendlyError = 'Произошла ошибка при применении промокода';
-
-    if (error.message === 'Request timeout') {
-      userFriendlyError = 'Истекло время ожидания. Попробуйте снова.';
-    } else if (error.status) {
-      const errorMessages = {
-        404: 'Промокод не найден',
-        400: 'Неверный формат промокода',
-        401: 'Необходимо войти в систему',
-        403: 'Промокод недоступен или уже использован',
-        409: 'Промокод уже был применён',
-        429: 'Слишком много запросов. Попробуйте позже.',
-        500: 'Ошибка сервера. Попробуйте позже.'
-      };
-      userFriendlyError = errorMessages[error.status] || userFriendlyError;
-    }
-
-    commit('SET_ERROR', {
-      message: userFriendlyError,
-      context: 'applyPromocode-exception',
-      originalError: error.message,
-      statusCode: error.status
-    });
-
-    return {
-      success: false,
-      error: userFriendlyError,
-      technical: error.message
-    };
-  }
-},
-
-  // ✅ ENHANCED: Validate promocode
-  async validatePromocode({ state, commit }, promoCode) {
-  console.log('🎟️ [Store] validatePromocode called with:', promoCode);
-  try {
-    if (!promoCode || typeof promoCode !== 'string' || promoCode.trim().length < 3) {
-      return { valid: false, error: 'Промокод должен содержать не менее 3 символов' };
-    }
-
-    const normalizedCode = promoCode.trim().toUpperCase();
-
-    // Check cache first (handle both Map and Object)
-    const cache = state.promocodes?.validationCache;
-    if (cache) {
-      const cached = cache instanceof Map ? cache.get(normalizedCode) : cache[normalizedCode];
-      if (cached) {
-        const age = Date.now() - cached.timestamp;
-        if (age < 300000) { // 5 minutes cache
-          console.log('🎟️ [Store] Returning cached result');
-          return cached.result;
-        }
-      }
-    }
-
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live';
-    console.log('🎟️ [Store] Calling API:', `${baseUrl}/api/promocodes/validate/${normalizedCode}`);
-
-    const response = await Promise.race([
-      fetch(`${baseUrl}/api/promocodes/validate/${normalizedCode}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
-      }),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Validation timeout')), 10000)
-      )
-    ]);
-
-    console.log('🎟️ [Store] Response status:', response.status);
-
-    const result = await response.json();
-    console.log('🎟️ [Store] API response:', JSON.stringify(result, null, 2));
-
-    // Check if promo code is valid: either explicit valid flag, or success with data
-    const isValid = result?.valid === true || (result?.success === true && result?.data);
-
-    const validationResult = {
-      valid: isValid,
-      data: result?.data || null,
-      error: isValid ? null : (result?.error || result?.message || null),
-      message: isValid
-        ? `Промокод действителен! Предоставляет: ${result?.data?.grantsPlan?.toUpperCase()} план`
-        : result?.error || result?.message || 'Промокод недействителен'
-    };
-
-    console.log('🎟️ [Store] Validation result:', validationResult);
-
-    // Cache the result (handle both Map and Object)
-    if (state.promocodes) {
-      if (!state.promocodes.validationCache) {
-        state.promocodes.validationCache = {};
-      }
-      if (state.promocodes.validationCache instanceof Map) {
-        state.promocodes.validationCache.set(normalizedCode, {
-          result: validationResult,
-          timestamp: Date.now()
-        });
-        // Limit cache size
-        if (state.promocodes.validationCache.size > 50) {
-          const firstKey = state.promocodes.validationCache.keys().next().value;
-          state.promocodes.validationCache.delete(firstKey);
-        }
-      } else {
-        state.promocodes.validationCache[normalizedCode] = {
-          result: validationResult,
-          timestamp: Date.now()
-        };
-        // Limit cache size
-        const keys = Object.keys(state.promocodes.validationCache);
-        if (keys.length > 50) {
-          delete state.promocodes.validationCache[keys[0]];
-        }
-      }
-    }
-
-    return validationResult;
-
-  } catch (error) {
-    console.error('🎟️ [Store] validatePromocode error:', error);
-    let userFriendlyError = 'Ошибка проверки промокода';
-
-    if (error.message === 'Validation timeout') {
-      userFriendlyError = 'Истекло время ожидания проверки';
-    } else if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
-      userFriendlyError = 'Ошибка сети. Проверьте подключение к интернету.';
-    }
-
-    return {
-      valid: false,
-      error: userFriendlyError
-    };
-  }
-},
-
-  // ✅ Keep all other actions from the original file...
-  async initialize({ commit, dispatch, state }) {
-  const startTime = Date.now();
-
-  if (state.system?.initialized) {
-    return { success: true, cached: true };
-  }
-
-
-  try {
-    // ✅ CRITICAL: Set basic initialized state first to prevent auth issues
-    commit('SET_INITIALIZED', true);
-
-    // Load from localStorage with comprehensive error handling
-    const storedDataKeys = {
-      user: 'currentUser',
-      status: 'userStatus',
-      preferences: 'userPreferences',
-      subscription: 'subscriptionDetails'
-    };
-
-    const storedData = {};
-
-    // Load all stored data with individual error handling
-    for (const [key, storageKey] of Object.entries(storedDataKeys)) {
       try {
-        const stored = localStorage.getItem(storageKey);
-        storedData[key] = stored;
+        commit('UPDATE_SUBSCRIPTION', subscriptionData);
+      } catch (subscriptionError) {
+        return {
+          success: false,
+          error: 'Failed to update subscription',
+          originalError: subscriptionError.message,
+          duration: Date.now() - startTime
+        };
+      }
+
+      try {
+        commit('UPDATE_FEATURES'); // Recalculate features based on new plan
+      } catch (featuresError) {
+        // Don't fail for features update
+      }
+
+      try {
+        commit('FORCE_UPDATE');
+      } catch (forceError) {
+        // Don't fail for force update
+      }
+
+
+      // ✅ CRITICAL: Persistent storage (don't let this fail the whole operation)
+      try {
+        localStorage.setItem('userStatus', validatedPlan);
+        localStorage.setItem('subscriptionDetails', JSON.stringify(subscriptionData));
+        localStorage.setItem('lastSubscriptionUpdate', Date.now().toString());
       } catch (storageError) {
-        storedData[key] = null;
+        // Don't fail the operation due to storage issues
       }
-    }
 
-    // Restore user data with validation
-    if (storedData.user) {
-      try {
-        const userData = JSON.parse(storedData.user);
-        if (userData && typeof userData === 'object' && userData.email) {
-          commit('SET_USER', userData);
-        }
-      } catch (parseError) {
-        localStorage.removeItem('currentUser');
-      }
-    }
+      // ✅ CRITICAL: Enhanced global event broadcasting
+      const eventData = {
+        oldStatus,
+        newStatus: validatedPlan,
+        source,
+        subscriptionData: { ...subscriptionData },
+        timestamp: Date.now(),
+        duration: Date.now() - startTime
+      };
 
-    // Restore status with validation
-    if (storedData.status && typeof storedData.status === 'string') {
-      const validStatuses = ['free', 'start', 'pro', 'premium'];
-      if (validStatuses.includes(storedData.status)) {
-        commit('SET_USER_STATUS', storedData.status);
-      }
-    }
-
-    // Restore subscription with validation
-    if (storedData.subscription) {
-      try {
-        const subscription = JSON.parse(storedData.subscription);
-        if (subscription && typeof subscription === 'object') {
-          commit('UPDATE_SUBSCRIPTION', subscription);
-        }
-      } catch (parseError) {
-      }
-    }
-
-    const initDuration = Date.now() - startTime;
-
-    return {
-      success: true,
-      duration: initDuration,
-      hasUser: !!state.currentUser,
-      userStatus: state.userStatus
-    };
-
-  } catch (error) {
-    // Even if initialization fails, mark as initialized to prevent infinite loops
-    commit('SET_INITIALIZED', false);
-
-    return {
-      success: false,
-      error: error.message,
-      duration: Date.now() - startTime
-    };
-  }
-},
-
-  // ✅ ENHANCED: Force update with better event coordination
-  async forceUpdate({ commit, state }) {
-  try {
-    const timestamp = Date.now();
-    const oldCounter = state.system.forceUpdateCounter;
-
-    commit('FORCE_UPDATE');
-    commit('UPDATE_FEATURES'); // Ensure features are current
-
-    // Additional Vue reactivity triggers
-    if (typeof window !== 'undefined') {
-      // Multiple event types for maximum compatibility
+      // Multiple event types for different listeners
       const events = [
-        'forceUpdate',
-        'globalForceUpdate',
-        'vueReactivityUpdate',
-        'storeForceUpdate'
+        'userStatusChanged',
+        'subscriptionUpdated',
+        'userSubscriptionChanged', // Legacy compatibility
+        'planChanged'
       ];
 
       events.forEach(eventName => {
         try {
-          if (window.triggerGlobalEvent) {
-            window.triggerGlobalEvent(eventName, {
-              source: 'forceUpdate-action',
-              counter: state.system.forceUpdateCounter,
-              oldCounter,
-              timestamp
+          if (typeof window !== 'undefined') {
+            // Method 1: triggerGlobalEvent function
+            if (window.triggerGlobalEvent) {
+              window.triggerGlobalEvent(eventName, eventData);
+            }
+
+            // Method 2: eventBus
+            if (window.eventBus?.emit) {
+              window.eventBus.emit(eventName, eventData);
+            }
+
+            // Method 3: DOM events
+            const customEvent = new CustomEvent(eventName, {
+              detail: eventData,
+              bubbles: true
             });
+            window.dispatchEvent(customEvent);
           }
         } catch (eventError) {
         }
       });
 
-      // Try to trigger Vue reactivity if available
-      setTimeout(() => {
-        if (window.Vue?.nextTick) {
-          window.Vue.nextTick(() => {
-          });
-        }
-      }, 10);
-    }
+
+      const duration = Date.now() - startTime;
+      const successResult = {
+        success: true,
+        subscriptionData: { ...subscriptionData },
+        oldStatus,
+        newStatus: validatedPlan,
+        duration,
+        message: `Subscription updated successfully from ${oldStatus} to ${validatedPlan}`,
+        timestamp: Date.now()
+      };
 
 
-    return {
-      success: true,
-      counter: state.system.forceUpdateCounter,
-      oldCounter,
-      timestamp
-    };
+      // ✅ CRITICAL: ALWAYS return the success result
+      return successResult;
 
-  } catch (error) {
-    try {
-      commit('SET_ERROR', {
-        message: 'Force update failed',
-        context: 'forceUpdate',
-        originalError: error.message
-      });
-    } catch (commitError) {
-    }
-
-    return { success: false, error: error.message };
-  }
-},
-
-  // ✅ Enhanced logout with comprehensive cleanup
-  async logout({ commit, state }) {
-  const startTime = Date.now();
-
-  try {
-
-    const userId = getUserId(state);
-
-    // Clear all user data from store
-    commit('CLEAR_USER');
-
-    // Enhanced localStorage cleanup
-    const keysToRemove = [
-      'userId', 'firebaseUserId', 'currentUser', 'token',
-      'userStatus', 'subscriptionDetails', 'subscriptionExpiry',
-      'userPreferences', 'appliedPromocodes', 'usageData',
-      'paymentHistory', 'lastUserUpdate', 'lastUserSync',
-      'statusUpdateTime', 'promocodesLastUpdate', 'subscriptionLastUpdate'
-    ];
-
-    keysToRemove.forEach(key => {
+    } catch (error) {
+      const duration = Date.now() - startTime;
       try {
-        localStorage.removeItem(key);
-      } catch (storageError) {
+        commit('SET_ERROR', {
+          message: 'Subscription update failed',
+          context: 'updateSubscription',
+          originalError: error.message,
+          plan,
+          source
+        });
+      } catch (commitError) {
       }
-    });
 
-    // Clear dynamic user-specific keys
-    if (userId) {
-      const dynamicKeyPrefixes = [
-        'pendingPayments_',
-        'lastMonthlyReset_',
-        'promocodeCache_',
-        'userCache_'
-      ];
+      const errorResult = {
+        success: false,
+        error: error.message || 'Subscription update failed',
+        duration,
+        plan,
+        source,
+        timestamp: Date.now(),
+        stack: error.stack
+      };
 
-      try {
-        Object.keys(localStorage).forEach(key => {
-          if (dynamicKeyPrefixes.some(prefix => key.startsWith(prefix + userId))) {
-            localStorage.removeItem(key);
+
+      // ✅ CRITICAL: ALWAYS return the error result
+      return errorResult;
+    }
+  },
+
+  // ✅ ENHANCED: Apply promocode with comprehensive validation and error handling
+  async applyPromocode({ commit, state, dispatch }, { promoCode, plan }) {
+    const startTime = Date.now();
+
+    try {
+      // Input validation
+      if (!promoCode || typeof promoCode !== 'string' || promoCode.trim().length < 3) {
+        return { success: false, error: 'Промокод должен содержать не менее 3 символов' };
+      }
+
+      if (!plan || !['start', 'pro', 'premium'].includes(plan)) {
+        return { success: false, error: 'Неверный план подписки' };
+      }
+
+      const userId = getUserId(state);
+      if (!userId) {
+        return { success: false, error: 'Пользователь не найден' };
+      }
+
+      const normalizedCode = promoCode.trim().toUpperCase();
+
+      // Check if already applied
+      const existingPromocode = state.promocodes.applied.find(p => p.code === normalizedCode);
+      if (existingPromocode) {
+        return {
+          success: false,
+          error: 'Этот промокод уже был применён',
+          alreadyApplied: true
+        };
+      }
+
+
+      const token = await getUserToken();
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live';
+      if (!baseUrl) {
+        commit('SET_ERROR', { message: 'API configuration error', context: 'applyPromocode' });
+        return { success: false, error: 'Ошибка конфигурации приложения' };
+      }
+
+      // Use the correct application endpoint
+      const response = await Promise.race([
+        fetch(`${baseUrl}/api/promocodes/apply`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            code: normalizedCode // Backend expects 'code'
+          })
+        }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Request timeout')), 10000)
+        )
+      ]);
+
+      const result = await response.json();
+
+      if (result?.success) {
+        const oldStatus = state.userStatus;
+        const newPlan = result.promocode?.grantsPlan || plan;
+
+        // ✅ CRITICAL: Update subscription through dedicated action
+        const updateResult = await dispatch('updateSubscription', {
+          plan: newPlan,
+          source: 'promocode',
+          details: {
+            promocode: normalizedCode,
+            appliedAt: new Date().toISOString(),
+            originalResponse: result.data || {},
+            ...result.data?.subscriptionDetails
           }
         });
-      } catch (error) {
-      }
-    }
 
-    // Enhanced global event broadcasting
-    const logoutData = {
-      userId: userId ? userId.substring(0, 8) + '...' : null,
-      timestamp: Date.now(),
-      duration: Date.now() - startTime,
-      source: 'enhanced-logout'
-    };
-
-    const logoutEvents = [
-      'userLoggedOut',
-      'userCleared',
-      'sessionEnded',
-      'authStatusChanged'
-    ];
-
-    logoutEvents.forEach(eventName => {
-      try {
-        if (window.triggerGlobalEvent) {
-          window.triggerGlobalEvent(eventName, logoutData);
+        // ✅ CRITICAL: Check if update was successful
+        if (!updateResult || updateResult.success !== true) {
+          return {
+            success: false,
+            error: 'Промокод применён на сервере, но локальное обновление не удалось',
+            serverSuccess: true,
+            updateResult
+          };
         }
-      } catch (eventError) {
+
+        // Track promocode application
+        commit('ADD_PROMOCODE', {
+          code: normalizedCode,
+          plan: newPlan,
+          oldPlan: oldStatus,
+          source: 'api',
+          details: result.data || {}
+        });
+
+        // Force global update
+        commit('FORCE_UPDATE');
+
+        const duration = Date.now() - startTime;
+
+        return {
+          success: true,
+          message: result.message || `Промокод успешно применён! Подписка "${newPlan.toUpperCase()}" активирована.`,
+          oldPlan: oldStatus,
+          newPlan: newPlan,
+          duration,
+          updateResult
+        };
       }
-    });
 
-    const duration = Date.now() - startTime;
+      // Handle server errors
+      const serverError = result?.message || result?.error || 'Не удалось применить промокод';
 
+      commit('SET_ERROR', {
+        message: serverError,
+        context: 'applyPromocode-server',
+        promocode: normalizedCode,
+        plan
+      });
 
-    return {
-      success: true,
-      duration,
-      keysCleared: keysToRemove.length,
-      userId: userId ? userId.substring(0, 8) + '...' : null
-    };
+      return { success: false, error: serverError };
 
-  } catch (error) {
-    // Even if logout fails, try to clear critical data
+    } catch (error) {
+      let userFriendlyError = 'Произошла ошибка при применении промокода';
+
+      if (error.message === 'Request timeout') {
+        userFriendlyError = 'Истекло время ожидания. Попробуйте снова.';
+      } else if (error.status) {
+        const errorMessages = {
+          404: 'Промокод не найден',
+          400: 'Неверный формат промокода',
+          401: 'Необходимо войти в систему',
+          403: 'Промокод недоступен или уже использован',
+          409: 'Промокод уже был применён',
+          429: 'Слишком много запросов. Попробуйте позже.',
+          500: 'Ошибка сервера. Попробуйте позже.'
+        };
+        userFriendlyError = errorMessages[error.status] || userFriendlyError;
+      }
+
+      commit('SET_ERROR', {
+        message: userFriendlyError,
+        context: 'applyPromocode-exception',
+        originalError: error.message,
+        statusCode: error.status
+      });
+
+      return {
+        success: false,
+        error: userFriendlyError,
+        technical: error.message
+      };
+    }
+  },
+
+  // ✅ ENHANCED: Validate promocode
+  async validatePromocode({ state, commit }, promoCode) {
+    console.log('🎟️ [Store] validatePromocode called with:', promoCode);
     try {
-      commit('CLEAR_USER');
-      localStorage.removeItem('currentUser');
-      localStorage.removeItem('token');
-    } catch (emergencyError) {
-    }
-
-    return {
-      success: false,
-      error: error.message,
-      duration: Date.now() - startTime
-    };
-  }
-},
-
-  // 🌐 NEW: Initialize user with global subscription sync
-  async initializeWithGlobalSync({ commit, dispatch, state }, userId) {
-  try {
-    // Get local subscription
-    const localSubscriptionJson = localStorage.getItem('subscriptionData');
-    let localSubscription = null;
-
-    if (localSubscriptionJson) {
-      try {
-        localSubscription = JSON.parse(localSubscriptionJson);
-      } catch (error) {
+      if (!promoCode || typeof promoCode !== 'string' || promoCode.trim().length < 3) {
+        return { valid: false, error: 'Промокод должен содержать не менее 3 символов' };
       }
+
+      const normalizedCode = promoCode.trim().toUpperCase();
+
+      // Check cache first (handle both Map and Object)
+      const cache = state.promocodes?.validationCache;
+      if (cache) {
+        const cached = cache instanceof Map ? cache.get(normalizedCode) : cache[normalizedCode];
+        if (cached) {
+          const age = Date.now() - cached.timestamp;
+          if (age < 300000) { // 5 minutes cache
+            console.log('🎟️ [Store] Returning cached result');
+            return cached.result;
+          }
+        }
+      }
+
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live';
+      console.log('🎟️ [Store] Calling API:', `${baseUrl}/api/promocodes/validate/${normalizedCode}`);
+
+      const response = await Promise.race([
+        fetch(`${baseUrl}/api/promocodes/validate/${normalizedCode}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          }
+        }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Validation timeout')), 10000)
+        )
+      ]);
+
+      console.log('🎟️ [Store] Response status:', response.status);
+
+      const result = await response.json();
+      console.log('🎟️ [Store] API response:', JSON.stringify(result, null, 2));
+
+      // Check if promo code is valid: either explicit valid flag, or success with data
+      const isValid = result?.valid === true || (result?.success === true && result?.data);
+
+      const validationResult = {
+        valid: isValid,
+        data: result?.data || null,
+        error: isValid ? null : (result?.error || result?.message || null),
+        message: isValid
+          ? `Промокод действителен! Предоставляет: ${result?.data?.grantsPlan?.toUpperCase()} план`
+          : result?.error || result?.message || 'Промокод недействителен'
+      };
+
+      console.log('🎟️ [Store] Validation result:', validationResult);
+
+      // Cache the result (handle both Map and Object)
+      if (state.promocodes) {
+        if (!state.promocodes.validationCache) {
+          state.promocodes.validationCache = {};
+        }
+        if (state.promocodes.validationCache instanceof Map) {
+          state.promocodes.validationCache.set(normalizedCode, {
+            result: validationResult,
+            timestamp: Date.now()
+          });
+          // Limit cache size
+          if (state.promocodes.validationCache.size > 50) {
+            const firstKey = state.promocodes.validationCache.keys().next().value;
+            state.promocodes.validationCache.delete(firstKey);
+          }
+        } else {
+          state.promocodes.validationCache[normalizedCode] = {
+            result: validationResult,
+            timestamp: Date.now()
+          };
+          // Limit cache size
+          const keys = Object.keys(state.promocodes.validationCache);
+          if (keys.length > 50) {
+            delete state.promocodes.validationCache[keys[0]];
+          }
+        }
+      }
+
+      return validationResult;
+
+    } catch (error) {
+      console.error('🎟️ [Store] validatePromocode error:', error);
+      let userFriendlyError = 'Ошибка проверки промокода';
+
+      if (error.message === 'Validation timeout') {
+        userFriendlyError = 'Истекло время ожидания проверки';
+      } else if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
+        userFriendlyError = 'Ошибка сети. Проверьте подключение к интернету.';
+      }
+
+      return {
+        valid: false,
+        error: userFriendlyError
+      };
+    }
+  },
+
+  // ✅ Keep all other actions from the original file...
+  async initialize({ commit, dispatch, state }) {
+    const startTime = Date.now();
+
+    if (state.system?.initialized) {
+      return { success: true, cached: true };
     }
 
-    // Perform global sync
-    const syncResult = await syncSubscriptionGlobally(userId, localSubscription);
 
-    if (syncResult.success && syncResult.subscription) {
-      // Update store with synced subscription
-      commit('SET_USER_STATUS', syncResult.subscription.plan);
-      commit('UPDATE_SUBSCRIPTION', syncResult.subscription);
+    try {
+      // ✅ CRITICAL: Set basic initialized state first to prevent auth issues
+      commit('SET_INITIALIZED', true);
+
+      // Load from localStorage with comprehensive error handling
+      const storedDataKeys = {
+        user: 'currentUser',
+        status: 'userStatus',
+        preferences: 'userPreferences',
+        subscription: 'subscriptionDetails'
+      };
+
+      const storedData = {};
+
+      // Load all stored data with individual error handling
+      for (const [key, storageKey] of Object.entries(storedDataKeys)) {
+        try {
+          const stored = localStorage.getItem(storageKey);
+          storedData[key] = stored;
+        } catch (storageError) {
+          storedData[key] = null;
+        }
+      }
+
+      // Restore user data with validation
+      if (storedData.user) {
+        try {
+          const userData = JSON.parse(storedData.user);
+          if (userData && typeof userData === 'object' && userData.email) {
+            commit('SET_USER', userData);
+          }
+        } catch (parseError) {
+          localStorage.removeItem('currentUser');
+        }
+      }
+
+      // Restore status with validation
+      if (storedData.status && typeof storedData.status === 'string') {
+        const validStatuses = ['free', 'start', 'pro', 'premium'];
+        if (validStatuses.includes(storedData.status)) {
+          commit('SET_USER_STATUS', storedData.status);
+        }
+      }
+
+      // Restore subscription with validation
+      if (storedData.subscription) {
+        try {
+          const subscription = JSON.parse(storedData.subscription);
+          if (subscription && typeof subscription === 'object') {
+            commit('UPDATE_SUBSCRIPTION', subscription);
+          }
+        } catch (parseError) {
+        }
+      }
+
+      const initDuration = Date.now() - startTime;
+
+      return {
+        success: true,
+        duration: initDuration,
+        hasUser: !!state.currentUser,
+        userStatus: state.userStatus
+      };
+
+    } catch (error) {
+      // Even if initialization fails, mark as initialized to prevent infinite loops
+      commit('SET_INITIALIZED', false);
+
+      return {
+        success: false,
+        error: error.message,
+        duration: Date.now() - startTime
+      };
+    }
+  },
+
+  // ✅ ENHANCED: Force update with better event coordination
+  async forceUpdate({ commit, state }) {
+    try {
+      const timestamp = Date.now();
+      const oldCounter = state.system.forceUpdateCounter;
+
+      commit('FORCE_UPDATE');
+      commit('UPDATE_FEATURES'); // Ensure features are current
+
+      // Additional Vue reactivity triggers
+      if (typeof window !== 'undefined') {
+        // Multiple event types for maximum compatibility
+        const events = [
+          'forceUpdate',
+          'globalForceUpdate',
+          'vueReactivityUpdate',
+          'storeForceUpdate'
+        ];
+
+        events.forEach(eventName => {
+          try {
+            if (window.triggerGlobalEvent) {
+              window.triggerGlobalEvent(eventName, {
+                source: 'forceUpdate-action',
+                counter: state.system.forceUpdateCounter,
+                oldCounter,
+                timestamp
+              });
+            }
+          } catch (eventError) {
+          }
+        });
+
+        // Try to trigger Vue reactivity if available
+        setTimeout(() => {
+          if (window.Vue?.nextTick) {
+            window.Vue.nextTick(() => {
+            });
+          }
+        }, 10);
+      }
 
 
       return {
         success: true,
-        subscription: syncResult.subscription,
-        syncAction: syncResult.syncAction,
-        globalSync: true
+        counter: state.system.forceUpdateCounter,
+        oldCounter,
+        timestamp
+      };
+
+    } catch (error) {
+      try {
+        commit('SET_ERROR', {
+          message: 'Force update failed',
+          context: 'forceUpdate',
+          originalError: error.message
+        });
+      } catch (commitError) {
+      }
+
+      return { success: false, error: error.message };
+    }
+  },
+
+  // ✅ Enhanced logout with comprehensive cleanup
+  async logout({ commit, state }) {
+    const startTime = Date.now();
+
+    try {
+
+      const userId = getUserId(state);
+
+      // Clear all user data from store
+      commit('CLEAR_USER');
+
+      // Enhanced localStorage cleanup
+      const keysToRemove = [
+        'userId', 'firebaseUserId', 'currentUser', 'token',
+        'userStatus', 'subscriptionDetails', 'subscriptionExpiry',
+        'userPreferences', 'appliedPromocodes', 'usageData',
+        'paymentHistory', 'lastUserUpdate', 'lastUserSync',
+        'statusUpdateTime', 'promocodesLastUpdate', 'subscriptionLastUpdate'
+      ];
+
+      keysToRemove.forEach(key => {
+        try {
+          localStorage.removeItem(key);
+        } catch (storageError) {
+        }
+      });
+
+      // Clear dynamic user-specific keys
+      if (userId) {
+        const dynamicKeyPrefixes = [
+          'pendingPayments_',
+          'lastMonthlyReset_',
+          'promocodeCache_',
+          'userCache_'
+        ];
+
+        try {
+          Object.keys(localStorage).forEach(key => {
+            if (dynamicKeyPrefixes.some(prefix => key.startsWith(prefix + userId))) {
+              localStorage.removeItem(key);
+            }
+          });
+        } catch (error) {
+        }
+      }
+
+      // Enhanced global event broadcasting
+      const logoutData = {
+        userId: userId ? userId.substring(0, 8) + '...' : null,
+        timestamp: Date.now(),
+        duration: Date.now() - startTime,
+        source: 'enhanced-logout'
+      };
+
+      const logoutEvents = [
+        'userLoggedOut',
+        'userCleared',
+        'sessionEnded',
+        'authStatusChanged'
+      ];
+
+      logoutEvents.forEach(eventName => {
+        try {
+          if (window.triggerGlobalEvent) {
+            window.triggerGlobalEvent(eventName, logoutData);
+          }
+        } catch (eventError) {
+        }
+      });
+
+      const duration = Date.now() - startTime;
+
+
+      return {
+        success: true,
+        duration,
+        keysCleared: keysToRemove.length,
+        userId: userId ? userId.substring(0, 8) + '...' : null
+      };
+
+    } catch (error) {
+      // Even if logout fails, try to clear critical data
+      try {
+        commit('CLEAR_USER');
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('token');
+      } catch (emergencyError) {
+      }
+
+      return {
+        success: false,
+        error: error.message,
+        duration: Date.now() - startTime
       };
     }
+  },
 
-    // No valid subscription found, but still a success
-    return {
-      success: true,
-      subscription: null,
-      message: 'No subscription to sync'
-    };
+  // 🌐 NEW: Initialize user with global subscription sync
+  async initializeWithGlobalSync({ commit, dispatch, state }, userId) {
+    try {
+      // Get local subscription
+      const localSubscriptionJson = localStorage.getItem('subscriptionData');
+      let localSubscription = null;
 
-  } catch (error) {
-    return {
-      success: false,
-      error: error.message
-    };
-  }
-},
+      if (localSubscriptionJson) {
+        try {
+          localSubscription = JSON.parse(localSubscriptionJson);
+        } catch (error) {
+        }
+      }
+
+      // Perform global sync
+      const syncResult = await syncSubscriptionGlobally(userId, localSubscription);
+
+      if (syncResult.success && syncResult.subscription) {
+        // Update store with synced subscription
+        commit('SET_USER_STATUS', syncResult.subscription.plan);
+        commit('UPDATE_SUBSCRIPTION', syncResult.subscription);
+
+
+        return {
+          success: true,
+          subscription: syncResult.subscription,
+          syncAction: syncResult.syncAction,
+          globalSync: true
+        };
+      }
+
+      // No valid subscription found, but still a success
+      return {
+        success: true,
+        subscription: null,
+        message: 'No subscription to sync'
+      };
+
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  },
 
   // 🌐 NEW: Apply promocode with global persistence
   async applyPromocodeWithGlobalSync({ commit, dispatch, state }, { promoCode, plan }) {
-  try {
-    const userId = state.currentUser?.firebaseId || state.currentUser?._id;
-    if (!userId) {
-      return { success: false, error: 'User not found' };
-    }
-    // Apply promocode globally
-    const result = await applyPromocodeWithGlobalPersistence(userId, promoCode, plan);
+    try {
+      const userId = state.currentUser?.firebaseId || state.currentUser?._id;
+      if (!userId) {
+        return { success: false, error: 'User not found' };
+      }
+      // Apply promocode globally
+      const result = await applyPromocodeWithGlobalPersistence(userId, promoCode, plan);
 
-    if (result.success) {
-      // Update store
-      commit('SET_USER_STATUS', plan);
-      commit('UPDATE_SUBSCRIPTION', result.subscription);
-      commit('ADD_PROMOCODE', {
-        code: promoCode,
-        plan: plan,
-        source: 'global',
-        details: result.subscription.details
-      });
+      if (result.success) {
+        // Update store
+        commit('SET_USER_STATUS', plan);
+        commit('UPDATE_SUBSCRIPTION', result.subscription);
+        commit('ADD_PROMOCODE', {
+          code: promoCode,
+          plan: plan,
+          source: 'global',
+          details: result.subscription.details
+        });
 
+        return result;
+      }
       return result;
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
     }
-    return result;
-  } catch (error) {
-    return {
-      success: false,
-      error: error.message
-    };
-  }
-},
+  },
 
   // 🌐 NEW: Complete payment with global persistence
   async completePaymentWithGlobalSync({ commit, dispatch, state }, paymentData) {
-  try {
-    const userId = state.currentUser?.firebaseId || state.currentUser?._id;
-    if (!userId) {
-      return { success: false, error: 'User not found' };
-    }
-    // Complete payment globally
-    const result = await completePaymentWithGlobalPersistence(userId, paymentData);
+    try {
+      const userId = state.currentUser?.firebaseId || state.currentUser?._id;
+      if (!userId) {
+        return { success: false, error: 'User not found' };
+      }
+      // Complete payment globally
+      const result = await completePaymentWithGlobalPersistence(userId, paymentData);
 
-    if (result.success) {
-      // Update store
-      commit('SET_USER_STATUS', paymentData.plan);
-      commit('UPDATE_SUBSCRIPTION', result.subscription);
-      commit('ADD_PAYMENT', {
-        ...paymentData,
-        status: 'completed',
-        completedAt: new Date().toISOString()
-      });
+      if (result.success) {
+        // Update store
+        commit('SET_USER_STATUS', paymentData.plan);
+        commit('UPDATE_SUBSCRIPTION', result.subscription);
+        commit('ADD_PAYMENT', {
+          ...paymentData,
+          status: 'completed',
+          completedAt: new Date().toISOString()
+        });
 
+        return result;
+      }
       return result;
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
     }
-    return result;
-  } catch (error) {
-    return {
-      success: false,
-      error: error.message
-    };
-  }
-},
+  },
 
   /**
    * CRITICAL FIX: Enhanced updateUserStatus action with server sync
    */
   async updateUserStatusWithServerSync({ commit, state, dispatch }, { newStatus, source = 'manual' }) {
-  try {
-    const userId = getUserId(state);
-    if (!userId) {
-      throw new Error('No user ID available');
-    }
-    // Import the enhanced API function
-    const { updateUserStatusWithPersistence } = await import('@/api');
-
-    // Update with global persistence
-    const result = await updateUserStatusWithPersistence(userId, newStatus, source);
-    if (result.success) {
-      // Update store
-      commit('SET_USER_STATUS', newStatus);
-      commit('UPDATE_SUBSCRIPTION', result.subscriptionData);
-      commit('FORCE_UPDATE');
-      // Trigger events
-      const eventData = {
-        oldStatus: state.userStatus,
-        newStatus: newStatus,
-        source: source,
-        serverSync: result.serverSync,
-        timestamp: Date.now()
-      };
-      // Multiple event triggers for maximum compatibility
-      if (typeof window !== 'undefined') {
-        window.triggerGlobalEvent('userStatusChanged', eventData);
-        window.triggerGlobalEvent('userSubscriptionChanged', eventData);
-        window.triggerGlobalEvent('subscriptionUpdated', eventData);
-        window.triggerGlobalEvent('globalForceUpdate', {
-          reason: 'server-sync-status-update',
-          plan: newStatus,
-          timestamp: Date.now()
-        });
-      }
-      return {
-        success: true,
-        newStatus: newStatus,
-        serverSync: result.serverSync,
-        message: `Status updated to ${newStatus.toUpperCase()} with ${result.serverSync ? 'server sync' : 'local storage only'}`
-      };
-    } else {
-      throw new Error(result.error || 'Status update failed');
-    }
-  } catch (error) {
-    // Fallback: update locally only
     try {
-      commit('SET_USER_STATUS', newStatus);
-      localStorage.setItem('userStatus', newStatus);
+      const userId = getUserId(state);
+      if (!userId) {
+        throw new Error('No user ID available');
+      }
+      // Import the enhanced API function
+      const { updateUserStatusWithPersistence } = await import('@/api');
 
-      return {
-        success: false,
-        error: error.message,
-        newStatus: newStatus,
-        fallback: true
-      };
-    } catch (fallbackError) {
-      return {
-        success: false,
-        error: fallbackError.message
-      };
+      // Update with global persistence
+      const result = await updateUserStatusWithPersistence(userId, newStatus, source);
+      if (result.success) {
+        // Update store
+        commit('SET_USER_STATUS', newStatus);
+        commit('UPDATE_SUBSCRIPTION', result.subscriptionData);
+        commit('FORCE_UPDATE');
+        // Trigger events
+        const eventData = {
+          oldStatus: state.userStatus,
+          newStatus: newStatus,
+          source: source,
+          serverSync: result.serverSync,
+          timestamp: Date.now()
+        };
+        // Multiple event triggers for maximum compatibility
+        if (typeof window !== 'undefined') {
+          window.triggerGlobalEvent('userStatusChanged', eventData);
+          window.triggerGlobalEvent('userSubscriptionChanged', eventData);
+          window.triggerGlobalEvent('subscriptionUpdated', eventData);
+          window.triggerGlobalEvent('globalForceUpdate', {
+            reason: 'server-sync-status-update',
+            plan: newStatus,
+            timestamp: Date.now()
+          });
+        }
+        return {
+          success: true,
+          newStatus: newStatus,
+          serverSync: result.serverSync,
+          message: `Status updated to ${newStatus.toUpperCase()} with ${result.serverSync ? 'server sync' : 'local storage only'}`
+        };
+      } else {
+        throw new Error(result.error || 'Status update failed');
+      }
+    } catch (error) {
+      // Fallback: update locally only
+      try {
+        commit('SET_USER_STATUS', newStatus);
+        localStorage.setItem('userStatus', newStatus);
+
+        return {
+          success: false,
+          error: error.message,
+          newStatus: newStatus,
+          fallback: true
+        };
+      } catch (fallbackError) {
+        return {
+          success: false,
+          error: fallbackError.message
+        };
+      }
     }
-  }
-},
+  },
 
   /**
    * CRITICAL FIX: Enhanced applyPromocode action with global persistence
    */
   async applyPromocodeWithGlobalSync({ commit, dispatch, state }, { promoCode, plan }) {
-  try {
-    const userId = getUserId(state);
-    if (!userId) {
-      throw new Error('No user ID available');
-    }
-    // Import the enhanced API function
-    const { applyPromocodeWithGlobalPersistence } = await import('@/api');
+    try {
+      const userId = getUserId(state);
+      if (!userId) {
+        throw new Error('No user ID available');
+      }
+      // Import the enhanced API function
+      const { applyPromocodeWithGlobalPersistence } = await import('@/api');
 
-    // Apply with global persistence
-    const result = await applyPromocodeWithGlobalPersistence(userId, promoCode, plan);
-    if (result.success) {
-      // Update store
-      await dispatch('updateUserStatusWithServerSync', {
-        newStatus: plan,
-        source: 'promocode'
-      });
-      // Track promocode
-      commit('ADD_PROMOCODE', {
-        code: promoCode.toUpperCase(),
-        plan: plan,
-        source: 'global-sync',
-        details: result.serverResponse
-      });
-      return result;
-    } else {
-      throw new Error(result.error || 'Promocode application failed');
+      // Apply with global persistence
+      const result = await applyPromocodeWithGlobalPersistence(userId, promoCode, plan);
+      if (result.success) {
+        // Update store
+        await dispatch('updateUserStatusWithServerSync', {
+          newStatus: plan,
+          source: 'promocode'
+        });
+        // Track promocode
+        commit('ADD_PROMOCODE', {
+          code: promoCode.toUpperCase(),
+          plan: plan,
+          source: 'global-sync',
+          details: result.serverResponse
+        });
+        return result;
+      } else {
+        throw new Error(result.error || 'Promocode application failed');
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
     }
-  } catch (error) {
-    return {
-      success: false,
-      error: error.message
-    };
-  }
-},
+  },
 
   // ✅ CRITICAL FIX: loadUserFromServer action
   async loadUserFromServer({ commit, state }) {
 
-  try {
-    const userId = getUserId(state);
-    if (!userId) {
-      return { success: false, error: 'No user ID' };
-    }
-    const token = await getUserToken();
-    if (!token) {
-      return { success: false, error: 'No token' };
-    }
+    try {
+      const userId = getUserId(state);
+      if (!userId) {
+        return { success: false, error: 'No user ID' };
+      }
+      const token = await getUserToken();
+      if (!token) {
+        return { success: false, error: 'No token' };
+      }
 
-    // Import the API instance
-    const apiModule = await import('@/api');
-    const api = apiModule.default || apiModule;
+      // Import the API instance
+      const apiModule = await import('@/api');
+      const api = apiModule.default || apiModule;
 
-    const { data } = await api.get(`/users/${userId}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    if (data.success && data.user) {
-      const serverUser = data.user;
-      const serverStatus = serverUser.subscriptionPlan || serverUser.userStatus || 'free';
-
-      // Update store
-      commit('SET_USER', serverUser);
-      commit('SET_USER_STATUS', serverStatus);
-
-      // Update localStorage
-      localStorage.setItem('user', JSON.stringify(serverUser));
-      localStorage.setItem('userStatus', serverStatus);
-      localStorage.setItem('userPlan', serverStatus);
-      localStorage.setItem('subscriptionPlan', serverStatus);
-      localStorage.setItem('serverStatus', serverStatus);
-      localStorage.setItem('lastServerLoad', Date.now().toString());
-
-      // Trigger events
-      window.triggerGlobalEvent('userStatusChanged', {
-        oldStatus: state.userStatus,
-        newStatus: serverStatus,
-        source: 'server-load',
-        timestamp: Date.now()
+      const { data } = await api.get(`/users/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` }
       });
+      if (data.success && data.user) {
+        const serverUser = data.user;
+        const serverStatus = serverUser.subscriptionPlan || serverUser.userStatus || 'free';
 
-      return {
-        success: true,
-        user: serverUser,
-        status: serverStatus
-      };
+        // Update store
+        commit('SET_USER', serverUser);
+        commit('SET_USER_STATUS', serverStatus);
+
+        // Update localStorage
+        localStorage.setItem('user', JSON.stringify(serverUser));
+        localStorage.setItem('userStatus', serverStatus);
+        localStorage.setItem('userPlan', serverStatus);
+        localStorage.setItem('subscriptionPlan', serverStatus);
+        localStorage.setItem('serverStatus', serverStatus);
+        localStorage.setItem('lastServerLoad', Date.now().toString());
+
+        // Trigger events
+        window.triggerGlobalEvent('userStatusChanged', {
+          oldStatus: state.userStatus,
+          newStatus: serverStatus,
+          source: 'server-load',
+          timestamp: Date.now()
+        });
+
+        return {
+          success: true,
+          user: serverUser,
+          status: serverStatus
+        };
+      }
+      return { success: false, error: 'Invalid server response' };
+    } catch (error) {
+      return { success: false, error: error.message };
     }
-    return { success: false, error: 'Invalid server response' };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-},
+  },
 };
 // Assuming handleSuccessfulUserSave and eventBus are defined elsewhere or passed in scope.
 // This block is typically outside the store module or in a related utility file.
