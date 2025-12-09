@@ -1854,20 +1854,19 @@ return finalResult;
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const baseUrl = import.meta.env.VITE_API_BASE_URL;
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live';
     if (!baseUrl) {
       commit('SET_ERROR', { message: 'API configuration error', context: 'applyPromocode' });
       return { success: false, error: 'Ошибка конфигурации приложения' };
     }
 
+    // Use the correct application endpoint
     const response = await Promise.race([
-      fetch(`${baseUrl}/api/payments/promo-code`, {
+      fetch(`${baseUrl}/api/promocodes/apply`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          userId,
-          plan,
-          promoCode: normalizedCode
+          code: normalizedCode // Backend expects 'code'
         })
       }),
       new Promise((_, reject) =>
@@ -1879,10 +1878,11 @@ return finalResult;
 
     if (result?.success) {
       const oldStatus = state.userStatus;
+      const newPlan = result.promocode?.grantsPlan || plan;
 
       // ✅ CRITICAL: Update subscription through dedicated action
       const updateResult = await dispatch('updateSubscription', {
-        plan,
+        plan: newPlan,
         source: 'promocode',
         details: {
           promocode: normalizedCode,
@@ -1905,7 +1905,7 @@ return finalResult;
       // Track promocode application
       commit('ADD_PROMOCODE', {
         code: normalizedCode,
-        plan,
+        plan: newPlan,
         oldPlan: oldStatus,
         source: 'api',
         details: result.data || {}
@@ -1918,16 +1918,16 @@ return finalResult;
 
       return {
         success: true,
-        message: result.message || `Промокод успешно применён! Подписка "${plan.toUpperCase()}" активирована.`,
+        message: result.message || `Промокод успешно применён! Подписка "${newPlan.toUpperCase()}" активирована.`,
         oldPlan: oldStatus,
-        newPlan: plan,
+        newPlan: newPlan,
         duration,
         updateResult
       };
     }
 
     // Handle server errors
-    const serverError = result?.error || 'Не удалось применить промокод';
+    const serverError = result?.message || result?.error || 'Не удалось применить промокод';
 
     commit('SET_ERROR', {
       message: serverError,

@@ -498,6 +498,21 @@
                 </div>
 
                 <div class="form-group">
+                  <label class="form-label">Subscription Duration</label>
+                  <div class="duration-selector" style="display: flex; gap: 8px; margin-bottom: 16px;">
+                    <button 
+                      v-for="duration in [1, 3, 6]" 
+                      :key="duration"
+                      :class="['duration-btn', { selected: selectedDuration === duration }]"
+                      @click="selectedDuration = duration"
+                      style="flex: 1; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; background: white; cursor: pointer; transition: all 0.2s; font-weight: 500;"
+                    >
+                      {{ duration }} Mo
+                    </button>
+                  </div>
+                </div>
+
+                <div class="form-group">
                   <label class="form-label">Plan Type</label>
                   <div class="pro-plan-display" style="display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white; font-weight: 600;">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -1366,173 +1381,6 @@ this.showNotification('Error saving name', 'error');
       }
     },
 
-    cancelEditingName() {
-      this.isEditingName = false;
-      this.tempUser = { name: this.user.name, surname: this.user.surname };
-    },
-
-    handlePromoCodeInput() {
-      if (this.promoValidationTimeout) {
-        clearTimeout(this.promoValidationTimeout);
-      }
-      
-      this.promoCode = this.promoCode.toUpperCase();
-      
-      if (this.promoCode.length <= 3) {
-        this.promoValidation = null;
-        this.isValidatingPromo = false;
-        return;
-      }
-      
-      this.isValidatingPromo = true;
-      
-      this.promoValidationTimeout = setTimeout(() => {
-        this.validatePromoCodeLocal();
-      }, 800);
-    },
-    
-    async validatePromoCodeLocal() {
-      if (!this.promoCode.trim() || this.promoCode.length <= 3) {
-        this.promoValidation = null;
-        this.isValidatingPromo = false;
-        return;
-      }
-      
-      try {
-        const promocodeUpper = this.promoCode.trim().toUpperCase();
-if (this.$store && this.$store.dispatch) {
-          const storeResult = await this.$store.dispatch('user/validatePromocode', promocodeUpper);
-          
-          if (storeResult && typeof storeResult === 'object') {
-            this.promoValidation = storeResult;
-if (storeResult.valid && storeResult.data?.grantsPlan && !this.selectedPlan) {
-              this.selectedPlan = storeResult.data.grantsPlan;
-            }
-            
-            this.isValidatingPromo = false;
-            return;
-          }
-        }
-        
-        this.promoValidation = {
-          valid: false,
-          error: `Unable to verify promo code "${promocodeUpper}".`
-        };
-        
-      } catch (error) {
-this.promoValidation = {
-          valid: false,
-          error: 'Error checking promo code.'
-        };
-      } finally {
-        this.isValidatingPromo = false;
-      }
-    },
-    
-    async applyPromo() {
-      if (!this.promoCode || !this.selectedPlan || !this.userId) {
-        this.showNotification('Please fill in all fields', 'error');
-        return;
-      }
-      
-      this.isProcessingPromo = true;
-      
-      try {
-        const normalizedCode = this.promoCode.trim().toUpperCase();
-const result = await this.$store.dispatch('user/applyPromocode', {
-          code: normalizedCode,
-          plan: this.selectedPlan,
-          userId: this.userId
-        });
-        
-        if (result && (result.success === true || result.status === 'success')) {
-          const planLabel = this.selectedPlan === 'pro' ? 'Pro' : 'Start';
-          this.showNotification(`Promo code applied! ${planLabel} subscription activated!`, 'success');
-          
-          this.promoCode = '';
-          this.selectedPlan = '';
-          this.promoValidation = null;
-          
-          this.forceReactivityUpdate();
-        } else {
-          const errorMessage = result?.error || result?.message || 'Unable to apply promo code';
-          this.showNotification(errorMessage, 'error');
-        }
-        
-      } catch (error) {
-this.showNotification('Error applying promo code', 'error');
-      } finally {
-        this.isProcessingPromo = false;
-      }
-    },
-
-    selectPaymentPlan(plan) {
-      if (this.currentPlan === plan || (this.currentPlan === 'pro' && plan === 'start')) {
-        return;
-      }
-      this.paymentPlan = plan;
-},
-
-    async goToPayment() {
-      try {
-        if (!this.selectedDuration) {
-          this.showNotification('Please select a subscription duration', 'warning');
-          return;
-        }
-
-        // Navigate to payment page with duration parameter
-        await this.$router.push({
-          path: '/pay/pro',
-          query: { 
-            duration: this.selectedDuration,
-            from: 'settings'
-          }
-        });
-      } catch (error) {
-        if (error.name !== 'NavigationDuplicated') {
-          console.error('Error navigating to payment:', error);
-          this.showNotification('Failed to navigate to payment page', 'error');
-        }
-      }
-    },
-
-    getPaymentButtonText() {
-      if (!this.paymentPlan) return 'Select a plan';
-      if (this.currentPlan === this.paymentPlan) return 'Already active';
-      
-      const planNames = {
-        start: 'START',
-        pro: 'PRO'
-      };
-      
-      return `Pay for ${planNames[this.paymentPlan] || this.paymentPlan.toUpperCase()}`;
-    },
-
-    async sendPasswordReset() {
-      if (!this.user.email) {
-        this.showNotification('Please enter email address', 'error');
-        return;
-      }
-
-      try {
-        await sendPasswordResetEmail(auth, this.user.email);
-        this.showNotification('Password reset email sent!', 'success');
-      } catch (error) {
-let errorMessage = 'Error sending email';
-        
-        if (error.code === 'auth/user-not-found') {
-          errorMessage = 'User with this email not found';
-        } else if (error.code === 'auth/invalid-email') {
-          errorMessage = 'Invalid email format';
-        }
-        
-        this.showNotification(errorMessage, 'error');
-      }
-    },
-
-    async saveChanges() {
-      this.showNotification('Password update function', 'info');
-    },
 
     goToProfile() {
       this.$router.push('/profile');
