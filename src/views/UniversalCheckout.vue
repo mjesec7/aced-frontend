@@ -834,10 +834,26 @@ this.otpError = err.message || 'Invalid verification code';
       this.transactionId = paymentData.uuid || paymentData.transactionId;
       this.loading = false;
       this.processing = false;
-      
-      // Update global user status immediately
+
+      // ✅ CRITICAL: Sync user status from server (server-authoritative)
       try {
-        await this.$store.dispatch('user/loadUserStatus');
+        // Load fresh status from server
+        const statusResult = await this.$store.dispatch('user/loadUserStatus');
+
+        // Force global update to notify all components
+        this.$store.commit('user/FORCE_UPDATE');
+
+        // Emit global event for components not connected to store
+        if (typeof window !== 'undefined') {
+          const eventData = {
+            source: 'payment',
+            transactionId: this.transactionId,
+            plan: statusResult?.status,
+            timestamp: Date.now()
+          };
+          window.dispatchEvent(new CustomEvent('userStatusChanged', { detail: eventData }));
+          window.dispatchEvent(new CustomEvent('subscriptionUpdated', { detail: eventData }));
+        }
       } catch (error) {
         console.error('Failed to update user status after payment:', error);
       }

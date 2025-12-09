@@ -1932,31 +1932,53 @@ const actions = {
 
       if (result?.success) {
         const oldStatus = state.userStatus;
-        const newPlan = result.promocode?.grantsPlan || plan;
+        const newPlan = result.promocode?.grantsPlan || result.user?.subscriptionPlan || plan;
 
-        // ✅ CRITICAL: Update subscription through dedicated action
+        // ✅ CRITICAL: Fetch updated user status from server (server-authoritative)
+        // The backend's grantSubscription() already updated MongoDB and Firebase
+        const serverStatusResult = await dispatch('loadUserStatus');
+
+        if (serverStatusResult?.success) {
+          // Use server-authoritative data
+          const serverPlan = serverStatusResult.status || newPlan;
+
+          // Track promocode application
+          commit('ADD_PROMOCODE', {
+            code: normalizedCode,
+            plan: serverPlan,
+            oldPlan: oldStatus,
+            source: 'api',
+            details: result.data || result.user || {}
+          });
+
+          // Force global update
+          commit('FORCE_UPDATE');
+
+          const duration = Date.now() - startTime;
+
+          return {
+            success: true,
+            message: result.message || `Промокод успешно применён! Подписка "${serverPlan.toUpperCase()}" активирована.`,
+            oldPlan: oldStatus,
+            newPlan: serverPlan,
+            duration,
+            serverSync: true,
+            expiryDate: result.user?.subscriptionEndDate || result.user?.subscriptionExpiryDate
+          };
+        }
+
+        // Fallback: Server sync failed but promo was applied - update locally
         const updateResult = await dispatch('updateSubscription', {
           plan: newPlan,
           source: 'promocode',
           details: {
             promocode: normalizedCode,
             appliedAt: new Date().toISOString(),
-            originalResponse: result.data || {},
+            expiryDate: result.user?.subscriptionEndDate || result.user?.subscriptionExpiryDate,
             ...result.data?.subscriptionDetails
           }
         });
 
-        // ✅ CRITICAL: Check if update was successful
-        if (!updateResult || updateResult.success !== true) {
-          return {
-            success: false,
-            error: 'Промокод применён на сервере, но локальное обновление не удалось',
-            serverSuccess: true,
-            updateResult
-          };
-        }
-
-        // Track promocode application
         commit('ADD_PROMOCODE', {
           code: normalizedCode,
           plan: newPlan,
@@ -1965,7 +1987,6 @@ const actions = {
           details: result.data || {}
         });
 
-        // Force global update
         commit('FORCE_UPDATE');
 
         const duration = Date.now() - startTime;
@@ -1976,6 +1997,7 @@ const actions = {
           oldPlan: oldStatus,
           newPlan: newPlan,
           duration,
+          serverSync: false,
           updateResult
         };
       }
