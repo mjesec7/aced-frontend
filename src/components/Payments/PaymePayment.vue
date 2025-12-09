@@ -637,16 +637,26 @@ this.userValidation = { loading: false, valid: false, user: null };
 
         if (result.success) {
           this.promoSuccess = result.message;
-          
+
           // Show success state first, then redirect
-          setTimeout(() => {
+          setTimeout(async () => {
             this.paymentSuccess = true;
-            
-            // Update store if available
+
+            // ✅ CRITICAL: Sync user status from server after promo/payment success
             if (this.$store.getters['user/isAuthenticated']) {
-              this.$store.dispatch('user/checkPendingPayments');
+              try {
+                await this.$store.dispatch('user/loadUserStatus');
+                this.$store.commit('user/FORCE_UPDATE');
+
+                // Emit global event
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('userStatusChanged', { detail: { source: 'payme-promo' } }));
+                }
+              } catch (e) {
+                console.error('Status sync failed:', e);
+              }
             }
-            
+
             setTimeout(() => {
               const returnTo = this.$route.query.returnTo;
               if (returnTo) {
@@ -803,17 +813,27 @@ this.error = 'Ошибка перенаправления. Попробуйте 
 
         if (result.success) {
           this.transaction = { ...this.transaction, ...result.transaction };
-          
+
           // Handle completed payment
           if (result.transaction.state === 2) {
             this.paymentSuccess = true;
             this.success = 'Платёж успешно завершён! Доступ к курсам активирован.';
-            
-            // Update user status in store
+
+            // ✅ CRITICAL: Sync user status from server after payment success
             if (this.$store.getters['user/isAuthenticated']) {
-              this.$store.dispatch('user/checkPendingPayments');
+              try {
+                await this.$store.dispatch('user/loadUserStatus');
+                this.$store.commit('user/FORCE_UPDATE');
+
+                // Emit global event
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('userStatusChanged', { detail: { source: 'payme-payment', transactionId: this.transaction.id } }));
+                }
+              } catch (e) {
+                console.error('Status sync failed:', e);
+              }
             }
-            
+
             // Show success state for a moment, then redirect
             setTimeout(() => {
               const returnTo = this.$route.query.returnTo;

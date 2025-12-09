@@ -172,10 +172,26 @@ export default {
         // Update user subscription status in store
         if (this.$store.getters['user/isAuthenticated']) {
           await this.$store.dispatch('user/checkPendingPayments');
-          await this.$store.dispatch('user/loadUserStatus');
+          const statusResult = await this.$store.dispatch('user/loadUserStatus');
+
+          // Force global update to notify all components
+          this.$store.commit('user/FORCE_UPDATE');
+
+          // Emit global event for components not connected to store
+          if (typeof window !== 'undefined') {
+            const eventData = {
+              source: 'payment-success',
+              plan: statusResult?.status,
+              transactionId: this.transactionData?.id || this.transactionData?.transactionId,
+              timestamp: Date.now()
+            };
+            window.dispatchEvent(new CustomEvent('userStatusChanged', { detail: eventData }));
+            window.dispatchEvent(new CustomEvent('subscriptionUpdated', { detail: eventData }));
+          }
         }
       } catch (error) {
-}
+        console.error('Failed to update user status:', error);
+      }
     },
 
     formatAmount(amount) {
