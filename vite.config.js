@@ -17,7 +17,7 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: false, // 🛑 Added to disable source maps
     esbuild: {
-      drop: ['console', 'debugger'], // 🛑 Added to remove console and debugger statements
+      // drop: ['console', 'debugger'], // 🔧 TEMPORARILY DISABLED for debugging promo code issue
     },
   },
   server: {
