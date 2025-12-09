@@ -1270,7 +1270,7 @@ const actions = {
       commit('SET_LOADING', { type: 'saving', loading: true });
 
       // ✅ CRITICAL: Environment validation
-      const baseUrl = import.meta.env.VITE_API_BASE_URL;
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live';
       if (!baseUrl || typeof baseUrl !== 'string') {
         const error = 'Application configuration error - API base URL not set';
         commit('SET_ERROR', { message: error, context: 'saveUser-config' });
@@ -1989,7 +1989,7 @@ return finalResult;
       }
     }
 
-    const baseUrl = import.meta.env.VITE_API_BASE_URL;
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live';
     if (!baseUrl) {
       return { valid: false, error: 'Ошибка конфигурации приложения' };
     }
