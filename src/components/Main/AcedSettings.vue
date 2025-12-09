@@ -499,13 +499,12 @@
 
                 <div class="form-group">
                   <label class="form-label">Subscription Duration</label>
-                  <div class="duration-selector" style="display: flex; gap: 8px; margin-bottom: 16px;">
+                  <div class="duration-selector">
                     <button 
                       v-for="duration in [1, 3, 6]" 
                       :key="duration"
                       :class="['duration-btn', { selected: selectedDuration === duration }]"
                       @click="selectedDuration = duration"
-                      style="flex: 1; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; background: white; cursor: pointer; transition: all 0.2s; font-weight: 500;"
                     >
                       {{ duration }} Mo
                     </button>
@@ -833,9 +832,9 @@ export default {
       isEditingName: false,
       
       promoCode: "",
-      selectedPlan: "",
+      selectedPlan: "pro",
       paymentPlan: "",
-      selectedDuration: null, // Selected subscription duration (1, 3, or 6 months)
+      selectedDuration: 3, // Selected subscription duration (1, 3, or 6 months)
       
       promoValidation: null,
       promoValidationTimeout: null,
@@ -2524,7 +2523,50 @@ return 0;
   margin-top: 20px;
 }
 
+/* ==================== DURATION SELECTOR ==================== */
+
+.duration-selector {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.duration-btn {
+  flex: 1;
+  padding: 12px 8px;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 600;
+  font-size: 14px;
+  color: #374151;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.duration-btn:hover {
+  border-color: #667eea;
+  background: #f8f9ff;
+  transform: translateY(-2px);
+}
+
+.duration-btn.selected {
+  border-color: #667eea;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.duration-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+}
+
 /* ==================== RESPONSIVE ==================== */
+
 
 @media (max-width: 1024px) {
   .content-grid {
