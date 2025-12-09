@@ -1823,9 +1823,9 @@ const actions = {
     }
   },
 
-  // ✅ ENHANCED: Apply promocode with comprehensive validation and error handling
+  // ✅ FIXED: Apply promocode using existing API module
   async applyPromocode({ commit, state, dispatch }, { promoCode, plan }) {
-    const startTime = Date.now();
+    console.log('🎟️ [Store] applyPromocode called:', { promoCode, plan });
 
     try {
       // Input validation
@@ -1833,223 +1833,91 @@ const actions = {
         return { success: false, error: 'Промокод должен содержать не менее 3 символов' };
       }
 
-      if (!plan || !['start', 'pro', 'premium'].includes(plan)) {
-        return { success: false, error: 'Неверный план подписки' };
-      }
-
-      const userId = getUserId(state);
-      if (!userId) {
-        return { success: false, error: 'Пользователь не найден' };
-      }
-
       const normalizedCode = promoCode.trim().toUpperCase();
+      const oldStatus = state.userStatus || 'free';
 
-      // Check if already applied
-      const existingPromocode = state.promocodes.applied.find(p => p.code === normalizedCode);
-      if (existingPromocode) {
-        return {
-          success: false,
-          error: 'Этот промокод уже был применён',
-          alreadyApplied: true
-        };
-      }
+      // Use the existing API module which handles auth properly
+      const { applyPromocode: applyPromocodeAPI } = await import('@/api/promocodes');
+      console.log('🎟️ [Store] Calling API...');
 
+      const result = await applyPromocodeAPI(normalizedCode);
+      console.log('🎟️ [Store] API result:', JSON.stringify(result, null, 2));
 
-      const token = await getUserToken();
-      const headers = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
+      if (result.success) {
+        // Get the plan from the result or use the one passed in
+        const newPlan = result.plan || plan || 'pro';
+        const expiryDate = result.expiryDate;
 
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live';
-      if (!baseUrl) {
-        commit('SET_ERROR', { message: 'API configuration error', context: 'applyPromocode' });
-        return { success: false, error: 'Ошибка конфигурации приложения' };
-      }
+        console.log('🎟️ [Store] Success! Plan:', newPlan, 'Expiry:', expiryDate);
 
-      // Use the correct backend endpoint for promo code application
-      const response = await Promise.race([
-        fetch(`${baseUrl}/api/payments/promo-code`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            userId: userId,
-            promoCode: normalizedCode
-          })
-        }),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Request timeout')), 10000)
-        )
-      ]);
-
-      // Handle HTTP errors with specific messages
-      if (!response.ok) {
-        const httpErrorMessages = {
-          400: 'Неверный формат промокода',
-          401: 'Необходимо войти в систему',
-          403: 'Промокод недоступен или уже использован',
-          404: 'Промокод не найден',
-          409: 'Промокод уже был применён',
-          410: 'Срок действия промокода истёк',
-          422: 'Промокод нельзя применить к вашему аккаунту',
-          429: 'Слишком много запросов. Попробуйте позже.',
-          500: 'Ошибка сервера. Попробуйте позже.',
-          502: 'Сервер временно недоступен. Попробуйте позже.',
-          503: 'Сервис временно недоступен. Попробуйте позже.'
-        };
-
-        // Try to get error message from response body
-        let serverMessage = null;
-        try {
-          const errorBody = await response.json();
-          serverMessage = errorBody?.message || errorBody?.error;
-        } catch {
-          // Response body is not JSON, use HTTP status message
-        }
-
-        const httpError = serverMessage || httpErrorMessages[response.status] || `Ошибка сервера (${response.status})`;
-
-        commit('SET_ERROR', {
-          message: httpError,
-          context: 'applyPromocode-http',
-          statusCode: response.status,
-          promocode: normalizedCode
-        });
-
-        return { success: false, error: httpError, statusCode: response.status };
-      }
-
-      // Safely parse JSON response
-      let result;
-      try {
-        result = await response.json();
-      } catch (parseError) {
-        const parseErrorMsg = 'Ошибка обработки ответа сервера';
-        commit('SET_ERROR', {
-          message: parseErrorMsg,
-          context: 'applyPromocode-parse',
-          originalError: parseError.message
-        });
-        return { success: false, error: parseErrorMsg };
-      }
-
-      if (result?.success) {
-        console.log('🎟️ [Store] Promo code API success:', JSON.stringify(result, null, 2));
-
-        const oldStatus = state.userStatus;
-        // Backend returns plan in various formats - check all possibilities
-        const newPlan = result.plan || result.promocode?.grantsPlan || result.user?.subscriptionPlan || plan;
-        const expiryDate = result.user?.subscriptionEndDate || result.user?.subscriptionExpiryDate ||
-                          result.expiryDate || result.subscriptionEndDate;
-
-        console.log('🎟️ [Store] Extracted newPlan:', newPlan, 'expiryDate:', expiryDate);
-
-        // ✅ CRITICAL: Force token refresh to clear Firebase cache, then fetch status
+        // Force Firebase token refresh to get updated custom claims
         try {
           const { auth } = await import('@/firebase');
           if (auth.currentUser) {
-            await auth.currentUser.getIdToken(true); // Force refresh
+            await auth.currentUser.getIdToken(true);
           }
         } catch (e) {
           console.warn('Token refresh failed:', e);
         }
 
-        // Fetch updated user status from server
-        const serverStatusResult = await dispatch('loadUserStatus');
-        console.log('🎟️ [Store] Server status after promo:', serverStatusResult);
-
-        // Determine final plan - prefer server data, fallback to API response
-        const serverPlan = serverStatusResult?.status;
-        const finalPlan = (serverPlan && serverPlan !== 'free') ? serverPlan : newPlan;
-
-        console.log('🎟️ [Store] Final plan decision:', { serverPlan, newPlan, finalPlan });
-
-        // Always update local state with the granted plan
-        commit('SET_USER_STATUS', finalPlan);
+        // Update local state immediately with the new plan
+        commit('SET_USER_STATUS', newPlan);
         commit('UPDATE_SUBSCRIPTION', {
-          plan: finalPlan,
+          plan: newPlan,
           status: 'active',
           expiryDate: expiryDate,
           source: 'promocode',
           lastSync: new Date().toISOString()
         });
 
-        // Update localStorage for persistence
+        // Update localStorage
         try {
-          localStorage.setItem('userStatus', finalPlan);
-          localStorage.setItem('subscriptionPlan', finalPlan);
+          localStorage.setItem('userStatus', newPlan);
+          localStorage.setItem('subscriptionPlan', newPlan);
+          localStorage.setItem('userPlan', newPlan);
           if (expiryDate) localStorage.setItem('subscriptionExpiry', expiryDate);
         } catch (e) {}
 
-        // Track promocode application
+        // Track the promocode
         commit('ADD_PROMOCODE', {
           code: normalizedCode,
-          plan: finalPlan,
+          plan: newPlan,
           oldPlan: oldStatus,
           source: 'api',
-          details: result.data || result.user || {}
+          appliedAt: new Date().toISOString()
         });
 
         // Force global update
         commit('FORCE_UPDATE');
 
-        // Emit global events for all components
+        // Emit global events
         if (typeof window !== 'undefined') {
-          const eventData = { oldStatus, newStatus: finalPlan, source: 'promocode', timestamp: Date.now() };
+          const eventData = { oldStatus, newStatus: newPlan, source: 'promocode', timestamp: Date.now() };
           window.dispatchEvent(new CustomEvent('userStatusChanged', { detail: eventData }));
           window.dispatchEvent(new CustomEvent('subscriptionUpdated', { detail: eventData }));
         }
 
-        const duration = Date.now() - startTime;
+        // Also try to sync with server to verify
+        dispatch('loadUserStatus').catch(() => {});
 
         return {
           success: true,
-          message: result.message || `Промокод успешно применён! Подписка "${finalPlan.toUpperCase()}" активирована.`,
+          message: result.message || `Промокод применён! Подписка ${newPlan.toUpperCase()} активирована.`,
           oldPlan: oldStatus,
-          newPlan: finalPlan,
-          duration,
-          serverSync: serverPlan === finalPlan,
+          newPlan: newPlan,
           expiryDate
         };
+      } else {
+        // API returned error
+        const errorMsg = result.message || 'Не удалось применить промокод';
+        console.log('🎟️ [Store] API error:', errorMsg);
+        return { success: false, error: errorMsg };
       }
-
-      // Handle server errors
-      const serverError = result?.message || result?.error || 'Не удалось применить промокод';
-
-      commit('SET_ERROR', {
-        message: serverError,
-        context: 'applyPromocode-server',
-        promocode: normalizedCode,
-        plan
-      });
-
-      return { success: false, error: serverError };
 
     } catch (error) {
-      // Handle network and other errors (HTTP errors already handled above)
-      let userFriendlyError;
-
-      if (error.message === 'Request timeout') {
-        userFriendlyError = 'Истекло время ожидания. Попробуйте снова.';
-      } else if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
-        userFriendlyError = 'Не удалось подключиться к серверу. Проверьте интернет-соединение.';
-      } else if (error.message?.includes('network') || error.message?.includes('Network')) {
-        userFriendlyError = 'Ошибка сети. Проверьте интернет-соединение.';
-      } else {
-        // Log unexpected errors for debugging
-        console.error('🎟️ Unexpected promo code error:', error);
-        userFriendlyError = 'Не удалось применить промокод. Попробуйте позже.';
-      }
-
-      commit('SET_ERROR', {
-        message: userFriendlyError,
-        context: 'applyPromocode-exception',
-        originalError: error.message
-      });
-
-      return {
-        success: false,
-        error: userFriendlyError,
-        technical: error.message
-      };
+      console.error('🎟️ [Store] Exception:', error);
+      const errorMsg = error.message || 'Ошибка при применении промокода';
+      return { success: false, error: errorMsg, technical: error.message };
     }
   },
 

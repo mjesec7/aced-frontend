@@ -774,8 +774,26 @@ export default {
       this.processing = true; this.error = '';
       try {
         if (this.promoApplied && this.promoData) {
+          console.log('🎟️ [Checkout] Applying promo code...');
           const result = await this.$store.dispatch('user/applyPromocode', { promoCode: this.promoCodeInput, plan: this.promoData.grantsPlan || 'pro', duration: this.selectedDuration });
-          if (result.success) { this.handlePaymentSuccess({ transactionId: 'PROMO-' + Date.now() }); return; }
+          console.log('🎟️ [Checkout] Result:', result);
+          if (result.success) {
+            // Show success briefly then redirect
+            this.paymentStatus = 'success';
+            this.transactionId = 'PROMO-' + Date.now();
+            this.processing = false;
+
+            // Wait a moment then redirect to settings
+            setTimeout(() => {
+              const returnTo = this.$route.query.from || this.$route.query.returnTo;
+              if (returnTo === 'settings') {
+                this.$router.push({ path: '/settings', query: { promoApplied: 'true', plan: result.newPlan } });
+              } else {
+                this.$router.push({ path: '/dashboard', query: { promoApplied: 'true', plan: result.newPlan } });
+              }
+            }, 2000);
+            return;
+          }
           else throw new Error(result.error || 'Failed to apply promo code');
         }
         if (this.paymentProvider === 'payme') await this.processPaymePayment();

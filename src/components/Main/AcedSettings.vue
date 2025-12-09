@@ -1100,6 +1100,16 @@ return 0;
     this.componentMounted = true;
     // Load inbox messages
     this.loadInboxMessages();
+
+    // Check if returning from successful promo code application
+    if (this.$route.query.promoApplied === 'true') {
+      const plan = this.$route.query.plan || 'pro';
+      this.showNotification(`Подписка ${plan.toUpperCase()} активирована!`, 'success');
+      // Clear the query params
+      this.$router.replace({ path: this.$route.path, query: {} });
+      // Refresh user data
+      await this.loadInitialData();
+    }
   },
 
   methods: {
@@ -1459,15 +1469,19 @@ return 0;
           });
           
           if (result.success) {
-            this.showNotification(result.message || 'Promo code applied!', 'success');
+            this.showNotification(result.message || 'Промокод применён!', 'success');
             this.promoCode = '';
             this.promoValidation = null;
             // Refresh user data
             await this.loadInitialData();
+            // Force UI update
+            this.$nextTick(() => {
+              this.forceReactivityUpdate();
+            });
             // Refresh inbox to show new message
             await this.loadInboxMessages();
           } else {
-            this.showNotification(result.error || 'Failed to apply promo code', 'error');
+            this.showNotification(result.error || 'Не удалось применить промокод', 'error');
           }
         } else {
           // Discount code - redirect to payment
