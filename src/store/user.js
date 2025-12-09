@@ -3,7 +3,7 @@
 import { checkPaymentStatus } from '@/api/payments';
 import { getUserUsage, resetMonthlyUsage } from '@/services/GPTService';
 import { updateUserStatusAction } from '@/composables/useUserStatus';
-import { syncSubscriptionGlobally, applyPromocodeGlobally, completePaymentGlobally } from '@/api';
+import { syncSubscriptionGlobally, applyPromocodeWithGlobalPersistence, completePaymentWithGlobalPersistence } from '@/api';
 
 
 // ✅ ENHANCED triggerGlobalEvent function with error handling
@@ -261,7 +261,7 @@ const state = () => ({
     applied: [],
     available: [],
     lastCheck: null,
-    validationCache: {}
+    validationCache: new Map()
   },
 
   // ✅ BULLETPROOF: Payment history - Always arrays
@@ -1270,7 +1270,7 @@ const actions = {
       commit('SET_LOADING', { type: 'saving', loading: true });
 
       // ✅ CRITICAL: Environment validation
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live';
+      const baseUrl = import.meta.env.VITE_API_BASE_URL;
       if (!baseUrl || typeof baseUrl !== 'string') {
         const error = 'Application configuration error - API base URL not set';
         commit('SET_ERROR', { message: error, context: 'saveUser-config' });
@@ -1320,10 +1320,9 @@ const actions = {
       // ✅ CRITICAL: Validate essential payload fields
       if (!payload.firebaseUserId || !payload.email) {
         const error = 'Missing essential user information (ID or email)';
-      });
-      commit('SET_ERROR', { message: error, context: 'saveUser-payload-validation' });
-      return createErrorResult(error, { payloadValidationError: true });
-    }
+        commit('SET_ERROR', { message: error, context: 'saveUser-payload-validation' });
+        return createErrorResult(error, { payloadValidationError: true });
+      }
 
 
 
@@ -1450,24 +1449,23 @@ const actions = {
         savedUser = responseData.user;
       } else {
         const error = 'Server returned success but no user data';
-      });
-      commit('SET_ERROR', { message: error, context: 'saveUser-response-structure' });
-      return createErrorResult(error, { responseStructureError: true });
-    }
-  } else if(responseData.user && typeof responseData.user === 'object') {
-    savedUser = responseData.user;
-      } else if ((responseData._id || responseData.firebaseId || responseData.firebaseUserId) && responseData.email) {
-  savedUser = responseData;
-} else if (!responseData.success && !responseData.error && responseData.email) {
-  // Handle case where server returns user data directly without success wrapper
-  savedUser = responseData;
-} else if (responseData.success === false) {
-  const error = responseData.message || responseData.error || 'Server returned failure status';
-  commit('SET_ERROR', { message: error, context: 'saveUser-server-failure' });
-  return createErrorResult(error, { serverFailure: true, serverResponse: responseData });
-} else {
-  const error = 'Server returned unrecognized response format';
-  commit('SET_ERROR', { message: error, context: 'saveUser-unknown-response' });
+        commit('SET_ERROR', { message: error, context: 'saveUser-response-structure' });
+        return createErrorResult(error, { responseStructureError: true });
+      }
+    } else if (responseData.user && typeof responseData.user === 'object') {
+      savedUser = responseData.user;
+    } else if ((responseData._id || responseData.firebaseId || responseData.firebaseUserId) && responseData.email) {
+      savedUser = responseData;
+    } else if (!responseData.success && !responseData.error && responseData.email) {
+      // Handle case where server returns user data directly without success wrapper
+      savedUser = responseData;
+    } else if (responseData.success === false) {
+      const error = responseData.message || responseData.error || 'Server returned failure status';
+      commit('SET_ERROR', { message: error, context: 'saveUser-server-failure' });
+      return createErrorResult(error, { serverFailure: true, serverResponse: responseData });
+    } else {
+      const error = 'Server returned unrecognized response format';
+      commit('SET_ERROR', { message: error, context: 'saveUser-unknown-response' });
   return createErrorResult(error, { unknownResponseError: true, rawResponse: responseData });
 }
 
@@ -1500,10 +1498,9 @@ const completeUser = {
 // ✅ CRITICAL: Final validation of complete user
 if (!completeUser.firebaseId || !completeUser.email) {
   const error = 'Server user data missing essential fields';
-});
-commit('SET_ERROR', { message: error, context: 'saveUser-final-validation' });
-return createErrorResult(error, { finalValidationError: true });
-      }
+  commit('SET_ERROR', { message: error, context: 'saveUser-final-validation' });
+  return createErrorResult(error, { finalValidationError: true });
+}
 
 
 
@@ -1558,18 +1555,16 @@ return finalResult;
     stack: error.stack,
     category: errorCategory
   });
-  - startTime + 'ms'
-});
 
-// ✅ CRITICAL: ALWAYS return error result
-const finalResult = createErrorResult(userFriendlyError, {
-  isUnexpectedError: true,
-  originalError: error.message,
-  category: errorCategory
-});
-return finalResult;
+  // ✅ CRITICAL: ALWAYS return error result
+  const finalResult = createErrorResult(userFriendlyError, {
+    isUnexpectedError: true,
+    originalError: error.message,
+    category: errorCategory
+  });
+  return finalResult;
 
-    } finally {
+} finally {
   // ✅ CRITICAL: Always clear loading state
   try {
     commit('SET_LOADING', { type: 'saving', loading: false });
@@ -1855,7 +1850,6 @@ return finalResult;
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
     const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live';
-    console.log('🎟️ [Store] Using baseUrl:', baseUrl);
     if (!baseUrl) {
       commit('SET_ERROR', { message: 'API configuration error', context: 'applyPromocode' });
       return { success: false, error: 'Ошибка конфигурации приложения' };
@@ -1974,7 +1968,6 @@ return finalResult;
 
   // ✅ ENHANCED: Validate promocode
   async validatePromocode({ state, commit }, promoCode) {
-  console.log('🎟️ [Store] validatePromocode called with:', promoCode);
   try {
     if (!promoCode || typeof promoCode !== 'string' || promoCode.trim().length < 3) {
       return { valid: false, error: 'Промокод должен содержать не менее 3 символов' };
@@ -1983,21 +1976,19 @@ return finalResult;
     const normalizedCode = promoCode.trim().toUpperCase();
 
     // Check cache first
-    if (state.promocodes.validationCache && state.promocodes.validationCache[normalizedCode]) {
-      const cached = state.promocodes.validationCache[normalizedCode];
+    if (state.promocodes.validationCache.has(normalizedCode)) {
+      const cached = state.promocodes.validationCache.get(normalizedCode);
       const age = Date.now() - cached.timestamp;
       if (age < 300000) { // 5 minutes cache
         return cached.result;
       }
     }
 
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live';
-    console.log('🎟️ [Store] Using baseUrl:', baseUrl);
+    const baseUrl = import.meta.env.VITE_API_BASE_URL;
     if (!baseUrl) {
       return { valid: false, error: 'Ошибка конфигурации приложения' };
     }
 
-    console.log('🎟️ [Store] Calling API:', baseUrl + '/api/promocodes/validate/' + normalizedCode);
     const response = await Promise.race([
       fetch(`${baseUrl}/api/promocodes/validate/${normalizedCode}`),
       new Promise((_, reject) =>
@@ -2006,31 +1997,26 @@ return finalResult;
     ]);
 
     const result = await response.json();
-    console.log('🎟️ [Store] API response:', JSON.stringify(result, null, 2));
-
-    // Check if promo code is valid: either explicit valid flag, or success with data
-    const isValid = result?.valid === true || (result?.success === true && result?.data);
 
     const validationResult = {
-      valid: isValid,
+      valid: result?.success && result.valid,
       data: result.data || null,
       error: result?.error || null,
-      message: isValid
+      message: result?.success && result.valid
         ? `Промокод действителен! Предоставляет: ${result.data?.grantsPlan?.toUpperCase()} план`
-        : result?.error || result?.message || 'Промокод недействителен'
+        : result?.error || 'Промокод недействителен'
     };
 
     // Cache the result
-    if (!state.promocodes.validationCache) state.promocodes.validationCache = {};
-    state.promocodes.validationCache[normalizedCode] = {
+    state.promocodes.validationCache.set(normalizedCode, {
       result: validationResult,
       timestamp: Date.now()
-    };
+    });
 
-    // Limit cache size (simple cleanup)
-    const cacheKeys = Object.keys(state.promocodes.validationCache);
-    if (cacheKeys.length > 50) {
-      delete state.promocodes.validationCache[cacheKeys[0]];
+    // Limit cache size
+    if (state.promocodes.validationCache.size > 50) {
+      const firstKey = state.promocodes.validationCache.keys().next().value;
+      state.promocodes.validationCache.delete(firstKey);
     }
 
     return validationResult;
@@ -2356,7 +2342,7 @@ return finalResult;
       return { success: false, error: 'User not found' };
     }
     // Apply promocode globally
-    const result = await applyPromocodeGlobally(userId, promoCode, plan);
+    const result = await applyPromocodeWithGlobalPersistence(userId, promoCode, plan);
 
     if (result.success) {
       // Update store
@@ -2388,7 +2374,7 @@ return finalResult;
       return { success: false, error: 'User not found' };
     }
     // Complete payment globally
-    const result = await completePaymentGlobally(userId, paymentData);
+    const result = await completePaymentWithGlobalPersistence(userId, paymentData);
 
     if (result.success) {
       // Update store
@@ -3534,12 +3520,4 @@ export const performanceMonitor = {
       }
     };
   }
-};
-
-export default {
-  namespaced: true,
-  state,
-  getters,
-  mutations,
-  actions
 };

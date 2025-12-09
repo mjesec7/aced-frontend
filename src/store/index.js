@@ -1,6 +1,7 @@
 import { createStore } from 'vuex';
 import global from './global';
 import platformMode from './platformMode';
+import user from './user';
 import axios from 'axios';
 
 const API_BASE_URL = import.meta.env?.VITE_API_BASE_URL || 'https://api.aced.live';
@@ -9,6 +10,7 @@ export default createStore({
   modules: {
     global,
     platformMode,
+    user,
   },
 
   state: {
