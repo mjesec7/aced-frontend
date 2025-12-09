@@ -1098,11 +1098,7 @@ return 0;
     // Load inbox messages
     this.loadInboxMessages();
   },
-  
-  beforeUnmount() {
-this.cleanup();
-  },
-  
+
   methods: {
     // =============================================
     // INBOX METHODS
@@ -1213,7 +1209,7 @@ this.cleanup();
         }
 
       } catch (error) {
-this.$forceUpdate();
+        this.$forceUpdate();
       }
     },
 
@@ -1228,7 +1224,8 @@ this.$forceUpdate();
           this.$forceUpdate();
         });
       } catch (error) {
-}
+        // ignore
+      }
     },
 
     getTimeRemaining(diffTime) {
@@ -1258,11 +1255,11 @@ this.$forceUpdate();
       this.loadingText = 'Loading settings...';
       
       try {
-await this.checkAuthState();
+        await this.checkAuthState();
         await this.loadInitialData();
         this.forceReactivityUpdate();
-} catch (error) {
-this.showNotification('Error loading settings', 'error');
+      } catch (error) {
+        this.showNotification('Error loading settings', 'error');
       } finally {
         this.loading = false;
       }
@@ -1270,15 +1267,16 @@ this.showNotification('Error loading settings', 'error');
 
     async loadInitialData() {
       try {
-if (this.$store && this.$store.dispatch) {
+        if (this.$store && this.$store.dispatch) {
           await this.$store.dispatch('user/loadUserStatus');
-// Force reactivity update after data loads
+          // Force reactivity update after data loads
           this.$nextTick(() => {
             this.forceReactivityUpdate();
           });
         }
       } catch (error) {
-}
+        // ignore
+      }
     },
     
     checkAuthState() {
@@ -1286,10 +1284,9 @@ if (this.$store && this.$store.dispatch) {
         onAuthStateChanged(auth, async (user) => {
           this.currentUser = user;
           if (user) {
-this.isGoogleUser = user.providerData[0]?.providerId === "google.com";
+            this.isGoogleUser = user.providerData[0]?.providerId === "google.com";
             await this.fetchUserData();
-          } else {
-}
+          }
           resolve();
         });
       });
@@ -1298,14 +1295,14 @@ this.isGoogleUser = user.providerData[0]?.providerId === "google.com";
     async fetchUserData() {
       try {
         if (!this.currentUser) return;
-const userRef = doc(db, "users", this.currentUser.uid);
+        const userRef = doc(db, "users", this.currentUser.uid);
         const userDoc = await getDoc(userRef);
         
         if (userDoc.exists()) {
           this.user = userDoc.data();
           this.tempUser = { name: this.user.name, surname: this.user.surname };
-} else {
-const newUserData = {
+        } else {
+          const newUserData = {
             name: "New User",
             surname: "",
             email: this.currentUser.email,
@@ -1315,7 +1312,7 @@ const newUserData = {
           this.tempUser = { name: newUserData.name, surname: newUserData.surname };
         }
       } catch (error) {
-this.showNotification("Error loading user data", 'error');
+        console.error("Error fetching user data:", error);
       }
     },
 
@@ -1375,12 +1372,184 @@ this.showNotification("Error loading user data", 'error');
 
         this.showNotification('Name updated successfully!', 'success');
       } catch (error) {
-this.showNotification('Error saving name', 'error');
+        this.showNotification('Error saving name', 'error');
       } finally {
         this.loading = false;
       }
     },
 
+    cancelEditingName() {
+      this.isEditingName = false;
+      this.tempUser = { name: this.user.name, surname: this.user.surname };
+    },
+
+    handlePromoCodeInput() {
+      if (this.promoValidationTimeout) {
+        clearTimeout(this.promoValidationTimeout);
+      }
+      
+      this.promoCode = this.promoCode.toUpperCase();
+      
+      if (this.promoCode.length <= 3) {
+        this.promoValidation = null;
+        this.isValidatingPromo = false;
+        return;
+      }
+      
+      this.isValidatingPromo = true;
+      
+      this.promoValidationTimeout = setTimeout(() => {
+        this.validatePromoCodeLocal();
+      }, 800);
+    },
+    
+    async validatePromoCodeLocal() {
+      if (!this.promoCode.trim() || this.promoCode.length <= 3) {
+        this.promoValidation = null;
+        this.isValidatingPromo = false;
+        return;
+      }
+      
+      try {
+        const promocodeUpper = this.promoCode.trim().toUpperCase();
+        if (this.$store && this.$store.dispatch) {
+          const storeResult = await this.$store.dispatch('user/validatePromocode', promocodeUpper);
+          
+          if (storeResult && typeof storeResult === 'object') {
+            this.promoValidation = storeResult;
+            if (storeResult.valid && storeResult.data?.grantsPlan && !this.selectedPlan) {
+              this.selectedPlan = storeResult.data.grantsPlan;
+            }
+            
+            this.isValidatingPromo = false;
+            return;
+          }
+        }
+        
+        this.promoValidation = {
+          valid: false,
+          error: `Unable to verify promo code "${promocodeUpper}".`
+        };
+        
+      } catch (error) {
+        this.promoValidation = {
+          valid: false,
+          error: 'Error checking promo code.'
+        };
+      }
+    },
+
+    async applyPromo() {
+      if (!this.canApplyPromo) return;
+      
+      this.isProcessingPromo = true;
+      
+      try {
+        const promoData = this.promoValidation?.data;
+        
+        if (promoData?.grantsPlan) {
+          // Grant plan directly
+          const result = await this.$store.dispatch('user/applyPromocode', {
+            promoCode: this.promoCode,
+            plan: promoData.grantsPlan
+          });
+          
+          if (result.success) {
+            this.showNotification(result.message || 'Promo code applied!', 'success');
+            this.promoCode = '';
+            this.promoValidation = null;
+            // Refresh user data
+            await this.loadInitialData();
+          } else {
+            this.showNotification(result.error || 'Failed to apply promo code', 'error');
+          }
+        } else {
+          // Discount code - redirect to payment
+          await this.goToPayment();
+        }
+      } catch (error) {
+        console.error('Error applying promo:', error);
+        this.showNotification('An error occurred', 'error');
+      } finally {
+        this.isProcessingPromo = false;
+      }
+    },
+
+    async selectDurationAndGo(duration) {
+      this.selectedDuration = duration;
+      // Small delay to show selection visual
+      setTimeout(async () => {
+        await this.goToPayment();
+      }, 200);
+    },
+
+    async goToPayment() {
+      try {
+        if (!this.selectedDuration) {
+          this.showNotification('Please select a subscription duration', 'warning');
+          return;
+        }
+
+        const query = { 
+          duration: this.selectedDuration,
+          from: 'settings'
+        };
+        
+        // Add promo code if valid
+        if (this.promoValidation?.valid && this.promoCode) {
+          query.promoCode = this.promoCode;
+        }
+
+        // Navigate to payment page with duration parameter
+        await this.$router.push({
+          path: '/pay/pro',
+          query
+        });
+      } catch (error) {
+        if (error.name !== 'NavigationDuplicated') {
+          console.error('Error navigating to payment:', error);
+          this.showNotification('Failed to navigate to payment page', 'error');
+        }
+      }
+    },
+
+    getPaymentButtonText() {
+      if (!this.paymentPlan) return 'Select a plan';
+      if (this.currentPlan === this.paymentPlan) return 'Already active';
+      
+      const planNames = {
+        start: 'START',
+        pro: 'PRO'
+      };
+      
+      return `Pay for ${planNames[this.paymentPlan] || this.paymentPlan.toUpperCase()}`;
+    },
+
+    async sendPasswordReset() {
+      if (!this.user.email) {
+        this.showNotification('Please enter email address', 'error');
+        return;
+      }
+
+      try {
+        await sendPasswordResetEmail(auth, this.user.email);
+        this.showNotification('Password reset email sent!', 'success');
+      } catch (error) {
+        let errorMessage = 'Error sending email';
+        
+        if (error.code === 'auth/user-not-found') {
+          errorMessage = 'User with this email not found';
+        } else if (error.code === 'auth/invalid-email') {
+          errorMessage = 'Invalid email format';
+        }
+        
+        this.showNotification(errorMessage, 'error');
+      }
+    },
+
+    async saveChanges() {
+      this.showNotification('Password update function', 'info');
+    },
 
     goToProfile() {
       this.$router.push('/profile');
@@ -2034,18 +2203,6 @@ this.showNotification('Error saving name', 'error');
 }
 
 .btn-large {
-  padding: 16px 32px;
-  font-size: 16px;
-  width: 100%;
-}
-
-/* ==================== PRICING CARDS ==================== */
-
-.pricing-cards {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  margin-top: 16px;
 }
 
 .pricing-card {

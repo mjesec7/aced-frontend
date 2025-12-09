@@ -89,7 +89,7 @@ const addLocalMessage = (userId, message) => {
 export const getUserMessages = async (userId) => {
   try {
     // Try API first
-    const response = await inboxApi.get(`/users/${userId}/messages`);
+    const response = await inboxApi.get(`/api/messages/${userId}`);
     if (response.data && response.data.success) {
       return {
         success: true,
@@ -124,7 +124,7 @@ export const sendMessage = async (userId, messageData) => {
 
   try {
     // Try API first
-    const response = await inboxApi.post(`/users/${userId}/messages`, message);
+    const response = await inboxApi.post(`/api/messages/${userId}`, message);
     if (response.data && response.data.success) {
       return {
         success: true,
@@ -151,7 +151,7 @@ export const sendMessage = async (userId, messageData) => {
 export const markMessageAsRead = async (userId, messageId) => {
   try {
     // Try API first
-    const response = await inboxApi.put(`/users/${userId}/messages/${messageId}/read`);
+    const response = await inboxApi.put(`/api/messages/${userId}/${messageId}/read`);
     if (response.data && response.data.success) {
       return { success: true, source: 'api' };
     }
@@ -174,7 +174,7 @@ export const markMessageAsRead = async (userId, messageId) => {
 export const markAllMessagesAsRead = async (userId) => {
   try {
     // Try API first
-    const response = await inboxApi.put(`/users/${userId}/messages/read-all`);
+    const response = await inboxApi.put(`/api/messages/${userId}/read-all`);
     if (response.data && response.data.success) {
       return { success: true, source: 'api' };
     }
@@ -196,7 +196,7 @@ export const markAllMessagesAsRead = async (userId) => {
 export const deleteMessage = async (userId, messageId) => {
   try {
     // Try API first
-    const response = await inboxApi.delete(`/users/${userId}/messages/${messageId}`);
+    const response = await inboxApi.delete(`/api/messages/${userId}/${messageId}`);
     if (response.data && response.data.success) {
       return { success: true, source: 'api' };
     }
@@ -217,7 +217,7 @@ export const deleteMessage = async (userId, messageId) => {
 export const getUnreadCount = async (userId) => {
   try {
     // Try API first
-    const response = await inboxApi.get(`/users/${userId}/messages/unread-count`);
+    const response = await inboxApi.get(`/api/messages/${userId}/unread-count`);
     if (response.data && response.data.success !== false) {
       return {
         success: true,
