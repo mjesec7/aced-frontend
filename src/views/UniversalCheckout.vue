@@ -351,6 +351,7 @@
                 type="text"
                 placeholder="Enter promo code"
                 :disabled="promoApplying"
+                @input="handlePromoCodeInput"
                 @keyup.enter="applyPromoCode"
                 class="tw-w-full tw-px-4 tw-py-3 tw-border tw-border-gray-200 tw-rounded-xl tw-text-sm tw-uppercase tw-tracking-wider tw-font-medium focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-purple-500 focus:tw-border-transparent tw-transition-all"
                 :class="{ 'tw-border-green-500 tw-bg-green-50': promoApplied, 'tw-border-red-500 tw-bg-red-50': promoError }"
@@ -803,6 +804,15 @@ this.error = 'Payment initialization error';
 
     selectCard(token) {
       this.selectedCardToken = token;
+    },
+
+    handlePromoCodeInput() {
+      this.promoError = false;
+      this.promoMessage = '';
+      if (this.promoApplied) {
+        this.promoApplied = false;
+        this.promoData = null;
+      }
     },
 
     async applyPromoCode() {
