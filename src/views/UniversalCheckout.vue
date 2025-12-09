@@ -296,7 +296,7 @@
 
             <!-- 3 Months -->
             <label 
-              :class="['duration-card popular', { 'active': selectedDuration === 6 }]"
+              :class="['duration-card popular', { 'active': selectedDuration === 3 }]"
               @click="selectedDuration = 3"
             >
               <div class="popular-badge tw-absolute tw--top-2 tw-left-1/2 tw--translate-x-1/2 tw-bg-gradient-to-r tw-from-purple-500 tw-to-pink-500 tw-text-white tw-text-[10px] tw-px-2 tw-py-0.5 tw-rounded-full tw-font-medium">
@@ -312,12 +312,12 @@
                 <span class="tw-text-xs tw-text-gray-400">UZS</span>
                 <span class="tw-block tw-text-[10px] tw-text-green-500 tw-font-medium">Save 10%</span>
               </div>
-              <div v-if="selectedDuration === 6" class="duration-check">✓</div>
+              <div v-if="selectedDuration === 3" class="duration-check">✓</div>
             </label>
 
             <!-- 6 Months -->
             <label 
-              :class="['duration-card', { 'active': selectedDuration === 12 }]"
+              :class="['duration-card', { 'active': selectedDuration === 6 }]"
               @click="selectedDuration = 6"
             >
               <input type="radio" v-model="selectedDuration" :value="6" class="tw-hidden" />
@@ -330,7 +330,7 @@
                 <span class="tw-text-xs tw-text-gray-400">UZS</span>
                 <span class="tw-block tw-text-[10px] tw-text-green-500 tw-font-medium">Save 20%</span>
               </div>
-              <div v-if="selectedDuration === 12" class="duration-check">✓</div>
+              <div v-if="selectedDuration === 6" class="duration-check">✓</div>
             </label>
           </div>
         </div>
@@ -583,7 +583,7 @@ export default {
       internalUserEmail: '',
       
       // Duration selection (1 month, 6 months, 12 months)
-      selectedDuration: 6,
+      selectedDuration: 3,
       
       // Promo code state
       promoCodeInput: '',
