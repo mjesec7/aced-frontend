@@ -89,7 +89,10 @@ export const validatePromocode = async (code) => {
 
         const result = await response.json();
 
-        if (result.success && result.valid) {
+        // Check if promo code is valid: either explicit valid flag, or success with data
+        const isValid = result?.valid === true || (result?.success === true && result?.data);
+
+        if (isValid) {
             return {
                 valid: true,
                 data: result.data,
@@ -98,7 +101,7 @@ export const validatePromocode = async (code) => {
         } else {
             return {
                 valid: false,
-                message: result.error || 'Недействительный промокод'
+                message: result.error || result.message || 'Недействительный промокод'
             };
         }
     } catch (error) {

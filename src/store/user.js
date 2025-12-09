@@ -2008,13 +2008,16 @@ return finalResult;
     const result = await response.json();
     console.log('🎟️ [Store] API response:', JSON.stringify(result, null, 2));
 
+    // Check if promo code is valid: either explicit valid flag, or success with data
+    const isValid = result?.valid === true || (result?.success === true && result?.data);
+
     const validationResult = {
-      valid: result?.success && result.valid,
+      valid: isValid,
       data: result.data || null,
       error: result?.error || null,
-      message: result?.success && result.valid
+      message: isValid
         ? `Промокод действителен! Предоставляет: ${result.data?.grantsPlan?.toUpperCase()} план`
-        : result?.error || 'Промокод недействителен'
+        : result?.error || result?.message || 'Промокод недействителен'
     };
 
     // Cache the result
