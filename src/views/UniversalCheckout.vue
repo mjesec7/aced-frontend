@@ -738,17 +738,30 @@ export default {
     },
     handlePromoCodeInput() { this.promoApplied = false; this.promoError = false; this.promoMessage = ''; this.promoData = null; },
     async applyPromoCode() {
-      if (!this.promoCodeInput || this.promoApplying) return;
+      console.log('🎟️ [UniversalCheckout] applyPromoCode called');
+      console.log('🎟️ [UniversalCheckout] promoCodeInput:', this.promoCodeInput);
+      if (!this.promoCodeInput || this.promoApplying) {
+        console.log('🎟️ [UniversalCheckout] Early return - no input or already applying');
+        return;
+      }
       this.promoApplying = true; this.promoError = false; this.promoMessage = '';
       try {
         const result = await this.$store.dispatch('user/validatePromocode', this.promoCodeInput.toUpperCase());
+        console.log('🎟️ [UniversalCheckout] validatePromocode result:', JSON.stringify(result, null, 2));
         if (result && result.valid) { this.promoApplied = true; this.promoData = result.data; this.promoMessage = 'Promo code applied!'; }
         else { this.promoError = true; this.promoMessage = result?.message || result?.error || 'Invalid promo code'; }
       } catch (err) { this.promoError = true; this.promoMessage = 'Error validating promo code'; }
       finally { this.promoApplying = false; }
     },
     async processPayment() {
-      if (!this.canProceedToPayment || this.processing) return;
+      console.log('💰 [UniversalCheckout] processPayment called');
+      console.log('💰 [UniversalCheckout] canProceedToPayment:', this.canProceedToPayment);
+      console.log('💰 [UniversalCheckout] paymentProvider:', this.paymentProvider);
+      console.log('💰 [UniversalCheckout] promoApplied:', this.promoApplied);
+      if (!this.canProceedToPayment || this.processing) {
+        console.log('💰 [UniversalCheckout] Early return - cannot proceed or already processing');
+        return;
+      }
       this.processing = true; this.error = '';
       try {
         if (this.promoApplied && this.promoData) {
@@ -768,10 +781,14 @@ export default {
       else throw new Error(result.error || 'Failed to initiate payment');
     },
     async processMulticardPayment() {
+      console.log('💳 [UniversalCheckout] processMulticardPayment called');
       const paymentData = { userId: this.finalUserId, userName: this.finalUserName, userEmail: this.finalUserEmail, plan: this.finalPlan, amount: this.finalAmount, duration: this.selectedDuration, lang: this.selectedLanguage };
+      console.log('💳 [UniversalCheckout] paymentData:', JSON.stringify(paymentData, null, 2));
+      console.log('💳 [UniversalCheckout] selectedCardToken:', this.selectedCardToken);
       let result = this.selectedCardToken ? await createPaymentByToken(this.selectedCardToken, paymentData) : await initiateMulticardPayment(paymentData);
+      console.log('💳 [UniversalCheckout] initiateMulticardPayment result:', JSON.stringify(result, null, 2));
       if (result.success) {
-        if (result.data?.paymentUrl) window.location.href = result.data.paymentUrl;
+        if (result.data?.paymentUrl || result.data?.checkoutUrl) window.location.href = result.data.paymentUrl || result.data.checkoutUrl;
         else if (result.data?.requiresOtp) { this.currentPaymentUuid = result.data.uuid; this.showOtpModal = true; }
         else if (result.data?.status === 'success') this.handlePaymentSuccess(result.data);
       } else throw new Error(result.error || 'Failed to process payment');

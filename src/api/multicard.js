@@ -34,11 +34,11 @@ multicardApi.interceptors.request.use(
 
       return config;
     } catch (error) {
-return config;
+      return config;
     }
   },
   (error) => {
-return Promise.reject(error);
+    return Promise.reject(error);
   }
 );
 
@@ -48,7 +48,7 @@ return Promise.reject(error);
 
 multicardApi.interceptors.response.use(
   (response) => {
-return response;
+    return response;
   },
   (error) => {
     const errorDetails = {
@@ -56,15 +56,15 @@ return response;
       method: error.config?.method?.toUpperCase(),
       status: error.response?.status,
       statusText: error.response?.statusText,
-      message: error.response?.data?.error?.details || 
-               error.response?.data?.error || 
-               error.response?.data?.message ||
-               error.message,
+      message: error.response?.data?.error?.details ||
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        error.message,
       fullError: error.response?.data
     };
-// Attach detailed error info for better debugging
+    // Attach detailed error info for better debugging
     error.multicardDetails = errorDetails;
-    
+
     return Promise.reject(error);
   }
 );
@@ -79,10 +79,10 @@ return response;
  */
 export const testMulticardConnection = async () => {
   try {
-const { data } = await multicardApi.post('/multicard/test-connection');
-return data;
+    const { data } = await multicardApi.post('/multicard/test-connection');
+    return data;
   } catch (error) {
-throw error;
+    throw error;
   }
 };
 
@@ -108,8 +108,9 @@ export const testMulticardAuth = testMulticardConnection;
  * @returns {Promise<Object>} Payment initiation result
  */
 export const initiateMulticardPayment = async (paymentData) => {
+  console.log('💳 [multicard.js] initiateMulticardPayment called with:', paymentData);
   try {
-// Validation
+    // Validation
     if (!paymentData.userId) {
       throw new Error('userId is required');
     }
@@ -126,7 +127,7 @@ export const initiateMulticardPayment = async (paymentData) => {
     // 1 UZS = 100 tiyin
     // Pro: 455,000 UZS = 45,500,000 tiyin
     // Start: 260,000 UZS = 26,000,000 tiyin
-    const finalAmount = paymentData.amount || 
+    const finalAmount = paymentData.amount ||
       (paymentData.plan === 'pro' ? 45500000 : 26000000);
 
     // ✅ CRITICAL: Build OFD data correctly - it should be an array
@@ -152,7 +153,9 @@ export const initiateMulticardPayment = async (paymentData) => {
       provider: 'multicard' // ✅ Add provider field
     };
 
+    console.log('💳 [multicard.js] Sending request to /multicard/initiate with:', requestPayload);
     const { data } = await multicardApi.post('/multicard/initiate', requestPayload);
+    console.log('💳 [multicard.js] Response from /multicard/initiate:', data);
 
     // Handle success
     if (data.success && data.data) {
@@ -175,9 +178,9 @@ export const initiateMulticardPayment = async (paymentData) => {
 
   } catch (error) {
 
-// Extract error message with priority
+    // Extract error message with priority
     let errorMessage = 'Unknown payment error occurred';
-    
+
     if (error.response?.data?.error) {
       if (typeof error.response.data.error === 'string') {
         errorMessage = error.response.data.error;
@@ -195,8 +198,8 @@ export const initiateMulticardPayment = async (paymentData) => {
     // Check for specific error scenarios
     if (error.response?.status === 404) {
       errorMessage = 'Multicard payment endpoint not found. Please contact support.';
-    } else if (errorMessage.includes('временно отключен') || 
-               errorMessage.includes('temporarily disabled')) {
+    } else if (errorMessage.includes('временно отключен') ||
+      errorMessage.includes('temporarily disabled')) {
       errorMessage = 'Multicard payment is temporarily disabled. Please try PayMe or contact support.';
     }
 
@@ -213,7 +216,7 @@ export const initiateMulticardPayment = async (paymentData) => {
         endpoint: error.config?.url
       }
     };
-return errorResponse;
+    return errorResponse;
   }
 };
 
@@ -228,10 +231,10 @@ return errorResponse;
  */
 export const getInvoiceInfo = async (invoiceId) => {
   try {
-const { data } = await multicardApi.post(`/multicard/invoice/${invoiceId}`);
+    const { data } = await multicardApi.post(`/multicard/invoice/${invoiceId}`);
     return data;
   } catch (error) {
-throw error;
+    throw error;
   }
 };
 
@@ -242,10 +245,10 @@ throw error;
  */
 export const cancelInvoice = async (invoiceId) => {
   try {
-const { data } = await multicardApi.delete(`/multicard/invoice/${invoiceId}`);
+    const { data } = await multicardApi.delete(`/multicard/invoice/${invoiceId}`);
     return data;
   } catch (error) {
-throw error;
+    throw error;
   }
 };
 
@@ -258,7 +261,7 @@ throw error;
  */
 export const createCardBindingSession = async (bindingData) => {
   try {
-if (!bindingData.userId) {
+    if (!bindingData.userId) {
       throw new Error('userId is required');
     }
     if (!bindingData.redirectUrl) {
@@ -271,7 +274,7 @@ if (!bindingData.userId) {
     const { data } = await multicardApi.post('/multicard/card/bind', bindingData);
 
     if (data.success) {
-return {
+      return {
         success: true,
         data: {
           sessionId: data.data.sessionId,
@@ -283,7 +286,7 @@ return {
       throw new Error(data.error?.details || 'Card binding session creation failed');
     }
   } catch (error) {
-return {
+    return {
       success: false,
       error: error.response?.data?.error?.details || error.message
     };
@@ -295,10 +298,10 @@ return {
  */
 export const checkCardBindingStatus = async (sessionId) => {
   try {
-const { data } = await multicardApi.post(`/multicard/card/bind/${sessionId}`);
+    const { data } = await multicardApi.post(`/multicard/card/bind/${sessionId}`);
     return data;
   } catch (error) {
-throw error;
+    throw error;
   }
 };
 
@@ -307,10 +310,10 @@ throw error;
  */
 export const getCardInfo = async (cardToken) => {
   try {
-const { data } = await multicardApi.post(`/multicard/card/${cardToken}`);
+    const { data } = await multicardApi.post(`/multicard/card/${cardToken}`);
     return data;
   } catch (error) {
-throw error;
+    throw error;
   }
 };
 
@@ -319,10 +322,10 @@ throw error;
  */
 export const deleteCard = async (cardToken) => {
   try {
-const { data } = await multicardApi.delete(`/multicard/card/${cardToken}`);
+    const { data } = await multicardApi.delete(`/multicard/card/${cardToken}`);
     return data;
   } catch (error) {
-throw error;
+    throw error;
   }
 };
 
@@ -335,7 +338,7 @@ throw error;
  */
 export const createPaymentByToken = async (paymentData) => {
   try {
-if (!paymentData.card?.token) {
+    if (!paymentData.card?.token) {
       throw new Error('Card token is required');
     }
     if (!paymentData.amount) {
@@ -351,7 +354,7 @@ if (!paymentData.card?.token) {
     const { data } = await multicardApi.post('/multicard/payment', paymentData);
 
     if (data.success) {
-return {
+      return {
         success: true,
         data: data.data
       };
@@ -359,7 +362,7 @@ return {
       throw new Error(data.error?.details || 'Payment creation failed');
     }
   } catch (error) {
-return {
+    return {
       success: false,
       error: error.response?.data?.error?.details || error.message
     };
@@ -371,7 +374,7 @@ return {
  */
 export const createPaymentViaApp = async (paymentData) => {
   try {
-const validSystems = ['payme', 'click', 'uzum', 'anorbank', 'alif', 'oson', 'xazna', 'beepul'];
+    const validSystems = ['payme', 'click', 'uzum', 'anorbank', 'alif', 'oson', 'xazna', 'beepul'];
     if (!validSystems.includes(paymentData.paymentSystem)) {
       throw new Error(`Invalid payment system. Must be one of: ${validSystems.join(', ')}`);
     }
@@ -388,7 +391,7 @@ const validSystems = ['payme', 'click', 'uzum', 'anorbank', 'alif', 'oson', 'xaz
       throw new Error(data.error?.details || 'Payment via app creation failed');
     }
   } catch (error) {
-return {
+    return {
       success: false,
       error: error.response?.data?.error?.details || error.message
     };
@@ -400,7 +403,7 @@ return {
  */
 export const confirmPayment = async (paymentUuid, otp, debitAvailable = false) => {
   try {
-if (!paymentUuid) {
+    if (!paymentUuid) {
       throw new Error('Payment UUID is required');
     }
     if (!otp || otp.length !== 6) {
@@ -413,7 +416,7 @@ if (!paymentUuid) {
     });
 
     if (data.success) {
-return {
+      return {
         success: true,
         data: data.data
       };
@@ -421,7 +424,7 @@ return {
       throw new Error(data.error?.details || 'Payment confirmation failed');
     }
   } catch (error) {
-return {
+    return {
       success: false,
       error: error.response?.data?.error?.details || error.message,
       code: error.response?.data?.error?.code
@@ -434,10 +437,10 @@ return {
  */
 export const refundPayment = async (paymentUuid) => {
   try {
-const { data } = await multicardApi.delete(`/multicard/payment/${paymentUuid}`);
+    const { data } = await multicardApi.delete(`/multicard/payment/${paymentUuid}`);
     return data;
   } catch (error) {
-throw error;
+    throw error;
   }
 };
 
@@ -446,10 +449,10 @@ throw error;
  */
 export const getPaymentInfo = async (paymentUuid) => {
   try {
-const { data } = await multicardApi.post(`/multicard/payment/${paymentUuid}`);
+    const { data } = await multicardApi.post(`/multicard/payment/${paymentUuid}`);
     return data;
   } catch (error) {
-throw error;
+    throw error;
   }
 };
 
@@ -459,30 +462,30 @@ throw error;
 
 export const getPaymentHistory = async (storeId, params) => {
   try {
-const { data } = await multicardApi.post(`/multicard/store/${storeId}/history`, { params });
+    const { data } = await multicardApi.post(`/multicard/store/${storeId}/history`, { params });
     return data;
   } catch (error) {
-throw error;
+    throw error;
   }
 };
 
 export const getPaymentStatistics = async (storeId, startDate, endDate) => {
   try {
-const { data } = await multicardApi.post(`/multicard/store/${storeId}/statistics`, {
+    const { data } = await multicardApi.post(`/multicard/store/${storeId}/statistics`, {
       params: { startDate, endDate }
     });
     return data;
   } catch (error) {
-throw error;
+    throw error;
   }
 };
 
 export const getApplicationInfo = async () => {
   try {
-const { data } = await multicardApi.post('/multicard/application/info');
+    const { data } = await multicardApi.post('/multicard/application/info');
     return data;
   } catch (error) {
-throw error;
+    throw error;
   }
 };
 

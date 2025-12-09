@@ -1855,6 +1855,7 @@ return finalResult;
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
     const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live';
+    console.log('🎟️ [Store] Using baseUrl:', baseUrl);
     if (!baseUrl) {
       commit('SET_ERROR', { message: 'API configuration error', context: 'applyPromocode' });
       return { success: false, error: 'Ошибка конфигурации приложения' };
@@ -1973,6 +1974,7 @@ return finalResult;
 
   // ✅ ENHANCED: Validate promocode
   async validatePromocode({ state, commit }, promoCode) {
+  console.log('🎟️ [Store] validatePromocode called with:', promoCode);
   try {
     if (!promoCode || typeof promoCode !== 'string' || promoCode.trim().length < 3) {
       return { valid: false, error: 'Промокод должен содержать не менее 3 символов' };
@@ -1990,10 +1992,12 @@ return finalResult;
     }
 
     const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live';
+    console.log('🎟️ [Store] Using baseUrl:', baseUrl);
     if (!baseUrl) {
       return { valid: false, error: 'Ошибка конфигурации приложения' };
     }
 
+    console.log('🎟️ [Store] Calling API:', baseUrl + '/api/promocodes/validate/' + normalizedCode);
     const response = await Promise.race([
       fetch(`${baseUrl}/api/promocodes/validate/${normalizedCode}`),
       new Promise((_, reject) =>
@@ -2002,6 +2006,7 @@ return finalResult;
     ]);
 
     const result = await response.json();
+    console.log('🎟️ [Store] API response:', JSON.stringify(result, null, 2));
 
     const validationResult = {
       valid: result?.success && result.valid,
