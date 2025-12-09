@@ -1865,13 +1865,14 @@ const actions = {
         return { success: false, error: 'Ошибка конфигурации приложения' };
       }
 
-      // Use the correct application endpoint
+      // Use the correct backend endpoint for promo code application
       const response = await Promise.race([
-        fetch(`${baseUrl}/api/promocodes/apply`, {
+        fetch(`${baseUrl}/api/payments/promo-code`, {
           method: 'POST',
           headers,
           body: JSON.stringify({
-            code: normalizedCode // Backend expects 'code'
+            userId: userId,
+            promoCode: normalizedCode
           })
         }),
         new Promise((_, reject) =>
@@ -1932,7 +1933,8 @@ const actions = {
 
       if (result?.success) {
         const oldStatus = state.userStatus;
-        const newPlan = result.promocode?.grantsPlan || result.user?.subscriptionPlan || plan;
+        // Backend returns plan in various formats - check all possibilities
+        const newPlan = result.plan || result.promocode?.grantsPlan || result.user?.subscriptionPlan || plan;
 
         // ✅ CRITICAL: Fetch updated user status from server (server-authoritative)
         // The backend's grantSubscription() already updated MongoDB and Firebase
