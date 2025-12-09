@@ -294,39 +294,39 @@
               <div v-if="selectedDuration === 1" class="duration-check">✓</div>
             </label>
 
-            <!-- 6 Months -->
+            <!-- 3 Months -->
             <label 
               :class="['duration-card popular', { 'active': selectedDuration === 6 }]"
-              @click="selectedDuration = 6"
+              @click="selectedDuration = 3"
             >
               <div class="popular-badge tw-absolute tw--top-2 tw-left-1/2 tw--translate-x-1/2 tw-bg-gradient-to-r tw-from-purple-500 tw-to-pink-500 tw-text-white tw-text-[10px] tw-px-2 tw-py-0.5 tw-rounded-full tw-font-medium">
                 POPULAR
               </div>
-              <input type="radio" v-model="selectedDuration" :value="6" class="tw-hidden" />
+              <input type="radio" v-model="selectedDuration" :value="3" class="tw-hidden" />
               <div class="tw-text-center">
-                <span class="tw-block tw-text-lg tw-font-bold tw-text-gray-800">6</span>
+                <span class="tw-block tw-text-lg tw-font-bold tw-text-gray-800">3</span>
                 <span class="tw-block tw-text-xs tw-text-gray-500 tw-uppercase">Months</span>
               </div>
               <div class="tw-text-center tw-mt-2">
-                <span class="tw-block tw-text-lg tw-font-semibold tw-text-purple-600">1,350,000</span>
+                <span class="tw-block tw-text-lg tw-font-semibold tw-text-purple-600">675,000</span>
                 <span class="tw-text-xs tw-text-gray-400">UZS</span>
                 <span class="tw-block tw-text-[10px] tw-text-green-500 tw-font-medium">Save 10%</span>
               </div>
               <div v-if="selectedDuration === 6" class="duration-check">✓</div>
             </label>
 
-            <!-- 1 Year -->
+            <!-- 6 Months -->
             <label 
               :class="['duration-card', { 'active': selectedDuration === 12 }]"
-              @click="selectedDuration = 12"
+              @click="selectedDuration = 6"
             >
-              <input type="radio" v-model="selectedDuration" :value="12" class="tw-hidden" />
+              <input type="radio" v-model="selectedDuration" :value="6" class="tw-hidden" />
               <div class="tw-text-center">
-                <span class="tw-block tw-text-lg tw-font-bold tw-text-gray-800">1</span>
-                <span class="tw-block tw-text-xs tw-text-gray-500 tw-uppercase">Year</span>
+                <span class="tw-block tw-text-lg tw-font-bold tw-text-gray-800">6</span>
+                <span class="tw-block tw-text-xs tw-text-gray-500 tw-uppercase">Months</span>
               </div>
               <div class="tw-text-center tw-mt-2">
-                <span class="tw-block tw-text-lg tw-font-semibold tw-text-green-600">2,400,000</span>
+                <span class="tw-block tw-text-lg tw-font-semibold tw-text-green-600">1,200,000</span>
                 <span class="tw-text-xs tw-text-gray-400">UZS</span>
                 <span class="tw-block tw-text-[10px] tw-text-green-500 tw-font-medium">Save 20%</span>
               </div>
@@ -639,27 +639,27 @@ export default {
       }
       
       // Use selected duration (in months)
-      const duration = this.selectedDuration || 6;
+      const duration = this.selectedDuration || 3;
       
       // Pro plan amounts in tiyin (UZS * 100)
-      // 1 month = 250,000 UZS, 6 months = 1,350,000 UZS, 12 months = 2,400,000 UZS
+      // 1 month = 250,000 UZS, 6 months = 675,000 UZS, 12 months = 1,200,000 UZS
       const amounts = {
         1: 25000000,    // 250,000 UZS (30 days)
-        6: 135000000,   // 1,350,000 UZS (180 days) - 10% discount
-        12: 240000000   // 2,400,000 UZS (365 days) - 20% discount
+        6: 135000000,   // 675,000 UZS (180 days) - 10% discount
+        12: 240000000   // 1,200,000 UZS (365 days) - 20% discount
       };
       
-      return amounts[duration] || amounts[6];
+      return amounts[duration] || amounts[3];
     },
     
     planName() {
       if (this.promoApplied && this.promoData) {
         return `Pro Plan (via Promocode - ${this.promoData.durationText})`;
       }
-      const duration = this.selectedDuration || 6;
+      const duration = this.selectedDuration || 3;
       if (duration === 1) return 'Pro Plan (1 Month)';
-      if (duration === 6) return 'Pro Plan (6 Months)';
-      return 'Pro Plan (1 Year)';
+      if (duration === 3) return 'Pro Plan (3 Months)';
+      return 'Pro Plan (6 Months)';
     },
     
     canProceedToPayment() {
