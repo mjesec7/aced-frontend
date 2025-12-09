@@ -743,7 +743,7 @@ export default {
       try {
         const result = await this.$store.dispatch('user/validatePromocode', this.promoCodeInput.toUpperCase());
         if (result && result.valid) { this.promoApplied = true; this.promoData = result.data; this.promoMessage = 'Promo code applied!'; }
-        else { this.promoError = true; this.promoMessage = result?.error || 'Invalid promo code'; }
+        else { this.promoError = true; this.promoMessage = result?.message || result?.error || 'Invalid promo code'; }
       } catch (err) { this.promoError = true; this.promoMessage = 'Error validating promo code'; }
       finally { this.promoApplying = false; }
     },

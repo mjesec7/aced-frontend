@@ -1429,6 +1429,7 @@ return 0;
           valid: false,
           error: `Unable to verify promo code "${promocodeUpper}".`
         };
+        this.isValidatingPromo = false;
         
       } catch (error) {
         this.promoValidation = {
@@ -2202,6 +2203,23 @@ return 0;
 }
 
 .btn-large {
+}
+
+
+/* ==================== PRICING CARDS GRID ==================== */
+
+.pricing-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 900px) {
+  .pricing-cards {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
 }
 
 .pricing-card {
