@@ -261,7 +261,7 @@ const state = () => ({
     applied: [],
     available: [],
     lastCheck: null,
-    validationCache: new Map()
+    validationCache: {}
   },
 
   // ✅ BULLETPROOF: Payment history - Always arrays
@@ -1983,8 +1983,8 @@ return finalResult;
     const normalizedCode = promoCode.trim().toUpperCase();
 
     // Check cache first
-    if (state.promocodes.validationCache.has(normalizedCode)) {
-      const cached = state.promocodes.validationCache.get(normalizedCode);
+    if (state.promocodes.validationCache && state.promocodes.validationCache[normalizedCode]) {
+      const cached = state.promocodes.validationCache[normalizedCode];
       const age = Date.now() - cached.timestamp;
       if (age < 300000) { // 5 minutes cache
         return cached.result;
@@ -2018,15 +2018,16 @@ return finalResult;
     };
 
     // Cache the result
-    state.promocodes.validationCache.set(normalizedCode, {
+    if (!state.promocodes.validationCache) state.promocodes.validationCache = {};
+    state.promocodes.validationCache[normalizedCode] = {
       result: validationResult,
       timestamp: Date.now()
-    });
+    };
 
-    // Limit cache size
-    if (state.promocodes.validationCache.size > 50) {
-      const firstKey = state.promocodes.validationCache.keys().next().value;
-      state.promocodes.validationCache.delete(firstKey);
+    // Limit cache size (simple cleanup)
+    const cacheKeys = Object.keys(state.promocodes.validationCache);
+    if (cacheKeys.length > 50) {
+      delete state.promocodes.validationCache[cacheKeys[0]];
     }
 
     return validationResult;
@@ -3530,4 +3531,12 @@ export const performanceMonitor = {
       }
     };
   }
+};
+
+export default {
+  namespaced: true,
+  state,
+  getters,
+  mutations,
+  actions
 };
