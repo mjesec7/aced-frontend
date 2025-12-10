@@ -2844,14 +2844,14 @@ const getters = {
   },
 
   // ✅ CRITICAL: Enhanced subscription getter
-  subscription: (state) => {
+  subscription: (state, getters) => {
     const subscription = state.subscription || {};
-    const userStatus = getters.userStatus(state);
+    const userStatus = getters.userStatus;
 
     return {
+      ...subscription,
       plan: userStatus,
       status: userStatus !== 'free' ? 'active' : 'inactive',
-      ...subscription,
       lastAccess: Date.now()
     };
   },
@@ -2886,10 +2886,9 @@ const getters = {
     return status === 'free';
   },
 
-  hasActiveSubscription: (state) => {
-    const subscription = state.subscription || {};
-    return subscription.status === 'active' &&
-      (subscription.plan !== 'free');
+  hasActiveSubscription: (state, getters) => {
+    const status = getters.userStatus;
+    return status !== 'free';
   },
 
   isSubscriptionExpired: (state) => {
