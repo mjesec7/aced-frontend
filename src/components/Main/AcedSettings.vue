@@ -43,7 +43,7 @@
         <!-- STATS OVERVIEW -->
         <div class="stats-section">
           <div class="stat-card">
-            <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <div class="stat-icon plan-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
               </svg>
@@ -56,7 +56,7 @@
           </div>
 
           <div class="stat-card">
-            <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            <div class="stat-icon messages-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
               </svg>
@@ -71,7 +71,7 @@
           </div>
 
           <div class="stat-card">
-            <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+            <div class="stat-icon images-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
                 <circle cx="8.5" cy="8.5" r="1.5"/>
@@ -581,7 +581,7 @@
 
                   <div class="form-group">
                     <label class="form-label">Plan Type</label>
-                    <div class="pro-plan-display" style="display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white; font-weight: 600;">
+                    <div class="pro-plan-display">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                         <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
                       </svg>
@@ -662,7 +662,7 @@
                     <p class="card-description">Your payment notifications</p>
                   </div>
                 </div>
-                <span v-if="unreadMessagesCount > 0" class="bg-linear-to-r from-indigo-500 to-purple-600 text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[22px] text-center">{{ unreadMessagesCount }}</span>
+                <span v-if="unreadMessagesCount > 0" class="bg-indigo-600 text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[22px] text-center">{{ unreadMessagesCount }}</span>
               </div>
 
               <div class="card-body">
@@ -2048,7 +2048,23 @@ return 0;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  color: white;
+  background: #F3F4F6;
+  color: #111827;
+}
+
+.stat-icon.messages-icon {
+  color: #EC4899;
+  background: #FCE7F3;
+}
+
+.stat-icon.images-icon {
+  color: #0EA5E9;
+  background: #E0F2FE;
+}
+
+.stat-icon.plan-icon {
+  color: #6366F1;
+  background: #E0E7FF;
 }
 
 .stat-info {
@@ -2109,7 +2125,7 @@ return 0;
 
 .mini-progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  background: #111827;
   border-radius: 999px;
   transition: width 0.6s ease;
 }
@@ -2163,12 +2179,12 @@ return 0;
 .card-icon {
   width: 40px;
   height: 40px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #F3F4F6;
   border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: #111827;
   flex-shrink: 0;
 }
 
@@ -2364,15 +2380,16 @@ return 0;
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #111827;
   color: white;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  box-shadow: none;
   width: 100%;
 }
 
 .btn-primary:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  transform: translateY(-1px);
+  background: #1F2937;
+  box-shadow: none;
 }
 
 .btn-secondary {
@@ -2427,19 +2444,19 @@ return 0;
 }
 
 .pricing-card:hover {
-  border-color: #667eea;
-  transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(102, 126, 234, 0.2);
+  border-color: #111827;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .pricing-card.selected {
-  border-color: #667eea;
-  background: linear-gradient(180deg, rgba(102, 126, 234, 0.05) 0%, white 100%);
+  border-color: #111827;
+  background: #F9FAFB;
 }
 
 .pricing-card.featured {
-  border-color: #667eea;
-  background: linear-gradient(180deg, rgba(102, 126, 234, 0.08) 0%, white 100%);
+  border-color: #111827;
+  background: #F9FAFB;
 }
 
 .current-badge {
@@ -2468,14 +2485,14 @@ return 0;
   align-items: center;
   gap: 4px;
   padding: 6px 16px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #111827;
   color: white;
   font-size: 11px;
   font-weight: 700;
   border-radius: 999px;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  box-shadow: none;
 }
 
 .pricing-header {
@@ -2509,7 +2526,7 @@ return 0;
 .price-amount {
   font-size: 30px;
   font-weight: 800;
-  color: #667eea;
+  color: #111827;
   line-height: 1;
 }
 
@@ -2557,8 +2574,8 @@ return 0;
 
 .pricing-button {
   width: 100%;
-  padding: 12px 24px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 10px 20px;
+  background: #111827;
   border: none;
   border-radius: 10px;
   color: white;
@@ -2591,7 +2608,7 @@ return 0;
 .plan-badge {
   display: inline-block;
   padding: 8px 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #4F46E5;
   color: white;
   font-size: 14px;
   font-weight: 700;
@@ -2602,7 +2619,7 @@ return 0;
 
 /* ✅ Days Remaining Display */
 .subscription-days-remaining {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  background: #111827;
   border-radius: 16px;
   padding: 20px;
   margin-bottom: 20px;
@@ -2721,11 +2738,22 @@ return 0;
 }
 
 .usage-progress-bar.messages {
-  background: linear-gradient(90deg, #f093fb 0%, #f5576c 100%);
+  background: #EC4899;
 }
 
 .usage-progress-bar.images {
-  background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+  background: #0EA5E9;
+}
+
+.pro-plan-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #111827;
+  border-radius: 12px;
+  color: white;
+  font-weight: 600;
 }
 
 /* ==================== LOADING ==================== */
