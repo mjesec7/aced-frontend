@@ -558,6 +558,13 @@
                     <span class="plan-badge">{{ currentPlanLabel }} Plan</span>
                   </div>
                   
+                  <!-- Days Remaining Display -->
+                  <div class="subscription-days-remaining">
+                    <p class="days-label">Time Remaining</p>
+                    <h3 class="days-value">{{ subscriptionExpiryInfo.daysRemaining }} <span class="days-unit">days</span></h3>
+                    <p class="time-remaining-detail">{{ subscriptionExpiryInfo.timeRemaining }}</p>
+                  </div>
+                  
                   <div class="subscription-expiry">
                     <p class="expiry-label">Valid until</p>
                     <h3 class="expiry-date">{{ subscriptionExpiryInfo.formattedDate }}</h3>
@@ -903,13 +910,29 @@ return localStorage.getItem('userStatus') || 'free';
     
     subscriptionExpiryInfo() {
       try {
+        // ✅ Try to get expiry from multiple sources
         const details = this.subscriptionDetails || {};
+        let expiryDateStr = details.expiryDate;
         
-        if (!details || !details.expiryDate || this.currentPlan === 'free') {
+        // Fallback to localStorage if Vuex doesn't have it
+        if (!expiryDateStr) {
+          expiryDateStr = localStorage.getItem('subscriptionExpiry');
+        }
+        
+        // Try subscriptionData in localStorage
+        if (!expiryDateStr) {
+          try {
+            const subData = JSON.parse(localStorage.getItem('subscriptionData') || '{}');
+            expiryDateStr = subData.expiryDate;
+          } catch (e) {}
+        }
+        
+        // If still no expiry or free plan, return null
+        if (!expiryDateStr || this.currentPlan === 'free') {
           return null;
         }
         
-        const expiryDate = new Date(details.expiryDate);
+        const expiryDate = new Date(expiryDateStr);
         const now = new Date();
         const diffTime = expiryDate - now;
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -919,11 +942,13 @@ return localStorage.getItem('userStatus') || 'free';
           daysRemaining: Math.max(0, diffDays),
           isExpiring: diffDays <= 7 && diffDays > 0,
           isExpired: diffDays <= 0,
-          formattedDate: this.formatDate(details.expiryDate),
-          timeRemaining: this.getTimeRemaining(diffTime)
+          formattedDate: this.formatDate(expiryDateStr),
+          timeRemaining: this.getTimeRemaining(diffTime),
+          duration: details.duration || null
         };
       } catch (e) {
-return null;
+        console.error('subscriptionExpiryInfo error:', e);
+        return null;
       }
     },
     
@@ -1176,6 +1201,33 @@ return 0;
       } catch (error) {
         console.error('Failed to delete message:', error);
         this.showNotification('Failed to delete message', 'error');
+      }
+    },
+
+    // ✅ Add message to local inbox display (fallback when API unavailable)
+    addLocalInboxMessage(messageData) {
+      const newMessage = {
+        id: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        type: messageData.type || 'payment',
+        title: messageData.title,
+        content: messageData.content,
+        data: messageData.data || {},
+        read: false,
+        createdAt: new Date().toISOString()
+      };
+      
+      // Add to beginning of array
+      this.inboxMessages.unshift(newMessage);
+      this.unreadMessagesCount++;
+      
+      // Also save to local storage for persistence
+      try {
+        const storageKey = `aced_user_inbox_${this.currentUser?.uid}`;
+        const existing = JSON.parse(localStorage.getItem(storageKey) || '[]');
+        existing.unshift(newMessage);
+        localStorage.setItem(storageKey, JSON.stringify(existing.slice(0, 50)));
+      } catch (e) {
+        console.error('Failed to save message to local storage:', e);
       }
     },
 
@@ -1486,19 +1538,38 @@ return 0;
         if (result.success) {
           // Extract data from response
           const newPlan = result.plan || result.user?.subscriptionPlan || promoData?.grantsPlan || 'pro';
-          const expiryDate = result.expiryDate || result.user?.subscriptionExpiryDate;
-          const subscriptionDays = promoData?.subscriptionDays || 30;
+          const subscriptionDays = result.promocode?.subscriptionDays || promoData?.subscriptionDays || 30;
+          const now = new Date();
+          const expiryDate = result.expiryDate || result.user?.subscriptionExpiryDate || 
+            new Date(now.getTime() + subscriptionDays * 24 * 60 * 60 * 1000).toISOString();
+          const durationMonths = subscriptionDays <= 31 ? 1 : subscriptionDays <= 95 ? 3 : 6;
+
+          // ✅ CRITICAL: Save comprehensive subscription data
+          const subscriptionData = {
+            plan: newPlan,
+            status: 'active',
+            source: 'promocode',
+            startDate: now.toISOString(),
+            expiryDate: expiryDate,
+            promoCode: normalizedCode,
+            duration: durationMonths,
+            activatedAt: now.toISOString()
+          };
 
           // Update local storage immediately
           localStorage.setItem('userStatus', newPlan);
           localStorage.setItem('plan', newPlan);
           localStorage.setItem('subscriptionPlan', newPlan);
+          localStorage.setItem('subscriptionExpiry', expiryDate);
+          localStorage.setItem('subscriptionData', JSON.stringify(subscriptionData));
 
-          if (expiryDate) {
-            localStorage.setItem('subscriptionExpiry', expiryDate);
+          // ✅ CRITICAL: Update Vuex store with subscription details
+          if (this.$store && this.$store.commit) {
+            this.$store.commit('user/SET_USER_STATUS', newPlan);
+            this.$store.commit('user/UPDATE_SUBSCRIPTION', subscriptionData);
           }
 
-          // Update Vuex store
+          // Also dispatch loadUserStatus to sync everything
           if (this.$store && this.$store.dispatch) {
             await this.$store.dispatch('user/loadUserStatus');
           }
@@ -1510,15 +1581,17 @@ return 0;
           window.dispatchEvent(new CustomEvent('userStatusChanged', {
             detail: { source: 'promocode', plan: newPlan, expiryDate, timestamp: Date.now() }
           }));
+          window.dispatchEvent(new CustomEvent('subscriptionUpdated', {
+            detail: subscriptionData
+          }));
 
           // ✅ Send inbox message with promocode confirmation
+          const endDate = new Date(expiryDate);
+
           try {
             const { sendPaymentConfirmationMessage } = await import('@/api/inbox');
-            const now = new Date();
-            const endDate = expiryDate ? new Date(expiryDate) : new Date(now.getTime() + subscriptionDays * 24 * 60 * 60 * 1000);
-            const durationMonths = subscriptionDays <= 31 ? 1 : subscriptionDays <= 95 ? 3 : 6;
 
-            await sendPaymentConfirmationMessage({
+            const msgResult = await sendPaymentConfirmationMessage({
               userId: this.currentUser?.uid,
               amount: 0, // Free via promocode
               plan: newPlan,
@@ -1531,9 +1604,27 @@ return 0;
               userEmail: this.user?.email,
               userName: this.user?.name
             });
-            console.log('✅ Inbox message sent for promo code');
+            
+            console.log('✅ Inbox message sent for promo code:', msgResult.source);
+            
+            // If message was saved to local storage, add it directly to display
+            if (msgResult.source === 'local' || !msgResult.source) {
+              console.log('ℹ️ Message saved to local storage fallback');
+            }
           } catch (msgError) {
             console.error('Failed to send inbox message:', msgError);
+            // Still add to local inbox as fallback
+            this.addLocalInboxMessage({
+              type: 'payment',
+              title: '🎉 Promo Code Applied - Subscription Activated!',
+              content: `Your promo code "${normalizedCode}" has been applied!\n\n` +
+                `Plan: ${newPlan.toUpperCase()}\n` +
+                `Duration: ${durationMonths} month${durationMonths > 1 ? 's' : ''}\n` +
+                `Payment Method: Promo Code\n` +
+                `Subscription End Date: ${endDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}\n\n` +
+                `Enjoy your premium features!`,
+              data: { promoCode: normalizedCode, plan: newPlan, endDate: expiryDate }
+            });
           }
 
           this.showNotification(result.message || 'Promocode applied successfully!', 'success', 6000);
@@ -2485,6 +2576,43 @@ return 0;
   border-radius: 999px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+}
+
+/* ✅ Days Remaining Display */
+.subscription-days-remaining {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+  color: white;
+  text-align: center;
+}
+
+.days-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.9;
+  margin-bottom: 8px;
+}
+
+.days-value {
+  font-size: 48px;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.days-unit {
+  font-size: 20px;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.time-remaining-detail {
+  font-size: 14px;
+  opacity: 0.85;
 }
 
 .subscription-expiry {
