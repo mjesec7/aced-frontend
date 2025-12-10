@@ -931,25 +931,15 @@ return localStorage.getItem('userStatus') || 'free';
     
     subscriptionExpiryInfo() {
       try {
-        // ✅ Try to get expiry from multiple sources
+        // 🔒 STRICT: If plan is free, return null. No client-side calculations allowed.
+        if (this.currentPlan === 'free') {
+          return null;
+        }
+
         const details = this.subscriptionDetails || {};
-        let expiryDateStr = details.expiryDate;
+        const expiryDateStr = details.expiryDate; // ONLY from backend/store
         
-        // Fallback to localStorage if Vuex doesn't have it
         if (!expiryDateStr) {
-          expiryDateStr = localStorage.getItem('subscriptionExpiry');
-        }
-        
-        // Try subscriptionData in localStorage
-        if (!expiryDateStr) {
-          try {
-            const subData = JSON.parse(localStorage.getItem('subscriptionData') || '{}');
-            expiryDateStr = subData.expiryDate;
-          } catch (e) {}
-        }
-        
-        // If still no expiry or free plan, return null
-        if (!expiryDateStr || this.currentPlan === 'free') {
           return null;
         }
         
