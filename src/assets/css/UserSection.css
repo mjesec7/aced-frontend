@@ -1,0 +1,350 @@
+/* src/assets/css/UserSection.css */
+
+.auth-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* ==== MODERN GLASSMORPHISM BUTTONS - COMPACT ==== */
+.auth-btn {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 8px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  color: #1f2937;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+/* ✅ NEON GLOW HOVER EFFECT FOR ALL BUTTONS */
+.auth-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+  /* Purple border color on hover */
+  border-color: rgba(192, 132, 252, 0.8);
+  /* Multi-layered box-shadow for a deep neon glow */
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1),      /* Base shadow lift */
+              0 0 15px rgba(168, 85, 247, 0.6), /* Inner glow */
+              0 0 30px rgba(168, 85, 247, 0.4); /* Outer glow */
+}
+
+.auth-btn:active {
+  transform: translateY(0);
+}
+
+.auth-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(156, 163, 175, 0.2);
+}
+
+/* This rule can still be used if you want the profile button to have different padding */
+.auth-btn.profile {
+  padding: 6px 14px;
+}
+
+
+/* ==== MODAL STYLES - COMPACT ==== */
+.global-auth-modal {
+  position: fixed;
+  z-index: 99999;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: fade-in 0.2s ease;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-content {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  padding: 20px;
+  border-radius: 14px;
+  position: relative;
+  max-width: 340px;
+  width: 100%;
+  z-index: 1100;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.close-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-size: 16px;
+  cursor: pointer;
+  color: #6b7280;
+  transition: all 0.2s ease;
+  z-index: 10;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+.close-btn:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.modal-content input {
+  width: 100%;
+  padding: 10px 12px;
+  margin: 6px 0;
+  border: 1px solid rgba(229, 231, 235, 0.5);
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(10px);
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.modal-content input:focus {
+  outline: none;
+  border-color: rgba(156, 163, 175, 0.6);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.auth-submit,
+.google-auth {
+  width: 100%;
+  padding: 10px;
+  margin-top: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.auth-submit {
+  background: rgba(31, 41, 55, 0.9);
+  color: white;
+  backdrop-filter: blur(10px);
+}
+
+.auth-submit:hover {
+  background: rgba(31, 41, 55, 1);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 12px rgba(31, 41, 55, 0.2);
+}
+
+.google-auth {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  color: #374151;
+}
+
+.google-auth:hover {
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.05);
+}
+
+.switch-text {
+  margin-top: 14px;
+  font-size: 0.75rem;
+  text-align: center;
+  color: #6b7280;
+}
+
+.switch-text span {
+  color: #374151;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.switch-text span:hover {
+  text-decoration: underline;
+}
+
+/* ==== USER SECTION - GLASSMORPHISM - COMPACT ==== */
+.user-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-menu {
+  position: relative;
+}
+
+.user-button {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #374151;
+  padding: 7px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.user-button:hover {
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+.user-button::after {
+  content: '⌄';
+  font-size: 10px;
+  transition: transform 0.2s ease;
+  color: #6b7280;
+}
+
+.user-button.active::after {
+  transform: rotate(180deg);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  padding: 6px;
+  min-width: 150px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px);
+  transition: all 0.2s ease;
+  z-index: 1000;
+}
+
+.dropdown-menu.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.dropdown-menu ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.dropdown-menu li {
+  padding: 7px 12px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.dropdown-menu li:hover {
+  background: rgba(255, 255, 255, 0.5);
+  color: #1f2937;
+}
+
+.dropdown-menu li:last-child {
+  border-top: 1px solid rgba(229, 231, 235, 0.3);
+  margin-top: 3px;
+  padding-top: 7px;
+  color: #ef4444;
+}
+
+.dropdown-menu li:last-child:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+}
+
+.badge {
+  margin-left: 6px;
+  background: rgba(31, 41, 55, 0.9);
+  backdrop-filter: blur(10px);
+  color: white;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-size: 0.5625rem;
+  font-weight: 500;
+}
+
+/* ==== RESPONSIVE DESIGN ==== */
+@media (max-width: 768px) {
+  .auth-buttons {
+    gap: 6px;
+  }
+
+  .auth-btn {
+    padding: 6px 12px;
+    font-size: 0.6875rem;
+  }
+
+  .modal, .modal-content {
+    width: 95%;
+    padding: 16px;
+  }
+
+  .user-button {
+    padding: 5px 10px;
+    font-size: 0.6875rem;
+  }
+
+  .dropdown-menu li {
+    padding: 6px 10px;
+    font-size: 0.6875rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-btn {
+    padding: 5px 10px;
+    font-size: 0.625rem;
+  }
+
+  .modal, .modal-content {
+    padding: 14px;
+  }
+
+  .modal-content input {
+    padding: 8px 10px;
+    font-size: 0.75rem;
+  }
+
+  .auth-submit,
+  .google-auth {
+    padding: 8px;
+    font-size: 0.75rem;
+  }
+}
