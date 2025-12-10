@@ -41,16 +41,17 @@ export const applyPromocode = async (code) => {
         console.log('🎟️ [promocodes.js] Making API request to apply promocode');
         console.log('🎟️ [promocodes.js] User ID:', userId.substring(0, 8) + '...');
         console.log('🎟️ [promocodes.js] Code:', code);
+        console.log('🎟️ [promocodes.js] Endpoint: /api/promocodes/apply');
 
-        const response = await fetch(`${BASE_URL}/api/payments/promo-code`, {
+        // FIXED: Use correct endpoint /api/promocodes/apply
+        const response = await fetch(`${BASE_URL}/api/promocodes/apply`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                userId: userId,
-                promoCode: code.trim().toUpperCase()
+                code: code.trim().toUpperCase()
             })
         });
 
@@ -61,13 +62,20 @@ export const applyPromocode = async (code) => {
 
         if (result.success) {
             console.log('✅ [promocodes.js] Promocode applied successfully');
+
+            // Extract plan info from response (handle different response formats)
+            const plan = result.promocode?.grantsPlan || result.user?.subscriptionPlan || result.plan || 'pro';
+            const subscriptionDays = result.promocode?.subscriptionDays || 30;
+            const expiryDate = result.user?.subscriptionExpiryDate || result.user?.subscriptionEndDate || result.expiryDate || null;
+
             return {
                 success: true,
                 message: result.message || 'Промокод успешно применён!',
-                plan: result.plan || result.promocode?.grantsPlan || 'pro',
-                subscriptionDays: result.promocode?.subscriptionDays,
-                durationText: result.promocode?.durationText,
-                expiryDate: result.user?.subscriptionEndDate || result.expiryDate
+                plan: plan,
+                subscriptionDays: subscriptionDays,
+                durationText: result.promocode?.durationText || getDurationText(subscriptionDays),
+                expiryDate: expiryDate,
+                user: result.user
             };
         } else {
             console.error('❌ [promocodes.js] Server returned error:', result.message || result.error);
@@ -212,16 +220,32 @@ export const getPromocodeErrorMessage = (errorMessage) => {
     if (!errorMessage) return null;
 
     const errorMessages = {
+        // Backend error messages
+        'Promo code is required': 'Введите промокод',
+        'Promocode is required': 'Введите промокод',
+        'Invalid or inactive promocode': 'Недействительный или неактивный промокод',
+        'Invalid promocode': 'Недействительный промокод',
         'Promocode not found or is inactive': 'Промокод не найден или неактивен',
         'Promocode not found': 'Промокод не найден',
+        'Promo code not found': 'Промокод не найден',
+        'This promo code has expired': 'Срок действия промокода истёк',
         'This promocode has expired': 'Срок действия промокода истёк',
+        'expired': 'Срок действия промокода истёк',
+        'This promo code has reached its usage limit': 'Лимит использования промокода исчерпан',
         'This promocode has reached its maximum usage limit': 'Лимит использования промокода исчерпан',
+        'usage limit': 'Лимит использования промокода исчерпан',
+        'You have already used this promo code': 'Вы уже использовали этот промокод',
         'You have already used this promocode': 'Вы уже использовали этот промокод',
+        'already used': 'Вы уже использовали этот промокод',
+        'This promo code is not available for your account': 'Промокод недоступен для вашего аккаунта',
+        'not available': 'Промокод недоступен',
         'User not found': 'Пользователь не найден',
         'User ID and promo code are required': 'Необходимо ввести промокод',
         'Server error while applying promocode': 'Ошибка сервера при применении промокода',
-        'Invalid promocode': 'Недействительный промокод',
+        'server error': 'Ошибка сервера. Попробуйте позже.',
         'Promocode is inactive': 'Промокод неактивен',
+        'Authentication required': 'Необходима авторизация',
+        'Unauthorized': 'Необходима авторизация',
         'Network error': 'Ошибка сети. Проверьте подключение к интернету.'
     };
 
