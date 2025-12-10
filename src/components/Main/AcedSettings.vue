@@ -438,6 +438,56 @@
               </div>
             </div>
 
+            <!-- SUBSCRIPTION INFO (Moved to Left Column) -->
+            <div class="card" v-if="subscriptionExpiryInfo">
+              <div class="card-header">
+                <div class="card-header-left">
+                  <div class="card-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="10"/>
+                      <polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 class="card-title">Subscription</h2>
+                    <p class="card-description">Your subscription information</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="card-body">
+                <div class="subscription-info">
+                  <div class="subscription-plan">
+                    <span class="plan-badge">{{ currentPlanLabel }} Plan</span>
+                  </div>
+                  
+                  <!-- Days Remaining Display -->
+                  <div class="subscription-days-remaining">
+                    <p class="days-label">Time Remaining</p>
+                    <h3 class="days-value">{{ subscriptionExpiryInfo.daysRemaining }} <span class="days-unit">days</span></h3>
+                    <p class="time-remaining-detail">{{ subscriptionExpiryInfo.timeRemaining }}</p>
+                  </div>
+                  
+                  <div class="subscription-expiry">
+                    <p class="expiry-label">Valid until</p>
+                    <h3 class="expiry-date">{{ subscriptionExpiryInfo.formattedDate }}</h3>
+                  </div>
+                  
+                  <div :class="['subscription-status', subscriptionExpiryInfo.isExpiring ? 'expiring' : 'active']">
+                    <svg v-if="!subscriptionExpiryInfo.isExpiring" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                      <line x1="12" y1="9" x2="12" y2="13"/>
+                      <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                    {{ subscriptionExpiryInfo.isExpiring ? 'Expiring Soon' : 'Active' }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
 
           <!-- RIGHT COLUMN -->
@@ -554,55 +604,7 @@
               </div>
             </div>
 
-            <!-- SUBSCRIPTION INFO -->
-            <div class="card" v-if="subscriptionExpiryInfo">
-              <div class="card-header">
-                <div class="card-header-left">
-                  <div class="card-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <circle cx="12" cy="12" r="10"/>
-                      <polyline points="12 6 12 12 16 14"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <h2 class="card-title">Subscription</h2>
-                    <p class="card-description">Your subscription information</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div class="card-body">
-                <div class="subscription-info">
-                  <div class="subscription-plan">
-                    <span class="plan-badge">{{ currentPlanLabel }} Plan</span>
-                  </div>
-                  
-                  <!-- Days Remaining Display -->
-                  <div class="subscription-days-remaining">
-                    <p class="days-label">Time Remaining</p>
-                    <h3 class="days-value">{{ subscriptionExpiryInfo.daysRemaining }} <span class="days-unit">days</span></h3>
-                    <p class="time-remaining-detail">{{ subscriptionExpiryInfo.timeRemaining }}</p>
-                  </div>
-                  
-                  <div class="subscription-expiry">
-                    <p class="expiry-label">Valid until</p>
-                    <h3 class="expiry-date">{{ subscriptionExpiryInfo.formattedDate }}</h3>
-                  </div>
-                  
-                  <div :class="['subscription-status', subscriptionExpiryInfo.isExpiring ? 'expiring' : 'active']">
-                    <svg v-if="!subscriptionExpiryInfo.isExpiring" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                    <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                      <line x1="12" y1="9" x2="12" y2="13"/>
-                      <line x1="12" y1="17" x2="12.01" y2="17"/>
-                    </svg>
-                    {{ subscriptionExpiryInfo.isExpiring ? 'Expiring Soon' : 'Active' }}
-                  </div>
-                </div>
-              </div>
-            </div>
+
 
             <!-- USAGE STATS -->
             <div class="card">
@@ -2023,7 +2025,7 @@ return 0;
 .stat-card {
   background: white;
   border-radius: 16px;
-  padding: 24px;
+  padding: 20px;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -2063,7 +2065,7 @@ return 0;
 }
 
 .stat-value {
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
   color: #111827;
   line-height: 1;
@@ -2147,7 +2149,8 @@ return 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 24px;
+  align-items: center;
+  padding: 16px 20px;
   border-bottom: 2px solid #f3f4f6;
 }
 
@@ -2170,14 +2173,14 @@ return 0;
 }
 
 .card-title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   color: #111827;
   margin-bottom: 2px;
 }
 
 .card-description {
-  font-size: 13px;
+  font-size: 12px;
   color: #6b7280;
 }
 
@@ -2202,7 +2205,7 @@ return 0;
 }
 
 .card-body {
-  padding: 24px;
+  padding: 20px;
 }
 
 /* ==================== FORMS ==================== */
@@ -2226,7 +2229,7 @@ return 0;
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: #374151;
   margin-bottom: 8px;
@@ -2249,7 +2252,7 @@ return 0;
 .form-input,
 .form-select {
   width: 100%;
-  padding: 12px 16px;
+  padding: 10px 14px;
   background: white;
   border: 2px solid #e5e7eb;
   border-radius: 10px;
@@ -2345,7 +2348,7 @@ return 0;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 12px 24px;
+  padding: 10px 20px;
   border: none;
   border-radius: 10px;
   font-size: 15px;
@@ -2417,7 +2420,7 @@ return 0;
   background: white;
   border: 3px solid #e5e7eb;
   border-radius: 16px;
-  padding: 28px;
+  padding: 20px;
   position: relative;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -2483,7 +2486,7 @@ return 0;
 }
 
 .pricing-header h3 {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
   color: #111827;
   margin-bottom: 12px;
@@ -2504,7 +2507,7 @@ return 0;
 }
 
 .price-amount {
-  font-size: 36px;
+  font-size: 30px;
   font-weight: 800;
   color: #667eea;
   line-height: 1;
@@ -2617,7 +2620,7 @@ return 0;
 }
 
 .days-value {
-  font-size: 48px;
+  font-size: 40px;
   font-weight: 800;
   line-height: 1;
   margin-bottom: 4px;
@@ -2648,7 +2651,7 @@ return 0;
 }
 
 .expiry-date {
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
   color: #111827;
 }
