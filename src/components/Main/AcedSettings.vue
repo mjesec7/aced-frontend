@@ -915,16 +915,20 @@ export default {
       try {
         // 1. Prioritize Vuex Store (synced with backend)
         const storeStatus = this.$store.state.user?.userStatus;
+        console.log('🔍 [AcedSettings] currentPlan check - Store:', storeStatus);
         if (storeStatus) return storeStatus;
         
         // 2. Fallback to user object
         const userStatus = this.getUser?.subscriptionPlan;
+        console.log('🔍 [AcedSettings] currentPlan check - UserObj:', userStatus);
         if (userStatus) return userStatus;
         
         // 3. Last resort: localStorage
-        // Only use this if we have absolutely no data from backend
-        return localStorage.getItem('userStatus') || 'free';
+        const local = localStorage.getItem('userStatus');
+        console.log('🔍 [AcedSettings] currentPlan check - Local:', local);
+        return local || 'free';
       } catch (e) {
+        console.error('🔍 [AcedSettings] currentPlan error:', e);
         return 'free';
       }
     },
@@ -1110,6 +1114,7 @@ return 0;
         try {
           const newPlan = newUser?.subscriptionPlan;
           const oldPlan = oldUser?.subscriptionPlan;
+          console.log('🔍 [AcedSettings] User state changed:', newPlan);
           
           if (newPlan !== oldPlan) {
             this.handleUserStatusChange(newPlan, oldPlan);
