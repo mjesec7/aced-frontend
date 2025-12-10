@@ -914,7 +914,7 @@ export default {
     currentPlan() {
       try {
         // 1. Prioritize Vuex Store (synced with backend)
-        const storeStatus = this.$store.state.user?.subscriptionPlan;
+        const storeStatus = this.$store.state.user?.userStatus;
         if (storeStatus) return storeStatus;
         
         // 2. Fallback to user object

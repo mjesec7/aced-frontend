@@ -1605,6 +1605,11 @@ const actions = {
 
         commit('SET_USER_STATUS', status);
 
+        // ✅ FIX: Also update current user if data is available to keep everything in sync
+        if (result.data && result.data.email && (result.data.firebaseId || result.data._id)) {
+          commit('SET_USER', result.data);
+        }
+
         if (result.data?.subscriptionDetails) {
           commit('UPDATE_SUBSCRIPTION', {
             ...result.data.subscriptionDetails,
@@ -1876,7 +1881,7 @@ const actions = {
           localStorage.setItem('subscriptionPlan', newPlan);
           localStorage.setItem('userPlan', newPlan);
           if (expiryDate) localStorage.setItem('subscriptionExpiry', expiryDate);
-        } catch (e) {}
+        } catch (e) { }
 
         // Track the promocode
         commit('ADD_PROMOCODE', {
@@ -1898,7 +1903,7 @@ const actions = {
         }
 
         // Also try to sync with server to verify
-        dispatch('loadUserStatus').catch(() => {});
+        dispatch('loadUserStatus').catch(() => { });
 
         return {
           success: true,
