@@ -87,8 +87,8 @@
             </div>
           </div>
 
-          <div class="stat-card">
-            <div class="stat-icon" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+          <div class="stat-card" v-if="currentPlan !== 'free'">
+            <div class="stat-icon days-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
                 <line x1="16" y1="2" x2="16" y2="6"/>
@@ -912,20 +912,20 @@ export default {
     ]),
 
     currentPlan() {
-      const reactKey = this.reactivityKey;
-      const updateTime = this.lastUpdateTime;
-      
       try {
-        const storeStatus = this.$store.state.user?.subscriptionPlan || this.$store.getters['user/userStatus'];
-        const localStatus = localStorage.getItem('userStatus') || localStorage.getItem('plan');
-        const userObjectStatus = this.getUser?.subscriptionPlan;
+        // 1. Prioritize Vuex Store (synced with backend)
+        const storeStatus = this.$store.state.user?.subscriptionPlan;
+        if (storeStatus) return storeStatus;
         
-        const statuses = [storeStatus, localStatus, userObjectStatus].filter(s => s && s !== 'free');
-        const status = statuses[0] || storeStatus || localStatus || userObjectStatus || 'free';
+        // 2. Fallback to user object
+        const userStatus = this.getUser?.subscriptionPlan;
+        if (userStatus) return userStatus;
         
-        return status;
+        // 3. Last resort: localStorage
+        // Only use this if we have absolutely no data from backend
+        return localStorage.getItem('userStatus') || 'free';
       } catch (e) {
-return localStorage.getItem('userStatus') || 'free';
+        return 'free';
       }
     },
     
@@ -1651,7 +1651,8 @@ return 0;
         }
       } catch (error) {
         console.error('❌ [AcedSettings] Error applying promo:', error);
-        this.showNotification('An error occurred. Please check your connection.', 'error');
+        const errorMessage = error.response?.data?.error || error.message || 'An error occurred while applying the promo code.';
+        this.showNotification(errorMessage, 'error');
       } finally {
         this.isProcessingPromo = false;
         this.loading = false;
@@ -2055,6 +2056,11 @@ return 0;
 .stat-icon.plan-icon {
   color: #6366F1;
   background: #E0E7FF;
+}
+
+.stat-icon.days-icon {
+  color: #F59E0B;
+  background: #FEF3C7;
 }
 
 .stat-info {
