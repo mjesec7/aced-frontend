@@ -475,7 +475,6 @@ const mutations = {
 
   // ✅ CRITICAL FIX: Enhanced SET_USER_STATUS mutation
   SET_USER_STATUS(state, status) {
-    console.log('🔍 [Store] SET_USER_STATUS called with:', status);
     const startTime = Date.now();
     const oldStatus = state.userStatus;
 
@@ -541,6 +540,15 @@ const mutations = {
       localStorage.setItem('userPlan', newStatus);
       localStorage.setItem('subscriptionPlan', newStatus);
       localStorage.setItem('plan', newStatus);
+
+      // ✅ CRITICAL FIX: Sync subscriptionData to prevent auth.js reversion
+      const existingSub = JSON.parse(localStorage.getItem('subscriptionData') || '{}');
+      if (existingSub.plan !== newStatus) {
+        existingSub.plan = newStatus;
+        existingSub.status = newStatus !== 'free' ? 'active' : 'inactive';
+        localStorage.setItem('subscriptionData', JSON.stringify(existingSub));
+      }
+
       localStorage.setItem('statusUpdateTime', Date.now().toString());
       localStorage.setItem('mutationTime', Date.now().toString());
 
@@ -765,6 +773,8 @@ const mutations = {
     // Persist to localStorage
     try {
       localStorage.setItem('subscriptionDetails', JSON.stringify(state.subscription));
+      // ✅ CRITICAL FIX: Also update subscriptionData which is used by auth.js
+      localStorage.setItem('subscriptionData', JSON.stringify(state.subscription));
       localStorage.setItem('subscriptionLastUpdate', timestamp.toString());
     } catch (storageError) {
     }
@@ -1600,17 +1610,14 @@ const actions = {
 
       const { getUserStatus } = await import('@/api/user');
       const result = await getUserStatus(userId);
-      console.log('🔍 [Store] loadUserStatus API Result:', result);
 
       if (result?.success) {
         const status = result.status || result.data?.subscriptionPlan || 'free';
-        console.log('🔍 [Store] loadUserStatus Resolved Status:', status);
 
         commit('SET_USER_STATUS', status);
 
         // ✅ FIX: Also update current user if data is available to keep everything in sync
         if (result.data && result.data.email && (result.data.firebaseId || result.data._id)) {
-          console.log('🔍 [Store] Updating user data from status load:', result.data);
           commit('SET_USER', result.data);
         }
 
@@ -2840,12 +2847,10 @@ const getters = {
 
     for (const source of sources) {
       if (source && typeof source === 'string' && ['free', 'start', 'pro', 'premium'].includes(source)) {
-        // console.log('🔍 [Store] userStatus resolved to:', source);
         return source;
       }
     }
 
-    // console.log('🔍 [Store] userStatus defaulted to free');
     return 'free';
   },
 
@@ -2894,9 +2899,7 @@ const getters = {
 
   hasActiveSubscription: (state, getters) => {
     const status = getters.userStatus;
-    const isActive = status !== 'free';
-    console.log('🔍 [Store] hasActiveSubscription:', isActive, 'Status:', status);
-    return isActive;
+    return status !== 'free';
   },
 
   isSubscriptionExpired: (state) => {
