@@ -1597,7 +1597,7 @@ const actions = {
       }
 
 
-      const { getUserStatus } = await import('@/api');
+      const { getUserStatus } = await import('@/api/user');
       const result = await getUserStatus(userId);
 
       if (result?.success) {
