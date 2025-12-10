@@ -29,11 +29,11 @@
           </div>
           
           <div class="result-actions">
-            <button @click="goToDashboard" class="btn btn-primary">
-              Start Learning
+            <button @click="goToSettings" class="btn btn-primary">
+              View Subscription
             </button>
-            <button @click="goHome" class="btn btn-outline">
-              Back to Home
+            <button @click="goToDashboard" class="btn btn-outline">
+              Start Learning
             </button>
           </div>
         </div>
@@ -488,12 +488,13 @@
 
 <script>
 import { auth } from '@/firebase';
-import { 
-  initiatePaymePayment, 
+import {
+  initiatePaymePayment,
   initiateMulticardPayment,
   createPaymentByToken,
   confirmPayment
 } from '@/api';
+import { applyPromocode, validatePromocode } from '@/api/promocodes';
 
 export default {
   name: 'UniversalCheckout',
@@ -667,9 +668,14 @@ export default {
     },
     
     canProceedToPayment() {
+      // If promo is applied, we can proceed (no payment needed, just redirect)
+      if (this.promoApplied && this.promoData) {
+        return Boolean(this.finalUserId);
+      }
+
       return Boolean(
-        this.finalUserId && 
-        this.finalPlan && 
+        this.finalUserId &&
+        this.finalPlan &&
         this.finalAmount > 0 &&
         this.providers[this.paymentProvider]?.enabled
       );
@@ -720,11 +726,19 @@ export default {
     if (this.$route.query.plan) {
       this.selectedPlan = this.$route.query.plan;
     }
+    if (this.$route.query.promoCode) {
+      this.promoCodeInput = this.$route.query.promoCode;
+    }
   },
 
   async mounted() {
     this.loadPaymentData();
     this.validatePaymentData();
+
+    // If promo code was passed via query, validate it
+    if (this.promoCodeInput) {
+      await this.validatePromoCodeOnLoad();
+    }
   },
 
   methods: {
@@ -745,61 +759,145 @@ export default {
       if (!this.finalPlan) { this.error = 'Please select a plan.'; return false; }
       return true;
     },
-    handlePromoCodeInput() { this.promoApplied = false; this.promoError = false; this.promoMessage = ''; this.promoData = null; },
+    handlePromoCodeInput() {
+      this.promoApplied = false;
+      this.promoError = false;
+      this.promoMessage = '';
+      this.promoData = null;
+    },
+
+    async validatePromoCodeOnLoad() {
+      if (!this.promoCodeInput) return;
+
+      try {
+        const result = await validatePromocode(this.promoCodeInput.toUpperCase());
+        console.log('🎟️ [Checkout] Promo validation on load:', result);
+
+        if (result && result.valid) {
+          this.promoData = result.data;
+          this.promoMessage = `Valid! ${(result.data?.grantsPlan || 'Pro').toUpperCase()} Plan`;
+        }
+      } catch (err) {
+        console.error('Error validating promo on load:', err);
+      }
+    },
+
     async applyPromoCode() {
       console.log('🎟️ [UniversalCheckout] applyPromoCode called');
       console.log('🎟️ [UniversalCheckout] promoCodeInput:', this.promoCodeInput);
+
       if (!this.promoCodeInput || this.promoApplying) {
         console.log('🎟️ [UniversalCheckout] Early return - no input or already applying');
         return;
       }
-      this.promoApplying = true; this.promoError = false; this.promoMessage = '';
+
+      this.promoApplying = true;
+      this.promoError = false;
+      this.promoMessage = '';
+
       try {
-        const result = await this.$store.dispatch('user/validatePromocode', this.promoCodeInput.toUpperCase());
-        console.log('🎟️ [UniversalCheckout] validatePromocode result:', JSON.stringify(result, null, 2));
-        if (result && result.valid) { this.promoApplied = true; this.promoData = result.data; this.promoMessage = 'Promo code applied!'; }
-        else { this.promoError = true; this.promoMessage = result?.message || result?.error || 'Invalid promo code'; }
-      } catch (err) { this.promoError = true; this.promoMessage = 'Error validating promo code'; }
-      finally { this.promoApplying = false; }
+        // First validate the promocode using direct API call
+        const validationResult = await validatePromocode(this.promoCodeInput.toUpperCase());
+        console.log('🎟️ [UniversalCheckout] validatePromocode result:', JSON.stringify(validationResult, null, 2));
+
+        if (validationResult && validationResult.valid) {
+          this.promoApplied = true;
+          this.promoData = validationResult.data;
+          this.promoMessage = `Promo code applied! ${(validationResult.data?.grantsPlan || 'Pro').toUpperCase()} Plan - ${validationResult.data?.durationText || '30 days'}`;
+        } else {
+          this.promoError = true;
+          this.promoMessage = validationResult?.message || validationResult?.error || 'Invalid promo code';
+        }
+      } catch (err) {
+        console.error('Error validating promo code:', err);
+        this.promoError = true;
+        this.promoMessage = 'Error validating promo code. Please try again.';
+      } finally {
+        this.promoApplying = false;
+      }
     },
     async processPayment() {
       console.log('💰 [UniversalCheckout] processPayment called');
       console.log('💰 [UniversalCheckout] canProceedToPayment:', this.canProceedToPayment);
       console.log('💰 [UniversalCheckout] paymentProvider:', this.paymentProvider);
       console.log('💰 [UniversalCheckout] promoApplied:', this.promoApplied);
+
       if (!this.canProceedToPayment || this.processing) {
         console.log('💰 [UniversalCheckout] Early return - cannot proceed or already processing');
         return;
       }
-      this.processing = true; this.error = '';
-      try {
-        if (this.promoApplied && this.promoData) {
-          console.log('🎟️ [Checkout] Applying promo code...');
-          const result = await this.$store.dispatch('user/applyPromocode', { promoCode: this.promoCodeInput, plan: this.promoData.grantsPlan || 'pro', duration: this.selectedDuration });
-          console.log('🎟️ [Checkout] Result:', result);
-          if (result.success) {
-            // Show success briefly then redirect
-            this.paymentStatus = 'success';
-            this.transactionId = 'PROMO-' + Date.now();
-            this.processing = false;
 
-            // Wait a moment then redirect to settings
-            setTimeout(() => {
-              const returnTo = this.$route.query.from || this.$route.query.returnTo;
-              if (returnTo === 'settings') {
-                this.$router.push({ path: '/settings', query: { promoApplied: 'true', plan: result.newPlan } });
-              } else {
-                this.$router.push({ path: '/dashboard', query: { promoApplied: 'true', plan: result.newPlan } });
+      this.processing = true;
+      this.error = '';
+
+      try {
+        // Handle promocode application (free subscription)
+        if (this.promoApplied && this.promoData) {
+          console.log('🎟️ [UniversalCheckout] Applying promocode for free subscription');
+
+          // Call the backend to actually apply the promocode
+          const result = await applyPromocode(this.promoCodeInput.toUpperCase());
+
+          console.log('🎟️ [UniversalCheckout] applyPromocode result:', result);
+
+          if (result.success) {
+            const newPlan = result.plan || this.promoData.grantsPlan || 'pro';
+
+            // Update local storage
+            localStorage.setItem('userStatus', newPlan);
+            localStorage.setItem('plan', newPlan);
+            localStorage.setItem('subscriptionPlan', newPlan);
+
+            if (result.expiryDate) {
+              localStorage.setItem('subscriptionExpiry', result.expiryDate);
+            }
+
+            // Update Vuex store
+            if (this.$store && this.$store.dispatch) {
+              try {
+                await this.$store.dispatch('user/loadUserStatus');
+                this.$store.commit('user/FORCE_UPDATE');
+              } catch (storeError) {
+                console.warn('Store update warning:', storeError);
               }
-            }, 2000);
+            }
+
+            // Dispatch global events
+            const eventData = {
+              source: 'promocode',
+              transactionId: 'PROMO-' + Date.now(),
+              plan: newPlan,
+              timestamp: Date.now()
+            };
+
+            window.dispatchEvent(new CustomEvent('userStatusChanged', { detail: eventData }));
+            window.dispatchEvent(new CustomEvent('subscriptionUpdated', { detail: eventData }));
+
+            // Show success and redirect
+            this.handlePaymentSuccess({
+              transactionId: 'PROMO-' + Date.now(),
+              plan: newPlan
+            });
+
             return;
+          } else {
+            throw new Error(result.message || result.error || 'Failed to apply promo code');
           }
-          else throw new Error(result.error || 'Failed to apply promo code');
         }
-        if (this.paymentProvider === 'payme') await this.processPaymePayment();
-        else if (this.paymentProvider === 'multicard') await this.processMulticardPayment();
-        else throw new Error('Please select a valid payment method');
-      } catch (err) { this.error = this.formatError(err); this.processing = false; }
+
+        // Regular payment flow
+        if (this.paymentProvider === 'payme') {
+          await this.processPaymePayment();
+        } else if (this.paymentProvider === 'multicard') {
+          await this.processMulticardPayment();
+        } else {
+          throw new Error('Please select a valid payment method');
+        }
+      } catch (err) {
+        console.error('Payment error:', err);
+        this.error = this.formatError(err);
+        this.processing = false;
+      }
     },
     async processPaymePayment() {
       const paymentData = { userId: this.finalUserId, userName: this.finalUserName, userEmail: this.finalUserEmail, plan: this.finalPlan, amount: this.finalAmount, duration: this.selectedDuration, lang: this.selectedLanguage };
@@ -909,11 +1007,11 @@ this.otpError = err.message || 'Invalid verification code';
     },
 
     formatAmount(amount) {
-      if (!amount) return '';
-      
+      if (!amount) return 'FREE';
+
       // Convert from tiyin (amount is multiplied by 100) to UZS
       const uzs = Math.floor(amount / 100);
-      
+
       try {
         return new Intl.NumberFormat('en-US', {
           style: 'decimal',
@@ -935,6 +1033,10 @@ this.otpError = err.message || 'Invalid verification code';
 
     goToDashboard() {
       this.$router.push('/dashboard');
+    },
+
+    goToSettings() {
+      this.$router.push('/settings');
     },
 
     goHome() {

@@ -1,4 +1,4 @@
-// src/api/promocodes.js - Frontend Promocode API Module
+// src/api/promocodes.js - Frontend Promocode API Module (FIXED)
 import { auth } from '@/firebase';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live';
@@ -23,9 +23,12 @@ const getAuthToken = async () => {
  * @returns {Promise<Object>} Result with success status and subscription details
  */
 export const applyPromocode = async (code) => {
+    console.log('🎟️ [promocodes.js] applyPromocode called with code:', code);
+
     try {
         const currentUser = auth.currentUser;
         if (!currentUser) {
+            console.error('❌ [promocodes.js] No current user');
             return {
                 success: false,
                 message: 'Необходимо войти в систему для применения промокода'
@@ -34,6 +37,10 @@ export const applyPromocode = async (code) => {
 
         const token = await currentUser.getIdToken();
         const userId = currentUser.uid;
+
+        console.log('🎟️ [promocodes.js] Making API request to apply promocode');
+        console.log('🎟️ [promocodes.js] User ID:', userId.substring(0, 8) + '...');
+        console.log('🎟️ [promocodes.js] Code:', code);
 
         const response = await fetch(`${BASE_URL}/api/payments/promo-code`, {
             method: 'POST',
@@ -47,25 +54,39 @@ export const applyPromocode = async (code) => {
             })
         });
 
+        console.log('🎟️ [promocodes.js] Response status:', response.status);
+
         const result = await response.json();
+        console.log('🎟️ [promocodes.js] Response body:', JSON.stringify(result, null, 2));
 
         if (result.success) {
+            console.log('✅ [promocodes.js] Promocode applied successfully');
             return {
                 success: true,
                 message: result.message || 'Промокод успешно применён!',
-                plan: result.plan,
+                plan: result.plan || result.promocode?.grantsPlan || 'pro',
                 subscriptionDays: result.promocode?.subscriptionDays,
                 durationText: result.promocode?.durationText,
-                expiryDate: result.user?.subscriptionEndDate
+                expiryDate: result.user?.subscriptionEndDate || result.expiryDate
             };
         } else {
+            console.error('❌ [promocodes.js] Server returned error:', result.message || result.error);
             return {
                 success: false,
-                message: result.message || 'Не удалось применить промокод'
+                message: getPromocodeErrorMessage(result.message || result.error) || 'Не удалось применить промокод'
             };
         }
     } catch (error) {
-        console.error('❌ Promocode apply error:', error);
+        console.error('❌ [promocodes.js] Promocode apply error:', error);
+
+        // Check if it's a network error
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            return {
+                success: false,
+                message: 'Ошибка сети. Проверьте подключение к интернету.'
+            };
+        }
+
         return {
             success: false,
             message: 'Ошибка при применении промокода. Попробуйте позже.'
@@ -79,33 +100,84 @@ export const applyPromocode = async (code) => {
  * @returns {Promise<Object>} Validation result
  */
 export const validatePromocode = async (code) => {
+    console.log('🔍 [promocodes.js] validatePromocode called with code:', code);
+
+    if (!code || code.trim().length < 3) {
+        return {
+            valid: false,
+            message: 'Промокод слишком короткий'
+        };
+    }
+
     try {
-        const response = await fetch(`${BASE_URL}/api/promocodes/validate/${encodeURIComponent(code.trim().toUpperCase())}`, {
+        const normalizedCode = code.trim().toUpperCase();
+        const url = `${BASE_URL}/api/promocodes/validate/${encodeURIComponent(normalizedCode)}`;
+
+        console.log('🔍 [promocodes.js] Validation URL:', url);
+
+        const response = await fetch(url, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
             }
         });
 
+        console.log('🔍 [promocodes.js] Validation response status:', response.status);
+
+        if (!response.ok) {
+            console.error('❌ [promocodes.js] HTTP error:', response.status);
+            return {
+                valid: false,
+                message: response.status === 404 ? 'Промокод не найден' : 'Ошибка при проверке промокода'
+            };
+        }
+
         const result = await response.json();
+        console.log('🔍 [promocodes.js] Validation response:', JSON.stringify(result, null, 2));
 
-        // Check if promo code is valid: either explicit valid flag, or success with data
-        const isValid = result?.valid === true || (result?.success === true && result?.data);
+        // Handle different response formats from the backend
+        // Format 1: { valid: true, data: {...} }
+        // Format 2: { success: true, data: {...} }
+        // Format 3: { data: {...} } (implicit valid)
 
-        if (isValid) {
+        const isValid = result?.valid === true ||
+                       result?.success === true ||
+                       (result?.data && !result?.error);
+
+        if (isValid && result?.data) {
+            console.log('✅ [promocodes.js] Promocode is valid');
             return {
                 valid: true,
-                data: result.data,
+                data: {
+                    code: result.data.code || normalizedCode,
+                    grantsPlan: result.data.grantsPlan || result.data.plan || 'pro',
+                    subscriptionDays: result.data.subscriptionDays || 30,
+                    durationText: result.data.durationText || getDurationText(result.data.subscriptionDays || 30),
+                    description: result.data.description,
+                    expiresAt: result.data.expiresAt,
+                    maxUses: result.data.maxUses,
+                    currentUses: result.data.currentUses
+                },
                 message: 'Промокод действителен'
             };
         } else {
+            console.log('❌ [promocodes.js] Promocode is invalid:', result?.error || result?.message);
             return {
                 valid: false,
-                message: result.error || result.message || 'Недействительный промокод'
+                message: getPromocodeErrorMessage(result?.error || result?.message) || 'Недействительный промокод'
             };
         }
     } catch (error) {
-        console.error('❌ Promocode validation error:', error);
+        console.error('❌ [promocodes.js] Promocode validation error:', error);
+
+        // Check if it's a network error
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            return {
+                valid: false,
+                message: 'Ошибка сети. Проверьте подключение к интернету.'
+            };
+        }
+
         return {
             valid: false,
             message: 'Ошибка при проверке промокода'
@@ -114,22 +186,58 @@ export const validatePromocode = async (code) => {
 };
 
 /**
+ * Get duration text from subscription days
+ * @param {number} days - Number of subscription days
+ * @returns {string} Human-readable duration text
+ */
+const getDurationText = (days) => {
+    if (days <= 31) return '1 Month';
+    if (days <= 45) return '1.5 Months';
+    if (days <= 62) return '2 Months';
+    if (days <= 95) return '3 Months';
+    if (days <= 125) return '4 Months';
+    if (days <= 155) return '5 Months';
+    if (days <= 185) return '6 Months';
+    if (days <= 270) return '9 Months';
+    if (days <= 370) return '1 Year';
+    return `${days} Days`;
+};
+
+/**
  * Get human-readable error message from promocode error
  * @param {string} errorMessage - The error message from API
  * @returns {string} Localized error message
  */
 export const getPromocodeErrorMessage = (errorMessage) => {
+    if (!errorMessage) return null;
+
     const errorMessages = {
         'Promocode not found or is inactive': 'Промокод не найден или неактивен',
+        'Promocode not found': 'Промокод не найден',
         'This promocode has expired': 'Срок действия промокода истёк',
         'This promocode has reached its maximum usage limit': 'Лимит использования промокода исчерпан',
         'You have already used this promocode': 'Вы уже использовали этот промокод',
         'User not found': 'Пользователь не найден',
         'User ID and promo code are required': 'Необходимо ввести промокод',
-        'Server error while applying promocode': 'Ошибка сервера при применении промокода'
+        'Server error while applying promocode': 'Ошибка сервера при применении промокода',
+        'Invalid promocode': 'Недействительный промокод',
+        'Promocode is inactive': 'Промокод неактивен',
+        'Network error': 'Ошибка сети. Проверьте подключение к интернету.'
     };
 
-    return errorMessages[errorMessage] || errorMessage || 'Произошла ошибка';
+    // Check for exact match
+    if (errorMessages[errorMessage]) {
+        return errorMessages[errorMessage];
+    }
+
+    // Check for partial match
+    for (const [key, value] of Object.entries(errorMessages)) {
+        if (errorMessage.toLowerCase().includes(key.toLowerCase())) {
+            return value;
+        }
+    }
+
+    return errorMessage;
 };
 
 export default {

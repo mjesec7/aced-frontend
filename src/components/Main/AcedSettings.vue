@@ -818,6 +818,9 @@ import {
   getUnreadCount
 } from '@/api/inbox';
 
+// CRITICAL: Import directly from promocodes API for reliable promo code handling
+import { applyPromocode, validatePromocode } from '@/api/promocodes';
+
 export default {
   name: 'AcedSettings',
   data() {
@@ -1422,76 +1425,105 @@ return 0;
         this.isValidatingPromo = false;
         return;
       }
-      
+
       try {
         const promocodeUpper = this.promoCode.trim().toUpperCase();
-        if (this.$store && this.$store.dispatch) {
-          const storeResult = await this.$store.dispatch('user/validatePromocode', promocodeUpper);
-          
-          if (storeResult && typeof storeResult === 'object') {
-            this.promoValidation = storeResult;
-            if (storeResult.valid && storeResult.data?.grantsPlan && !this.selectedPlan) {
-              this.selectedPlan = storeResult.data.grantsPlan;
-            }
-            
-            this.isValidatingPromo = false;
-            return;
+        console.log('🔍 [AcedSettings] Validating promocode:', promocodeUpper);
+
+        // CRITICAL: Use the direct API function instead of store
+        const result = await validatePromocode(promocodeUpper);
+        console.log('🔍 [AcedSettings] Validation result:', result);
+
+        if (result && result.valid) {
+          this.promoValidation = {
+            valid: true,
+            data: result.data,
+            message: result.message || 'Valid promocode'
+          };
+
+          if (result.data?.grantsPlan && !this.selectedPlan) {
+            this.selectedPlan = result.data.grantsPlan;
           }
+        } else {
+          this.promoValidation = {
+            valid: false,
+            message: result?.message || result?.error || 'Invalid promocode'
+          };
         }
-        
+
+        this.isValidatingPromo = false;
+      } catch (error) {
+        console.error('❌ [AcedSettings] Validation error:', error);
         this.promoValidation = {
           valid: false,
-          error: `Unable to verify promo code "${promocodeUpper}".`
+          message: 'Error checking promo code. Please try again.'
         };
         this.isValidatingPromo = false;
-        
-      } catch (error) {
-        this.promoValidation = {
-          valid: false,
-          error: 'Error checking promo code.'
-        };
       }
     },
 
     async applyPromo() {
-      if (!this.canApplyPromo) return;
-      
+      if (!this.canApplyPromo) {
+        console.log('❌ [AcedSettings] Cannot apply promo - conditions not met');
+        return;
+      }
+
       this.isProcessingPromo = true;
-      
+      this.loading = true;
+      this.loadingText = 'Applying promocode...';
+
       try {
         const promoData = this.promoValidation?.data;
-        
-        if (promoData?.grantsPlan) {
-          // Grant plan directly
-          const result = await this.$store.dispatch('user/applyPromocode', {
-            promoCode: this.promoCode,
-            plan: promoData.grantsPlan
-          });
-          
-          if (result.success) {
-            this.showNotification(result.message || 'Промокод применён!', 'success');
-            this.promoCode = '';
-            this.promoValidation = null;
-            // Refresh user data
-            await this.loadInitialData();
-            // Force UI update
-            this.$nextTick(() => {
-              this.forceReactivityUpdate();
-            });
-            // Refresh inbox to show new message
-            await this.loadInboxMessages();
-          } else {
-            this.showNotification(result.error || 'Не удалось применить промокод', 'error');
+        const normalizedCode = this.promoCode.trim().toUpperCase();
+
+        console.log('🎟️ [AcedSettings] Applying promocode:', normalizedCode);
+
+        // CRITICAL: Use the direct API function instead of store
+        const result = await applyPromocode(normalizedCode);
+
+        console.log('🎟️ [AcedSettings] Apply result:', result);
+
+        if (result.success) {
+          // Update local storage immediately
+          const newPlan = result.plan || promoData?.grantsPlan || 'pro';
+          localStorage.setItem('userStatus', newPlan);
+          localStorage.setItem('plan', newPlan);
+          localStorage.setItem('subscriptionPlan', newPlan);
+
+          if (result.expiryDate) {
+            localStorage.setItem('subscriptionExpiry', result.expiryDate);
           }
+
+          // Update Vuex store
+          if (this.$store && this.$store.dispatch) {
+            await this.$store.dispatch('user/loadUserStatus');
+          }
+
+          // Force reactivity update
+          this.forceReactivityUpdate();
+
+          // Dispatch global events for other components
+          window.dispatchEvent(new CustomEvent('userStatusChanged', {
+            detail: { source: 'promocode', plan: newPlan, timestamp: Date.now() }
+          }));
+
+          this.showNotification(result.message || 'Promocode applied successfully!', 'success', 6000);
+
+          // Clear the promo code input
+          this.promoCode = '';
+          this.promoValidation = null;
+
+          // Reload inbox
+          await this.loadInboxMessages();
         } else {
-          // Discount code - redirect to payment
-          await this.goToPayment();
+          this.showNotification(result.message || 'Failed to apply promocode.', 'error');
         }
       } catch (error) {
-        console.error('Error applying promo:', error);
-        this.showNotification('An error occurred', 'error');
+        console.error('❌ [AcedSettings] Error applying promo:', error);
+        this.showNotification('An error occurred. Please check your connection.', 'error');
       } finally {
         this.isProcessingPromo = false;
+        this.loading = false;
       }
     },
 

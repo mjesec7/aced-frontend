@@ -58,6 +58,9 @@ import * as GamesAPI from './api/games';
 // Inbox/Messages
 import * as InboxAPI from './api/inbox';
 
+// Promocodes
+import * as PromocodesAPI from './api/promocodes';
+
 // =============================================
 // 📤 RE-EXPORT EVERYTHING FOR EASY IMPORTS
 // =============================================
@@ -254,6 +257,18 @@ export const {
 export { MulticardAPI as multicardAPI };
 
 // =============================================
+// 🎟️ PROMOCODES API
+// =============================================
+export const {
+  applyPromocode,
+  validatePromocode,
+  getPromocodeErrorMessage
+} = PromocodesAPI;
+
+// Export entire promocodes module for convenience
+export { PromocodesAPI as promocodesAPI };
+
+// =============================================
 // 📚 VOCABULARY API
 // =============================================
 export const {
@@ -392,6 +407,7 @@ export {
   MulticardAPI,
   VocabularyAPI,
   InboxAPI,
+  PromocodesAPI,
   Utils,
   ContentProcessors
 };
