@@ -254,7 +254,7 @@
             </div>
 
             <!-- SUBSCRIPTION PLANS -->
-            <div class="card">
+            <div class="card" v-if="!hasActiveSubscription">
               <div class="card-header">
                 <div class="card-header-left">
                   <div class="card-icon">
@@ -870,7 +870,7 @@ export default {
       isValidatingPromo: false,
       isProcessingPromo: false,
       
-      loading: false,
+      loading: true,
       loadingText: "",
       notification: "",
       notificationClass: "",
