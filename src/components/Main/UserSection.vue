@@ -193,15 +193,27 @@ export default {
 
   computed: {
     ...mapGetters(["getUser"]),
+    ...mapGetters('user', ['userStatus', 'subscription', 'forceUpdateKey']),
     currentUser() {
       return this.getUser;
     },
     displayPlan() {
-      const plan = this.currentUser?.subscriptionPlan || localStorage.getItem("plan") || 'free';
+      // Priority: Vuex store (server-authoritative) > currentUser > localStorage
+      const plan = this.userStatus || 
+                   this.$store?.state?.user?.userStatus ||
+                   this.currentUser?.subscriptionPlan || 
+                   localStorage.getItem("userStatus") ||
+                   localStorage.getItem("plan") || 
+                   'free';
       return plan.toUpperCase();
     },
     planClass() {
-      const plan = (this.currentUser?.subscriptionPlan || localStorage.getItem("plan") || 'free').toLowerCase();
+      const plan = (this.userStatus || 
+                    this.$store?.state?.user?.userStatus ||
+                    this.currentUser?.subscriptionPlan || 
+                    localStorage.getItem("userStatus") ||
+                    localStorage.getItem("plan") || 
+                    'free').toLowerCase();
       return `badge-${plan}`;
     }
   },
@@ -217,6 +229,11 @@ export default {
       this.openModal("Login");
     });
 
+    // Listen for subscription updates from anywhere in the app
+    window.addEventListener('userStatusChanged', this.handleStatusUpdate);
+    window.addEventListener('subscriptionUpdated', this.handleStatusUpdate);
+    window.addEventListener('forceUpdate', this.handleStatusUpdate);
+
     document.addEventListener('click', (event) => {
       if (!this.$el.contains(event.target)) {
         this.dropdownOpen = false;
@@ -224,9 +241,21 @@ export default {
     });
   },
 
+  beforeUnmount() {
+    window.removeEventListener('userStatusChanged', this.handleStatusUpdate);
+    window.removeEventListener('subscriptionUpdated', this.handleStatusUpdate);
+    window.removeEventListener('forceUpdate', this.handleStatusUpdate);
+  },
+
   methods: {
     ...mapMutations(["setUser", "setFirebaseUserId", "setToken"]),
     ...mapActions(["LoginUser", "logoutUser"]),
+
+    // Handler for subscription status updates
+    handleStatusUpdate() {
+      // Force Vue to re-render computed properties by accessing forceUpdateKey
+      this.$forceUpdate();
+    },
 
     getApiBase() {
       const envUrl = import.meta.env.VITE_API_BASE_URL;
@@ -335,7 +364,7 @@ export default {
         this.setUserData(userData, firebaseUser.uid, token);
         
       } catch (error) {
-try {
+        try {
           const fallbackUserData = {
             name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
             email: firebaseUser.email,
@@ -346,7 +375,7 @@ try {
           const token = await firebaseUser.getIdToken(true);
           this.setUserData(fallbackUserData, firebaseUser.uid, token);
         } catch (fallbackError) {
-this.showError('Login system error');
+          this.showError('Login system error');
         }
       }
     },
@@ -533,7 +562,7 @@ this.showError('Login system error');
           this.$router.push('/');
         }
       } catch (error) {
-}
+      }
     },
 
     resetForms() {
@@ -798,21 +827,17 @@ this.showError('Login system error');
   backdrop-filter: blur(40px);
   border: 2px solid rgba(139, 92, 246, 0.15);
   border-radius: 24px;
-  padding: 48px;
-  max-width: 480px;
-  width: 90%;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 
-    0 24px 80px rgba(139, 92, 246, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 100%;
+  max-width: 420px;
+  padding: 40px;
+  box-shadow: 0 24px 64px rgba(139, 92, 246, 0.25);
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateY(40px) scale(0.95);
+    transform: translateY(20px) scale(0.95);
   }
   to {
     opacity: 1;
@@ -824,212 +849,135 @@ this.showError('Login system error');
   position: absolute;
   top: 20px;
   right: 20px;
-  width: 36px;
-  height: 36px;
-  background: rgba(139, 92, 246, 0.08);
-  border: 1.5px solid rgba(139, 92, 246, 0.2);
-  border-radius: 10px;
-  color: #737373;
-  font-size: 1.5rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: white;
+  color: #666;
+  font-size: 1.25rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 10;
 }
 
 .close-btn:hover {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.3);
-  color: #dc2626;
+  background: #f5f5f5;
+  color: #000;
   transform: rotate(90deg);
-}
-
-/* Loading State */
-.loading-state {
-  text-align: center;
-  padding: 3rem 2rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-}
-
-.loader-spinner {
-  width: 48px;
-  height: 48px;
-  border: 4px solid rgba(139, 92, 246, 0.15);
-  border-top-color: #8b5cf6;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.loading-state p {
-  font-size: 1rem;
-  color: #525252;
-  font-weight: 500;
-}
-
-/* Auth Form */
-.auth-form {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
 }
 
 .modal-header {
   text-align: center;
-  margin-bottom: 12px;
+  margin-bottom: 32px;
 }
 
 .modal-header h2 {
-  font-size: 1.875rem;
+  font-size: 1.75rem;
   font-weight: 700;
-  color: #0a0a0a;
+  color: #111;
   margin: 0 0 8px 0;
   letter-spacing: -0.02em;
 }
 
 .modal-subtitle {
+  color: #666;
   font-size: 0.9375rem;
-  color: #737373;
-  margin: 0;
 }
 
 .form-group {
-  display: flex;
-  flex-direction: column;
+  margin-bottom: 16px;
 }
 
 .form-input {
-  padding: 14px 18px;
-  border: 2px solid rgba(139, 92, 246, 0.15);
+  width: 100%;
+  padding: 14px 16px;
+  border: 1.5px solid #e5e7eb;
   border-radius: 12px;
   font-size: 0.9375rem;
-  font-weight: 500;
-  color: #0a0a0a;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  transition: all 0.3s ease;
-  outline: none;
-}
-
-.form-input::placeholder {
-  color: #a3a3a3;
+  transition: all 0.2s ease;
+  background: #f9fafb;
+  box-sizing: border-box;
 }
 
 .form-input:focus {
+  outline: none;
   border-color: #8b5cf6;
-  background: rgba(255, 255, 255, 0.95);
-  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.08);
+  background: white;
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
 }
 
-.form-input:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* Submit Button */
 .auth-submit {
-  position: relative;
-  padding: 16px 24px;
-  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  width: 100%;
+  padding: 14px;
+  margin-top: 8px;
   border: none;
   border-radius: 12px;
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
   color: white;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
   overflow: hidden;
-  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
-  margin-top: 8px;
+  transition: all 0.3s ease;
 }
 
-.auth-submit:hover:not(:disabled) {
+.auth-submit:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.4);
-}
-
-.auth-submit:active:not(:disabled) {
-  transform: translateY(0);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.3);
 }
 
 .auth-submit:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+  transform: none;
 }
 
-.submit-glow {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), transparent);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.auth-submit:hover:not(:disabled) .submit-glow {
-  opacity: 1;
-}
-
-/* Divider */
 .divider {
   display: flex;
   align-items: center;
   text-align: center;
-  margin: 8px 0;
+  margin: 24px 0;
+  color: #9ca3af;
+  font-size: 0.875rem;
 }
 
 .divider::before,
 .divider::after {
   content: '';
   flex: 1;
-  border-bottom: 1.5px solid rgba(139, 92, 246, 0.15);
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .divider span {
-  padding: 0 16px;
-  font-size: 0.8125rem;
-  color: #a3a3a3;
-  font-weight: 500;
+  padding: 0 12px;
 }
 
-/* Google Auth Button */
 .google-auth {
-  position: relative;
+  width: 100%;
+  padding: 12px;
+  background: white;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  padding: 14px 24px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 2px solid rgba(139, 92, 246, 0.2);
-  border-radius: 12px;
-  color: #404040;
   font-size: 0.9375rem;
-  font-weight: 600;
+  font-weight: 500;
+  color: #374151;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
 }
 
-.google-auth:hover:not(:disabled) {
-  background: white;
-  border-color: rgba(139, 92, 246, 0.35);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.15);
-}
-
-.google-auth:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.google-auth:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+  transform: translateY(-1px);
 }
 
 .google-icon {
@@ -1037,118 +985,94 @@ this.showError('Login system error');
   height: 20px;
 }
 
-/* Switch Text */
 .switch-text {
   text-align: center;
-  font-size: 0.875rem;
-  color: #737373;
-  margin-top: 8px;
+  margin-top: 24px;
+  color: #6b7280;
+  font-size: 0.9375rem;
 }
 
 .switch-link {
-  color: #7c3aed;
+  color: #8b5cf6;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
-  text-decoration: none;
-  border-bottom: 1.5px solid transparent;
+  margin-left: 4px;
+  transition: color 0.2s ease;
 }
 
 .switch-link:hover {
-  color: #6d28d9;
-  border-bottom-color: #7c3aed;
+  color: #7c3aed;
+  text-decoration: underline;
 }
 
-/* Messages */
 .error-message,
 .success-message {
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 18px;
-  border-radius: 12px;
+  gap: 8px;
   font-size: 0.875rem;
-  font-weight: 500;
-  margin-top: 16px;
-  animation: slideIn 0.3s ease;
+  animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
 
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+@keyframes shake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60% { transform: translate3d(4px, 0, 0); }
 }
 
 .error-message {
-  background: rgba(239, 68, 68, 0.08);
-  border: 1.5px solid rgba(239, 68, 68, 0.25);
+  background: #fef2f2;
   color: #dc2626;
+  border: 1px solid #fecaca;
 }
 
 .success-message {
-  background: rgba(34, 197, 94, 0.08);
-  border: 1.5px solid rgba(34, 197, 94, 0.25);
-  color: #15803d;
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
 }
 
-.message-icon {
-  font-size: 1.125rem;
-  flex-shrink: 0;
+.loading-state {
+  text-align: center;
+  padding: 40px 0;
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-  .modal-content {
-    padding: 32px 24px;
-    border-radius: 20px;
-  }
-
-  .modal-header h2 {
-    font-size: 1.5rem;
-  }
-
-  .auth-buttons {
-    gap: 8px;
-  }
-
-  .auth-btn {
-    padding: 9px 18px;
-    font-size: 0.875rem;
-  }
+.loader-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #8b5cf6;
+  border-radius: 50%;
+  margin: 0 auto 16px;
+  animation: spin 1s linear infinite;
 }
 
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive */
 @media (max-width: 480px) {
   .modal-content {
-    padding: 28px 20px;
-    width: 95%;
+    padding: 24px;
+    margin: 16px;
+    width: auto;
   }
-
-  .user-button {
-    padding: 9px 16px;
-    font-size: 0.875rem;
-  }
-
-  .user-greeting {
+  
+  .auth-buttons .btn-text {
     display: none;
   }
-
-  .badge {
-    padding: 4px 8px;
-    font-size: 0.625rem;
+  
+  .auth-btn {
+    padding: 10px;
   }
-}
-
-/* Reduced Motion */
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+  
+  .user-greeting {
+    display: none;
   }
 }
 </style>

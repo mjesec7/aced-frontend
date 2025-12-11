@@ -358,13 +358,16 @@ export default {
   computed: {
     ...mapState(['user']),
     ...mapGetters(['getUser']),
+    ...mapGetters('user', ['userStatus']),
 
     currentUser() {
       return this.getUser || this.user || {};
     },
 
     currentUserStatus() {
-      return this.currentUser?.subscriptionPlan ||
+      return this.userStatus ||
+             this.$store?.state?.user?.userStatus ||
+             this.currentUser?.subscriptionPlan ||
              localStorage.getItem('userStatus') ||
              'free';
     },
@@ -423,14 +426,26 @@ export default {
         this.clearUser();
       }
     });
+
+    // Listen for subscription updates
+    window.addEventListener('userStatusChanged', this.handleStatusUpdate);
+    window.addEventListener('subscriptionUpdated', this.handleStatusUpdate);
+    window.addEventListener('forceUpdate', this.handleStatusUpdate);
   },
 
   beforeUnmount() {
     window.removeEventListener('resize', this.checkMobile);
+    window.removeEventListener('userStatusChanged', this.handleStatusUpdate);
+    window.removeEventListener('subscriptionUpdated', this.handleStatusUpdate);
+    window.removeEventListener('forceUpdate', this.handleStatusUpdate);
   },
 
   methods: {
     ...mapMutations(['setUser', 'clearUser']),
+
+    handleStatusUpdate() {
+      this.$forceUpdate();
+    },
 
     hasAccess(link) {
       if (!link.premium) return true;
