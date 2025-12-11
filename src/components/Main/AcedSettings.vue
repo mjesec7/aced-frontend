@@ -560,6 +560,9 @@ export default {
     // Subscription - CRITICAL: These are populated from server
     const serverSubscriptionData = ref(null);
     const promocode = ref('');
+    const applyingPromo = ref(false);
+    const promoError = ref('');
+    const promoSuccess = ref('');
     // Duration selection
     const selectedDuration = ref(3); // Default to 3 months
     

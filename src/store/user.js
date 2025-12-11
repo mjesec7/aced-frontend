@@ -104,15 +104,51 @@ const getUserId = (state) => {
     null;
 };
 
+// Circuit breaker for token refresh
+let storeTokenCache = {
+  token: null,
+  expiry: 0,
+  quotaErrorUntil: 0
+};
+const STORE_QUOTA_COOLDOWN = 30000;
+const STORE_TOKEN_CACHE_TTL = 300000;
+
 const getAuthToken = async () => {
+  const now = Date.now();
+
+  // Circuit breaker: don't retry if quota exceeded recently
+  if (storeTokenCache.quotaErrorUntil > now) {
+    if (storeTokenCache.token && storeTokenCache.expiry > now) {
+      return storeTokenCache.token;
+    }
+    return localStorage.getItem('token') || null;
+  }
+
+  // Return cached token if valid
+  if (storeTokenCache.token && storeTokenCache.expiry > now) {
+    return storeTokenCache.token;
+  }
+
   try {
     if (auth.currentUser) {
-      return await auth.currentUser.getIdToken(true);
+      const token = await auth.currentUser.getIdToken(false);
+      storeTokenCache.token = token;
+      storeTokenCache.expiry = now + STORE_TOKEN_CACHE_TTL;
+      return token;
     }
     return localStorage.getItem('token') || null;
   } catch (error) {
     console.error('[store/user] Error getting auth token:', error);
-    return null;
+
+    if (error.code === 'auth/quota-exceeded' ||
+      error.message?.includes('quota-exceeded')) {
+      storeTokenCache.quotaErrorUntil = now + STORE_QUOTA_COOLDOWN;
+    }
+
+    if (storeTokenCache.token && storeTokenCache.expiry > now) {
+      return storeTokenCache.token;
+    }
+    return localStorage.getItem('token') || null;
   }
 };
 

@@ -3,19 +3,66 @@ import api from './core';
 import { auth } from '@/firebase';
 
 // =============================================
-// 🔧 HELPER FUNCTIONS
+// 🔧 HELPER FUNCTIONS WITH CIRCUIT BREAKER
 // =============================================
 
+// Circuit breaker state to prevent infinite token refresh loops
+let tokenCache = {
+  token: null,
+  expiry: 0,
+  quotaErrorUntil: 0  // Timestamp until which we won't retry after quota error
+};
+
+const QUOTA_COOLDOWN_MS = 30000;  // 30 second cooldown after quota error
+const TOKEN_CACHE_TTL_MS = 300000; // 5 minute token cache
+
 const getAuthToken = async () => {
+  const now = Date.now();
+
+  // Circuit breaker: If we hit quota error recently, return cached token or null
+  if (tokenCache.quotaErrorUntil > now) {
+    console.warn('[subscription.js] ⚠️ Token refresh blocked (quota cooldown)');
+    // Return cached token if still valid, otherwise return from localStorage
+    if (tokenCache.token && tokenCache.expiry > now) {
+      return tokenCache.token;
+    }
+    return localStorage.getItem('token') || null;
+  }
+
+  // Return cached token if still valid
+  if (tokenCache.token && tokenCache.expiry > now) {
+    return tokenCache.token;
+  }
+
   try {
     const currentUser = auth.currentUser;
     if (currentUser) {
-      return await currentUser.getIdToken(true);
+      // Use forceRefresh=false to avoid hitting API unnecessarily
+      const token = await currentUser.getIdToken(false);
+
+      // Cache the token
+      tokenCache.token = token;
+      tokenCache.expiry = now + TOKEN_CACHE_TTL_MS;
+
+      return token;
     }
     return localStorage.getItem('token') || null;
   } catch (error) {
     console.error('[subscription.js] Error getting auth token:', error);
-    return null;
+
+    // Check for quota exceeded error
+    if (error.code === 'auth/quota-exceeded' ||
+      error.message?.includes('quota-exceeded') ||
+      error.message?.includes('QUOTA_EXCEEDED')) {
+      console.error('[subscription.js] 🛑 Quota exceeded - activating circuit breaker');
+      tokenCache.quotaErrorUntil = now + QUOTA_COOLDOWN_MS;
+    }
+
+    // Return cached token or localStorage fallback
+    if (tokenCache.token && tokenCache.expiry > now) {
+      return tokenCache.token;
+    }
+    return localStorage.getItem('token') || null;
   }
 };
 
