@@ -1,88 +1,126 @@
-﻿<template>
-  <div class="hero-container">
-    <!-- Top Navigation -->
-    <div class="top-nav">
-      <div class="nav-inner">
-        <img src="@/assets/logo.png" alt="ACED Logo" class="aced-logo" />
-        <UserSection />
-      </div>
-    </div>
-    <!-- Main Hero Content -->
-    <div class="hero-content">
-      <div class="hero-inner">
-        <!-- Left Side - Enhanced Message -->
-        <div class="hero-left">
-          <div class="hero-message">
-            <div class="label-badge">🚀 Proven Quality Education</div>
-            <h1 class="hero-title">
-              Your path to knowledge<br />
-              starts here
-            </h1>
-            <p class="hero-subtitle">
-              Over 2,800 students are already learning on ACED. Join and get access to lessons right now — it takes 30 seconds
-            </p>
+<template>
+  <div class="min-h-screen bg-gradient-to-br from-amber-50 via-white to-teal-50 relative overflow-hidden">
+    <!-- Fun background shapes -->
+    <div class="absolute top-20 left-10 w-72 h-72 bg-gradient-to-br from-orange-300/30 to-pink-300/30 rounded-full blur-3xl"></div>
+    <div class="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-br from-teal-300/30 to-cyan-300/30 rounded-full blur-3xl"></div>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-br from-lime-200/20 to-emerald-200/20 rounded-full blur-3xl"></div>
+
+    <!-- Navigation -->
+    <nav class="relative z-10 flex items-center justify-between px-6 lg:px-12 py-6">
+      <img src="@/assets/logo.png" alt="ACED" class="h-12 lg:h-14" />
+      <UserSection />
+    </nav>
+
+    <!-- Hero Content -->
+    <div class="relative z-10 max-w-7xl mx-auto px-6 lg:px-12 pt-12 lg:pt-20 pb-24">
+      <div class="grid lg:grid-cols-2 gap-16 items-center">
+        <!-- Left Content -->
+        <div class="space-y-8">
+          <!-- Badge -->
+          <div class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-100 to-amber-100 rounded-full border border-orange-200/50">
+            <span class="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></span>
+            <span class="text-sm font-semibold text-orange-700">2,800+ students learning</span>
           </div>
 
-          <!-- Social Proof -->
-          <div class="proof-section">
-            <div class="proof-avatars">
-              <div class="avatar">👤</div>
-              <div class="avatar">👤</div>
-              <div class="avatar">👤</div>
-              <div class="avatar-more">+2.8K</div>
-            </div>
-            <div class="proof-text">
-              <div class="proof-number">2,844 students</div>
-              <div class="proof-label">already learning and achieving results</div>
-            </div>
+          <!-- Main heading -->
+          <h1 class="text-5xl lg:text-7xl font-bold text-gray-900 leading-tight">
+            Learn
+            <span class="relative inline-block">
+              <span class="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-pink-500 to-teal-500">smarter</span>
+              <svg class="absolute -bottom-2 left-0 w-full" viewBox="0 0 200 12" fill="none">
+                <path d="M2 10C50 2 150 2 198 10" stroke="url(#grad)" stroke-width="4" stroke-linecap="round"/>
+                <defs><linearGradient id="grad"><stop stop-color="#f97316"/><stop offset="1" stop-color="#14b8a6"/></linearGradient></defs>
+              </svg>
+            </span>
+            <br />not harder
+          </h1>
+
+          <!-- Subtitle -->
+          <p class="text-xl text-gray-600 leading-relaxed max-w-lg">
+            Interactive lessons, AI-powered help, and a learning experience that actually feels fun. Start for free in 30 seconds.
+          </p>
+
+          <!-- CTA Buttons -->
+          <div class="flex flex-wrap gap-4">
+            <button
+              @click="handleStartFree"
+              class="group px-8 py-4 bg-gradient-to-r from-orange-500 to-pink-500 text-white font-bold rounded-2xl shadow-lg shadow-orange-500/25 hover:shadow-xl hover:shadow-orange-500/30 hover:-translate-y-0.5 transition-all duration-300"
+            >
+              <span class="flex items-center gap-2">
+                Start Learning Free
+                <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </span>
+            </button>
+            <button
+              @click="handleRegister"
+              class="px-8 py-4 bg-white text-gray-800 font-bold rounded-2xl border-2 border-gray-200 hover:border-teal-400 hover:bg-teal-50 transition-all duration-300"
+            >
+              Create Account
+            </button>
           </div>
 
-          <!-- Trust Badges -->
-          <div class="trust-badges">
-            <div class="badge-item">
-              <span class="badge-icon">✓</span>
-              <span>Free to start</span>
+          <!-- Trust indicators -->
+          <div class="flex flex-wrap items-center gap-6 pt-4">
+            <div class="flex items-center gap-2 text-sm text-gray-600">
+              <div class="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center">
+                <svg class="w-3 h-3 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                </svg>
+              </div>
+              <span>No credit card</span>
             </div>
-            <div class="badge-item">
-              <span class="badge-icon">✓</span>
-              <span>No credit card required</span>
-            </div>
-            <div class="badge-item">
-              <span class="badge-icon">✓</span>
+            <div class="flex items-center gap-2 text-sm text-gray-600">
+              <div class="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center">
+                <svg class="w-3 h-3 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                </svg>
+              </div>
               <span>Cancel anytime</span>
+            </div>
+            <div class="flex items-center gap-2 text-sm text-gray-600">
+              <div class="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center">
+                <svg class="w-3 h-3 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                </svg>
+              </div>
+              <span>Instant access</span>
             </div>
           </div>
         </div>
 
-        <!-- Right Side - Glassmorphism Cards -->
-        <div class="hero-right">
-          <div class="cards-stack">
-            <!-- Free Card -->
-            <div class="glass-card" @click="handleStartFree">
-              <div class="card-inner">
-                <h3 class="card-title">Try it free</h3>
-                <p class="card-description">
-                  Start learning right now. No cards, no commitments.
-                </p>
-                <div class="card-footer">
-                  <span class="card-link">Start learning →</span>
-                </div>
+        <!-- Right Content - Fun Cards -->
+        <div class="relative hidden lg:block">
+          <!-- Floating cards -->
+          <div class="relative w-full h-[500px]">
+            <!-- Main card -->
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 bg-white rounded-3xl shadow-2xl shadow-gray-200/50 p-8 rotate-3 hover:rotate-0 transition-transform duration-500">
+              <div class="w-14 h-14 bg-gradient-to-br from-orange-400 to-pink-500 rounded-2xl flex items-center justify-center mb-6">
+                <svg class="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
               </div>
-              <div class="glass-shine"></div>
+              <h3 class="text-2xl font-bold text-gray-900 mb-3">Interactive Lessons</h3>
+              <p class="text-gray-600">Learn by doing with hands-on exercises and real-time feedback</p>
+              <div class="mt-6 flex -space-x-2">
+                <div class="w-8 h-8 rounded-full bg-teal-400"></div>
+                <div class="w-8 h-8 rounded-full bg-orange-400"></div>
+                <div class="w-8 h-8 rounded-full bg-pink-400"></div>
+                <div class="w-8 h-8 rounded-full bg-lime-400 flex items-center justify-center text-xs font-bold text-white">+99</div>
+              </div>
             </div>
 
-            <!-- Premium Card -->
-            <div class="glass-card premium" @click="handleRegister">
-              <div class="card-inner">
-                <h3 class="card-title">Sign up and save your progress</h3>
-                <p class="card-description">
-                  Track achievements, earn certificates, learn anywhere.
-                </p>
-                <div class="card-footer">
-                  <span class="card-link">Create account →</span>
-                </div>
-              </div>
-              <div class="glass-shine"></div>
+            <!-- Secondary card -->
+            <div class="absolute top-10 right-0 w-56 bg-gradient-to-br from-teal-400 to-cyan-500 rounded-2xl p-5 text-white -rotate-6 hover:rotate-0 transition-transform duration-500 shadow-xl shadow-teal-500/25">
+              <div class="text-4xl font-bold">AI</div>
+              <div class="text-sm opacity-90 mt-1">Powered Help</div>
+            </div>
+
+            <!-- Third card -->
+            <div class="absolute bottom-10 left-0 w-48 bg-gradient-to-br from-lime-400 to-emerald-500 rounded-2xl p-5 text-white rotate-6 hover:rotate-0 transition-transform duration-500 shadow-xl shadow-lime-500/25">
+              <div class="text-3xl font-bold">100+</div>
+              <div class="text-sm opacity-90 mt-1">Courses Available</div>
             </div>
           </div>
         </div>
@@ -96,543 +134,16 @@ import UserSection from "@/components/Main/UserSection.vue";
 
 export default {
   components: { UserSection },
-  
   methods: {
     handleStartFree() {
       const acedSection = document.getElementById('aced');
       if (acedSection) {
-        acedSection.scrollIntoView({ 
-          behavior: 'smooth',
-          block: 'start'
-        });
-      } else {
-        window.scrollTo({
-          top: window.innerHeight,
-          behavior: 'smooth'
-        });
+        acedSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     },
-    
     handleRegister() {
       window.dispatchEvent(new Event("open-Login-modal"));
     }
   }
 };
 </script>
-
-<style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-.hero-container {
-  position: relative;
-  width: 100%;
-  min-height: 100vh;
-  background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Subtle gradient orbs */
-.hero-container::before {
-  content: '';
-  position: absolute;
-  top: -30%;
-  right: -15%;
-  width: 60%;
-  height: 60%;
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.06) 0%, transparent 70%);
-  pointer-events: none;
-  filter: blur(60px);
-}
-
-.hero-container::after {
-  content: '';
-  position: absolute;
-  bottom: -20%;
-  left: -10%;
-  width: 50%;
-  height: 50%;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.04) 0%, transparent 70%);
-  pointer-events: none;
-  filter: blur(50px);
-}
-
-/* Navigation */
-.top-nav {
-  position: relative;
-  width: 100%;
-  height: 90px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 10;
-  background: transparent;
-}
-
-.nav-inner {
-  max-width: 1400px;
-  width: 100%;
-  padding: 0 50px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.aced-logo {
-  height: 60px;
-  width: auto;
-}
-
-/* Hero Content */
-.hero-content {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 50px 60px;
-  z-index: 2;
-}
-
-.hero-inner {
-  max-width: 1400px;
-  width: 100%;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 80px;
-  align-items: center;
-}
-
-/* Left Side */
-.hero-left {
-  display: flex;
-  flex-direction: column;
-  gap: 40px;
-}
-
-.hero-message {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.label-badge {
-  display: inline-flex;
-  align-items: center;
-  width: fit-content;
-  padding: 8px 16px;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.12) 0%, rgba(99, 102, 241, 0.08) 100%);
-  border: 1px solid rgba(139, 92, 246, 0.25);
-  border-radius: 30px;
-  font-family: 'Inter', sans-serif;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: #7c3aed;
-  letter-spacing: 0.02em;
-  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.15);
-}
-
-.hero-title {
-  font-family: 'Inter', sans-serif;
-  font-size: clamp(2.5rem, 5vw, 3.75rem);
-  font-weight: 700;
-  color: #0a0a0a;
-  line-height: 1.1;
-  letter-spacing: -0.03em;
-}
-
-.hero-subtitle {
-  font-family: 'Inter', sans-serif;
-  font-size: clamp(1.0625rem, 2vw, 1.1875rem);
-  color: #404040;
-  font-weight: 400;
-  line-height: 1.65;
-  max-width: 540px;
-}
-
-/* Social Proof */
-.proof-section {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 20px 24px;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(139, 92, 246, 0.15);
-  border-radius: 16px;
-  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.08);
-}
-
-.proof-avatars {
-  display: flex;
-  align-items: center;
-}
-
-.avatar {
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 3px solid white;
-  margin-left: -12px;
-  font-size: 1.25rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.avatar:first-child {
-  margin-left: 0;
-}
-
-.avatar-more {
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(135deg, #7c3aed, #5b21b6);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 3px solid white;
-  margin-left: -12px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.proof-text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  font-family: 'Inter', sans-serif;
-}
-
-.proof-number {
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: #0a0a0a;
-  line-height: 1.3;
-}
-
-.proof-label {
-  font-size: 0.875rem;
-  font-weight: 400;
-  color: #737373;
-  line-height: 1.4;
-}
-
-/* Trust Badges */
-.trust-badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.badge-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  background: rgba(34, 197, 94, 0.08);
-  border: 1px solid rgba(34, 197, 94, 0.2);
-  border-radius: 8px;
-  font-family: 'Inter', sans-serif;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: #15803d;
-}
-
-.badge-icon {
-  font-size: 0.875rem;
-  font-weight: 700;
-}
-
-/* Right Side - Glassmorphism Cards */
-.hero-right {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.cards-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  width: 100%;
-  max-width: 450px;
-}
-
-.glass-card {
-  position: relative;
-  padding: 32px;
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(30px);
-  border-radius: 16px;
-  cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  overflow: hidden;
-  box-shadow: 
-    0 8px 32px rgba(139, 92, 246, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  display: flex;
-  align-items: center;
-  min-height: 160px;
-}
-
-.glass-card::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 16px;
-  padding: 2px;
-  background: linear-gradient(135deg, #8b5cf6, #6d28d9, #a78bfa);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-}
-
-.glass-card.premium {
-  background: rgba(255, 255, 255, 0.85);
-  box-shadow: 
-    0 12px 48px rgba(139, 92, 246, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
-}
-
-.glass-card.premium::after {
-  background: linear-gradient(135deg, #7c3aed, #5b21b6, #8b5cf6);
-  animation: borderRotate 3s linear infinite;
-}
-
-@keyframes borderRotate {
-  0% { filter: hue-rotate(0deg) brightness(1); }
-  50% { filter: hue-rotate(10deg) brightness(1.1); }
-  100% { filter: hue-rotate(0deg) brightness(1); }
-}
-
-.glass-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.03) 0%, transparent 100%);
-  opacity: 0;
-  transition: opacity 0.4s ease;
-  pointer-events: none;
-}
-
-.glass-card:hover {
-  transform: translateY(-6px) scale(1.01);
-  box-shadow: 
-    0 20px 60px rgba(139, 92, 246, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
-}
-
-.glass-card.premium:hover {
-  box-shadow: 
-    0 24px 70px rgba(139, 92, 246, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
-}
-
-.glass-card:hover::before {
-  opacity: 1;
-}
-
-.glass-shine {
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.3),
-    transparent
-  );
-  transition: left 0.6s ease;
-  pointer-events: none;
-}
-
-.glass-card:hover .glass-shine {
-  left: 100%;
-}
-
-.card-inner {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.card-title {
-  font-family: 'Inter', sans-serif;
-  font-size: 1.375rem;
-  font-weight: 600;
-  color: #0a0a0a;
-  letter-spacing: -0.01em;
-  line-height: 1.3;
-}
-
-.card-description {
-  font-family: 'Inter', sans-serif;
-  font-size: 0.9375rem;
-  color: #525252;
-  line-height: 1.6;
-  font-weight: 400;
-}
-
-.card-footer {
-  margin-top: 8px;
-}
-
-.card-link {
-  font-family: 'Inter', sans-serif;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: #7c3aed;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  transition: gap 0.3s ease;
-}
-
-.glass-card:hover .card-link {
-  gap: 8px;
-}
-
-/* Responsive Design */
-@media (max-width: 1200px) {
-  .hero-inner {
-    grid-template-columns: 1fr 1fr;
-    gap: 50px;
-  }
-}
-
-@media (max-width: 1024px) {
-  .nav-inner {
-    padding: 0 40px;
-  }
-  
-  .hero-content {
-    padding: 0 40px;
-  }
-  
-  .hero-inner {
-    grid-template-columns: 1fr;
-    gap: 50px;
-  }
-  
-  .hero-left {
-    align-items: center;
-    text-align: center;
-  }
-  
-  .label-badge {
-    margin: 0 auto;
-  }
-  
-  .hero-subtitle {
-    margin: 0 auto;
-  }
-  
-  .cards-stack {
-    max-width: 100%;
-  }
-}
-
-@media (max-width: 768px) {
-  .top-nav {
-    height: 80px;
-  }
-  
-  .nav-inner {
-    padding: 0 24px;
-  }
-  
-  .aced-logo {
-    height: 50px;
-  }
-  
-  .hero-content {
-    padding: 30px 24px;
-  }
-  
-  .hero-left {
-    gap: 30px;
-  }
-  
-  .hero-message {
-    gap: 16px;
-  }
-  
-  .proof-section {
-    padding: 16px 20px;
-  }
-  
-  .cards-stack {
-    max-width: 100%;
-  }
-  
-  .glass-card {
-    padding: 28px;
-    min-height: 150px;
-  }
-  
-  .card-title {
-    font-size: 1.25rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .hero-content {
-    padding: 20px 16px 40px;
-  }
-  
-  .hero-left {
-    gap: 24px;
-  }
-  
-  .label-badge {
-    font-size: 0.75rem;
-    padding: 6px 12px;
-  }
-  
-  .proof-section {
-    padding: 14px 16px;
-  }
-  
-  .cards-stack {
-    gap: 16px;
-  }
-  
-  .glass-card {
-    padding: 24px;
-    min-height: 140px;
-  }
-  
-  .card-inner {
-    gap: 12px;
-  }
-}
-
-/* Reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
-</style>
