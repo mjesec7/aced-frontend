@@ -1089,6 +1089,8 @@ export default {
       notificationIcon,
       notificationTitle,
       availablePlans,
+      durationOptions,
+      selectedDuration,
       
       // Methods
       refreshFromServer,
@@ -1101,6 +1103,7 @@ export default {
       sendPasswordReset,
       toggleDarkMode,
       selectPlan,
+      selectDuration,
       goToUpgrade,
       applyPromocode,
       goToProfile,
