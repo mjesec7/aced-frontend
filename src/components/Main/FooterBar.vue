@@ -1,80 +1,104 @@
 <template>
-  <footer class="main-footer" id="contacts">
-    <div class="container">
-      <div class="footer-grid">
-        <div class="footer-brand">
-          <div class="logo">
-            <div class="logo-icon">A</div>
-            <span class="logo-text">ACED</span>
+  <footer class="relative bg-white pt-24 pb-12 overflow-hidden" id="contacts">
+    <!-- Background Elements -->
+    <div class="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+      <div class="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-indigo-200 to-transparent"></div>
+      <div class="absolute -bottom-[20%] -left-[10%] w-[600px] h-[600px] rounded-full bg-gradient-to-tr from-indigo-50/50 to-purple-50/50 blur-[100px]"></div>
+      <div class="absolute -top-[20%] -right-[10%] w-[600px] h-[600px] rounded-full bg-gradient-to-bl from-yellow-50/50 to-amber-50/50 blur-[100px]"></div>
+    </div>
+
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+        
+        <!-- Brand Column -->
+        <div class="lg:col-span-2">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white font-bold text-2xl shadow-lg shadow-indigo-500/20">
+              A
+            </div>
+            <span class="text-2xl font-extrabold text-slate-900 tracking-tight">ACED</span>
           </div>
-          <p class="brand-description">
-            Next generation education. We're here to help you grow and achieve your goals.
+          <p class="text-slate-500 text-lg leading-relaxed mb-8 max-w-md">
+            Next generation education. We're here to help you grow and achieve your goals with our interactive platform.
           </p>
-          <div class="social-links">
-            <a href="#" class="social-link">
-              <span class="social-icon">📱</span>
+          <div class="flex gap-4">
+            <a href="#" class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center hover:bg-indigo-100 hover:scale-110 transition-all duration-300">
+              📱
             </a>
-            <a href="#" class="social-link">
-              <span class="social-icon">💬</span>
+            <a href="#" class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center hover:bg-purple-100 hover:scale-110 transition-all duration-300">
+              💬
             </a>
-            <a href="#" class="social-link">
-              <span class="social-icon">📧</span>
+            <a href="#" class="w-10 h-10 rounded-xl bg-yellow-50 text-yellow-600 flex items-center justify-center hover:bg-yellow-100 hover:scale-110 transition-all duration-300">
+              📧
             </a>
           </div>
         </div>
 
-        <div class="footer-section">
-          <h4 class="section-title">Navigation</h4>
-          <ul class="link-list">
-            <li><a href="#about-us" class="footer-link">About Us</a></li>
-            <li><a href="#aced" class="footer-link">Courses</a></li>
-            <li><a href="#tariffs" class="footer-link">Pricing</a></li>
-            <li><a href="#" @click.prevent="showAIHelperModal" class="footer-link">AI Assistant</a></li>
+        <!-- Navigation Column -->
+        <div>
+          <h4 class="font-bold text-slate-900 mb-6">Navigation</h4>
+          <ul class="space-y-4">
+            <li><a href="#about-us" class="text-slate-500 hover:text-indigo-600 font-medium transition-colors">About Us</a></li>
+            <li><a href="#aced" class="text-slate-500 hover:text-indigo-600 font-medium transition-colors">Courses</a></li>
+            <li><a href="#tariffs" class="text-slate-500 hover:text-indigo-600 font-medium transition-colors">Pricing</a></li>
+            <li><a href="#" @click.prevent="showAIHelperModal" class="text-slate-500 hover:text-indigo-600 font-medium transition-colors flex items-center gap-2">
+              AI Assistant <span class="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-[10px] font-bold uppercase">New</span>
+            </a></li>
           </ul>
         </div>
 
-        <div class="footer-section">
-          <h4 class="section-title">Contact</h4>
-          <ul class="link-list">
-            <li class="contact-item">
-              <span class="contact-icon">📱</span>
-              <span>Telegram: @aced.live</span>
+        <!-- Contact Column -->
+        <div>
+          <h4 class="font-bold text-slate-900 mb-6">Contact</h4>
+          <ul class="space-y-4">
+            <li class="flex items-center gap-3 text-slate-500">
+              <span class="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-lg">📱</span>
+              <span class="font-medium">@aced.live</span>
             </li>
             <li>
-              <a href="#" @click.prevent="showContactModal" class="contact-link">
-                <span class="link-icon">✉️</span>
-                <span>Contact Us</span>
+              <a href="#" @click.prevent="showContactModal" class="flex items-center gap-3 text-slate-500 hover:text-indigo-600 transition-colors group">
+                <span class="w-8 h-8 rounded-lg bg-slate-50 group-hover:bg-indigo-50 flex items-center justify-center text-lg transition-colors">✉️</span>
+                <span class="font-medium">Contact Us</span>
               </a>
             </li>
           </ul>
         </div>
       </div>
-      
-      <div class="footer-bottom">
-        <p class="copyright">© 2025 ACED. All rights reserved.</p>
-        <div class="footer-links">
-          <a href="#" class="bottom-link">Privacy Policy</a>
-          <span class="divider">•</span>
-          <a href="#" class="bottom-link">Terms of Service</a>
+
+      <!-- Footer Bottom -->
+      <div class="pt-8 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-6">
+        <p class="text-slate-400 font-medium text-sm">
+          © 2025 ACED. All rights reserved.
+        </p>
+        <div class="flex items-center gap-8">
+          <a href="#" class="text-slate-400 hover:text-indigo-600 text-sm font-medium transition-colors">Privacy Policy</a>
+          <a href="#" class="text-slate-400 hover:text-indigo-600 text-sm font-medium transition-colors">Terms of Service</a>
         </div>
       </div>
     </div>
 
-    <div v-if="showAIModal || showContact" class="modal-overlay" @click.self="closeModals">
-      <div v-if="showAIModal" class="modal-content glass-card">
-        <button class="close-btn" @click="showAIModal = false">
-          <span>×</span>
+    <!-- Modals -->
+    <div v-if="showAIModal || showContact" class="fixed inset-0 z-[100] flex items-center justify-center p-4" @click.self="closeModals">
+      <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
+      
+      <!-- AI Modal -->
+      <div v-if="showAIModal" class="relative w-full max-w-md bg-white rounded-[2rem] shadow-2xl p-8 text-center transform transition-all animate-slide-up">
+        <button class="absolute top-6 right-6 p-2 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors" @click="showAIModal = false">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
-        <div class="modal-icon">🤖</div>
-        <h3 class="modal-title">Where to find AI Assistant?</h3>
-        <p class="modal-text">
+        
+        <div class="w-20 h-20 mx-auto bg-indigo-50 rounded-2xl flex items-center justify-center text-4xl mb-6 animate-bounce">
+          🤖
+        </div>
+        <h3 class="text-2xl font-bold text-slate-900 mb-4">AI Assistant</h3>
+        <p class="text-slate-500 mb-8 leading-relaxed">
           Our AI assistant is located in the bottom right corner of the screen. Just click on the robot icon and it will be happy to help you!
         </p>
-        <button class="modal-button" @click="showAIModal = false">
-          <span>Got it!</span>
-          <span class="button-glow"></span>
+        <button class="w-full py-3.5 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/25" @click="showAIModal = false">
+          Got it!
         </button>
       </div>
+
       <ContactModal v-if="showContact" @close="showContact = false" />
     </div>
   </footer>
@@ -110,476 +134,18 @@ export default {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
-.main-footer {
-  width: 100%;
-  padding: 80px 50px 30px;
-  background: linear-gradient(180deg, #fafafa 0%, #f5f5f5 100%);
-  color: #0a0a0a;
-  font-family: 'Inter', sans-serif;
-  border-top: 1.5px solid rgba(139, 92, 246, 0.1);
-  position: relative;
-}
-
-.main-footer::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.3), transparent);
-}
-
-.container {
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
-.footer-grid {
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
-  gap: 60px;
-  margin-bottom: 60px;
-}
-
-.footer-brand {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.logo-icon {
-  width: 48px;
-  height: 48px;
-  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 800;
-  font-size: 1.5rem;
-  color: white;
-  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
-}
-
-.logo-text {
-  font-size: 1.875rem;
-  font-weight: 800;
-  color: #0a0a0a;
-  letter-spacing: -0.02em;
-}
-
-.brand-description {
-  color: #737373;
-  line-height: 1.7;
-  font-size: 0.9375rem;
-  font-weight: 400;
-  max-width: 400px;
-  margin: 0;
-}
-
-.social-links {
-  display: flex;
-  gap: 12px;
-  margin-top: 8px;
-}
-
-.social-link {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  background: rgba(139, 92, 246, 0.08);
-  border: 1.5px solid rgba(139, 92, 246, 0.2);
-  border-radius: 12px;
-  transition: all 0.3s ease;
-  text-decoration: none;
-}
-
-.social-link:hover {
-  background: rgba(139, 92, 246, 0.15);
-  border-color: rgba(139, 92, 246, 0.4);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
-}
-
-.social-icon {
-  font-size: 1.25rem;
-}
-
-.footer-section {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.section-title {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #0a0a0a;
-  margin: 0;
-  letter-spacing: -0.01em;
-  text-transform: uppercase;
-  font-size: 0.8125rem;
-  letter-spacing: 0.05em;
-}
-
-.link-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.footer-link {
-  text-decoration: none;
-  color: #737373;
-  transition: all 0.2s ease;
-  cursor: pointer;
-  font-size: 0.9375rem;
-  font-weight: 500;
-  display: inline-block;
-}
-
-.footer-link:hover {
-  color: #7c3aed;
-  transform: translateX(4px);
-}
-
-.contact-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #737373;
-  font-size: 0.9375rem;
-  font-weight: 500;
-}
-
-.contact-icon {
-  font-size: 1.125rem;
-}
-
-.contact-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  text-decoration: none;
-  color: #7c3aed;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 0.9375rem;
-}
-
-.contact-link:hover {
-  color: #6d28d9;
-  transform: translateX(4px);
-}
-
-.link-icon {
-  font-size: 1.125rem;
-}
-
-.footer-bottom {
-  border-top: 1.5px solid rgba(139, 92, 246, 0.1);
-  padding-top: 32px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 20px;
-}
-
-.copyright {
-  font-size: 0.875rem;
-  color: #a3a3a3;
-  font-weight: 500;
-  margin: 0;
-}
-
-.footer-links {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.bottom-link {
-  text-decoration: none;
-  color: #737373;
-  font-size: 0.875rem;
-  font-weight: 500;
-  transition: color 0.2s ease;
-}
-
-.bottom-link:hover {
-  color: #7c3aed;
-}
-
-.divider {
-  color: #d4d4d4;
-  font-size: 0.875rem;
-}
-
-/* Modal Styles */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(8px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 10000;
-  animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.glass-card {
-  position: relative;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(30px);
-  border-radius: 24px;
-  border: 1.5px solid rgba(139, 92, 246, 0.2);
-  overflow: hidden;
-  box-shadow: 0 24px 60px rgba(139, 92, 246, 0.3);
-}
-
-.modal-content {
-  width: 90%;
-  max-width: 480px;
-  padding: 48px 40px;
-  text-align: center;
-  animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-@keyframes slideUp {
-  from { 
+@keyframes slide-up {
+  from {
     opacity: 0;
-    transform: translateY(40px) scale(0.95);
+    transform: translateY(20px);
   }
-  to { 
+  to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
-.close-btn {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  width: 36px;
-  height: 36px;
-  background: rgba(139, 92, 246, 0.08);
-  border: 1.5px solid rgba(139, 92, 246, 0.2);
-  border-radius: 10px;
-  color: #737373;
-  font-size: 1.5rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-}
-
-.close-btn:hover {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.3);
-  color: #dc2626;
-  transform: rotate(90deg);
-}
-
-.modal-icon {
-  font-size: 4rem;
-  margin-bottom: 24px;
-  animation: float 3s ease-in-out infinite;
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
-}
-
-.modal-title {
-  font-size: 1.875rem;
-  font-weight: 700;
-  color: #0a0a0a;
-  margin: 0 0 16px 0;
-  letter-spacing: -0.02em;
-}
-
-.modal-text {
-  color: #737373;
-  line-height: 1.7;
-  font-size: 1rem;
-  font-weight: 400;
-  margin: 0 0 32px 0;
-}
-
-.modal-button {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 14px 32px;
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 50%, #6d28d9 100%);
-  color: white;
-  border: none;
-  border-radius: 14px;
-  font-size: 1rem;
-  font-weight: 600;
-  font-family: 'Inter', sans-serif;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  overflow: hidden;
-  box-shadow: 
-    0 4px 20px rgba(139, 92, 246, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-}
-
-.modal-button::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 14px;
-  padding: 2px;
-  background: linear-gradient(135deg, #a78bfa, #d8b4fe);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.modal-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 
-    0 8px 35px rgba(139, 92, 246, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
-}
-
-.modal-button:hover::before {
-  opacity: 1;
-}
-
-.button-glow {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.4), transparent);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.modal-button:hover .button-glow {
-  opacity: 1;
-}
-
-/* Responsive Design */
-@media (max-width: 1024px) {
-  .footer-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 40px;
-  }
-  
-  .footer-brand {
-    grid-column: 1 / -1;
-  }
-}
-
-@media (max-width: 768px) {
-  .main-footer {
-    padding: 60px 24px 24px;
-  }
-  
-  .footer-grid {
-    grid-template-columns: 1fr;
-    gap: 40px;
-    margin-bottom: 40px;
-  }
-  
-  .footer-brand {
-    text-align: center;
-    align-items: center;
-  }
-  
-  .logo {
-    justify-content: center;
-  }
-  
-  .brand-description {
-    text-align: center;
-  }
-  
-  .social-links {
-    justify-content: center;
-  }
-  
-  .footer-section {
-    text-align: center;
-    align-items: center;
-  }
-  
-  .link-list {
-    align-items: center;
-  }
-  
-  .footer-link:hover,
-  .contact-link:hover {
-    transform: translateX(0) scale(1.05);
-  }
-  
-  .footer-bottom {
-    flex-direction: column;
-    text-align: center;
-    padding-top: 24px;
-  }
-  
-  .footer-links {
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-}
-
-@media (max-width: 480px) {
-  .main-footer {
-    padding: 40px 16px 20px;
-  }
-  
-  .modal-content {
-    padding: 40px 24px;
-  }
-  
-  .modal-title {
-    font-size: 1.5rem;
-  }
-  
-  .modal-icon {
-    font-size: 3rem;
-  }
-}
-
-/* Reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out forwards;
 }
 </style>

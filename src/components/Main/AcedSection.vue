@@ -3,7 +3,7 @@
     <!-- Vibrant Background Elements -->
     <div class="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
       <div class="absolute top-[10%] left-[-5%] w-[600px] h-[600px] rounded-full bg-gradient-to-r from-indigo-100/50 to-purple-100/50 blur-[120px]"></div>
-      <div class="absolute bottom-[10%] right-[-5%] w-[600px] h-[600px] rounded-full bg-gradient-to-l from-pink-100/50 to-rose-100/50 blur-[120px]"></div>
+      <div class="absolute bottom-[10%] right-[-5%] w-[600px] h-[600px] rounded-full bg-gradient-to-l from-yellow-100/50 to-amber-100/50 blur-[120px]"></div>
     </div>
 
     <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -14,7 +14,7 @@
         </div>
         <h1 class="text-4xl md:text-6xl font-extrabold text-slate-900 mb-6 tracking-tight leading-tight">
           Explore our <br class="hidden md:block" />
-          <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600">vibrant curriculum</span>
+          <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-yellow-500">vibrant curriculum</span>
         </h1>
         <p class="text-xl text-slate-600 max-w-2xl leading-relaxed">
           Dive into a world of knowledge with our interactive and engaging courses.
@@ -39,7 +39,7 @@
             :class="{
               'hover:border-indigo-200': getTopicType(course) === 'free',
               'hover:border-purple-200': getTopicType(course) === 'premium',
-              'hover:border-pink-200': getTopicType(course) === 'pro'
+              'hover:border-yellow-200': getTopicType(course) === 'pro'
             }"
             @click="handleCourseClick(course)"
           >
@@ -50,7 +50,7 @@
                   :class="{
                     'bg-indigo-50 text-indigo-700 border border-indigo-100': getTopicType(course) === 'free',
                     'bg-purple-50 text-purple-700 border border-purple-100': getTopicType(course) === 'premium',
-                    'bg-pink-50 text-pink-700 border border-pink-100': getTopicType(course) === 'pro'
+                    'bg-yellow-50 text-yellow-700 border border-yellow-100': getTopicType(course) === 'pro'
                   }"
                 >
                   <span>{{ getTopicTypeIcon(course) }}</span>
@@ -65,8 +65,8 @@
               <h3 class="text-2xl font-bold text-slate-900 mb-3 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r transition-all duration-300 line-clamp-2"
                 :class="{
                   'group-hover:from-indigo-600 group-hover:to-purple-600': getTopicType(course) === 'free',
-                  'group-hover:from-purple-600 group-hover:to-pink-600': getTopicType(course) === 'premium',
-                  'group-hover:from-pink-600 group-hover:to-rose-600': getTopicType(course) === 'pro'
+                  'group-hover:from-purple-600 group-hover:to-fuchsia-600': getTopicType(course) === 'premium',
+                  'group-hover:from-yellow-500 group-hover:to-amber-600': getTopicType(course) === 'pro'
                 }"
               >
                 {{ getTopicName(course) }}
@@ -107,7 +107,7 @@
                 :class="{
                   'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-indigo-500/25 hover:shadow-indigo-500/40': getTopicType(course) === 'free',
                   'bg-gradient-to-r from-purple-500 to-fuchsia-600 text-white shadow-purple-500/25 hover:shadow-purple-500/40': getTopicType(course) === 'premium',
-                  'bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-pink-500/25 hover:shadow-pink-500/40': getTopicType(course) === 'pro'
+                  'bg-gradient-to-r from-yellow-500 to-amber-600 text-white shadow-yellow-500/25 hover:shadow-yellow-500/40': getTopicType(course) === 'pro'
                 }"
                 @click.stop="handleStartCourse(course)"
                 :disabled="processingCourse === course._id"

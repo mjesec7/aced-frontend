@@ -2,18 +2,18 @@
   <section class="relative py-24 bg-white overflow-hidden" id="tariffs">
     <!-- Vibrant Background Elements -->
     <div class="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-      <div class="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] rounded-full bg-gradient-to-br from-purple-200/40 to-pink-200/40 blur-[100px]"></div>
-      <div class="absolute bottom-[-10%] left-[-5%] w-[600px] h-[600px] rounded-full bg-gradient-to-tr from-indigo-200/40 to-blue-200/40 blur-[100px]"></div>
+      <div class="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] rounded-full bg-gradient-to-br from-purple-100/40 to-yellow-100/40 blur-[100px]"></div>
+      <div class="absolute bottom-[-10%] left-[-5%] w-[600px] h-[600px] rounded-full bg-gradient-to-tr from-indigo-100/40 to-amber-100/40 blur-[100px]"></div>
     </div>
 
     <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <!-- Header -->
       <div class="text-center max-w-3xl mx-auto mb-16">
-        <div class="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-100 text-indigo-600 text-sm font-bold mb-6 shadow-sm">
+        <div class="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-indigo-500/10 to-yellow-500/10 border border-indigo-100 text-indigo-600 text-sm font-bold mb-6 shadow-sm">
           ✨ Flexible Plans
         </div>
         <h2 class="text-4xl md:text-5xl font-extrabold text-slate-900 mb-6 tracking-tight">
-          Choose your <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600">perfect path</span>
+          Choose your <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-yellow-500">perfect path</span>
         </h2>
         <p class="text-lg text-slate-600 leading-relaxed">
           Unlock premium features and accelerate your learning with our tailored subscription plans.
@@ -59,7 +59,7 @@
         </div>
 
         <!-- 3 Months Card - POPULAR -->
-        <div class="relative flex flex-col p-1 rounded-[2rem] bg-gradient-to-b from-indigo-500 via-purple-500 to-pink-500 shadow-2xl shadow-purple-500/20 transform md:-translate-y-4 z-10">
+        <div class="relative flex flex-col p-1 rounded-[2rem] bg-gradient-to-b from-indigo-500 via-purple-500 to-yellow-500 shadow-2xl shadow-purple-500/20 transform md:-translate-y-4 z-10">
           <div class="absolute top-0 left-1/2 -translate-x-1/2 -mt-4">
             <span class="inline-flex items-center px-4 py-1.5 rounded-full text-xs font-bold bg-slate-900 text-white shadow-lg uppercase tracking-wider border border-white/20">
               Most Popular
@@ -105,9 +105,9 @@
         </div>
 
         <!-- 6 Months Card -->
-        <div class="group relative flex flex-col p-8 bg-white rounded-[2rem] border-2 border-slate-100 hover:border-pink-200 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-pink-500/10">
+        <div class="group relative flex flex-col p-8 bg-white rounded-[2rem] border-2 border-slate-100 hover:border-yellow-400 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-yellow-500/10">
           <div class="mb-6">
-            <div class="w-12 h-12 rounded-2xl bg-pink-50 text-pink-600 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform duration-300">
+            <div class="w-12 h-12 rounded-2xl bg-yellow-50 text-yellow-600 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform duration-300">
               👑
             </div>
             <h3 class="text-2xl font-bold text-slate-900 mb-2">Biannual</h3>
@@ -125,14 +125,14 @@
 
           <button 
             @click="handleSubscribe(6)"
-            class="w-full py-4 rounded-xl bg-slate-50 text-pink-600 font-bold border-2 border-slate-100 hover:bg-pink-50 hover:border-pink-200 hover:text-pink-700 transition-all duration-200 mb-8"
+            class="w-full py-4 rounded-xl bg-slate-50 text-yellow-600 font-bold border-2 border-slate-100 hover:bg-yellow-50 hover:border-yellow-400 hover:text-yellow-700 transition-all duration-200 mb-8"
           >
             Subscribe
           </button>
 
           <div class="space-y-4 flex-1">
             <div v-for="(feature, i) in features" :key="i" class="flex items-start gap-3">
-              <div class="p-1 rounded-full bg-pink-100 text-pink-600 mt-0.5">
+              <div class="p-1 rounded-full bg-yellow-100 text-yellow-600 mt-0.5">
                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
@@ -159,7 +159,7 @@
           Cancel anytime
         </div>
         <div class="flex items-center gap-2 text-sm font-semibold text-slate-500 bg-slate-50 px-4 py-2 rounded-full border border-slate-100">
-          <svg class="w-5 h-5 text-pink-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg class="w-5 h-5 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
           Instant Access
