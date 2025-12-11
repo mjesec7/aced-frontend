@@ -1,6 +1,47 @@
-// src/api/user.js - User Management API
+// src/api/user.js - User Management API (FIXED - Server-First Approach)
 import api from './core';
 import { auth } from '@/firebase';
+
+// =============================================
+// 🔧 HELPER FUNCTIONS
+// =============================================
+
+/**
+ * Get authentication token with multiple fallbacks
+ */
+const getAuthToken = async () => {
+  try {
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      return await currentUser.getIdToken(true); // Force refresh
+    }
+    
+    // Fallback to stored token
+    const storedToken = localStorage.getItem('token') || localStorage.getItem('authToken');
+    if (storedToken && storedToken.length > 20) {
+      return storedToken;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('[user.js] Error getting auth token:', error);
+    return null;
+  }
+};
+
+/**
+ * Get user ID from various sources
+ */
+const resolveUserId = (userId) => {
+  if (userId) return userId;
+  
+  const currentUser = auth.currentUser;
+  if (currentUser?.uid) return currentUser.uid;
+  
+  return localStorage.getItem('userId') || 
+         localStorage.getItem('firebaseUserId') || 
+         null;
+};
 
 // =============================================
 // 👤 USER MANAGEMENT API FUNCTIONS
@@ -8,72 +49,192 @@ import { auth } from '@/firebase';
 
 /**
  * Get user info with multiple endpoint support
+ * CRITICAL: This is the main function to fetch user data from server
  */
 export const getUserInfo = async (userId) => {
+  console.log('📡 [user.js] getUserInfo called for:', userId);
+  
   try {
-    const token = await auth.currentUser?.getIdToken();
+    const token = await getAuthToken();
     if (!token) {
+      console.error('❌ [user.js] No authentication token available');
       throw new Error('No authentication token available');
+    }
+
+    const resolvedUserId = resolveUserId(userId);
+    if (!resolvedUserId) {
+      console.error('❌ [user.js] No user ID available');
+      throw new Error('No user ID available');
     }
 
     const headers = { Authorization: `Bearer ${token}` };
 
-    const { data } = await api.get(`users/${userId}`, { headers });
-    return data;
+    console.log('📡 [user.js] Fetching user from server:', resolvedUserId);
+    const { data } = await api.get(`users/${resolvedUserId}`, { headers });
+    
+    console.log('✅ [user.js] Server response:', data);
+    
+    // Handle different response formats
+    const userData = data.user || data.data || data;
+    
+    return {
+      success: true,
+      data: userData,
+      user: userData,
+      subscriptionPlan: userData.subscriptionPlan || 'free',
+      subscriptionExpiryDate: userData.subscriptionExpiryDate,
+      serverFetch: true,
+      fetchTime: new Date().toISOString()
+    };
   } catch (error) {
-throw error;
+    console.error('❌ [user.js] getUserInfo error:', error);
+    throw error;
   }
 };
 
 /**
- * Get user status with multiple endpoint support
+ * Get user status - CRITICAL: Always fetches from server
+ * This is the primary function for subscription status
  */
 export const getUserStatus = async (userId) => {
+  console.log('📡 [user.js] getUserStatus called for:', userId);
+  
   try {
-    const token = await auth.currentUser?.getIdToken();
+    const token = await getAuthToken();
     if (!token) {
-      throw new Error('No authentication token');
+      console.error('❌ [user.js] No authentication token');
+      return {
+        success: false,
+        error: 'No authentication token',
+        status: null,
+        serverFetch: false
+      };
+    }
+
+    const resolvedUserId = resolveUserId(userId);
+    if (!resolvedUserId) {
+      console.error('❌ [user.js] No user ID');
+      return {
+        success: false,
+        error: 'No user ID',
+        status: null,
+        serverFetch: false
+      };
     }
 
     const headers = { Authorization: `Bearer ${token}` };
 
-    // Try multiple endpoints for user status
+    // Try multiple endpoints in order of preference
     const endpoints = [
-      `users/${userId}/status`,
-      `users/${userId}`,
-      `user/${userId}/status`,
-      `user/${userId}`
+      `users/${resolvedUserId}`,
+      `users/${resolvedUserId}/status`,
+      `users/${resolvedUserId}/subscription-status`
     ];
 
     for (const endpoint of endpoints) {
       try {
+        console.log(`📡 [user.js] Trying endpoint: ${endpoint}`);
         const { data } = await api.get(endpoint, { headers });
 
-        if (data && (data.success !== false)) {
+        if (data && data.success !== false) {
+          // Extract user data from various response formats
+          const userData = data.user || data.data || data;
+          const status = userData.subscriptionPlan || 
+                        userData.userStatus || 
+                        userData.plan || 
+                        data.status ||
+                        'free';
+          
+          console.log('✅ [user.js] Got status from server:', status);
+          
           return {
             success: true,
-            data: data.data || data,
-            status: data.status || data.subscriptionPlan || data.data?.subscriptionPlan || 'free'
+            data: userData,
+            status: status,
+            subscriptionPlan: status,
+            subscriptionExpiryDate: userData.subscriptionExpiryDate || userData.subscriptionExpiry,
+            subscriptionSource: userData.subscriptionSource,
+            serverFetch: true,
+            endpoint: endpoint,
+            fetchTime: new Date().toISOString()
           };
         }
       } catch (endpointError) {
-continue;
+        console.warn(`⚠️ [user.js] Endpoint ${endpoint} failed:`, endpointError.message);
+        continue;
       }
     }
 
-    // If all fail, return default
+    // All endpoints failed - return error, NOT default 'free'
+    console.error('❌ [user.js] All endpoints failed');
     return {
-      success: true,
-      data: { subscriptionPlan: 'free' },
-      status: 'free'
+      success: false,
+      error: 'Could not fetch status from server',
+      status: null,
+      serverFetch: false
     };
 
   } catch (error) {
-return {
+    console.error('❌ [user.js] getUserStatus error:', error);
+    return {
       success: false,
-      data: { subscriptionPlan: 'free' },
-      status: 'free',
-      error: error.message
+      error: error.message,
+      status: null,
+      serverFetch: false
+    };
+  }
+};
+
+/**
+ * CRITICAL: Fetch subscription status directly from server
+ * This bypasses all caching and local storage
+ */
+export const fetchSubscriptionFromServer = async (userId) => {
+  console.log('🔄 [user.js] fetchSubscriptionFromServer called for:', userId);
+  
+  try {
+    const token = await getAuthToken();
+    if (!token) {
+      throw new Error('No authentication token');
+    }
+
+    const resolvedUserId = resolveUserId(userId);
+    if (!resolvedUserId) {
+      throw new Error('No user ID');
+    }
+
+    const headers = { Authorization: `Bearer ${token}` };
+
+    // Direct fetch from user endpoint
+    const { data } = await api.get(`users/${resolvedUserId}`, { headers });
+    
+    const userData = data.user || data.data || data;
+    
+    const subscriptionData = {
+      plan: userData.subscriptionPlan || 'free',
+      status: (userData.subscriptionPlan && userData.subscriptionPlan !== 'free') ? 'active' : 'inactive',
+      expiryDate: userData.subscriptionExpiryDate || null,
+      source: userData.subscriptionSource || null,
+      activatedAt: userData.subscriptionActivatedAt || null,
+      duration: userData.subscriptionDuration || null,
+      serverFetch: true,
+      fetchTime: new Date().toISOString()
+    };
+
+    console.log('✅ [user.js] Subscription data from server:', subscriptionData);
+    
+    return {
+      success: true,
+      subscription: subscriptionData,
+      user: userData
+    };
+    
+  } catch (error) {
+    console.error('❌ [user.js] fetchSubscriptionFromServer error:', error);
+    return {
+      success: false,
+      error: error.message,
+      subscription: null
     };
   }
 };
@@ -82,15 +243,19 @@ return {
  * Save user with enhanced error handling
  */
 export const saveUser = async (userData) => {
+  console.log('📡 [user.js] saveUser called');
+  
   try {
     const { data } = await api.post('users/save', userData);
 
     return {
       success: true,
-      data: data
+      data: data,
+      user: data.user || data
     };
   } catch (error) {
-throw error;
+    console.error('❌ [user.js] saveUser error:', error);
+    throw error;
   }
 };
 
@@ -99,17 +264,18 @@ throw error;
  */
 export const updateUserProfile = async (userId, profileData) => {
   try {
-    const token = await auth.currentUser?.getIdToken();
+    const token = await getAuthToken();
     if (!token) {
       throw new Error('No authentication token available');
     }
 
     const headers = { Authorization: `Bearer ${token}` };
-
     const { data } = await api.put(`users/${userId}/profile`, profileData, { headers });
+    
     return data;
   } catch (error) {
-throw error;
+    console.error('❌ [user.js] updateUserProfile error:', error);
+    throw error;
   }
 };
 
@@ -122,7 +288,7 @@ throw error;
  */
 export const getUserStudyList = async (userId) => {
   try {
-    const token = await auth.currentUser?.getIdToken();
+    const token = await getAuthToken();
     if (!token) throw new Error('No authentication token');
 
     const { data } = await api.get(`users/${userId}/study-list`, {
@@ -135,7 +301,7 @@ export const getUserStudyList = async (userId) => {
       message: data.message
     };
   } catch (error) {
-if (error.response?.status === 404) {
+    if (error.response?.status === 404) {
       return {
         success: true,
         data: [],
@@ -156,7 +322,7 @@ if (error.response?.status === 404) {
  */
 export const addToStudyList = async (userId, topicData) => {
   try {
-    const token = await auth.currentUser?.getIdToken();
+    const token = await getAuthToken();
     if (!token) throw new Error('No token');
 
     const data = {
@@ -191,7 +357,7 @@ export const addToStudyList = async (userId, topicData) => {
  */
 export const removeFromStudyList = async (userId, topicId) => {
   try {
-    const token = await auth.currentUser?.getIdToken();
+    const token = await getAuthToken();
     await api.delete(`users/${userId}/study-list/${topicId}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -211,13 +377,13 @@ export const removeFromStudyList = async (userId, topicId) => {
  */
 export const cleanupStudyList = async (userId) => {
   try {
-    const token = await auth.currentUser?.getIdToken();
+    const token = await getAuthToken();
     const { data } = await api.post(`users/${userId}/study-list/cleanup`, {}, {
       headers: { Authorization: `Bearer ${token}` }
     });
     return data;
   } catch (error) {
-throw error;
+    throw error;
   }
 };
 
@@ -230,7 +396,7 @@ throw error;
  */
 export const getUserGoals = async (userId) => {
   try {
-    const token = await auth.currentUser?.getIdToken();
+    const token = await getAuthToken();
     if (!token) throw new Error('No authentication token');
 
     const { data } = await api.get(`users/${userId}/goals`, {
@@ -238,7 +404,7 @@ export const getUserGoals = async (userId) => {
     });
     return data;
   } catch (error) {
-throw error;
+    throw error;
   }
 };
 
@@ -247,7 +413,7 @@ throw error;
  */
 export const createUserGoal = async (userId, goalData) => {
   try {
-    const token = await auth.currentUser?.getIdToken();
+    const token = await getAuthToken();
     if (!token) throw new Error('No authentication token');
 
     const { data } = await api.post(`users/${userId}/goals`, goalData, {
@@ -255,7 +421,7 @@ export const createUserGoal = async (userId, goalData) => {
     });
     return data;
   } catch (error) {
-throw error;
+    throw error;
   }
 };
 
@@ -264,7 +430,7 @@ throw error;
  */
 export const updateUserGoal = async (userId, goalId, goalData) => {
   try {
-    const token = await auth.currentUser?.getIdToken();
+    const token = await getAuthToken();
     if (!token) throw new Error('No authentication token');
 
     const { data } = await api.put(`users/${userId}/goals/${goalId}`, goalData, {
@@ -272,7 +438,7 @@ export const updateUserGoal = async (userId, goalId, goalData) => {
     });
     return data;
   } catch (error) {
-throw error;
+    throw error;
   }
 };
 
@@ -281,7 +447,7 @@ throw error;
  */
 export const deleteUserGoal = async (userId, goalId) => {
   try {
-    const token = await auth.currentUser?.getIdToken();
+    const token = await getAuthToken();
     if (!token) throw new Error('No authentication token');
 
     const { data } = await api.delete(`users/${userId}/goals/${goalId}`, {
@@ -289,7 +455,7 @@ export const deleteUserGoal = async (userId, goalId) => {
     });
     return data;
   } catch (error) {
-throw error;
+    throw error;
   }
 };
 
@@ -302,7 +468,7 @@ throw error;
  */
 export const saveDiaryEntry = async (userId, diaryData) => {
   try {
-    const token = await auth.currentUser?.getIdToken();
+    const token = await getAuthToken();
     if (!token) throw new Error('No authentication token');
 
     const { data } = await api.post(`users/${userId}/diary`, diaryData, {
@@ -310,7 +476,7 @@ export const saveDiaryEntry = async (userId, diaryData) => {
     });
     return data;
   } catch (error) {
-throw error;
+    throw error;
   }
 };
 
@@ -319,7 +485,7 @@ throw error;
  */
 export const getDiaryEntries = async (userId) => {
   try {
-    const token = await auth.currentUser?.getIdToken();
+    const token = await getAuthToken();
     if (!token) throw new Error('No authentication token');
 
     const { data } = await api.get(`users/${userId}/diary`, {
@@ -327,12 +493,12 @@ export const getDiaryEntries = async (userId) => {
     });
     return data;
   } catch (error) {
-throw error;
+    throw error;
   }
 };
 
 // =============================================
-// 🧬 LEARNING PROFILE (UPDATED PATHS)
+// 🧬 LEARNING PROFILE
 // =============================================
 
 /**
@@ -340,18 +506,17 @@ throw error;
  */
 export const getLearningProfile = async (userId) => {
   try {
-    const token = await auth.currentUser?.getIdToken();
+    const token = await getAuthToken();
     if (!token) {
       throw new Error('No authentication token available');
     }
 
     const headers = { Authorization: `Bearer ${token}` };
-    // ✅ FIXED: Add 'progress/' prefix
     const { data } = await api.get(`progress/learning-profile/${userId}`, { headers });
     
     return data;
   } catch (error) {
-throw error;
+    throw error;
   }
 };
 
@@ -360,18 +525,17 @@ throw error;
  */
 export const updateLearningProfile = async (userId, performanceData) => {
   try {
-    const token = await auth.currentUser?.getIdToken();
+    const token = await getAuthToken();
     if (!token) {
       throw new Error('No authentication token available');
     }
 
     const headers = { Authorization: `Bearer ${token}` };
-    // ✅ FIXED: Add 'progress/' prefix
     const { data } = await api.post(`progress/learning-profile/${userId}/update`, performanceData, { headers });
     
     return data;
   } catch (error) {
-throw error;
+    throw error;
   }
 };
 
@@ -380,23 +544,22 @@ throw error;
  */
 export const getPersonalizedRecommendations = async (userId) => {
   try {
-    const token = await auth.currentUser?.getIdToken();
+    const token = await getAuthToken();
     if (!token) {
       throw new Error('No authentication token available');
     }
 
     const headers = { Authorization: `Bearer ${token}` };
-    // ✅ FIXED: Add 'progress/' prefix
     const { data } = await api.get(`progress/learning-profile/${userId}/recommendation`, { headers });
     
     return data;
   } catch (error) {
-throw error;
+    throw error;
   }
 };
 
 // =============================================
-// 🎮 REWARD SYSTEM (UPDATED PATHS)
+// 🎮 REWARD SYSTEM
 // =============================================
 
 /**
@@ -404,18 +567,17 @@ throw error;
  */
 export const getUserRewards = async (userId) => {
   try {
-    const token = await auth.currentUser?.getIdToken();
+    const token = await getAuthToken();
     if (!token) {
       throw new Error('No authentication token available');
     }
 
     const headers = { Authorization: `Bearer ${token}` };
-    // ✅ FIXED: Add 'progress/' prefix
     const { data } = await api.get(`progress/rewards/${userId}`, { headers });
     
     return data;
   } catch (error) {
-throw error;
+    throw error;
   }
 };
 
@@ -424,18 +586,17 @@ throw error;
  */
 export const checkReward = async (userId, currentStep) => {
   try {
-    const token = await auth.currentUser?.getIdToken();
+    const token = await getAuthToken();
     if (!token) {
       throw new Error('No authentication token available');
     }
 
     const headers = { Authorization: `Bearer ${token}` };
-    // ✅ FIXED: Add 'progress/' prefix
     const { data } = await api.post(`progress/rewards/${userId}/check`, { currentStep }, { headers });
     
     return data;
   } catch (error) {
-throw error;
+    throw error;
   }
 };
 
@@ -444,18 +605,17 @@ throw error;
  */
 export const updateStreak = async (userId) => {
   try {
-    const token = await auth.currentUser?.getIdToken();
+    const token = await getAuthToken();
     if (!token) {
       throw new Error('No authentication token available');
     }
 
     const headers = { Authorization: `Bearer ${token}` };
-    // ✅ FIXED: Add 'progress/' prefix
     const { data } = await api.post(`progress/rewards/${userId}/streak`, {}, { headers });
 
     return data;
   } catch (error) {
-throw error;
+    throw error;
   }
 };
 
@@ -468,7 +628,7 @@ throw error;
  */
 export const getLearningMode = async (userId) => {
   try {
-    const token = await auth.currentUser?.getIdToken();
+    const token = await getAuthToken();
     if (!token) throw new Error('No authentication token');
 
     const headers = { Authorization: `Bearer ${token}` };
@@ -479,7 +639,7 @@ export const getLearningMode = async (userId) => {
       data: data
     };
   } catch (error) {
-return {
+    return {
       success: false,
       error: error.response?.data?.error || error.message
     };
@@ -491,7 +651,7 @@ return {
  */
 export const switchLearningMode = async (userId, newMode, reason = '') => {
   try {
-    const token = await auth.currentUser?.getIdToken();
+    const token = await getAuthToken();
     if (!token) throw new Error('No authentication token');
 
     const headers = { Authorization: `Bearer ${token}` };
@@ -505,7 +665,7 @@ export const switchLearningMode = async (userId, newMode, reason = '') => {
       data: data
     };
   } catch (error) {
-return {
+    return {
       success: false,
       error: error.response?.data?.error || error.message
     };
@@ -517,7 +677,7 @@ return {
  */
 export const startPlacementTest = async (userId) => {
   try {
-    const token = await auth.currentUser?.getIdToken();
+    const token = await getAuthToken();
     if (!token) throw new Error('No authentication token');
 
     const headers = { Authorization: `Bearer ${token}` };
@@ -528,7 +688,7 @@ export const startPlacementTest = async (userId) => {
       data: data
     };
   } catch (error) {
-return {
+    return {
       success: false,
       error: error.response?.data?.error || error.message
     };
@@ -540,7 +700,7 @@ return {
  */
 export const submitPlacementTestAnswer = async (testId, answer, timeSpent) => {
   try {
-    const token = await auth.currentUser?.getIdToken();
+    const token = await getAuthToken();
     if (!token) throw new Error('No authentication token');
 
     const headers = { Authorization: `Bearer ${token}` };
@@ -554,7 +714,7 @@ export const submitPlacementTestAnswer = async (testId, answer, timeSpent) => {
       data: data
     };
   } catch (error) {
-return {
+    return {
       success: false,
       error: error.response?.data?.error || error.message
     };
@@ -566,7 +726,7 @@ return {
  */
 export const getPlacementTestResults = async (userId) => {
   try {
-    const token = await auth.currentUser?.getIdToken();
+    const token = await getAuthToken();
     if (!token) throw new Error('No authentication token');
 
     const headers = { Authorization: `Bearer ${token}` };
@@ -577,7 +737,7 @@ export const getPlacementTestResults = async (userId) => {
       data: data
     };
   } catch (error) {
-return {
+    return {
       success: false,
       error: error.response?.data?.error || error.message
     };
@@ -589,7 +749,7 @@ return {
  */
 export const getSchoolCurriculum = async (userId) => {
   try {
-    const token = await auth.currentUser?.getIdToken();
+    const token = await getAuthToken();
     if (!token) throw new Error('No authentication token');
 
     const headers = { Authorization: `Bearer ${token}` };
@@ -600,7 +760,7 @@ export const getSchoolCurriculum = async (userId) => {
       data: data
     };
   } catch (error) {
-return {
+    return {
       success: false,
       error: error.response?.data?.error || error.message
     };
@@ -612,7 +772,7 @@ return {
  */
 export const completeLevel = async (userId, levelData) => {
   try {
-    const token = await auth.currentUser?.getIdToken();
+    const token = await getAuthToken();
     if (!token) throw new Error('No authentication token');
 
     const headers = { Authorization: `Bearer ${token}` };
@@ -626,7 +786,7 @@ export const completeLevel = async (userId, levelData) => {
       data: data
     };
   } catch (error) {
-return {
+    return {
       success: false,
       error: error.response?.data?.error || error.message
     };
@@ -638,7 +798,7 @@ return {
  */
 export const addStudyCentreBookmark = async (userId, courseId, notes = '') => {
   try {
-    const token = await auth.currentUser?.getIdToken();
+    const token = await getAuthToken();
     if (!token) throw new Error('No authentication token');
 
     const headers = { Authorization: `Bearer ${token}` };
@@ -652,7 +812,7 @@ export const addStudyCentreBookmark = async (userId, courseId, notes = '') => {
       data: data
     };
   } catch (error) {
-return {
+    return {
       success: false,
       error: error.response?.data?.error || error.message
     };
@@ -664,7 +824,7 @@ return {
  */
 export const createPersonalPath = async (userId, pathData) => {
   try {
-    const token = await auth.currentUser?.getIdToken();
+    const token = await getAuthToken();
     if (!token) throw new Error('No authentication token');
 
     const headers = { Authorization: `Bearer ${token}` };
@@ -678,7 +838,7 @@ export const createPersonalPath = async (userId, pathData) => {
       data: data
     };
   } catch (error) {
-return {
+    return {
       success: false,
       error: error.response?.data?.error || error.message
     };
@@ -690,7 +850,7 @@ return {
  */
 export const getAccessibleContent = async (userId) => {
   try {
-    const token = await auth.currentUser?.getIdToken();
+    const token = await getAuthToken();
     if (!token) throw new Error('No authentication token');
 
     const headers = { Authorization: `Bearer ${token}` };
@@ -701,7 +861,7 @@ export const getAccessibleContent = async (userId) => {
       data: data
     };
   } catch (error) {
-return {
+    return {
       success: false,
       error: error.response?.data?.error || error.message
     };
@@ -713,7 +873,7 @@ return {
  */
 export const checkLessonAccess = async (userId, lessonId) => {
   try {
-    const token = await auth.currentUser?.getIdToken();
+    const token = await getAuthToken();
     if (!token) throw new Error('No authentication token');
 
     const headers = { Authorization: `Bearer ${token}` };
@@ -725,10 +885,49 @@ export const checkLessonAccess = async (userId, lessonId) => {
       reason: data.reason
     };
   } catch (error) {
-return {
+    return {
       success: false,
       canAccess: false,
       reason: error.response?.data?.error || error.message
     };
   }
+};
+
+// =============================================
+// 📤 DEFAULT EXPORT
+// =============================================
+
+export default {
+  getUserInfo,
+  getUserStatus,
+  fetchSubscriptionFromServer,
+  saveUser,
+  updateUserProfile,
+  getUserStudyList,
+  addToStudyList,
+  removeFromStudyList,
+  cleanupStudyList,
+  getUserGoals,
+  createUserGoal,
+  updateUserGoal,
+  deleteUserGoal,
+  saveDiaryEntry,
+  getDiaryEntries,
+  getLearningProfile,
+  updateLearningProfile,
+  getPersonalizedRecommendations,
+  getUserRewards,
+  checkReward,
+  updateStreak,
+  getLearningMode,
+  switchLearningMode,
+  startPlacementTest,
+  submitPlacementTestAnswer,
+  getPlacementTestResults,
+  getSchoolCurriculum,
+  completeLevel,
+  addStudyCentreBookmark,
+  createPersonalPath,
+  getAccessibleContent,
+  checkLessonAccess
 };

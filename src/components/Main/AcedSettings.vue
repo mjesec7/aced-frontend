@@ -37,6 +37,15 @@
         <button class="alert-close" @click="notification = ''">×</button>
       </div>
 
+      <!-- SERVER SYNC STATUS -->
+      <div v-if="syncStatus" :class="['sync-status-banner', syncStatus.type]">
+        <span class="sync-icon">{{ syncStatus.icon }}</span>
+        <span class="sync-message">{{ syncStatus.message }}</span>
+        <button v-if="syncStatus.type === 'error'" @click="refreshFromServer" class="sync-retry-btn">
+          Retry
+        </button>
+      </div>
+
       <!-- CONTENT -->
       <div class="settings-content">
         
@@ -51,7 +60,9 @@
             <div class="stat-info">
               <p class="stat-label">Current Plan</p>
               <h3 class="stat-value">{{ currentPlanLabel }}</h3>
-              <span class="stat-badge active">Active</span>
+              <span :class="['stat-badge', currentPlan !== 'free' ? 'active' : 'inactive']">
+                {{ currentPlan !== 'free' ? 'Active' : 'Free' }}
+              </span>
             </div>
           </div>
 
@@ -87,7 +98,7 @@
             </div>
           </div>
 
-          <div class="stat-card" v-if="currentPlan !== 'free'">
+          <div class="stat-card" v-if="currentPlan !== 'free' && subscriptionExpiryInfo">
             <div class="stat-icon days-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
@@ -253,1614 +264,940 @@
               </div>
             </div>
 
-            <!-- SUBSCRIPTION PLANS -->
-            <div class="card" v-if="!hasActiveSubscription">
+            <!-- PREFERENCES CARD -->
+            <div class="card">
               <div class="card-header">
                 <div class="card-header-left">
                   <div class="card-icon">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                      <circle cx="12" cy="12" r="3"/>
+                      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
                     </svg>
                   </div>
                   <div>
-                    <h2 class="card-title">Subscription Tiers</h2>
-                    <p class="card-description">Choose your subscription duration</p>
+                    <h2 class="card-title">Preferences</h2>
+                    <p class="card-description">Customize your experience</p>
                   </div>
                 </div>
               </div>
               
               <div class="card-body">
-                <div class="pricing-cards">
-                  
-                  <!-- 1 MONTH -->
-                  <div 
-                    :class="['pricing-card', { selected: selectedDuration === 1 }]"
-                    @click="selectedDuration = 1"
-                  >
-                    <div v-if="subscriptionDuration === 1 && currentPlan === 'pro'" class="current-badge">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="20 6 9 17 4 12"/>
-                      </svg>
-                      Current
-                    </div>
-                    
-                    <div class="pricing-header">
-                      <h3>1 Month</h3>
-                      <div class="pricing-price">
-                        <span class="price-currency">UZS</span>
-                        <span class="price-amount">250K</span>
-                      </div>
-                      <p class="pricing-tagline">Monthly subscription</p>
-                    </div>
-
-                    <ul class="feature-list">
-                      <li>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                          <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                        Unlimited messages
-                      </li>
-                      <li>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                          <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                        Unlimited images
-                      </li>
-                      <li>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                          <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                        All pro features
-                      </li>
-                    </ul>
-
-                    <button 
-                      class="pricing-button"
-                      :disabled="subscriptionDuration === 1 && currentPlan === 'pro'"
-                    >
-                      {{ (subscriptionDuration === 1 && currentPlan === 'pro') ? 'Current Tier' : 'Select' }}
-                    </button>
+                <div class="preference-item">
+                  <div class="preference-info">
+                    <h4>Dark Mode</h4>
+                    <p>Switch to dark theme</p>
                   </div>
-
-                  <!-- 3 MONTHS - MOST POPULAR -->
-                  <div 
-                    :class="['pricing-card', 'featured', { selected: selectedDuration === 3 }]"
-                    @click="selectedDuration = 3"
-                  >
-                    <div class="popular-badge">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                      </svg>
-                      {{ (subscriptionDuration === 3 && currentPlan === 'pro') ? 'Current' : 'Most Popular' }}
-                    </div>
-                    
-                    <div class="pricing-header">
-                      <h3>3 Months</h3>
-                      <div class="pricing-price">
-                        <span class="price-currency">UZS</span>
-                        <span class="price-amount">675K</span>
-                      </div>
-                      <p class="pricing-tagline">225K/month • Save 10%</p>
-                    </div>
-
-                    <ul class="feature-list">
-                      <li>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                          <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                        Unlimited messages
-                      </li>
-                      <li>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                          <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                        Unlimited images
-                      </li>
-                      <li>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                          <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                        All pro features
-                      </li>
-                    </ul>
-
-                    <button 
-                      class="pricing-button"
-                      :disabled="subscriptionDuration === 3 && currentPlan === 'pro'"
-                    >
-                      {{ (subscriptionDuration === 3 && currentPlan === 'pro') ? 'Current Tier' : 'Select' }}
-                    </button>
-                  </div>
-
-                  <!-- 6 MONTHS -->
-                  <div 
-                    :class="['pricing-card', { selected: selectedDuration === 6 }]"
-                    @click="selectedDuration = 6"
-                  >
-                    <div v-if="subscriptionDuration === 6 && currentPlan === 'pro'" class="current-badge">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="20 6 9 17 4 12"/>
-                      </svg>
-                      Current
-                    </div>
-                    
-                    <div class="pricing-header">
-                      <h3>6 Months</h3>
-                      <div class="pricing-price">
-                        <span class="price-currency">UZS</span>
-                        <span class="price-amount">1.2M</span>
-                      </div>
-                      <p class="pricing-tagline">200K/month • Save 20%</p>
-                    </div>
-
-                    <ul class="feature-list">
-                      <li>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                          <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                        Unlimited messages
-                      </li>
-                      <li>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                          <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                        Unlimited images
-                      </li>
-                      <li>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                          <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                        All pro features
-                      </li>
-                    </ul>
-
-                    <button 
-                      class="pricing-button"
-                      :disabled="subscriptionDuration === 6 && currentPlan === 'pro'"
-                    >
-                      {{ (subscriptionDuration === 6 && currentPlan === 'pro') ? 'Current Tier' : 'Select' }}
-                    </button>
-                  </div>
+                  <label class="toggle">
+                    <input type="checkbox" v-model="darkMode" @change="toggleDarkMode">
+                    <span class="toggle-slider"></span>
+                  </label>
                 </div>
 
-                <button 
-                  class="btn btn-large btn-primary"
-                  @click="goToPayment"
-                  :disabled="!selectedDuration || loading"
-                  style="margin-top: 24px;"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-                    <line x1="1" y1="10" x2="23" y2="10"/>
-                  </svg>
-                  {{ selectedDuration ? `Subscribe for ${selectedDuration} Month${selectedDuration > 1 ? 's' : ''}` : 'Select a duration' }}
-                </button>
-              </div>
-            </div>
-
-            <!-- SUBSCRIPTION INFO (Moved to Left Column) -->
-            <div class="card" v-if="subscriptionExpiryInfo">
-              <div class="card-header">
-                <div class="card-header-left">
-                  <div class="card-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <circle cx="12" cy="12" r="10"/>
-                      <polyline points="12 6 12 12 16 14"/>
-                    </svg>
+                <div class="preference-item">
+                  <div class="preference-info">
+                    <h4>Email Notifications</h4>
+                    <p>Receive updates via email</p>
                   </div>
-                  <div>
-                    <h2 class="card-title">Subscription</h2>
-                    <p class="card-description">Your subscription information</p>
-                  </div>
+                  <label class="toggle">
+                    <input type="checkbox" v-model="emailNotifications">
+                    <span class="toggle-slider"></span>
+                  </label>
                 </div>
-              </div>
-              
-              <div class="card-body">
-                <div class="subscription-info">
-                  <div class="subscription-plan">
-                    <span class="plan-badge">{{ currentPlanLabel }} Plan</span>
+
+                <div class="preference-item">
+                  <div class="preference-info">
+                    <h4>Sound Effects</h4>
+                    <p>Play sounds for actions</p>
                   </div>
-                  
-                  <!-- Days Remaining Display -->
-                  <div class="subscription-days-remaining">
-                    <p class="days-label">Time Remaining</p>
-                    <h3 class="days-value">{{ subscriptionExpiryInfo.daysRemaining }} <span class="days-unit">days</span></h3>
-                    <p class="time-remaining-detail">{{ subscriptionExpiryInfo.timeRemaining }}</p>
-                  </div>
-                  
-                  <div class="subscription-expiry">
-                    <p class="expiry-label">Valid until</p>
-                    <h3 class="expiry-date">{{ subscriptionExpiryInfo.formattedDate }}</h3>
-                  </div>
-                  
-                  <div :class="['subscription-status', subscriptionExpiryInfo.isExpiring ? 'expiring' : 'active']">
-                    <svg v-if="!subscriptionExpiryInfo.isExpiring" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                    <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                      <line x1="12" y1="9" x2="12" y2="13"/>
-                      <line x1="12" y1="17" x2="12.01" y2="17"/>
-                    </svg>
-                    {{ subscriptionExpiryInfo.isExpiring ? 'Expiring Soon' : 'Active' }}
-                  </div>
+                  <label class="toggle">
+                    <input type="checkbox" v-model="soundEffects">
+                    <span class="toggle-slider"></span>
+                  </label>
                 </div>
               </div>
             </div>
-
           </div>
 
           <!-- RIGHT COLUMN -->
           <div class="right-column">
             
-            <!-- PROMO CODE CARD -->
-            <div class="card">
+            <!-- SUBSCRIPTION CARD -->
+            <div class="card subscription-card">
               <div class="card-header">
                 <div class="card-header-left">
-                  <div class="card-icon">
+                  <div class="card-icon premium-icon">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-                      <polyline points="7.5 4.21 12 6.81 16.5 4.21"/>
-                      <polyline points="7.5 19.79 7.5 14.6 3 12"/>
-                      <polyline points="21 12 16.5 14.6 16.5 19.79"/>
-                      <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
-                      <line x1="12" y1="22.08" x2="12" y2="12"/>
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
                     </svg>
                   </div>
                   <div>
-                    <h2 class="card-title">Promo Code</h2>
-                    <p class="card-description">Activate special offer</p>
+                    <h2 class="card-title">Subscription</h2>
+                    <p class="card-description">Manage your plan</p>
+                  </div>
+                </div>
+                <button @click="refreshFromServer" class="btn-icon" title="Refresh from server">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="23 4 23 10 17 10"/>
+                    <polyline points="1 20 1 14 7 14"/>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                  </svg>
+                </button>
+              </div>
+              
+              <div class="card-body">
+                <!-- Current Plan Display -->
+                <div class="current-plan-display">
+                  <div class="plan-badge-large" :class="currentPlan">
+                    {{ currentPlanLabel }}
+                  </div>
+                  <div class="plan-details" v-if="currentPlan !== 'free'">
+                    <p v-if="subscriptionExpiryInfo">
+                      Expires: {{ subscriptionExpiryInfo.formattedDate }}
+                      <span class="days-left">({{ subscriptionExpiryInfo.daysRemaining }} days left)</span>
+                    </p>
+                    <p v-if="subscriptionSource" class="subscription-source">
+                      Source: {{ subscriptionSource }}
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Plan Options -->
+                <div class="plan-options">
+                  <div 
+                    v-for="plan in availablePlans" 
+                    :key="plan.id"
+                    :class="['plan-option', { active: currentPlan === plan.id, recommended: plan.recommended }]"
+                    @click="selectPlan(plan.id)"
+                  >
+                    <div class="plan-option-header">
+                      <span class="plan-name">{{ plan.name }}</span>
+                      <span v-if="plan.recommended" class="recommended-badge">Popular</span>
+                      <span v-if="currentPlan === plan.id" class="current-badge">Current</span>
+                    </div>
+                    <div class="plan-price">
+                      <span class="price-amount">{{ plan.price }}</span>
+                      <span class="price-period">/month</span>
+                    </div>
+                    <ul class="plan-features">
+                      <li v-for="feature in plan.features" :key="feature">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        {{ feature }}
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <!-- Upgrade Button -->
+                <button 
+                  v-if="currentPlan === 'free'" 
+                  @click="goToUpgrade" 
+                  class="btn btn-primary btn-block btn-upgrade"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                  </svg>
+                  Upgrade Now
+                </button>
+
+                <!-- Promocode Section -->
+                <div class="promocode-section">
+                  <h4>Have a promocode?</h4>
+                  <div class="promocode-input-group">
+                    <input 
+                      type="text" 
+                      v-model="promocode" 
+                      class="form-input"
+                      placeholder="Enter promocode"
+                      :disabled="applyingPromo"
+                    />
+                    <button 
+                      @click="applyPromocode" 
+                      class="btn btn-secondary"
+                      :disabled="!promocode || applyingPromo"
+                    >
+                      {{ applyingPromo ? 'Applying...' : 'Apply' }}
+                    </button>
+                  </div>
+                  <p v-if="promoError" class="promo-error">{{ promoError }}</p>
+                  <p v-if="promoSuccess" class="promo-success">{{ promoSuccess }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- DANGER ZONE -->
+            <div class="card danger-card">
+              <div class="card-header">
+                <div class="card-header-left">
+                  <div class="card-icon danger-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                      <line x1="12" y1="9" x2="12" y2="13"/>
+                      <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 class="card-title">Danger Zone</h2>
+                    <p class="card-description">Irreversible actions</p>
                   </div>
                 </div>
               </div>
               
               <div class="card-body">
-                <!-- Show message if user has active subscription -->
-                <div v-if="hasActiveSubscription && subscriptionExpiryInfo && !subscriptionExpiryInfo.isExpired" class="active-subscription-notice">
-                  <div class="notice-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <circle cx="12" cy="12" r="10"/>
-                      <line x1="12" y1="8" x2="12" y2="12"/>
-                      <line x1="12" y1="16" x2="12.01" y2="16"/>
-                    </svg>
+                <div class="danger-item">
+                  <div class="danger-info">
+                    <h4>Sign Out</h4>
+                    <p>Sign out from your account</p>
                   </div>
-                  <div class="notice-content">
-                    <h4>You have an active subscription</h4>
-                    <p>You can apply a new promo code after your current <strong>{{ currentPlanLabel }} Plan</strong> expires.</p>
-                    <p class="notice-expiry">Available in <strong>{{ subscriptionExpiryInfo.daysRemaining }} days</strong> ({{ subscriptionExpiryInfo.formattedDate }})</p>
-                  </div>
-                </div>
-
-                <!-- Show promo form if no active subscription -->
-                <template v-else>
-                  <div class="form-group">
-                    <label class="form-label">Enter promo code</label>
-                    <input 
-                      type="text" 
-                      v-model="promoCode" 
-                      class="form-input promo-input"
-                      placeholder="PROMO2024"
-                      :disabled="loading || isProcessingPromo"
-                      @input="handlePromoCodeInput"
-                    />
-                    <div v-if="isValidatingPromo" class="form-hint">
-                      <div class="spinner-mini"></div>
-                      Checking promo code...
-                    </div>
-                    <div v-else-if="promoValidation && promoCode.length > 3">
-                      <div v-if="promoValidation.valid" class="form-success">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                          <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                        Valid! {{ promoValidation.data?.grantsPlan?.toUpperCase() }} Plan
-                      </div>
-                      <div v-else class="form-error">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                          <circle cx="12" cy="12" r="10"/>
-                          <line x1="15" y1="9" x2="9" y2="15"/>
-                          <line x1="9" y1="9" x2="15" y2="15"/>
-                        </svg>
-                        {{ promoValidation.error }}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="form-group">
-                    <label class="form-label">Subscription Duration</label>
-                    <div class="duration-selector">
-                      <button 
-                        v-for="duration in [1, 3, 6]" 
-                        :key="duration"
-                        :class="['duration-btn', { selected: selectedDuration === duration }]"
-                        @click="selectedDuration = duration"
-                      >
-                        {{ duration }} Mo
-                      </button>
-                    </div>
-                  </div>
-
-                  <div class="form-group">
-                    <label class="form-label">Plan Type</label>
-                    <div class="pro-plan-display">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                      </svg>
-                      Pro Plan
-                    </div>
-                  </div>
-
-                  <button 
-                    class="btn btn-primary"
-                    @click="applyPromo"
-                    :disabled="!canApplyPromo || isProcessingPromo"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                      <polyline points="22 4 12 14.01 9 11.01"/>
-                    </svg>
-                    {{ promoButtonText }}
-                  </button>
-                </template>
-              </div>
-            </div>
-
-
-
-            <!-- USAGE STATS -->
-            <div class="card">
-              <div class="card-header">
-                <div class="card-header-left">
-                  <div class="card-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M18 20V10"/>
-                      <path d="M12 20V4"/>
-                      <path d="M6 20v-6"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <h2 class="card-title">Usage</h2>
-                    <p class="card-description">Your monthly statistics</p>
-                  </div>
-                </div>
-              </div>
-
-              <div class="card-body">
-                <div class="usage-item">
-                  <div class="usage-header">
-                    <span class="usage-label">Messages</span>
-                    <span class="usage-value">{{ currentUsageMessages }} / {{ usageLimitsMessages === -1 ? '∞' : usageLimitsMessages }}</span>
-                  </div>
-                  <div class="usage-progress">
-                    <div class="usage-progress-bar messages" :style="{ width: messageUsagePercentage + '%' }"></div>
-                  </div>
-                </div>
-
-                <div class="usage-item">
-                  <div class="usage-header">
-                    <span class="usage-label">Images</span>
-                    <span class="usage-value">{{ currentUsageImages }} / {{ usageLimitsImages === -1 ? '∞' : usageLimitsImages }}</span>
-                  </div>
-                  <div class="usage-progress">
-                    <div class="usage-progress-bar images" :style="{ width: imageUsagePercentage + '%' }"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- INBOX / NOTIFICATIONS -->
-            <div class="card">
-              <div class="card-header">
-                <div class="card-header-left">
-                  <div class="card-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                      <polyline points="22,6 12,13 2,6"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <h2 class="card-title">Inbox</h2>
-                    <p class="card-description">Your payment notifications</p>
-                  </div>
-                </div>
-                <span v-if="unreadMessagesCount > 0" class="bg-indigo-600 text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[22px] text-center">{{ unreadMessagesCount }}</span>
-              </div>
-
-              <div class="card-body">
-                <div v-if="loadingInbox" class="flex items-center justify-center gap-2.5 py-6 text-gray-500 text-sm">
-                  <div class="w-4 h-4 border-2 border-gray-200 border-t-indigo-500 rounded-full animate-spin"></div>
-                  <span>Loading messages...</span>
-                </div>
-
-                <div v-else-if="inboxMessages.length === 0" class="text-center py-8 px-4 text-gray-400">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 mx-auto mb-3 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M22 12h-6l-2 3h-4l-2-3H2"/>
-                    <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
-                  </svg>
-                  <p class="text-sm font-semibold text-gray-500 mb-1">No messages yet</p>
-                  <span class="text-xs">Payment confirmations will appear here</span>
-                </div>
-
-                <div v-else class="flex flex-col gap-2">
-                  <div
-                    v-for="message in inboxMessages.slice(0, 5)"
-                    :key="message.id"
-                    :class="[
-                      'group flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-all border',
-                      message.read
-                        ? 'bg-white border-transparent hover:bg-gray-50 hover:border-gray-200'
-                        : 'bg-indigo-50 border-indigo-200'
-                    ]"
-                    @click="openMessage(message)"
-                  >
-                    <div :class="[
-                      'w-8 h-8 rounded-lg flex items-center justify-center shrink-0',
-                      message.type === 'payment' ? 'bg-green-100 text-green-600' :
-                      message.type === 'warning' ? 'bg-amber-100 text-amber-600' :
-                      'bg-blue-100 text-blue-600'
-                    ]">
-                      <svg v-if="message.type === 'payment'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="20 6 9 17 4 12"/>
-                      </svg>
-                      <svg v-else-if="message.type === 'warning'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                        <line x1="12" y1="9" x2="12" y2="13"/>
-                        <line x1="12" y1="17" x2="12.01" y2="17"/>
-                      </svg>
-                      <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"/>
-                        <line x1="12" y1="16" x2="12" y2="12"/>
-                        <line x1="12" y1="8" x2="12.01" y2="8"/>
-                      </svg>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                      <h4 class="text-sm font-semibold text-gray-900 mb-0.5 truncate">{{ message.title }}</h4>
-                      <p class="text-xs text-gray-500 mb-1 truncate">{{ message.content.substring(0, 60) }}...</p>
-                      <span class="text-[11px] text-gray-400">{{ formatMessageDate(message.createdAt) }}</span>
-                    </div>
-                    <button
-                      class="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-all opacity-0 group-hover:opacity-100"
-                      @click.stop="deleteInboxMessage(message.id)"
-                      title="Delete message"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"/>
-                        <line x1="6" y1="6" x2="18" y2="18"/>
-                      </svg>
-                    </button>
-                  </div>
-
-                  <button
-                    v-if="inboxMessages.length > 5"
-                    class="mt-2 text-sm text-indigo-500 hover:text-indigo-600 font-medium"
-                    @click="showAllMessages = true"
-                  >
-                    View all {{ inboxMessages.length }} messages
+                  <button @click="handleLogout" class="btn btn-outline-danger">
+                    Sign Out
                   </button>
                 </div>
-              </div>
-            </div>
 
-          </div>
-        </div>
-
-        <!-- MESSAGE DETAIL MODAL -->
-        <transition name="modal">
-          <div v-if="selectedMessage" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" @click.self="closeMessage">
-            <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
-              <div class="flex items-center gap-4 p-5 border-b border-gray-100">
-                <div :class="[
-                  'w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0',
-                  selectedMessage.type === 'payment' ? 'bg-green-100 text-green-600' :
-                  selectedMessage.type === 'warning' ? 'bg-amber-100 text-amber-600' :
-                  'bg-blue-100 text-blue-600'
-                ]">
-                  <svg v-if="selectedMessage.type === 'payment'" xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="20 6 9 17 4 12"/>
-                  </svg>
-                  <svg v-else-if="selectedMessage.type === 'warning'" xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                    <line x1="12" y1="9" x2="12" y2="13"/>
-                    <line x1="12" y1="17" x2="12.01" y2="17"/>
-                  </svg>
-                  <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"/>
-                    <line x1="12" y1="16" x2="12" y2="12"/>
-                    <line x1="12" y1="8" x2="12.01" y2="8"/>
-                  </svg>
+                <div class="danger-item">
+                  <div class="danger-info">
+                    <h4>Delete Account</h4>
+                    <p>Permanently delete your account and all data</p>
+                  </div>
+                  <button @click="confirmDeleteAccount" class="btn btn-danger">
+                    Delete Account
+                  </button>
                 </div>
-                <h3 class="flex-1 text-lg font-bold text-gray-900">{{ selectedMessage.title }}</h3>
-                <button @click="closeMessage" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18"/>
-                    <line x1="6" y1="6" x2="18" y2="18"/>
-                  </svg>
-                </button>
-              </div>
-
-              <div class="p-5">
-                <p class="text-sm text-gray-400 mb-4">{{ formatMessageDate(selectedMessage.createdAt) }}</p>
-                <div class="text-sm leading-relaxed text-gray-600 whitespace-pre-wrap bg-gray-50 p-4 rounded-xl mb-4">{{ selectedMessage.content }}</div>
-
-                <!-- Payment Details if available -->
-                <div v-if="selectedMessage.data && selectedMessage.type === 'payment'" class="bg-green-50 border border-green-200 rounded-xl p-4">
-                  <h4 class="text-sm font-semibold text-green-800 mb-3">Payment Details</h4>
-                  <div v-if="selectedMessage.data.transactionId" class="flex justify-between items-center py-1.5 text-sm border-b border-dashed border-green-200">
-                    <span class="text-gray-500">Transaction ID:</span>
-                    <code class="font-mono text-xs bg-green-100 px-1.5 py-0.5 rounded text-gray-800">{{ selectedMessage.data.transactionId }}</code>
-                  </div>
-                  <div v-if="selectedMessage.data.paymentMethod" class="flex justify-between items-center py-1.5 text-sm border-b border-dashed border-green-200">
-                    <span class="text-gray-500">Payment Method:</span>
-                    <span class="font-medium text-gray-800">{{ selectedMessage.data.paymentMethod }}</span>
-                  </div>
-                  <div v-if="selectedMessage.data.startDate" class="flex justify-between items-center py-1.5 text-sm border-b border-dashed border-green-200">
-                    <span class="text-gray-500">Start Date:</span>
-                    <span class="font-medium text-gray-800">{{ formatMessageDate(selectedMessage.data.startDate) }}</span>
-                  </div>
-                  <div v-if="selectedMessage.data.endDate" class="flex justify-between items-center py-1.5 text-sm">
-                    <span class="text-gray-500">End Date:</span>
-                    <span class="font-medium text-gray-800">{{ formatMessageDate(selectedMessage.data.endDate) }}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="flex gap-3 p-5 pt-0">
-                <button class="flex-1 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-all" @click="deleteInboxMessage(selectedMessage.id); closeMessage();">
-                  Delete
-                </button>
-                <button class="flex-1 px-4 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg font-medium transition-all" @click="closeMessage">
-                  Close
-                </button>
               </div>
             </div>
           </div>
-        </transition>
-
+        </div>
       </div>
     </main>
 
-    <!-- LOADING OVERLAY -->
-    <div v-if="loading" class="loading-overlay">
-      <div class="loading-spinner"></div>
-      <p class="loading-text">{{ loadingText }}</p>
+    <!-- DELETE CONFIRMATION MODAL -->
+    <div v-if="showDeleteModal" class="modal-overlay" @click.self="showDeleteModal = false">
+      <div class="modal">
+        <div class="modal-header">
+          <h3>Delete Account</h3>
+          <button @click="showDeleteModal = false" class="modal-close">×</button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to delete your account? This action cannot be undone.</p>
+          <p class="warning-text">All your data, progress, and subscription will be permanently deleted.</p>
+        </div>
+        <div class="modal-footer">
+          <button @click="showDeleteModal = false" class="btn btn-secondary">Cancel</button>
+          <button @click="deleteAccount" class="btn btn-danger">Delete Forever</button>
+        </div>
+      </div>
     </div>
-
   </div>
 </template>
 
 <script>
-import { auth, db } from "@/firebase";
-import { mapGetters, mapActions } from 'vuex';
-import {
-  updateEmail,
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { useStore } from 'vuex';
+import { useRouter } from 'vue-router';
+import { auth } from '@/firebase';
+import { 
+  updatePassword, 
+  EmailAuthProvider, 
   reauthenticateWithCredential,
-  EmailAuthProvider,
-  updatePassword,
-  onAuthStateChanged,
   sendPasswordResetEmail,
-} from "firebase/auth";
-import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
-import {
-  getUserMessages,
-  markMessageAsRead,
-  deleteMessage,
-  getUnreadCount
-} from '@/api/inbox';
-
-// CRITICAL: Import directly from promocodes API for reliable promo code handling
-import { applyPromocode, validatePromocode } from '@/api/promocodes';
+  deleteUser
+} from 'firebase/auth';
+import { fetchSubscriptionFromServer, syncSubscriptionGlobally } from '@/api/subscription';
+import { getUserStatus, getUserInfo } from '@/api/user';
 
 export default {
   name: 'AcedSettings',
-  data() {
-    return {
-      user: { name: "", surname: "", email: "" },
-      tempUser: { name: "", surname: "" },
-      oldPassword: "",
-      newPassword: "",
-      confirmPassword: "",
-      currentUser: null,
-      isGoogleUser: false,
-      isEditingName: false,
-      
-      promoCode: "",
-      selectedPlan: "pro",
-      paymentPlan: "",
-      selectedDuration: 3, // Selected subscription duration (1, 3, or 6 months)
-      
-      promoValidation: null,
-      promoValidationTimeout: null,
-      isValidatingPromo: false,
-      isProcessingPromo: false,
-      
-      loading: true,
-      loadingText: "",
-      notification: "",
-      notificationClass: "",
-      notificationIcon: "",
-      notificationTitle: "",
-      
-      reactivityKey: 0,
-      lastUpdateTime: Date.now(),
-      componentMounted: false,
-      statusEventListeners: [],
-      storeUnsubscribe: null,
-
-      // Inbox related
-      inboxMessages: [],
-      loadingInbox: false,
-      selectedMessage: null,
-      unreadMessagesCount: 0,
-      showAllMessages: false
-    };
-  },
   
-  computed: {
-    ...mapGetters('user', [
-      'userStatus',
-      'isPremiumUser', 
-      'isStartUser',
-      'isProUser',
-      'isFreeUser',
-      'hasActiveSubscription',
-      'getUser',
-      'subscriptionDetails',
-      'appliedPromocodes',
-      'paymentHistory',
-      'currentUsage',
-      'usageLimits',
-      'forceUpdateCounter'
-    ]),
+  setup() {
+    const store = useStore();
+    const router = useRouter();
 
-    currentPlan() {
-      try {
-        // 1. Prioritize Vuex Store (synced with backend)
-        const storeStatus = this.$store.state.user?.userStatus;
-        if (storeStatus) return storeStatus;
-        
-        // 2. Fallback to user object
-        const userStatus = this.getUser?.subscriptionPlan;
-        if (userStatus) return userStatus;
-        
-        // 3. Last resort: localStorage
-        // Only use this if we have absolutely no data from backend
-        return localStorage.getItem('userStatus') || 'free';
-      } catch (e) {
-        return 'free';
-      }
-    },
-    
-    subscriptionExpiryInfo() {
-      try {
-        // 🔒 STRICT: If plan is free, return null. No client-side calculations allowed.
-        if (this.currentPlan === 'free') {
-          return null;
-        }
-
-        const details = this.subscriptionDetails || {};
-        const expiryDateStr = details.expiryDate; // ONLY from backend/store
-        
-        if (!expiryDateStr) {
-          return null;
-        }
-        
-        const expiryDate = new Date(expiryDateStr);
-        const now = new Date();
-        const diffTime = expiryDate - now;
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
-        return {
-          expiryDate: expiryDate,
-          daysRemaining: Math.max(0, diffDays),
-          isExpiring: diffDays <= 7 && diffDays > 0,
-          isExpired: diffDays <= 0,
-          formattedDate: this.formatDate(expiryDateStr),
-          timeRemaining: this.getTimeRemaining(diffTime),
-          duration: details.duration || null
-        };
-      } catch (e) {
-        console.error('subscriptionExpiryInfo error:', e);
-        return null;
-      }
-    },
-    
-    appliedPromocodesCount() {
-      try {
-        return this.appliedPromocodes?.length || 0;
-      } catch (e) {
-        return 0;
-      }
-    },
-    
-    currentUsageMessages() {
-      try {
-        return this.currentUsage?.messages || 0;
-      } catch (e) {
-return 0;
-      }
-    },
-    
-    currentUsageImages() {
-      try {
-        return this.currentUsage?.images || 0;
-      } catch (e) {
-return 0;
-      }
-    },
-    
-    usageLimitsMessages() {
-      try {
-        return this.usageLimits?.messages || 50;
-      } catch (e) {
-return 50;
-      }
-    },
-    
-    usageLimitsImages() {
-      try {
-        return this.usageLimits?.images || 5;
-      } catch (e) {
-return 5;
-      }
-    },
-    
-    messageUsagePercentage() {
-      try {
-        const messages = this.currentUsageMessages;
-        const limit = this.usageLimitsMessages;
-        return (limit === -1) ? 0 : Math.min(100, Math.round((messages / limit) * 100));
-      } catch (e) {
-return 0;
-      }
-    },
-    
-    imageUsagePercentage() {
-      try {
-        const images = this.currentUsageImages;
-        const limit = this.usageLimitsImages;
-        return (limit === -1) ? 0 : Math.min(100, Math.round((images / limit) * 100));
-      } catch (e) {
-return 0;
-      }
-    },
-    
-    currentPlanLabel() {
-      try {
-        const labels = {
-          pro: 'Pro',
-          start: 'Start', 
-          free: 'Free'
-        };
-        return labels[this.currentPlan] || 'Free';
-      } catch (e) {
-        return 'Free';
-      }
-    },
-    
-    userId() {
-      try {
-        return this.currentUser?.uid || null;
-      } catch (e) {
-        return null;
-      }
-    },
-    
-    subscriptionDuration() {
-      try {
-        // Get duration from Vuex store or user details
-        const duration = this.getUser?.subscriptionDuration || this.subscriptionDetails?.duration;
-        return duration || null;
-      } catch (e) {
-        return null;
-      }
-    },
-    
-    canApplyPromo() {
-      try {
-        // If promo grants a plan directly, don't require selectedPlan
-        const promoGrantsPlan = this.promoValidation?.data?.grantsPlan;
-        const hasPlan = this.selectedPlan || promoGrantsPlan;
-
-        return this.promoCode &&
-               this.promoCode.trim().length > 3 &&
-               hasPlan &&
-               this.promoValidation &&
-               this.promoValidation.valid === true &&
-               !this.loading &&
-               !this.isProcessingPromo &&
-               !this.planCompatibilityError;
-      } catch (e) {
-        return false;
-      }
-    },
-    
-    promoButtonText() {
-      try {
-        if (this.isProcessingPromo) return 'Applying...';
-        if (this.isValidatingPromo) return 'Checking...';
-        if (!this.promoCode.trim()) return 'Enter promo code';
-        if (!this.selectedPlan) return 'Select plan';
-        if (this.promoValidation && !this.promoValidation.valid) return 'Invalid promo code';
-        if (this.planCompatibilityError) return 'Check plan';
-        if (this.canApplyPromo) return 'Apply promo code';
-        return 'Apply promo code';
-      } catch (e) {
-        return 'Apply promo code';
-      }
-    },
-    
-    planCompatibilityError() {
-      try {
-        if (!this.promoValidation || !this.promoValidation.valid || !this.selectedPlan) return false;
-        
-        const promoGrantsPlan = this.promoValidation.data?.grantsPlan;
-        if (promoGrantsPlan && promoGrantsPlan !== this.selectedPlan) {
-          return true;
-        }
-        
-        return false;
-      } catch (e) {
-        return false;
-      }
-    }
-  },
-  
-  watch: {
-    '$store.state.user': {
-      handler(newUser, oldUser) {
-        try {
-          const newPlan = newUser?.subscriptionPlan;
-          const oldPlan = oldUser?.subscriptionPlan;
-          
-          if (newPlan !== oldPlan) {
-            this.handleUserStatusChange(newPlan, oldPlan);
-          }
-        } catch (e) {
-}
-      },
-      deep: true,
-      immediate: true
-    },
-
-    currentPlan: {
-      handler(newPlan, oldPlan) {
-        try {
-          if (newPlan !== oldPlan) {
-            this.forceReactivityUpdate();
-          }
-        } catch (e) {
-}
-      },
-      immediate: true
-    }
-  },
-  
-  async mounted() {
-    await this.initializeComponent();
-    this.componentMounted = true;
-    // Load inbox messages
-    this.loadInboxMessages();
-
-    // Check if returning from successful promo code application
-    if (this.$route.query.promoApplied === 'true') {
-      const plan = this.$route.query.plan || 'pro';
-      this.showNotification(`Подписка ${plan.toUpperCase()} активирована!`, 'success');
-      // Clear the query params
-      this.$router.replace({ path: this.$route.path, query: {} });
-      // Refresh user data
-      await this.loadInitialData();
-    }
-  },
-
-  methods: {
     // =============================================
-    // INBOX METHODS
+    // 📦 STATE
+    // =============================================
+    
+    const loading = ref(false);
+    const notification = ref('');
+    const notificationType = ref('info');
+    const syncStatus = ref(null);
+    
+    // User data
+    const user = ref({
+      name: '',
+      surname: '',
+      email: ''
+    });
+    const tempUser = ref({
+      name: '',
+      surname: ''
+    });
+    const isEditingName = ref(false);
+    
+    // Password
+    const oldPassword = ref('');
+    const newPassword = ref('');
+    const confirmPassword = ref('');
+    
+    // Preferences
+    const darkMode = ref(false);
+    const emailNotifications = ref(true);
+    const soundEffects = ref(true);
+    
+    // Subscription - CRITICAL: These are populated from server
+    const serverSubscriptionData = ref(null);
+    const promocode = ref('');
+    const applyingPromo = ref(false);
+    const promoError = ref('');
+    const promoSuccess = ref('');
+    
+    // Modals
+    const showDeleteModal = ref(false);
+
+    // =============================================
+    // 🔧 COMPUTED PROPERTIES
     // =============================================
 
-    async loadInboxMessages() {
-      if (!this.currentUser?.uid) return;
-
-      this.loadingInbox = true;
-      try {
-        const result = await getUserMessages(this.currentUser.uid);
-        if (result.success) {
-          this.inboxMessages = result.messages;
-          this.unreadMessagesCount = result.messages.filter(m => !m.read).length;
-        }
-      } catch (error) {
-        console.error('Failed to load inbox messages:', error);
-      } finally {
-        this.loadingInbox = false;
+    /**
+     * CRITICAL: Get current plan from server data first, then store, then localStorage
+     */
+    const currentPlan = computed(() => {
+      // Priority 1: Server-fetched data (most reliable)
+      if (serverSubscriptionData.value?.plan && serverSubscriptionData.value.plan !== 'free') {
+        console.log('📊 [AcedSettings] currentPlan from server:', serverSubscriptionData.value.plan);
+        return serverSubscriptionData.value.plan;
       }
-    },
-
-    async openMessage(message) {
-      this.selectedMessage = message;
-
-      // Mark as read if not already
-      if (!message.read && this.currentUser?.uid) {
-        try {
-          await markMessageAsRead(this.currentUser.uid, message.id);
-          // Update local state
-          const msgIndex = this.inboxMessages.findIndex(m => m.id === message.id);
-          if (msgIndex !== -1) {
-            this.inboxMessages[msgIndex].read = true;
-            this.unreadMessagesCount = Math.max(0, this.unreadMessagesCount - 1);
-          }
-        } catch (error) {
-          console.error('Failed to mark message as read:', error);
-        }
+      
+      // Priority 2: Vuex store
+      const storeStatus = store.getters['user/userStatus'];
+      if (storeStatus && storeStatus !== 'free') {
+        console.log('📊 [AcedSettings] currentPlan from store:', storeStatus);
+        return storeStatus;
       }
-    },
-
-    closeMessage() {
-      this.selectedMessage = null;
-    },
-
-    async deleteInboxMessage(messageId) {
-      if (!this.currentUser?.uid) return;
-
-      try {
-        await deleteMessage(this.currentUser.uid, messageId);
-        // Remove from local state
-        const msgIndex = this.inboxMessages.findIndex(m => m.id === messageId);
-        if (msgIndex !== -1) {
-          if (!this.inboxMessages[msgIndex].read) {
-            this.unreadMessagesCount = Math.max(0, this.unreadMessagesCount - 1);
-          }
-          this.inboxMessages.splice(msgIndex, 1);
-        }
-      } catch (error) {
-        console.error('Failed to delete message:', error);
-        this.showNotification('Failed to delete message', 'error');
+      
+      // Priority 3: localStorage (fallback only)
+      const localStatus = localStorage.getItem('userStatus') || localStorage.getItem('subscriptionPlan');
+      if (localStatus && ['start', 'pro', 'premium'].includes(localStatus)) {
+        console.log('📊 [AcedSettings] currentPlan from localStorage:', localStatus);
+        return localStatus;
       }
-    },
+      
+      // Default
+      return storeStatus || 'free';
+    });
 
-    // ✅ Add message to local inbox display (fallback when API unavailable)
-    addLocalInboxMessage(messageData) {
-      const newMessage = {
-        id: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        type: messageData.type || 'payment',
-        title: messageData.title,
-        content: messageData.content,
-        data: messageData.data || {},
-        read: false,
-        createdAt: new Date().toISOString()
+    const currentPlanLabel = computed(() => {
+      const labels = {
+        free: 'Free',
+        start: 'Start',
+        pro: 'Pro',
+        premium: 'Premium'
       };
-      
-      // Add to beginning of array
-      this.inboxMessages.unshift(newMessage);
-      this.unreadMessagesCount++;
-      
-      // Also save to local storage for persistence
-      try {
-        const storageKey = `aced_user_inbox_${this.currentUser?.uid}`;
-        const existing = JSON.parse(localStorage.getItem(storageKey) || '[]');
-        existing.unshift(newMessage);
-        localStorage.setItem(storageKey, JSON.stringify(existing.slice(0, 50)));
-      } catch (e) {
-        console.error('Failed to save message to local storage:', e);
-      }
-    },
+      return labels[currentPlan.value] || 'Free';
+    });
 
-    formatMessageDate(dateStr) {
-      if (!dateStr) return '';
+    const subscriptionSource = computed(() => {
+      return serverSubscriptionData.value?.source || 
+             store.state.user?.subscription?.source || 
+             null;
+    });
 
-      const date = new Date(dateStr);
+    const subscriptionExpiryInfo = computed(() => {
+      const expiryDate = serverSubscriptionData.value?.expiryDate || 
+                         store.state.user?.subscription?.expiryDate ||
+                         localStorage.getItem('subscriptionExpiry');
+      
+      if (!expiryDate) return null;
+      
+      const expiry = new Date(expiryDate);
       const now = new Date();
-      const diffTime = now - date;
-      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-      if (diffDays === 0) {
-        // Today - show time
-        return date.toLocaleTimeString('en-US', {
-          hour: '2-digit',
-          minute: '2-digit'
-        });
-      } else if (diffDays === 1) {
-        return 'Yesterday';
-      } else if (diffDays < 7) {
-        return date.toLocaleDateString('en-US', { weekday: 'short' });
-      } else {
-        return date.toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric'
-        });
-      }
-    },
-
-    // =============================================
-    // USER STATUS METHODS
-    // =============================================
-
-    handleUserStatusChange(newStatus, oldStatus) {
-      if (!newStatus || newStatus === oldStatus) return;
-
-      try {
-        localStorage.setItem('userStatus', newStatus);
-        localStorage.setItem('plan', newStatus);
-        localStorage.setItem('statusChangeTime', Date.now().toString());
-
-        this.forceReactivityUpdate();
-
-        if (newStatus && newStatus !== 'free' && (oldStatus === 'free' || !oldStatus)) {
-          const planLabel = newStatus === 'pro' ? 'Pro' : 'Start';
-          this.showNotification(`${planLabel} subscription activated!`, 'success', 5000);
-        }
-
-      } catch (error) {
-        this.$forceUpdate();
-      }
-    },
-
-    forceReactivityUpdate() {
-      try {
-        this.reactivityKey++;
-        this.lastUpdateTime = Date.now();
-        
-        this.$forceUpdate();
-        
-        this.$nextTick(() => {
-          this.$forceUpdate();
-        });
-      } catch (error) {
-        // ignore
-      }
-    },
-
-    getTimeRemaining(diffTime) {
-      if (diffTime <= 0) return 'Expired';
+      const diffTime = expiry - now;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       
-      const days = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      
-      if (days > 0) {
-        return `${days} days ${hours} hrs`;
-      } else if (hours > 0) {
-        return `${hours} hrs`;
-      } else {
-        const minutes = Math.floor((diffTime % (1000 * 60 * 60)) / (1000 * 60));
-        return `${minutes} min`;
-      }
-    },
-
-    cleanup() {
-      if (this.promoValidationTimeout) {
-        clearTimeout(this.promoValidationTimeout);
-      }
-    },
-
-    async initializeComponent() {
-      this.loading = true;
-      this.loadingText = 'Loading settings...';
-      
-      try {
-        await this.checkAuthState();
-        await this.loadInitialData();
-        this.forceReactivityUpdate();
-      } catch (error) {
-        this.showNotification('Error loading settings', 'error');
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    async loadInitialData() {
-      try {
-        if (this.$store && this.$store.dispatch) {
-          await this.$store.dispatch('user/loadUserStatus');
-          // Force reactivity update after data loads
-          this.$nextTick(() => {
-            this.forceReactivityUpdate();
-          });
-        }
-      } catch (error) {
-        // ignore
-      }
-    },
-    
-    checkAuthState() {
-      return new Promise((resolve) => {
-        onAuthStateChanged(auth, async (user) => {
-          this.currentUser = user;
-          if (user) {
-            this.isGoogleUser = user.providerData[0]?.providerId === "google.com";
-            await this.fetchUserData();
-          }
-          resolve();
-        });
-      });
-    },
-    
-    async fetchUserData() {
-      try {
-        if (!this.currentUser) return;
-        const userRef = doc(db, "users", this.currentUser.uid);
-        const userDoc = await getDoc(userRef);
-        
-        if (userDoc.exists()) {
-          this.user = userDoc.data();
-          this.tempUser = { name: this.user.name, surname: this.user.surname };
-        } else {
-          const newUserData = {
-            name: "New User",
-            surname: "",
-            email: this.currentUser.email,
-          };
-          await setDoc(userRef, newUserData);
-          this.user = newUserData;
-          this.tempUser = { name: newUserData.name, surname: newUserData.surname };
-        }
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-      }
-    },
-
-    startEditingName() {
-      this.isEditingName = true;
-      this.tempUser = { name: this.user.name, surname: this.user.surname };
-    },
-
-    async saveNameChanges() {
-      this.loading = true;
-      this.loadingText = 'Saving changes...';
-      
-      try {
-        if (!this.currentUser) {
-          this.showNotification('User not found', 'error');
-          return;
-        }
-
-        // 1. Update Firestore
-        const userRef = doc(db, "users", this.currentUser.uid);
-        await updateDoc(userRef, {
-          name: this.tempUser.name,
-          surname: this.tempUser.surname,
-          updatedAt: new Date().toISOString()
-        });
-
-        // 2. Update Firebase Auth Profile
-        try {
-          const { updateProfile } = await import("firebase/auth");
-          await updateProfile(this.currentUser, {
-            displayName: `${this.tempUser.name} ${this.tempUser.surname}`.trim()
-          });
-        } catch (authError) {
-          console.error('Error updating auth profile:', authError);
-        }
-
-        // 3. Sync with Backend (MongoDB)
-        try {
-          const token = await this.currentUser.getIdToken(true);
-          const userData = {
-            uid: this.currentUser.uid,
-            email: this.currentUser.email,
-            displayName: `${this.tempUser.name} ${this.tempUser.surname}`.trim(),
-            name: this.tempUser.name,
-            surname: this.tempUser.surname,
-            photoURL: this.currentUser.photoURL
-          };
-          
-          await this.$store.dispatch('user/saveUser', { userData, token });
-        } catch (syncError) {
-          console.error('Error syncing with backend:', syncError);
-        }
-
-        this.user.name = this.tempUser.name;
-        this.user.surname = this.tempUser.surname;
-        this.isEditingName = false;
-
-        this.showNotification('Name updated successfully!', 'success');
-      } catch (error) {
-        this.showNotification('Error saving name', 'error');
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    cancelEditingName() {
-      this.isEditingName = false;
-      this.tempUser = { name: this.user.name, surname: this.user.surname };
-    },
-
-    handlePromoCodeInput() {
-      if (this.promoValidationTimeout) {
-        clearTimeout(this.promoValidationTimeout);
-      }
-      
-      this.promoCode = this.promoCode.toUpperCase();
-      
-      if (this.promoCode.length <= 3) {
-        this.promoValidation = null;
-        this.isValidatingPromo = false;
-        return;
-      }
-      
-      this.isValidatingPromo = true;
-      
-      this.promoValidationTimeout = setTimeout(() => {
-        this.validatePromoCodeLocal();
-      }, 800);
-    },
-    
-    async validatePromoCodeLocal() {
-      if (!this.promoCode.trim() || this.promoCode.length <= 3) {
-        this.promoValidation = null;
-        this.isValidatingPromo = false;
-        return;
-      }
-
-      try {
-        const promocodeUpper = this.promoCode.trim().toUpperCase();
-        console.log('🔍 [AcedSettings] Validating promocode:', promocodeUpper);
-
-        // CRITICAL: Use the direct API function instead of store
-        const result = await validatePromocode(promocodeUpper);
-        console.log('🔍 [AcedSettings] Validation result:', result);
-
-        if (result && result.valid) {
-          this.promoValidation = {
-            valid: true,
-            data: result.data,
-            message: result.message || 'Valid promocode'
-          };
-
-          if (result.data?.grantsPlan && !this.selectedPlan) {
-            this.selectedPlan = result.data.grantsPlan;
-          }
-        } else {
-          this.promoValidation = {
-            valid: false,
-            message: result?.message || result?.error || 'Invalid promocode'
-          };
-        }
-
-        this.isValidatingPromo = false;
-      } catch (error) {
-        console.error('❌ [AcedSettings] Validation error:', error);
-        this.promoValidation = {
-          valid: false,
-          message: 'Error checking promo code. Please try again.'
-        };
-        this.isValidatingPromo = false;
-      }
-    },
-
-    async applyPromo() {
-      if (!this.canApplyPromo) {
-        console.log('❌ [AcedSettings] Cannot apply promo - conditions not met');
-        return;
-      }
-
-      this.isProcessingPromo = true;
-      this.loading = true;
-      this.loadingText = 'Applying promocode...';
-
-      try {
-        const promoData = this.promoValidation?.data;
-        const normalizedCode = this.promoCode.trim().toUpperCase();
-
-        console.log('🎟️ [AcedSettings] Applying promocode:', normalizedCode);
-
-        // CRITICAL: Use the direct API function instead of store
-        const result = await applyPromocode(normalizedCode);
-
-        console.log('🎟️ [AcedSettings] Apply result:', result);
-
-        if (result.success) {
-          // Extract data from response
-          const newPlan = result.plan || result.user?.subscriptionPlan || promoData?.grantsPlan || 'pro';
-          const subscriptionDays = result.promocode?.subscriptionDays || promoData?.subscriptionDays || 30;
-          const now = new Date();
-          const expiryDate = result.expiryDate || result.user?.subscriptionExpiryDate || 
-            new Date(now.getTime() + subscriptionDays * 24 * 60 * 60 * 1000).toISOString();
-          const durationMonths = subscriptionDays <= 31 ? 1 : subscriptionDays <= 95 ? 3 : 6;
-
-          // ✅ CRITICAL: Save comprehensive subscription data
-          const subscriptionData = {
-            plan: newPlan,
-            status: 'active',
-            source: 'promocode',
-            startDate: now.toISOString(),
-            expiryDate: expiryDate,
-            promoCode: normalizedCode,
-            duration: durationMonths,
-            activatedAt: now.toISOString()
-          };
-
-          // Update local storage immediately
-          localStorage.setItem('userStatus', newPlan);
-          localStorage.setItem('plan', newPlan);
-          localStorage.setItem('subscriptionPlan', newPlan);
-          localStorage.setItem('subscriptionExpiry', expiryDate);
-          localStorage.setItem('subscriptionData', JSON.stringify(subscriptionData));
-
-          // ✅ CRITICAL: Update Vuex store with subscription details
-          if (this.$store && this.$store.commit) {
-            this.$store.commit('user/SET_USER_STATUS', newPlan);
-            this.$store.commit('user/UPDATE_SUBSCRIPTION', subscriptionData);
-          }
-
-          // Also dispatch loadUserStatus to sync everything
-          if (this.$store && this.$store.dispatch) {
-            await this.$store.dispatch('user/loadUserStatus');
-          }
-
-          // Force reactivity update
-          this.forceReactivityUpdate();
-
-          // Dispatch global events for other components
-          window.dispatchEvent(new CustomEvent('userStatusChanged', {
-            detail: { source: 'promocode', plan: newPlan, expiryDate, timestamp: Date.now() }
-          }));
-          window.dispatchEvent(new CustomEvent('subscriptionUpdated', {
-            detail: subscriptionData
-          }));
-
-          // ✅ Send inbox message with promocode confirmation
-          const endDate = new Date(expiryDate);
-
-          try {
-            const { sendPaymentConfirmationMessage } = await import('@/api/inbox');
-
-            const msgResult = await sendPaymentConfirmationMessage({
-              userId: this.currentUser?.uid,
-              amount: 0, // Free via promocode
-              plan: newPlan,
-              duration: durationMonths,
-              transactionId: 'PROMO-' + Date.now(),
-              paymentMethod: 'Promo Code',
-              startDate: now.toISOString(),
-              endDate: endDate.toISOString(),
-              promoCode: normalizedCode,
-              userEmail: this.user?.email,
-              userName: this.user?.name
-            });
-            
-            console.log('✅ Inbox message sent for promo code:', msgResult.source);
-            
-            // If message was saved to local storage, add it directly to display
-            if (msgResult.source === 'local' || !msgResult.source) {
-              console.log('ℹ️ Message saved to local storage fallback');
-            }
-          } catch (msgError) {
-            console.error('Failed to send inbox message:', msgError);
-            // Still add to local inbox as fallback
-            this.addLocalInboxMessage({
-              type: 'payment',
-              title: '🎉 Promo Code Applied - Subscription Activated!',
-              content: `Your promo code "${normalizedCode}" has been applied!\n\n` +
-                `Plan: ${newPlan.toUpperCase()}\n` +
-                `Duration: ${durationMonths} month${durationMonths > 1 ? 's' : ''}\n` +
-                `Payment Method: Promo Code\n` +
-                `Subscription End Date: ${endDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}\n\n` +
-                `Enjoy your premium features!`,
-              data: { promoCode: normalizedCode, plan: newPlan, endDate: expiryDate }
-            });
-          }
-
-          this.showNotification(result.message || 'Promocode applied successfully!', 'success', 6000);
-
-          // Clear the promo code input
-          this.promoCode = '';
-          this.promoValidation = null;
-
-          // Reload inbox
-          await this.loadInboxMessages();
-        } else {
-          this.showNotification(result.message || 'Failed to apply promocode.', 'error');
-        }
-      } catch (error) {
-        console.error('❌ [AcedSettings] Error applying promo:', error);
-        const errorMessage = error.response?.data?.error || error.message || 'An error occurred while applying the promo code.';
-        this.showNotification(errorMessage, 'error');
-      } finally {
-        this.isProcessingPromo = false;
-        this.loading = false;
-      }
-    },
-
-    async selectDurationAndGo(duration) {
-      this.selectedDuration = duration;
-      // Small delay to show selection visual
-      setTimeout(async () => {
-        await this.goToPayment();
-      }, 200);
-    },
-
-    async goToPayment() {
-      try {
-        if (!this.selectedDuration) {
-          this.showNotification('Please select a subscription duration', 'warning');
-          return;
-        }
-
-        const query = { 
-          duration: this.selectedDuration,
-          from: 'settings'
-        };
-        
-        // Add promo code if valid
-        if (this.promoValidation?.valid && this.promoCode) {
-          query.promoCode = this.promoCode;
-        }
-
-        // Navigate to payment page with duration parameter
-        await this.$router.push({
-          path: '/pay/pro',
-          query
-        });
-      } catch (error) {
-        if (error.name !== 'NavigationDuplicated') {
-          console.error('Error navigating to payment:', error);
-          this.showNotification('Failed to navigate to payment page', 'error');
-        }
-      }
-    },
-
-    getPaymentButtonText() {
-      if (!this.paymentPlan) return 'Select a plan';
-      if (this.currentPlan === this.paymentPlan) return 'Already active';
-      
-      const planNames = {
-        start: 'START',
-        pro: 'PRO'
+      return {
+        date: expiry,
+        formattedDate: expiry.toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        }),
+        daysRemaining: Math.max(0, diffDays),
+        isExpiring: diffDays <= 7 && diffDays > 0,
+        isExpired: diffDays <= 0
       };
-      
-      return `Pay for ${planNames[this.paymentPlan] || this.paymentPlan.toUpperCase()}`;
-    },
+    });
 
-    async sendPasswordReset() {
-      if (!this.user.email) {
-        this.showNotification('Please enter email address', 'error');
-        return;
-      }
+    // Usage computeds
+    const currentUsageMessages = computed(() => {
+      return store.getters['user/currentUsage']?.messages || 0;
+    });
 
-      try {
-        await sendPasswordResetEmail(auth, this.user.email);
-        this.showNotification('Password reset email sent!', 'success');
-      } catch (error) {
-        let errorMessage = 'Error sending email';
-        
-        if (error.code === 'auth/user-not-found') {
-          errorMessage = 'User with this email not found';
-        } else if (error.code === 'auth/invalid-email') {
-          errorMessage = 'Invalid email format';
-        }
-        
-        this.showNotification(errorMessage, 'error');
-      }
-    },
+    const currentUsageImages = computed(() => {
+      return store.getters['user/currentUsage']?.images || 0;
+    });
 
-    async saveChanges() {
-      this.showNotification('Password update function', 'info');
-    },
+    const usageLimitsMessages = computed(() => {
+      return store.getters['user/usageLimits']?.messages || 50;
+    });
 
-    goToProfile() {
-      this.$router.push('/profile');
-    },
+    const usageLimitsImages = computed(() => {
+      return store.getters['user/usageLimits']?.images || 5;
+    });
 
-    formatDate(date) {
-      if (!date) return '';
-      try {
-        return new Date(date).toLocaleDateString('en-US');
-      } catch (error) {
-        return '';
-      }
-    },
+    const messageUsagePercentage = computed(() => {
+      if (usageLimitsMessages.value === -1) return 0;
+      return Math.min(100, (currentUsageMessages.value / usageLimitsMessages.value) * 100);
+    });
 
-    showNotification(message, type = 'info', duration = 5000) {
-      this.notification = message;
-      this.notificationClass = `notification-${type}`;
-      
+    const imageUsagePercentage = computed(() => {
+      if (usageLimitsImages.value === -1) return 0;
+      return Math.min(100, (currentUsageImages.value / usageLimitsImages.value) * 100);
+    });
+
+    const isGoogleUser = computed(() => {
+      const currentUser = auth.currentUser;
+      if (!currentUser) return false;
+      return currentUser.providerData?.some(p => p.providerId === 'google.com');
+    });
+
+    const notificationClass = computed(() => {
+      return `alert-${notificationType.value}`;
+    });
+
+    const notificationIcon = computed(() => {
       const icons = {
         success: '✓',
         error: '✕',
         warning: '⚠',
         info: 'ℹ'
       };
-      
+      return icons[notificationType.value] || 'ℹ';
+    });
+
+    const notificationTitle = computed(() => {
       const titles = {
         success: 'Success',
         error: 'Error',
         warning: 'Warning',
-        info: 'Information'
+        info: 'Info'
       };
+      return titles[notificationType.value] || 'Info';
+    });
+
+    // Available plans
+    const availablePlans = computed(() => [
+      {
+        id: 'free',
+        name: 'Free',
+        price: '0',
+        features: ['50 messages/month', '5 images/month', 'Basic lessons']
+      },
+      {
+        id: 'start',
+        name: 'Start',
+        price: '49,000 UZS',
+        features: ['Unlimited messages', '20 images/month', 'All lessons', 'Priority support'],
+        recommended: false
+      },
+      {
+        id: 'pro',
+        name: 'Pro',
+        price: '99,000 UZS',
+        features: ['Unlimited everything', 'AI tutor', 'Custom courses', 'Analytics'],
+        recommended: true
+      }
+    ]);
+
+    // =============================================
+    // 🔄 METHODS
+    // =============================================
+
+    /**
+     * CRITICAL: Fetch subscription status from server
+     * This is called on mount and can be called manually to refresh
+     */
+    const refreshFromServer = async () => {
+      console.log('🔄 [AcedSettings] refreshFromServer called');
       
-      this.notificationIcon = icons[type] || 'ℹ';
-      this.notificationTitle = titles[type] || 'Notification';
+      syncStatus.value = {
+        type: 'loading',
+        icon: '⏳',
+        message: 'Syncing with server...'
+      };
+
+      try {
+        const userId = store.getters['user/getUserId'] || 
+                       localStorage.getItem('userId') || 
+                       localStorage.getItem('firebaseUserId') ||
+                       auth.currentUser?.uid;
+
+        if (!userId) {
+          console.error('❌ [AcedSettings] No user ID available');
+          syncStatus.value = {
+            type: 'error',
+            icon: '❌',
+            message: 'No user ID. Please log in again.'
+          };
+          return;
+        }
+
+        console.log('📡 [AcedSettings] Fetching subscription for user:', userId);
+
+        // Fetch directly from server
+        const result = await fetchSubscriptionFromServer(userId);
+        
+        console.log('📡 [AcedSettings] Server result:', result);
+
+        if (result.success && result.subscription) {
+          // Store server data
+          serverSubscriptionData.value = result.subscription;
+          
+          // Update Vuex store
+          await store.dispatch('user/fetchStatusFromServer');
+          
+          // Update localStorage for consistency
+          localStorage.setItem('userStatus', result.subscription.plan);
+          localStorage.setItem('subscriptionPlan', result.subscription.plan);
+          localStorage.setItem('userPlan', result.subscription.plan);
+          if (result.subscription.expiryDate) {
+            localStorage.setItem('subscriptionExpiry', result.subscription.expiryDate);
+          }
+          localStorage.setItem('lastServerSync', Date.now().toString());
+
+          syncStatus.value = {
+            type: 'success',
+            icon: '✓',
+            message: `Synced: ${result.subscription.plan.toUpperCase()} plan`
+          };
+
+          // Clear after 3 seconds
+          setTimeout(() => {
+            syncStatus.value = null;
+          }, 3000);
+
+          console.log('✅ [AcedSettings] Subscription synced:', result.subscription.plan);
+        } else {
+          console.warn('⚠️ [AcedSettings] Server fetch returned no data');
+          syncStatus.value = {
+            type: 'warning',
+            icon: '⚠',
+            message: 'Could not verify subscription status'
+          };
+        }
+      } catch (error) {
+        console.error('❌ [AcedSettings] refreshFromServer error:', error);
+        syncStatus.value = {
+          type: 'error',
+          icon: '❌',
+          message: 'Failed to sync. Click retry.'
+        };
+      }
+    };
+
+    /**
+     * Load initial data including user info and subscription
+     */
+    const loadInitialData = async () => {
+      console.log('📥 [AcedSettings] loadInitialData called');
+      loading.value = true;
+
+      try {
+        // Load user info
+        const currentUser = auth.currentUser;
+        const storedUser = store.getters['user/getUser'];
+        
+        if (storedUser) {
+          user.value = {
+            name: storedUser.name || storedUser.displayName?.split(' ')[0] || '',
+            surname: storedUser.surname || storedUser.displayName?.split(' ')[1] || '',
+            email: storedUser.email || currentUser?.email || ''
+          };
+        } else if (currentUser) {
+          user.value = {
+            name: currentUser.displayName?.split(' ')[0] || '',
+            surname: currentUser.displayName?.split(' ')[1] || '',
+            email: currentUser.email || ''
+          };
+        }
+
+        // Load preferences
+        darkMode.value = localStorage.getItem('darkMode') === 'true';
+        emailNotifications.value = localStorage.getItem('emailNotifications') !== 'false';
+        soundEffects.value = localStorage.getItem('soundEffects') !== 'false';
+
+        // CRITICAL: Fetch subscription from server
+        await refreshFromServer();
+
+      } catch (error) {
+        console.error('❌ [AcedSettings] loadInitialData error:', error);
+        showNotification('Failed to load settings', 'error');
+      } finally {
+        loading.value = false;
+      }
+    };
+
+    const showNotification = (message, type = 'info') => {
+      notification.value = message;
+      notificationType.value = type;
       
       setTimeout(() => {
-        this.notification = '';
-        this.notificationClass = '';
-        this.notificationIcon = '';
-        this.notificationTitle = '';
-      }, duration);
-    }
+        notification.value = '';
+      }, 5000);
+    };
+
+    // Name editing
+    const startEditingName = () => {
+      tempUser.value = { ...user.value };
+      isEditingName.value = true;
+    };
+
+    const cancelEditingName = () => {
+      isEditingName.value = false;
+      tempUser.value = { name: '', surname: '' };
+    };
+
+    const saveNameChanges = async () => {
+      try {
+        loading.value = true;
+        
+        user.value.name = tempUser.value.name;
+        user.value.surname = tempUser.value.surname;
+        
+        // Save to backend
+        const userId = store.getters['user/getUserId'];
+        if (userId) {
+          // API call to update user profile
+          // await updateUserProfile(userId, { name: user.value.name, surname: user.value.surname });
+        }
+        
+        isEditingName.value = false;
+        showNotification('Name updated successfully', 'success');
+      } catch (error) {
+        console.error('Error saving name:', error);
+        showNotification('Failed to update name', 'error');
+      } finally {
+        loading.value = false;
+      }
+    };
+
+    // Password management
+    const saveChanges = async () => {
+      if (!oldPassword.value || !newPassword.value || !confirmPassword.value) {
+        showNotification('Please fill in all password fields', 'warning');
+        return;
+      }
+
+      if (newPassword.value !== confirmPassword.value) {
+        showNotification('Passwords do not match', 'error');
+        return;
+      }
+
+      if (newPassword.value.length < 6) {
+        showNotification('Password must be at least 6 characters', 'error');
+        return;
+      }
+
+      try {
+        loading.value = true;
+        
+        const currentUser = auth.currentUser;
+        if (!currentUser || !currentUser.email) {
+          throw new Error('No authenticated user');
+        }
+
+        // Reauthenticate
+        const credential = EmailAuthProvider.credential(currentUser.email, oldPassword.value);
+        await reauthenticateWithCredential(currentUser, credential);
+        
+        // Update password
+        await updatePassword(currentUser, newPassword.value);
+        
+        oldPassword.value = '';
+        newPassword.value = '';
+        confirmPassword.value = '';
+        
+        showNotification('Password updated successfully', 'success');
+      } catch (error) {
+        console.error('Password update error:', error);
+        if (error.code === 'auth/wrong-password') {
+          showNotification('Current password is incorrect', 'error');
+        } else {
+          showNotification('Failed to update password', 'error');
+        }
+      } finally {
+        loading.value = false;
+      }
+    };
+
+    const sendPasswordReset = async () => {
+      try {
+        const email = user.value.email || auth.currentUser?.email;
+        if (!email) {
+          showNotification('No email address found', 'error');
+          return;
+        }
+
+        await sendPasswordResetEmail(auth, email);
+        showNotification('Password reset email sent', 'success');
+      } catch (error) {
+        console.error('Password reset error:', error);
+        showNotification('Failed to send reset email', 'error');
+      }
+    };
+
+    // Preferences
+    const toggleDarkMode = () => {
+      localStorage.setItem('darkMode', darkMode.value.toString());
+      document.body.classList.toggle('dark-mode', darkMode.value);
+    };
+
+    // Subscription
+    const selectPlan = (planId) => {
+      if (planId !== 'free' && currentPlan.value === 'free') {
+        goToUpgrade();
+      }
+    };
+
+    const goToUpgrade = () => {
+      router.push('/upgrade');
+    };
+
+    const applyPromocode = async () => {
+      if (!promocode.value.trim()) {
+        promoError.value = 'Please enter a promocode';
+        return;
+      }
+
+      promoError.value = '';
+      promoSuccess.value = '';
+      applyingPromo.value = true;
+
+      try {
+        const result = await store.dispatch('user/applyPromocode', {
+          promoCode: promocode.value.trim(),
+          plan: 'pro'
+        });
+
+        if (result.success) {
+          promoSuccess.value = result.message || 'Promocode applied successfully!';
+          promocode.value = '';
+          
+          // Refresh from server to get updated status
+          await refreshFromServer();
+        } else {
+          promoError.value = result.error || 'Invalid promocode';
+        }
+      } catch (error) {
+        console.error('Promocode error:', error);
+        promoError.value = 'Failed to apply promocode';
+      } finally {
+        applyingPromo.value = false;
+      }
+    };
+
+    // Navigation
+    const goToProfile = () => {
+      router.push('/profile');
+    };
+
+    // Account management
+    const handleLogout = async () => {
+      try {
+        await auth.signOut();
+        await store.dispatch('user/logout');
+        router.push('/login');
+      } catch (error) {
+        console.error('Logout error:', error);
+        showNotification('Failed to sign out', 'error');
+      }
+    };
+
+    const confirmDeleteAccount = () => {
+      showDeleteModal.value = true;
+    };
+
+    const deleteAccount = async () => {
+      try {
+        loading.value = true;
+        
+        const currentUser = auth.currentUser;
+        if (!currentUser) {
+          throw new Error('No authenticated user');
+        }
+
+        await deleteUser(currentUser);
+        await store.dispatch('user/logout');
+        
+        showDeleteModal.value = false;
+        router.push('/');
+      } catch (error) {
+        console.error('Delete account error:', error);
+        if (error.code === 'auth/requires-recent-login') {
+          showNotification('Please sign in again before deleting your account', 'error');
+        } else {
+          showNotification('Failed to delete account', 'error');
+        }
+      } finally {
+        loading.value = false;
+      }
+    };
+
+    // =============================================
+    // 🎯 LIFECYCLE
+    // =============================================
+
+    onMounted(() => {
+      console.log('🚀 [AcedSettings] Component mounted');
+      loadInitialData();
+
+      // Listen for subscription updates
+      window.addEventListener('subscriptionUpdated', refreshFromServer);
+      window.addEventListener('userStatusChanged', refreshFromServer);
+    });
+
+    onUnmounted(() => {
+      window.removeEventListener('subscriptionUpdated', refreshFromServer);
+      window.removeEventListener('userStatusChanged', refreshFromServer);
+    });
+
+    // Watch for store changes
+    watch(
+      () => store.getters['user/userStatus'],
+      (newStatus) => {
+        console.log('👁️ [AcedSettings] Store status changed:', newStatus);
+      }
+    );
+
+    // =============================================
+    // 📤 RETURN
+    // =============================================
+
+    return {
+      // State
+      loading,
+      notification,
+      notificationType,
+      syncStatus,
+      user,
+      tempUser,
+      isEditingName,
+      oldPassword,
+      newPassword,
+      confirmPassword,
+      darkMode,
+      emailNotifications,
+      soundEffects,
+      promocode,
+      applyingPromo,
+      promoError,
+      promoSuccess,
+      showDeleteModal,
+      
+      // Computed
+      currentPlan,
+      currentPlanLabel,
+      subscriptionSource,
+      subscriptionExpiryInfo,
+      currentUsageMessages,
+      currentUsageImages,
+      usageLimitsMessages,
+      usageLimitsImages,
+      messageUsagePercentage,
+      imageUsagePercentage,
+      isGoogleUser,
+      notificationClass,
+      notificationIcon,
+      notificationTitle,
+      availablePlans,
+      
+      // Methods
+      refreshFromServer,
+      loadInitialData,
+      showNotification,
+      startEditingName,
+      cancelEditingName,
+      saveNameChanges,
+      saveChanges,
+      sendPasswordReset,
+      toggleDarkMode,
+      selectPlan,
+      goToUpgrade,
+      applyPromocode,
+      goToProfile,
+      handleLogout,
+      confirmDeleteAccount,
+      deleteAccount
+    };
   }
-}
+};
 </script>
 
 <style scoped>
-/* ========================================
-   MODERN SETTINGS PAGE - REDESIGNED
-   Clean, Professional, Fun
-   ======================================== */
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+/* =============================================
+   BASE STYLES
+   ============================================= */
 
 .settings-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
 }
-
-/* ==================== HEADER ==================== */
 
 .settings-main {
-  max-width: 1400px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 32px;
+  padding: 24px;
 }
+
+/* =============================================
+   HEADER
+   ============================================= */
 
 .settings-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 32px;
-  gap: 24px;
+  margin-bottom: 24px;
+  padding: 20px 24px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .header-content {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
 }
 
 .back-button {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 20px;
-  background: white;
-  border: 2px solid #e5e7eb;
-  border-radius: 12px;
-  color: #374151;
-  font-size: 15px;
+  padding: 10px 16px;
+  background: #f1f3f4;
+  border: none;
+  border-radius: 10px;
+  color: #333;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s;
 }
 
 .back-button:hover {
-  border-color: #667eea;
-  color: #667eea;
-  transform: translateX(-4px);
+  background: #e8eaeb;
 }
 
-.back-button svg {
-  stroke-width: 2.5;
-}
-
-.header-text {
-  flex: 1;
-}
-
-.header-title {
-  font-size: 32px;
+.header-text h1 {
+  font-size: 24px;
   font-weight: 700;
-  color: #111827;
-  margin-bottom: 4px;
-  letter-spacing: -0.02em;
+  color: #1a1a1a;
+  margin: 0;
 }
 
 .header-subtitle {
-  font-size: 15px;
-  color: #6b7280;
-  font-weight: 400;
+  font-size: 14px;
+  color: #666;
+  margin: 4px 0 0;
 }
 
 .save-button {
@@ -1870,98 +1207,64 @@ return 0;
   padding: 12px 24px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
-  border-radius: 12px;
+  border-radius: 10px;
   color: white;
-  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  transition: all 0.3s;
 }
 
-.save-button:hover:not(:disabled) {
+.save-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
 .save-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  transform: none;
 }
 
-/* ==================== ALERTS ==================== */
+/* =============================================
+   ALERTS & SYNC STATUS
+   ============================================= */
 
 .alert-banner {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   padding: 16px 20px;
   border-radius: 12px;
-  margin-bottom: 24px;
-  animation: slideDown 0.3s ease;
+  margin-bottom: 20px;
 }
 
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.alert-success {
+  background: #d4edda;
+  border: 1px solid #c3e6cb;
+  color: #155724;
 }
 
-.notification-success {
-  background: #ecfdf5;
-  border: 2px solid #10b981;
+.alert-error {
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  color: #721c24;
 }
 
-.notification-error {
-  background: #fef2f2;
-  border: 2px solid #ef4444;
+.alert-warning {
+  background: #fff3cd;
+  border: 1px solid #ffeeba;
+  color: #856404;
 }
 
-.notification-warning {
-  background: #fffbeb;
-  border: 2px solid #f59e0b;
-}
-
-.notification-info {
-  background: #eff6ff;
-  border: 2px solid #3b82f6;
+.alert-info {
+  background: #d1ecf1;
+  border: 1px solid #bee5eb;
+  color: #0c5460;
 }
 
 .alert-icon {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
   font-size: 20px;
-  font-weight: 700;
-  flex-shrink: 0;
-}
-
-.notification-success .alert-icon {
-  background: #10b981;
-  color: white;
-}
-
-.notification-error .alert-icon {
-  background: #ef4444;
-  color: white;
-}
-
-.notification-warning .alert-icon {
-  background: #f59e0b;
-  color: white;
-}
-
-.notification-info .alert-icon {
-  background: #3b82f6;
-  color: white;
+  font-weight: bold;
 }
 
 .alert-content {
@@ -1970,97 +1273,114 @@ return 0;
 
 .alert-content strong {
   display: block;
-  font-size: 15px;
-  font-weight: 600;
   margin-bottom: 2px;
-  color: #111827;
 }
 
 .alert-content p {
+  margin: 0;
   font-size: 14px;
-  color: #6b7280;
 }
 
 .alert-close {
   background: none;
   border: none;
   font-size: 24px;
-  color: #9ca3af;
   cursor: pointer;
-  padding: 4px;
-  transition: all 0.2s;
+  opacity: 0.6;
 }
 
 .alert-close:hover {
-  color: #374151;
+  opacity: 1;
 }
 
-/* ==================== STATS SECTION ==================== */
-
-.settings-content {
-  animation: fadeIn 0.4s ease;
+.sync-status-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  font-size: 14px;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+.sync-status-banner.loading {
+  background: #e3f2fd;
+  color: #1565c0;
 }
+
+.sync-status-banner.success {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.sync-status-banner.error {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.sync-status-banner.warning {
+  background: #fff8e1;
+  color: #f57f17;
+}
+
+.sync-retry-btn {
+  margin-left: auto;
+  padding: 6px 12px;
+  background: white;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* =============================================
+   STATS SECTION
+   ============================================= */
 
 .stats-section {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 20px;
-  margin-bottom: 32px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
 .stat-card {
-  background: white;
-  border-radius: 16px;
-  padding: 20px;
   display: flex;
   align-items: center;
   gap: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  transition: all 0.3s ease;
-  border: 2px solid transparent;
-}
-
-.stat-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  border-color: #e5e7eb;
+  padding: 20px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .stat-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 12px;
+  width: 48px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  background: #F3F4F6;
-  color: #111827;
+  border-radius: 12px;
 }
 
-.stat-icon.messages-icon {
-  color: #EC4899;
-  background: #FCE7F3;
+.plan-icon {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
 }
 
-.stat-icon.images-icon {
-  color: #0EA5E9;
-  background: #E0F2FE;
+.messages-icon {
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  color: white;
 }
 
-.stat-icon.plan-icon {
-  color: #6366F1;
-  background: #E0E7FF;
+.images-icon {
+  background: linear-gradient(135deg, #ee0979 0%, #ff6a00 100%);
+  color: white;
 }
 
-.stat-icon.days-icon {
-  color: #F59E0B;
-  background: #FEF3C7;
+.days-icon {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
 }
 
 .stat-info {
@@ -2068,70 +1388,80 @@ return 0;
 }
 
 .stat-label {
-  font-size: 13px;
-  color: #6b7280;
-  font-weight: 500;
+  font-size: 12px;
+  color: #666;
+  margin: 0 0 4px;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 4px;
+  letter-spacing: 0.5px;
 }
 
 .stat-value {
   font-size: 24px;
   font-weight: 700;
-  color: #111827;
-  line-height: 1;
-  margin-bottom: 8px;
+  color: #1a1a1a;
+  margin: 0;
 }
 
 .stat-limit {
-  font-size: 16px;
-  font-weight: 500;
-  color: #9ca3af;
+  font-size: 14px;
+  font-weight: 400;
+  color: #999;
 }
 
 .stat-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 12px;
-  border-radius: 6px;
-  font-size: 12px;
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  margin-top: 6px;
 }
 
 .stat-badge.active {
-  background: #d1fae5;
-  color: #065f46;
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.stat-badge.inactive {
+  background: #f5f5f5;
+  color: #666;
 }
 
 .stat-badge.warning {
-  background: #fed7aa;
-  color: #92400e;
+  background: #fff3e0;
+  color: #e65100;
 }
 
 .mini-progress {
-  height: 6px;
-  background: #f3f4f6;
-  border-radius: 999px;
-  overflow: hidden;
+  height: 4px;
+  background: #eee;
+  border-radius: 2px;
   margin-top: 8px;
+  overflow: hidden;
 }
 
 .mini-progress-bar {
   height: 100%;
-  background: #111827;
-  border-radius: 999px;
-  transition: width 0.6s ease;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  border-radius: 2px;
+  transition: width 0.3s;
 }
 
-/* ==================== CONTENT GRID ==================== */
+/* =============================================
+   CONTENT GRID
+   ============================================= */
 
 .content-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 24px;
+}
+
+@media (max-width: 900px) {
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .left-column,
@@ -2141,29 +1471,23 @@ return 0;
   gap: 24px;
 }
 
-/* ==================== CARDS ==================== */
+/* =============================================
+   CARDS
+   ============================================= */
 
 .card {
   background: white;
   border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   overflow: hidden;
-  transition: all 0.3s ease;
-  border: 2px solid transparent;
-}
-
-.card:hover {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-  border-color: #f3f4f6;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  align-items: center;
-  padding: 16px 20px;
-  border-bottom: 2px solid #f3f4f6;
+  padding: 20px 24px;
+  border-bottom: 1px solid #f0f0f0;
 }
 
 .card-header-left {
@@ -2175,66 +1499,72 @@ return 0;
 .card-icon {
   width: 40px;
   height: 40px;
-  background: #F3F4F6;
-  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #111827;
-  flex-shrink: 0;
+  background: #f5f7fa;
+  border-radius: 10px;
+  color: #667eea;
+}
+
+.premium-icon {
+  background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%);
+  color: white;
+}
+
+.danger-icon {
+  background: #ffebee;
+  color: #c62828;
 }
 
 .card-title {
   font-size: 16px;
-  font-weight: 700;
-  color: #111827;
-  margin-bottom: 2px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0;
 }
 
 .card-description {
-  font-size: 12px;
-  color: #6b7280;
-}
-
-.btn-icon {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f9fafb;
-  border: 2px solid #e5e7eb;
-  border-radius: 10px;
-  color: #6b7280;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-icon:hover {
-  background: #f3f4f6;
-  border-color: #667eea;
-  color: #667eea;
+  font-size: 13px;
+  color: #666;
+  margin: 2px 0 0;
 }
 
 .card-body {
-  padding: 20px;
+  padding: 24px;
 }
 
-/* ==================== FORMS ==================== */
+.btn-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5f7fa;
+  border: none;
+  border-radius: 8px;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-icon:hover {
+  background: #e8eaeb;
+  color: #333;
+}
+
+/* =============================================
+   FORMS
+   ============================================= */
 
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
-  margin-bottom: 16px;
 }
 
 .form-group {
   margin-bottom: 20px;
-}
-
-.form-group:last-child {
-  margin-bottom: 0;
 }
 
 .form-label {
@@ -2242,8 +1572,8 @@ return 0;
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  font-weight: 600;
-  color: #374151;
+  font-weight: 500;
+  color: #333;
   margin-bottom: 8px;
 }
 
@@ -2252,696 +1582,529 @@ return 0;
   align-items: center;
   gap: 4px;
   padding: 2px 8px;
-  background: #d1fae5;
-  color: #065f46;
+  background: #e8f5e9;
+  color: #2e7d32;
+  border-radius: 20px;
   font-size: 11px;
-  font-weight: 600;
-  border-radius: 6px;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
 }
 
-.form-input,
-.form-select {
+.form-input {
   width: 100%;
-  padding: 10px 14px;
-  background: white;
-  border: 2px solid #e5e7eb;
+  padding: 12px 16px;
+  background: #f5f7fa;
+  border: 2px solid transparent;
   border-radius: 10px;
-  font-size: 15px;
-  color: #111827;
-  font-family: inherit;
-  transition: all 0.2s ease;
+  font-size: 14px;
+  color: #333;
+  transition: all 0.2s;
 }
 
-.form-input:hover,
-.form-select:hover {
-  border-color: #d1d5db;
-}
-
-.form-input:focus,
-.form-select:focus {
+.form-input:focus {
   outline: none;
+  background: white;
   border-color: #667eea;
-  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
 }
 
 .form-input:disabled {
-  background: #f9fafb;
-  color: #9ca3af;
+  opacity: 0.7;
   cursor: not-allowed;
 }
 
 .form-display {
   padding: 12px 16px;
-  background: #f9fafb;
-  border: 2px solid #e5e7eb;
+  background: #f5f7fa;
   border-radius: 10px;
-  font-size: 15px;
-  color: #111827;
-}
-
-.form-select {
-  cursor: pointer;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
-  background-position: right 12px center;
-  background-repeat: no-repeat;
-  background-size: 20px;
-  padding-right: 40px;
-}
-
-.promo-input {
-  text-transform: uppercase;
-  font-weight: 600;
-  font-family: 'Courier New', monospace;
-  letter-spacing: 0.05em;
-}
-
-.form-hint {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: #6b7280;
-  margin-top: 6px;
-}
-
-.form-success {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: #059669;
-  margin-top: 6px;
-  font-weight: 500;
-}
-
-.form-error {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: #dc2626;
-  margin-top: 6px;
-  font-weight: 500;
+  font-size: 14px;
+  color: #333;
 }
 
 .form-actions {
   display: flex;
+  justify-content: flex-end;
   gap: 12px;
-  margin-top: 24px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #f0f0f0;
 }
 
-/* ==================== BUTTONS ==================== */
+/* =============================================
+   BUTTONS
+   ============================================= */
 
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 10px 20px;
+  padding: 12px 24px;
   border: none;
   border-radius: 10px;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
-  font-family: inherit;
+  transition: all 0.2s;
 }
 
 .btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-primary {
-  background: #111827;
-  color: white;
-  box-shadow: none;
-  width: 100%;
-}
-
-.btn-primary:hover:not(:disabled) {
-  transform: translateY(-1px);
-  background: #1F2937;
-  box-shadow: none;
-}
-
-.btn-secondary {
-  background: #f3f4f6;
-  color: #374151;
-  border: 2px solid #e5e7eb;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: #e5e7eb;
-  border-color: #d1d5db;
-}
-
-.btn-text {
-  background: transparent;
-  color: #667eea;
-  padding: 8px 16px;
-}
-
-.btn-text:hover:not(:disabled) {
-  background: #f3f4f6;
-}
-
-.btn-large {
-}
-
-
-/* ==================== PRICING CARDS GRID ==================== */
-
-.pricing-cards {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-  margin-bottom: 24px;
-}
-
-@media (max-width: 900px) {
-  .pricing-cards {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-}
-
-.pricing-card {
-  background: white;
-  border: 3px solid #e5e7eb;
-  border-radius: 16px;
-  padding: 20px;
-  position: relative;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.pricing-card:hover {
-  border-color: #111827;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-}
-
-.pricing-card.selected {
-  border-color: #111827;
-  background: #F9FAFB;
-}
-
-.pricing-card.featured {
-  border-color: #111827;
-  background: #F9FAFB;
-}
-
-.current-badge {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
-  background: #d1fae5;
-  color: #065f46;
-  font-size: 11px;
-  font-weight: 700;
-  border-radius: 8px;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.popular-badge {
-  position: absolute;
-  top: -12px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 16px;
-  background: #111827;
-  color: white;
-  font-size: 11px;
-  font-weight: 700;
-  border-radius: 999px;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  box-shadow: none;
-}
-
-.pricing-header {
-  text-align: center;
-  padding-bottom: 24px;
-  border-bottom: 2px solid #f3f4f6;
-  margin-bottom: 24px;
-}
-
-.pricing-header h3 {
-  font-size: 20px;
-  font-weight: 700;
-  color: #111827;
-  margin-bottom: 12px;
-}
-
-.pricing-price {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 4px;
-  margin-bottom: 8px;
-}
-
-.price-currency {
-  font-size: 14px;
-  font-weight: 600;
-  color: #6b7280;
-}
-
-.price-amount {
-  font-size: 30px;
-  font-weight: 800;
-  color: #111827;
-  line-height: 1;
-}
-
-.price-period {
-  font-size: 14px;
-  color: #9ca3af;
-}
-
-.pricing-tagline {
-  font-size: 13px;
-  color: #6b7280;
-}
-
-.feature-list {
-  list-style: none;
-  margin-bottom: 24px;
-}
-
-.feature-list li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 0;
-  font-size: 14px;
-  color: #374151;
-  border-bottom: 1px solid #f3f4f6;
-}
-
-.feature-list li:last-child {
-  border-bottom: none;
-}
-
-.feature-list li.disabled {
-  color: #9ca3af;
-}
-
-.feature-list li svg {
-  flex-shrink: 0;
-  color: #10b981;
-}
-
-.feature-list li.disabled svg {
-  color: #d1d5db;
-}
-
-.pricing-button {
-  width: 100%;
-  padding: 10px 20px;
-  background: #111827;
-  border: none;
-  border-radius: 10px;
-  color: white;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.pricing-button:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-}
-
-.pricing-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-/* ==================== SUBSCRIPTION INFO ==================== */
-
-.subscription-info {
-  text-align: center;
-}
-
-.subscription-plan {
-  margin-bottom: 20px;
-}
-
-.plan-badge {
-  display: inline-block;
-  padding: 8px 20px;
-  background: #4F46E5;
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  font-size: 14px;
-  font-weight: 700;
-  border-radius: 999px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
-/* ✅ Days Remaining Display */
-.subscription-days-remaining {
-  background: #111827;
-  border-radius: 16px;
-  padding: 20px;
-  margin-bottom: 20px;
-  color: white;
-  text-align: center;
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
-.days-label {
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  opacity: 0.9;
-  margin-bottom: 8px;
+.btn-secondary {
+  background: #f5f7fa;
+  color: #333;
 }
 
-.days-value {
-  font-size: 40px;
-  font-weight: 800;
-  line-height: 1;
-  margin-bottom: 4px;
+.btn-secondary:hover:not(:disabled) {
+  background: #e8eaeb;
 }
 
-.days-unit {
-  font-size: 20px;
-  font-weight: 500;
-  opacity: 0.9;
-}
-
-.time-remaining-detail {
-  font-size: 14px;
-  opacity: 0.85;
-}
-
-.subscription-expiry {
-  margin-bottom: 20px;
-}
-
-.expiry-label {
-  font-size: 13px;
-  color: #6b7280;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 8px;
-}
-
-.expiry-date {
-  font-size: 24px;
-  font-weight: 700;
-  color: #111827;
-}
-
-.subscription-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.subscription-status.active {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.subscription-status.expiring {
-  background: #fed7aa;
-  color: #92400e;
-}
-
-/* ==================== USAGE STATS ==================== */
-
-.usage-item {
-  margin-bottom: 20px;
-}
-
-.usage-item:last-child {
-  margin-bottom: 0;
-}
-
-.usage-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.usage-label {
-  font-size: 14px;
-  font-weight: 600;
-  color: #374151;
-}
-
-.usage-value {
-  font-size: 14px;
-  font-weight: 700;
+.btn-text {
+  background: none;
   color: #667eea;
-}
-
-.usage-progress {
-  height: 8px;
-  background: #f3f4f6;
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-.usage-progress-bar {
-  height: 100%;
-  border-radius: 999px;
-  transition: width 0.6s ease;
-}
-
-.usage-progress-bar.messages {
-  background: #EC4899;
-}
-
-.usage-progress-bar.images {
-  background: #0EA5E9;
-}
-
-.pro-plan-display {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   padding: 12px 16px;
-  background: #111827;
-  border-radius: 12px;
+}
+
+.btn-text:hover {
+  text-decoration: underline;
+}
+
+.btn-outline-danger {
+  background: white;
+  border: 2px solid #dc3545;
+  color: #dc3545;
+}
+
+.btn-outline-danger:hover:not(:disabled) {
+  background: #dc3545;
   color: white;
-  font-weight: 600;
 }
 
-/* ==================== LOADING ==================== */
-
-.loading-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(8px);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-}
-
-.loading-spinner {
-  width: 64px;
-  height: 64px;
-  border: 4px solid rgba(255, 255, 255, 0.2);
-  border-top-color: white;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-.spinner-mini {
-  width: 16px;
-  height: 16px;
-  border: 2px solid #e5e7eb;
-  border-top-color: #667eea;
-  border-radius: 50%;
-  animation: spin 0.6s linear infinite;
-  display: inline-block;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.loading-text {
+.btn-danger {
+  background: #dc3545;
   color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #c82333;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.btn-upgrade {
+  padding: 16px 24px;
   font-size: 16px;
-  font-weight: 500;
   margin-top: 20px;
 }
 
-/* ==================== DURATION SELECTOR ==================== */
+/* =============================================
+   PREFERENCES
+   ============================================= */
 
-.duration-selector {
+.preference-item {
   display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0;
+  border-bottom: 1px solid #f0f0f0;
 }
 
-.duration-btn {
-  flex: 1;
-  padding: 12px 8px;
-  border: 2px solid #e2e8f0;
-  border-radius: 10px;
-  background: white;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-weight: 600;
+.preference-item:last-child {
+  border-bottom: none;
+}
+
+.preference-info h4 {
   font-size: 14px;
-  color: #374151;
-  text-align: center;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 4px;
+}
+
+.preference-info p {
+  font-size: 13px;
+  color: #666;
+  margin: 0;
+}
+
+.toggle {
   position: relative;
-  z-index: 1;
+  width: 48px;
+  height: 26px;
 }
 
-.duration-btn:hover {
-  border-color: #667eea;
-  background: #f8f9ff;
-  transform: translateY(-2px);
+.toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
 }
 
-.duration-btn.selected {
-  border-color: #667eea;
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #ccc;
+  border-radius: 26px;
+  transition: 0.3s;
+}
+
+.toggle-slider:before {
+  content: "";
+  position: absolute;
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background: white;
+  border-radius: 50%;
+  transition: 0.3s;
+}
+
+.toggle input:checked + .toggle-slider {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.toggle input:checked + .toggle-slider:before {
+  transform: translateX(22px);
+}
+
+/* =============================================
+   SUBSCRIPTION
+   ============================================= */
+
+.current-plan-display {
+  text-align: center;
+  padding: 20px;
+  background: #f5f7fa;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.plan-badge-large {
+  display: inline-block;
+  padding: 8px 24px;
+  border-radius: 30px;
+  font-size: 18px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.plan-badge-large.free {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.plan-badge-large.start {
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  color: white;
+}
+
+.plan-badge-large.pro {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
-.duration-btn:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+.plan-badge-large.premium {
+  background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%);
+  color: #333;
 }
 
-/* ==================== ACTIVE SUBSCRIPTION NOTICE ==================== */
+.plan-details {
+  margin-top: 12px;
+  font-size: 14px;
+  color: #666;
+}
 
-.active-subscription-notice {
+.plan-details .days-left {
+  color: #999;
+  font-size: 13px;
+}
+
+.subscription-source {
+  font-size: 12px;
+  color: #999;
+  margin-top: 4px;
+}
+
+.plan-options {
   display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  padding: 20px;
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-  border-radius: 12px;
-  border: 1px solid #f59e0b;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.notice-icon {
+.plan-option {
+  padding: 16px;
+  border: 2px solid #eee;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.plan-option:hover {
+  border-color: #667eea;
+}
+
+.plan-option.active {
+  border-color: #667eea;
+  background: #f5f7ff;
+}
+
+.plan-option.recommended {
+  border-color: #ffd700;
+}
+
+.plan-option-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.plan-name {
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.recommended-badge {
+  padding: 2px 8px;
+  background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%);
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #333;
+  text-transform: uppercase;
+}
+
+.current-badge {
+  padding: 2px 8px;
+  background: #667eea;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 600;
+  color: white;
+  text-transform: uppercase;
+}
+
+.plan-price {
+  margin-bottom: 12px;
+}
+
+.price-amount {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.price-period {
+  font-size: 13px;
+  color: #666;
+}
+
+.plan-features {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.plan-features li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 6px;
+}
+
+.plan-features li svg {
+  color: #2e7d32;
   flex-shrink: 0;
-  width: 48px;
-  height: 48px;
-  background: #f59e0b;
-  border-radius: 50%;
+}
+
+/* =============================================
+   PROMOCODE
+   ============================================= */
+
+.promocode-section {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.promocode-section h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 12px;
+}
+
+.promocode-input-group {
+  display: flex;
+  gap: 12px;
+}
+
+.promocode-input-group .form-input {
+  flex: 1;
+}
+
+.promo-error {
+  color: #dc3545;
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+.promo-success {
+  color: #2e7d32;
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+/* =============================================
+   DANGER ZONE
+   ============================================= */
+
+.danger-card .card-header {
+  background: #fff5f5;
+}
+
+.danger-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.danger-item:last-child {
+  border-bottom: none;
+}
+
+.danger-info h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 4px;
+}
+
+.danger-info p {
+  font-size: 13px;
+  color: #666;
+  margin: 0;
+}
+
+/* =============================================
+   MODAL
+   ============================================= */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  z-index: 1000;
+  padding: 20px;
 }
 
-.notice-content {
-  flex: 1;
+.modal {
+  background: white;
+  border-radius: 16px;
+  max-width: 450px;
+  width: 100%;
+  overflow: hidden;
 }
 
-.notice-content h4 {
-  margin: 0 0 8px 0;
-  font-size: 16px;
-  font-weight: 700;
-  color: #92400e;
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #f0f0f0;
 }
 
-.notice-content p {
-  margin: 0 0 4px 0;
-  font-size: 14px;
-  color: #78350f;
-  line-height: 1.5;
-}
-
-.notice-content p strong {
+.modal-header h3 {
+  font-size: 18px;
   font-weight: 600;
+  margin: 0;
 }
 
-.notice-expiry {
-  margin-top: 12px !important;
-  padding-top: 12px;
-  border-top: 1px solid rgba(245, 158, 11, 0.3);
-  font-weight: 500 !important;
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
 }
 
-/* ==================== RESPONSIVE ==================== */
-
-
-@media (max-width: 1024px) {
-  .content-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .pricing-cards {
-    grid-template-columns: 1fr;
-  }
+.modal-body {
+  padding: 24px;
 }
 
-@media (max-width: 768px) {
+.modal-body p {
+  margin: 0 0 12px;
+  color: #333;
+}
+
+.warning-text {
+  color: #dc3545;
+  font-weight: 500;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  background: #f5f7fa;
+}
+
+/* =============================================
+   RESPONSIVE
+   ============================================= */
+
+@media (max-width: 600px) {
   .settings-main {
-    padding: 20px;
+    padding: 16px;
   }
 
   .settings-header {
     flex-direction: column;
-    align-items: stretch;
+    gap: 16px;
+    text-align: center;
   }
 
   .header-content {
     flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .back-button,
-  .save-button {
-    width: 100%;
-  }
-
-  .header-title {
-    font-size: 24px;
-  }
-
-  .stats-section {
-    grid-template-columns: 1fr;
   }
 
   .form-row {
     grid-template-columns: 1fr;
   }
 
-  .form-actions {
-    flex-direction: column;
+  .stats-section {
+    grid-template-columns: 1fr;
   }
 
-  .form-actions .btn {
-    width: 100%;
+  .promocode-input-group {
+    flex-direction: column;
   }
 }
 </style>

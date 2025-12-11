@@ -3,9 +3,9 @@
 import { getApp } from './appMounter.js';
 
 export function setupEnhancedGlobalSubscriptionManagement(store, eventBus) {
-const handleGlobalSubscriptionChange = (event) => {
+  const handleGlobalSubscriptionChange = (event) => {
     const { plan, newStatus, userStatus, subscriptionPlan, message, source, oldPlan, timestamp } = event.detail || {};
-    
+
     let actualPlan = plan || newStatus || userStatus || subscriptionPlan;
 
     // Parse plan from success messages if plan is empty
@@ -58,6 +58,15 @@ const handleGlobalSubscriptionChange = (event) => {
     localStorage.setItem('userStatus', actualPlan);
     localStorage.setItem('userPlan', actualPlan);
     localStorage.setItem('subscriptionPlan', actualPlan);
+
+    // ✅ CRITICAL FIX: Sync subscriptionData to prevent auth.js reversion
+    const existingSub = JSON.parse(localStorage.getItem('subscriptionData') || '{}');
+    if (existingSub.plan !== actualPlan) {
+      existingSub.plan = actualPlan;
+      existingSub.status = actualPlan !== 'free' ? 'active' : 'inactive';
+      localStorage.setItem('subscriptionData', JSON.stringify(existingSub));
+    }
+
     localStorage.setItem('statusUpdateTime', Date.now().toString());
 
     // Update store if not already updated
@@ -80,7 +89,7 @@ const handleGlobalSubscriptionChange = (event) => {
         }
       }
     } catch (storeError) {
-}
+    }
 
     // Force Vue app update
     const app = getApp();
@@ -88,7 +97,7 @@ const handleGlobalSubscriptionChange = (event) => {
       try {
         app._instance.proxy.$forceUpdate();
       } catch (error) {
-}
+      }
     }
 
     // Emit multiple event types
@@ -160,13 +169,22 @@ const handleGlobalSubscriptionChange = (event) => {
     if (!['free', 'start', 'pro', 'premium'].includes(actualStatus)) {
       actualStatus = 'free';
     }
-try {
+    try {
       localStorage.setItem('userStatus', actualStatus);
       localStorage.setItem('userPlan', actualStatus);
       localStorage.setItem('subscriptionPlan', actualStatus);
+
+      // ✅ CRITICAL FIX: Sync subscriptionData to prevent auth.js reversion
+      const existingSub = JSON.parse(localStorage.getItem('subscriptionData') || '{}');
+      if (existingSub.plan !== actualStatus) {
+        existingSub.plan = actualStatus;
+        existingSub.status = actualStatus !== 'free' ? 'active' : 'inactive';
+        localStorage.setItem('subscriptionData', JSON.stringify(existingSub));
+      }
+
       localStorage.setItem('statusUpdateTime', Date.now().toString());
     } catch (storageError) {
-}
+    }
 
     try {
       const currentStoreStatus = store.getters['user/userStatus'];
@@ -180,7 +198,7 @@ try {
         }
       }
     } catch (storeError) {
-}
+    }
 
     const app = getApp();
     if (app?._instance) {
@@ -190,12 +208,12 @@ try {
           // Trigger next tick for delayed components
         });
       } catch (error) {
-}
+      }
     }
   });
 
   eventBus.on('promocodeApplied', (data) => {
-const domEvent = new CustomEvent('userSubscriptionChanged', {
+    const domEvent = new CustomEvent('userSubscriptionChanged', {
       detail: {
         plan: data.newStatus,
         source: 'promocode',
@@ -208,7 +226,7 @@ const domEvent = new CustomEvent('userSubscriptionChanged', {
   });
 
   eventBus.on('paymentCompleted', (data) => {
-const domEvent = new CustomEvent('userSubscriptionChanged', {
+    const domEvent = new CustomEvent('userSubscriptionChanged', {
       detail: {
         plan: data.plan,
         source: 'payment',

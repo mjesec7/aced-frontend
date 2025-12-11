@@ -1,271 +1,247 @@
-// src/api/promocodes.js - Frontend Promocode API Module (FIXED)
+// src/api/promocodes.js - Promocode Management API
+import api from './core';
 import { auth } from '@/firebase';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live';
+// =============================================
+// 🔧 HELPER FUNCTIONS
+// =============================================
 
-/**
- * Get auth token for authenticated requests
- */
 const getAuthToken = async () => {
-    try {
-        const currentUser = auth.currentUser;
-        if (!currentUser) return null;
-        return await currentUser.getIdToken();
-    } catch (error) {
-        console.error('Error getting auth token:', error);
-        return null;
+  try {
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      return await currentUser.getIdToken(true);
     }
+    return localStorage.getItem('token') || null;
+  } catch (error) {
+    console.error('[promocodes.js] Error getting auth token:', error);
+    return null;
+  }
 };
 
-/**
- * Apply a promocode to the current user's account
- * @param {string} code - The promocode to apply
- * @returns {Promise<Object>} Result with success status and subscription details
- */
-export const applyPromocode = async (code) => {
-    console.log('🎟️ [promocodes.js] applyPromocode called with code:', code);
-
-    try {
-        const currentUser = auth.currentUser;
-        if (!currentUser) {
-            console.error('❌ [promocodes.js] No current user');
-            return {
-                success: false,
-                message: 'Необходимо войти в систему для применения промокода'
-            };
-        }
-
-        const token = await currentUser.getIdToken();
-        const userId = currentUser.uid;
-
-        console.log('🎟️ [promocodes.js] Making API request to apply promocode');
-        console.log('🎟️ [promocodes.js] User ID:', userId.substring(0, 8) + '...');
-        console.log('🎟️ [promocodes.js] Code:', code);
-        console.log('🎟️ [promocodes.js] Endpoint: /api/promocodes/apply');
-
-        // FIXED: Use correct endpoint /api/promocodes/apply
-        const response = await fetch(`${BASE_URL}/api/promocodes/apply`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                code: code.trim().toUpperCase()
-            })
-        });
-
-        console.log('🎟️ [promocodes.js] Response status:', response.status);
-
-        const result = await response.json();
-        console.log('🎟️ [promocodes.js] Response body:', JSON.stringify(result, null, 2));
-
-        if (result.success) {
-            console.log('✅ [promocodes.js] Promocode applied successfully');
-
-            // Extract plan info from response (handle different response formats)
-            const plan = result.promocode?.grantsPlan || result.user?.subscriptionPlan || result.plan || 'pro';
-            const subscriptionDays = result.promocode?.subscriptionDays || 30;
-            const expiryDate = result.user?.subscriptionExpiryDate || result.user?.subscriptionEndDate || result.expiryDate || null;
-
-            return {
-                success: true,
-                message: result.message || 'Промокод успешно применён!',
-                plan: plan,
-                subscriptionDays: subscriptionDays,
-                durationText: result.promocode?.durationText || getDurationText(subscriptionDays),
-                expiryDate: expiryDate,
-                user: result.user
-            };
-        } else {
-            console.error('❌ [promocodes.js] Server returned error:', result.message || result.error);
-            return {
-                success: false,
-                message: getPromocodeErrorMessage(result.message || result.error) || 'Не удалось применить промокод'
-            };
-        }
-    } catch (error) {
-        console.error('❌ [promocodes.js] Promocode apply error:', error);
-
-        // Check if it's a network error
-        if (error.name === 'TypeError' && error.message.includes('fetch')) {
-            return {
-                success: false,
-                message: 'Ошибка сети. Проверьте подключение к интернету.'
-            };
-        }
-
-        return {
-            success: false,
-            message: 'Ошибка при применении промокода. Попробуйте позже.'
-        };
-    }
+const getUserId = () => {
+  const currentUser = auth.currentUser;
+  if (currentUser?.uid) return currentUser.uid;
+  
+  return localStorage.getItem('userId') || 
+         localStorage.getItem('firebaseUserId') || 
+         null;
 };
 
+// =============================================
+// 🎟️ PROMOCODE API FUNCTIONS
+// =============================================
+
 /**
- * Validate a promocode without applying it
- * @param {string} code - The promocode to validate
- * @returns {Promise<Object>} Validation result
+ * Validate a promocode
  */
 export const validatePromocode = async (code) => {
-    console.log('🔍 [promocodes.js] validatePromocode called with code:', code);
-
+  console.log('🔍 [promocodes.js] validatePromocode called:', code);
+  
+  try {
     if (!code || code.trim().length < 3) {
-        return {
-            valid: false,
-            message: 'Промокод слишком короткий'
-        };
+      return { valid: false, error: 'Promocode is too short' };
     }
 
-    try {
-        const normalizedCode = code.trim().toUpperCase();
-        const url = `${BASE_URL}/api/promocodes/validate/${encodeURIComponent(normalizedCode)}`;
+    const normalizedCode = code.trim().toUpperCase();
+    
+    const { data } = await api.post('promocodes/validate', {
+      code: normalizedCode
+    });
 
-        console.log('🔍 [promocodes.js] Validation URL:', url);
+    console.log('📡 [promocodes.js] Validation response:', data);
 
-        const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-
-        console.log('🔍 [promocodes.js] Validation response status:', response.status);
-
-        if (!response.ok) {
-            console.error('❌ [promocodes.js] HTTP error:', response.status);
-            return {
-                valid: false,
-                message: response.status === 404 ? 'Промокод не найден' : 'Ошибка при проверке промокода'
-            };
-        }
-
-        const result = await response.json();
-        console.log('🔍 [promocodes.js] Validation response:', JSON.stringify(result, null, 2));
-
-        // Handle different response formats from the backend
-        // Format 1: { valid: true, data: {...} }
-        // Format 2: { success: true, data: {...} }
-        // Format 3: { data: {...} } (implicit valid)
-
-        const isValid = result?.valid === true ||
-                       result?.success === true ||
-                       (result?.data && !result?.error);
-
-        if (isValid && result?.data) {
-            console.log('✅ [promocodes.js] Promocode is valid');
-            return {
-                valid: true,
-                data: {
-                    code: result.data.code || normalizedCode,
-                    grantsPlan: result.data.grantsPlan || result.data.plan || 'pro',
-                    subscriptionDays: result.data.subscriptionDays || 30,
-                    durationText: result.data.durationText || getDurationText(result.data.subscriptionDays || 30),
-                    description: result.data.description,
-                    expiresAt: result.data.expiresAt,
-                    maxUses: result.data.maxUses,
-                    currentUses: result.data.currentUses
-                },
-                message: 'Промокод действителен'
-            };
-        } else {
-            console.log('❌ [promocodes.js] Promocode is invalid:', result?.error || result?.message);
-            return {
-                valid: false,
-                message: getPromocodeErrorMessage(result?.error || result?.message) || 'Недействительный промокод'
-            };
-        }
-    } catch (error) {
-        console.error('❌ [promocodes.js] Promocode validation error:', error);
-
-        // Check if it's a network error
-        if (error.name === 'TypeError' && error.message.includes('fetch')) {
-            return {
-                valid: false,
-                message: 'Ошибка сети. Проверьте подключение к интернету.'
-            };
-        }
-
-        return {
-            valid: false,
-            message: 'Ошибка при проверке промокода'
-        };
+    if (data.valid || data.success) {
+      return {
+        valid: true,
+        code: normalizedCode,
+        plan: data.plan || 'pro',
+        duration: data.duration || 30,
+        discount: data.discount || 100,
+        message: data.message || 'Promocode is valid'
+      };
+    } else {
+      return {
+        valid: false,
+        error: data.message || data.error || 'Invalid promocode'
+      };
     }
-};
-
-/**
- * Get duration text from subscription days
- * @param {number} days - Number of subscription days
- * @returns {string} Human-readable duration text
- */
-const getDurationText = (days) => {
-    if (days <= 31) return '1 Month';
-    if (days <= 45) return '1.5 Months';
-    if (days <= 62) return '2 Months';
-    if (days <= 95) return '3 Months';
-    if (days <= 125) return '4 Months';
-    if (days <= 155) return '5 Months';
-    if (days <= 185) return '6 Months';
-    if (days <= 270) return '9 Months';
-    if (days <= 370) return '1 Year';
-    return `${days} Days`;
-};
-
-/**
- * Get human-readable error message from promocode error
- * @param {string} errorMessage - The error message from API
- * @returns {string} Localized error message
- */
-export const getPromocodeErrorMessage = (errorMessage) => {
-    if (!errorMessage) return null;
-
-    const errorMessages = {
-        // Backend error messages
-        'Promo code is required': 'Введите промокод',
-        'Promocode is required': 'Введите промокод',
-        'Invalid or inactive promocode': 'Недействительный или неактивный промокод',
-        'Invalid promocode': 'Недействительный промокод',
-        'Promocode not found or is inactive': 'Промокод не найден или неактивен',
-        'Promocode not found': 'Промокод не найден',
-        'Promo code not found': 'Промокод не найден',
-        'This promo code has expired': 'Срок действия промокода истёк',
-        'This promocode has expired': 'Срок действия промокода истёк',
-        'expired': 'Срок действия промокода истёк',
-        'This promo code has reached its usage limit': 'Лимит использования промокода исчерпан',
-        'This promocode has reached its maximum usage limit': 'Лимит использования промокода исчерпан',
-        'usage limit': 'Лимит использования промокода исчерпан',
-        'You have already used this promo code': 'Вы уже использовали этот промокод',
-        'You have already used this promocode': 'Вы уже использовали этот промокод',
-        'already used': 'Вы уже использовали этот промокод',
-        'This promo code is not available for your account': 'Промокод недоступен для вашего аккаунта',
-        'not available': 'Промокод недоступен',
-        'User not found': 'Пользователь не найден',
-        'User ID and promo code are required': 'Необходимо ввести промокод',
-        'Server error while applying promocode': 'Ошибка сервера при применении промокода',
-        'server error': 'Ошибка сервера. Попробуйте позже.',
-        'Promocode is inactive': 'Промокод неактивен',
-        'Authentication required': 'Необходима авторизация',
-        'Unauthorized': 'Необходима авторизация',
-        'Network error': 'Ошибка сети. Проверьте подключение к интернету.'
+  } catch (error) {
+    console.error('❌ [promocodes.js] validatePromocode error:', error);
+    
+    if (error.response?.status === 404) {
+      return { valid: false, error: 'Promocode not found' };
+    }
+    if (error.response?.status === 410) {
+      return { valid: false, error: 'Promocode has expired' };
+    }
+    if (error.response?.status === 409) {
+      return { valid: false, error: 'Promocode already used' };
+    }
+    
+    return { 
+      valid: false, 
+      error: error.response?.data?.message || error.message || 'Failed to validate promocode' 
     };
-
-    // Check for exact match
-    if (errorMessages[errorMessage]) {
-        return errorMessages[errorMessage];
-    }
-
-    // Check for partial match
-    for (const [key, value] of Object.entries(errorMessages)) {
-        if (errorMessage.toLowerCase().includes(key.toLowerCase())) {
-            return value;
-        }
-    }
-
-    return errorMessage;
+  }
 };
+
+/**
+ * Apply a promocode to user account
+ */
+export const applyPromocode = async (code, userId = null) => {
+  console.log('🎟️ [promocodes.js] applyPromocode called:', code);
+  
+  try {
+    if (!code || code.trim().length < 3) {
+      return { success: false, error: 'Promocode is too short' };
+    }
+
+    const token = await getAuthToken();
+    if (!token) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const resolvedUserId = userId || getUserId();
+    if (!resolvedUserId) {
+      return { success: false, error: 'No user ID available' };
+    }
+
+    const normalizedCode = code.trim().toUpperCase();
+    
+    const headers = { Authorization: `Bearer ${token}` };
+
+    const { data } = await api.post('promocodes/apply', {
+      code: normalizedCode,
+      userId: resolvedUserId
+    }, { headers });
+
+    console.log('📡 [promocodes.js] Apply response:', data);
+
+    if (data.success) {
+      // Calculate expiry date
+      const now = new Date();
+      const durationDays = data.duration || 30;
+      const expiryDate = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
+
+      return {
+        success: true,
+        message: data.message || `Promocode applied! ${(data.plan || 'Pro').toUpperCase()} activated.`,
+        plan: data.plan || 'pro',
+        duration: durationDays,
+        expiryDate: expiryDate.toISOString(),
+        promocode: normalizedCode
+      };
+    } else {
+      return {
+        success: false,
+        error: data.message || data.error || 'Failed to apply promocode'
+      };
+    }
+  } catch (error) {
+    console.error('❌ [promocodes.js] applyPromocode error:', error);
+    
+    if (error.response?.status === 404) {
+      return { success: false, error: 'Promocode not found' };
+    }
+    if (error.response?.status === 410) {
+      return { success: false, error: 'Promocode has expired' };
+    }
+    if (error.response?.status === 409) {
+      return { success: false, error: 'Promocode already used' };
+    }
+    if (error.response?.status === 400) {
+      return { success: false, error: error.response?.data?.message || 'Invalid promocode' };
+    }
+    
+    return { 
+      success: false, 
+      error: error.response?.data?.message || error.message || 'Failed to apply promocode' 
+    };
+  }
+};
+
+/**
+ * Get user's applied promocodes
+ */
+export const getUserPromocodes = async (userId = null) => {
+  console.log('📋 [promocodes.js] getUserPromocodes called');
+  
+  try {
+    const token = await getAuthToken();
+    if (!token) {
+      return { success: false, error: 'Not authenticated', promocodes: [] };
+    }
+
+    const resolvedUserId = userId || getUserId();
+    if (!resolvedUserId) {
+      return { success: false, error: 'No user ID', promocodes: [] };
+    }
+
+    const headers = { Authorization: `Bearer ${token}` };
+
+    const { data } = await api.get(`users/${resolvedUserId}/promocodes`, { headers });
+
+    return {
+      success: true,
+      promocodes: data.promocodes || data.data || []
+    };
+  } catch (error) {
+    console.error('❌ [promocodes.js] getUserPromocodes error:', error);
+    return { 
+      success: false, 
+      error: error.message,
+      promocodes: [] 
+    };
+  }
+};
+
+/**
+ * Check if user can use a specific promocode
+ */
+export const checkPromocodeEligibility = async (code, userId = null) => {
+  console.log('✅ [promocodes.js] checkPromocodeEligibility called:', code);
+  
+  try {
+    const token = await getAuthToken();
+    if (!token) {
+      return { eligible: false, error: 'Not authenticated' };
+    }
+
+    const resolvedUserId = userId || getUserId();
+    if (!resolvedUserId) {
+      return { eligible: false, error: 'No user ID' };
+    }
+
+    const normalizedCode = code.trim().toUpperCase();
+    const headers = { Authorization: `Bearer ${token}` };
+
+    const { data } = await api.post('promocodes/check-eligibility', {
+      code: normalizedCode,
+      userId: resolvedUserId
+    }, { headers });
+
+    return {
+      eligible: data.eligible || data.success,
+      reason: data.reason || data.message,
+      plan: data.plan
+    };
+  } catch (error) {
+    console.error('❌ [promocodes.js] checkPromocodeEligibility error:', error);
+    return { 
+      eligible: false, 
+      error: error.response?.data?.message || error.message 
+    };
+  }
+};
+
+// =============================================
+// 📤 DEFAULT EXPORT
+// =============================================
 
 export default {
-    applyPromocode,
-    validatePromocode,
-    getPromocodeErrorMessage
+  validatePromocode,
+  applyPromocode,
+  getUserPromocodes,
+  checkPromocodeEligibility
 };
