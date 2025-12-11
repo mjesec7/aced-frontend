@@ -15,10 +15,16 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: false, // 🛑 Added to disable source maps
-    esbuild: {
-      // drop: ['console', 'debugger'], // 🔧 TEMPORARILY DISABLED for debugging promo code issue
-    },
+    sourcemap: false,
+    // Ensure unique chunk names with content hash for better cache invalidation
+    rollupOptions: {
+      output: {
+        // Include hash in entry file names
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]'
+      }
+    }
   },
   server: {
     historyApiFallback: true // ✅ Handles SPA routes in dev
