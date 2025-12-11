@@ -561,7 +561,7 @@ export default {
       } catch (error) { /* Silent */ }
     };
 
-    const goToUpgrade = (months = 1) => router.push({ path: '/upgrade', query: { duration: months } });
+    const goToUpgrade = (months = 1) => router.push({ path: '/pay/pro', query: { duration: months } });
 
     const applyPromocode = async () => {
       if (!promocode.value.trim()) { promoError.value = 'Please enter a promocode'; return; }
