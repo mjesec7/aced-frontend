@@ -123,7 +123,7 @@ const getAuthToken = async () => {
 const state = () => ({
   currentUser: null,
   userStatus: 'free',
-  
+
   subscription: {
     plan: 'free',
     status: 'inactive',
@@ -224,7 +224,7 @@ const mutations = {
 
   CLEAR_USER(state) {
     const timestamp = Date.now();
-    
+
     state.currentUser = null;
     state.userStatus = 'free';
     state.subscription = {
@@ -252,7 +252,7 @@ const mutations = {
       'userPlan', 'plan', 'subscriptionExpiry', 'userId', 'firebaseUserId'
     ];
     keysToRemove.forEach(key => {
-      try { localStorage.removeItem(key); } catch (e) {}
+      try { localStorage.removeItem(key); } catch (e) { }
     });
 
     triggerGlobalEvent('userCleared', { timestamp });
@@ -294,7 +294,7 @@ const mutations = {
     if (!subscriptionData || typeof subscriptionData !== 'object') return;
 
     const timestamp = Date.now();
-    
+
     state.subscription = {
       ...state.subscription,
       ...subscriptionData,
@@ -371,14 +371,14 @@ const mutations = {
     };
 
     state.promocodes.applied.unshift(promocode);
-    
+
     if (state.promocodes.applied.length > 10) {
       state.promocodes.applied = state.promocodes.applied.slice(0, 10);
     }
 
     try {
       localStorage.setItem('appliedPromocodes', JSON.stringify(state.promocodes.applied));
-    } catch (e) {}
+    } catch (e) { }
 
     triggerGlobalEvent('promocodeApplied', { promocode });
   },
@@ -400,7 +400,7 @@ const mutations = {
     };
 
     state.payments.history.unshift(payment);
-    
+
     if (state.payments.history.length > 50) {
       state.payments.history = state.payments.history.slice(0, 50);
     }
@@ -439,7 +439,7 @@ const actions = {
    */
   async initialize({ commit, dispatch, state }) {
     console.log('🚀 [store/user] Initializing...');
-    
+
     if (state.system.initialized) {
       console.log('⏭️ [store/user] Already initialized');
       return { success: true, cached: true };
@@ -456,7 +456,7 @@ const actions = {
           if (userData && userData.email) {
             commit('SET_USER', userData);
           }
-        } catch (e) {}
+        } catch (e) { }
       }
 
       const storedStatus = localStorage.getItem('userStatus');
@@ -479,77 +479,101 @@ const actions = {
    * This is the PRIMARY method for getting subscription status
    */
   async fetchStatusFromServer({ commit, state }) {
-    const startTime = Date.now();
     console.log('🔄 [store/user] fetchStatusFromServer called');
 
     try {
       commit('SET_LOADING', { type: 'status', loading: true });
 
-      const userId = getUserId(state);
+      // Get user ID from multiple sources
+      const userId = state.currentUser?.firebaseId ||
+        state.currentUser?.firebaseUserId ||
+        state.currentUser?._id ||
+        state.currentUser?.uid ||
+        localStorage.getItem('userId') ||
+        localStorage.getItem('firebaseUserId');
+
       if (!userId) {
         console.error('❌ [store/user] No user ID available');
         return { success: false, error: 'No user ID' };
       }
 
-      const token = await getAuthToken();
+      // Get auth token
+      let token = null;
+      try {
+        const { auth } = await import('@/firebase');
+        if (auth.currentUser) {
+          token = await auth.currentUser.getIdToken();
+        }
+      } catch (e) {
+        token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      }
+
       if (!token) {
         console.error('❌ [store/user] No auth token available');
         return { success: false, error: 'No auth token' };
       }
 
-      // Import API module
-      const { fetchSubscriptionFromServer } = await import('@/api/subscription');
-      
-      const result = await fetchSubscriptionFromServer(userId);
-      
-      console.log('📡 [store/user] Server response:', result);
+      // Direct API call to get user data
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live';
 
-      if (result.success && result.subscription) {
-        const subscription = result.subscription;
-        
-        // Update store with server data
-        commit('SET_USER_STATUS', subscription.plan);
-        commit('UPDATE_SUBSCRIPTION', {
-          plan: subscription.plan,
-          status: subscription.status,
-          expiryDate: subscription.expiryDate,
-          source: subscription.source,
-          activatedAt: subscription.activatedAt,
-          serverFetch: true,
-          lastSync: new Date().toISOString()
-        });
-        commit('SET_LAST_SERVER_SYNC', Date.now());
+      console.log('📡 [store/user] Fetching from:', `${baseUrl}/api/users/${userId}`);
 
-        // Update localStorage
-        localStorage.setItem('userStatus', subscription.plan);
-        localStorage.setItem('subscriptionPlan', subscription.plan);
-        localStorage.setItem('userPlan', subscription.plan);
-        if (subscription.expiryDate) {
-          localStorage.setItem('subscriptionExpiry', subscription.expiryDate);
+      const response = await fetch(`${baseUrl}/api/users/${userId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
-        localStorage.setItem('lastServerSync', Date.now().toString());
+      });
 
-        console.log('✅ [store/user] Status synced from server:', subscription.plan);
-
-        return {
-          success: true,
-          status: subscription.plan,
-          subscription: subscription,
-          duration: Date.now() - startTime,
-          serverFetch: true
-        };
-      } else {
-        console.warn('⚠️ [store/user] Server fetch failed:', result.error);
-        return {
-          success: false,
-          error: result.error || 'Failed to fetch from server',
-          duration: Date.now() - startTime
-        };
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}`);
       }
+
+      const data = await response.json();
+      console.log('📡 [store/user] Server response:', data);
+
+      // Extract user data from various response formats
+      const userData = data.user || data.data || data;
+      const serverStatus = userData.subscriptionPlan || userData.userStatus || 'free';
+      const expiryDate = userData.subscriptionExpiryDate || userData.subscriptionExpiry;
+      const subscriptionDuration = userData.subscriptionDuration;
+
+      console.log('✅ [store/user] Server status:', serverStatus, 'Expiry:', expiryDate);
+
+      // Update store with server data
+      commit('SET_USER_STATUS', serverStatus);
+
+      // Update subscription object with serverFetch flag
+      commit('UPDATE_SUBSCRIPTION', {
+        plan: serverStatus,
+        status: serverStatus !== 'free' ? 'active' : 'inactive',
+        expiryDate: expiryDate || null,
+        duration: subscriptionDuration || null,
+        lastSync: new Date().toISOString(),
+        serverFetch: true  // ✅ CRITICAL: Mark as fetched from server
+      });
+
+      // Update localStorage for persistence
+      localStorage.setItem('userStatus', serverStatus);
+      localStorage.setItem('subscriptionPlan', serverStatus);
+      localStorage.setItem('userPlan', serverStatus);
+      localStorage.setItem('plan', serverStatus);
+      if (expiryDate) {
+        localStorage.setItem('subscriptionExpiry', expiryDate);
+      }
+      localStorage.setItem('lastServerSync', Date.now().toString());
+
+      return {
+        success: true,
+        status: serverStatus,
+        expiryDate: expiryDate,
+        duration: subscriptionDuration,
+        serverFetch: true
+      };
 
     } catch (error) {
       console.error('❌ [store/user] fetchStatusFromServer error:', error);
-      commit('SET_ERROR', { message: error.message, context: 'fetchStatusFromServer' });
       return { success: false, error: error.message };
     } finally {
       commit('SET_LOADING', { type: 'status', loading: false });
@@ -561,25 +585,25 @@ const actions = {
    */
   async loadUserStatus({ dispatch, commit, state }) {
     console.log('📥 [store/user] loadUserStatus called');
-    
+
     // Always try to fetch from server first
     const result = await dispatch('fetchStatusFromServer');
-    
+
     if (!result.success) {
       console.warn('⚠️ [store/user] Server fetch failed, using local data');
-      
+
       // Fallback to localStorage
       const localStatus = localStorage.getItem('userStatus');
       if (localStatus && ['free', 'start', 'pro', 'premium'].includes(localStatus)) {
         commit('SET_USER_STATUS', localStatus);
         return { success: true, status: localStatus, source: 'localStorage' };
       }
-      
+
       // Default to free
       commit('SET_USER_STATUS', 'free');
       return { success: true, status: 'free', defaulted: true };
     }
-    
+
     return result;
   },
 
@@ -595,7 +619,7 @@ const actions = {
     }
 
     const oldStatus = state.userStatus;
-    
+
     if (oldStatus === newStatus) {
       return { success: true, message: 'Status unchanged', noChange: true };
     }
@@ -787,7 +811,7 @@ const actions = {
       commit('SET_LOADING', { type: 'saving', loading: true });
 
       const { saveUser: saveUserAPI } = await import('@/api/user');
-      
+
       const payload = {
         firebaseUserId: userData.uid || userData.firebaseId,
         email: userData.email,
@@ -815,7 +839,7 @@ const actions = {
       if (result.success && result.user) {
         commit('SET_USER', result.user);
         commit('SET_USER_STATUS', result.user.subscriptionPlan || 'free');
-        
+
         localStorage.setItem('userId', result.user.firebaseId);
         localStorage.setItem('firebaseUserId', result.user.firebaseId);
 

@@ -562,28 +562,40 @@ export default {
      * CRITICAL: Get current plan from server data first, then store, then localStorage
      */
     const currentPlan = computed(() => {
-      // Priority 1: Server-fetched data (most reliable)
-      if (serverSubscriptionData.value?.plan && serverSubscriptionData.value.plan !== 'free') {
-        console.log('📊 [AcedSettings] currentPlan from server:', serverSubscriptionData.value.plan);
-        return serverSubscriptionData.value.plan;
+      try {
+        // ✅ CRITICAL: Check if we have server-fetched data first
+        const subscription = store.state.user?.subscription;
+        if (subscription?.serverFetch && subscription?.plan) {
+          console.log('📊 [AcedSettings] Using server-fetched plan:', subscription.plan);
+          return subscription.plan;
+        }
+        
+        // 1. Prioritize Vuex Store userStatus (but only if not 'free' or if explicitly set)
+        const storeStatus = store.state.user?.userStatus;
+        if (storeStatus && storeStatus !== 'free') {
+          return storeStatus;
+        }
+        
+        // 2. Check subscription object plan
+        if (subscription?.plan && subscription.plan !== 'free') {
+          return subscription.plan;
+        }
+        
+        // 3. Fallback to user object
+        const userStatus = store.getters['user/getUser']?.subscriptionPlan;
+        if (userStatus && userStatus !== 'free') {
+          return userStatus;
+        }
+        
+        // 4. Return store status even if free (it's the source of truth)
+        if (storeStatus) return storeStatus;
+        
+        // 5. Last resort: localStorage (but only if no store data at all)
+        return localStorage.getItem('userStatus') || 'free';
+      } catch (e) {
+        console.error('currentPlan error:', e);
+        return 'free';
       }
-      
-      // Priority 2: Vuex store
-      const storeStatus = store.getters['user/userStatus'];
-      if (storeStatus && storeStatus !== 'free') {
-        console.log('📊 [AcedSettings] currentPlan from store:', storeStatus);
-        return storeStatus;
-      }
-      
-      // Priority 3: localStorage (fallback only)
-      const localStatus = localStorage.getItem('userStatus') || localStorage.getItem('subscriptionPlan');
-      if (localStatus && ['start', 'pro', 'premium'].includes(localStatus)) {
-        console.log('📊 [AcedSettings] currentPlan from localStorage:', localStatus);
-        return localStatus;
-      }
-      
-      // Default
-      return storeStatus || 'free';
     });
 
     const currentPlanLabel = computed(() => {
@@ -825,12 +837,25 @@ export default {
         emailNotifications.value = localStorage.getItem('emailNotifications') !== 'false';
         soundEffects.value = localStorage.getItem('soundEffects') !== 'false';
 
-        // CRITICAL: Fetch subscription from server
-        await refreshFromServer();
-
+        if (store && store.dispatch) {
+          // ✅ CRITICAL: Fetch from server FIRST, not just load from cache
+          console.log('📥 [AcedSettings] Loading initial data from server...');
+          
+          const serverResult = await store.dispatch('user/fetchStatusFromServer');
+          console.log('📥 [AcedSettings] Server result:', serverResult);
+          
+          if (!serverResult?.success) {
+            // Fallback to cached data if server fetch fails
+            console.warn('⚠️ [AcedSettings] Server fetch failed, using cached data');
+            await store.dispatch('user/loadUserStatus');
+          }
+        }
       } catch (error) {
         console.error('❌ [AcedSettings] loadInitialData error:', error);
-        showNotification('Failed to load settings', 'error');
+        // Try fallback
+        try {
+          await store.dispatch('user/loadUserStatus');
+        } catch (e) {}
       } finally {
         loading.value = false;
       }
