@@ -559,43 +559,18 @@ export default {
     // =============================================
 
     /**
-     * CRITICAL: Get current plan from server data first, then store, then localStorage
+     * CRITICAL: Get current plan from server data ONLY
      */
     const currentPlan = computed(() => {
-      try {
-        // ✅ CRITICAL: Check if we have server-fetched data first
-        const subscription = store.state.user?.subscription;
-        if (subscription?.serverFetch && subscription?.plan) {
-          console.log('📊 [AcedSettings] Using server-fetched plan:', subscription.plan);
-          return subscription.plan;
-        }
-        
-        // 1. Prioritize Vuex Store userStatus (but only if not 'free' or if explicitly set)
-        const storeStatus = store.state.user?.userStatus;
-        if (storeStatus && storeStatus !== 'free') {
-          return storeStatus;
-        }
-        
-        // 2. Check subscription object plan
-        if (subscription?.plan && subscription.plan !== 'free') {
-          return subscription.plan;
-        }
-        
-        // 3. Fallback to user object
-        const userStatus = store.getters['user/getUser']?.subscriptionPlan;
-        if (userStatus && userStatus !== 'free') {
-          return userStatus;
-        }
-        
-        // 4. Return store status even if free (it's the source of truth)
-        if (storeStatus) return storeStatus;
-        
-        // 5. Last resort: localStorage (but only if no store data at all)
-        return localStorage.getItem('userStatus') || 'free';
-      } catch (e) {
-        console.error('currentPlan error:', e);
-        return 'free';
+      // Priority 1: Server-fetched data (most reliable)
+      if (serverSubscriptionData.value?.plan) {
+        console.log('📊 [AcedSettings] currentPlan from server:', serverSubscriptionData.value.plan);
+        return serverSubscriptionData.value.plan;
       }
+      
+      // If we haven't fetched yet, or fetch failed, return 'free' (safe default)
+      // We explicitly DO NOT check store or localStorage as per user request
+      return 'free';
     });
 
     const currentPlanLabel = computed(() => {
@@ -609,15 +584,11 @@ export default {
     });
 
     const subscriptionSource = computed(() => {
-      return serverSubscriptionData.value?.source || 
-             store.state.user?.subscription?.source || 
-             null;
+      return serverSubscriptionData.value?.source || null;
     });
 
     const subscriptionExpiryInfo = computed(() => {
-      const expiryDate = serverSubscriptionData.value?.expiryDate || 
-                         store.state.user?.subscription?.expiryDate ||
-                         localStorage.getItem('subscriptionExpiry');
+      const expiryDate = serverSubscriptionData.value?.expiryDate;
       
       if (!expiryDate) return null;
       
@@ -705,16 +676,9 @@ export default {
         features: ['50 messages/month', '5 images/month', 'Basic lessons']
       },
       {
-        id: 'start',
-        name: 'Start',
-        price: '49,000 UZS',
-        features: ['Unlimited messages', '20 images/month', 'All lessons', 'Priority support'],
-        recommended: false
-      },
-      {
         id: 'pro',
         name: 'Pro',
-        price: '99,000 UZS',
+        price: '250,000 UZS',
         features: ['Unlimited everything', 'AI tutor', 'Custom courses', 'Analytics'],
         recommended: true
       }
@@ -738,10 +702,9 @@ export default {
       };
 
       try {
-        const userId = store.getters['user/getUserId'] || 
+        const userId = auth.currentUser?.uid || 
                        localStorage.getItem('userId') || 
-                       localStorage.getItem('firebaseUserId') ||
-                       auth.currentUser?.uid;
+                       localStorage.getItem('firebaseUserId');
 
         if (!userId) {
           console.error('❌ [AcedSettings] No user ID available');
@@ -764,17 +727,11 @@ export default {
           // Store server data
           serverSubscriptionData.value = result.subscription;
           
-          // Update Vuex store
-          await store.dispatch('user/fetchStatusFromServer');
-          
-          // Update localStorage for consistency
-          localStorage.setItem('userStatus', result.subscription.plan);
-          localStorage.setItem('subscriptionPlan', result.subscription.plan);
-          localStorage.setItem('userPlan', result.subscription.plan);
-          if (result.subscription.expiryDate) {
-            localStorage.setItem('subscriptionExpiry', result.subscription.expiryDate);
-          }
-          localStorage.setItem('lastServerSync', Date.now().toString());
+          // Update Vuex store (just to keep it in sync, but we won't read from it)
+          store.commit('user/UPDATE_SUBSCRIPTION', {
+             ...result.subscription,
+             serverFetch: true
+          });
 
           syncStatus.value = {
             type: 'success',
@@ -837,25 +794,12 @@ export default {
         emailNotifications.value = localStorage.getItem('emailNotifications') !== 'false';
         soundEffects.value = localStorage.getItem('soundEffects') !== 'false';
 
-        if (store && store.dispatch) {
-          // ✅ CRITICAL: Fetch from server FIRST, not just load from cache
-          console.log('📥 [AcedSettings] Loading initial data from server...');
-          
-          const serverResult = await store.dispatch('user/fetchStatusFromServer');
-          console.log('📥 [AcedSettings] Server result:', serverResult);
-          
-          if (!serverResult?.success) {
-            // Fallback to cached data if server fetch fails
-            console.warn('⚠️ [AcedSettings] Server fetch failed, using cached data');
-            await store.dispatch('user/loadUserStatus');
-          }
-        }
+        // CRITICAL: Fetch subscription from server
+        await refreshFromServer();
+
       } catch (error) {
         console.error('❌ [AcedSettings] loadInitialData error:', error);
-        // Try fallback
-        try {
-          await store.dispatch('user/loadUserStatus');
-        } catch (e) {}
+        showNotification('Failed to load settings', 'error');
       } finally {
         loading.value = false;
       }
