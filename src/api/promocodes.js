@@ -22,10 +22,10 @@ const getAuthToken = async () => {
 const getUserId = () => {
   const currentUser = auth.currentUser;
   if (currentUser?.uid) return currentUser.uid;
-  
-  return localStorage.getItem('userId') || 
-         localStorage.getItem('firebaseUserId') || 
-         null;
+
+  return localStorage.getItem('userId') ||
+    localStorage.getItem('firebaseUserId') ||
+    null;
 };
 
 // =============================================
@@ -36,20 +36,20 @@ const getUserId = () => {
  * Validate a promocode
  */
 export const validatePromocode = async (code) => {
-  console.log('🔍 [promocodes.js] validatePromocode called:', code);
-  
+
+
   try {
     if (!code || code.trim().length < 3) {
       return { valid: false, error: 'Promocode is too short' };
     }
 
     const normalizedCode = code.trim().toUpperCase();
-    
+
     const { data } = await api.post('promocodes/validate', {
       code: normalizedCode
     });
 
-    console.log('📡 [promocodes.js] Validation response:', data);
+
 
     if (data.valid || data.success) {
       return {
@@ -67,8 +67,8 @@ export const validatePromocode = async (code) => {
       };
     }
   } catch (error) {
-    console.error('❌ [promocodes.js] validatePromocode error:', error);
-    
+
+
     if (error.response?.status === 404) {
       return { valid: false, error: 'Promocode not found' };
     }
@@ -78,10 +78,10 @@ export const validatePromocode = async (code) => {
     if (error.response?.status === 409) {
       return { valid: false, error: 'Promocode already used' };
     }
-    
-    return { 
-      valid: false, 
-      error: error.response?.data?.message || error.message || 'Failed to validate promocode' 
+
+    return {
+      valid: false,
+      error: error.response?.data?.message || error.message || 'Failed to validate promocode'
     };
   }
 };
@@ -90,8 +90,8 @@ export const validatePromocode = async (code) => {
  * Apply a promocode to user account
  */
 export const applyPromocode = async (code, userId = null) => {
-  console.log('🎟️ [promocodes.js] applyPromocode called:', code);
-  
+
+
   try {
     if (!code || code.trim().length < 3) {
       return { success: false, error: 'Promocode is too short' };
@@ -108,7 +108,7 @@ export const applyPromocode = async (code, userId = null) => {
     }
 
     const normalizedCode = code.trim().toUpperCase();
-    
+
     const headers = { Authorization: `Bearer ${token}` };
 
     const { data } = await api.post('promocodes/apply', {
@@ -116,7 +116,7 @@ export const applyPromocode = async (code, userId = null) => {
       userId: resolvedUserId
     }, { headers });
 
-    console.log('📡 [promocodes.js] Apply response:', data);
+
 
     if (data.success) {
       // Calculate expiry date
@@ -139,8 +139,8 @@ export const applyPromocode = async (code, userId = null) => {
       };
     }
   } catch (error) {
-    console.error('❌ [promocodes.js] applyPromocode error:', error);
-    
+
+
     if (error.response?.status === 404) {
       return { success: false, error: 'Promocode not found' };
     }
@@ -153,10 +153,10 @@ export const applyPromocode = async (code, userId = null) => {
     if (error.response?.status === 400) {
       return { success: false, error: error.response?.data?.message || 'Invalid promocode' };
     }
-    
-    return { 
-      success: false, 
-      error: error.response?.data?.message || error.message || 'Failed to apply promocode' 
+
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message || 'Failed to apply promocode'
     };
   }
 };
@@ -165,8 +165,8 @@ export const applyPromocode = async (code, userId = null) => {
  * Get user's applied promocodes
  */
 export const getUserPromocodes = async (userId = null) => {
-  console.log('📋 [promocodes.js] getUserPromocodes called');
-  
+
+
   try {
     const token = await getAuthToken();
     if (!token) {
@@ -187,11 +187,11 @@ export const getUserPromocodes = async (userId = null) => {
       promocodes: data.promocodes || data.data || []
     };
   } catch (error) {
-    console.error('❌ [promocodes.js] getUserPromocodes error:', error);
-    return { 
-      success: false, 
+
+    return {
+      success: false,
       error: error.message,
-      promocodes: [] 
+      promocodes: []
     };
   }
 };
@@ -200,8 +200,8 @@ export const getUserPromocodes = async (userId = null) => {
  * Check if user can use a specific promocode
  */
 export const checkPromocodeEligibility = async (code, userId = null) => {
-  console.log('✅ [promocodes.js] checkPromocodeEligibility called:', code);
-  
+
+
   try {
     const token = await getAuthToken();
     if (!token) {
@@ -227,10 +227,10 @@ export const checkPromocodeEligibility = async (code, userId = null) => {
       plan: data.plan
     };
   } catch (error) {
-    console.error('❌ [promocodes.js] checkPromocodeEligibility error:', error);
-    return { 
-      eligible: false, 
-      error: error.response?.data?.message || error.message 
+
+    return {
+      eligible: false,
+      error: error.response?.data?.message || error.message
     };
   }
 };

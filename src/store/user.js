@@ -215,7 +215,7 @@ const mutations = {
         localStorage.setItem('userId', user.firebaseId || user.uid || user._id);
         localStorage.setItem('firebaseUserId', user.firebaseId || user.uid);
       } catch (e) {
-        console.warn('[store/user] localStorage error:', e);
+
       }
     }
 
@@ -263,13 +263,13 @@ const mutations = {
     const validStatuses = ['free', 'start', 'pro', 'premium'];
     const newStatus = validStatuses.includes(status) ? status : 'free';
 
-    console.log(`📝 [store/user] SET_USER_STATUS: ${oldStatus} -> ${newStatus}`);
+
 
     state.userStatus = newStatus;
 
     // Defensive check: Ensure subscription is an object
     if (!state.subscription || typeof state.subscription !== 'object') {
-      console.warn('⚠️ [store/user] state.subscription was invalid, resetting to object');
+
       state.subscription = {
         plan: 'free',
         status: 'inactive',
@@ -299,7 +299,7 @@ const mutations = {
       localStorage.setItem('subscriptionPlan', newStatus);
       localStorage.setItem('plan', newStatus);
     } catch (e) {
-      console.warn('[store/user] localStorage error:', e);
+
     }
 
     // Trigger events
@@ -314,7 +314,7 @@ const mutations = {
 
     // Defensive check for system object
     if (!state.system) {
-      console.warn('⚠️ [store/user] state.system missing in UPDATE_SUBSCRIPTION, re-initializing');
+
       state.system = {
         loading: {},
         errors: { errorCount: 0, lastError: null },
@@ -345,16 +345,16 @@ const mutations = {
         localStorage.setItem('subscriptionExpiry', subscriptionData.expiryDate);
       }
     } catch (e) {
-      console.warn('[store/user] localStorage error:', e);
+
     }
 
-    console.log('✅ [store/user] Subscription updated:', state.subscription);
+
   },
 
   SET_LOADING(state, { type, loading }) {
     // Defensive check for system object
     if (!state.system) {
-      console.warn('⚠️ [store/user] state.system missing in SET_LOADING, re-initializing');
+
       state.system = {
         loading: {},
         errors: { errorCount: 0, lastError: null },
@@ -847,7 +847,7 @@ const actions = {
    * Save user to backend
    */
   async saveUser({ commit, dispatch }, { userData, token }) {
-    console.log('💾 [store/user] saveUser called');
+
 
     try {
       commit('SET_LOADING', { type: 'saving', loading: true });
@@ -885,7 +885,7 @@ const actions = {
         localStorage.setItem('userId', result.user.firebaseId);
         localStorage.setItem('firebaseUserId', result.user.firebaseId);
 
-        console.log('✅ [store/user] User saved successfully');
+
 
         return { success: true, user: result.user };
       } else {
@@ -893,7 +893,7 @@ const actions = {
       }
 
     } catch (error) {
-      console.error('❌ [store/user] saveUser error:', error);
+
       commit('SET_ERROR', { message: error.message, context: 'saveUser' });
       return { success: false, error: error.message };
     } finally {
@@ -913,7 +913,7 @@ const actions = {
    * Logout
    */
   async logout({ commit }) {
-    console.log('🚪 [store/user] logout called');
+
     commit('CLEAR_USER');
     return { success: true };
   }

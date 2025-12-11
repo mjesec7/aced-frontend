@@ -361,6 +361,19 @@
                   </div>
                 </div>
 
+                <!-- Duration Selector -->
+                <div class="duration-selector" v-if="currentPlan === 'free'">
+                  <div 
+                    v-for="option in durationOptions" 
+                    :key="option.months"
+                    :class="['duration-option', { active: selectedDuration === option.months }]"
+                    @click="selectDuration(option.months)"
+                  >
+                    <span class="duration-label">{{ option.label }}</span>
+                    <span v-if="option.discount > 0" class="duration-discount">-{{ option.discount }}%</span>
+                  </div>
+                </div>
+
                 <!-- Plan Options -->
                 <div class="plan-options">
                   <div 
@@ -376,7 +389,7 @@
                     </div>
                     <div class="plan-price">
                       <span class="price-amount">{{ plan.price }}</span>
-                      <span class="price-period">/month</span>
+                      <span class="price-period" v-if="plan.id !== 'free'">/{{ selectedDuration }} mo</span>
                     </div>
                     <ul class="plan-features">
                       <li v-for="feature in plan.features" :key="feature">
@@ -391,14 +404,14 @@
 
                 <!-- Upgrade Button -->
                 <button 
-                  v-if="currentPlan === 'free'" 
                   @click="goToUpgrade" 
                   class="btn btn-primary btn-block btn-upgrade"
+                  :disabled="currentPlan !== 'free'"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
                   </svg>
-                  Upgrade Now
+                  {{ currentPlan === 'free' ? 'Upgrade Now' : 'Plan Active' }}
                 </button>
 
                 <!-- Promocode Section -->
@@ -410,12 +423,12 @@
                       v-model="promocode" 
                       class="form-input"
                       placeholder="Enter promocode"
-                      :disabled="applyingPromo"
+                      :disabled="applyingPromo || currentPlan !== 'free'"
                     />
                     <button 
                       @click="applyPromocode" 
                       class="btn btn-secondary"
-                      :disabled="!promocode || applyingPromo"
+                      :disabled="!promocode || applyingPromo || currentPlan !== 'free'"
                     >
                       {{ applyingPromo ? 'Applying...' : 'Apply' }}
                     </button>
@@ -547,10 +560,19 @@ export default {
     // Subscription - CRITICAL: These are populated from server
     const serverSubscriptionData = ref(null);
     const promocode = ref('');
-    const applyingPromo = ref(false);
-    const promoError = ref('');
-    const promoSuccess = ref('');
+    // Duration selection
+    const selectedDuration = ref(3); // Default to 3 months
     
+    const durationOptions = [
+      { months: 1, label: '1 Month', discount: 0 },
+      { months: 3, label: '3 Months', discount: 10 },
+      { months: 6, label: '6 Months', discount: 20 }
+    ];
+
+    const selectDuration = (months) => {
+      selectedDuration.value = months;
+    };
+
     // Modals
     const showDeleteModal = ref(false);
 
@@ -564,7 +586,7 @@ export default {
     const currentPlan = computed(() => {
       // Priority 1: Server-fetched data (most reliable)
       if (serverSubscriptionData.value?.plan) {
-        console.log('📊 [AcedSettings] currentPlan from server:', serverSubscriptionData.value.plan);
+  
         return serverSubscriptionData.value.plan;
       }
       
@@ -574,39 +596,25 @@ export default {
     });
 
     const currentPlanLabel = computed(() => {
-      const labels = {
-        free: 'Free',
-        start: 'Start',
-        pro: 'Pro',
-        premium: 'Premium'
-      };
-      return labels[currentPlan.value] || 'Free';
+      return currentPlan.value === 'pro' || currentPlan.value === 'premium' ? 'Pro Plan' : 'Free Plan';
     });
 
     const subscriptionSource = computed(() => {
-      return serverSubscriptionData.value?.source || null;
+      return serverSubscriptionData.value?.source || '';
     });
 
     const subscriptionExpiryInfo = computed(() => {
-      const expiryDate = serverSubscriptionData.value?.expiryDate;
+      if (currentPlan.value === 'free' || !serverSubscriptionData.value?.expiryDate) return null;
       
-      if (!expiryDate) return null;
-      
-      const expiry = new Date(expiryDate);
+      const expiry = new Date(serverSubscriptionData.value.expiryDate);
       const now = new Date();
-      const diffTime = expiry - now;
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const daysRemaining = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
       
       return {
         date: expiry,
-        formattedDate: expiry.toLocaleDateString('en-US', { 
-          year: 'numeric', 
-          month: 'long', 
-          day: 'numeric' 
-        }),
-        daysRemaining: Math.max(0, diffDays),
-        isExpiring: diffDays <= 7 && diffDays > 0,
-        isExpired: diffDays <= 0
+        formattedDate: expiry.toLocaleDateString(),
+        daysRemaining: Math.max(0, daysRemaining),
+        isExpiring: daysRemaining <= 3
       };
     });
 
@@ -693,7 +701,7 @@ export default {
      * This is called on mount and can be called manually to refresh
      */
     const refreshFromServer = async () => {
-      console.log('🔄 [AcedSettings] refreshFromServer called');
+
       
       syncStatus.value = {
         type: 'loading',
@@ -716,12 +724,12 @@ export default {
           return;
         }
 
-        console.log('📡 [AcedSettings] Fetching subscription for user:', userId);
+  
 
         // Fetch directly from server
         const result = await fetchSubscriptionFromServer(userId);
         
-        console.log('📡 [AcedSettings] Server result:', result);
+
 
         if (result.success && result.subscription) {
           // Store server data
@@ -754,7 +762,7 @@ export default {
           };
         }
       } catch (error) {
-        console.error('❌ [AcedSettings] refreshFromServer error:', error);
+  
         syncStatus.value = {
           type: 'error',
           icon: '❌',
@@ -767,7 +775,7 @@ export default {
      * Load initial data including user info and subscription
      */
     const loadInitialData = async () => {
-      console.log('📥 [AcedSettings] loadInitialData called');
+
       loading.value = true;
 
       try {
@@ -1016,7 +1024,7 @@ export default {
     // =============================================
 
     onMounted(() => {
-      console.log('🚀 [AcedSettings] Component mounted');
+
       loadInitialData();
 
       // Listen for subscription updates
@@ -2043,6 +2051,59 @@ export default {
   gap: 12px;
   padding: 16px 24px;
   background: #f5f7fa;
+}
+
+/* =============================================
+   DURATION SELECTOR
+   ============================================= */
+
+.duration-selector {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding: 4px;
+  background: #f5f7fa;
+  border-radius: 12px;
+}
+
+.duration-option {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 8px;
+  background: transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 2px solid transparent;
+}
+
+.duration-option:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.duration-option.active {
+  background: white;
+  border-color: #667eea;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+}
+
+.duration-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.duration-discount {
+  font-size: 11px;
+  color: #2e7d32;
+  font-weight: 700;
+  margin-top: 2px;
+  background: #e8f5e9;
+  padding: 2px 6px;
+  border-radius: 10px;
 }
 
 /* =============================================
