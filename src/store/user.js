@@ -266,6 +266,23 @@ const mutations = {
     console.log(`📝 [store/user] SET_USER_STATUS: ${oldStatus} -> ${newStatus}`);
 
     state.userStatus = newStatus;
+
+    // Defensive check: Ensure subscription is an object
+    if (!state.subscription || typeof state.subscription !== 'object') {
+      console.warn('⚠️ [store/user] state.subscription was invalid, resetting to object');
+      state.subscription = {
+        plan: 'free',
+        status: 'inactive',
+        source: null,
+        startDate: null,
+        expiryDate: null,
+        isAutoRenew: false,
+        details: {},
+        lastSync: null,
+        serverFetch: false
+      };
+    }
+
     state.subscription.plan = newStatus;
     state.subscription.status = newStatus !== 'free' ? 'active' : 'inactive';
     state.subscription.lastSync = new Date().toISOString();
