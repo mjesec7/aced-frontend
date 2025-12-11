@@ -36,8 +36,6 @@ const getUserId = () => {
  * Validate a promocode
  */
 export const validatePromocode = async (code) => {
-
-
   try {
     if (!code || code.trim().length < 3) {
       return { valid: false, error: 'Promocode is too short' };
@@ -45,18 +43,16 @@ export const validatePromocode = async (code) => {
 
     const normalizedCode = code.trim().toUpperCase();
 
-    const { data } = await api.post('promocodes/validate', {
-      code: normalizedCode
-    });
-
-
+    // Use GET request - backend expects /validate/:code
+    const { data } = await api.get(`promocodes/validate/${normalizedCode}`);
 
     if (data.valid || data.success) {
       return {
         valid: true,
         code: normalizedCode,
-        plan: data.plan || 'pro',
-        duration: data.duration || 30,
+        data: data.data || {},
+        plan: data.data?.grantsPlan || data.plan || 'pro',
+        duration: data.data?.subscriptionDays || data.duration || 30,
         discount: data.discount || 100,
         message: data.message || 'Promocode is valid'
       };
@@ -67,8 +63,6 @@ export const validatePromocode = async (code) => {
       };
     }
   } catch (error) {
-
-
     if (error.response?.status === 404) {
       return { valid: false, error: 'Promocode not found' };
     }
