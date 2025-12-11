@@ -312,21 +312,32 @@ const mutations = {
 
     const timestamp = Date.now();
 
+    // Defensive check for system object
+    if (!state.system) {
+      console.warn('⚠️ [store/user] state.system missing in UPDATE_SUBSCRIPTION, re-initializing');
+      state.system = {
+        loading: {},
+        errors: { errorCount: 0, lastError: null },
+        initialized: false,
+        lastUpdate: Date.now(),
+        forceUpdateCounter: 0
+      };
+    }
+
     state.subscription = {
       ...state.subscription,
       ...subscriptionData,
       lastSync: new Date().toISOString()
     };
 
-    // Auto-update status if plan changed
-    if (subscriptionData.plan && subscriptionData.plan !== state.userStatus) {
+    // Also update userStatus if plan is present
+    if (subscriptionData.plan) {
       state.userStatus = subscriptionData.plan;
       updateFeatureMatrix(state);
     }
 
     state.system.lastUpdate = timestamp;
-    state.system.forceUpdateCounter++;
-
+    triggerGlobalEvent('subscriptionUpdated', { ...subscriptionData, timestamp });
     // Persist to localStorage
     try {
       localStorage.setItem('subscriptionData', JSON.stringify(state.subscription));
@@ -338,7 +349,6 @@ const mutations = {
     }
 
     console.log('✅ [store/user] Subscription updated:', state.subscription);
-    triggerGlobalEvent('subscriptionUpdated', { subscription: state.subscription, timestamp });
   },
 
   SET_LOADING(state, { type, loading }) {
