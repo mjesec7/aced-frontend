@@ -325,9 +325,24 @@ const mutations = {
   },
 
   SET_LOADING(state, { type, loading }) {
-    if (state.system.loading) {
-      state.system.loading[type] = Boolean(loading);
+    // Defensive check for system object
+    if (!state.system) {
+      console.warn('⚠️ [store/user] state.system missing in SET_LOADING, re-initializing');
+      state.system = {
+        loading: {},
+        errors: { errorCount: 0, lastError: null },
+        initialized: false,
+        lastUpdate: Date.now(),
+        forceUpdateCounter: 0
+      };
     }
+
+    // Defensive check for loading object
+    if (!state.system.loading) {
+      state.system.loading = {};
+    }
+
+    state.system.loading[type] = Boolean(loading);
     state.system.lastUpdate = Date.now();
   },
 
