@@ -48,35 +48,35 @@
         </div>
 
         <!-- 3 Months - Popular -->
-        <div class="bg-violet-600 rounded-2xl p-8 relative md:-translate-y-4">
+        <div class="bg-white rounded-2xl p-8 relative md:-translate-y-4 ring-2 ring-violet-500 shadow-xl shadow-violet-500/10">
           <div class="absolute -top-3 left-1/2 -translate-x-1/2">
-            <span class="px-4 py-1 bg-amber-400 text-gray-900 text-xs font-bold rounded-full">POPULAR</span>
+            <span class="px-4 py-1.5 bg-violet-600 text-white text-xs font-bold rounded-full shadow-lg">POPULAR</span>
           </div>
 
           <div class="mb-6 pt-2">
-            <h3 class="text-lg font-bold text-white mb-1">Quarterly</h3>
-            <p class="text-violet-200 text-sm">Best value</p>
+            <h3 class="text-lg font-bold text-gray-900 mb-1">Quarterly</h3>
+            <p class="text-gray-500 text-sm">Best value</p>
           </div>
 
           <div class="mb-2">
-            <span class="text-4xl font-bold text-white">675K</span>
-            <span class="text-violet-200 ml-1">UZS</span>
+            <span class="text-4xl font-bold text-gray-900">675K</span>
+            <span class="text-gray-500 ml-1">UZS</span>
           </div>
           <div class="mb-6">
-            <span class="text-sm text-violet-200">for 3 months</span>
-            <span class="ml-2 px-2 py-0.5 bg-white/20 rounded text-xs text-white font-medium">Save 10%</span>
+            <span class="text-sm text-gray-500">for 3 months</span>
+            <span class="ml-2 px-2 py-0.5 bg-amber-100 rounded text-xs text-amber-700 font-medium">Save 10%</span>
           </div>
 
           <button
             @click="handleSubscribe(3)"
-            class="w-full py-3 px-6 bg-white text-violet-600 font-semibold rounded-xl hover:bg-violet-50 transition-colors mb-6"
+            class="w-full py-3 px-6 bg-violet-600 text-white font-semibold rounded-xl hover:bg-violet-700 transition-colors mb-6 shadow-lg shadow-violet-600/20"
           >
             Start Learning
           </button>
 
           <ul class="space-y-3">
-            <li v-for="(feature, i) in features" :key="i" class="flex items-center gap-3 text-sm text-white/90">
-              <svg class="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+            <li v-for="(feature, i) in features" :key="i" class="flex items-center gap-3 text-sm text-gray-600">
+              <svg class="w-5 h-5 text-violet-500" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
               </svg>
               {{ feature }}
