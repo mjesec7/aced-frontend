@@ -1,42 +1,36 @@
 <template>
-  <div class="min-h-screen bg-white relative overflow-hidden">
-    <!-- Background decorations -->
-    <div class="absolute inset-0 overflow-hidden">
-      <div class="absolute -top-40 -right-40 w-[600px] h-[600px] bg-violet-100 rounded-full blur-3xl opacity-50"></div>
-      <div class="absolute -bottom-40 -left-40 w-[500px] h-[500px] bg-amber-100 rounded-full blur-3xl opacity-50"></div>
-    </div>
-
+  <div class="min-h-screen bg-white relative">
     <!-- Navigation -->
-    <nav class="relative z-10 flex items-center justify-between px-6 lg:px-16 py-5 max-w-7xl mx-auto">
+    <nav class="flex items-center justify-between px-6 lg:px-16 py-5 max-w-7xl mx-auto">
       <img src="@/assets/logo.png" alt="ACED" class="h-10 lg:h-12" />
       <UserSection />
     </nav>
 
     <!-- Hero Content -->
-    <div class="relative z-10 max-w-7xl mx-auto px-6 lg:px-16">
+    <div class="max-w-7xl mx-auto px-6 lg:px-16">
       <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center min-h-[calc(100vh-100px)] py-12">
 
         <!-- Left side - Text content -->
         <div>
           <!-- Badge -->
-          <div class="inline-flex items-center gap-2 px-4 py-2 bg-violet-50 rounded-full border border-violet-100 mb-8">
+          <div class="inline-flex items-center gap-2 px-4 py-2 bg-violet-50 rounded-full border border-violet-100 mb-6">
             <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
             <span class="text-sm font-medium text-violet-700">2,800+ students already learning</span>
           </div>
 
           <!-- Main heading -->
-          <h1 class="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 leading-[1.1] tracking-tight mb-6">
+          <h1 class="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 leading-[1.1] tracking-tight mb-5">
             The smarter way to
             <span class="text-violet-600">learn anything</span>
           </h1>
 
           <!-- Subtitle -->
-          <p class="text-xl lg:text-2xl text-gray-500 leading-relaxed mb-10 max-w-lg">
-            Interactive lessons with AI-powered help. Learn at your own pace and actually enjoy the process.
+          <p class="text-xl lg:text-2xl text-gray-500 leading-relaxed mb-8 max-w-lg">
+            Interactive lessons with AI-powered help. Learn at your own pace.
           </p>
 
           <!-- CTA Buttons -->
-          <div class="flex flex-col sm:flex-row gap-4 mb-12">
+          <div class="flex flex-col sm:flex-row gap-4 mb-10">
             <button
               @click="handleStartFree"
               class="px-10 py-4 bg-violet-600 text-white text-lg font-semibold rounded-xl hover:bg-violet-700 transition-colors shadow-lg shadow-violet-600/25"
@@ -71,8 +65,11 @@
         <!-- Right side - Visual/Cards -->
         <div class="relative hidden lg:block">
           <!-- Main card -->
-          <div class="bg-white rounded-3xl shadow-2xl shadow-gray-200/50 p-8 border border-gray-100">
-            <div class="space-y-6">
+          <div class="bg-white rounded-3xl shadow-2xl shadow-gray-200/50 p-8 border border-gray-100 relative">
+            <!-- Decorative element inside card -->
+            <div class="absolute top-4 right-4 w-16 h-16 bg-amber-400 rounded-2xl rotate-12 opacity-20"></div>
+
+            <div class="space-y-5 relative">
               <!-- Course preview card 1 -->
               <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl">
                 <div class="w-14 h-14 bg-violet-100 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -117,7 +114,7 @@
             </div>
 
             <!-- Bottom stats -->
-            <div class="mt-8 pt-6 border-t border-gray-100 flex items-center justify-between">
+            <div class="mt-6 pt-6 border-t border-gray-100 flex items-center justify-between">
               <div class="flex items-center gap-2">
                 <div class="flex -space-x-2">
                   <div class="w-8 h-8 bg-violet-200 rounded-full border-2 border-white"></div>
@@ -134,10 +131,6 @@
               </div>
             </div>
           </div>
-
-          <!-- Floating elements -->
-          <div class="absolute -top-4 -right-4 w-20 h-20 bg-amber-400 rounded-2xl rotate-12 opacity-80"></div>
-          <div class="absolute -bottom-6 -left-6 w-16 h-16 bg-violet-500 rounded-xl -rotate-12 opacity-80"></div>
         </div>
       </div>
     </div>
