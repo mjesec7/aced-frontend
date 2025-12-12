@@ -3,11 +3,11 @@
     <div class="max-w-7xl mx-auto px-6 lg:px-16">
       <!-- Section header -->
       <div class="text-center mb-16">
-        <div class="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full border border-gray-200 mb-6">
+        <div class="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full border border-gray-200 mb-4">
           <span class="w-2 h-2 bg-violet-500 rounded-full"></span>
           <span class="text-sm font-medium text-gray-600">Why Choose Us</span>
         </div>
-        <h2 class="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
+        <h2 class="text-4xl lg:text-5xl font-bold text-gray-900 mb-3">
           Learning made <span class="text-violet-600">simple</span>
         </h2>
         <p class="text-lg text-gray-500 max-w-2xl mx-auto">
