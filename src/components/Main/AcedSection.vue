@@ -2,15 +2,15 @@
   <section class="py-24 bg-white" id="aced">
     <div class="max-w-7xl mx-auto px-6 lg:px-16">
       <!-- Header -->
-      <div class="mb-12">
-        <div class="inline-flex items-center gap-2 px-4 py-2 bg-violet-50 rounded-full border border-violet-100 mb-6">
+      <div class="text-center mb-16">
+        <div class="inline-flex items-center gap-2 px-4 py-2 bg-violet-50 rounded-full border border-violet-100 mb-5">
           <span class="w-2 h-2 bg-violet-500 rounded-full"></span>
           <span class="text-sm font-medium text-violet-700">Explore Courses</span>
         </div>
-        <h2 class="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
+        <h2 class="text-5xl lg:text-6xl font-bold text-gray-900 mb-4">
           Start <span class="text-violet-600">learning</span> today
         </h2>
-        <p class="text-lg text-gray-500 max-w-2xl">
+        <p class="text-xl text-gray-500 max-w-2xl mx-auto">
           Choose a course and begin your learning journey
         </p>
       </div>
