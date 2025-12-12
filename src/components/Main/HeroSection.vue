@@ -1,14 +1,17 @@
 <template>
-  <div class="min-h-screen bg-white relative">
+  <div class="bg-white relative overflow-hidden">
+    <!-- Centered decorative element - contained within hero -->
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-amber-400/10 rounded-full blur-3xl pointer-events-none"></div>
+
     <!-- Navigation -->
-    <nav class="flex items-center justify-between px-6 lg:px-16 py-5 max-w-7xl mx-auto">
+    <nav class="flex items-center justify-between px-6 lg:px-16 py-5 max-w-7xl mx-auto relative z-10">
       <img src="@/assets/logo.png" alt="ACED" class="h-10 lg:h-12" />
       <UserSection />
     </nav>
 
     <!-- Hero Content -->
-    <div class="max-w-7xl mx-auto px-6 lg:px-16">
-      <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center min-h-[calc(100vh-100px)] py-12">
+    <div class="max-w-7xl mx-auto px-6 lg:px-16 pb-20 relative z-10">
+      <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center py-12 lg:py-20">
 
         <!-- Left side - Text content -->
         <div>

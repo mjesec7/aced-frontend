@@ -55,14 +55,11 @@ import ChatBot from '@/components/Main/ChatBot.vue';
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  
+  background-color: white;
 }
 
 section {
-
-
   width: 100%;
-  display: flex;
-  justify-content: center;
+  background-color: white;
 }
 </style>

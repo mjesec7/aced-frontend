@@ -1,5 +1,5 @@
 <template>
-  <footer class="bg-white border-t border-gray-100 pt-16 pb-8" id="contacts">
+  <footer class="bg-white py-20 lg:py-24" id="contacts">
     <div class="max-w-7xl mx-auto px-6 lg:px-16">
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
 
