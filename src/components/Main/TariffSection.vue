@@ -2,7 +2,7 @@
   <section class="py-24 bg-gray-50" id="tariffs">
     <div class="max-w-7xl mx-auto px-6 lg:px-16">
       <!-- Header -->
-      <div class="text-center max-w-2xl mx-auto mb-20">
+      <div class="text-center mb-20">
         <div class="inline-flex items-center gap-2 px-4 py-2 bg-violet-50 rounded-full border border-violet-100 mb-5">
           <span class="w-2 h-2 bg-violet-500 rounded-full"></span>
           <span class="text-sm font-medium text-violet-700">Pricing</span>
@@ -16,7 +16,7 @@
       </div>
 
       <!-- Pricing Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
 
         <!-- 1 Month -->
         <div class="bg-white rounded-2xl border border-gray-100 p-8 hover:border-violet-200 transition-colors">
