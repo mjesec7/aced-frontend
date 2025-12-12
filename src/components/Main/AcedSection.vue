@@ -1,5 +1,5 @@
 <template>
-  <section class="py-24 bg-white" id="aced">
+  <section class="py-20 lg:py-24 bg-white" id="aced">
     <div class="max-w-7xl mx-auto px-6 lg:px-16">
       <!-- Header -->
       <div class="text-center mb-16">
