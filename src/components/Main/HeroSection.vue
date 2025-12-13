@@ -14,27 +14,33 @@
       <div class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center py-8 lg:py-12">
 
         <!-- Left side - Text content -->
-        <div>
+        <div class="relative">
+          <!-- Decorative accent -->
+          <div class="absolute -left-4 top-0 w-1 h-32 bg-gradient-to-b from-violet-500 to-amber-400 rounded-full hidden sm:block"></div>
+
           <!-- Badge -->
-          <div class="inline-flex items-center gap-2 px-4 py-2 bg-violet-50 rounded-full border border-violet-100 mb-10">
+          <div class="inline-flex items-center gap-2 px-4 py-2 bg-violet-50 rounded-full border border-violet-100 mb-8">
             <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
             <span class="text-sm font-medium text-violet-700">2,800+ students already learning</span>
           </div>
 
           <!-- Main heading + Subtitle -->
-          <div class="flex flex-col gap-8 mb-12">
-            <h1 class="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 leading-[1.1] tracking-tight">
+          <div class="flex flex-col gap-6 mb-10">
+            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-[1.15] tracking-tight">
               The smarter way to
-              <span class="text-violet-600">learn anything</span>
+              <span class="relative inline-block">
+                <span class="relative z-10 text-violet-600">learn anything</span>
+                <span class="absolute bottom-2 left-0 w-full h-3 bg-violet-200/60 -z-0 rounded"></span>
+              </span>
             </h1>
 
-            <p class="text-xl lg:text-2xl text-gray-500 leading-relaxed max-w-lg">
+            <p class="text-lg lg:text-xl text-gray-500 leading-relaxed max-w-md">
               Interactive lessons with AI-powered help. Learn at your own pace.
             </p>
           </div>
 
           <!-- CTA Buttons -->
-          <div class="flex flex-col sm:flex-row gap-4 mb-12">
+          <div class="flex flex-col sm:flex-row gap-3 mb-10">
             <button
               @click="handleStartFree"
               class="px-8 py-3 bg-violet-600 text-white text-base font-semibold rounded-xl hover:bg-violet-700 transition-colors shadow-lg shadow-violet-600/25"
@@ -50,18 +56,39 @@
           </div>
 
           <!-- Stats -->
-          <div class="flex flex-wrap gap-8 lg:gap-12">
-            <div>
-              <div class="text-3xl lg:text-4xl font-bold text-gray-900">100+</div>
-              <div class="text-gray-500">Courses</div>
+          <div class="flex flex-wrap gap-6 sm:gap-8 pt-6 border-t border-gray-100">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center">
+                <svg class="w-5 h-5 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+              </div>
+              <div>
+                <div class="text-xl font-bold text-gray-900">100+</div>
+                <div class="text-sm text-gray-500">Courses</div>
+              </div>
             </div>
-            <div>
-              <div class="text-3xl lg:text-4xl font-bold text-gray-900">24/7</div>
-              <div class="text-gray-500">AI Support</div>
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
+                <svg class="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <div>
+                <div class="text-xl font-bold text-gray-900">24/7</div>
+                <div class="text-sm text-gray-500">AI Support</div>
+              </div>
             </div>
-            <div>
-              <div class="text-3xl lg:text-4xl font-bold text-gray-900">95%</div>
-              <div class="text-gray-500">Completion</div>
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
+                <svg class="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <div class="text-xl font-bold text-gray-900">95%</div>
+                <div class="text-sm text-gray-500">Completion</div>
+              </div>
             </div>
           </div>
         </div>
