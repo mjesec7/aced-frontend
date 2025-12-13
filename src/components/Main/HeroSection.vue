@@ -16,24 +16,24 @@
         <!-- Left side - Text content -->
         <div>
           <!-- Badge -->
-          <div class="inline-flex items-center gap-2 px-4 py-2 bg-violet-50 rounded-full border border-violet-100 mb-4">
+          <div class="inline-flex items-center gap-2 px-4 py-2 bg-violet-50 rounded-full border border-violet-100 mb-6">
             <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
             <span class="text-sm font-medium text-violet-700">2,800+ students already learning</span>
           </div>
 
           <!-- Main heading -->
-          <h1 class="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 leading-[1.1] tracking-tight mb-5">
+          <h1 class="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 leading-[1.1] tracking-tight mb-6">
             The smarter way to
             <span class="text-violet-600">learn anything</span>
           </h1>
 
           <!-- Subtitle -->
-          <p class="text-xl lg:text-2xl text-gray-500 leading-relaxed mb-6 max-w-lg">
+          <p class="text-xl lg:text-2xl text-gray-500 leading-relaxed mb-8 max-w-lg">
             Interactive lessons with AI-powered help. Learn at your own pace.
           </p>
 
           <!-- CTA Buttons -->
-          <div class="flex flex-col sm:flex-row gap-4 mb-8">
+          <div class="flex flex-col sm:flex-row gap-4 mb-10">
             <button
               @click="handleStartFree"
               class="px-10 py-4 bg-violet-600 text-white text-lg font-semibold rounded-xl hover:bg-violet-700 transition-colors shadow-lg shadow-violet-600/25"
