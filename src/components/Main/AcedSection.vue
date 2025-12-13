@@ -161,8 +161,7 @@ export default {
     getTypeClasses(course) {
       const type = this.getTopicType(course);
       if (type === 'free') return 'bg-green-100 text-green-700';
-      if (type === 'premium') return 'bg-amber-100 text-amber-700';
-      return 'bg-violet-100 text-violet-700';
+      return 'bg-violet-100 text-violet-700'; // Pro
     },
 
     async initializeCourses() {
@@ -316,13 +315,12 @@ export default {
 
     getTopicType(course) {
       const type = String(course?.type || 'free').toLowerCase();
-      if (['premium', 'paid', 'start'].includes(type)) return 'premium';
-      if (['pro', 'professional'].includes(type)) return 'pro';
+      if (['premium', 'paid', 'start', 'pro', 'professional'].includes(type)) return 'pro';
       return 'free';
     },
 
     getTopicTypeLabel(course) {
-      const labels = { free: 'Free', premium: 'Premium', pro: 'Pro' };
+      const labels = { free: 'Free', pro: 'Pro' };
       return labels[this.getTopicType(course)] || 'Free';
     }
   }
