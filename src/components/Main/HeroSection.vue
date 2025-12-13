@@ -22,13 +22,13 @@
           </div>
 
           <!-- Main heading -->
-          <h1 class="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 leading-[1.1] tracking-tight mb-10">
+          <h1 class="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 leading-[1.1] tracking-tight">
             The smarter way to
             <span class="text-violet-600">learn anything</span>
           </h1>
 
           <!-- Subtitle -->
-          <p class="text-xl lg:text-2xl text-gray-500 leading-relaxed mb-12 max-w-lg">
+          <p class="text-xl lg:text-2xl text-gray-500 leading-relaxed mt-8 mb-12 max-w-lg">
             Interactive lessons with AI-powered help. Learn at your own pace.
           </p>
 
