@@ -21,16 +21,17 @@
             <span class="text-sm font-medium text-violet-700">2,800+ students already learning</span>
           </div>
 
-          <!-- Main heading -->
-          <h1 class="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 leading-[1.1] tracking-tight">
-            The smarter way to
-            <span class="text-violet-600">learn anything</span>
-          </h1>
+          <!-- Main heading + Subtitle -->
+          <div class="flex flex-col gap-8 mb-12">
+            <h1 class="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 leading-[1.1] tracking-tight">
+              The smarter way to
+              <span class="text-violet-600">learn anything</span>
+            </h1>
 
-          <!-- Subtitle -->
-          <p class="text-xl lg:text-2xl text-gray-500 leading-relaxed mt-8 mb-12 max-w-lg">
-            Interactive lessons with AI-powered help. Learn at your own pace.
-          </p>
+            <p class="text-xl lg:text-2xl text-gray-500 leading-relaxed max-w-lg">
+              Interactive lessons with AI-powered help. Learn at your own pace.
+            </p>
+          </div>
 
           <!-- CTA Buttons -->
           <div class="flex flex-col sm:flex-row gap-4 mb-12">
