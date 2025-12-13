@@ -16,19 +16,19 @@
         <!-- Left side - Text content -->
         <div>
           <!-- Badge -->
-          <div class="inline-flex items-center gap-2 px-4 py-2 bg-violet-50 rounded-full border border-violet-100 mb-8">
+          <div class="inline-flex items-center gap-2 px-4 py-2 bg-violet-50 rounded-full border border-violet-100 mb-10">
             <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
             <span class="text-sm font-medium text-violet-700">2,800+ students already learning</span>
           </div>
 
           <!-- Main heading -->
-          <h1 class="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 leading-[1.1] tracking-tight mb-8">
+          <h1 class="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 leading-[1.1] tracking-tight mb-10">
             The smarter way to
             <span class="text-violet-600">learn anything</span>
           </h1>
 
           <!-- Subtitle -->
-          <p class="text-xl lg:text-2xl text-gray-500 leading-relaxed mb-10 max-w-lg">
+          <p class="text-xl lg:text-2xl text-gray-500 leading-relaxed mb-12 max-w-lg">
             Interactive lessons with AI-powered help. Learn at your own pace.
           </p>
 
@@ -36,13 +36,13 @@
           <div class="flex flex-col sm:flex-row gap-4 mb-12">
             <button
               @click="handleStartFree"
-              class="px-10 py-4 bg-violet-600 text-white text-lg font-semibold rounded-xl hover:bg-violet-700 transition-colors shadow-lg shadow-violet-600/25"
+              class="px-8 py-3 bg-violet-600 text-white text-base font-semibold rounded-xl hover:bg-violet-700 transition-colors shadow-lg shadow-violet-600/25"
             >
               Start Free - No Registration
             </button>
             <button
               @click="handleRegister"
-              class="px-10 py-4 bg-white text-gray-700 text-lg font-semibold rounded-xl border-2 border-gray-200 hover:border-violet-400 hover:text-violet-600 transition-all"
+              class="px-8 py-3 bg-white text-gray-700 text-base font-semibold rounded-xl border-2 border-gray-200 hover:border-violet-400 hover:text-violet-600 transition-all"
             >
               Register & Save Progress
             </button>
