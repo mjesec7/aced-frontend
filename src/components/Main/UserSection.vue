@@ -727,12 +727,11 @@ export default {
   border: 1px solid rgba(139, 92, 246, 0.3);
 }
 
-.badge-premium,
 .badge-pro {
-  background: linear-gradient(135deg, #fbbf24, #f59e0b);
-  color: #78350f;
-  border: 1px solid rgba(245, 158, 11, 0.3);
-  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.2);
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  color: white;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
 }
 
 .dropdown-arrow {

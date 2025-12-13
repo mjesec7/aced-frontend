@@ -4,19 +4,19 @@
     <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-amber-400/10 rounded-full blur-3xl pointer-events-none"></div>
 
     <!-- Navigation -->
-    <nav class="flex items-center justify-between px-6 lg:px-16 py-5 max-w-7xl mx-auto relative z-10">
+    <nav class="flex items-center justify-between px-6 lg:px-16 py-5 max-w-7xl mx-auto relative">
       <img src="@/assets/logo.png" alt="ACED" class="h-10 lg:h-12" />
       <UserSection />
     </nav>
 
     <!-- Hero Content -->
-    <div class="max-w-7xl mx-auto px-6 lg:px-16 pb-20 relative z-10">
-      <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center py-12 lg:py-20">
+    <div class="max-w-7xl mx-auto px-6 lg:px-16 pb-20 relative">
+      <div class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center py-8 lg:py-12">
 
         <!-- Left side - Text content -->
         <div>
           <!-- Badge -->
-          <div class="inline-flex items-center gap-2 px-4 py-2 bg-violet-50 rounded-full border border-violet-100 mb-6">
+          <div class="inline-flex items-center gap-2 px-4 py-2 bg-violet-50 rounded-full border border-violet-100 mb-4">
             <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
             <span class="text-sm font-medium text-violet-700">2,800+ students already learning</span>
           </div>
@@ -28,12 +28,12 @@
           </h1>
 
           <!-- Subtitle -->
-          <p class="text-xl lg:text-2xl text-gray-500 leading-relaxed mb-8 max-w-lg">
+          <p class="text-xl lg:text-2xl text-gray-500 leading-relaxed mb-6 max-w-lg">
             Interactive lessons with AI-powered help. Learn at your own pace.
           </p>
 
           <!-- CTA Buttons -->
-          <div class="flex flex-col sm:flex-row gap-4 mb-10">
+          <div class="flex flex-col sm:flex-row gap-4 mb-8">
             <button
               @click="handleStartFree"
               class="px-10 py-4 bg-violet-600 text-white text-lg font-semibold rounded-xl hover:bg-violet-700 transition-colors shadow-lg shadow-violet-600/25"
@@ -98,7 +98,7 @@
                   <div class="font-semibold text-gray-900">Languages</div>
                   <div class="text-sm text-gray-500">24 lessons • Intermediate</div>
                 </div>
-                <span class="px-3 py-1 bg-amber-100 text-amber-700 text-xs font-semibold rounded-full">Premium</span>
+                <span class="px-3 py-1 bg-violet-100 text-violet-700 text-xs font-semibold rounded-full">Pro</span>
               </div>
 
               <!-- Course preview card 3 -->
