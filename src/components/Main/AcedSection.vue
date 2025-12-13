@@ -7,11 +7,11 @@
           <span class="w-2 h-2 bg-violet-500 rounded-full"></span>
           <span class="text-sm font-medium text-violet-700">Explore Courses</span>
         </div>
-        <div class="flex flex-col gap-4">
+        <div class="flex flex-col items-center gap-4">
           <h2 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900">
             Start <span class="text-violet-600">learning</span> today
           </h2>
-          <p class="text-lg lg:text-xl text-gray-500 max-w-2xl mx-auto">
+          <p class="text-lg lg:text-xl text-gray-500 text-center max-w-2xl">
             Choose a course and begin your learning journey
           </p>
         </div>
