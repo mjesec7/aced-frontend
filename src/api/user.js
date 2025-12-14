@@ -15,13 +15,13 @@ const getAuthToken = async () => {
     if (currentUser) {
       return await currentUser.getIdToken(true); // Force refresh
     }
-    
+
     // Fallback to stored token
     const storedToken = localStorage.getItem('token') || localStorage.getItem('authToken');
     if (storedToken && storedToken.length > 20) {
       return storedToken;
     }
-    
+
     return null;
   } catch (error) {
     console.error('[user.js] Error getting auth token:', error);
@@ -34,13 +34,13 @@ const getAuthToken = async () => {
  */
 const resolveUserId = (userId) => {
   if (userId) return userId;
-  
+
   const currentUser = auth.currentUser;
   if (currentUser?.uid) return currentUser.uid;
-  
-  return localStorage.getItem('userId') || 
-         localStorage.getItem('firebaseUserId') || 
-         null;
+
+  return localStorage.getItem('userId') ||
+    localStorage.getItem('firebaseUserId') ||
+    null;
 };
 
 // =============================================
@@ -53,7 +53,7 @@ const resolveUserId = (userId) => {
  */
 export const getUserInfo = async (userId) => {
   console.log('📡 [user.js] getUserInfo called for:', userId);
-  
+
   try {
     const token = await getAuthToken();
     if (!token) {
@@ -71,12 +71,12 @@ export const getUserInfo = async (userId) => {
 
     console.log('📡 [user.js] Fetching user from server:', resolvedUserId);
     const { data } = await api.get(`users/${resolvedUserId}`, { headers });
-    
+
     console.log('✅ [user.js] Server response:', data);
-    
+
     // Handle different response formats
     const userData = data.user || data.data || data;
-    
+
     return {
       success: true,
       data: userData,
@@ -98,7 +98,7 @@ export const getUserInfo = async (userId) => {
  */
 export const getUserStatus = async (userId) => {
   console.log('📡 [user.js] getUserStatus called for:', userId);
-  
+
   try {
     const token = await getAuthToken();
     if (!token) {
@@ -139,14 +139,14 @@ export const getUserStatus = async (userId) => {
         if (data && data.success !== false) {
           // Extract user data from various response formats
           const userData = data.user || data.data || data;
-          const status = userData.subscriptionPlan || 
-                        userData.userStatus || 
-                        userData.plan || 
-                        data.status ||
-                        'free';
-          
+          const status = userData.subscriptionPlan ||
+            userData.userStatus ||
+            userData.plan ||
+            data.status ||
+            'free';
+
           console.log('✅ [user.js] Got status from server:', status);
-          
+
           return {
             success: true,
             data: userData,
@@ -191,7 +191,7 @@ export const getUserStatus = async (userId) => {
  */
 export const fetchSubscriptionFromServer = async (userId) => {
   console.log('🔄 [user.js] fetchSubscriptionFromServer called for:', userId);
-  
+
   try {
     const token = await getAuthToken();
     if (!token) {
@@ -207,9 +207,9 @@ export const fetchSubscriptionFromServer = async (userId) => {
 
     // Direct fetch from user endpoint
     const { data } = await api.get(`users/${resolvedUserId}`, { headers });
-    
+
     const userData = data.user || data.data || data;
-    
+
     const subscriptionData = {
       plan: userData.subscriptionPlan || 'free',
       status: (userData.subscriptionPlan && userData.subscriptionPlan !== 'free') ? 'active' : 'inactive',
@@ -222,13 +222,13 @@ export const fetchSubscriptionFromServer = async (userId) => {
     };
 
     console.log('✅ [user.js] Subscription data from server:', subscriptionData);
-    
+
     return {
       success: true,
       subscription: subscriptionData,
       user: userData
     };
-    
+
   } catch (error) {
     console.error('❌ [user.js] fetchSubscriptionFromServer error:', error);
     return {
@@ -244,7 +244,7 @@ export const fetchSubscriptionFromServer = async (userId) => {
  */
 export const saveUser = async (userData) => {
   console.log('📡 [user.js] saveUser called');
-  
+
   try {
     const { data } = await api.post('users/save', userData);
 
@@ -271,7 +271,7 @@ export const updateUserProfile = async (userId, profileData) => {
 
     const headers = { Authorization: `Bearer ${token}` };
     const { data } = await api.put(`users/${userId}/profile`, profileData, { headers });
-    
+
     return data;
   } catch (error) {
     console.error('❌ [user.js] updateUserProfile error:', error);
@@ -286,12 +286,13 @@ export const updateUserProfile = async (userId, profileData) => {
 /**
  * Get user study list
  */
-export const getUserStudyList = async (userId) => {
+export const getUserStudyList = async (userId, forceRefresh = false) => {
   try {
     const token = await getAuthToken();
     if (!token) throw new Error('No authentication token');
 
-    const { data } = await api.get(`users/${userId}/study-list`, {
+    const url = `users/${userId}/study-list${forceRefresh ? `?t=${Date.now()}` : ''}`;
+    const { data } = await api.get(url, {
       headers: { Authorization: `Bearer ${token}` }
     });
 
@@ -513,7 +514,7 @@ export const getLearningProfile = async (userId) => {
 
     const headers = { Authorization: `Bearer ${token}` };
     const { data } = await api.get(`progress/learning-profile/${userId}`, { headers });
-    
+
     return data;
   } catch (error) {
     throw error;
@@ -532,7 +533,7 @@ export const updateLearningProfile = async (userId, performanceData) => {
 
     const headers = { Authorization: `Bearer ${token}` };
     const { data } = await api.post(`progress/learning-profile/${userId}/update`, performanceData, { headers });
-    
+
     return data;
   } catch (error) {
     throw error;
@@ -551,7 +552,7 @@ export const getPersonalizedRecommendations = async (userId) => {
 
     const headers = { Authorization: `Bearer ${token}` };
     const { data } = await api.get(`progress/learning-profile/${userId}/recommendation`, { headers });
-    
+
     return data;
   } catch (error) {
     throw error;
@@ -574,7 +575,7 @@ export const getUserRewards = async (userId) => {
 
     const headers = { Authorization: `Bearer ${token}` };
     const { data } = await api.get(`progress/rewards/${userId}`, { headers });
-    
+
     return data;
   } catch (error) {
     throw error;
@@ -593,7 +594,7 @@ export const checkReward = async (userId, currentStep) => {
 
     const headers = { Authorization: `Bearer ${token}` };
     const { data } = await api.post(`progress/rewards/${userId}/check`, { currentStep }, { headers });
-    
+
     return data;
   } catch (error) {
     throw error;

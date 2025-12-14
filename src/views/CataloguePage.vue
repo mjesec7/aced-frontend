@@ -903,14 +903,18 @@ return {
       if (!this.selectedCourse || !this.userId) return;
       try {
         const topicData = {
-          topicId: this.selectedCourse.topicId,
-          topic: this.selectedCourse.name,
+          topicId: this.selectedCourse.topicId || this.selectedCourse._id || this.selectedCourse.id,
+          topic: this.selectedCourse.name || this.selectedCourse.title || 'Untitled Course',
           subject: this.selectedCourse.subject || 'General',
           level: parseInt(this.selectedCourse.level) || 1,
           lessonCount: this.selectedCourse.lessonCount || 0,
           totalTime: this.selectedCourse.totalTime || 10,
           type: this.selectedCourse.type || 'free'
         };
+        
+        if (!topicData.topicId) {
+          throw new Error('Invalid course ID');
+        }
         
         const result = await addToStudyList(this.userId, topicData);
         

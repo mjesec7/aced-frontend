@@ -901,7 +901,7 @@ export default {
     },
 
     handleStudyListUpdate() {
-      this.loadData();
+      this.loadData(true);
     },
 
     async initialize() {
@@ -1069,11 +1069,11 @@ this.recommendations = null;
       this.currentDate = new Date().toLocaleDateString('en-US', options);
     },
     
-    async loadData() {
+    async loadData(forceRefresh = false) {
       this.loadingStudyList = true;
       try {
         const [studyListResult, progressResult] = await Promise.all([
-          getUserStudyList(this.userId),
+          getUserStudyList(this.userId, forceRefresh),
           getUserProgress(this.userId)
         ]);
         
@@ -1112,7 +1112,14 @@ this.recommendations = null;
               lastAccessed: entry.lastAccessed || new Date().toISOString()
             };
           } catch (error) {
-return null;
+            // Fallback if topic fetch fails: use existing entry data
+            return {
+              ...entry,
+              name: entry.topic || entry.name || 'Unknown Course',
+              lessons: [],
+              progress: { percent: 0, completedLessons: 0, totalLessons: 0 },
+              lastAccessed: entry.lastAccessed || new Date().toISOString()
+            };
           }
         });
       
