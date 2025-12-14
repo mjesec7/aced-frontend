@@ -902,8 +902,13 @@ return {
     async confirmAddToStudyPlan() {
       if (!this.selectedCourse || !this.userId) return;
       try {
+        let rawTopicId = this.selectedCourse.topicId || this.selectedCourse._id || this.selectedCourse.id;
+        if (rawTopicId && typeof rawTopicId === 'object') {
+             rawTopicId = rawTopicId._id || rawTopicId.id;
+        }
+
         const topicData = {
-          topicId: this.selectedCourse.topicId || this.selectedCourse._id || this.selectedCourse.id,
+          topicId: rawTopicId,
           topic: this.selectedCourse.name || this.selectedCourse.title || 'Untitled Course',
           subject: this.selectedCourse.subject || 'General',
           level: parseInt(this.selectedCourse.level) || 1,
