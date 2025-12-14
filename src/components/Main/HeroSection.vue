@@ -1,0 +1,188 @@
+<template>
+  <div class="bg-white relative overflow-hidden">
+    <!-- Centered decorative element - contained within hero -->
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-amber-400/10 rounded-full blur-3xl pointer-events-none"></div>
+
+    <!-- Navigation -->
+    <nav class="flex items-center justify-between px-6 lg:px-16 py-5 max-w-7xl mx-auto relative">
+      <img src="@/assets/logo.png" alt="ACED" class="h-10 lg:h-12" />
+      <UserSection />
+    </nav>
+
+    <!-- Hero Content -->
+    <div class="max-w-7xl mx-auto px-6 lg:px-16 pb-20 relative">
+      <div class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center py-8 lg:py-12">
+
+        <!-- Left side - Text content -->
+        <div class="relative">
+          <!-- Decorative accent -->
+          <div class="absolute -left-4 top-0 w-1 h-32 bg-gradient-to-b from-violet-500 to-amber-400 rounded-full hidden sm:block"></div>
+
+          <!-- Badge -->
+          <div class="inline-flex items-center gap-2 px-4 py-2 bg-violet-50 rounded-full border border-violet-100 mb-8">
+            <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+            <span class="text-sm font-medium text-violet-700">2,800+ students already learning</span>
+          </div>
+
+          <!-- Main heading + Subtitle -->
+          <div class="flex flex-col gap-6 mb-10">
+            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-[1.15] tracking-tight">
+              The smarter way to
+              <span class="relative inline-block">
+                <span class="relative z-10 text-violet-600">learn anything</span>
+                <span class="absolute bottom-2 left-0 w-full h-3 bg-violet-200/60 -z-0 rounded"></span>
+              </span>
+            </h1>
+
+            <p class="text-lg lg:text-xl text-gray-500 leading-relaxed max-w-md">
+              Interactive lessons with AI-powered help. Learn at your own pace.
+            </p>
+          </div>
+
+          <!-- CTA Buttons -->
+          <div class="flex flex-col sm:flex-row gap-3 mb-10">
+            <button
+              @click="handleStartFree"
+              class="px-8 py-3 bg-violet-600 text-white text-base font-semibold rounded-xl hover:bg-violet-700 transition-colors shadow-lg shadow-violet-600/25"
+            >
+              Start Free - No Registration
+            </button>
+            <button
+              @click="handleRegister"
+              class="px-8 py-3 bg-white text-gray-700 text-base font-semibold rounded-xl border-2 border-gray-200 hover:border-violet-400 hover:text-violet-600 transition-all"
+            >
+              Register & Save Progress
+            </button>
+          </div>
+
+          <!-- Stats -->
+          <div class="flex flex-wrap gap-6 sm:gap-8 pt-6 border-t border-gray-100">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center">
+                <svg class="w-5 h-5 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+              </div>
+              <div>
+                <div class="text-xl font-bold text-gray-900">100+</div>
+                <div class="text-sm text-gray-500">Courses</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
+                <svg class="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <div>
+                <div class="text-xl font-bold text-gray-900">24/7</div>
+                <div class="text-sm text-gray-500">AI Support</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
+                <svg class="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <div class="text-xl font-bold text-gray-900">95%</div>
+                <div class="text-sm text-gray-500">Completion</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right side - Visual/Cards -->
+        <div class="relative hidden lg:block">
+          <!-- Main card -->
+          <div class="bg-white rounded-3xl shadow-2xl shadow-gray-200/50 p-8 border border-gray-100 relative">
+            <!-- Decorative element inside card -->
+            <div class="absolute top-4 right-4 w-16 h-16 bg-amber-400 rounded-2xl rotate-12 opacity-20"></div>
+
+            <div class="space-y-5 relative">
+              <!-- Course preview card 1 -->
+              <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl">
+                <div class="w-14 h-14 bg-violet-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <svg class="w-7 h-7 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                </div>
+                <div class="flex-1">
+                  <div class="font-semibold text-gray-900">Mathematics</div>
+                  <div class="text-sm text-gray-500">12 lessons • Beginner</div>
+                </div>
+                <span class="px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">Free</span>
+              </div>
+
+              <!-- Course preview card 2 -->
+              <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl">
+                <div class="w-14 h-14 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <svg class="w-7 h-7 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+                  </svg>
+                </div>
+                <div class="flex-1">
+                  <div class="font-semibold text-gray-900">Languages</div>
+                  <div class="text-sm text-gray-500">24 lessons • Intermediate</div>
+                </div>
+                <span class="px-3 py-1 bg-violet-100 text-violet-700 text-xs font-semibold rounded-full">Pro</span>
+              </div>
+
+              <!-- Course preview card 3 -->
+              <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl">
+                <div class="w-14 h-14 bg-violet-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <svg class="w-7 h-7 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                  </svg>
+                </div>
+                <div class="flex-1">
+                  <div class="font-semibold text-gray-900">Science</div>
+                  <div class="text-sm text-gray-500">18 lessons • Advanced</div>
+                </div>
+                <span class="px-3 py-1 bg-violet-100 text-violet-700 text-xs font-semibold rounded-full">Pro</span>
+              </div>
+            </div>
+
+            <!-- Bottom stats -->
+            <div class="mt-6 pt-6 border-t border-gray-100 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <div class="flex -space-x-2">
+                  <div class="w-8 h-8 bg-violet-200 rounded-full border-2 border-white"></div>
+                  <div class="w-8 h-8 bg-amber-200 rounded-full border-2 border-white"></div>
+                  <div class="w-8 h-8 bg-green-200 rounded-full border-2 border-white"></div>
+                </div>
+                <span class="text-sm text-gray-500">2,800+ learners</span>
+              </div>
+              <div class="flex items-center gap-1 text-amber-500">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                </svg>
+                <span class="font-semibold">4.9</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import UserSection from "@/components/Main/UserSection.vue";
+
+export default {
+  components: { UserSection },
+  methods: {
+    handleStartFree() {
+      const acedSection = document.getElementById('aced');
+      if (acedSection) {
+        acedSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    },
+    handleRegister() {
+      window.dispatchEvent(new Event("open-Login-modal"));
+    }
+  }
+};
+</script>
