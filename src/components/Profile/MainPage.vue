@@ -61,10 +61,11 @@
           </div>
         </div>
 
-        <!-- School Mode: Duolingo-Style Level Pathway -->
+        <!-- School Mode: Interactive Level Pathway -->
         <div v-if="hasSelectedMode && isSchoolMode" class="level-pathway-section">
           <LevelPathway 
             v-if="currentCourse && currentCourseLessons.length > 0"
+            :key="currentCourse._id || 'pathway'"
             :lessons="currentCourseLessons"
             :user-progress="userProgress"
             :current-level-prop="rewards?.level || 1"
@@ -77,7 +78,7 @@
           <div v-else class="empty-pathway-card">
             <div class="empty-pathway-icon">🎮</div>
             <h3 class="empty-pathway-title">Your Learning Journey</h3>
-            <p class="empty-pathway-text">Add a course to see your Duolingo-style lesson pathway!</p>
+            <p class="empty-pathway-text">Add a course to see your interactive lesson pathway!</p>
             <router-link to="/profile/catalogue" class="add-course-pathway-btn">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="12" y1="5" x2="12" y2="19"/>
@@ -2220,7 +2221,7 @@ return null;
 }
 
 /* =============================================
-   LEVEL PATHWAY SECTION (Duolingo-style)
+   LEVEL PATHWAY SECTION
    ============================================= */
 .level-pathway-section {
   margin-bottom: 1.5rem;

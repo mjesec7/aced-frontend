@@ -837,24 +837,62 @@ const actions = {
         // Fetch fresh data from server
         dispatch('fetchStatusFromServer');
 
-        return {
-          success: true,
-          message: result.message || `Promocode applied! ${newPlan.toUpperCase()} activated.`,
-          oldPlan: oldStatus,
-          newPlan: newPlan,
-          expiryDate: expiryDate
-        };
-      } else {
-        return {
-          success: false,
-          error: result.message || 'Failed to apply promocode'
-        };
-      }
+        // Import and use API
+        const { applyPromocode } = await import('@/api/subscription');
+        const result = await applyPromocode(getUserId(state), normalizedCode);
 
+        if (result.success) {
+          // Update store
+          commit('ADD_PROMOCODE', {
+            code: normalizedCode,
+            plan: result.plan,
+            source: 'api'
+          });
+
+          // Update status if plan changed
+          if (result.plan && result.plan !== oldStatus) {
+            commit('SET_USER_STATUS', result.plan);
+            commit('FORCE_UPDATE');
+          }
+
+          return result;
+        }
+
+        return result;
+      }
     } catch (error) {
       console.error('❌ [store/user] applyPromocode error:', error);
       return { success: false, error: error.message };
     }
+  },
+
+  /**
+   * Save user data to server
+   */
+  async saveUser({ commit, state }, { userData, token }) {
+    console.log('💾 [store/user] saveUser called');
+    try {
+      const { saveUser } = await import('@/api/user');
+      const result = await saveUser(userData);
+
+      if (result.success && result.user) {
+        commit('SET_USER', result.user);
+        return { success: true, user: result.user };
+      }
+      return { success: false, error: 'Failed to save user' };
+    } catch (error) {
+      console.error('❌ [store/user] saveUser error:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  /**
+   * Logout user
+   */
+  async logout({ commit }) {
+    console.log('👋 [store/user] logout called');
+    commit('CLEAR_USER');
+    return { success: true };
   },
 
   /**
