@@ -62,17 +62,31 @@
         </div>
 
         <!-- School Mode: Duolingo-Style Level Pathway -->
-        <LevelPathway 
-          v-if="hasSelectedMode && isSchoolMode && currentCourse"
-          :lessons="currentCourseLessons"
-          :user-progress="userProgress"
-          :current-level-prop="rewards?.level || 1"
-          :current-x-p-prop="rewards?.totalPoints || 0"
-          :streak-prop="displayStreak"
-          @lesson-click="handleLessonClick"
-          @continue="handleContinueLesson"
-          class="level-pathway-section"
-        />
+        <div v-if="hasSelectedMode && isSchoolMode" class="level-pathway-section">
+          <LevelPathway 
+            v-if="currentCourse && currentCourseLessons.length > 0"
+            :lessons="currentCourseLessons"
+            :user-progress="userProgress"
+            :current-level-prop="rewards?.level || 1"
+            :current-x-p-prop="rewards?.totalPoints || 0"
+            :streak-prop="displayStreak"
+            @lesson-click="handleLessonClick"
+            @continue="handleContinueLesson"
+          />
+          <!-- No courses state -->
+          <div v-else class="empty-pathway-card">
+            <div class="empty-pathway-icon">🎮</div>
+            <h3 class="empty-pathway-title">Your Learning Journey</h3>
+            <p class="empty-pathway-text">Add a course to see your Duolingo-style lesson pathway!</p>
+            <router-link to="/profile/catalogue" class="add-course-pathway-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              Browse Courses
+            </router-link>
+          </div>
+        </div>
 
         <div v-if="learningProfile" class="section-card learning-dna-card">
           <div class="section-header">
@@ -868,12 +882,25 @@ export default {
   
   async mounted() {
     await this.initialize();
+    if (window.eventBus) {
+      window.eventBus.on('studyListUpdated', this.handleStudyListUpdate);
+    }
+  },
+
+  beforeUnmount() {
+    if (window.eventBus) {
+      window.eventBus.off('studyListUpdated', this.handleStudyListUpdate);
+    }
   },
   
   methods: {
     // Navigate to placement test
     goToPlacementTest() {
       this.$router.push({ name: 'PlacementTest' });
+    },
+
+    handleStudyListUpdate() {
+      this.loadData();
     },
 
     async initialize() {
@@ -2291,5 +2318,66 @@ return null;
   .courses-list .course-card {
     padding: 1rem;
   }
+}
+
+/* =============================================
+   EMPTY PATHWAY CARD (when no courses added)
+   ============================================= */
+.empty-pathway-card {
+  background: linear-gradient(135deg, #f3e8ff 0%, #ede9fe 100%);
+  border: 2px dashed #c4b5fd;
+  border-radius: 16px;
+  padding: 2rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.empty-pathway-icon {
+  font-size: 3rem;
+  line-height: 1;
+}
+
+.empty-pathway-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #6b21a8;
+  margin: 0;
+}
+
+.empty-pathway-text {
+  font-size: 0.9375rem;
+  color: #7c3aed;
+  margin: 0;
+  max-width: 280px;
+}
+
+.add-course-pathway-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 0.5rem;
+}
+
+.add-course-pathway-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+}
+
+.add-course-pathway-btn svg {
+  width: 1rem;
+  height: 1rem;
 }
 </style>

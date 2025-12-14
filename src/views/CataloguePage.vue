@@ -921,6 +921,12 @@ return {
           if (courseIndex !== -1) {
             this.courses[courseIndex].inStudyPlan = true;
           }
+          
+          // Notify other components
+          if (window.eventBus) {
+            window.eventBus.emit('studyListUpdated');
+          }
+          
           this.showAddModal = false;
           this.showSuccessModal = true;
         } else {

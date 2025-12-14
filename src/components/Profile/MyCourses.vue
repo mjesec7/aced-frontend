@@ -728,6 +728,12 @@ export default {
         this.deleteModal.deleting = true;
         await removeFromStudyList(this.userId, this.deleteModal.course._id);
         this.studyList = this.studyList.filter(c => c._id !== this.deleteModal.course._id);
+        
+        // Notify other components
+        if (window.eventBus) {
+          window.eventBus.emit('studyListUpdated');
+        }
+        
         this.closeDeleteModal();
       } catch (error) {
 alert('Failed to delete course');
