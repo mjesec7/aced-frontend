@@ -23,7 +23,7 @@ export async function mountVueApplication() {
   const { default: router } = await import('../router');
   const { createI18n } = await import('vue-i18n');
   const messages = (await import('../locales/messages.json')).default;
-try {
+  try {
     app = createApp(App);
 
     // ============================================================================
@@ -56,7 +56,7 @@ try {
     app.use(store);
 
     // Initialize platform mode from localStorage
-store.dispatch('platformMode/loadFromLocalStorage');
+    store.dispatch('platformMode/loadFromLocalStorage');
 
     app.use(router);
     app.use(VueToast, {
@@ -70,9 +70,9 @@ store.dispatch('platformMode/loadFromLocalStorage');
     // 🚨 ENHANCED ERROR HANDLER
     // ============================================================================
     app.config.errorHandler = (error, instance, info) => {
-// Check if error is related to length property
+      // Check if error is related to length property
       if (error.message?.includes("Cannot read properties of undefined (reading 'length')")) {
-window.eventBus.emit('lengthPropertyError', {
+        window.eventBus.emit('lengthPropertyError', {
           error: error.message,
           component: instance?.$options?.name || 'Unknown',
           info,
@@ -86,7 +86,7 @@ window.eventBus.emit('lengthPropertyError', {
             timestamp: Date.now()
           });
         } catch (recoveryError) {
-}
+        }
       }
 
       // Emit error to event bus
@@ -104,10 +104,10 @@ window.eventBus.emit('lengthPropertyError', {
     app.mount('#app');
     isApplicationMounted = true;
     appLifecycle.mounted = true;
-// ============================================================================
+    // ============================================================================
     // 🔧 SETUP GLOBAL SUBSCRIPTION MANAGEMENT
     // ============================================================================
-    setupEnhancedGlobalSubscriptionManagement(store, window.eventBus);
+    setupEnhancedGlobalSubscriptionManagement(store, window.eventBus, app);
 
     // ============================================================================
     // ✅ MARK APP AS FULLY INITIALIZED
@@ -130,16 +130,16 @@ window.eventBus.emit('lengthPropertyError', {
     // ============================================================================
     setTimeout(() => {
       const currentStatus = store.getters['user/userStatus'] || 'free';
-window.triggerGlobalEvent('userStatusChanged', {
+      window.triggerGlobalEvent('userStatusChanged', {
         oldStatus: null,
         newStatus: currentStatus,
         source: 'app-mount-complete',
         timestamp: Date.now()
       });
     }, 200);
-return true;
+    return true;
   } catch (error) {
-window.eventBus.emit('appMountError', {
+    window.eventBus.emit('appMountError', {
       error: error.message,
       timestamp: Date.now()
     });
@@ -193,7 +193,7 @@ export async function mountVueApplicationBasic() {
 
     return true;
   } catch (error) {
-throw error;
+    throw error;
   }
 }
 
@@ -219,36 +219,36 @@ export function forceAppUpdate() {
   if (app?._instance) {
     try {
       app._instance.proxy.$forceUpdate();
-return true;
+      return true;
     } catch (error) {
-return false;
+      return false;
     }
   }
-return false;
+  return false;
 }
 
 // ============================================================================
 // 🔄 REMOUNT APP (FOR RECOVERY)
 // ============================================================================
 export async function remountApp() {
-try {
+  try {
     // Unmount if already mounted
     if (app && isApplicationMounted) {
       app.unmount();
       isApplicationMounted = false;
       appLifecycle.mounted = false;
-}
+    }
 
     // Remount
     await mountVueApplication();
-return true;
+    return true;
   } catch (error) {
-// Try basic mount as fallback
+    // Try basic mount as fallback
     try {
       await mountVueApplicationBasic();
-return true;
+      return true;
     } catch (fallbackError) {
-return false;
+      return false;
     }
   }
 }

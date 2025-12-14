@@ -1,8 +1,6 @@
 // src/utils/subscriptionManagement.js - Enhanced Global Subscription Management
 
-import { getApp } from './appMounter.js';
-
-export function setupEnhancedGlobalSubscriptionManagement(store, eventBus) {
+export function setupEnhancedGlobalSubscriptionManagement(store, eventBus, app) {
   const handleGlobalSubscriptionChange = (event) => {
     const { plan, newStatus, userStatus, subscriptionPlan, message, source, oldPlan, timestamp } = event.detail || {};
 
@@ -92,7 +90,6 @@ export function setupEnhancedGlobalSubscriptionManagement(store, eventBus) {
     }
 
     // Force Vue app update
-    const app = getApp();
     if (app?._instance) {
       try {
         app._instance.proxy.$forceUpdate();
@@ -200,7 +197,6 @@ export function setupEnhancedGlobalSubscriptionManagement(store, eventBus) {
     } catch (storeError) {
     }
 
-    const app = getApp();
     if (app?._instance) {
       try {
         app._instance.proxy.$forceUpdate();
