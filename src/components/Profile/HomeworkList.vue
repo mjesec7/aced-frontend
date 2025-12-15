@@ -1,91 +1,103 @@
 <template>
-  <div class="homework-page">
+  <div class="min-h-screen bg-[#fafafa] p-6">
     <!-- Hero Header -->
-    <header class="hero-header" :style="{ backgroundImage: `url(${currentHeroImage})` }">
-      <div class="hero-overlay"></div>
-      <div class="hero-content">
-        <div class="hero-left">
-          <div class="hero-badge">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <header class="max-w-7xl mx-auto mb-8 relative overflow-hidden rounded-2xl bg-indigo-600 text-white shadow-lg">
+      <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 opacity-90"></div>
+      <div class="relative z-10 px-8 py-12 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div class="text-left">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-sm font-medium mb-4">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
               <polyline points="14 2 14 8 20 8"/>
             </svg>
-            Homework
+            Homework Assignments
           </div>
-          <h1 class="hero-title">Your Assignments</h1>
-          <p class="hero-subtitle">{{ validHomeworks.length }} assignments available</p>
+          <h1 class="text-3xl md:text-4xl font-bold mb-2">Your Assignments</h1>
+          <p class="text-indigo-100 text-lg">{{ validHomeworks.length }} assignments available</p>
+        </div>
+        <!-- Decorative Icon -->
+        <div class="hidden md:block opacity-20 transform rotate-12">
+          <svg class="w-32 h-32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+          </svg>
         </div>
       </div>
     </header>
 
     <!-- Stats Section -->
-    <div class="stats-section">
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon blue">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <div class="max-w-7xl mx-auto mb-8">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex items-center gap-4">
+          <div class="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
               <polyline points="14 2 14 8 20 8"/>
             </svg>
           </div>
-          <div class="stat-info">
-            <span class="stat-value">{{ totalHomeworks }}</span>
-            <span class="stat-label">Total Assignments</span>
+          <div>
+            <div class="text-2xl font-bold text-gray-900">{{ totalHomeworks }}</div>
+            <div class="text-sm text-gray-500 font-medium">Total Assignments</div>
           </div>
         </div>
-        <div class="stat-card">
-          <div class="stat-icon purple">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex items-center gap-4">
+          <div class="w-12 h-12 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
               <polyline points="22 4 12 14.01 9 11.01"/>
             </svg>
           </div>
-          <div class="stat-info">
-            <span class="stat-value">{{ completedHomeworks }}</span>
-            <span class="stat-label">Completed</span>
+          <div>
+            <div class="text-2xl font-bold text-gray-900">{{ completedHomeworks }}</div>
+            <div class="text-sm text-gray-500 font-medium">Completed</div>
           </div>
         </div>
-        <div class="stat-card">
-          <div class="stat-icon gold">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex items-center gap-4">
+          <div class="w-12 h-12 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10"/>
               <polyline points="12 6 12 12 16 14"/>
             </svg>
           </div>
-          <div class="stat-info">
-            <span class="stat-value">{{ inProgressHomeworks }}</span>
-            <span class="stat-label">In Progress</span>
+          <div>
+            <div class="text-2xl font-bold text-gray-900">{{ inProgressHomeworks }}</div>
+            <div class="text-sm text-gray-500 font-medium">In Progress</div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Control Section -->
-    <div class="control-section">
-      <div class="control-content">
-        <div class="search-container">
-          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <!-- Controls Section -->
+    <div class="max-w-7xl mx-auto mb-8">
+      <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200 flex flex-col md:flex-row gap-4 items-center justify-between">
+        <!-- Search -->
+        <div class="relative w-full md:w-96">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="8"/>
             <path d="m21 21-4.35-4.35"/>
           </svg>
           <input
             v-model="searchQuery"
             type="text"
-            class="search-input"
+            class="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
             placeholder="Search by title..."
           />
-          <button v-if="searchQuery" @click="searchQuery = ''" class="clear-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <button 
+            v-if="searchQuery" 
+            @click="searchQuery = ''" 
+            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          >
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="18" y1="6" x2="6" y2="18"/>
               <line x1="6" y1="6" x2="18" y2="18"/>
             </svg>
           </button>
         </div>
 
-        <div class="filters-pills">
-          <div class="filter-pill">
-            <label>Subject</label>
-            <select v-model="selectedSubject">
+        <!-- Filters -->
+        <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <div class="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg">
+            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Subject</span>
+            <select v-model="selectedSubject" class="bg-transparent border-none text-sm font-medium text-gray-900 focus:ring-0 cursor-pointer">
               <option value="">All</option>
               <option v-for="subject in subjects" :key="subject" :value="subject">
                 {{ subject }}
@@ -93,9 +105,9 @@
             </select>
           </div>
 
-          <div class="filter-pill">
-            <label>Status</label>
-            <select v-model="selectedStatus">
+          <div class="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg">
+            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</span>
+            <select v-model="selectedStatus" class="bg-transparent border-none text-sm font-medium text-gray-900 focus:ring-0 cursor-pointer">
               <option value="">All</option>
               <option value="pending">Not Started</option>
               <option value="in-progress">In Progress</option>
@@ -103,16 +115,23 @@
             </select>
           </div>
 
-          <button v-if="hasActiveFilters" @click="clearFilters" class="reset-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <button 
+            v-if="hasActiveFilters" 
+            @click="clearFilters" 
+            class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+          >
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="1 4 1 10 7 10"/>
               <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
             </svg>
             Reset
           </button>
 
-          <button @click="refreshHomeworks" class="refresh-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <button 
+            @click="refreshHomeworks" 
+            class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="23 4 23 10 17 10"/>
               <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
             </svg>
@@ -123,154 +142,171 @@
     </div>
 
     <!-- Loading State -->
-    <div v-if="loading" class="loading-container">
-      <div class="loader">
-        <div class="loader-ring"></div>
-        <div class="loader-ring"></div>
-        <div class="loader-ring"></div>
-      </div>
-      <p>Loading assignments...</p>
+    <div v-if="loading" class="flex flex-col items-center justify-center py-20">
+      <div class="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
+      <p class="text-gray-500 font-medium">Loading assignments...</p>
     </div>
 
     <!-- Error State -->
-    <div v-else-if="error" class="error-container">
-      <div class="error-illustration">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+    <div v-else-if="error" class="flex flex-col items-center justify-center py-20 bg-white rounded-xl border border-gray-200 border-dashed max-w-7xl mx-auto">
+      <div class="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4 text-red-500">
+        <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <circle cx="12" cy="12" r="10"/>
           <line x1="15" y1="9" x2="9" y2="15"/>
           <line x1="9" y1="9" x2="15" y2="15"/>
         </svg>
       </div>
-      <h3>Load Error</h3>
-      <p>{{ error }}</p>
-      <button @click="refreshHomeworks" class="retry-btn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="23 4 23 10 17 10"/>
-          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-        </svg>
+      <h3 class="text-lg font-semibold text-gray-900 mb-1">Load Error</h3>
+      <p class="text-gray-500 text-center max-w-xs mb-6">{{ error }}</p>
+      <button 
+        @click="refreshHomeworks" 
+        class="px-4 py-2 bg-indigo-50 text-indigo-600 font-medium rounded-lg hover:bg-indigo-100 transition-colors"
+      >
         Try Again
       </button>
     </div>
 
     <!-- Empty State -->
-    <div v-else-if="displayableHomeworks.length === 0 && validHomeworks.length > 0" class="empty-container">
-      <div class="empty-illustration">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+    <div v-else-if="displayableHomeworks.length === 0" class="flex flex-col items-center justify-center py-20 bg-white rounded-xl border border-gray-200 border-dashed max-w-7xl mx-auto">
+      <div class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4 text-gray-400">
+        <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <circle cx="11" cy="11" r="8"/>
           <path d="m21 21-4.35-4.35"/>
         </svg>
       </div>
-      <h3>Nothing Found</h3>
-      <p>Try changing filter or search parameters</p>
-      <button @click="clearFilters" class="retry-btn">Clear Filters</button>
-    </div>
-
-    <div v-else-if="validHomeworks.length === 0" class="empty-container">
-      <div class="empty-illustration">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/>
-        </svg>
-      </div>
-      <h3>No Homework</h3>
-      <p>Homework will appear after starting a course or completing a lesson</p>
-      <button @click="refreshHomeworks" class="retry-btn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="23 4 23 10 17 10"/>
-          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-        </svg>
+      <h3 class="text-lg font-semibold text-gray-900 mb-1">
+        {{ validHomeworks.length === 0 ? 'No Homework' : 'No Matches Found' }}
+      </h3>
+      <p class="text-gray-500 text-center max-w-xs mb-6">
+        {{ validHomeworks.length === 0 ? 'Homework will appear after starting a course or completing a lesson.' : 'Try adjusting your search or filters.' }}
+      </p>
+      <button 
+        v-if="validHomeworks.length > 0" 
+        @click="clearFilters" 
+        class="px-4 py-2 bg-indigo-50 text-indigo-600 font-medium rounded-lg hover:bg-indigo-100 transition-colors"
+      >
+        Clear Filters
+      </button>
+      <button 
+        v-else 
+        @click="refreshHomeworks" 
+        class="px-4 py-2 bg-indigo-50 text-indigo-600 font-medium rounded-lg hover:bg-indigo-100 transition-colors"
+      >
         Refresh
       </button>
     </div>
 
     <!-- Homework Grid -->
-    <main v-else class="main-section">
-      <div class="homework-container">
-        <div class="homework-grid">
-          <article 
-            v-for="hw in displayableHomeworks" 
-            :key="getHomeworkKey(hw)" 
-            class="homework-card"
-            :class="{ 'urgent': isUrgent(hw) }"
-          >
-            <div class="card-header">
-              <span class="homework-badge" :class="getStatus(hw)">
-                {{ statusLabel(hw) }}
-              </span>
-              <span v-if="hw.type" class="type-badge" :class="hw.type">
-                {{ getTypeLabel(hw.type) }}
-              </span>
-            </div>
+    <main v-else class="max-w-7xl mx-auto">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <article 
+          v-for="hw in displayableHomeworks" 
+          :key="getHomeworkKey(hw)" 
+          class="group bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all flex flex-col relative overflow-hidden"
+          :class="{ 'ring-2 ring-red-100': isUrgent(hw) }"
+        >
+          <!-- Urgent Badge -->
+          <div v-if="isUrgent(hw)" class="absolute top-0 right-0 bg-red-100 text-red-600 text-xs font-bold px-2 py-1 rounded-bl-lg z-10">
+            DUE SOON
+          </div>
 
-            <div class="card-body">
-              <h3 class="homework-name">{{ getHomeworkTitle(hw) }}</h3>
-              
-              <div class="homework-meta">
-                <span v-if="hw.subject" class="meta-item">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-                  </svg>
-                  {{ hw.subject }}
+          <div class="p-6 flex-1">
+            <div class="flex items-start justify-between mb-4">
+              <div class="flex gap-2">
+                <span 
+                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                  :class="{
+                    'bg-gray-100 text-gray-600': getStatus(hw) === 'pending',
+                    'bg-amber-100 text-amber-700': getStatus(hw) === 'in-progress',
+                    'bg-green-100 text-green-700': getStatus(hw) === 'completed'
+                  }"
+                >
+                  {{ statusLabel(hw) }}
                 </span>
-                <span v-if="getExerciseCount(hw) > 0" class="meta-item">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <polyline points="14 2 14 8 20 8"/>
-                  </svg>
-                  {{ getExerciseCount(hw) }} {{ getExerciseWord(getExerciseCount(hw)) }}
+                <span v-if="hw.type" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700">
+                  {{ getTypeLabel(hw.type) }}
                 </span>
-              </div>
-
-              <div v-if="hw.dueDate" class="homework-stats">
-                <div class="stat-item" :class="{ 'overdue': isOverdue(hw) }">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                    <line x1="16" y1="2" x2="16" y2="6"/>
-                    <line x1="8" y1="2" x2="8" y2="6"/>
-                    <line x1="3" y1="10" x2="21" y2="10"/>
-                  </svg>
-                  {{ formatDate(hw.dueDate) }}
-                </div>
-              </div>
-
-              <div v-if="hw.difficulty" class="difficulty-section">
-                <span class="difficulty-label">Difficulty:</span>
-                <div class="difficulty-stars">
-                  <span v-for="i in 5" :key="i" class="star" :class="{ 'filled': i <= hw.difficulty }">★</span>
-                </div>
-              </div>
-
-              <div class="progress-container">
-                <div class="progress-info">
-                  <span class="progress-text">Progress</span>
-                  <span class="progress-percent">{{ getScore(hw) }}%</span>
-                </div>
-                <div class="progress-track">
-                  <div 
-                    class="progress-fill" 
-                    :class="getProgressClass(hw)"
-                    :style="{ width: getProgressWidth(hw) }"
-                  ></div>
-                </div>
               </div>
             </div>
 
-            <div class="card-footer">
-              <button 
-                class="homework-btn" 
-                :class="getButtonClass(hw)"
-                @click="goToHomework(hw)"
-              >
-                <span>{{ getButtonText(hw) }}</span>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="5" y1="12" x2="19" y2="12"/>
-                  <polyline points="12 5 19 12 12 19"/>
+            <h3 class="text-lg font-bold text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors line-clamp-2">
+              {{ getHomeworkTitle(hw) }}
+            </h3>
+            
+            <div class="flex flex-col gap-2 mb-4">
+              <div v-if="hw.subject" class="flex items-center gap-2 text-sm text-gray-500">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
                 </svg>
-              </button>
+                {{ hw.subject }}
+              </div>
+              <div v-if="getExerciseCount(hw) > 0" class="flex items-center gap-2 text-sm text-gray-500">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                </svg>
+                {{ getExerciseCount(hw) }} {{ getExerciseWord(getExerciseCount(hw)) }}
+              </div>
+              <div v-if="hw.dueDate" class="flex items-center gap-2 text-sm" :class="isOverdue(hw) ? 'text-red-500 font-medium' : 'text-gray-500'">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+                {{ formatDate(hw.dueDate) }}
+              </div>
             </div>
-          </article>
-        </div>
+
+            <!-- Difficulty Stars -->
+            <div v-if="hw.difficulty" class="flex items-center gap-2 mb-4">
+              <span class="text-xs font-semibold text-gray-400 uppercase">Difficulty:</span>
+              <div class="flex">
+                <span 
+                  v-for="i in 5" 
+                  :key="i" 
+                  class="text-sm"
+                  :class="i <= hw.difficulty ? 'text-amber-400' : 'text-gray-200'"
+                >★</span>
+              </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="mt-auto">
+              <div class="flex justify-between items-end mb-1">
+                <span class="text-xs font-semibold text-gray-500 uppercase">Progress</span>
+                <span class="text-xs font-bold text-gray-900">{{ getScore(hw) }}%</span>
+              </div>
+              <div class="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                <div 
+                  class="h-full rounded-full transition-all duration-500"
+                  :class="{
+                    'bg-green-500': getScore(hw) >= 80,
+                    'bg-indigo-500': getScore(hw) >= 50 && getScore(hw) < 80,
+                    'bg-amber-500': getScore(hw) > 0 && getScore(hw) < 50,
+                    'bg-gray-300': getScore(hw) === 0
+                  }"
+                  :style="{ width: getProgressWidth(hw) }"
+                ></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 rounded-b-xl flex justify-end">
+            <button 
+              class="flex items-center gap-2 text-sm font-semibold transition-all group-hover:translate-x-1"
+              :class="isCompleted(hw) ? 'text-green-600' : 'text-indigo-600'"
+              @click="goToHomework(hw)"
+            >
+              {{ getButtonText(hw) }}
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="5" y1="12" x2="19" y2="12"/>
+                <polyline points="12 5 19 12 12 19"/>
+              </svg>
+            </button>
+          </div>
+        </article>
       </div>
     </main>
   </div>
@@ -431,7 +467,8 @@ export default {
           query: query
         });
       } catch (err) {
-}
+        console.error('Navigation error:', err);
+      }
     },
     
     statusLabel(hw) {
@@ -449,20 +486,6 @@ export default {
     getProgressWidth(hw) {
       if (!this.hasProgress(hw)) return '0%';
       return `${this.getScore(hw)}%`;
-    },
-    
-    getProgressClass(hw) {
-      const score = this.getScore(hw);
-      if (score >= 80) return 'high';
-      if (score >= 50) return 'medium';
-      if (score > 0) return 'low';
-      return 'very-low';
-    },
-    
-    getButtonClass(hw) {
-      if (this.isCompleted(hw)) return 'completed';
-      if (this.hasProgress(hw)) return 'continue';
-      return 'start';
     },
     
     getButtonText(hw) {
@@ -528,7 +551,7 @@ export default {
           this.homeworks = [];
         }
       } catch (err) {
-this.error = err.message || 'Error loading homework';
+        this.error = err.message || 'Error loading homework';
         this.homeworks = [];
       } finally {
         this.loading = false;
@@ -569,658 +592,3 @@ this.error = err.message || 'Error loading homework';
   }
 };
 </script>
-
-<style scoped>
-* {
-  box-sizing: border-box;
-}
-
-.homework-page {
-  min-height: 100vh;
-  background: linear-gradient(180deg, #f9fafb 0%, #ffffff 100%);
-}
-
-/* HERO HEADER */
-.hero-header {
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  padding: 2rem 0;
-  position: relative;
-  overflow: hidden;
-}
-.hero-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.85) 0%, rgba(168, 85, 247, 0.85) 100%);
-}
-.hero-content {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 2rem;
-  position: relative;
-  z-index: 1;
-}
-.hero-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.375rem 0.875rem;
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
-  border-radius: 50px;
-  color: white;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
-}
-.hero-badge svg {
-  width: 0.875rem;
-  height: 0.875rem;
-}
-.hero-title {
-  font-size: 2.25rem;
-  font-weight: 800;
-  color: white;
-  margin: 0 0 0.5rem 0;
-  line-height: 1.1;
-}
-.hero-subtitle {
-  font-size: 1rem;
-  color: rgba(255, 255, 255, 0.9);
-  margin: 0;
-}
-
-/* STATS SECTION */
-.stats-section {
-  margin-top: -1.5rem;
-  position: relative;
-  z-index: 10;
-  max-width: 1400px;
-  margin-left: auto;
-  margin-right: auto;
-  padding: 0 2rem;
-}
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1.25rem;
-}
-.stat-card {
-  background: white;
-  border-radius: 12px;
-  padding: 1.25rem;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  transition: all 0.2s;
-}
-.stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-.stat-icon {
-  width: 3rem;
-  height: 3rem;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.stat-icon svg {
-  width: 1.5rem;
-  height: 1.5rem;
-}
-.stat-icon.blue {
-  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
-  color: #3b82f6;
-}
-.stat-icon.purple {
-  background: linear-gradient(135deg, #f3e8ff, #e9d5ff);
-  color: #a855f7;
-}
-.stat-icon.gold {
-  background: linear-gradient(135deg, #fef3c7, #fde68a);
-  color: #d97706;
-}
-.stat-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-.stat-value {
-  font-size: 1.75rem;
-  font-weight: 800;
-  color: #111827;
-  line-height: 1;
-}
-.stat-label {
-  font-size: 0.8125rem;
-  color: #6b7280;
-  font-weight: 500;
-}
-
-/* CONTROL SECTION */
-.control-section {
-  max-width: 1400px;
-  margin: 2rem auto 1.5rem;
-  padding: 0 2rem;
-}
-.control-content {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-.search-container {
-  position: relative;
-  width: 100%;
-}
-.search-icon {
-  position: absolute;
-  left: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 1.125rem;
-  height: 1.125rem;
-  color: #9ca3af;
-}
-.search-input {
-  width: 100%;
-  padding: 0.875rem 3rem;
-  border: 2px solid #e5e7eb;
-  border-radius: 12px;
-  font-size: 0.9375rem;
-  background: white;
-  transition: all 0.2s;
-}
-.search-input:focus {
-  outline: none;
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-}
-.clear-btn {
-  position: absolute;
-  right: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 1.875rem;
-  height: 1.875rem;
-  border: none;
-  background: #f3f4f6;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: #6b7280;
-  transition: all 0.2s;
-}
-.clear-btn:hover {
-  background: #e5e7eb;
-  color: #111827;
-}
-.clear-btn svg {
-  width: 0.875rem;
-  height: 0.875rem;
-}
-
-/* FILTER PILLS */
-.filters-pills {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  align-items: center;
-}
-.filter-pill {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: white;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 10px;
-  padding: 0.5rem 0.875rem;
-  transition: all 0.2s;
-}
-.filter-pill:hover {
-  border-color: #d1d5db;
-}
-.filter-pill label {
-  font-size: 0.8125rem;
-  color: #6b7280;
-  font-weight: 600;
-}
-.filter-pill select {
-  border: none;
-  background: transparent;
-  font-size: 0.8125rem;
-  color: #111827;
-  font-weight: 600;
-  cursor: pointer;
-  outline: none;
-  padding: 0.125rem;
-}
-.reset-btn, .refresh-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.625rem 1rem;
-  border-radius: 10px;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-}
-.reset-btn {
-  background: #fef2f2;
-  color: #dc2626;
-  border: 1.5px solid #fca5a5;
-}
-.reset-btn:hover {
-  background: #fee2e2;
-}
-.refresh-btn {
-  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
-  color: #1e40af;
-  border: 1.5px solid #93c5fd;
-}
-.refresh-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
-}
-.reset-btn svg, .refresh-btn svg {
-  width: 0.875rem;
-  height: 0.875rem;
-}
-
-/* LOADING */
-.loading-container {
-  max-width: 1400px;
-  margin: 4rem auto;
-  padding: 4rem 2rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2rem;
-}
-.loader {
-  position: relative;
-  width: 80px;
-  height: 80px;
-}
-.loader-ring {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  border: 4px solid transparent;
-  border-top-color: #6366f1;
-  border-radius: 50%;
-  animation: spin 1.5s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
-}
-.loader-ring:nth-child(2) {
-  border-top-color: #a855f7;
-  animation-delay: 0.2s;
-  width: 90%;
-  height: 90%;
-  top: 5%;
-  left: 5%;
-}
-.loader-ring:nth-child(3) {
-  border-top-color: #fbbf24;
-  animation-delay: 0.4s;
-  width: 80%;
-  height: 80%;
-  top: 10%;
-  left: 10%;
-}
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-.loading-container p {
-  font-size: 1.125rem;
-  color: #6b7280;
-  font-weight: 500;
-}
-
-/* ERROR & EMPTY STATES */
-.error-container, .empty-container {
-  max-width: 600px;
-  margin: 4rem auto;
-  padding: 4rem 2rem;
-  text-align: center;
-}
-.error-illustration, .empty-illustration {
-  width: 120px;
-  height: 120px;
-  margin: 0 auto 2rem;
-  background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.error-illustration svg, .empty-illustration svg {
-  width: 60px;
-  height: 60px;
-  color: #9ca3af;
-}
-.error-container h3, .empty-container h3 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #111827;
-  margin: 0 0 0.5rem 0;
-}
-.error-container p, .empty-container p {
-  font-size: 1rem;
-  color: #6b7280;
-  margin: 0 0 1.5rem 0;
-}
-.retry-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #a855f7, #9333ea);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.retry-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(168, 85, 247, 0.3);
-}
-.retry-btn svg {
-  width: 1rem;
-  height: 1rem;
-}
-
-/* MAIN SECTION */
-.main-section {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 2rem 4rem;
-}
-
-/* HOMEWORK GRID */
-.homework-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 1.25rem;
-}
-
-/* HOMEWORK CARD */
-.homework-card {
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex;
-  flex-direction: column;
-  border: 1px solid #f3f4f6;
-}
-.homework-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
-  border-color: #e5e7eb;
-}
-.homework-card.urgent {
-  border-left: 3px solid #ef4444;
-  background: linear-gradient(135deg, #fff 0%, #fef2f2 100%);
-}
-.card-header {
-  padding: 1rem 1rem 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.5rem;
-}
-.homework-badge {
-  padding: 0.3125rem 0.625rem;
-  border-radius: 6px;
-  font-size: 0.625rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-.homework-badge.pending {
-  background: #fef3c7;
-  color: #92400e;
-}
-.homework-badge.in-progress {
-  background: #dbeafe;
-  color: #1e40af;
-}
-.homework-badge.completed {
-  background: #d1fae5;
-  color: #065f46;
-}
-.type-badge {
-  padding: 0.3125rem 0.625rem;
-  border-radius: 6px;
-  font-size: 0.625rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  background: #f3f4f6;
-  color: #6b7280;
-}
-.type-badge.standalone {
-  background: #f3e8ff;
-  color: #7c3aed;
-}
-.type-badge.lesson {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.card-body {
-  padding: 1rem;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-.homework-name {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #111827;
-  margin: 0;
-  line-height: 1.3;
-}
-.homework-meta {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-.meta-item {
-  display: flex;
-  align-items: center;
-  gap: 0.3125rem;
-  font-size: 0.75rem;
-  color: #6b7280;
-  font-weight: 500;
-}
-.meta-item svg {
-  width: 0.8125rem;
-  height: 0.8125rem;
-  color: #9ca3af;
-}
-.homework-stats {
-  display: flex;
-  gap: 1rem;
-  padding: 0.75rem;
-  background: #f9fafb;
-  border-radius: 8px;
-}
-.stat-item {
-  display: flex;
-  align-items: center;
-  gap: 0.3125rem;
-  font-size: 0.75rem;
-  color: #374151;
-  font-weight: 600;
-}
-.stat-item.overdue {
-  color: #dc2626;
-}
-.stat-item svg {
-  width: 0.875rem;
-  height: 0.875rem;
-}
-.difficulty-section {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem;
-  background: #f9fafb;
-  border-radius: 8px;
-}
-.difficulty-label {
-  font-size: 0.75rem;
-  color: #6b7280;
-  font-weight: 600;
-}
-.difficulty-stars {
-  display: flex;
-  gap: 0.125rem;
-}
-.star {
-  color: #e5e7eb;
-  font-size: 0.875rem;
-}
-.star.filled {
-  color: #fbbf24;
-}
-
-.progress-container {
-  margin-top: auto;
-}
-.progress-info {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 0.375rem;
-}
-.progress-text {
-  font-size: 0.6875rem;
-  color: #6b7280;
-  font-weight: 500;
-}
-.progress-percent {
-  font-size: 0.6875rem;
-  color: #111827;
-  font-weight: 700;
-}
-.progress-track {
-  width: 100%;
-  height: 5px;
-  background: #f3f4f6;
-  border-radius: 100px;
-  overflow: hidden;
-}
-.progress-fill {
-  height: 100%;
-  border-radius: 100px;
-  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.progress-fill.high {
-  background: linear-gradient(90deg, #10b981, #059669);
-}
-.progress-fill.medium {
-  background: linear-gradient(90deg, #6366f1, #4f46e5);
-}
-.progress-fill.low {
-  background: linear-gradient(90deg, #f59e0b, #d97706);
-}
-.progress-fill.very-low {
-  background: linear-gradient(90deg, #ef4444, #dc2626);
-}
-
-.card-footer {
-  padding: 0 1rem 1rem;
-}
-.homework-btn {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.375rem;
-  padding: 0.75rem;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.8125rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.homework-btn svg {
-  width: 0.875rem;
-  height: 0.875rem;
-}
-.homework-btn.start {
-  background: linear-gradient(135deg, #a855f7, #9333ea);
-  color: white;
-}
-.homework-btn.start:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(168, 85, 247, 0.3);
-}
-.homework-btn.continue {
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-  color: white;
-}
-.homework-btn.continue:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
-}
-.homework-btn.completed {
-  background: #f3f4f6;
-  color: #6b7280;
-}
-.homework-btn.completed:hover {
-  background: #e5e7eb;
-}
-
-/* RESPONSIVE */
-@media (max-width: 768px) {
-  .hero-title {
-    font-size: 1.75rem;
-  }
-  .hero-subtitle {
-    font-size: 0.9375rem;
-  }
-  .stats-section {
-    padding: 0 1.5rem;
-  }
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-  .control-section, .main-section {
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
-  }
-  .filters-pills {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .filter-pill {
-    width: 100%;
-  }
-  .homework-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
-  }
-}
-</style>

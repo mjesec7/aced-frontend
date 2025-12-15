@@ -1,86 +1,102 @@
 <template>
-  <div class="tests-page">
-    <header class="hero-header" :style="{ backgroundImage: `url(${currentHeroImage})` }">
-      <div class="hero-overlay"></div>
-      <div class="hero-content">
-        <div class="hero-left">
-          <div class="hero-badge">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+  <div class="min-h-screen bg-[#fafafa] p-6">
+    <!-- Hero Header -->
+    <header class="max-w-7xl mx-auto mb-8 relative overflow-hidden rounded-2xl bg-indigo-600 text-white shadow-lg">
+      <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 opacity-90"></div>
+      <div class="relative z-10 px-8 py-12 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div class="text-left">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-sm font-medium mb-4">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="9 11 12 14 22 4"/>
               <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
             </svg>
             Tests and Assessments
           </div>
-          <h1 class="hero-title">Test Your Knowledge</h1>
-          <p class="hero-subtitle">{{ filteredTests.length }} tests available</p>
+          <h1 class="text-3xl md:text-4xl font-bold mb-2">Test Your Knowledge</h1>
+          <p class="text-indigo-100 text-lg">{{ filteredTests.length }} tests available</p>
+        </div>
+        <!-- Decorative Icon -->
+        <div class="hidden md:block opacity-20 transform rotate-12">
+          <svg class="w-32 h-32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
         </div>
       </div>
     </header>
 
-    <div v-if="!activeTest" class="stats-section">
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon blue">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <!-- Stats Section -->
+    <div v-if="!activeTest" class="max-w-7xl mx-auto mb-8">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex items-center gap-4">
+          <div class="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
               <polyline points="14 2 14 8 20 8"/>
             </svg>
           </div>
-          <div class="stat-info">
-            <span class="stat-value">{{ tests.length }}</span>
-            <span class="stat-label">Total Tests</span>
+          <div>
+            <div class="text-2xl font-bold text-gray-900">{{ tests.length }}</div>
+            <div class="text-sm text-gray-500 font-medium">Total Tests</div>
           </div>
         </div>
-        <div class="stat-card">
-          <div class="stat-icon purple">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex items-center gap-4">
+          <div class="w-12 h-12 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
             </svg>
           </div>
-          <div class="stat-info">
-            <span class="stat-value">{{ uniqueSubjects.length }}</span>
-            <span class="stat-label">Subjects</span>
+          <div>
+            <div class="text-2xl font-bold text-gray-900">{{ uniqueSubjects.length }}</div>
+            <div class="text-sm text-gray-500 font-medium">Subjects</div>
           </div>
         </div>
-        <div class="stat-card">
-          <div class="stat-icon gold">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex items-center gap-4">
+          <div class="w-12 h-12 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
             </svg>
           </div>
-          <div class="stat-info">
-            <span class="stat-value">{{ uniqueLevels.length }}</span>
-            <span class="stat-label">Levels</span>
+          <div>
+            <div class="text-2xl font-bold text-gray-900">{{ uniqueLevels.length }}</div>
+            <div class="text-sm text-gray-500 font-medium">Levels</div>
           </div>
         </div>
       </div>
     </div>
 
-    <div v-if="!activeTest" class="control-section">
-      <div class="control-content">
-        <div class="search-container">
-          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <!-- Controls Section -->
+    <div v-if="!activeTest" class="max-w-7xl mx-auto mb-8">
+      <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200 flex flex-col md:flex-row gap-4 items-center justify-between">
+        <!-- Search -->
+        <div class="relative w-full md:w-96">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="8"/>
             <path d="m21 21-4.35-4.35"/>
           </svg>
           <input
             v-model="searchQuery"
             type="text"
-            class="search-input"
+            class="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
             placeholder="Search tests..."
           />
-          <button v-if="searchQuery" @click="searchQuery = ''" class="clear-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <button 
+            v-if="searchQuery" 
+            @click="searchQuery = ''" 
+            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          >
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="18" y1="6" x2="6" y2="18"/>
               <line x1="6" y1="6" x2="18" y2="18"/>
             </svg>
           </button>
         </div>
 
-        <div class="filters-pills">
-          <div class="filter-pill">
-            <label>Subject</label>
-            <select v-model="selectedSubject">
+        <!-- Filters -->
+        <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <div class="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg">
+            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Subject</span>
+            <select v-model="selectedSubject" class="bg-transparent border-none text-sm font-medium text-gray-900 focus:ring-0 cursor-pointer">
               <option value="">All</option>
               <option v-for="subject in uniqueSubjects" :key="subject" :value="subject">
                 {{ subject }}
@@ -88,9 +104,9 @@
             </select>
           </div>
 
-          <div class="filter-pill">
-            <label>Level</label>
-            <select v-model="selectedLevel">
+          <div class="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg">
+            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Level</span>
+            <select v-model="selectedLevel" class="bg-transparent border-none text-sm font-medium text-gray-900 focus:ring-0 cursor-pointer">
               <option value="">All</option>
               <option v-for="level in uniqueLevels" :key="level" :value="level">
                 Level {{ level }}
@@ -98,8 +114,12 @@
             </select>
           </div>
 
-          <button v-if="hasActiveFilters" @click="clearFilters" class="reset-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <button 
+            v-if="hasActiveFilters" 
+            @click="clearFilters" 
+            class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+          >
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="1 4 1 10 7 10"/>
               <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
             </svg>
@@ -109,153 +129,164 @@
       </div>
     </div>
 
-    <div v-if="loading" class="loading-container">
-      <div class="loader">
-        <div class="loader-ring"></div>
-        <div class="loader-ring"></div>
-        <div class="loader-ring"></div>
-      </div>
-      <p>Loading tests...</p>
+    <!-- Loading State -->
+    <div v-if="loading" class="flex flex-col items-center justify-center py-20">
+      <div class="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
+      <p class="text-gray-500 font-medium">Loading tests...</p>
     </div>
 
-    <main v-else-if="!activeTest" class="main-section">
-      <div v-if="filteredTests.length === 0 && tests.length === 0" class="empty-container">
-        <div class="empty-illustration">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-          </svg>
-        </div>
-        <h3>No Tests Yet</h3>
-        <p>Tests will appear here when they are added</p>
-      </div>
-
-      <div v-else-if="filteredTests.length === 0 && tests.length > 0" class="empty-container">
-        <div class="empty-illustration">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+    <!-- Main Content -->
+    <main v-else-if="!activeTest" class="max-w-7xl mx-auto">
+      <!-- Empty States -->
+      <div v-if="filteredTests.length === 0" class="flex flex-col items-center justify-center py-20 bg-white rounded-xl border border-gray-200 border-dashed">
+        <div class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4 text-gray-400">
+          <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
             <circle cx="11" cy="11" r="8"/>
             <path d="m21 21-4.35-4.35"/>
           </svg>
         </div>
-        <h3>Nothing Found</h3>
-        <p>Try changing your search parameters</p>
-        <button @click="clearFilters" class="retry-btn">Clear Filters</button>
+        <h3 class="text-lg font-semibold text-gray-900 mb-1">
+          {{ tests.length === 0 ? 'No Tests Yet' : 'No Matches Found' }}
+        </h3>
+        <p class="text-gray-500 text-center max-w-xs mb-6">
+          {{ tests.length === 0 ? 'Tests will appear here when they are added.' : 'Try adjusting your search or filters to find what you\'re looking for.' }}
+        </p>
+        <button 
+          v-if="tests.length > 0" 
+          @click="clearFilters" 
+          class="px-4 py-2 bg-indigo-50 text-indigo-600 font-medium rounded-lg hover:bg-indigo-100 transition-colors"
+        >
+          Clear Filters
+        </button>
       </div>
 
-      <div v-else class="tests-container">
-        <div class="tests-grid">
-          <article 
-            v-for="test in filteredTests" 
-            :key="test._id" 
-            class="test-card"
-            @click="handleStartTest(test)"
-          >
-            <div class="card-header">
-              <span class="test-badge questions">
-                {{ test.questions?.length || 0 }} questions
-              </span>
-              <span v-if="test.duration" class="test-badge duration">
-                {{ test.duration }}m
-              </span>
-            </div>
-
-            <div class="card-body">
-              <h3 class="test-name">{{ test.title }}</h3>
-              <p v-if="test.description" class="test-description">{{ test.description }}</p>
-              
-              <div class="test-meta">
-                <span class="meta-item">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-                  </svg>
-                  {{ test.subject || 'General' }}
+      <!-- Tests Grid -->
+      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <article 
+          v-for="test in filteredTests" 
+          :key="test._id" 
+          class="group bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all cursor-pointer flex flex-col"
+          @click="handleStartTest(test)"
+        >
+          <div class="p-6 flex-1">
+            <div class="flex items-start justify-between mb-4">
+              <div class="flex gap-2">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
+                  {{ test.questions?.length || 0 }} questions
                 </span>
-                <span class="meta-item level" :class="getLevelClass(test.level || 1)">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-                  </svg>
-                  Level {{ test.level || 1 }}
+                <span v-if="test.duration" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                  {{ test.duration }}m
                 </span>
               </div>
             </div>
 
-            <div class="card-footer">
-              <button class="test-btn">
-                <span>Start Test</span>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="5" y1="12" x2="19" y2="12"/>
-                  <polyline points="12 5 19 12 12 19"/>
+            <h3 class="text-lg font-bold text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors line-clamp-2">
+              {{ test.title }}
+            </h3>
+            <p v-if="test.description" class="text-gray-500 text-sm mb-4 line-clamp-2">
+              {{ test.description }}
+            </p>
+            
+            <div class="flex items-center gap-4 text-sm text-gray-500 mt-auto">
+              <span class="flex items-center gap-1.5">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
                 </svg>
-              </button>
+                {{ test.subject || 'General' }}
+              </span>
+              <span class="flex items-center gap-1.5">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+                Level {{ test.level || 1 }}
+              </span>
             </div>
-          </article>
-        </div>
+          </div>
+
+          <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 rounded-b-xl flex justify-end">
+            <button class="flex items-center gap-2 text-sm font-semibold text-indigo-600 group-hover:translate-x-1 transition-transform">
+              Start Test
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="5" y1="12" x2="19" y2="12"/>
+                <polyline points="12 5 19 12 12 19"/>
+              </svg>
+            </button>
+          </div>
+        </article>
       </div>
     </main>
 
-    <div v-else-if="!isTestCompleted" class="test-taking-section">
-      <div class="test-container">
-        <div class="test-progress-bar">
-          <div class="progress-track">
-            <div 
-              class="progress-fill" 
-              :style="{ width: `${progressPercentage}%` }"
-            ></div>
-          </div>
-          <div class="progress-label">
+    <!-- Test Taking Interface -->
+    <div v-else-if="!isTestCompleted" class="max-w-3xl mx-auto py-8">
+      <div class="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+        <!-- Progress Bar -->
+        <div class="bg-gray-100 h-2 w-full">
+          <div 
+            class="bg-indigo-600 h-full transition-all duration-300 ease-out" 
+            :style="{ width: `${progressPercentage}%` }"
+          ></div>
+        </div>
+        
+        <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+          <span class="text-sm font-medium text-gray-500">
             Question {{ currentQuestionIndex + 1 }} of {{ activeTest.questions.length }}
-          </div>
+          </span>
+          <span class="text-sm font-semibold text-indigo-600">
+            {{ Math.round(progressPercentage) }}% Complete
+          </span>
         </div>
 
-        <div class="question-card">
-          <div class="question-header">
-            <h2 class="test-title">{{ activeTest.title }}</h2>
-            <div class="question-number">{{ currentQuestionIndex + 1 }}/{{ activeTest.questions.length }}</div>
+        <div class="p-8">
+          <div class="mb-8">
+            <h2 class="text-xl font-bold text-gray-900 mb-2">{{ activeTest.title }}</h2>
+            <h3 class="text-lg text-gray-700 leading-relaxed">{{ currentQuestion.text || currentQuestion.question }}</h3>
           </div>
-          
-          <h3 class="question-text">{{ currentQuestion.text || currentQuestion.question }}</h3>
-          
-          <div v-if="currentQuestion.type === 'multiple-choice' || currentQuestion.options" class="options-container">
+
+          <!-- Options -->
+          <div v-if="currentQuestion.type === 'multiple-choice' || currentQuestion.options" class="space-y-3">
             <label 
               v-for="(opt, j) in currentQuestion.options || ['true', 'false']" 
               :key="j" 
-              class="option-item"
-              :class="{ 'selected': userAnswers[currentQuestionIndex] === (opt.text || opt) }"
+              class="flex items-center p-4 rounded-xl border-2 cursor-pointer transition-all hover:bg-gray-50"
+              :class="userAnswers[currentQuestionIndex] === (opt.text || opt) ? 'border-indigo-600 bg-indigo-50/50' : 'border-gray-200'"
             >
               <input
                 type="radio"
                 :value="opt.text || opt"
                 v-model="userAnswers[currentQuestionIndex]"
-                class="option-input"
+                class="sr-only"
               />
-              <div class="option-content">
-                <div class="option-radio">
-                  <div class="radio-inner"></div>
-                </div>
-                <span class="option-text">{{ opt.text || opt }}</span>
+              <div 
+                class="w-5 h-5 rounded-full border-2 mr-4 flex items-center justify-center flex-shrink-0"
+                :class="userAnswers[currentQuestionIndex] === (opt.text || opt) ? 'border-indigo-600' : 'border-gray-300'"
+              >
+                <div v-if="userAnswers[currentQuestionIndex] === (opt.text || opt)" class="w-2.5 h-2.5 rounded-full bg-indigo-600"></div>
               </div>
+              <span class="text-gray-700 font-medium">{{ opt.text || opt }}</span>
             </label>
           </div>
 
-          <div v-else class="text-answer-container">
+          <!-- Text Input -->
+          <div v-else>
             <textarea
               v-model="userAnswers[currentQuestionIndex]"
-              class="text-answer-input"
-              placeholder="Enter your answer..."
-              rows="4"
+              class="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-indigo-600 focus:ring-0 transition-colors text-gray-700"
+              placeholder="Type your answer here..."
+              rows="6"
             ></textarea>
           </div>
 
-          <div class="question-actions">
+          <!-- Actions -->
+          <div class="mt-8 flex justify-end">
             <button 
-              class="next-btn"
+              class="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-xl shadow-sm hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
               @click="handleNextQuestion"
               :disabled="!userAnswers[currentQuestionIndex] || userAnswers[currentQuestionIndex].trim() === ''"
             >
               <span v-if="isLastQuestion">Finish Test</span>
               <span v-else>Next Question</span>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="5" y1="12" x2="19" y2="12"/>
                 <polyline points="12 5 19 12 12 19"/>
               </svg>
@@ -265,88 +296,77 @@
       </div>
     </div>
 
-    <div v-else class="results-section">
-      <div class="results-container">
-        <div class="results-card">
-          <div class="results-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-              <polyline points="22 4 12 14.01 9 11.01"/>
-            </svg>
-          </div>
-          
-          <h2 class="results-title">Test Completed!</h2>
-          
-          <div class="results-stats">
-            <div class="stat-circle-card">
-              <div class="circle-wrapper">
-                <svg class="progress-ring" width="120" height="120">
-                  <circle
-                    class="progress-ring-circle"
-                    stroke="#e5e7eb"
-                    stroke-width="8"
-                    fill="transparent"
-                    r="52"
-                    cx="60"
-                    cy="60"
-                  />
-                  <circle
-                    class="progress-ring-circle progress"
-                    :class="getScoreClass(score)"
-                    stroke-width="8"
-                    fill="transparent"
-                    r="52"
-                    cx="60"
-                    cy="60"
-                    :style="{ strokeDashoffset: progressOffset }"
-                  />
-                </svg>
-                <div class="circle-content">
-                  <div class="score-value">{{ score }}%</div>
-                </div>
-              </div>
-              <div class="score-label">Your Score</div>
-              <div class="score-description" :class="getScoreClass(score)">
-                {{ getScoreDescription(score) }}
-              </div>
-            </div>
-            
-            <div class="answers-summary">
-              <div class="summary-item">
-                <div class="summary-icon correct">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="20 6 9 17 4 12"/>
-                  </svg>
-                </div>
-                <div class="summary-content">
-                  <div class="summary-value">{{ correctCount }}</div>
-                  <div class="summary-label">Correct</div>
-                </div>
-              </div>
-              
-              <div class="summary-item">
-                <div class="summary-icon total">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <polyline points="14 2 14 8 20 8"/>
-                  </svg>
-                </div>
-                <div class="summary-content">
-                  <div class="summary-value">{{ activeTest.questions.length }}</div>
-                  <div class="summary-label">Total Questions</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <button @click="handleGoBack" class="back-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="19" y1="12" x2="5" y2="12"/>
-              <polyline points="12 19 5 12 12 5"/>
-            </svg>
-            <span>Back to Tests</span>
-          </button>
+    <!-- Results Section -->
+    <div v-else class="max-w-2xl mx-auto py-12">
+      <div class="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 text-center">
+        <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 text-green-600">
+          <svg class="w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
         </div>
+        
+        <h2 class="text-3xl font-bold text-gray-900 mb-2">Test Completed!</h2>
+        <p class="text-gray-500 mb-8">You've successfully finished the assessment.</p>
+        
+        <div class="flex flex-col items-center justify-center mb-8">
+          <div class="relative w-40 h-40 mb-4">
+            <svg class="transform -rotate-90 w-full h-full">
+              <circle
+                class="text-gray-100"
+                stroke-width="12"
+                stroke="currentColor"
+                fill="transparent"
+                r="70"
+                cx="80"
+                cy="80"
+              />
+              <circle
+                class="text-indigo-600 transition-all duration-1000 ease-out"
+                stroke-width="12"
+                stroke-linecap="round"
+                stroke="currentColor"
+                fill="transparent"
+                r="70"
+                cx="80"
+                cy="80"
+                :style="{ strokeDasharray: 440, strokeDashoffset: 440 - (score / 100) * 440 }"
+              />
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center">
+              <span class="text-4xl font-bold text-gray-900">{{ score }}%</span>
+            </div>
+          </div>
+          <div class="text-lg font-semibold" :class="{
+            'text-green-600': score >= 70,
+            'text-yellow-600': score >= 50 && score < 70,
+            'text-red-600': score < 50
+          }">
+            {{ getScoreDescription(score) }}
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 mb-8">
+          <div class="bg-green-50 rounded-xl p-4 border border-green-100">
+            <div class="text-2xl font-bold text-green-700">{{ correctCount }}</div>
+            <div class="text-sm font-medium text-green-600">Correct Answers</div>
+          </div>
+          <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
+            <div class="text-2xl font-bold text-gray-900">{{ activeTest.questions.length }}</div>
+            <div class="text-sm font-medium text-gray-500">Total Questions</div>
+          </div>
+        </div>
+
+        <button 
+          @click="handleGoBack" 
+          class="w-full py-3 bg-gray-900 text-white font-semibold rounded-xl shadow-md hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+        >
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="19" y1="12" x2="5" y2="12"/>
+            <polyline points="12 19 5 12 12 5"/>
+          </svg>
+          Back to Tests
+        </button>
       </div>
     </div>
   </div>
@@ -375,13 +395,6 @@ export default {
     const error = ref(null);
     const retryCount = ref(0);
     
-    const heroImages = [
-      'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=1600&h=400&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=1600&h=400&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=1600&h=400&fit=crop&q=80',
-    ];
-    const currentHeroImage = ref('');
-
     const uniqueSubjects = computed(() => 
       [...new Set(tests.value.map(test => test.subject).filter(Boolean))].sort()
     );
@@ -434,19 +447,9 @@ export default {
       return Math.round((correctCount.value / activeTest.value.questions.length) * 100);
     });
 
-    const progressOffset = computed(() => {
-      const circumference = 2 * Math.PI * 52;
-      return circumference - (score.value / 100) * circumference;
-    });
-
     const hasActiveFilters = computed(() => {
       return !!(searchQuery.value || selectedSubject.value || selectedLevel.value);
     });
-
-    const selectRandomHeroImage = () => {
-      const randomIndex = Math.floor(Math.random() * heroImages.length);
-      currentHeroImage.value = heroImages[randomIndex];
-    };
     
     // Fixed loadTests function
     const loadTests = async () => {
@@ -489,7 +492,7 @@ export default {
             loadedTests = userTestsResponse.data.tests;
           }
         } catch (userTestsError) {
-// Strategy 2: General tests endpoint
+          // Strategy 2: General tests endpoint
           try {
             const generalTestsResponse = await withTimeout(
               api.get('/tests', {
@@ -505,7 +508,7 @@ export default {
               ? testsData.filter(test => test.isActive !== false) 
               : [];
           } catch (generalTestsError) {
-// Use empty array as final fallback
+            // Use empty array as final fallback
             loadedTests = [];
           }
         }
@@ -513,7 +516,7 @@ export default {
         tests.value = loadedTests;
 
       } catch (err) {
-error.value = err.message;
+        error.value = err.message;
         tests.value = [];
       } finally {
         loading.value = false;
@@ -584,7 +587,7 @@ error.value = err.message;
         currentQuestionIndex.value = 0;
 
       } catch (err) {
-error.value = err.message || 'Failed to load test';
+        error.value = err.message || 'Failed to load test';
         
         // Reset state on error
         activeTest.value = null;
@@ -630,7 +633,7 @@ error.value = err.message || 'Failed to load test';
             { headers: { Authorization: `Bearer ${token}` } }
           );
         } catch (submitError) {
-await api.post(
+          await api.post(
             `/tests/${activeTest.value._id}/submit`,
             { 
               userId: userId,
@@ -643,7 +646,8 @@ await api.post(
         currentQuestionIndex.value = activeTest.value.questions.length;
         
       } catch (err) {
-}
+        console.error('Submit error:', err);
+      }
     };
 
     const handleGoBack = () => {
@@ -675,19 +679,6 @@ await api.post(
              correctAnswer.toString().toLowerCase().trim();
     };
 
-    const getLevelClass = (level) => {
-      if (level <= 2) return 'beginner';
-      if (level <= 4) return 'intermediate';
-      return 'advanced';
-    };
-
-    const getScoreClass = (score) => {
-      if (score >= 90) return 'excellent';
-      if (score >= 70) return 'good';
-      if (score >= 50) return 'average';
-      return 'poor';
-    };
-
     const getScoreDescription = (score) => {
       if (score >= 90) return 'Excellent!';
       if (score >= 70) return 'Good!';
@@ -715,10 +706,9 @@ await api.post(
     // Initialize with error boundary
     onMounted(async () => {
       try {
-        selectRandomHeroImage();
         await loadTests();
       } catch (err) {
-error.value = 'Error loading page';
+        error.value = 'Error loading page';
       }
     });
 
@@ -731,7 +721,6 @@ error.value = 'Error loading page';
       searchQuery,
       selectedSubject,
       selectedLevel,
-      currentHeroImage,
       uniqueSubjects,
       uniqueLevels,
       filteredTests,
@@ -741,7 +730,6 @@ error.value = 'Error loading page';
       isTestCompleted,
       correctCount,
       score,
-      progressOffset,
       hasActiveFilters,
       error,
       retryCount,
@@ -751,916 +739,8 @@ error.value = 'Error loading page';
       handleSubmitTest,
       handleGoBack,
       clearFilters,
-      getLevelClass,
-      getScoreClass,
       getScoreDescription,
     };
   }
 };
 </script>
-
-<style scoped>
-* {
-  box-sizing: border-box;
-}
-
-.tests-page {
-  min-height: 100vh;
-  background: linear-gradient(180deg, #f9fafb 0%, #ffffff 100%);
-}
-
-/* HERO HEADER */
-.hero-header {
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  padding: 2rem 0;
-  position: relative;
-  overflow: hidden;
-}
-.hero-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.85) 0%, rgba(168, 85, 247, 0.85) 100%);
-}
-.hero-content {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 2rem;
-  position: relative;
-  z-index: 1;
-}
-.hero-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.375rem 0.875rem;
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
-  border-radius: 50px;
-  color: white;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
-}
-.hero-badge svg {
-  width: 0.875rem;
-  height: 0.875rem;
-}
-.hero-title {
-  font-size: 2.25rem;
-  font-weight: 800;
-  color: white;
-  margin: 0 0 0.5rem 0;
-  line-height: 1.1;
-}
-.hero-subtitle {
-  font-size: 1rem;
-  color: rgba(255, 255, 255, 0.9);
-  margin: 0;
-}
-
-/* STATS SECTION */
-.stats-section {
-  margin-top: -1.5rem;
-  position: relative;
-  z-index: 10;
-  max-width: 1400px;
-  margin-left: auto;
-  margin-right: auto;
-  padding: 0 2rem;
-}
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1.25rem;
-}
-.stat-card {
-  background: white;
-  border-radius: 12px;
-  padding: 1.25rem;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  transition: all 0.2s;
-}
-.stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-.stat-icon {
-  width: 3rem;
-  height: 3rem;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.stat-icon svg {
-  width: 1.5rem;
-  height: 1.5rem;
-}
-.stat-icon.blue {
-  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
-  color: #3b82f6;
-}
-.stat-icon.purple {
-  background: linear-gradient(135deg, #f3e8ff, #e9d5ff);
-  color: #a855f7;
-}
-.stat-icon.gold {
-  background: linear-gradient(135deg, #fef3c7, #fde68a);
-  color: #d97706;
-}
-.stat-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-.stat-value {
-  font-size: 1.75rem;
-  font-weight: 800;
-  color: #111827;
-  line-height: 1;
-}
-.stat-label {
-  font-size: 0.8125rem;
-  color: #6b7280;
-  font-weight: 500;
-}
-
-/* CONTROL SECTION */
-.control-section {
-  max-width: 1400px;
-  margin: 2rem auto 1.5rem;
-  padding: 0 2rem;
-}
-.control-content {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-.search-container {
-  position: relative;
-  width: 100%;
-}
-.search-icon {
-  position: absolute;
-  left: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 1.125rem;
-  height: 1.125rem;
-  color: #9ca3af;
-}
-.search-input {
-  width: 100%;
-  padding: 0.875rem 3rem;
-  border: 2px solid #e5e7eb;
-  border-radius: 12px;
-  font-size: 0.9375rem;
-  background: white;
-  transition: all 0.2s;
-}
-.search-input:focus {
-  outline: none;
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-}
-.clear-btn {
-  position: absolute;
-  right: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 1.875rem;
-  height: 1.875rem;
-  border: none;
-  background: #f3f4f6;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: #6b7280;
-  transition: all 0.2s;
-}
-.clear-btn:hover {
-  background: #e5e7eb;
-  color: #111827;
-}
-.clear-btn svg {
-  width: 0.875rem;
-  height: 0.875rem;
-}
-
-/* FILTER PILLS */
-.filters-pills {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  align-items: center;
-}
-.filter-pill {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: white;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 10px;
-  padding: 0.5rem 0.875rem;
-  transition: all 0.2s;
-}
-.filter-pill:hover {
-  border-color: #d1d5db;
-}
-.filter-pill label {
-  font-size: 0.8125rem;
-  color: #6b7280;
-  font-weight: 600;
-}
-.filter-pill select {
-  border: none;
-  background: transparent;
-  font-size: 0.8125rem;
-  color: #111827;
-  font-weight: 600;
-  cursor: pointer;
-  outline: none;
-  padding: 0.125rem;
-}
-.reset-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.625rem 1rem;
-  border-radius: 10px;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-  background: #fef2f2;
-  color: #dc2626;
-  border: 1.5px solid #fca5a5;
-}
-.reset-btn:hover {
-  background: #fee2e2;
-}
-.reset-btn svg {
-  width: 0.875rem;
-  height: 0.875rem;
-}
-
-/* LOADING */
-.loading-container {
-  max-width: 1400px;
-  margin: 4rem auto;
-  padding: 4rem 2rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2rem;
-}
-.loader {
-  position: relative;
-  width: 80px;
-  height: 80px;
-}
-.loader-ring {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  border: 4px solid transparent;
-  border-top-color: #6366f1;
-  border-radius: 50%;
-  animation: spin 1.5s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
-}
-.loader-ring:nth-child(2) {
-  border-top-color: #a855f7;
-  animation-delay: 0.2s;
-  width: 90%;
-  height: 90%;
-  top: 5%;
-  left: 5%;
-}
-.loader-ring:nth-child(3) {
-  border-top-color: #fbbf24;
-  animation-delay: 0.4s;
-  width: 80%;
-  height: 80%;
-  top: 10%;
-  left: 10%;
-}
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-.loading-container p {
-  font-size: 1.125rem;
-  color: #6b7280;
-  font-weight: 500;
-}
-
-/* EMPTY STATE */
-.empty-container {
-  max-width: 600px;
-  margin: 4rem auto;
-  padding: 4rem 2rem;
-  text-align: center;
-}
-.empty-illustration {
-  width: 120px;
-  height: 120px;
-  margin: 0 auto 2rem;
-  background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.empty-illustration svg {
-  width: 60px;
-  height: 60px;
-  color: #9ca3af;
-}
-.empty-container h3 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #111827;
-  margin: 0 0 0.5rem 0;
-}
-.empty-container p {
-  font-size: 1rem;
-  color: #6b7280;
-  margin: 0 0 1.5rem 0;
-}
-.retry-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #a855f7, #9333ea);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.retry-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(168, 85, 247, 0.3);
-}
-
-/* MAIN SECTION */
-.main-section {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 2rem 4rem;
-}
-
-/* TESTS GRID */
-.tests-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 1.25rem;
-}
-
-/* TEST CARD */
-.test-card {
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex;
-  flex-direction: column;
-  border: 1px solid #f3f4f6;
-  cursor: pointer;
-}
-.test-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
-  border-color: #e5e7eb;
-}
-.card-header {
-  padding: 1rem 1rem 0;
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-.test-badge {
-  padding: 0.3125rem 0.625rem;
-  border-radius: 6px;
-  font-size: 0.625rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-.test-badge.questions {
-  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
-  color: #1e40af;
-}
-.test-badge.duration {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.card-body {
-  padding: 1rem;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-.test-name {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #111827;
-  margin: 0;
-  line-height: 1.3;
-}
-.test-description {
-  font-size: 0.8125rem;
-  color: #6b7280;
-  line-height: 1.5;
-  margin: 0;
-}
-.test-meta {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-.meta-item {
-  display: flex;
-  align-items: center;
-  gap: 0.3125rem;
-  font-size: 0.75rem;
-  color: #6b7280;
-  font-weight: 500;
-  padding: 0.375rem 0.625rem;
-  background: #f9fafb;
-  border-radius: 6px;
-}
-.meta-item svg {
-  width: 0.8125rem;
-  height: 0.8125rem;
-}
-.meta-item.level.beginner {
-  background: rgba(16, 185, 129, 0.1);
-  color: #10b981;
-}
-.meta-item.level.intermediate {
-  background: rgba(245, 158, 11, 0.1);
-  color: #f59e0b;
-}
-.meta-item.level.advanced {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
-}
-
-.card-footer {
-  padding: 0 1rem 1rem;
-}
-.test-btn {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.375rem;
-  padding: 0.75rem;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.8125rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s;
-  background: linear-gradient(135deg, #a855f7, #9333ea);
-  color: white;
-}
-.test-btn svg {
-  width: 0.875rem;
-  height: 0.875rem;
-}
-.test-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(168, 85, 247, 0.3);
-}
-
-/* TEST TAKING SECTION */
-.test-taking-section {
-  max-width: 900px;
-  margin: 2rem auto;
-  padding: 0 2rem 4rem;
-}
-.test-container {
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  border: 1px solid #e5e7eb;
-}
-.test-progress-bar {
-  padding: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
-}
-.progress-track {
-  width: 100%;
-  height: 8px;
-  background: #f3f4f6;
-  border-radius: 100px;
-  overflow: hidden;
-  margin-bottom: 0.75rem;
-}
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #6366f1, #a855f7);
-  border-radius: 100px;
-  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.progress-label {
-  text-align: center;
-  font-size: 0.875rem;
-  color: #6b7280;
-  font-weight: 600;
-}
-
-.question-card {
-  padding: 2rem;
-}
-.question-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-.test-title {
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: #111827;
-  margin: 0;
-}
-.question-number {
-  padding: 0.5rem 1rem;
-  background: linear-gradient(135deg, #f3e8ff, #e9d5ff);
-  color: #7c3aed;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 700;
-}
-.question-text {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #111827;
-  margin: 0 0 1.5rem 0;
-  line-height: 1.5;
-}
-
-.options-container {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  margin-bottom: 2rem;
-}
-.option-item {
-  display: block;
-  cursor: pointer;
-}
-.option-input {
-  display: none;
-}
-.option-content {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 1rem;
-  border: 2px solid #e5e7eb;
-  border-radius: 10px;
-  background: white;
-  transition: all 0.2s;
-}
-.option-item:hover .option-content {
-  border-color: #a855f7;
-  background: #faf5ff;
-}
-.option-item.selected .option-content {
-  border-color: #a855f7;
-  background: #faf5ff;
-}
-.option-radio {
-  width: 1.25rem;
-  height: 1.25rem;
-  border: 2px solid #d1d5db;
-  border-radius: 50%;
-  position: relative;
-  transition: all 0.2s;
-  flex-shrink: 0;
-}
-.option-item.selected .option-radio {
-  border-color: #a855f7;
-  background: #a855f7;
-}
-.radio-inner {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(0);
-  width: 0.5rem;
-  height: 0.5rem;
-  background: white;
-  border-radius: 50%;
-  transition: transform 0.2s;
-}
-.option-item.selected .radio-inner {
-  transform: translate(-50%, -50%) scale(1);
-}
-.option-text {
-  font-size: 0.9375rem;
-  color: #374151;
-  font-weight: 500;
-  line-height: 1.4;
-}
-
-.text-answer-container {
-  margin-bottom: 2rem;
-}
-.text-answer-input {
-  width: 100%;
-  padding: 1rem;
-  border: 2px solid #e5e7eb;
-  border-radius: 10px;
-  font-size: 0.9375rem;
-  font-family: inherit;
-  resize: vertical;
-  min-height: 120px;
-  transition: all 0.2s;
-}
-.text-answer-input:focus {
-  outline: none;
-  border-color: #a855f7;
-  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
-}
-
-.question-actions {
-  display: flex;
-  justify-content: flex-end;
-}
-.next-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.875rem 1.5rem;
-  background: linear-gradient(135deg, #a855f7, #9333ea);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.next-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(168, 85, 247, 0.3);
-}
-.next-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.next-btn svg {
-  width: 1rem;
-  height: 1rem;
-}
-
-/* RESULTS SECTION */
-.results-section {
-  max-width: 800px;
-  margin: 2rem auto;
-  padding: 0 2rem 4rem;
-}
-.results-container {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  border: 1px solid #e5e7eb;
-}
-.results-card {
-  padding: 3rem 2rem;
-  text-align: center;
-}
-.results-icon {
-  width: 80px;
-  height: 80px;
-  margin: 0 auto 1.5rem;
-  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #10b981;
-}
-.results-icon svg {
-  width: 40px;
-  height: 40px;
-}
-.results-title {
-  font-size: 2rem;
-  font-weight: 800;
-  color: #111827;
-  margin: 0 0 2rem 0;
-}
-.results-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-  margin-bottom: 2.5rem;
-}
-
-.stat-circle-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-}
-.circle-wrapper {
-  position: relative;
-  width: 120px;
-  height: 120px;
-}
-.progress-ring {
-  transform: rotate(-90deg);
-}
-.progress-ring-circle {
-  stroke-dasharray: 326.73;
-  stroke-dashoffset: 0;
-  transition: stroke-dashoffset 1s ease;
-}
-.progress-ring-circle.progress {
-  stroke-linecap: round;
-}
-.progress-ring-circle.progress.excellent {
-  stroke: #10b981;
-}
-.progress-ring-circle.progress.good {
-  stroke: #6366f1;
-}
-.progress-ring-circle.progress.average {
-  stroke: #f59e0b;
-}
-.progress-ring-circle.progress.poor {
-  stroke: #ef4444;
-}
-.circle-content {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  text-align: center;
-}
-.score-value {
-  font-size: 2rem;
-  font-weight: 800;
-  color: #111827;
-  line-height: 1;
-}
-.score-label {
-  font-size: 0.875rem;
-  color: #6b7280;
-  font-weight: 600;
-}
-.score-description {
-  font-size: 1rem;
-  font-weight: 700;
-}
-.score-description.excellent { color: #10b981; }
-.score-description.good { color: #6366f1; }
-.score-description.average { color: #f59e0b; }
-.score-description.poor { color: #ef4444; }
-
-.answers-summary {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
-}
-.summary-item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 1rem;
-  background: #f9fafb;
-  border-radius: 10px;
-}
-.summary-icon {
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.summary-icon svg {
-  width: 1.25rem;
-  height: 1.25rem;
-}
-.summary-icon.correct {
-  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
-  color: #10b981;
-}
-.summary-icon.total {
-  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
-  color: #3b82f6;
-}
-.summary-content {
-  flex: 1;
-  text-align: left;
-}
-.summary-value {
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: #111827;
-  line-height: 1;
-}
-.summary-label {
-  font-size: 0.75rem;
-  color: #6b7280;
-  font-weight: 500;
-}
-
-.back-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.875rem 1.5rem;
-  background: white;
-  color: #6b7280;
-  border: 2px solid #e5e7eb;
-  border-radius: 10px;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.back-btn:hover {
-  background: #f9fafb;
-  border-color: #a855f7;
-  color: #a855f7;
-}
-.back-btn svg {
-  width: 1rem;
-  height: 1rem;
-}
-
-/* RESPONSIVE */
-@media (max-width: 768px) {
-  .hero-title {
-    font-size: 1.75rem;
-  }
-  .hero-subtitle {
-    font-size: 0.9375rem;
-  }
-  .stats-section {
-    padding: 0 1.5rem;
-  }
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-  .control-section, .main-section, .test-taking-section, .results-section {
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
-  }
-  .filters-pills {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .filter-pill {
-    width: 100%;
-  }
-  .tests-grid {
-    grid-template-columns: 1fr;
-  }
-  .question-card {
-    padding: 1.5rem;
-  }
-  .question-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
-  .answers-summary {
-    grid-template-columns: 1fr;
-  }
-  .results-card {
-    padding: 2rem 1.5rem;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
-  }
-}
-</style>
