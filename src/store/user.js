@@ -31,7 +31,7 @@ const triggerGlobalEvent = (eventName, data = {}) => {
       window.eventBus.emit(eventName, enhancedData);
     }
 
-    console.log(`📡 [store/user] Event triggered: ${eventName}`);
+
 
   } catch (eventError) {
     console.error(`❌ [store/user] Event trigger error:`, eventError);
@@ -413,7 +413,7 @@ const mutations = {
     state.system.initialized = Boolean(initialized);
     state.system.initializationTime = initialized ? Date.now() : null;
     state.system.lastUpdate = Date.now();
-    console.log(`📦 [store/user] Initialized: ${initialized}`);
+
   },
 
   SET_LAST_SERVER_SYNC(state, timestamp) {
@@ -516,10 +516,10 @@ const actions = {
    * CRITICAL: Initialize store and fetch from server
    */
   async initialize({ commit, dispatch, state }) {
-    console.log('🚀 [store/user] Initializing...');
+
 
     if (state.system.initialized) {
-      console.log('⏭️ [store/user] Already initialized');
+
       return { success: true, cached: true };
     }
 
@@ -542,7 +542,7 @@ const actions = {
         commit('SET_USER_STATUS', storedStatus);
       }
 
-      console.log('✅ [store/user] Initialization complete');
+
       return { success: true };
 
     } catch (error) {
@@ -557,7 +557,7 @@ const actions = {
    * This is the PRIMARY method for getting subscription status
    */
   async fetchStatusFromServer({ commit, state }) {
-    console.log('🔄 [store/user] fetchStatusFromServer called');
+
 
     try {
       commit('SET_LOADING', { type: 'status', loading: true });
@@ -594,7 +594,7 @@ const actions = {
       // Direct API call to get user data
       const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live';
 
-      console.log('📡 [store/user] Fetching from:', `${baseUrl}/api/users/${userId}`);
+
 
       const response = await fetch(`${baseUrl}/api/users/${userId}`, {
         method: 'GET',
@@ -609,7 +609,7 @@ const actions = {
       }
 
       const data = await response.json();
-      console.log('📡 [store/user] Server response:', data);
+
 
       // Extract user data from various response formats
       const userData = data.user || data.data || data;
@@ -617,7 +617,7 @@ const actions = {
       const expiryDate = userData.subscriptionExpiryDate || userData.subscriptionExpiry;
       const subscriptionDuration = userData.subscriptionDuration;
 
-      console.log('✅ [store/user] Server status:', serverStatus, 'Expiry:', expiryDate);
+
 
       // Update store with server data
       commit('SET_USER_STATUS', serverStatus);
@@ -662,7 +662,7 @@ const actions = {
    * Load user status - calls fetchStatusFromServer
    */
   async loadUserStatus({ dispatch, commit, state }) {
-    console.log('📥 [store/user] loadUserStatus called');
+
 
     // Always try to fetch from server first
     const result = await dispatch('fetchStatusFromServer');
@@ -689,7 +689,7 @@ const actions = {
    * Update user status with server sync
    */
   async updateUserStatus({ commit, state, dispatch }, newStatus) {
-    console.log('📝 [store/user] updateUserStatus called:', newStatus);
+
 
     const validStatuses = ['free', 'start', 'pro', 'premium'];
     if (!newStatus || !validStatuses.includes(newStatus)) {
@@ -732,7 +732,7 @@ const actions = {
    * Update subscription with server sync
    */
   async updateSubscription({ commit, dispatch, state }, { plan, source = 'payment', details = {} }) {
-    console.log('💳 [store/user] updateSubscription called:', plan);
+
 
     try {
       const validPlans = ['free', 'start', 'pro', 'premium'];
@@ -787,7 +787,7 @@ const actions = {
    * Apply promocode
    */
   async applyPromocode({ commit, state, dispatch }, { promoCode, plan }) {
-    console.log('🎟️ [store/user] applyPromocode called:', promoCode);
+
 
     try {
       if (!promoCode || promoCode.trim().length < 3) {
@@ -801,7 +801,7 @@ const actions = {
       const { applyPromocode: applyPromocodeAPI } = await import('@/api/promocodes');
       const result = await applyPromocodeAPI(normalizedCode);
 
-      console.log('📡 [store/user] Promocode API result:', result);
+
 
       if (result.success) {
         const newPlan = result.plan || plan || 'pro';
@@ -870,7 +870,7 @@ const actions = {
    * Save user data to server
    */
   async saveUser({ commit, state }, { userData, token }) {
-    console.log('💾 [store/user] saveUser called');
+
     try {
       const { saveUser } = await import('@/api/user');
       const result = await saveUser(userData);
@@ -890,7 +890,7 @@ const actions = {
    * Logout user
    */
   async logout({ commit }) {
-    console.log('👋 [store/user] logout called');
+
     commit('CLEAR_USER');
     return { success: true };
   },
@@ -899,7 +899,7 @@ const actions = {
    * Validate promocode
    */
   async validatePromocode({ state }, promoCode) {
-    console.log('🔍 [store/user] validatePromocode called:', promoCode);
+
 
     try {
       if (!promoCode || promoCode.trim().length < 3) {

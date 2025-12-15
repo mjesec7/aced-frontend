@@ -1181,7 +1181,7 @@ sound.pronounceWord?.(word)
       if (!step) return null
 
       // ✅ DEBUG: Check what step we are actually on
-      console.log('Current Step Type:', step.type, 'Index:', lessonOrchestrator.currentIndex.value)
+
 
       // ✅ CRITICAL FIX: Force Game Object Creation
       if (step.type === 'game' || step.gameType || (step.data && step.data.gameConfig)) {
@@ -1194,7 +1194,7 @@ sound.pronounceWord?.(word)
                                 (step.type === 'basket-catch' ? 'basket-catch' : null) ||
                                 'basket-catch';
 
-        console.log(`🎮 Game Step Detected! Type: ${specificGameType}`);
+
 
         return {
           ...step,
@@ -1241,7 +1241,7 @@ sound.pronounceWord?.(word)
       // ✅✅✅ CRITICAL FIX: Handle exercises with CONTENT.type (your lesson structure)
       // This handles: histogram, map, block-coding, data_analysis, fraction_visual, etc.
       if (step.type === 'exercise' && step.content && step.content.type) {
-        console.log(`📊 Detected ${step.content.type} exercise via content.type`);
+
         const exerciseId = step.id || step._id || `${step.content.type}_${lessonOrchestrator.currentIndex.value}`;
         
         // Build normalized exercise object
@@ -1277,13 +1277,13 @@ sound.pronounceWord?.(word)
           });
         }
         
-        console.log('Returning normalized exercise:', normalizedExercise);
+
         return normalizedExercise;
       }
 
       // ✅ FIX: Handle exercises with DATA.type (alternative structure)
       if (step.type === 'exercise' && step.data && typeof step.data === 'object' && !Array.isArray(step.data) && step.data.type) {
-        console.log(`📐 Detected ${step.data.type} exercise via data.type`);
+
         const exerciseId = step.id || `${step.data.type}_${lessonOrchestrator.currentIndex.value}`;
         
         const normalizedExercise = {
@@ -1317,7 +1317,7 @@ sound.pronounceWord?.(word)
       ];
       
       if (directInteractiveTypes.includes(step.type)) {
-        console.log(`🎯 Direct interactive step type: ${step.type}`);
+
         const exerciseId = step.id || step._id || `${step.type}_${lessonOrchestrator.currentIndex.value}`;
         
         const normalizedExercise = {
@@ -1326,7 +1326,7 @@ sound.pronounceWord?.(word)
           content: step.content || step,
           data: step.content?.data || step.data || step
         };
-        console.log('Normalized Exercise for ' + step.type + ':', JSON.stringify(normalizedExercise, null, 2));
+
         
         if (initializationTracker.value.currentExerciseId !== exerciseId) {
           initializationTracker.value = { currentExerciseId: exerciseId, initialized: false };
@@ -1826,7 +1826,7 @@ return { success: false, error: error.message }
     watch(() => lessonOrchestrator.currentStep.value, (newStep, oldStep) => {
       // Reset exercise index when changing high-level steps
       if (newStep?.id !== oldStep?.id) {
-        console.log('Step changed, resetting exercise index') // Debug
+
         exercises.currentExerciseIndex.value = 0
 
         // Also reset initialization tracker

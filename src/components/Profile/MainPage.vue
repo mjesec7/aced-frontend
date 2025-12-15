@@ -598,19 +598,6 @@
       @close="showPaywall = false"
       @unlocked="handlePaymentSuccess($event)"
     />
-
-    <!-- DEBUG SECTION (Temporary) -->
-    <div v-if="true" style="margin-top: 2rem; padding: 1rem; background: #f0f0f0; border: 1px solid #ccc; border-radius: 8px; font-family: monospace; font-size: 12px; color: #333;">
-      <h3>Debug Info</h3>
-      <p><strong>User ID:</strong> {{ userId }}</p>
-      <p><strong>Study List Length:</strong> {{ studyList ? studyList.length : 'null' }}</p>
-      <p><strong>Filtered List Length:</strong> {{ filteredStudyList ? filteredStudyList.length : 'null' }}</p>
-      <details>
-        <summary>Raw Study List (First 3)</summary>
-        <pre>{{ studyList ? studyList.slice(0, 3) : 'null' }}</pre>
-      </details>
-      <button @click="loadData(true)" style="margin-top: 0.5rem; padding: 0.25rem 0.5rem; cursor: pointer;">Force Refresh Data</button>
-    </div>
   </div>
 </template>
 
