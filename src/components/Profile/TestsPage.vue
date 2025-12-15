@@ -482,3 +482,28 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+/* Mobile first responsive adjustments */
+@media (max-width: 640px) {
+  .min-h-screen { padding: 1rem !important; }
+  .max-w-6xl { padding-left: 1rem !important; padding-right: 1rem !important; }
+  .text-2xl { font-size: 1.25rem !important; }
+  .gap-4 { gap: 0.75rem !important; }
+  .grid-cols-1 { grid-template-columns: 1fr !important; }
+  .p-5 { padding: 1rem !important; }
+  .hidden.md\\:flex { display: none !important; }
+  .relative.flex-1.min-w-64 { min-width: 100% !important; }
+  .flex-wrap { flex-wrap: wrap !important; }
+  .flex-wrap > select { flex: 1 1 45%; min-width: 120px; }
+}
+
+@media (min-width: 641px) and (max-width: 1023px) {
+  .grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .lg\\:grid-cols-3 { grid-template-columns: repeat(2, 1fr) !important; }
+}
+
+@media (min-width: 1024px) {
+  .lg\\:grid-cols-3 { grid-template-columns: repeat(3, 1fr) !important; }
+}
+</style>

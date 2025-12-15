@@ -1800,15 +1800,27 @@ this.recommendations = null;
    ============================================= */
 .dashboard-grid {
   max-width: 1400px; margin: 0 auto; display: grid;
-  grid-template-columns: 1fr; gap: 1.5rem;
+  grid-template-columns: 1fr 360px; gap: 1.5rem;
+}
+
+@media (max-width: 1200px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr 320px;
+  }
 }
 
 /* =============================================
    QUICK STATS
    ============================================= */
 .quick-stats-grid {
-  display: grid; grid-template-columns: repeat(2, 1fr);
+  display: grid; grid-template-columns: repeat(4, 1fr);
   gap: 0.75rem; margin-bottom: 1.5rem;
+}
+
+@media (max-width: 900px) {
+  .quick-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 .stat-card {
   background: white; border-radius: 10px; border: 1px solid #e5e7eb;
