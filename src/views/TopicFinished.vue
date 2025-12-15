@@ -3,16 +3,16 @@
       <div id="confetti-holder"></div> <!-- Confetti Animation -->
   
       <div class="content">
-        <h1>🎉 Поздравляем!</h1>
+        <h1>🎉 Congratulations!</h1>
   
         <div class="medal-section">
           <img :src="medalImage" alt="Medal" class="medal-img" v-if="medalImage" />
           <p class="medal-text">{{ medalText }}</p>
         </div>
   
-        <p>Вы завершили все уроки в этой теме!</p>
+        <p>You have completed all lessons in this topic!</p>
   
-        <router-link to="/profile" class="back-btn">🏠 Вернуться на Дашборд</router-link>
+        <router-link to="/profile" class="back-btn">🏠 Return to Dashboard</router-link>
       </div>
     </div>
   </template>
@@ -42,10 +42,10 @@
 },
 
       medalText() {
-        if (this.performance >= 90) return '🥇 Золотая медаль! Великолепно!';
-        if (this.performance >= 70) return '🥈 Серебряная медаль! Отличная работа!';
-        if (this.performance >= 50) return '🥉 Бронзовая медаль! Молодец!';
-        return 'Продолжай учиться и ты получишь медаль!';
+        if (this.performance >= 90) return '🥇 Gold Medal! Magnificent!';
+        if (this.performance >= 70) return '🥈 Silver Medal! Great job!';
+        if (this.performance >= 50) return '🥉 Bronze Medal! Well done!';
+        return 'Keep learning and you will get a medal!';
       }
     },
     mounted() {

@@ -16,15 +16,14 @@
               <path d="M18.5 8.5L22 12l-3.5 3.5" />
               <path d="M12 2l-2 10l2 10l2-10z" />
             </svg>
-            Новые курсы каждую неделю
+            New courses every week
           </div>
-          <h1 class="header-title">Современные профессии</h1>
+          <h1 class="header-title">Modern Professions</h1>
           <h2 class="header-subtitle">
-            Изучайте актуальные навыки и развивайтесь вместе с технологиями
+            Learn relevant skills and grow with technology
           </h2>
           <p class="header-description">
-            Откройте для себя курсы по самым востребованным направлениям: ИИ,
-            блокчейн, дизайн, маркетинг и программирование
+            Discover courses in most in-demand areas: AI, blockchain, design, marketing and programming
           </p>
         </div>
       </div>
@@ -41,14 +40,14 @@
             <input 
               v-model="searchTerm" 
               @input="debounceSearch" 
-              placeholder="Поиск курсов..." 
+              placeholder="Search courses..." 
               class="input-search" 
             />
           </div>
 
           <div class="filter-group-select">
             <select v-model="categoryFilter" @change="applyFilters" class="select-field">
-              <option value="all">Все категории</option>
+              <option value="all">All categories</option>
               <option v-for="category in availableCategories" :key="category" :value="category">
                 {{ category }}
               </option>
@@ -60,7 +59,7 @@
 
           <div class="filter-group-select">
             <select v-model="levelFilter" @change="applyFilters" class="select-field">
-              <option value="all">Все уровни</option>
+              <option value="all">All levels</option>
               <option v-for="level in availableLevels" :key="level" :value="level">
                 {{ level }}
               </option>
@@ -72,13 +71,13 @@
 
           <div class="filter-group-buttons">
             <button :class="['button-filter', { active: typeFilter === 'all' }]" @click="setTypeFilter('all')">
-              Все
+              All
             </button>
             <button :class="['button-filter', { active: typeFilter === 'free' }]" @click="setTypeFilter('free')">
-              Бесплатные
+              Free
             </button>
             <button :class="['button-filter', { active: typeFilter === 'premium' }]" @click="setTypeFilter('premium')">
-              Премиум
+              Premium
             </button>
           </div>
         </div>
@@ -88,15 +87,15 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="results-icon">
               <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
             </svg>
-            <span>Найдено курсов: {{ courses.length }}</span>
+            <span>Courses found: {{ courses.length }}</span>
           </div>
-          <div class="results-updated">Обновлено сегодня</div>
+          <div class="results-updated">Updated today</div>
         </div>
 
         <div v-if="loading" class="empty-state">
           <div class="spinner"></div>
-          <h3 class="empty-state-title">Загрузка курсов...</h3>
-          <p class="empty-state-description">Подготавливаем для вас лучшие курсы</p>
+          <h3 class="empty-state-title">Loading courses...</h3>
+          <p class="empty-state-description">Preparing the best courses for you</p>
         </div>
 
         <div v-else-if="error" class="empty-state">
@@ -107,10 +106,10 @@
               <line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
           </div>
-          <h3 class="empty-state-title">Не удалось загрузить курсы</h3>
+          <h3 class="empty-state-title">Failed to load courses</h3>
           <p class="empty-state-description">{{ error }}</p>
           <button @click="loadCourses" class="button-reset-filters">
-            Попробовать снова
+            Try again
           </button>
         </div>
 
@@ -140,17 +139,17 @@
                   <path d="m14 6 4 10L2 10"></path>
                   <path d="M5 14 2 12l10-2L9.5 2l.5 6"></path>
                 </svg>
-                Премиум
+                Premium
               </div>
-              <div v-else class="badge badge-free">Бесплатно</div>
+              <div v-else class="badge badge-free">Free</div>
             </div>
 
             <div class="course-card-content">
               <div class="course-card-meta">
-                <div class="course-card-category">{{ course.category || 'Общий' }}</div>
+                <div class="course-card-category">{{ course.category || 'General' }}</div>
               </div>
-              <h3 class="course-card-title">{{ course.title || 'Без названия' }}</h3>
-              <p class="course-card-description">{{ course.description || 'Описание не указано' }}</p>
+              <h3 class="course-card-title">{{ course.title || 'Untitled' }}</h3>
+              <p class="course-card-description">{{ course.description || 'No description provided' }}</p>
               <div class="course-card-stats-and-provider">
                 <div class="course-card-stats">
                   <div class="course-card-stat">
@@ -158,12 +157,12 @@
                       <circle cx="12" cy="12" r="10"></circle>
                       <polyline points="12 6 12 12 16 14"></polyline>
                     </svg>
-                    <span>{{ course.duration || '30 мин' }}</span>
+                    <span>{{ course.duration || '30 min' }}</span>
                   </div>
-                  <div class="course-card-level">{{ course.level || 'Базовый' }}</div>
+                  <div class="course-card-level">{{ course.level || 'Basic' }}</div>
                 </div>
                 <div class="course-card-provider">
-                  <p>от</p>
+                  <p>from</p>
                   <p>Aced</p>
                 </div>
               </div>
@@ -178,12 +177,12 @@
               <path d="m21 21-4.3-4.3"></path>
             </svg>
           </div>
-          <h3 class="empty-state-title">Курсы не найдены</h3>
+          <h3 class="empty-state-title">No courses found</h3>
           <p class="empty-state-description">
-            Попробуйте изменить параметры поиска или выбрать другую категорию
+            Try changing search parameters or choose another category
           </p>
           <button @click="clearFilters" class="button-reset-filters">
-            Сбросить фильтры
+            Reset filters
           </button>
         </div>
       </div>
@@ -195,11 +194,11 @@
          
           <div v-if="modalLoading" class="modal-loading-state">
             <div class="spinner"></div>
-            <p>Загрузка информации о курсе...</p>
+            <p>Loading course info...</p>
           </div>
 
           <div v-else-if="selectedCourse" class="modal-content">
-            <button class="modal-close" @click="closeModal" aria-label="Закрыть">
+            <button class="modal-close" @click="closeModal" aria-label="Close">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M18 6 6 18"></path>
               <path d="m6 6 12 12"></path>
@@ -227,14 +226,14 @@
                       <path d="m14 6 4 10L2 10"></path>
                       <path d="M5 14 2 12l10-2L9.5 2l.5 6"></path>
                     </svg>
-                    Премиум
+                    Premium
                   </div>
                   <div v-else class="modal-badge modal-badge-free">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <circle cx="12" cy="12" r="10"></circle>
                       <polyline points="12 6 12 12 16 14"></polyline>
                     </svg>
-                    Бесплатно
+                    Free
                   </div>
                 </div>
 

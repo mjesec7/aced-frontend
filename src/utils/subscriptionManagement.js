@@ -124,13 +124,13 @@ export function setupEnhancedGlobalSubscriptionManagement(store, eventBus, app) 
 
     // Show celebration for upgrades
     if (actualPlan !== 'free' && (oldPlan === 'free' || !oldPlan)) {
-      const sourceText = source === 'promocode' ? 'промокоду' : 'оплате';
+      const sourceText = source === 'promocode' ? 'promocode' : 'payment';
 
       eventBus.emit('subscriptionUpgrade', {
         plan: actualPlan,
         newStatus: actualPlan,
         source: source || 'upgrade',
-        message: message || `Поздравляем! ${planLabel} подписка активирована по ${sourceText}!`,
+        message: message || `Congratulations! ${planLabel} subscription activated via ${sourceText}!`,
         timestamp: Date.now()
       });
     }

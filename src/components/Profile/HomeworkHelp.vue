@@ -1,54 +1,54 @@
 <template>
   <div class="homework-help">
     <div class="instruction-box">
-      <h2>📘 Как пользоваться помощником</h2>
+      <h2>📘 How to use the assistant</h2>
       <ol>
-        <li>Выберите предмет или тему.</li>
-        <li>Сформулируйте вопрос как можно чётче.</li>
-        <li>Прикрепите изображение и поясните, что на нём изображено.</li>
-        <li>Нажмите «Отправить» и получите ответ!</li>
+        <li>Choose a subject or topic.</li>
+        <li>Formulate your question as clearly as possible.</li>
+        <li>Attach an image and explain what is depicted.</li>
+        <li>Click "Send" and get an answer!</li>
       </ol>
     </div>
 
     <!-- Enhanced usage display based on subscription plan -->
     <div class="chat-header">
-      <h2>📚 Помощь с домашкой</h2>
+      <h2>📚 Homework Help</h2>
       <div class="usage-info">
         <div v-if="plan === 'free'" class="usage-counter free">
           <div class="usage-item">
-            <span class="label">Сообщения:</span>
-            <span class="count">{{ remainingMessages }} из 50</span>
+            <span class="label">Messages:</span>
+            <span class="count">{{ remainingMessages }} of 50</span>
           </div>
           <div class="usage-item">
-            <span class="label">Изображения:</span>
-            <span class="count">{{ remainingImages }} из 5</span>
+            <span class="label">Images:</span>
+            <span class="count">{{ remainingImages }} of 5</span>
           </div>
         </div>
         
         <div v-else-if="plan === 'start'" class="usage-counter start">
           <div class="usage-item">
-            <span class="label">Сообщения:</span>
-            <span class="count unlimited">∞ Безлимит</span>
+            <span class="label">Messages:</span>
+            <span class="count unlimited">∞ Unlimited</span>
           </div>
           <div class="usage-item">
-            <span class="label">Изображения:</span>
-            <span class="count">{{ remainingImages }} из 20</span>
+            <span class="label">Images:</span>
+            <span class="count">{{ remainingImages }} of 20</span>
           </div>
         </div>
         
         <div v-else-if="plan === 'pro'" class="usage-counter pro">
           <div class="usage-item">
-            <span class="label">Сообщения:</span>
-            <span class="count unlimited">∞ Безлимит</span>
+            <span class="label">Messages:</span>
+            <span class="count unlimited">∞ Unlimited</span>
           </div>
           <div class="usage-item">
-            <span class="label">Изображения:</span>
-            <span class="count unlimited">∞ Безлимит</span>
+            <span class="label">Images:</span>
+            <span class="count unlimited">∞ Unlimited</span>
           </div>
         </div>
         
         <div class="reset-info">
-          <small>Обновление: {{ nextResetDate }}</small>
+          <small>Reset: {{ nextResetDate }}</small>
         </div>
       </div>
     </div>
@@ -59,7 +59,7 @@
         <span class="warning-icon">⚠️</span>
         <span class="warning-text">{{ warningMessage }}</span>
         <button v-if="canUpgrade" @click="navigateToUpgrade" class="upgrade-btn">
-          Улучшить план
+          Upgrade Plan
         </button>
       </div>
     </div>
@@ -115,11 +115,11 @@
         :disabled="isInputDisabled"
         :class="{ disabled: isInputDisabled }"
       >
-        Отправить
+        Send
       </button>
     </div>
 
-    <p v-if="imageAdded" class="image-added-msg">📸 Изображение успешно добавлено!</p>
+    <p v-if="imageAdded" class="image-added-msg">📸 Image successfully added!</p>
   </div>
 </template>
 
@@ -185,7 +185,7 @@ computed: {
   nextResetDate() {
     const now = new Date();
     const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-    return nextMonth.toLocaleDateString('ru-RU', { 
+    return nextMonth.toLocaleDateString('en-US', { 
       day: 'numeric', 
       month: 'long' 
     });
@@ -211,16 +211,16 @@ computed: {
   
   inputPlaceholder() {
     if (this.isMessageLimitReached) {
-      return 'Лимит сообщений исчерпан. Обновится в следующем месяце.';
+      return 'Message limit reached. Resets next month.';
     }
-    return 'Напиши вопрос...';
+    return 'Type a question...';
   },
   
   imageUploadTooltip() {
     if (this.isImageLimitReached) {
-      return 'Лимит изображений исчерпан';
+      return 'Image limit reached';
     }
-    return 'Прикрепить изображение';
+    return 'Attach image';
   },
   
   showUsageWarning() {
@@ -240,21 +240,21 @@ computed: {
   warningMessage() {
     if (this.plan === 'free') {
       if (this.isMessageLimitReached && this.isImageLimitReached) {
-        return 'Лимиты сообщений и изображений исчерпаны. Улучшите план для продолжения.';
+        return 'Message and image limits reached. Upgrade plan to continue.';
       } else if (this.isMessageLimitReached) {
-        return 'Лимит сообщений исчерпан. Улучшите план для безлимитного общения.';
+        return 'Message limit reached. Upgrade plan for unlimited messaging.';
       } else if (this.isImageLimitReached) {
-        return 'Лимит изображений исчерпан. Улучшите план для большего количества изображений.';
+        return 'Image limit reached. Upgrade plan for more images.';
       } else if (this.remainingMessages <= 5) {
-        return `Осталось ${this.remainingMessages} сообщений до конца месяца.`;
+        return `${this.remainingMessages} messages remaining this month.`;
       } else if (this.remainingImages <= 1) {
-        return `Остался ${this.remainingImages} запрос с изображением до конца месяца.`;
+        return `${this.remainingImages} image request(s) remaining this month.`;
       }
     } else if (this.plan === 'start') {
       if (this.isImageLimitReached) {
-        return 'Лимит изображений исчерпан. Улучшите до Pro для безлимитных изображений.';
+        return 'Image limit reached. Upgrade to Pro for unlimited images.';
       } else if (this.remainingImages <= 2) {
-        return `Осталось ${this.remainingImages} изображений до конца месяца.`;
+        return `${this.remainingImages} images remaining this month.`;
       }
     }
     return '';
@@ -427,7 +427,7 @@ methods: {
       
       // Show error message
       this.messages.push({
-        text: '❌ Произошла ошибка. Попробуйте еще раз.',
+        text: '❌ An error occurred. Please try again.',
         sender: 'bot',
         timestamp: new Date().toISOString()
       });
@@ -482,10 +482,10 @@ methods: {
           this.imageAdded = true;
           setTimeout(() => (this.imageAdded = false), 3000);
         } else {
-          alert('Не удалось загрузить изображение.');
+          alert('Failed to upload image.');
         }
       } catch (err) {
-alert('Произошла ошибка при загрузке изображения.');
+alert('Error uploading image.');
       }
     };
     
@@ -494,11 +494,11 @@ alert('Произошла ошибка при загрузке изображе�
   
   showLimitModal(type) {
     const messages = {
-      messages: 'Лимит сообщений исчерпан. Улучшите план для продолжения общения.',
-      images: 'Лимит изображений исчерпан. Улучшите план для отправки большего количества изображений.'
+      messages: 'Message limit reached. Upgrade plan to continue chatting.',
+      images: 'Image limit reached. Upgrade plan to send more images.'
     };
     
-    if (confirm(`${messages[type]}\n\nПерейти к выбору плана?`)) {
+    if (confirm(`${messages[type]}\n\nGo to plan selection?`)) {
       this.navigateToUpgrade();
     }
   },
@@ -508,7 +508,7 @@ alert('Произошла ошибка при загрузке изображе�
   },
   
   formatTimestamp(timestamp) {
-    return new Date(timestamp).toLocaleTimeString('ru-RU', {
+    return new Date(timestamp).toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit'
     });

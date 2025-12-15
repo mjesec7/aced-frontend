@@ -1477,9 +1477,9 @@ sound.pronounceWord?.(word)
         lessonOrchestrator.earnedPoints.value += 10
         if (attemptCount.value === 1) {
           lessonOrchestrator.earnedPoints.value += 5
-          exercises.confirmation.value = exercises.getRandomSuccessMessage() + ' 🌟 Бонус за первую попытку!'
+          exercises.confirmation.value = exercises.getRandomSuccessMessage() + ' 🌟 Bonus for first attempt!'
         } else {
-          exercises.confirmation.value = exercises.getRandomSuccessMessage() + ' 💪 Отлично, со второй попытки!'
+          exercises.confirmation.value = exercises.getRandomSuccessMessage() + ' 💪 Great, on the second attempt!'
         }
         sound.playSuccessSound?.()
         isOnSecondChance.value = false

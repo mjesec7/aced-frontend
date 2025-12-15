@@ -7,7 +7,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="15 18 9 12 15 6"/>
           </svg>
-          Назад
+          Back
         </button>
         <div class="header-info">
           <h1 class="page-title">{{ currentTitle }}</h1>
@@ -19,7 +19,7 @@
     <!-- Loading State -->
     <div v-if="loading" class="loading-state">
       <div class="spinner"></div>
-      <p>Загрузка словаря...</p>
+      <p>Loading vocabulary...</p>
     </div>
 
     <!-- Languages View -->
@@ -29,8 +29,8 @@
           <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
           <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
         </svg>
-        <p class="empty-text">У вас пока нет слов в словаре</p>
-        <p class="empty-subtext">Начните изучать уроки для добавления новых слов</p>
+        <p class="empty-text">You don't have any words in your vocabulary yet</p>
+        <p class="empty-subtext">Start studying lessons to add new words</p>
       </div>
 
       <div v-else class="cards-grid">
@@ -42,23 +42,23 @@
         >
           <div class="card-icon">{{ lang.flag }}</div>
           <div class="card-content">
-            <h3 class="card-title">{{ lang.nameRu }}</h3>
+            <h3 class="card-title">{{ lang.name }}</h3>
             <div class="card-stats">
               <div class="stat-item">
                 <span class="stat-number">{{ lang.totalWords }}</span>
-                <span class="stat-label">слов</span>
+                <span class="stat-label">words</span>
               </div>
               <div class="stat-divider"></div>
               <div class="stat-item">
                 <span class="stat-number">{{ lang.levels?.length || 0 }}</span>
-                <span class="stat-label">уровней</span>
+                <span class="stat-label">levels</span>
               </div>
             </div>
             <div class="progress-section">
               <div class="progress-bar-container">
                 <div class="progress-bar-fill" :style="{ width: lang.progress + '%' }"></div>
               </div>
-              <span class="progress-text">{{ lang.progress }}% изучено</span>
+              <span class="progress-text">{{ lang.progress }}% learned</span>
             </div>
           </div>
         </div>
@@ -77,7 +77,7 @@
           <div class="card-header-row">
             <div class="level-badge">
               <span class="level-icon">{{ getLevelIcon(level.level) }}</span>
-              <span class="level-number">Уровень {{ level.level }}</span>
+              <span class="level-number">Level {{ level.level }}</span>
             </div>
             <div :class="['difficulty-badge', getDifficulty(level.level)]">
               {{ getDifficultyLabel(getDifficulty(level.level)) }}
@@ -90,14 +90,14 @@
                 <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
                 <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
               </svg>
-              <span>{{ level.totalWords }} слов</span>
+              <span>{{ level.totalWords }} words</span>
             </div>
             <div class="stat-group">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
                 <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
               </svg>
-              <span>{{ level.topicCount }} тем</span>
+              <span>{{ level.topicCount }} topics</span>
             </div>
           </div>
         </div>
@@ -117,14 +117,14 @@
             <span class="topic-emoji">{{ getTopicIcon(topic.name) }}</span>
           </div>
           <div class="card-content">
-            <h3 class="card-title">{{ getTopicNameRu(topic.name) }}</h3>
+            <h3 class="card-title">{{ getTopicName(topic.name) }}</h3>
             <p class="card-subtitle">{{ getTopicDescription(topic.name) }}</p>
             <div class="word-count">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="10"/>
                 <polyline points="12 6 12 12 16 14"/>
               </svg>
-              <span>{{ topic.totalWords }} слов</span>
+              <span>{{ topic.totalWords }} words</span>
             </div>
           </div>
         </div>
@@ -141,7 +141,7 @@
           </svg>
           <input 
             v-model="searchQuery" 
-            placeholder="Поиск слов..." 
+            placeholder="Search words..." 
             class="search-input"
           >
         </div>
@@ -160,7 +160,7 @@
             <line x1="9" y1="8" x2="15" y2="8"/>
             <line x1="17" y1="16" x2="23" y2="16"/>
           </svg>
-          {{ showAll ? 'Все слова' : 'Активные' }}
+          {{ showAll ? 'All words' : 'Active' }}
         </button>
       </div>
 
@@ -183,7 +183,7 @@
           <p class="word-translation">{{ word.translation }}</p>
           <div v-if="word.definition" class="word-definition">{{ word.definition }}</div>
           <div class="word-meta">
-            <span class="meta-badge pos">{{ getPartOfSpeechRu(word.partOfSpeech) }}</span>
+            <span class="meta-badge pos">{{ getPartOfSpeechLabel(word.partOfSpeech) }}</span>
             <span :class="['meta-badge difficulty', word.difficulty]">
               {{ getDifficultyLabel(word.difficulty) }}
             </span>
@@ -229,7 +229,7 @@
           <div class="translation-section">
             <p class="translation-large">{{ selectedWord.translation }}</p>
             <div class="meta-tags">
-              <span class="meta-badge pos">{{ getPartOfSpeechRu(selectedWord.partOfSpeech) }}</span>
+              <span class="meta-badge pos">{{ getPartOfSpeechLabel(selectedWord.partOfSpeech) }}</span>
               <span :class="['meta-badge difficulty', selectedWord.difficulty]">
                 {{ getDifficultyLabel(selectedWord.difficulty) }}
               </span>
@@ -237,12 +237,12 @@
           </div>
 
           <div v-if="selectedWord.definition" class="definition-section">
-            <h4 class="section-title">Определение</h4>
+            <h4 class="section-title">Definition</h4>
             <p class="definition-text">{{ selectedWord.definition }}</p>
           </div>
 
           <div v-if="selectedWord.examples?.length" class="examples-section">
-            <h4 class="section-title">Примеры использования</h4>
+            <h4 class="section-title">Usage examples</h4>
             <div v-for="(example, index) in selectedWord.examples" :key="index" class="example-item">
               <p class="example-sentence">{{ example.sentence }}</p>
               <p class="example-translation">{{ example.translation }}</p>
@@ -255,13 +255,13 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M18 6L6 18M6 6l12 12"/>
             </svg>
-            Повторить
+            Review
           </button>
           <button @click="markAsKnown(selectedWord)" class="action-button primary">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="20 6 9 17 4 12"/>
             </svg>
-            Знаю
+            I know
           </button>
         </div>
       </div>
@@ -315,19 +315,19 @@ const canGoBack = computed(() => currentView.value !== 'languages')
 
 const currentTitle = computed(() => {
   switch (currentView.value) {
-    case 'languages': return '📚 Мой словарь'
-    case 'levels': return selectedLanguage.value?.nameRu || 'Уровни'
-    case 'topics': return `Уровень ${selectedLevel.value} - Темы`
-    case 'words': return selectedTopic.value?.nameRu || 'Слова'
-    default: return 'Словарь'
+    case 'languages': return '📚 My Vocabulary'
+    case 'levels': return selectedLanguage.value?.name || 'Levels'
+    case 'topics': return `Level ${selectedLevel.value} - Topics`
+    case 'words': return selectedTopic.value?.name || 'Words'
+    default: return 'Vocabulary'
   }
 })
 
 const breadcrumb = computed(() => {
   const parts = []
-  if (selectedLanguage.value) parts.push(selectedLanguage.value.nameRu)
-  if (selectedLevel.value) parts.push(`Уровень ${selectedLevel.value}`)
-  if (selectedTopic.value) parts.push(selectedTopic.value.nameRu)
+  if (selectedLanguage.value) parts.push(selectedLanguage.value.name)
+  if (selectedLevel.value) parts.push(`Level ${selectedLevel.value}`)
+  if (selectedTopic.value) parts.push(selectedTopic.value.name)
   return parts.join(' → ')
 })
 
@@ -627,14 +627,14 @@ return getDemoVocabulary(languageCode)
 
 const getDemoVocabulary = (languageCode = null) => {
   const demoWords = [
-    { id: 'hello_en', word: 'Hello', translation: 'Привет', language: 'english', topic: 'Greetings', level: 1, progress: 75, partOfSpeech: 'interjection', difficulty: 'beginner', definition: 'A greeting used when meeting someone' },
-    { id: 'goodbye_en', word: 'Goodbye', translation: 'До свидания', language: 'english', topic: 'Greetings', level: 1, progress: 50, partOfSpeech: 'interjection', difficulty: 'beginner', definition: 'A farewell greeting' },
-    { id: 'house_en', word: 'House', translation: 'Дом', language: 'english', topic: 'Home', level: 1, progress: 90, partOfSpeech: 'noun', difficulty: 'beginner', definition: 'A building for human habitation' },
-    { id: 'water_en', word: 'Water', translation: 'Вода', language: 'english', topic: 'Nature', level: 1, progress: 100, partOfSpeech: 'noun', difficulty: 'beginner', definition: 'A clear liquid that forms the seas, lakes, rivers, and rain' },
-    { id: 'computer_en', word: 'Computer', translation: 'Компьютер', language: 'english', topic: 'Technology', level: 2, progress: 25, partOfSpeech: 'noun', difficulty: 'intermediate', definition: 'An electronic device for storing and processing data' },
-    { id: 'hola_es', word: 'Hola', translation: 'Привет', language: 'spanish', topic: 'Greetings', level: 1, progress: 60, partOfSpeech: 'interjection', difficulty: 'beginner', definition: 'A Spanish greeting' },
-    { id: 'casa_es', word: 'Casa', translation: 'Дом', language: 'spanish', topic: 'Home', level: 1, progress: 80, partOfSpeech: 'noun', difficulty: 'beginner', definition: 'A house or home in Spanish' },
-    { id: 'bonjour_fr', word: 'Bonjour', translation: 'Привет', language: 'french', topic: 'Greetings', level: 1, progress: 40, partOfSpeech: 'interjection', difficulty: 'beginner', definition: 'A French greeting meaning good day' }
+    { id: 'hello_en', word: 'Hello', translation: 'Hello', language: 'english', topic: 'Greetings', level: 1, progress: 75, partOfSpeech: 'interjection', difficulty: 'beginner', definition: 'A greeting used when meeting someone' },
+    { id: 'goodbye_en', word: 'Goodbye', translation: 'Goodbye', language: 'english', topic: 'Greetings', level: 1, progress: 50, partOfSpeech: 'interjection', difficulty: 'beginner', definition: 'A farewell greeting' },
+    { id: 'house_en', word: 'House', translation: 'House', language: 'english', topic: 'Home', level: 1, progress: 90, partOfSpeech: 'noun', difficulty: 'beginner', definition: 'A building for human habitation' },
+    { id: 'water_en', word: 'Water', translation: 'Water', language: 'english', topic: 'Nature', level: 1, progress: 100, partOfSpeech: 'noun', difficulty: 'beginner', definition: 'A clear liquid that forms the seas, lakes, rivers, and rain' },
+    { id: 'computer_en', word: 'Computer', translation: 'Computer', language: 'english', topic: 'Technology', level: 2, progress: 25, partOfSpeech: 'noun', difficulty: 'intermediate', definition: 'An electronic device for storing and processing data' },
+    { id: 'hola_es', word: 'Hola', translation: 'Hello', language: 'spanish', topic: 'Greetings', level: 1, progress: 60, partOfSpeech: 'interjection', difficulty: 'beginner', definition: 'A Spanish greeting' },
+    { id: 'casa_es', word: 'Casa', translation: 'House', language: 'spanish', topic: 'Home', level: 1, progress: 80, partOfSpeech: 'noun', difficulty: 'beginner', definition: 'A house or home in Spanish' },
+    { id: 'bonjour_fr', word: 'Bonjour', translation: 'Hello', language: 'french', topic: 'Greetings', level: 1, progress: 40, partOfSpeech: 'interjection', difficulty: 'beginner', definition: 'A French greeting meaning good day' }
   ]
   
   if (languageCode) {
@@ -697,7 +697,7 @@ const loadLanguages = async () => {
     const vocabulary = await getUserVocabulary(userId)
     
     if (!vocabulary || vocabulary.length === 0) {
-      showToast('Словарь пуст. Начните изучать уроки для добавления слов!', 'warning')
+      showToast('Vocabulary is empty. Start studying lessons to add words!', 'warning')
       languages.value = []
       return
     }
@@ -713,7 +713,7 @@ const loadLanguages = async () => {
         const config = getLanguageConfig(langCode)
         languageMap.set(langCode, {
           code: langCode,
-          nameRu: config.nameRu,
+          name: config.name,
           flag: config.flag,
           totalWords: 0,
           levels: new Set(),
@@ -739,10 +739,10 @@ const loadLanguages = async () => {
     })).filter(lang => lang.totalWords > 0)
     
     if (languages.value.length === 0) {
-      showToast('Нет доступных языков в словаре', 'warning')
+      showToast('No available languages in vocabulary', 'warning')
     }
   } catch (error) {
-showToast('Ошибка загрузки языков', 'error')
+showToast('Error loading languages', 'error')
     languages.value = []
   } finally {
     loading.value = false
@@ -783,7 +783,7 @@ const loadLevels = async (language) => {
     })).sort((a, b) => a.level - b.level)
     
   } catch (error) {
-    showToast('Ошибка загрузки уровней', 'error')
+    showToast('Error loading levels', 'error')
   } finally {
     loading.value = false
   }
@@ -805,7 +805,7 @@ const loadTopics = async (language, level) => {
         if (!topicMap.has(topicName)) {
           topicMap.set(topicName, {
             name: topicName,
-            nameRu: getTopicNameRu(topicName),
+            name: topicName,
             totalWords: 0,
             words: []
           })
@@ -818,7 +818,7 @@ const loadTopics = async (language, level) => {
     
     topics.value = Array.from(topicMap.values()).sort((a, b) => a.name.localeCompare(b.name))
   } catch (error) {
-    showToast('Ошибка загрузки тем', 'error')
+    showToast('Error loading topics', 'error')
   } finally {
     loading.value = false
   }
@@ -853,18 +853,18 @@ const loadWords = async (language, level, topic) => {
 
 const getLanguageConfig = (code) => {
   const configs = {
-    english: { nameRu: 'Английский', flag: '🇺🇸' },
-    spanish: { nameRu: 'Испанский', flag: '🇪🇸' },
-    french: { nameRu: 'Французский', flag: '🇫🇷' },
-    german: { nameRu: 'Немецкий', flag: '🇩🇪' },
-    chinese: { nameRu: 'Китайский', flag: '🇨🇳' },
-    arabic: { nameRu: 'Арабский', flag: '🇸🇦' },
-    japanese: { nameRu: 'Японский', flag: '🇯🇵' },
-    korean: { nameRu: 'Корейский', flag: '🇰🇷' },
-    uzbek: { nameRu: 'Узбекский', flag: '🇺🇿' },
-    russian: { nameRu: 'Русский', flag: '🇷🇺' }
+    english: { name: 'English', flag: '🇺🇸' },
+    spanish: { name: 'Spanish', flag: '🇪🇸' },
+    french: { name: 'French', flag: '🇫🇷' },
+    german: { name: 'German', flag: '🇩🇪' },
+    chinese: { name: 'Chinese', flag: '🇨🇳' },
+    arabic: { name: 'Arabic', flag: '🇸🇦' },
+    japanese: { name: 'Japanese', flag: '🇯🇵' },
+    korean: { name: 'Korean', flag: '🇰🇷' },
+    uzbek: { name: 'Uzbek', flag: '🇺🇿' },
+    russian: { name: 'Russian', flag: '🇷🇺' }
   }
-  return configs[code] || { nameRu: code, flag: '🌍' }
+  return configs[code] || { name: code, flag: '🌍' }
 }
 
 const getLevelIcon = (level) => {
@@ -874,13 +874,13 @@ const getLevelIcon = (level) => {
 
 const getLevelDescription = (level) => {
   const descriptions = {
-    1: 'Базовые слова и фразы',
-    2: 'Повседневная лексика',
-    3: 'Расширенный словарь',
-    4: 'Продвинутые темы',
-    5: 'Специализированная лексика'
+    1: 'Basic words and phrases',
+    2: 'Everyday vocabulary',
+    3: 'Extended vocabulary',
+    4: 'Advanced topics',
+    5: 'Specialized vocabulary'
   }
-  return descriptions[level] || `Уровень ${level}`
+  return descriptions[level] || `Level ${level}`
 }
 
 const getDifficulty = (level) => {
@@ -890,7 +890,7 @@ const getDifficulty = (level) => {
 }
 
 const getDifficultyLabel = (difficulty) => {
-  const labels = { beginner: 'Легкий', intermediate: 'Средний', advanced: 'Сложный' }
+  const labels = { beginner: 'Easy', intermediate: 'Medium', advanced: 'Hard' }
   return labels[difficulty] || difficulty
 }
 
@@ -904,32 +904,26 @@ const getTopicIcon = (topicName) => {
   return icons[topicName] || '📖'
 }
 
-const getTopicNameRu = (topicName) => {
-  const translations = {
-    'Travel': 'Путешествия', 'Business': 'Бизнес', 'Food': 'Еда',
-    'Family': 'Семья', 'Education': 'Образование', 'Health': 'Здоровье',
-    'Technology': 'Технологии', 'Sports': 'Спорт', 'Greetings': 'Приветствие',
-    'Home': 'Дом', 'Nature': 'Природа', 'General': 'Общее'
-  }
-  return translations[topicName] || topicName
+const getTopicName = (topicName) => {
+  return topicName
 }
 
 const getTopicDescription = (topicName) => {
   const descriptions = {
-    'Travel': 'Слова для путешествий',
-    'Business': 'Деловая лексика',
-    'Food': 'Еда и напитки',
-    'Greetings': 'Приветствие и знакомство',
-    'Home': 'Дом и семья',
-    'Technology': 'Компьютеры и технологии'
+    'Travel': 'Words for travel',
+    'Business': 'Business vocabulary',
+    'Food': 'Food and drinks',
+    'Greetings': 'Greetings and introductions',
+    'Home': 'Home and family',
+    'Technology': 'Computers and technology'
   }
-  return descriptions[topicName] || `Изучайте слова по теме "${topicName}"`
+  return descriptions[topicName] || `Learn words about "${topicName}"`
 }
 
-const getPartOfSpeechRu = (partOfSpeech) => {
+const getPartOfSpeechLabel = (partOfSpeech) => {
   const translations = {
-    'noun': 'сущ.', 'verb': 'глаг.', 'adjective': 'прил.',
-    'adverb': 'нар.', 'phrase': 'фраза', 'interjection': 'межд.'
+    'noun': 'noun', 'verb': 'verb', 'adjective': 'adj.',
+    'adverb': 'adv.', 'phrase': 'phrase', 'interjection': 'interj.'
   }
   return translations[partOfSpeech] || partOfSpeech
 }
@@ -945,20 +939,20 @@ const pronounceWord = (text) => {
 const markAsKnown = async (word) => {
   try {
     word.progress = 100
-    showToast('Слово отмечено как изученное')
+    showToast('Word marked as learned')
     closeWordModal()
   } catch (error) {
-    showToast('Ошибка обновления', 'error')
+    showToast('Update error', 'error')
   }
 }
 
 const markAsUnknown = async (word) => {
   try {
     word.progress = 0
-    showToast('Слово добавлено для повторения')
+    showToast('Word added for review')
     closeWordModal()
   } catch (error) {
-    showToast('Ошибка обновления', 'error')
+    showToast('Update error', 'error')
   }
 }
 

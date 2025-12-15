@@ -10,10 +10,10 @@
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
               <polyline points="14 2 14 8 20 8"/>
             </svg>
-            Домашние задания
+            Homework
           </div>
-          <h1 class="hero-title">Ваши задания</h1>
-          <p class="hero-subtitle">{{ validHomeworks.length }} заданий доступно</p>
+          <h1 class="hero-title">Your Assignments</h1>
+          <p class="hero-subtitle">{{ validHomeworks.length }} assignments available</p>
         </div>
       </div>
     </header>
@@ -30,7 +30,7 @@
           </div>
           <div class="stat-info">
             <span class="stat-value">{{ totalHomeworks }}</span>
-            <span class="stat-label">Всего заданий</span>
+            <span class="stat-label">Total Assignments</span>
           </div>
         </div>
         <div class="stat-card">
@@ -42,7 +42,7 @@
           </div>
           <div class="stat-info">
             <span class="stat-value">{{ completedHomeworks }}</span>
-            <span class="stat-label">Завершено</span>
+            <span class="stat-label">Completed</span>
           </div>
         </div>
         <div class="stat-card">
@@ -54,7 +54,7 @@
           </div>
           <div class="stat-info">
             <span class="stat-value">{{ inProgressHomeworks }}</span>
-            <span class="stat-label">В процессе</span>
+            <span class="stat-label">In Progress</span>
           </div>
         </div>
       </div>
@@ -72,7 +72,7 @@
             v-model="searchQuery"
             type="text"
             class="search-input"
-            placeholder="Поиск по названию..."
+            placeholder="Search by title..."
           />
           <button v-if="searchQuery" @click="searchQuery = ''" class="clear-btn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -84,9 +84,9 @@
 
         <div class="filters-pills">
           <div class="filter-pill">
-            <label>Предмет</label>
+            <label>Subject</label>
             <select v-model="selectedSubject">
-              <option value="">Все</option>
+              <option value="">All</option>
               <option v-for="subject in subjects" :key="subject" :value="subject">
                 {{ subject }}
               </option>
@@ -94,12 +94,12 @@
           </div>
 
           <div class="filter-pill">
-            <label>Статус</label>
+            <label>Status</label>
             <select v-model="selectedStatus">
-              <option value="">Все</option>
-              <option value="pending">Не начато</option>
-              <option value="in-progress">В процессе</option>
-              <option value="completed">Завершено</option>
+              <option value="">All</option>
+              <option value="pending">Not Started</option>
+              <option value="in-progress">In Progress</option>
+              <option value="completed">Completed</option>
             </select>
           </div>
 
@@ -108,7 +108,7 @@
               <polyline points="1 4 1 10 7 10"/>
               <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
             </svg>
-            Сбросить
+            Reset
           </button>
 
           <button @click="refreshHomeworks" class="refresh-btn">
@@ -116,7 +116,7 @@
               <polyline points="23 4 23 10 17 10"/>
               <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
             </svg>
-            Обновить
+            Refresh
           </button>
         </div>
       </div>
@@ -129,7 +129,7 @@
         <div class="loader-ring"></div>
         <div class="loader-ring"></div>
       </div>
-      <p>Загружаем задания...</p>
+      <p>Loading assignments...</p>
     </div>
 
     <!-- Error State -->
@@ -141,14 +141,14 @@
           <line x1="9" y1="9" x2="15" y2="15"/>
         </svg>
       </div>
-      <h3>Ошибка загрузки</h3>
+      <h3>Load Error</h3>
       <p>{{ error }}</p>
       <button @click="refreshHomeworks" class="retry-btn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="23 4 23 10 17 10"/>
           <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
         </svg>
-        Попробовать снова
+        Try Again
       </button>
     </div>
 
@@ -160,9 +160,9 @@
           <path d="m21 21-4.35-4.35"/>
         </svg>
       </div>
-      <h3>Ничего не найдено</h3>
-      <p>Попробуйте изменить параметры фильтров или поиска</p>
-      <button @click="clearFilters" class="retry-btn">Очистить фильтры</button>
+      <h3>Nothing Found</h3>
+      <p>Try changing filter or search parameters</p>
+      <button @click="clearFilters" class="retry-btn">Clear Filters</button>
     </div>
 
     <div v-else-if="validHomeworks.length === 0" class="empty-container">
@@ -172,14 +172,14 @@
           <polyline points="14 2 14 8 20 8"/>
         </svg>
       </div>
-      <h3>Нет домашних заданий</h3>
-      <p>Домашние задания появятся после начала курса или завершения урока</p>
+      <h3>No Homework</h3>
+      <p>Homework will appear after starting a course or completing a lesson</p>
       <button @click="refreshHomeworks" class="retry-btn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="23 4 23 10 17 10"/>
           <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
         </svg>
-        Обновить
+        Refresh
       </button>
     </div>
 
@@ -235,7 +235,7 @@
               </div>
 
               <div v-if="hw.difficulty" class="difficulty-section">
-                <span class="difficulty-label">Сложность:</span>
+                <span class="difficulty-label">Difficulty:</span>
                 <div class="difficulty-stars">
                   <span v-for="i in 5" :key="i" class="star" :class="{ 'filled': i <= hw.difficulty }">★</span>
                 </div>
@@ -243,7 +243,7 @@
 
               <div class="progress-container">
                 <div class="progress-info">
-                  <span class="progress-text">Прогресс</span>
+                  <span class="progress-text">Progress</span>
                   <span class="progress-percent">{{ getScore(hw) }}%</span>
                 </div>
                 <div class="progress-track">
@@ -364,7 +364,7 @@ export default {
     },
     
     getHomeworkTitle(hw) {
-      return hw.title || hw.lessonName || 'Домашнее задание' || 'Без названия';
+      return hw.title || hw.lessonName || 'Homework' || 'Untitled';
     },
     
     getExerciseCount(hw) {
@@ -376,16 +376,15 @@ export default {
     },
     
     getExerciseWord(count) {
-      if (count % 10 === 1 && count % 100 !== 11) return 'упражнение';
-      if (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 10 || count % 100 >= 20)) return 'упражнения';
-      return 'упражнений';
+      if (count === 1) return 'exercise';
+      return 'exercises';
     },
     
     getTypeLabel(type) {
       switch (type) {
-        case 'standalone': return 'Отдельное';
-        case 'lesson': return 'Урок';
-        default: return 'ДЗ';
+        case 'standalone': return 'Standalone';
+        case 'lesson': return 'Lesson';
+        default: return 'HW';
       }
     },
     
@@ -436,9 +435,9 @@ export default {
     },
     
     statusLabel(hw) {
-      if (!this.hasProgress(hw)) return 'Не начато';
-      if (!this.isCompleted(hw)) return 'В процессе';
-      return 'Завершено';
+      if (!this.hasProgress(hw)) return 'Not Started';
+      if (!this.isCompleted(hw)) return 'In Progress';
+      return 'Completed';
     },
     
     getStatus(hw) {
@@ -467,9 +466,9 @@ export default {
     },
     
     getButtonText(hw) {
-      if (this.isCompleted(hw)) return 'Просмотреть';
-      if (this.hasProgress(hw)) return 'Продолжить';
-      return 'Начать';
+      if (this.isCompleted(hw)) return 'View';
+      if (this.hasProgress(hw)) return 'Continue';
+      return 'Start';
     },
     
     clearFilters() {
@@ -485,7 +484,7 @@ export default {
     formatDate(dateString) {
       if (!dateString) return '';
       const date = new Date(dateString);
-      return date.toLocaleDateString('ru-RU', {
+      return date.toLocaleDateString('en-US', {
         day: 'numeric',
         month: 'short',
         year: 'numeric'
@@ -512,7 +511,7 @@ export default {
         
         const user = auth.currentUser;
         if (!user) {
-          throw new Error('Пользователь не авторизован');
+          throw new Error('User not authorized');
         }
         
         const result = await getAllHomeworks(user.uid);
@@ -525,11 +524,11 @@ export default {
             score: this.extractScore(hw),
           }));
         } else {
-          this.error = result.error || 'Не удалось загрузить домашние задания';
+          this.error = result.error || 'Failed to load homework';
           this.homeworks = [];
         }
       } catch (err) {
-this.error = err.message || 'Ошибка загрузки домашних заданий';
+this.error = err.message || 'Error loading homework';
         this.homeworks = [];
       } finally {
         this.loading = false;
