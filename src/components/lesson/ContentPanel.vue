@@ -605,4 +605,121 @@ export default {
   transform: translateY(-2px);
   box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
+
+/* MOBILE RESPONSIVE */
+@media (max-width: 768px) {
+  .content-step-header {
+    padding: 0.75rem 1rem;
+  }
+
+  .header-title {
+    font-size: 1rem;
+    gap: 0.5rem;
+  }
+
+  .step-number {
+    width: 26px;
+    height: 26px;
+    font-size: 0.875rem;
+  }
+
+  .step-icon {
+    font-size: 1.1rem;
+  }
+
+  .step-text {
+    font-size: 0.875rem;
+  }
+
+  .content-padding {
+    padding: 1.25rem 1rem;
+  }
+
+  .content-text {
+    font-size: 0.9375rem;
+    line-height: 1.6;
+  }
+
+  .interactive-instruction-card,
+  .empty-content-card {
+    padding: 1.5rem 1rem;
+    margin: 0;
+    max-width: none;
+  }
+
+  .instruction-icon,
+  .empty-icon {
+    font-size: 2rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .instruction-heading,
+  .empty-heading {
+    font-size: 1.1rem;
+  }
+
+  .vocabulary-trigger {
+    padding: 2rem 1.25rem;
+    max-width: none;
+  }
+
+  .trigger-icon {
+    font-size: 2.5rem;
+  }
+
+  .trigger-heading {
+    font-size: 1.4rem;
+  }
+
+  .trigger-subheading {
+    font-size: 1rem;
+  }
+
+  .content-navigation {
+    padding: 0.75rem 1rem;
+  }
+
+  .nav-button {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .content-step-header {
+    padding: 0.625rem 0.75rem;
+  }
+
+  .header-title {
+    font-size: 0.875rem;
+  }
+
+  .step-number {
+    width: 22px;
+    height: 22px;
+    font-size: 0.75rem;
+  }
+
+  .exercise-counter {
+    font-size: 0.8rem;
+  }
+
+  .content-padding {
+    padding: 1rem 0.75rem;
+  }
+
+  .content-text {
+    font-size: 0.875rem;
+  }
+
+  .instruction-heading,
+  .empty-heading {
+    font-size: 1rem;
+  }
+
+  .instruction-text,
+  .empty-text {
+    font-size: 0.875rem;
+  }
+}
 </style>
