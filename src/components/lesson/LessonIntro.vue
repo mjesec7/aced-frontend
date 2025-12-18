@@ -1,72 +1,141 @@
 <template>
-  <div class="intro-screen">
-    <button class="exit-btn" @click="$emit('exit')">✕</button>
-    
-    <div class="intro-content">
-      <h2 class="lesson-title">{{ getLocalized(lesson?.lessonName) || 'Untitled' }}</h2>
-      <p class="lesson-description">{{ getLocalized(lesson?.description) || 'Description unavailable' }}</p>
-      
-      <div class="lesson-info-grid">
-        <div class="info-card">
-          <div class="info-icon">⏱️</div>
-          <div class="info-text">
-            <span class="info-label">Time</span>
-            <span class="info-value">~{{ estimatedTime }} min</span>
-          </div>
-        </div>
-        <div class="info-card">
-          <div class="info-icon">📝</div>
-          <div class="info-text">
-            <span class="info-label">Steps</span>
-            <span class="info-value">{{ (steps || []).length }}</span>
-          </div>
-        </div>
-        <div class="info-card">
-          <div class="info-icon">🎯</div>
-          <div class="info-text">
-            <span class="info-label">Type</span>
-            <span class="info-value">{{ lesson?.type === 'premium' ? 'Premium' : 'Free' }}</span>
-          </div>
-        </div>
-      </div>
+  <div class="fixed inset-0 z-50 flex items-center justify-content bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
+    <!-- Subtle background pattern -->
+    <div class="absolute inset-0 opacity-40">
+      <div class="absolute top-20 left-10 w-72 h-72 bg-blue-100 rounded-full blur-3xl"></div>
+      <div class="absolute bottom-20 right-10 w-96 h-96 bg-indigo-100 rounded-full blur-3xl"></div>
+    </div>
 
-      <!-- Problem Report Link - Subtle placement -->
-      <div class="help-section">
-        <button 
-          class="problem-report-link" 
-          @click="$emit('report-problem')"
-          title="Report a problem with the lesson"
-        >
-          ⚠️ Having issues with the lesson?
-        </button>
-      </div>
-      
-      <!-- Previous Progress Display -->
-      <div v-if="previousProgress && (previousProgress?.completedSteps || []).length > 0" class="previous-progress">
-        <h4>📈 Previous progress</h4>
-        <div class="progress-stats-grid">
-          <div class="stat">
-            <span class="stat-value">{{ (previousProgress?.completedSteps || []).length }}/{{ (steps || []).length }}</span>
-            <span class="stat-label">Progress</span>
+    <!-- Close button -->
+    <button
+      @click="$emit('exit')"
+      class="absolute top-4 right-4 sm:top-6 sm:right-6 w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all duration-200 shadow-sm z-10"
+      aria-label="Close"
+    >
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+    </button>
+
+    <!-- Main content container -->
+    <div class="relative w-full max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-12 overflow-y-auto max-h-screen">
+      <div class="text-center">
+        <!-- Lesson badge -->
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-full text-blue-600 text-xs font-medium mb-6">
+          <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0z"/>
+          </svg>
+          <span>{{ lesson?.type === 'premium' ? 'Premium Lesson' : 'Free Lesson' }}</span>
+        </div>
+
+        <!-- Title -->
+        <h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-800 mb-3 leading-tight tracking-tight">
+          {{ getLocalized(lesson?.lessonName) || 'Untitled Lesson' }}
+        </h1>
+
+        <!-- Description -->
+        <p class="text-slate-500 text-base sm:text-lg max-w-lg mx-auto mb-8 leading-relaxed">
+          {{ getLocalized(lesson?.description) || 'Get ready to learn something new!' }}
+        </p>
+
+        <!-- Stats cards -->
+        <div class="grid grid-cols-3 gap-3 sm:gap-4 mb-8 max-w-md mx-auto">
+          <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-100 shadow-sm hover:shadow-md transition-shadow duration-200">
+            <div class="text-2xl sm:text-3xl mb-1">
+              <svg class="w-6 h-6 sm:w-7 sm:h-7 mx-auto text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </div>
+            <div class="text-lg sm:text-xl font-bold text-slate-800">~{{ estimatedTime }}</div>
+            <div class="text-xs text-slate-400 font-medium uppercase tracking-wide">minutes</div>
           </div>
-          <div class="stat">
-            <span class="stat-value">⭐ {{ previousProgress?.stars || 0 }}</span>
-            <span class="stat-label">Stars</span>
+
+          <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-100 shadow-sm hover:shadow-md transition-shadow duration-200">
+            <div class="text-2xl sm:text-3xl mb-1">
+              <svg class="w-6 h-6 sm:w-7 sm:h-7 mx-auto text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+              </svg>
+            </div>
+            <div class="text-lg sm:text-xl font-bold text-slate-800">{{ (steps || []).length }}</div>
+            <div class="text-xs text-slate-400 font-medium uppercase tracking-wide">steps</div>
           </div>
-          <div class="stat">
-            <span class="stat-value">❌ {{ previousProgress?.mistakes || 0 }}</span>
-            <span class="stat-label">Mistakes</span>
+
+          <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-100 shadow-sm hover:shadow-md transition-shadow duration-200">
+            <div class="text-2xl sm:text-3xl mb-1">
+              <svg class="w-6 h-6 sm:w-7 sm:h-7 mx-auto text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+              </svg>
+            </div>
+            <div class="text-lg sm:text-xl font-bold text-slate-800">{{ lesson?.type === 'premium' ? 'Pro' : 'Free' }}</div>
+            <div class="text-xs text-slate-400 font-medium uppercase tracking-wide">access</div>
           </div>
         </div>
-        <button @click="$emit('continue')" class="continue-btn">
-          📖 Continue from where you left off
-        </button>
-      </div>
-      
-      <div class="intro-actions">
-        <button class="start-btn" @click="$emit('start')">
-          {{ previousProgress ? '🔄 Start over' : '🚀 Start lesson' }}
-        </button>
+
+        <!-- Previous Progress Section -->
+        <div
+          v-if="previousProgress && (previousProgress?.completedSteps || []).length > 0"
+          class="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl p-5 sm:p-6 mb-6 border border-amber-100 text-left max-w-md mx-auto"
+        >
+          <div class="flex items-center gap-2 mb-4">
+            <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+            </svg>
+            <span class="font-semibold text-amber-800">Continue where you left off</span>
+          </div>
+
+          <div class="grid grid-cols-3 gap-3 mb-4">
+            <div class="bg-white/70 rounded-xl p-3 text-center">
+              <div class="text-lg font-bold text-slate-800">{{ (previousProgress?.completedSteps || []).length }}/{{ (steps || []).length }}</div>
+              <div class="text-xs text-slate-500">Progress</div>
+            </div>
+            <div class="bg-white/70 rounded-xl p-3 text-center">
+              <div class="text-lg font-bold text-slate-800 flex items-center justify-center gap-1">
+                <span class="text-amber-500">*</span>{{ previousProgress?.stars || 0 }}
+              </div>
+              <div class="text-xs text-slate-500">Stars</div>
+            </div>
+            <div class="bg-white/70 rounded-xl p-3 text-center">
+              <div class="text-lg font-bold text-slate-800">{{ previousProgress?.mistakes || 0 }}</div>
+              <div class="text-xs text-slate-500">Mistakes</div>
+            </div>
+          </div>
+
+          <button
+            @click="$emit('continue')"
+            class="w-full py-3 px-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold rounded-xl hover:from-amber-600 hover:to-orange-600 transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-center gap-2"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            Continue Learning
+          </button>
+        </div>
+
+        <!-- Start button -->
+        <div class="space-y-3 max-w-md mx-auto">
+          <button
+            @click="$emit('start')"
+            class="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-lg font-semibold rounded-2xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-3"
+          >
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            {{ previousProgress ? 'Start Over' : 'Begin Lesson' }}
+          </button>
+
+          <!-- Report problem link -->
+          <button
+            @click="$emit('report-problem')"
+            class="text-slate-400 hover:text-amber-600 text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-1.5 mx-auto"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            Report an issue
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -104,464 +173,27 @@ export default {
 </script>
 
 <style scoped>
-.intro-screen {
-  display: flex;
-  flex-direction: column;
+/* Ensure proper centering on all devices */
+.justify-content {
   justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  padding: 40px 20px;
-  text-align: center;
-  position: relative;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
 }
 
-.exit-btn {
-  position: absolute;
-  top: 40px;
-  right: 40px;
-  background: rgba(239, 68, 68, 0.1);
-  border: none;
-  font-size: 1.5rem;
-  color: #ef4444;
-  cursor: pointer;
-  padding: 12px;
-  border-radius: 12px;
-  transition: all 0.2s ease;
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 44px;
-  min-height: 44px;
-}
-
-.exit-btn:hover {
-  background: rgba(239, 68, 68, 0.2);
-  transform: scale(1.1);
-}
-
-.intro-content {
-  max-width: 600px;
-  width: 100%;
-  animation: fadeInUp 0.6s ease-out;
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.lesson-title {
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: #1e293b;
-  margin: 0 0 16px 0;
-  line-height: 1.2;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.lesson-description {
-  font-size: 1.1rem;
-  color: #64748b;
-  margin: 0 0 32px 0;
-  line-height: 1.6;
-  max-width: 500px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.lesson-info-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.info-card {
-  background: white;
-  padding: 24px 20px;
-  border-radius: 16px;
-  box-shadow: 
-    0 4px 12px rgba(0, 0, 0, 0.05),
-    0 0 0 1px rgba(255, 255, 255, 0.1);
-  border: 1px solid #e2e8f0;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  transition: all 0.2s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.info-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #3b82f6, #1d4ed8);
-  transform: scaleX(0);
-  transition: transform 0.3s ease;
-}
-
-.info-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-}
-
-.info-card:hover::before {
-  transform: scaleX(1);
-}
-
-.info-icon {
-  font-size: 2rem;
-  opacity: 0.8;
-  flex-shrink: 0;
-}
-
-.info-text {
-  display: flex;
-  flex-direction: column;
-  text-align: left;
-}
-
-.info-label {
-  font-size: 0.85rem;
-  color: #64748b;
-  margin-bottom: 4px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.info-value {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-/* Help Section - Better placement */
-.help-section {
-  margin: 16px 0 24px 0;
-  padding: 0;
-}
-
-.problem-report-link {
-  background: transparent;
-  border: none;
-  color: #6b7280;
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  padding: 8px 12px;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  text-decoration-color: transparent;
-}
-
-.problem-report-link:hover {
-  color: #f59e0b;
-  text-decoration-color: #f59e0b;
-  background: rgba(245, 158, 11, 0.05);
-}
-
-.problem-report-link:active {
-  transform: scale(0.98);
-}
-
-.previous-progress {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(29, 78, 216, 0.05) 100%);
-  padding: 32px;
-  border-radius: 20px;
-  margin: 32px 0;
-  border: 1px solid rgba(59, 130, 246, 0.1);
-  position: relative;
-  overflow: hidden;
-}
-
-.previous-progress::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #3b82f6, #1d4ed8);
-}
-
-.previous-progress h4 {
-  margin: 0 0 20px 0;
-  color: #1e293b;
-  font-size: 1.2rem;
-  font-weight: 600;
-}
-
-.progress-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-  margin-bottom: 24px;
-}
-
-.stat {
-  text-align: center;
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.7);
-  border-radius: 12px;
-  transition: all 0.2s ease;
-}
-
-.stat:hover {
-  background: rgba(255, 255, 255, 0.9);
-  transform: translateY(-2px);
-}
-
-.stat-value {
-  display: block;
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 4px;
-}
-
-.stat-label {
-  display: block;
-  font-size: 0.85rem;
-  color: #64748b;
-  font-weight: 500;
-}
-
-.continue-btn {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  color: white;
-  border: none;
-  padding: 14px 28px;
-  border-radius: 12px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
-}
-
-.continue-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(245, 158, 11, 0.4);
-}
-
-.intro-actions {
-  display: flex;
-  justify-content: center;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-top: 16px;
-}
-
-.start-btn {
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-  color: white;
-  border: none;
-  padding: 18px 36px;
-  border-radius: 16px;
-  font-size: 1.2rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  min-width: 200px;
-  min-height: 56px;
-  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
-  position: relative;
-  overflow: hidden;
-}
-
-.start-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s ease;
-}
-
-.start-btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 28px rgba(59, 130, 246, 0.4);
-}
-
-.start-btn:hover::before {
-  left: 100%;
-}
-
-.start-btn:active {
-  transform: translateY(-1px);
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .intro-screen {
-    padding: 20px 16px;
-  }
-
-  .exit-btn {
-    top: 20px;
-    right: 20px;
-    width: 40px;
-    height: 40px;
-    font-size: 1.2rem;
-  }
-
-  .lesson-title {
-    font-size: 2rem;
-  }
-
-  .lesson-description {
-    font-size: 1rem;
-  }
-
-  .lesson-info-grid {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-
-  .info-card {
-    padding: 20px 16px;
-  }
-
-  .help-section {
-    margin: 12px 0 20px 0;
-  }
-
-  .problem-report-link {
-    font-size: 0.85rem;
-    padding: 6px 10px;
-  }
-
-  .previous-progress {
-    padding: 24px 20px;
-  }
-
-  .progress-stats-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-  }
-
-  .stat {
-    padding: 12px;
-  }
-
-  .stat-value {
-    font-size: 1.1rem;
-  }
-
-  .intro-actions {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .start-btn {
-    width: 100%;
-    max-width: 300px;
-    font-size: 1.1rem;
-    padding: 16px 32px;
-  }
-}
-
-@media (max-width: 480px) {
-  .intro-screen {
-    padding: 15px 12px;
-  }
-
-  .exit-btn {
-    top: 15px;
-    right: 15px;
-    width: 36px;
-    height: 36px;
-    font-size: 1rem;
-    padding: 8px;
-  }
-
-  .lesson-title {
-    font-size: 1.5rem;
-  }
-
-  .lesson-description {
-    font-size: 0.95rem;
-  }
-
-  .info-card {
-    padding: 16px;
-    gap: 12px;
-  }
-
-  .info-icon {
-    font-size: 1.5rem;
-  }
-
-  .problem-report-link {
-    font-size: 0.8rem;
-    padding: 5px 8px;
-  }
-
-  .previous-progress {
-    padding: 20px 16px;
-  }
-
-  .progress-stats-grid {
-    gap: 8px;
-  }
-
-  .stat {
-    padding: 10px;
-  }
-
-  .stat-value {
-    font-size: 1rem;
-  }
-
-  .start-btn {
-    font-size: 1rem;
-    padding: 14px 28px;
-  }
+/* Smooth scrolling for overflow content */
+.overflow-y-auto {
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Focus states for accessibility */
-.exit-btn:focus,
-.start-btn:focus,
-.continue-btn:focus,
-.problem-report-link:focus {
-  outline: 3px solid #3b82f6;
+button:focus-visible {
+  outline: 2px solid #3b82f6;
   outline-offset: 2px;
 }
 
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
-  .intro-content {
-    animation: none;
-  }
-  
-  .info-card:hover,
-  .stat:hover,
-  .start-btn:hover,
-  .continue-btn:hover,
-  .problem-report-link:hover {
-    transform: none;
-  }
-
-  .start-btn::before {
-    display: none;
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
   }
 }
 </style>

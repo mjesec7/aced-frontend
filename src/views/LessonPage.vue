@@ -1,133 +1,240 @@
 <template>
   <div class="lesson-page">
-    <div v-if="loading" class="loading-screen">
-      <div class="loading-spinner"></div>
-      <p>Loading lesson...</p>
+    <!-- Loading Screen -->
+    <div v-if="loading" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-50 p-4">
+      <div class="w-12 h-12 border-4 border-slate-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
+      <p class="text-slate-600 font-medium">Loading lesson...</p>
     </div>
 
-    <div v-else-if="error" class="error-screen">
-      <div class="error-icon">❌</div>
-      <h3>Error Loading Lesson</h3>
-      <p>{{ error }}</p>
-      <div class="error-actions">
-        <button @click="retryLoad" class="retry-btn">🔄 Try Again</button>
-        <button @click="handleReturnToCatalogue" class="back-btn">⬅️ Back to Catalogue</button>
+    <!-- Error Screen -->
+    <div v-else-if="error" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-50 p-6 text-center">
+      <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+        <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+      </div>
+      <h3 class="text-xl font-bold text-slate-800 mb-2">Error Loading Lesson</h3>
+      <p class="text-slate-500 mb-6 max-w-sm">{{ error }}</p>
+      <div class="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
+        <button @click="retryLoad" class="flex-1 py-3 px-6 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          Try Again
+        </button>
+        <button @click="handleReturnToCatalogue" class="flex-1 py-3 px-6 bg-slate-100 text-slate-700 font-semibold rounded-xl hover:bg-slate-200 transition-colors flex items-center justify-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+          </svg>
+          Back
+        </button>
       </div>
     </div>
 
-    <div v-if="showPaywallModal" class="modal-overlay">
-      <div class="modal-content">
-        <h3>🔒 Premium Content</h3>
-        <p>This lesson is only available to subscribers.</p>
-        <div class="modal-actions">
-          <button @click="$router.push('/pay/start')" class="premium-btn">💳 Get Subscription</button>
-          <button @click="handleReturnToCatalogue" class="cancel-btn">⬅️ Back to Catalogue</button>
+    <!-- Premium Content Modal -->
+    <Teleport to="body">
+      <div v-if="showPaywallModal" class="fixed inset-0 z-[1000] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-modal-in">
+          <!-- Header -->
+          <div class="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-5 text-center">
+            <div class="w-14 h-14 mx-auto mb-3 bg-white/20 rounded-full flex items-center justify-center">
+              <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+              </svg>
+            </div>
+            <h3 class="text-xl font-bold text-white">Premium Content</h3>
+          </div>
+          <!-- Body -->
+          <div class="px-6 py-5 text-center">
+            <p class="text-slate-600 mb-6">This lesson is only available to premium subscribers. Upgrade now to unlock all content.</p>
+            <div class="space-y-3">
+              <button @click="$router.push('/pay/start')" class="w-full py-3.5 px-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold rounded-xl hover:from-amber-600 hover:to-orange-600 transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                </svg>
+                Get Premium
+              </button>
+              <button @click="handleReturnToCatalogue" class="w-full py-3 px-4 bg-slate-100 text-slate-600 font-medium rounded-xl hover:bg-slate-200 transition-colors duration-200 flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                Back to Catalogue
+              </button>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </Teleport>
 
-    <div v-if="showExitModal" class="modal-overlay">
-      <div class="modal-content">
-        <h3>Do you really want to exit?</h3>
-        <p>Your progress will be saved automatically.</p>
-        <div class="modal-actions">
-          <button @click="exitLesson" class="confirm-btn">Yes, Exit</button>
-          <button @click="cancelExit" class="cancel-btn">No, Stay</button>
+    <!-- Exit Confirmation Modal -->
+    <Teleport to="body">
+      <div v-if="showExitModal" class="fixed inset-0 z-[1000] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-modal-in">
+          <!-- Header -->
+          <div class="px-6 pt-6 pb-4 text-center">
+            <div class="w-14 h-14 mx-auto mb-4 bg-amber-100 rounded-full flex items-center justify-center">
+              <svg class="w-7 h-7 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+              </svg>
+            </div>
+            <h3 class="text-xl font-bold text-slate-800 mb-2">Leave Lesson?</h3>
+            <p class="text-slate-500">Your progress will be saved automatically. You can continue later.</p>
+          </div>
+          <!-- Actions -->
+          <div class="px-6 pb-6 space-y-3">
+            <button @click="exitLesson" class="w-full py-3.5 px-4 bg-red-500 text-white font-semibold rounded-xl hover:bg-red-600 transition-colors duration-200 flex items-center justify-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+              </svg>
+              Yes, Leave
+            </button>
+            <button @click="cancelExit" class="w-full py-3 px-4 bg-slate-100 text-slate-700 font-semibold rounded-xl hover:bg-slate-200 transition-colors duration-200 flex items-center justify-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              Continue Learning
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </Teleport>
 
-    <div v-if="showProblemReportModal" class="modal-overlay" @click.self="closeProblemReportModal">
-      <div class="problem-report-modal">
-        <div class="modal-header">
-          <h3>⚠️ Report a Problem with this Lesson</h3>
-          <button @click="closeProblemReportModal" class="close-btn">✕</button>
-        </div>
-
-        <div class="modal-body">
-          <p class="modal-description">
-            Help us improve the lesson! Describe the problem in detail and attach a screenshot if possible.
-          </p>
-
-          <div class="form-group">
-            <label for="problemType">Problem Type:</label>
-            <select id="problemType" v-model="problemType" class="form-select">
-              <option value="">Select problem type</option>
-              <option value="content">Content Error</option>
-              <option value="technical">Technical Problem</option>
-              <option value="interface">Interface Issue</option>
-              <option value="exercise">Exercise Error</option>
-              <option value="audio">Audio Problem</option>
-              <option value="other">Other</option>
-            </select>
+    <!-- Problem Report Modal -->
+    <Teleport to="body">
+      <div v-if="showProblemReportModal" class="fixed inset-0 z-[1000] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4" @click.self="closeProblemReportModal">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col animate-modal-in">
+          <!-- Header -->
+          <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
+                <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+              </div>
+              <h3 class="text-lg font-semibold text-slate-800">Report a Problem</h3>
+            </div>
+            <button @click="closeProblemReportModal" class="w-9 h-9 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
           </div>
 
-          <div class="form-group">
-            <label for="problemDescription">Detailed Description: <span class="required">*</span></label>
-            <textarea
-              id="problemDescription"
-              v-model="problemDescription"
-              rows="4"
-              placeholder="Describe the problem in as much detail as possible: what happened, at which step, what you expected to see..."
-              class="form-textarea"
-              :class="{ 'error': showValidationError && !problemDescription.trim() }"
-            ></textarea>
-            <div v-if="showValidationError && !problemDescription.trim()" class="error-message">
-              Please describe the problem
+          <!-- Body -->
+          <div class="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+            <p class="text-slate-500 text-sm">Help us improve by describing the issue you encountered.</p>
+
+            <!-- Problem Type -->
+            <div>
+              <label for="problemType" class="block text-sm font-medium text-slate-700 mb-2">Problem Type</label>
+              <select id="problemType" v-model="problemType" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                <option value="">Select type...</option>
+                <option value="content">Content Error</option>
+                <option value="technical">Technical Problem</option>
+                <option value="interface">Interface Issue</option>
+                <option value="exercise">Exercise Error</option>
+                <option value="audio">Audio Problem</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            <!-- Description -->
+            <div>
+              <label for="problemDescription" class="block text-sm font-medium text-slate-700 mb-2">
+                Description <span class="text-red-500">*</span>
+              </label>
+              <textarea
+                id="problemDescription"
+                v-model="problemDescription"
+                rows="4"
+                placeholder="What happened? Which step were you on? What did you expect?"
+                class="w-full px-4 py-3 bg-slate-50 border rounded-xl text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                :class="showValidationError && !problemDescription.trim() ? 'border-red-300 bg-red-50' : 'border-slate-200'"
+              ></textarea>
+              <p v-if="showValidationError && !problemDescription.trim()" class="mt-1.5 text-sm text-red-500">Please describe the problem</p>
+            </div>
+
+            <!-- Screenshot URL -->
+            <div>
+              <label for="screenshotUrl" class="block text-sm font-medium text-slate-700 mb-2">Screenshot URL (optional)</label>
+              <input
+                type="url"
+                id="screenshotUrl"
+                v-model="screenshotUrl"
+                placeholder="https://imgur.com/your-screenshot.png"
+                class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              >
+              <p class="mt-1.5 text-xs text-slate-400">Upload to imgur.com or imgbb.com and paste the link</p>
+            </div>
+
+            <!-- Contact Info -->
+            <div>
+              <label for="contactInfo" class="block text-sm font-medium text-slate-700 mb-2">Contact (optional)</label>
+              <input
+                type="text"
+                id="contactInfo"
+                v-model="contactInfo"
+                placeholder="Email or Telegram @username"
+                class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              >
             </div>
           </div>
 
-          <div class="form-group">
-            <label for="screenshotUrl">Screenshot or Photo URL (optional):</label>
-            <input
-              type="url"
-              id="screenshotUrl"
-              v-model="screenshotUrl"
-              placeholder="https://example.com/screenshot.png or paste a link from cloud storage"
-              class="form-input"
+          <!-- Footer -->
+          <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50">
+            <button @click="closeProblemReportModal" class="px-5 py-2.5 text-slate-600 font-medium rounded-xl hover:bg-slate-100 transition-colors">
+              Cancel
+            </button>
+            <button
+              @click="submitProblemReport"
+              :disabled="isSubmitting"
+              class="px-5 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
-            <div class="help-text">
-              💡 Tip: Take a screenshot and upload it to imgbb.com, imgur.com, or Google Drive, then paste the link here
+              <svg v-if="!isSubmitting" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+              </svg>
+              <svg v-else class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              {{ isSubmitting ? 'Sending...' : 'Send Report' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Success Notification -->
+    <Teleport to="body">
+      <Transition
+        enter-active-class="transition-all duration-300 ease-out"
+        enter-from-class="opacity-0 translate-x-full"
+        enter-to-class="opacity-100 translate-x-0"
+        leave-active-class="transition-all duration-200 ease-in"
+        leave-from-class="opacity-100 translate-x-0"
+        leave-to-class="opacity-0 translate-x-full"
+      >
+        <div v-if="showSuccessMessage" class="fixed top-4 right-4 z-[2000] max-w-sm w-full">
+          <div class="bg-white rounded-2xl shadow-xl border border-emerald-100 p-4 flex items-start gap-4">
+            <div class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+              </svg>
             </div>
-          </div>
-
-          <div class="form-group">
-            <label for="contactInfo">Your contact for feedback (optional):</label>
-            <input
-              type="text"
-              id="contactInfo"
-              v-model="contactInfo"
-              placeholder="Telegram @username, email, or phone"
-              class="form-input"
-            >
+            <div class="flex-1 min-w-0">
+              <h4 class="text-sm font-semibold text-slate-800">Report Sent!</h4>
+              <p class="text-sm text-slate-500 mt-0.5">Thank you for helping us improve.</p>
+            </div>
+            <button @click="closeSuccessMessage" class="text-slate-400 hover:text-slate-600 transition-colors">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
           </div>
         </div>
-
-        <div class="modal-footer">
-          <button @click="closeProblemReportModal" class="cancel-btn">
-            Cancel
-          </button>
-          <button
-            @click="submitProblemReport"
-            class="submit-btn"
-            :disabled="isSubmitting"
-          >
-            {{ isSubmitting ? '📤 Sending...' : '📤 Send Report' }}
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div v-if="showSuccessMessage" class="success-notification">
-      <div class="success-content">
-        <div class="success-icon">✅</div>
-        <div class="success-text">
-          <h4>Thanks for your report!</h4>
-          <p>We've received your information and will review the problem soon.</p>
-        </div>
-        <button @click="closeSuccessMessage" class="close-success">✕</button>
-      </div>
-    </div>
+      </Transition>
+    </Teleport>
 
     <VocabularyModal
       v-if="vocabularyModal.isVisible"
@@ -162,27 +269,52 @@
 
     <div v-else-if="started && !showPaywallModal && !loading && !error" class="lesson-container-new">
 
-      <!-- New Header -->
-      <div class="lesson-header-new">
-        <div class="header-left">
-          <button @click="confirmExit" class="close-btn-new">✕</button>
-          <div class="lesson-title-info">
-            <h2>{{ lesson?.title || 'Lesson' }}</h2>
-            <p>{{ lesson?.subtitle || '' }}</p>
+      <!-- New Header - Mobile Optimized -->
+      <div class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 px-3 sm:px-4 py-2.5 sm:py-3">
+        <div class="flex items-center justify-between gap-2 sm:gap-4">
+          <!-- Left side: Close + Title + Progress -->
+          <div class="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+            <button
+              @click="confirmExit"
+              class="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-red-50 hover:text-red-500 transition-colors flex-shrink-0"
+              aria-label="Exit lesson"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+
+            <div class="min-w-0 flex-1 hidden sm:block">
+              <h2 class="text-sm font-semibold text-slate-800 truncate">{{ lesson?.title || 'Lesson' }}</h2>
+              <p class="text-xs text-slate-400 truncate">{{ lesson?.subtitle || '' }}</p>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <div class="w-20 sm:w-28 h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div
+                  class="h-full bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full transition-all duration-500"
+                  :style="{ width: progressPercentage + '%' }"
+                ></div>
+              </div>
+              <span class="text-xs font-semibold text-slate-500 tabular-nums">{{ currentIndex + 1 }}/{{ steps.length }}</span>
+            </div>
           </div>
-          <div class="progress-bar-inline">
-            <div class="progress-fill-inline" :style="{ width: progressPercentage + '%' }"></div>
-          </div>
-          <span class="progress-text-inline">{{ currentIndex + 1 }}/{{ steps.length }}</span>
-        </div>
-        <div class="header-right">
-          <div class="streak-badge-new">
-            <span>⚡</span>
-            <span>{{ consecutiveCorrect }}</span>
-          </div>
-          <div class="points-badge-new">
-            <span>🏆</span>
-            <span>{{ earnedPoints }}</span>
+
+          <!-- Right side: Stats -->
+          <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+            <div class="flex items-center gap-1 px-2.5 py-1.5 bg-amber-50 rounded-lg">
+              <svg class="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"/>
+              </svg>
+              <span class="text-xs font-bold text-amber-700">{{ consecutiveCorrect }}</span>
+            </div>
+            <div class="flex items-center gap-1 px-2.5 py-1.5 bg-indigo-50 rounded-lg">
+              <svg class="w-4 h-4 text-indigo-500" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/>
+              </svg>
+              <span class="text-xs font-bold text-indigo-700">{{ earnedPoints }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -301,36 +433,78 @@
       @vocabulary="goToVocabulary"
     >
       <template #extra-actions>
-        <button @click="openProblemReportModal" class="btn-secondary">
-          ⚠️ Report a Problem with this Lesson
+        <button
+          @click="openProblemReportModal"
+          class="w-full py-3 px-4 text-slate-500 hover:text-amber-600 font-medium rounded-xl hover:bg-amber-50 transition-colors flex items-center justify-center gap-2 text-sm"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+          </svg>
+          Report an issue with this lesson
         </button>
       </template>
     </CompletionScreen>
 
-    <div v-if="showMigrationPanel" class="migration-panel">
-      <div class="migration-content">
-        <h3>🔄 Content Update</h3>
-        <p>Would you like to create assignments and vocabulary from already completed lessons?</p>
-        <div class="migration-actions">
-          <button
-            @click="migrateLessonContent"
-            :disabled="migrationLoading"
-            class="migrate-btn"
-          >
-            {{ migrationLoading ? '⏳ Processing...' : '🚀 Update Content' }}
-          </button>
-          <button @click="closeMigrationPanel" class="cancel-btn">❌ Close</button>
+    <!-- Migration Panel -->
+    <Teleport to="body">
+      <Transition
+        enter-active-class="transition-all duration-300 ease-out"
+        enter-from-class="opacity-0 translate-y-full"
+        enter-to-class="opacity-100 translate-y-0"
+        leave-active-class="transition-all duration-200 ease-in"
+        leave-from-class="opacity-100 translate-y-0"
+        leave-to-class="opacity-0 translate-y-full"
+      >
+        <div v-if="showMigrationPanel" class="fixed bottom-4 right-4 z-[100] max-w-sm w-full">
+          <div class="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+            <div class="px-5 py-4 border-b border-slate-100 bg-gradient-to-r from-blue-50 to-indigo-50">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                  <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                  </svg>
+                </div>
+                <h3 class="font-semibold text-slate-800">Content Update</h3>
+              </div>
+            </div>
+            <div class="px-5 py-4">
+              <p class="text-sm text-slate-600 mb-4">Create assignments and vocabulary from completed lessons?</p>
+              <div class="flex gap-3">
+                <button
+                  @click="migrateLessonContent"
+                  :disabled="migrationLoading"
+                  class="flex-1 py-2.5 px-4 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  <svg v-if="!migrationLoading" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+                  </svg>
+                  <svg v-else class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  {{ migrationLoading ? 'Processing...' : 'Update' }}
+                </button>
+                <button @click="closeMigrationPanel" class="py-2.5 px-4 text-slate-600 font-medium rounded-xl hover:bg-slate-100 transition-colors">
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      </Transition>
+    </Teleport>
 
+    <!-- Floating AI Assistant Button -->
     <button
       v-if="started && !lessonCompleted"
-      class="floating-ai-btn"
       @click="toggleFloatingAI"
-      :class="{ active: showFloatingAI }"
+      class="fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-2xl transition-all duration-200 hover:scale-110 hover:shadow-xl z-50"
+      :class="showFloatingAI ? 'bg-cyan-500 shadow-cyan-500/40' : 'bg-indigo-600 shadow-indigo-500/40'"
+      aria-label="AI Assistant"
     >
-      🤖
+      <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+      </svg>
     </button>
 
     <FloatingAIAssistant
@@ -2073,4 +2247,38 @@ return { success: false, error: error.message }
 
 <style scoped>
 @import "@/assets/css/LessonPage.css";
+
+/* Modal animation */
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-modal-in {
+  animation: modal-in 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Ensure buttons have proper touch targets on mobile */
+button {
+  min-height: 44px;
+}
+
+/* Focus states for accessibility */
+button:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .animate-modal-in {
+    animation: none;
+  }
+}
 </style>
