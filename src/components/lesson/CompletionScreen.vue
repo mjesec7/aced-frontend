@@ -7,9 +7,9 @@
 
     <!-- Main Content -->
     <div class="flex-1 flex flex-col items-center justify-center px-6 py-4 overflow-y-auto">
-      <div class="w-full max-w-md text-center space-y-4">
+      <div class="w-full max-w-md text-center flex flex-col gap-4">
         <!-- Completion Info Group -->
-        <div class="space-y-2">
+        <div class="flex flex-col gap-2">
           <!-- Medal Icon -->
           <div class="w-20 h-20 mx-auto rounded-full flex items-center justify-center text-4xl" :class="medalBgClass">
             {{ medalIcon }}

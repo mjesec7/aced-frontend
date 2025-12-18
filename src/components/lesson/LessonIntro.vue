@@ -16,9 +16,9 @@
 
     <!-- Main Content -->
     <div class="flex-1 flex flex-col items-center px-6 py-6 overflow-y-auto">
-      <div class="w-full max-w-md text-center space-y-4">
+      <div class="w-full max-w-md text-center flex flex-col gap-4">
         <!-- Lesson Info Group -->
-        <div class="space-y-2">
+        <div class="flex flex-col gap-2">
           <!-- Icon -->
           <div class="w-16 h-16 mx-auto rounded-2xl bg-slate-100 flex items-center justify-center">
             <svg class="w-10 h-10 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
