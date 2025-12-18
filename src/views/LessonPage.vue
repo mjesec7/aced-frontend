@@ -33,34 +33,22 @@
 
     <!-- Premium Content Modal -->
     <Teleport to="body">
-      <div v-if="showPaywallModal" class="fixed inset-0 z-[1000] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-modal-in">
-          <!-- Header -->
-          <div class="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-5 text-center">
-            <div class="w-14 h-14 mx-auto mb-3 bg-white/20 rounded-full flex items-center justify-center">
-              <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-              </svg>
-            </div>
-            <h3 class="text-xl font-bold text-white">Premium Content</h3>
+      <div v-if="showPaywallModal" class="fixed inset-0 z-[1000] bg-black/40 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-xs p-6 text-center">
+          <div class="w-16 h-16 mx-auto mb-4 bg-slate-100 rounded-full flex items-center justify-center">
+            <svg class="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+            </svg>
           </div>
-          <!-- Body -->
-          <div class="px-6 py-5 text-center">
-            <p class="text-slate-600 mb-6">This lesson is only available to premium subscribers. Upgrade now to unlock all content.</p>
-            <div class="space-y-3">
-              <button @click="$router.push('/pay/start')" class="w-full py-3.5 px-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold rounded-xl hover:from-amber-600 hover:to-orange-600 transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
-                </svg>
-                Get Premium
-              </button>
-              <button @click="handleReturnToCatalogue" class="w-full py-3 px-4 bg-slate-100 text-slate-600 font-medium rounded-xl hover:bg-slate-200 transition-colors duration-200 flex items-center justify-center gap-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-                </svg>
-                Back to Catalogue
-              </button>
-            </div>
+          <h3 class="text-lg font-bold text-slate-900 mb-2">Premium Content</h3>
+          <p class="text-slate-500 text-sm mb-6">Upgrade to access this lesson</p>
+          <div class="space-y-2">
+            <button @click="$router.push('/pay/start')" class="w-full py-3 bg-slate-900 text-white font-semibold rounded-xl hover:bg-slate-800 transition-colors">
+              Get Premium
+            </button>
+            <button @click="handleReturnToCatalogue" class="w-full py-3 text-slate-500 font-medium hover:text-slate-700 transition-colors">
+              Go Back
+            </button>
           </div>
         </div>
       </div>
@@ -68,32 +56,16 @@
 
     <!-- Exit Confirmation Modal -->
     <Teleport to="body">
-      <div v-if="showExitModal" class="fixed inset-0 z-[1000] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-modal-in">
-          <!-- Header -->
-          <div class="px-6 pt-6 pb-4 text-center">
-            <div class="w-14 h-14 mx-auto mb-4 bg-amber-100 rounded-full flex items-center justify-center">
-              <svg class="w-7 h-7 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-              </svg>
-            </div>
-            <h3 class="text-xl font-bold text-slate-800 mb-2">Leave Lesson?</h3>
-            <p class="text-slate-500">Your progress will be saved automatically. You can continue later.</p>
-          </div>
-          <!-- Actions -->
-          <div class="px-6 pb-6 space-y-3">
-            <button @click="exitLesson" class="w-full py-3.5 px-4 bg-red-500 text-white font-semibold rounded-xl hover:bg-red-600 transition-colors duration-200 flex items-center justify-center gap-2">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-              </svg>
-              Yes, Leave
+      <div v-if="showExitModal" class="fixed inset-0 z-[1000] bg-black/40 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-xs p-6 text-center">
+          <h3 class="text-lg font-bold text-slate-900 mb-2">Leave Lesson?</h3>
+          <p class="text-slate-500 text-sm mb-6">Your progress will be saved</p>
+          <div class="space-y-2">
+            <button @click="exitLesson" class="w-full py-3 bg-slate-900 text-white font-semibold rounded-xl hover:bg-slate-800 transition-colors">
+              Leave
             </button>
-            <button @click="cancelExit" class="w-full py-3 px-4 bg-slate-100 text-slate-700 font-semibold rounded-xl hover:bg-slate-200 transition-colors duration-200 flex items-center justify-center gap-2">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-              </svg>
-              Continue Learning
+            <button @click="cancelExit" class="w-full py-3 text-slate-500 font-medium hover:text-slate-700 transition-colors">
+              Stay
             </button>
           </div>
         </div>
@@ -102,19 +74,12 @@
 
     <!-- Problem Report Modal -->
     <Teleport to="body">
-      <div v-if="showProblemReportModal" class="fixed inset-0 z-[1000] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4" @click.self="closeProblemReportModal">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col animate-modal-in">
+      <div v-if="showProblemReportModal" class="fixed inset-0 z-[1000] bg-black/40 flex items-center justify-center p-4" @click.self="closeProblemReportModal">
+        <div class="bg-white rounded-2xl w-full max-w-md max-h-[85vh] overflow-hidden flex flex-col">
           <!-- Header -->
-          <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
-                <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                </svg>
-              </div>
-              <h3 class="text-lg font-semibold text-slate-800">Report a Problem</h3>
-            </div>
-            <button @click="closeProblemReportModal" class="w-9 h-9 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+          <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+            <h3 class="font-semibold text-slate-900">Report Issue</h3>
+            <button @click="closeProblemReportModal" class="w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
               </svg>
@@ -122,83 +87,55 @@
           </div>
 
           <!-- Body -->
-          <div class="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-            <p class="text-slate-500 text-sm">Help us improve by describing the issue you encountered.</p>
-
+          <div class="flex-1 overflow-y-auto px-5 py-4 space-y-4">
             <!-- Problem Type -->
             <div>
-              <label for="problemType" class="block text-sm font-medium text-slate-700 mb-2">Problem Type</label>
-              <select id="problemType" v-model="problemType" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
-                <option value="">Select type...</option>
+              <label class="block text-sm font-medium text-slate-700 mb-1.5">Type</label>
+              <select v-model="problemType" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent">
+                <option value="">Select...</option>
                 <option value="content">Content Error</option>
-                <option value="technical">Technical Problem</option>
-                <option value="interface">Interface Issue</option>
-                <option value="exercise">Exercise Error</option>
-                <option value="audio">Audio Problem</option>
+                <option value="technical">Technical</option>
+                <option value="exercise">Exercise</option>
                 <option value="other">Other</option>
               </select>
             </div>
 
             <!-- Description -->
             <div>
-              <label for="problemDescription" class="block text-sm font-medium text-slate-700 mb-2">
-                Description <span class="text-red-500">*</span>
-              </label>
+              <label class="block text-sm font-medium text-slate-700 mb-1.5">Description *</label>
               <textarea
-                id="problemDescription"
                 v-model="problemDescription"
-                rows="4"
-                placeholder="What happened? Which step were you on? What did you expect?"
-                class="w-full px-4 py-3 bg-slate-50 border rounded-xl text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
-                :class="showValidationError && !problemDescription.trim() ? 'border-red-300 bg-red-50' : 'border-slate-200'"
+                rows="3"
+                placeholder="Describe the issue..."
+                class="w-full px-3 py-2.5 bg-slate-50 border rounded-xl text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent resize-none"
+                :class="showValidationError && !problemDescription.trim() ? 'border-red-300' : 'border-slate-200'"
               ></textarea>
-              <p v-if="showValidationError && !problemDescription.trim()" class="mt-1.5 text-sm text-red-500">Please describe the problem</p>
+              <p v-if="showValidationError && !problemDescription.trim()" class="mt-1 text-xs text-red-500">Required</p>
             </div>
 
-            <!-- Screenshot URL -->
+            <!-- Contact -->
             <div>
-              <label for="screenshotUrl" class="block text-sm font-medium text-slate-700 mb-2">Screenshot URL (optional)</label>
-              <input
-                type="url"
-                id="screenshotUrl"
-                v-model="screenshotUrl"
-                placeholder="https://imgur.com/your-screenshot.png"
-                class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              >
-              <p class="mt-1.5 text-xs text-slate-400">Upload to imgur.com or imgbb.com and paste the link</p>
-            </div>
-
-            <!-- Contact Info -->
-            <div>
-              <label for="contactInfo" class="block text-sm font-medium text-slate-700 mb-2">Contact (optional)</label>
+              <label class="block text-sm font-medium text-slate-700 mb-1.5">Contact (optional)</label>
               <input
                 type="text"
-                id="contactInfo"
                 v-model="contactInfo"
-                placeholder="Email or Telegram @username"
-                class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                placeholder="Email or @telegram"
+                class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
               >
             </div>
           </div>
 
           <!-- Footer -->
-          <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50">
-            <button @click="closeProblemReportModal" class="px-5 py-2.5 text-slate-600 font-medium rounded-xl hover:bg-slate-100 transition-colors">
+          <div class="px-5 py-4 border-t border-slate-100 flex gap-3">
+            <button @click="closeProblemReportModal" class="flex-1 py-3 text-slate-600 font-medium rounded-xl hover:bg-slate-100 transition-colors">
               Cancel
             </button>
             <button
               @click="submitProblemReport"
               :disabled="isSubmitting"
-              class="px-5 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              class="flex-1 py-3 bg-slate-900 text-white font-semibold rounded-xl hover:bg-slate-800 transition-colors disabled:opacity-50"
             >
-              <svg v-if="!isSubmitting" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
-              </svg>
-              <svg v-else class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              {{ isSubmitting ? 'Sending...' : 'Send Report' }}
+              {{ isSubmitting ? 'Sending...' : 'Send' }}
             </button>
           </div>
         </div>

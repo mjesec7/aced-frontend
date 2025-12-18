@@ -1,9 +1,5 @@
 <template>
   <div class="whack-game-container">
-    <!-- Game Background Elements -->
-    <div class="bg-decoration circle-1"></div>
-    <div class="bg-decoration circle-2"></div>
-
     <!-- Right Sidebar HUD -->
     <GameHUDSidebar
       v-if="gameActive"
@@ -62,24 +58,33 @@
       </div>
     </div>
 
-    <!-- Small Completion Modal -->
+    <!-- Start Game Modal -->
     <transition name="fade">
-      <div v-if="!gameActive" class="modal-overlay" @click.self="startGame">
+      <div v-if="!gameActive && !isGameOver" class="modal-overlay" @click.self="startGame">
         <div class="small-modal">
-          <div class="modal-icon">{{ isGameOver ? (score >= 100 ? '🎉' : '😅') : '🔨' }}</div>
-          <h3 class="modal-title">{{ isGameOver ? (score >= 100 ? 'Perfect!' : 'Game Over') : 'Ready to Whack?' }}</h3>
-          <div class="modal-score">Score: {{ score }}/100</div>
-          
-          <div v-if="isGameOver" class="modal-stars">
-            <span v-for="n in 3" :key="n" class="star">{{ n <= earnedStars ? '⭐' : '☆' }}</span>
-          </div>
+          <div class="modal-icon">🔨</div>
+          <h3 class="modal-title">Ready to Whack?</h3>
+          <p class="modal-desc">Hit the correct answers!</p>
+          <button class="modal-btn" @click="startGame">Start</button>
+        </div>
+      </div>
+    </transition>
 
-          <button class="modal-btn" @click="startGame">
-            {{ isGameOver ? '🔄 Retry' : '▶ Start' }}
-          </button>
-          <button v-if="isGameOver" class="modal-btn secondary" @click="continueLesson">
-            Continue →
-          </button>
+    <!-- Game Over Toast - Auto dismisses -->
+    <transition name="slide-up">
+      <div v-if="isGameOver && showCompletionToast" class="completion-toast">
+        <div class="toast-content">
+          <div class="toast-icon">{{ score >= 100 ? '🎉' : score >= 50 ? '👍' : '💪' }}</div>
+          <div class="toast-info">
+            <div class="toast-title">{{ score >= 100 ? 'Perfect!' : score >= 50 ? 'Good job!' : 'Nice try!' }}</div>
+            <div class="toast-score">{{ score }} points</div>
+          </div>
+          <div class="toast-stars">
+            <span v-for="n in 3" :key="n" :class="n <= earnedStars ? 'star-filled' : 'star-empty'">★</span>
+          </div>
+        </div>
+        <div class="toast-progress">
+          <div class="toast-progress-bar" :style="{ width: progressWidth + '%' }"></div>
         </div>
       </div>
     </transition>
@@ -111,6 +116,11 @@ const gameInterval = ref(null);
 const currentQuestionIndex = ref(0);
 const isGameOver = ref(false);
 const earnedStars = ref(0);
+const showCompletionToast = ref(false);
+const progressWidth = ref(100);
+const autoDismissTimer = ref(null);
+const progressTimer = ref(null);
+const AUTO_DISMISS_DURATION = 5000; // 5 seconds
 
 // --- Computed Logic ---
 
@@ -256,18 +266,36 @@ const nextQuestion = () => {
 const finishGame = () => {
   stopGame();
   isGameOver.value = true;
-  
+  showCompletionToast.value = true;
+  progressWidth.value = 100;
+
   // Calculate stars based on score (100 is target)
   const percentage = (props.score / 100) * 100;
   if (percentage >= 100) earnedStars.value = 3;
   else if (percentage >= 70) earnedStars.value = 2;
   else if (percentage >= 50) earnedStars.value = 1;
   else earnedStars.value = 0;
-  
-  emit('game-complete', { score: props.score, completed: props.score >= 100 });
+
+  // Start progress bar animation
+  const startTime = Date.now();
+  progressTimer.value = setInterval(() => {
+    const elapsed = Date.now() - startTime;
+    progressWidth.value = Math.max(0, 100 - (elapsed / AUTO_DISMISS_DURATION) * 100);
+  }, 50);
+
+  // Auto-dismiss after 5 seconds and continue to next step
+  autoDismissTimer.value = setTimeout(() => {
+    clearInterval(progressTimer.value);
+    showCompletionToast.value = false;
+    emit('game-complete', { score: props.score, completed: props.score >= 50 });
+  }, AUTO_DISMISS_DURATION);
 };
 
 const continueLesson = () => {
+  // Clear any running timers
+  if (autoDismissTimer.value) clearTimeout(autoDismissTimer.value);
+  if (progressTimer.value) clearInterval(progressTimer.value);
+  showCompletionToast.value = false;
   emit('game-complete', { score: props.score, completed: props.score >= 50 });
 };
 
@@ -295,7 +323,11 @@ watch(() => props.lives, (val) => { if(val <= 0) finishGame(); });
 watch(() => props.timeRemaining, (val) => { if(val <= 0) finishGame(); });
 
 onMounted(initHoles);
-onUnmounted(stopGame);
+onUnmounted(() => {
+  stopGame();
+  if (autoDismissTimer.value) clearTimeout(autoDismissTimer.value);
+  if (progressTimer.value) clearInterval(progressTimer.value);
+});
 </script>
 
 <style scoped>
@@ -305,24 +337,15 @@ onUnmounted(stopGame);
   position: relative;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #86efac 0%, #22c55e 100%);
+  min-height: 400px;
+  background: linear-gradient(180deg, #4ade80 0%, #22c55e 50%, #166534 100%);
   overflow: hidden;
-  border-radius: 24px;
+  border-radius: 16px;
   user-select: none;
   font-family: 'Fredoka', sans-serif;
   display: flex;
   flex-direction: column;
-  box-shadow: inset 0 0 60px rgba(0,0,0,0.1);
 }
-
-.bg-decoration {
-  position: absolute;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  pointer-events: none;
-}
-.circle-1 { width: 300px; height: 300px; top: -50px; left: -50px; }
-.circle-2 { width: 200px; height: 200px; bottom: 50px; right: -20px; }
 
 /* Question Banner */
 .question-banner {
@@ -588,6 +611,101 @@ onUnmounted(stopGame);
 
 .modal-btn.secondary:hover {
   background: #e2e8f0;
+}
+
+.modal-desc {
+  color: #64748b;
+  font-size: 0.9rem;
+  margin-bottom: 16px;
+}
+
+/* Completion Toast */
+.completion-toast {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  border-radius: 16px;
+  padding: 16px 20px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+  z-index: 200;
+  min-width: 280px;
+  max-width: 90%;
+}
+
+.toast-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.toast-icon {
+  font-size: 2.5rem;
+  flex-shrink: 0;
+}
+
+.toast-info {
+  flex: 1;
+}
+
+.toast-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 2px;
+}
+
+.toast-score {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.toast-stars {
+  display: flex;
+  gap: 2px;
+  font-size: 1.5rem;
+}
+
+.star-filled {
+  color: #fbbf24;
+}
+
+.star-empty {
+  color: #e2e8f0;
+}
+
+.toast-progress {
+  height: 4px;
+  background: #e2e8f0;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.toast-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #22c55e, #16a34a);
+  transition: width 0.05s linear;
+}
+
+/* Slide up animation */
+.slide-up-enter-active {
+  transition: all 0.3s ease-out;
+}
+
+.slide-up-leave-active {
+  transition: all 0.2s ease-in;
+}
+
+.slide-up-enter-from {
+  transform: translateX(-50%) translateY(100%);
+  opacity: 0;
+}
+
+.slide-up-leave-to {
+  transform: translateX(-50%) translateY(20px);
+  opacity: 0;
 }
 
 /* ANIMATIONS */
