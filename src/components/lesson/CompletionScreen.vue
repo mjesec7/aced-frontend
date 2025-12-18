@@ -7,19 +7,22 @@
 
     <!-- Main Content -->
     <div class="flex-1 flex flex-col items-center justify-center px-6 py-4 overflow-y-auto">
-      <div class="w-full max-w-md text-center">
-        <!-- Medal Icon -->
-        <div class="w-20 h-20 mx-auto mb-3 rounded-full flex items-center justify-center text-4xl" :class="medalBgClass">
-          {{ medalIcon }}
+      <div class="w-full max-w-md text-center space-y-4">
+        <!-- Completion Info Group -->
+        <div class="space-y-2">
+          <!-- Medal Icon -->
+          <div class="w-20 h-20 mx-auto rounded-full flex items-center justify-center text-4xl" :class="medalBgClass">
+            {{ medalIcon }}
+          </div>
+
+          <!-- Title -->
+          <h1 class="text-2xl sm:text-3xl font-bold text-slate-900">
+            {{ medalLabel }}
+          </h1>
         </div>
 
-        <!-- Title -->
-        <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">
-          {{ medalLabel }}
-        </h1>
-
         <!-- Stats Row -->
-        <div class="flex justify-center gap-6 sm:gap-8 mb-4 py-2">
+        <div class="flex justify-center gap-6 sm:gap-8 py-2">
           <div class="text-center">
             <div class="text-2xl font-bold text-slate-900">{{ readableTime }}</div>
             <div class="text-xs text-slate-400 uppercase tracking-wide">time</div>
@@ -37,7 +40,7 @@
         </div>
 
         <!-- Accuracy Bar -->
-        <div class="bg-slate-50 rounded-2xl p-4 mb-4">
+        <div class="bg-slate-50 rounded-2xl p-4">
           <div class="flex items-center justify-between mb-2">
             <span class="text-sm font-medium text-slate-600">Accuracy</span>
             <span class="text-sm font-bold text-slate-900">{{ accuracyPercentage }}%</span>
@@ -54,11 +57,13 @@
         </div>
 
         <!-- AI Insight (if available) -->
-        <div v-if="progressInsight" class="bg-slate-50 rounded-2xl p-4 mb-4 text-left">
+        <div v-if="progressInsight" class="bg-slate-50 rounded-2xl p-4 text-left">
           <p class="text-sm text-slate-600 leading-relaxed">{{ progressInsight }}</p>
         </div>
       </div>
     </div>
+
+
 
     <!-- Bottom Actions -->
     <div class="px-6 pb-6 pt-3 border-t border-slate-100 bg-white">
