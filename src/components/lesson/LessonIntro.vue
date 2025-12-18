@@ -15,7 +15,7 @@
     </div>
 
     <!-- Main Content -->
-    <div class="flex-1 flex flex-col items-center justify-center px-6 py-8 overflow-y-auto">
+    <div class="flex-1 flex flex-col items-center px-6 py-6 overflow-y-auto">
       <div class="w-full max-w-md text-center">
         <!-- Icon -->
         <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-slate-100 flex items-center justify-center">

@@ -293,7 +293,6 @@
         </div>
 
         <div
-          v-if="!isGameStep"
           class="resize-handle"
           @mousedown="startResize"
           @touchstart="startResize"
@@ -682,12 +681,11 @@ return guestProgress[lessonId]
     // RESIZABLE SPLIT SCREEN COMPUTED PROPERTIES
     // ==========================================
     const leftPanelStyle = computed(() => {
-      if (isGameStep.value) return { display: 'none' }
+      // Show both panels for game steps - games stay in interactive panel
       return { width: `${currentLeftWidth.value}%` }
     })
 
     const rightPanelStyle = computed(() => {
-      if (isGameStep.value) return { width: '100%' }
       return { width: `${100 - currentLeftWidth.value}%` }
     })
 
