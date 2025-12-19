@@ -1,7 +1,6 @@
 <template>
   <div class="game-container" :class="`game-${gameType}`">
-
-    <!-- Dynamic Game Component - Games have their own start modals -->
+    <!-- Dynamic Game Component -->
     <component
       :is="gameComponent"
       v-if="!gameComplete"
@@ -39,9 +38,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
-// TODO: Add sound effect support
-// import { useSound } from '@/composables/useSound';
+import { ref, computed, onUnmounted, watch } from 'vue';
 import { submitGameResults } from '@/api';
 import GameHUD from './GameHUD.vue';
 import GameComplete from './GameComplete.vue';
@@ -55,33 +52,14 @@ import PatternBuilder from '../strategy/PatternBuilder.vue';
 import MazeRunner from '../maze/MazeRunner.vue';
 
 const props = defineProps({
-  gameData: {
-    type: Object,
-    required: true
-  },
-  gameType: {
-    type: String,
-    required: true
-  },
-  userId: {
-    type: String,
-    required: true
-  },
-  lessonId: {
-    type: String,
-    required: true
-  },
-  stepIndex: {
-    type: Number,
-    required: true
-  }
+  gameData: { type: Object, required: true },
+  gameType: { type: String, required: true },
+  userId: { type: String, required: true },
+  lessonId: { type: String, required: true },
+  stepIndex: { type: Number, required: true }
 });
 
 const emit = defineEmits(['game-complete', 'game-exit']);
-
-// Composables
-// TODO: Add sound effect support
-// const sound = useSound();
 
 // State
 const gameStarted = ref(false);
@@ -167,7 +145,6 @@ const timeSpent = computed(() => {
 });
 
 // Methods
-// Called when child game component starts (emits 'game-started')
 const handleGameStarted = () => {
   gameStarted.value = true;
   startTime.value = Date.now();
@@ -179,7 +156,6 @@ const handleGameStarted = () => {
   wrongItems.value = 0;
   actions.value = [];
 
-  // Start timer
   startTimer();
 };
 
@@ -188,10 +164,8 @@ const startTimer = () => {
     if (timeRemaining.value > 0) {
       timeRemaining.value--;
 
-      // Warning sound at 10 seconds
       if (timeRemaining.value === 10) {
-        // TODO: Add sound effect support
-        // sound.play('warning');
+        // Warning at 10 seconds
       }
     } else {
       clearInterval(timerInterval.value);
@@ -203,23 +177,15 @@ const startTimer = () => {
 const handleScoreChange = (change) => {
   score.value += change;
 
-  // Record action
   actions.value.push({
     timestamp: new Date().toISOString(),
     action: change > 0 ? 'correct' : 'wrong',
     points: change
   });
-
-  if (change > 0) {
-    // TODO: Add sound effect support
-    // sound.play('success');
-  }
 };
 
 const handleLifeLost = () => {
   lives.value--;
-  // TODO: Add sound effect support
-  // sound.play('error');
 
   if (lives.value <= 0) {
     handleGameComplete({ reason: 'no-lives' });
@@ -240,12 +206,6 @@ const handleGameComplete = async (data = {}) => {
 
   if (timerInterval.value) {
     clearInterval(timerInterval.value);
-  }
-
-  // Play completion sound
-  if (stars.value >= 2) {
-    // TODO: Add sound effect support
-    // sound.play('complete');
   }
 
   // Submit results to backend
@@ -275,6 +235,7 @@ const handleGameComplete = async (data = {}) => {
       isPersonalBest.value = result.result?.personalBest || false;
     }
   } catch (error) {
+    console.error('Error submitting game results:', error);
   } finally {
     isLoading.value = false;
   }
@@ -302,14 +263,7 @@ const continueLesson = () => {
 };
 
 const handleShare = (shareData) => {
-};
-
-const handleGiveUp = () => {
-  showGiveUpConfirm.value = false;
-  if (timerInterval.value) {
-    clearInterval(timerInterval.value);
-  }
-  emit('game-exit', { score: score.value, gaveUp: true });
+  // Handle share
 };
 
 // Lifecycle
@@ -325,15 +279,14 @@ onUnmounted(() => {
   position: relative;
   width: 100%;
   height: 100%;
-  min-height: 500px;
+  min-height: 400px;
   overflow: hidden;
-  /* FIXED: Changed from blue/purple gradient to transparent */
-  /* Each game component now handles its own background */
-  background: transparent;
   border-radius: 12px;
+  /* Transparent - each game handles its own background */
+  background: transparent;
 }
 
-/* Game-specific container backgrounds (fallbacks) */
+/* Game-specific fallback backgrounds */
 .game-container.game-basket-catch {
   background: linear-gradient(180deg, #87CEEB 0%, #98D8C8 100%);
 }
@@ -343,7 +296,7 @@ onUnmounted(() => {
 }
 
 .game-container.game-whack-a-mole {
-  /* WhackAMole has its own green background, keep container transparent */
+  /* WhackAMole has its own green background */
   background: transparent;
 }
 
@@ -357,101 +310,6 @@ onUnmounted(() => {
 
 .game-container.game-maze-runner {
   background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-}
-
-.instructions-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(10px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 200;
-  padding: 20px;
-}
-
-.instructions-card {
-  background: white;
-  border-radius: 20px;
-  padding: 40px;
-  max-width: 500px;
-  width: 100%;
-  text-align: center;
-  animation: slideUp 0.4s ease-out;
-  font-family: 'Fredoka', sans-serif;
-}
-
-@keyframes slideUp {
-  from {
-    transform: translateY(40px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-.instructions-icon {
-  font-size: 64px;
-  margin-bottom: 20px;
-}
-
-.instructions-title {
-  font-size: 28px;
-  font-weight: 800;
-  color: #333;
-  margin: 0 0 15px 0;
-}
-
-.instructions-text {
-  font-size: 16px;
-  color: #666;
-  line-height: 1.6;
-  margin: 0 0 30px 0;
-}
-
-.instructions-meta {
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-  margin-bottom: 30px;
-  flex-wrap: wrap;
-}
-
-.meta-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: #f5f5f5;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #666;
-}
-
-.meta-icon {
-  font-size: 18px;
-}
-
-.start-btn {
-  width: 100%;
-  padding: 16px;
-  background: linear-gradient(135deg, #a855f7, #9333ea);
-  color: white;
-  border: none;
-  border-radius: 12px;
-  font-size: 18px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.start-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(168, 85, 247, 0.4);
 }
 
 .game-loading {
@@ -480,126 +338,10 @@ onUnmounted(() => {
   to { transform: rotate(360deg); }
 }
 
-/* Give Up Button */
-.give-up-btn {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  width: 40px;
-  height: 40px;
-  background: rgba(239, 68, 68, 0.9);
-  color: white;
-  border: none;
-  border-radius: 50%;
-  font-size: 20px;
-  font-weight: 700;
-  cursor: pointer;
-  z-index: 150;
-  transition: all 0.3s;
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.give-up-btn:hover {
-  background: rgba(220, 38, 38, 1);
-  transform: scale(1.1);
-  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.5);
-}
-
-/* Confirmation Modal */
-.confirm-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 250;
-}
-
-.confirm-modal {
-  background: white;
-  padding: 24px;
-  border-radius: 16px;
-  text-align: center;
-  box-shadow: 0 20px 50px rgba(0,0,0,0.3);
-  max-width: 320px;
-  width: 90%;
-  animation: slideUp 0.3s ease-out;
-}
-
-.confirm-modal h3 {
-  margin: 0 0 12px;
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: #1e293b;
-}
-
-.confirm-modal p {
-  margin: 0 0 20px;
-  color: #64748b;
-  font-size: 1rem;
-}
-
-.confirm-buttons {
-  display: flex;
-  gap: 12px;
-}
-
-.confirm-btn {
-  flex: 1;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 10px;
-  font-weight: 700;
-  font-size: 0.95rem;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.confirm-btn.cancel {
-  background: #f1f5f9;
-  color: #475569;
-}
-
-.confirm-btn.cancel:hover {
-  background: #e2e8f0;
-}
-
-.confirm-btn.confirm {
-  background: #ef4444;
-  color: white;
-}
-
-.confirm-btn.confirm:hover {
-  background: #dc2626;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
-}
-
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.3s;
-}
-
-.fade-enter-from, .fade-leave-to {
-  opacity: 0;
-}
-
 /* Responsive */
 @media (max-width: 768px) {
-  .instructions-card {
-    padding: 30px 20px;
-  }
-
-  .instructions-icon {
-    font-size: 48px;
-  }
-
-  .instructions-title {
-    font-size: 24px;
+  .game-container {
+    min-height: 350px;
   }
 }
 </style>

@@ -1,6 +1,6 @@
 <template>
   <div class="whack-game-container">
-    <!-- Right Sidebar HUD -->
+    <!-- HUD Sidebar -->
     <GameHUDSidebar
       v-if="gameActive"
       :score="score"
@@ -18,76 +18,113 @@
     <div class="game-area">
       <div class="game-grid">
         <div v-for="(hole, index) in holes" :key="index" class="hole-wrapper">
-          <!-- Back of the mound -->
-          <div class="mound-back"></div>
+          <!-- Hole Shadow -->
+          <div class="hole-shadow"></div>
 
-          <!-- The Mole -->
+          <!-- Cute Mole -->
           <div
-            class="mole-character"
+            class="mole"
             :class="{
-              'visible': hole.active,
-              'hit': hole.state === 'hit',
-              'miss': hole.state === 'miss'
+              'mole--up': hole.active,
+              'mole--hit': hole.state === 'hit',
+              'mole--wrong': hole.state === 'miss'
             }"
             @mousedown.prevent="handleWhack(index)"
             @touchstart.prevent="handleWhack(index)"
           >
-            <div class="mole-body">
-              <div class="mole-face">
-                <div class="eyes">
-                  <span class="eye left"></span>
-                  <span class="eye right"></span>
+            <div class="mole__body">
+              <!-- Ears -->
+              <div class="mole__ears">
+                <div class="mole__ear mole__ear--left"></div>
+                <div class="mole__ear mole__ear--right"></div>
+              </div>
+              
+              <!-- Head -->
+              <div class="mole__head">
+                <!-- Eyes -->
+                <div class="mole__eyes">
+                  <div class="mole__eye">
+                    <div class="mole__pupil"></div>
+                    <div class="mole__eye-shine"></div>
+                  </div>
+                  <div class="mole__eye">
+                    <div class="mole__pupil"></div>
+                    <div class="mole__eye-shine"></div>
+                  </div>
                 </div>
-                <div class="snout"></div>
-                <div class="content-sign">
-                  {{ hole.content }}
+                
+                <!-- Nose -->
+                <div class="mole__nose">
+                  <div class="mole__nose-shine"></div>
                 </div>
+                
+                <!-- Cheeks -->
+                <div class="mole__cheeks">
+                  <div class="mole__cheek"></div>
+                  <div class="mole__cheek"></div>
+                </div>
+                
+                <!-- Mouth -->
+                <div class="mole__mouth"></div>
+              </div>
+              
+              <!-- Answer Sign -->
+              <div class="mole__sign">
+                <span class="mole__answer">{{ hole.content }}</span>
               </div>
             </div>
           </div>
 
-          <!-- Front of the mound -->
-          <div class="mound-front">
-            <div class="grass-tuft"></div>
+          <!-- Dirt Mound -->
+          <div class="mound">
+            <div class="mound__dirt"></div>
+            <div class="mound__grass">
+              <span></span><span></span><span></span><span></span><span></span>
+            </div>
           </div>
 
-          <!-- Effects -->
+          <!-- Hit Effects -->
           <transition name="pop">
-            <div v-if="hole.showEffect" class="hit-spark">
-              {{ hole.state === 'hit' ? '✨' : '❌' }}
+            <div v-if="hole.showEffect" class="effect">
+              {{ hole.state === 'hit' ? '✨' : '💥' }}
             </div>
           </transition>
         </div>
       </div>
     </div>
 
-    <!-- Start Game Modal -->
+    <!-- Start Modal -->
     <transition name="fade">
-      <div v-if="!gameActive && !isGameOver" class="modal-overlay" @click.self="startGame">
-        <div class="small-modal">
-          <div class="modal-icon">🔨</div>
-          <h3 class="modal-title">Ready to Whack?</h3>
-          <p class="modal-desc">Hit the correct answers!</p>
-          <button class="modal-btn" @click="startGame">Start</button>
+      <div v-if="!gameActive && !isGameOver" class="modal-overlay">
+        <div class="start-modal">
+          <div class="start-modal__emoji">🐹</div>
+          <h3 class="start-modal__title">Whack-a-Mole!</h3>
+          <p class="start-modal__desc">Tap the moles with correct answers</p>
+          <button class="start-modal__btn" @click="startGame">
+            <span>Start Game</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+          </button>
         </div>
       </div>
     </transition>
 
-    <!-- Game Over Toast - Auto dismisses -->
-    <transition name="slide-up">
-      <div v-if="isGameOver && showCompletionToast" class="completion-toast">
-        <div class="toast-content">
-          <div class="toast-icon">{{ score >= 100 ? '🎉' : score >= 50 ? '👍' : '💪' }}</div>
-          <div class="toast-info">
-            <div class="toast-title">{{ score >= 100 ? 'Perfect!' : score >= 50 ? 'Good job!' : 'Nice try!' }}</div>
-            <div class="toast-score">{{ score }} points</div>
+    <!-- Completion Toast -->
+    <transition name="toast">
+      <div v-if="isGameOver && showCompletionToast" class="toast">
+        <div class="toast__content">
+          <div class="toast__emoji">{{ score >= 100 ? '🎉' : score >= 50 ? '👏' : '💪' }}</div>
+          <div class="toast__info">
+            <div class="toast__title">{{ score >= 100 ? 'Perfect!' : score >= 50 ? 'Great job!' : 'Nice try!' }}</div>
+            <div class="toast__score">{{ score }} points</div>
           </div>
-          <div class="toast-stars">
-            <span v-for="n in 3" :key="n" :class="n <= earnedStars ? 'star-filled' : 'star-empty'">★</span>
+          <div class="toast__stars">
+            <span v-for="n in 3" :key="n" class="toast__star" :class="{ 'toast__star--filled': n <= earnedStars }">★</span>
           </div>
         </div>
-        <div class="toast-progress">
-          <div class="toast-progress-bar" :style="{ width: progressWidth + '%' }"></div>
+        <div class="toast__progress">
+          <div class="toast__bar" :style="{ width: progressWidth + '%' }"></div>
         </div>
       </div>
     </transition>
@@ -125,8 +162,7 @@ const autoDismissTimer = ref(null);
 const progressTimer = ref(null);
 const AUTO_DISMISS_DURATION = 5000;
 
-// --- Computed Logic ---
-
+// Computed
 const mode = computed(() => {
   return (props.gameData.questions && props.gameData.questions.length > 0) ? 'question' : 'category';
 });
@@ -141,12 +177,7 @@ const currentPrompt = computed(() => {
   return props.gameData.targetCategory || "Hit the correct items!";
 });
 
-const instructions = computed(() => {
-  return props.gameData.instructions || (mode.value === 'question' ? "Hit the answer!" : "Whack the correct items!");
-});
-
-// --- Game Loop ---
-
+// Methods
 const initHoles = () => {
   holes.value = Array.from({ length: GRID_SIZE }, () => ({
     active: false,
@@ -186,14 +217,14 @@ const spawnMole = () => {
     }
   } else {
     const items = props.gameData.items || [];
-    if (items.length === 0) return; 
+    if (items.length === 0) return;
 
     const randomIndex = Math.floor(Math.random() * items.length);
     const item = items[randomIndex];
     
     if (typeof item === 'string') {
       content = item;
-      isCorrect = true; 
+      isCorrect = true;
     } else {
       content = item.text || item.word || "??";
       isCorrect = item.isCorrect !== undefined ? item.isCorrect : true;
@@ -278,15 +309,6 @@ const finishGame = () => {
   }, AUTO_DISMISS_DURATION);
 };
 
-const continueLesson = () => {
-  if (autoDismissTimer.value) clearTimeout(autoDismissTimer.value);
-  if (progressTimer.value) clearInterval(progressTimer.value);
-  showCompletionToast.value = false;
-  emit('game-complete', { score: props.score, completed: props.score >= 50 });
-};
-
-// --- Lifecycle ---
-
 const startGame = () => {
   isGameOver.value = false;
   gameActive.value = true;
@@ -305,10 +327,12 @@ const stopGame = () => {
   holes.value.forEach(h => clearTimeout(h.timer));
 };
 
+// Watchers
 watch(() => props.score, (val) => { if(val >= 100) finishGame(); });
 watch(() => props.lives, (val) => { if(val <= 0) finishGame(); });
 watch(() => props.timeRemaining, (val) => { if(val <= 0) finishGame(); });
 
+// Lifecycle
 onMounted(initHoles);
 onUnmounted(() => {
   stopGame();
@@ -318,459 +342,537 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap');
-
 .whack-game-container {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  min-height: 450px;
-  /* FIXED: Solid green background - no gradient that could show blue */
-  background: #22c55e;
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, #86efac 0%, #4ade80 50%, #22c55e 100%);
   overflow: hidden;
-  border-radius: 16px;
+  font-family: 'Nunito', 'Segoe UI', system-ui, sans-serif;
   user-select: none;
-  font-family: 'Fredoka', sans-serif;
   display: flex;
   flex-direction: column;
 }
 
 /* Question Banner */
 .question-banner {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(240, 240, 255, 0.98));
-  backdrop-filter: blur(12px);
-  padding: 16px 28px;
-  margin: 16px auto 0;
-  border-radius: 20px;
-  max-width: 600px;
-  text-align: center;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15), 0 0 0 3px rgba(59, 130, 246, 0.2);
-  z-index: 50;
-  border: 2px solid rgba(59, 130, 246, 0.3);
   flex-shrink: 0;
+  background: white;
+  margin: 12px auto;
+  padding: 12px 24px;
+  border-radius: 50px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+  max-width: min(500px, calc(100% - 120px));
+  text-align: center;
 }
 
 .question-text {
-  font-size: 1.75rem;
-  font-weight: 900;
+  font-size: clamp(1rem, 2.5vw, 1.5rem);
+  font-weight: 800;
   color: #1e293b;
   margin: 0;
-  line-height: 1.3;
-  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* Game Area - fills remaining space */
+/* Game Area */
 .game-area {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 16px;
   min-height: 0;
-  /* Gradient from lighter to darker green - NO BLUE */
-  background: linear-gradient(180deg, #4ade80 0%, #22c55e 60%, #16a34a 100%);
+  overflow: hidden;
 }
 
-/* GRID */
 .game-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  max-width: 700px;
+  gap: clamp(10px, 3vw, 24px);
   width: 100%;
+  max-width: 650px;
 }
 
+/* Hole */
 .hole-wrapper {
   position: relative;
-  aspect-ratio: 1;
-  display: flex;
-  justify-content: center;
-  align-items: flex-end;
-  cursor: pointer;
-  overflow: hidden;
-  border-radius: 0 0 20px 20px;
-}
-
-/* DIRT MOUNDS */
-.mound-back {
-  position: absolute;
-  bottom: 12%;
-  width: 85%;
-  height: 35%;
-  background: linear-gradient(to bottom, #5d4037, #3e2723);
-  border-radius: 50% 50% 0 0;
-  z-index: 1;
-  box-shadow: inset 0 5px 10px rgba(0,0,0,0.3);
-}
-
-.mound-front {
-  position: absolute;
-  bottom: 0;
-  width: 95%;
-  height: 25%;
-  background: linear-gradient(to bottom, #795548, #5d4037);
-  border-radius: 50% 50% 15px 15px;
-  z-index: 10;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-}
-
-.grass-tuft {
-  position: absolute;
-  top: -5px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  height: 10px;
-  background-image: radial-gradient(circle at 5px 0, #22c55e 5px, transparent 6px);
-  background-size: 15px 10px;
-  background-repeat: repeat-x;
-}
-
-/* MOLE CHARACTER */
-.mole-character {
-  position: absolute;
-  bottom: 15%;
-  width: 75%;
-  height: 85%;
-  z-index: 5;
-  transform: translateY(110%);
-  transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  will-change: transform;
-}
-
-.mole-character.visible { transform: translateY(0); }
-.mole-character.hit { transform: scale(0.95) translateY(15px); filter: brightness(1.1); }
-.mole-character.miss { filter: hue-rotate(320deg) saturate(1.5); }
-
-.mole-body {
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(to right, #a1887f, #8d6e63);
-  border-radius: 45% 45% 0 0;
-  border: 4px solid #5d4037;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  box-shadow: inset -10px 0 20px rgba(0,0,0,0.15);
-  position: relative;
-}
-
-.mole-face { 
-  width: 100%;
+  aspect-ratio: 1 / 1.1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: -20px;
+  justify-content: flex-end;
+  cursor: pointer;
 }
 
-.eyes { 
-  display: flex; 
-  gap: 12px; 
-  margin-bottom: 8px; 
-}
-
-.eye {
-  width: 12px;
-  height: 12px;
-  background: #3e2723;
+.hole-shadow {
+  position: absolute;
+  bottom: 15%;
+  width: 85%;
+  height: 15%;
+  background: radial-gradient(ellipse, rgba(0,0,0,0.25) 0%, transparent 70%);
   border-radius: 50%;
+}
+
+/* Cute Mole */
+.mole {
+  position: absolute;
+  bottom: 22%;
+  width: 75%;
+  z-index: 5;
+  transform: translateY(105%);
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.mole--up {
+  transform: translateY(0);
+}
+
+.mole--hit {
+  transform: translateY(0) scale(0.92);
+  filter: brightness(1.15) saturate(1.1);
+}
+
+.mole--wrong {
+  animation: moleShake 0.35s ease-in-out;
+}
+
+@keyframes moleShake {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  20% { transform: translateY(0) rotate(-10deg); }
+  40% { transform: translateY(0) rotate(10deg); }
+  60% { transform: translateY(0) rotate(-6deg); }
+  80% { transform: translateY(0) rotate(6deg); }
+}
+
+.mole__body {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Ears */
+.mole__ears {
+  position: absolute;
+  top: 5%;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 8%;
+  z-index: 1;
+}
+
+.mole__ear {
+  width: 30%;
+  aspect-ratio: 1;
+  background: linear-gradient(145deg, #d4a574 0%, #b8956e 100%);
+  border-radius: 50%;
+  position: relative;
+  box-shadow: inset -2px -2px 5px rgba(0,0,0,0.1);
+}
+
+.mole__ear::after {
+  content: '';
+  position: absolute;
+  top: 25%;
+  left: 25%;
+  width: 50%;
+  height: 50%;
+  background: linear-gradient(145deg, #ffb5b5 0%, #f5a0a0 100%);
+  border-radius: 50%;
+}
+
+/* Head */
+.mole__head {
+  width: 100%;
+  aspect-ratio: 1 / 0.85;
+  background: linear-gradient(180deg, #d4a574 0%, #c4956a 40%, #b08060 100%);
+  border-radius: 48% 48% 42% 42%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 18%;
+  box-shadow: 
+    inset 0 8px 15px rgba(255,255,255,0.2),
+    inset 0 -8px 15px rgba(0,0,0,0.15),
+    0 6px 12px rgba(0,0,0,0.2);
+  z-index: 2;
+}
+
+/* Eyes */
+.mole__eyes {
+  display: flex;
+  gap: 22%;
+  margin-bottom: 6%;
+}
+
+.mole__eye {
+  width: clamp(14px, 22%, 26px);
+  aspect-ratio: 1;
+  background: linear-gradient(180deg, #ffffff 0%, #f0f0f0 100%);
+  border-radius: 50%;
+  position: relative;
+  box-shadow: 
+    inset 0 2px 4px rgba(0,0,0,0.1),
+    0 1px 2px rgba(0,0,0,0.1);
+}
+
+.mole__pupil {
+  position: absolute;
+  top: 22%;
+  left: 22%;
+  width: 56%;
+  height: 56%;
+  background: radial-gradient(circle at 35% 35%, #4a3728 0%, #1a1210 100%);
+  border-radius: 50%;
+}
+
+.mole__eye-shine {
+  position: absolute;
+  top: 18%;
+  right: 22%;
+  width: 28%;
+  height: 28%;
+  background: white;
+  border-radius: 50%;
+}
+
+/* Nose */
+.mole__nose {
+  width: clamp(16px, 28%, 32px);
+  aspect-ratio: 1.4;
+  background: linear-gradient(180deg, #5a4030 0%, #3a2820 100%);
+  border-radius: 50%;
+  position: relative;
+  margin-bottom: 4%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.mole__nose-shine {
+  position: absolute;
+  top: 18%;
+  left: 22%;
+  width: 25%;
+  height: 25%;
+  background: rgba(255,255,255,0.5);
+  border-radius: 50%;
+}
+
+/* Cheeks */
+.mole__cheeks {
+  position: absolute;
+  top: 48%;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 10%;
+}
+
+.mole__cheek {
+  width: 20%;
+  aspect-ratio: 1.4;
+  background: radial-gradient(ellipse, #ffb5b5 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+/* Mouth */
+.mole__mouth {
+  width: 20%;
+  height: 6%;
   position: relative;
 }
 
-.eye::after {
+.mole__mouth::after {
   content: '';
   position: absolute;
-  top: 2px;
-  right: 2px;
-  width: 4px;
-  height: 4px;
-  background: white;
-  border-radius: 50%;
-}
-
-.snout {
-  width: 24px;
-  height: 16px;
-  background: #ffccbc;
-  border-radius: 12px;
-  margin-bottom: 10px;
-  border: 2px solid #d7ccc8;
-}
-
-.content-sign {
-  background: white;
-  padding: 6px 12px;
-  border-radius: 12px;
-  font-weight: 800;
-  font-size: 1.1rem;
-  color: #333;
-  border: 3px solid #d7ccc8;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-  min-width: 60px;
-  text-align: center;
-  transform: rotate(-2deg);
-}
-
-/* EFFECTS */
-.hit-spark {
-  position: absolute;
   top: 0;
+  left: 10%;
+  width: 80%;
+  height: 100%;
+  border-bottom: 3px solid #5d4037;
+  border-radius: 0 0 50% 50%;
+}
+
+/* Sign */
+.mole__sign {
+  background: linear-gradient(180deg, #ffffff 0%, #f8f8f8 100%);
+  padding: clamp(5px, 1.2vw, 10px) clamp(10px, 2.5vw, 18px);
+  border-radius: 12px;
+  margin-top: -3%;
+  box-shadow: 
+    0 4px 12px rgba(0,0,0,0.15),
+    inset 0 1px 0 rgba(255,255,255,0.8);
+  border: 2px solid #e8ddd0;
+  z-index: 3;
+}
+
+.mole__answer {
+  font-size: clamp(0.85rem, 2.8vw, 1.25rem);
+  font-weight: 800;
+  color: #2d1f1a;
+  display: block;
+  text-align: center;
+}
+
+/* Mound */
+.mound {
+  width: 100%;
+  position: relative;
+  z-index: 10;
+}
+
+.mound__dirt {
+  width: 100%;
+  height: clamp(22px, 6vw, 38px);
+  background: linear-gradient(180deg, 
+    #a67c52 0%, 
+    #8b5e34 30%,
+    #704d2a 60%,
+    #5d4037 100%
+  );
+  border-radius: 50% 50% 18% 18%;
+  box-shadow: 
+    inset 0 6px 12px rgba(255,255,255,0.15),
+    inset 0 -4px 8px rgba(0,0,0,0.2),
+    0 4px 8px rgba(0,0,0,0.25);
+}
+
+.mound__grass {
+  position: absolute;
+  top: -5px;
+  left: 5%;
+  width: 90%;
+  display: flex;
+  justify-content: space-around;
+}
+
+.mound__grass span {
+  width: 10%;
+  height: clamp(8px, 2vw, 14px);
+  background: linear-gradient(180deg, #4ade80 0%, #22c55e 100%);
+  border-radius: 50% 50% 0 0;
+  transform-origin: bottom center;
+}
+
+.mound__grass span:nth-child(1) { transform: rotate(-25deg); height: 80%; }
+.mound__grass span:nth-child(2) { transform: rotate(-12deg); }
+.mound__grass span:nth-child(3) { height: 120%; }
+.mound__grass span:nth-child(4) { transform: rotate(12deg); }
+.mound__grass span:nth-child(5) { transform: rotate(25deg); height: 80%; }
+
+/* Effects */
+.effect {
+  position: absolute;
+  top: 5%;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 4rem;
+  font-size: clamp(2.5rem, 8vw, 4.5rem);
   z-index: 20;
-  animation: popOut 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
   pointer-events: none;
+  animation: effectBurst 0.5s ease-out forwards;
 }
 
-/* SMALL MODAL */
+@keyframes effectBurst {
+  0% { transform: translateX(-50%) scale(0.3); opacity: 0; }
+  40% { transform: translateX(-50%) scale(1.4); opacity: 1; }
+  100% { transform: translateX(-50%) scale(1) translateY(-25px); opacity: 0; }
+}
+
+/* Modal */
 .modal-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 200;
+  z-index: 100;
+  padding: 20px;
 }
 
-.small-modal {
+.start-modal {
   background: white;
-  padding: 28px 32px;
-  border-radius: 24px;
+  padding: clamp(28px, 6vw, 44px);
+  border-radius: 28px;
   text-align: center;
-  box-shadow: 0 20px 50px rgba(0,0,0,0.3);
-  max-width: 350px;
-  width: 90%;
-  animation: slideUp 0.3s ease-out;
+  box-shadow: 0 25px 70px rgba(0,0,0,0.3);
+  max-width: 340px;
+  width: 100%;
+  animation: modalPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-@keyframes slideUp {
-  from { transform: translateY(30px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+@keyframes modalPop {
+  from { transform: scale(0.85) translateY(30px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
 }
 
-.modal-icon {
-  font-size: 4rem;
-  margin-bottom: 16px;
+.start-modal__emoji {
+  font-size: clamp(4rem, 12vw, 6rem);
+  margin-bottom: 8px;
+  animation: emojiWiggle 2s ease-in-out infinite;
 }
 
-.modal-title {
-  font-size: 1.6rem;
+@keyframes emojiWiggle {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-8px) rotate(-5deg); }
+  75% { transform: translateY(-8px) rotate(5deg); }
+}
+
+.start-modal__title {
+  font-size: clamp(1.5rem, 5vw, 2rem);
   font-weight: 800;
   color: #1e293b;
-  margin: 0 0 10px;
+  margin: 0 0 8px;
 }
 
-.modal-score {
-  font-size: 1.2rem;
-  font-weight: 700;
+.start-modal__desc {
+  font-size: clamp(0.95rem, 3vw, 1.1rem);
   color: #64748b;
-  margin-bottom: 16px;
+  margin: 0 0 28px;
 }
 
-.modal-stars {
-  font-size: 2rem;
-  margin-bottom: 16px;
-  letter-spacing: 4px;
-}
-
-.modal-btn {
+.start-modal__btn {
   width: 100%;
-  padding: 14px 28px;
-  border: none;
-  border-radius: 14px;
-  font-weight: 700;
-  font-size: 1.1rem;
-  cursor: pointer;
-  transition: all 0.3s;
-  margin-bottom: 8px;
-}
-
-.modal-btn:not(.secondary) {
+  padding: 18px 28px;
   background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
   color: white;
-  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+  border: none;
+  border-radius: 18px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  transition: all 0.2s ease;
+  box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
 }
 
-.modal-btn:not(.secondary):hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(34, 197, 94, 0.4);
+.start-modal__btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(34, 197, 94, 0.5);
 }
 
-.modal-btn.secondary {
-  background: #f1f5f9;
-  color: #475569;
+.start-modal__btn:active {
+  transform: translateY(-1px);
 }
 
-.modal-btn.secondary:hover {
-  background: #e2e8f0;
+.start-modal__btn svg {
+  width: 22px;
+  height: 22px;
 }
 
-.modal-desc {
-  color: #64748b;
-  font-size: 1rem;
-  margin-bottom: 20px;
-}
-
-/* Completion Toast */
-.completion-toast {
+/* Toast */
+.toast {
   position: absolute;
   bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
   background: white;
-  border-radius: 20px;
-  padding: 18px 24px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-  z-index: 200;
+  border-radius: 22px;
+  padding: 18px 22px;
+  box-shadow: 0 12px 45px rgba(0,0,0,0.25);
+  z-index: 100;
   min-width: 300px;
-  max-width: 90%;
+  max-width: calc(100% - 48px);
 }
 
-.toast-content {
+.toast__content {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
   margin-bottom: 14px;
 }
 
-.toast-icon {
+.toast__emoji {
   font-size: 2.8rem;
   flex-shrink: 0;
 }
 
-.toast-info {
+.toast__info {
   flex: 1;
+  min-width: 0;
 }
 
-.toast-title {
-  font-size: 1.2rem;
+.toast__title {
+  font-size: 1.15rem;
   font-weight: 700;
   color: #1e293b;
-  margin-bottom: 4px;
 }
 
-.toast-score {
+.toast__score {
   font-size: 0.9rem;
   color: #64748b;
 }
 
-.toast-stars {
+.toast__stars {
   display: flex;
-  gap: 4px;
+  gap: 3px;
+}
+
+.toast__star {
   font-size: 1.6rem;
-}
-
-.star-filled {
-  color: #fbbf24;
-}
-
-.star-empty {
   color: #e2e8f0;
+  transition: all 0.3s ease;
 }
 
-.toast-progress {
+.toast__star--filled {
+  color: #fbbf24;
+  text-shadow: 0 2px 8px rgba(251, 191, 36, 0.4);
+}
+
+.toast__progress {
   height: 5px;
   background: #e2e8f0;
   border-radius: 3px;
   overflow: hidden;
 }
 
-.toast-progress-bar {
+.toast__bar {
   height: 100%;
   background: linear-gradient(90deg, #22c55e, #16a34a);
   transition: width 0.05s linear;
+  border-radius: 3px;
 }
 
-/* Slide up animation */
-.slide-up-enter-active {
-  transition: all 0.3s ease-out;
-}
-
-.slide-up-leave-active {
-  transition: all 0.2s ease-in;
-}
-
-.slide-up-enter-from {
-  transform: translateX(-50%) translateY(100%);
-  opacity: 0;
-}
-
-.slide-up-leave-to {
-  transform: translateX(-50%) translateY(20px);
-  opacity: 0;
-}
-
-/* ANIMATIONS */
-@keyframes popOut { 
-  0% { transform: translateX(-50%) scale(0.5); opacity: 0; } 
-  50% { transform: translateX(-50%) scale(1.2); opacity: 1; }
-  100% { transform: translateX(-50%) scale(1); opacity: 0; } 
-}
-
-@keyframes bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
-
-@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-
-.pop-enter-active, .pop-leave-active { transition: opacity 0.3s; }
-.pop-enter-from, .pop-leave-to { opacity: 0; }
-
-.fade-enter-active, .fade-leave-active { transition: opacity 0.3s; }
+/* Transitions */
+.fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 
-/* RESPONSIVE */
-@media (max-width: 768px) {
-  .whack-game-container {
-    min-height: 400px;
-  }
-  
-  .question-banner {
-    padding: 12px 20px;
-    margin: 12px auto 0;
-  }
-  
-  .question-text { 
-    font-size: 1.4rem; 
-  }
-  
-  .game-area {
-    padding: 12px;
-  }
-  
-  .game-grid {
-    gap: 10px;
-  }
-  
-  .content-sign {
-    font-size: 0.9rem;
-    padding: 4px 8px;
-  }
-  
-  .small-modal {
-    padding: 24px;
-  }
-  
-  .modal-icon { 
-    font-size: 3.5rem; 
-  }
-  
-  .modal-title { 
-    font-size: 1.4rem; 
-  }
-}
+.toast-enter-active { transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.toast-leave-active { transition: all 0.25s ease-in; }
+.toast-enter-from { transform: translateX(-50%) translateY(120%); opacity: 0; }
+.toast-leave-to { transform: translateX(-50%) translateY(30px); opacity: 0; }
 
-@media (max-width: 480px) {
+.pop-enter-active, .pop-leave-active { transition: all 0.3s ease; }
+.pop-enter-from, .pop-leave-to { opacity: 0; transform: scale(0.5); }
+
+/* Responsive */
+@media (max-width: 500px) {
+  .question-banner {
+    max-width: calc(100% - 100px);
+    padding: 10px 18px;
+    margin: 8px auto;
+  }
+  
   .game-grid {
     gap: 8px;
   }
+}
+
+@media (max-height: 450px) {
+  .question-banner {
+    margin: 6px auto;
+    padding: 8px 16px;
+  }
   
-  .question-text {
-    font-size: 1.2rem;
+  .game-area {
+    padding: 8px;
   }
 }
 </style>

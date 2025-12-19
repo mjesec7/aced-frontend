@@ -503,6 +503,13 @@ export default {
   setup() {
     const router = useRouter()
     const route = useRoute()
+
+    // ==========================================
+    // RESIZE CONSTANTS
+    // ==========================================
+    const MIN_PANEL_WIDTH = 30;  // 30% minimum
+    const MAX_PANEL_WIDTH = 70;  // 70% maximum  
+    const RESIZE_THROTTLE_MS = 16; // ~60fps throttle
     
     // ==========================================
     // GUEST MODE STATE
@@ -540,12 +547,16 @@ export default {
     // ==========================================
     const isResizing = ref(false)
     const currentLeftWidth = ref(60) // Initial %
+    const currentRightWidth = ref(40)
     const startX = ref(0)
     const startY = ref(0)
     const startWidthLeft = ref(60)
     const startWidthRight = ref(40)
-    const currentRightWidth = ref(40)
     const resizeDirection = ref('horizontal')
+    
+    // Optimization refs
+    const lastResizeTime = ref(0);
+    const rafId = ref(null);
 
     // ==========================================
     // OTHER REACTIVE STATE
@@ -720,103 +731,194 @@ return guestProgress[lessonId]
     // ==========================================
     // RESIZABLE SPLIT SCREEN METHODS
     // ==========================================
+    
+    // OPTIMIZED startResize
     const startResize = (event) => {
-      event.preventDefault()
+      event.preventDefault();
       
-      isResizing.value = true
-      resizeDirection.value = window.innerWidth <= 1023 ? 'vertical' : 'horizontal'
+      isResizing.value = true;
+      resizeDirection.value = window.innerWidth <= 1023 ? 'vertical' : 'horizontal';
       
       if (resizeDirection.value === 'horizontal') {
-        startX.value = event.clientX || event.touches?.[0]?.clientX || 0
+        startX.value = event.clientX || event.touches?.[0]?.clientX || 0;
       } else {
-        startY.value = event.clientY || event.touches?.[0]?.clientY || 0
+        startY.value = event.clientY || event.touches?.[0]?.clientY || 0;
       }
       
-      startWidthLeft.value = currentLeftWidth.value
-      startWidthRight.value = currentRightWidth.value
+      startWidthLeft.value = currentLeftWidth.value;
+      startWidthRight.value = currentRightWidth.value;
       
-      document.addEventListener('mousemove', handleResize, { passive: false })
-      document.addEventListener('mouseup', stopResize)
-      document.addEventListener('touchmove', handleResize, { passive: false })
-      document.addEventListener('touchend', stopResize)
+      // Add class to body for smooth cursor and disable pointer events
+      document.body.classList.add('is-resizing');
+      document.body.style.cursor = resizeDirection.value === 'horizontal' ? 'col-resize' : 'row-resize';
       
-      document.body.style.userSelect = 'none'
-      document.body.style.cursor = resizeDirection.value === 'horizontal' ? 'col-resize' : 'row-resize'
-    }
+      document.addEventListener('mousemove', handleResize, { passive: false });
+      document.addEventListener('mouseup', stopResize);
+      document.addEventListener('touchmove', handleResize, { passive: false });
+      document.addEventListener('touchend', stopResize);
+    };
 
+    // OPTIMIZED handleResize with throttling
     const handleResize = (event) => {
-      if (!isResizing.value) return
+      if (!isResizing.value) return;
       
-      event.preventDefault()
+      event.preventDefault();
       
-      const splitContent = document.querySelector('.split-content')
-      if (!splitContent) return
+      // Throttle to ~60fps for smooth performance
+      const now = performance.now();
+      if (now - lastResizeTime.value < RESIZE_THROTTLE_MS) {
+        if (!rafId.value) {
+          rafId.value = requestAnimationFrame(() => {
+            performResize(event);
+            rafId.value = null;
+          });
+        }
+        return;
+      }
       
-      let delta = 0
-      let containerSize = 0
+      lastResizeTime.value = now;
+      performResize(event);
+    };
+
+    // NEW performResize (actual resize logic)
+    const performResize = (event) => {
+      const splitContent = document.querySelector('.split-content');
+      if (!splitContent) return;
+      
+      let delta = 0;
+      let containerSize = 0;
       
       if (resizeDirection.value === 'horizontal') {
-        const currentX = event.clientX || event.touches?.[0]?.clientX || startX.value
-        delta = currentX - startX.value
-        containerSize = splitContent.offsetWidth
+        const currentX = event.clientX || event.touches?.[0]?.clientX || startX.value;
+        delta = currentX - startX.value;
+        containerSize = splitContent.offsetWidth;
       } else {
-        const currentY = event.clientY || event.touches?.[0]?.clientY || startY.value
-        delta = currentY - startY.value
-        containerSize = splitContent.offsetHeight
+        const currentY = event.clientY || event.touches?.[0]?.clientY || startY.value;
+        delta = currentY - startY.value;
+        containerSize = splitContent.offsetHeight;
       }
       
-      const deltaPercentage = (delta / containerSize) * 100
+      if (containerSize === 0) return;
       
-      let newLeftWidth = startWidthLeft.value + deltaPercentage
-      let newRightWidth = startWidthRight.value - deltaPercentage
+      const deltaPercentage = (delta / containerSize) * 100;
       
-      const minLeftWidth = 20
-      const maxLeftWidth = 85
-      const minRightWidth = 15
-      const maxRightWidth = 80
+      let newLeftWidth = startWidthLeft.value + deltaPercentage;
+      let newRightWidth = 100 - newLeftWidth;
       
-      if (newLeftWidth < minLeftWidth) {
-        newLeftWidth = minLeftWidth
-        newRightWidth = 100 - newLeftWidth
-      } else if (newLeftWidth > maxLeftWidth) {
-        newLeftWidth = maxLeftWidth
-        newRightWidth = 100 - newLeftWidth
+      // Apply MIN 30% / MAX 70% constraints
+      if (newLeftWidth < MIN_PANEL_WIDTH) {
+        newLeftWidth = MIN_PANEL_WIDTH;
+        newRightWidth = 100 - MIN_PANEL_WIDTH;
+      } else if (newLeftWidth > MAX_PANEL_WIDTH) {
+        newLeftWidth = MAX_PANEL_WIDTH;
+        newRightWidth = 100 - MAX_PANEL_WIDTH;
       }
       
-      if (newRightWidth < minRightWidth) {
-        newRightWidth = minRightWidth
-        newLeftWidth = 100 - newRightWidth
-      } else if (newRightWidth > maxRightWidth) {
-        newRightWidth = maxRightWidth
-        newLeftWidth = 100 - newRightWidth
+      if (newRightWidth < MIN_PANEL_WIDTH) {
+        newRightWidth = MIN_PANEL_WIDTH;
+        newLeftWidth = 100 - MIN_PANEL_WIDTH;
+      } else if (newRightWidth > MAX_PANEL_WIDTH) {
+        newRightWidth = MAX_PANEL_WIDTH;
+        newLeftWidth = 100 - MAX_PANEL_WIDTH;
       }
       
-      currentLeftWidth.value = newLeftWidth
-      currentRightWidth.value = newRightWidth
-    }
+      currentLeftWidth.value = newLeftWidth;
+      currentRightWidth.value = newRightWidth;
+    };
 
+    // OPTIMIZED stopResize
     const stopResize = () => {
-      if (!isResizing.value) return
+      if (!isResizing.value) return;
       
-      isResizing.value = false
+      isResizing.value = false;
       
-      document.removeEventListener('mousemove', handleResize)
-      document.removeEventListener('mouseup', stopResize)
-      document.removeEventListener('touchmove', handleResize)
-      document.removeEventListener('touchend', stopResize)
+      // Cancel any pending animation frame
+      if (rafId.value) {
+        cancelAnimationFrame(rafId.value);
+        rafId.value = null;
+      }
       
-      document.body.style.userSelect = ''
-      document.body.style.cursor = ''
+      document.removeEventListener('mousemove', handleResize);
+      document.removeEventListener('mouseup', stopResize);
+      document.removeEventListener('touchmove', handleResize);
+      document.removeEventListener('touchend', stopResize);
       
+      // Remove body styles
+      document.body.classList.remove('is-resizing');
+      document.body.style.cursor = '';
+      
+      // Save to localStorage
       try {
         localStorage.setItem('lessonPageSplitSizes', JSON.stringify({
           left: currentLeftWidth.value,
           right: currentRightWidth.value,
           timestamp: Date.now()
-        }))
+        }));
       } catch (error) {
-}
-    }
+        // Ignore localStorage errors
+      }
+    };
+
+    // NEW setDefaultSizes helper
+    const setDefaultSizes = () => {
+      // Default: 60% content, 40% interactive
+      currentLeftWidth.value = 60;
+      currentRightWidth.value = 40;
+    };
+
+    // OPTIMIZED loadSavedSizes
+    const loadSavedSizes = () => {
+      try {
+        const saved = localStorage.getItem('lessonPageSplitSizes');
+        if (saved) {
+          const { left, right, timestamp } = JSON.parse(saved);
+          
+          const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+          if (timestamp && timestamp > thirtyDaysAgo) {
+            // Apply constraints when loading
+            currentLeftWidth.value = Math.max(MIN_PANEL_WIDTH, Math.min(MAX_PANEL_WIDTH, left || 60));
+            currentRightWidth.value = Math.max(MIN_PANEL_WIDTH, Math.min(MAX_PANEL_WIDTH, right || 40));
+          } else {
+            localStorage.removeItem('lessonPageSplitSizes');
+            setDefaultSizes();
+          }
+        } else {
+          setDefaultSizes();
+        }
+      } catch (error) {
+        setDefaultSizes();
+      }
+    };
+
+    // OPTIMIZED resetSplitSizes
+    const resetSplitSizes = () => {
+      setDefaultSizes();
+      try {
+        localStorage.removeItem('lessonPageSplitSizes');
+      } catch (error) {
+        // Ignore
+      }
+    };
+    
+    // Initialize sizes
+    onMounted(() => {
+      loadSavedSizes();
+    });
+
+    onUnmounted(() => {
+      // Add resize cleanup
+      if (isResizing.value) {
+        stopResize();
+      }
+      
+      if (rafId.value) {
+        cancelAnimationFrame(rafId.value);
+      }
+      
+      document.body.classList.remove('is-resizing');
+      document.body.style.cursor = '';
+    });
+
 
     const handleResizeKeyboard = (event) => {
       const step = 5
@@ -873,40 +975,9 @@ return guestProgress[lessonId]
 }
     }
 
-    const resetSplitSizes = () => {
-      currentLeftWidth.value = 75
-      currentRightWidth.value = 25
-      
-      try {
-        localStorage.removeItem('lessonPageSplitSizes')
-      } catch (error) {
-}
-    }
 
-    const loadSavedSizes = () => {
-      try {
-        const saved = localStorage.getItem('lessonPageSplitSizes')
-        if (saved) {
-          const { left, right, timestamp } = JSON.parse(saved)
-          
-          const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000)
-          if (timestamp && timestamp > thirtyDaysAgo) {
-            currentLeftWidth.value = Math.max(20, Math.min(85, left || 75))
-            currentRightWidth.value = Math.max(15, Math.min(80, right || 25))
-          } else {
-            localStorage.removeItem('lessonPageSplitSizes')
-            currentLeftWidth.value = 75
-            currentRightWidth.value = 25
-          }
-        } else {
-          currentLeftWidth.value = 75
-          currentRightWidth.value = 25
-        }
-      } catch (error) {
-        currentLeftWidth.value = 75
-        currentRightWidth.value = 25
-      }
-    }
+
+
 
     const handleWindowResize = () => {
       const wasVertical = resizeDirection.value === 'vertical'
@@ -2006,6 +2077,8 @@ return { success: false, error: error.message }
       resetSplitSizes,
       loadSavedSizes,
       handleWindowResize,
+      performResize,
+      setDefaultSizes,
 
       // Data and state from lessonOrchestrator
       loading: lessonOrchestrator.loading,
@@ -2182,6 +2255,482 @@ return { success: false, error: error.message }
 
 <style scoped>
 @import "@/assets/css/LessonPage.css";
+
+/* ==========================================
+   LESSON PAGE STYLES - COMPLETE & OPTIMIZED
+   ========================================== */
+
+.lesson-page {
+  min-height: 100vh;
+  background-color: #f8fafc;
+}
+
+.lesson-container-new {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 60px);
+  overflow: hidden;
+}
+
+/* ==========================================
+   SPLIT CONTENT LAYOUT
+   ========================================== */
+
+.split-content {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.split-panel {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  /* GPU acceleration for smooth resize */
+  will-change: width;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  /* Prevent layout thrashing */
+  contain: layout style;
+}
+
+.split-panel.content-side {
+  background: #ffffff;
+  border-right: 1px solid #e2e8f0;
+  /* MIN 30% / MAX 70% constraints */
+  min-width: 30% !important;
+  max-width: 70% !important;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.split-panel.interactive-side {
+  background: #f8fafc;
+  /* MIN 30% / MAX 70% constraints */
+  min-width: 30% !important;
+  max-width: 70% !important;
+  overflow: hidden;
+}
+
+/* ==========================================
+   RESIZE HANDLE
+   ========================================== */
+
+.resize-handle {
+  width: 12px;
+  background: transparent;
+  cursor: col-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 20;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Larger touch/click target */
+.resize-handle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -10px;
+  right: -10px;
+}
+
+.handle-bar {
+  width: 4px;
+  height: 48px;
+  background: #cbd5e1;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.resize-handle:hover .handle-bar {
+  background: #6366f1;
+  height: 64px;
+  width: 5px;
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.4);
+}
+
+.resize-handle.is-resizing .handle-bar {
+  background: #6366f1;
+  height: 80px;
+  width: 6px;
+  box-shadow: 0 0 16px rgba(99, 102, 241, 0.5);
+}
+
+/* ==========================================
+   INTERACTIVE CONTAINER
+   ========================================== */
+
+.interactive-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  height: 100%;
+}
+
+.interactive-container > * {
+  flex: 1;
+  min-height: 0;
+}
+
+/* ==========================================
+   SCROLLBAR STYLING
+   ========================================== */
+
+.split-panel.content-side::-webkit-scrollbar {
+  width: 6px;
+}
+
+.split-panel.content-side::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.split-panel.content-side::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.split-panel.content-side::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ==========================================
+   PERFORMANCE - RESIZE STATE
+   ========================================== */
+
+/* Applied to body during resize */
+body.is-resizing {
+  cursor: col-resize !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+body.is-resizing * {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+/* Disable transitions during resize for performance */
+body.is-resizing .split-panel {
+  transition: none !important;
+}
+
+/* Prevent iframe/content interference during resize */
+body.is-resizing iframe,
+body.is-resizing video,
+body.is-resizing canvas {
+  pointer-events: none !important;
+}
+
+/* ==========================================
+   CONFETTI
+   ========================================== */
+
+.confetti-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ==========================================
+   RESPONSIVE - TABLET & MOBILE
+   ========================================== */
+
+@media (max-width: 1023px) {
+  .split-content {
+    flex-direction: column;
+  }
+  
+  .split-panel.content-side,
+  .split-panel.interactive-side {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    /* Vertical constraints */
+    min-height: 30% !important;
+    max-height: 70% !important;
+  }
+  
+  .split-panel.content-side {
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  
+  .resize-handle {
+    width: 100%;
+    height: 14px;
+    cursor: row-resize;
+  }
+  
+  .resize-handle::before {
+    top: -10px;
+    bottom: -10px;
+    left: 0;
+    right: 0;
+  }
+  
+  .handle-bar {
+    width: 48px;
+    height: 4px;
+  }
+  
+  .resize-handle:hover .handle-bar,
+  .resize-handle.is-resizing .handle-bar {
+    width: 64px;
+    height: 5px;
+  }
+  
+  body.is-resizing,
+  body.is-resizing * {
+    cursor: row-resize !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .lesson-container-new {
+    height: calc(100vh - 56px);
+  }
+  
+  /* Hide resize handle on small screens */
+  .resize-handle {
+    display: none;
+  }
+  
+  .split-panel.content-side {
+    height: auto !important;
+    max-height: none !important;
+    min-height: auto !important;
+    flex: 0 0 auto;
+  }
+  
+  .split-panel.interactive-side {
+    flex: 1;
+    min-height: 280px;
+    max-height: none !important;
+  }
+}
+
+/* ==========================================
+   ACCESSIBILITY
+   ========================================== */
+
+.resize-handle:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .handle-bar,
+  .split-panel {
+    transition: none !important;
+  }
+}
+
+/* ==========================================
+   CONTENT PANEL INNER STYLES
+   ========================================== */
+
+.content-panel-inner {
+  padding: 24px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+  .content-panel-inner {
+    padding: 16px;
+  }
+}
+
+/* ==========================================
+   INTERACTIVE PANEL STYLES
+   ========================================== */
+
+.interactive-panel-wrapper {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Exercise card */
+.exercise-card {
+  background: white;
+  border-radius: 24px;
+  padding: 32px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e2e8f0;
+  margin: 16px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+  .exercise-card {
+    padding: 20px;
+    margin: 12px;
+    border-radius: 20px;
+  }
+}
+
+/* ==========================================
+   HEADER STYLES
+   ========================================== */
+
+.lesson-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+/* ==========================================
+   BUTTON STYLES
+   ========================================== */
+
+.btn-primary {
+  padding: 14px 32px;
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: white;
+  border: none;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.3);
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-success {
+  padding: 14px 32px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+}
+
+.btn-success:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+
+/* ==========================================
+   TRANSITIONS
+   ========================================== */
+
+.slide-fade-enter-active {
+  transition: all 0.4s ease-out;
+}
+
+.slide-fade-leave-active {
+  transition: all 0.3s ease-in;
+}
+
+.slide-fade-enter-from,
+.slide-fade-leave-to {
+  transform: translateY(-10px);
+  opacity: 0;
+}
+
+/* ==========================================
+   UTILITY CLASSES
+   ========================================== */
+
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.flex-1 { flex: 1; }
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.gap-2 { gap: 0.5rem; }
+.gap-3 { gap: 0.75rem; }
+.gap-4 { gap: 1rem; }
+
+.w-full { width: 100%; }
+.h-full { height: 100%; }
+.min-h-0 { min-height: 0; }
+
+.overflow-hidden { overflow: hidden; }
+.overflow-auto { overflow: auto; }
+
+.rounded-xl { border-radius: 0.75rem; }
+.rounded-2xl { border-radius: 1rem; }
+
+.shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+
+.bg-white { background-color: white; }
+.bg-slate-50 { background-color: #f8fafc; }
+.bg-slate-100 { background-color: #f1f5f9; }
+
+.text-slate-500 { color: #64748b; }
+.text-slate-600 { color: #475569; }
+.text-slate-700 { color: #334155; }
+.text-slate-800 { color: #1e293b; }
+.text-slate-900 { color: #0f172a; }
+
+.font-medium { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
+
+.p-4 { padding: 1rem; }
+.p-6 { padding: 1.5rem; }
+.px-4 { padding-left: 1rem; padding-right: 1rem; }
+.py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+.py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-4 { margin-bottom: 1rem; }
+.mb-6 { margin-bottom: 1.5rem; }
+.mt-4 { margin-top: 1rem; }
+.mt-6 { margin-top: 1.5rem; }
+
+.border { border-width: 1px; }
+.border-slate-200 { border-color: #e2e8f0; }
+
+.transition-all { transition: all 0.2s ease; }
+.transition-colors { transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease; }
 
 /* Modal animation */
 @keyframes modal-in {
