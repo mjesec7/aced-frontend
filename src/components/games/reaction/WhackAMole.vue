@@ -9,12 +9,7 @@
       :max-lives="3"
     />
 
-    <!-- Background Decorations -->
-    <div class="clouds">
-      <div class="cloud cloud-1"></div>
-      <div class="cloud cloud-2"></div>
-      <div class="cloud cloud-3"></div>
-    </div>
+
 
     <!-- Question Banner - During active gameplay -->
     <div v-if="gameActive" class="question-banner">
@@ -428,7 +423,7 @@ onUnmounted(() => {
 .whack-game-wrapper {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, #86efac 0%, #4ade80 40%, #22c55e 100%);
+  background: linear-gradient(to bottom, #86efac, #22c55e);
   font-family: 'Nunito', 'Segoe UI', system-ui, sans-serif;
   user-select: none;
   overflow: hidden;
@@ -448,7 +443,7 @@ onUnmounted(() => {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   max-width: min(90%, 800px);
   text-align: center;
-  z-index: 10;
+  z-index: 30;
 }
 
 .question-text {
@@ -479,6 +474,9 @@ onUnmounted(() => {
   height: 100%;
   align-content: center;
   padding: 0 8px;
+  /* Constrain width based on viewport height to prevent vertical overflow */
+  max-width: 140vh;
+  margin: 0 auto;
 }
 
 /* ==========================================
@@ -492,6 +490,8 @@ onUnmounted(() => {
   align-items: center;
   justify-content: flex-end;
   cursor: pointer;
+  overflow: hidden;
+  border-radius: 0 0 20px 20px;
 }
 
 .hole-shadow {
@@ -1041,65 +1041,5 @@ onUnmounted(() => {
   }
 }
 
-/* Clouds Animation */
-.clouds {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 40%;
-  pointer-events: none;
-  z-index: 0;
-  overflow: hidden;
-}
 
-.cloud {
-  position: absolute;
-  background: rgba(255, 255, 255, 0.4);
-  border-radius: 50px;
-}
-
-.cloud::after, .cloud::before {
-  content: '';
-  position: absolute;
-  background: inherit;
-  border-radius: 50%;
-}
-
-.cloud-1 {
-  width: 100px;
-  height: 40px;
-  top: 10%;
-  left: -100px;
-  animation: float 20s linear infinite;
-}
-.cloud-1::after { width: 40px; height: 40px; top: -20px; left: 15px; }
-.cloud-1::before { width: 30px; height: 30px; top: -10px; left: 45px; }
-
-.cloud-2 {
-  width: 140px;
-  height: 50px;
-  top: 20%;
-  left: -140px;
-  animation: float 25s linear infinite;
-  animation-delay: 5s;
-}
-.cloud-2::after { width: 50px; height: 50px; top: -25px; left: 25px; }
-.cloud-2::before { width: 40px; height: 40px; top: -15px; left: 60px; }
-
-.cloud-3 {
-  width: 80px;
-  height: 30px;
-  top: 15%;
-  left: -80px;
-  animation: float 18s linear infinite;
-  animation-delay: 10s;
-}
-.cloud-3::after { width: 30px; height: 30px; top: -15px; left: 10px; }
-.cloud-3::before { width: 25px; height: 25px; top: -10px; left: 35px; }
-
-@keyframes float {
-  from { transform: translateX(-150px); }
-  to { transform: translateX(100vw); }
-}
 </style>
