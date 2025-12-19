@@ -463,6 +463,8 @@ onUnmounted(() => {
   justify-content: center;
   padding: 0;
   min-height: 0;
+  overflow-y: auto; /* Allow scrolling if height is too small */
+  overflow-x: hidden;
 }
 
 .game-grid {
@@ -474,9 +476,11 @@ onUnmounted(() => {
   height: 100%;
   align-content: center;
   padding: 0 8px;
-  /* Constrain width based on viewport height to prevent vertical overflow */
-  max-width: 140vh;
+  max-width: 100%;
   margin: 0 auto;
+  /* Ensure grid fits within available height, leaving space for banner */
+  max-height: 100%;
+  align-content: center;
 }
 
 /* ==========================================
@@ -492,6 +496,8 @@ onUnmounted(() => {
   cursor: pointer;
   overflow: hidden;
   border-radius: 0 0 20px 20px;
+  /* Ensure masking works correctly */
+  isolation: isolate;
 }
 
 .hole-shadow {
@@ -666,7 +672,9 @@ onUnmounted(() => {
 /* Dirt Mound */
 .mound {
   width: 100%;
-  position: relative;
+  position: absolute; /* Fix to bottom to ensure masking */
+  bottom: 0;
+  left: 0;
   z-index: 10;
 }
 
