@@ -428,7 +428,7 @@ onUnmounted(() => {
 .whack-game-wrapper {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, #7dd3fc 0%, #38bdf8 40%, #4ade80 40%, #22c55e 100%);
+  background: linear-gradient(180deg, #86efac 0%, #4ade80 40%, #22c55e 100%);
   font-family: 'Nunito', 'Segoe UI', system-ui, sans-serif;
   user-select: none;
   overflow: hidden;
@@ -475,7 +475,9 @@ onUnmounted(() => {
   grid-template-columns: repeat(4, 1fr);
   gap: clamp(16px, 4vw, 40px);
   width: 100%;
-  max-width: 1000px;
+  max-width: 100%;
+  height: 100%;
+  align-content: center;
   padding: 0 8px;
 }
 
@@ -720,7 +722,7 @@ onUnmounted(() => {
 .start-screen {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, #7dd3fc 0%, #38bdf8 100%);
+  background: linear-gradient(180deg, #86efac 0%, #22c55e 100%);
   display: flex;
   align-items: center;
   justify-content: center;
