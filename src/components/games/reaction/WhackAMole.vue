@@ -22,36 +22,39 @@
         <div v-for="(hole, index) in holes" :key="index" class="hole-wrapper">
           <div class="hole-shadow"></div>
 
-          <!-- Cute Mole -->
-          <div
-            class="mole"
-            :class="{
-              'mole--up': hole.active,
-              'mole--hit': hole.state === 'hit',
-              'mole--wrong': hole.state === 'miss'
-            }"
-            @mousedown.prevent="handleWhack(index)"
-            @touchstart.prevent="handleWhack(index)"
-          >
-            <div class="mole__body">
-              <div class="mole__ears">
-                <div class="mole__ear"></div>
-                <div class="mole__ear"></div>
-              </div>
-              <div class="mole__head">
-                <div class="mole__eyes">
-                  <div class="mole__eye"><div class="mole__pupil"></div></div>
-                  <div class="mole__eye"><div class="mole__pupil"></div></div>
+          <!-- Mole Container with Mask -->
+          <div class="mole-mask">
+            <div
+              class="mole"
+              :class="{
+                'mole--up': hole.active,
+                'mole--hit': hole.state === 'hit',
+                'mole--wrong': hole.state === 'miss'
+              }"
+              @mousedown.prevent="handleWhack(index)"
+              @touchstart.prevent="handleWhack(index)"
+              style="pointer-events: auto;"
+            >
+              <div class="mole__body">
+                <div class="mole__ears">
+                  <div class="mole__ear"></div>
+                  <div class="mole__ear"></div>
                 </div>
-                <div class="mole__nose"></div>
-                <div class="mole__cheeks">
-                  <div class="mole__cheek"></div>
-                  <div class="mole__cheek"></div>
+                <div class="mole__head">
+                  <div class="mole__eyes">
+                    <div class="mole__eye"><div class="mole__pupil"></div></div>
+                    <div class="mole__eye"><div class="mole__pupil"></div></div>
+                  </div>
+                  <div class="mole__nose"></div>
+                  <div class="mole__cheeks">
+                    <div class="mole__cheek"></div>
+                    <div class="mole__cheek"></div>
+                  </div>
+                  <div class="mole__mouth"></div>
                 </div>
-                <div class="mole__mouth"></div>
-              </div>
-              <div class="mole__sign">
-                <span class="mole__answer">{{ hole.content }}</span>
+                <div class="mole__sign">
+                  <span class="mole__answer">{{ hole.content }}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -423,7 +426,8 @@ onUnmounted(() => {
 .whack-game-wrapper {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom, #86efac, #22c55e);
+  background: #4ade80; /* Fallback */
+  background: linear-gradient(180deg, #4ade80 0%, #22c55e 100%); /* Lush green land */
   font-family: 'Nunito', 'Segoe UI', system-ui, sans-serif;
   user-select: none;
   overflow: hidden;
@@ -443,7 +447,8 @@ onUnmounted(() => {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   max-width: min(90%, 800px);
   text-align: center;
-  z-index: 30;
+  z-index: 50; /* Ensure above everything */
+  position: relative;
 }
 
 .question-text {
@@ -478,8 +483,8 @@ onUnmounted(() => {
   padding: 0 8px;
   max-width: 100%;
   margin: 0 auto;
-  /* Ensure grid fits within available height, leaving space for banner */
-  max-height: 100%;
+  height: auto; /* Allow height to fit content */
+  min-height: 0;
   align-content: center;
 }
 
@@ -496,26 +501,41 @@ onUnmounted(() => {
   cursor: pointer;
   overflow: hidden;
   border-radius: 0 0 20px 20px;
-  /* Ensure masking works correctly */
   isolation: isolate;
+}
+
+/* Masking Container for Mole */
+.mole-mask {
+  position: absolute;
+  bottom: 18%; /* Match shadow bottom */
+  left: 10%;
+  width: 80%;
+  height: 100%; /* Go up from the bottom */
+  overflow: hidden;
+  z-index: 5;
+  pointer-events: none; /* Let clicks pass through to mole */
+  border-radius: 0 0 40% 40%; /* Curve at bottom to match hole */
 }
 
 .hole-shadow {
   position: absolute;
   bottom: 18%;
-  width: 90%;
-  height: 18%;
-  background: radial-gradient(ellipse, rgba(0,0,0,0.25) 0%, transparent 70%);
+  width: 80%; /* Match mole width */
+  height: 20%;
+  left: 10%;
+  background: radial-gradient(ellipse, rgba(0,0,0,0.6) 0%, transparent 70%); /* Darker hole */
   border-radius: 50%;
+  z-index: 1; /* Behind mole */
 }
 
 /* Mole */
 .mole {
   position: absolute;
-  bottom: 24%;
-  width: 80%;
-  z-index: 5;
-  transform: translateY(110%);
+  bottom: 0; /* Relative to mask */
+  width: 100%; /* Relative to mask */
+  height: auto;
+  z-index: 2; /* Inside mask */
+  transform: translateY(100%); /* Start fully down */
   transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -672,10 +692,11 @@ onUnmounted(() => {
 /* Dirt Mound */
 .mound {
   width: 100%;
-  position: absolute; /* Fix to bottom to ensure masking */
+  position: absolute;
   bottom: 0;
   left: 0;
-  z-index: 10;
+  z-index: 20; /* Above everything */
+  pointer-events: none;
 }
 
 .mound__dirt {
