@@ -445,7 +445,7 @@ onUnmounted(() => {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   max-width: min(90%, 800px);
   text-align: center;
-  z-index: 50; /* Ensure above everything */
+  z-index: 110; /* Ensure above everything including HUD (z-index 100) */
   position: relative;
 }
 
