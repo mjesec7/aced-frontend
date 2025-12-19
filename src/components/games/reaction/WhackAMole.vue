@@ -20,49 +20,47 @@
     <div v-if="gameActive" class="game-area">
       <div class="game-grid">
         <div v-for="(hole, index) in holes" :key="index" class="hole-wrapper">
-          <div class="hole-shadow"></div>
+          <!-- 1. The Dark Hole Void (Back) -->
+          <div class="hole-void"></div>
 
-          <!-- Mole Container with Mask -->
-          <div class="mole-mask">
-            <div
-              class="mole"
-              :class="{
-                'mole--up': hole.active,
-                'mole--hit': hole.state === 'hit',
-                'mole--wrong': hole.state === 'miss'
-              }"
-              @mousedown.prevent="handleWhack(index)"
-              @touchstart.prevent="handleWhack(index)"
-              style="pointer-events: auto;"
-            >
-              <div class="mole__body">
-                <div class="mole__ears">
-                  <div class="mole__ear"></div>
-                  <div class="mole__ear"></div>
+          <!-- 2. The Mole (Middle) -->
+          <div
+            class="mole"
+            :class="{
+              'mole--up': hole.active,
+              'mole--hit': hole.state === 'hit',
+              'mole--wrong': hole.state === 'miss'
+            }"
+            @mousedown.prevent="handleWhack(index)"
+            @touchstart.prevent="handleWhack(index)"
+          >
+            <div class="mole__body">
+              <div class="mole__ears">
+                <div class="mole__ear"></div>
+                <div class="mole__ear"></div>
+              </div>
+              <div class="mole__head">
+                <div class="mole__eyes">
+                  <div class="mole__eye"><div class="mole__pupil"></div></div>
+                  <div class="mole__eye"><div class="mole__pupil"></div></div>
                 </div>
-                <div class="mole__head">
-                  <div class="mole__eyes">
-                    <div class="mole__eye"><div class="mole__pupil"></div></div>
-                    <div class="mole__eye"><div class="mole__pupil"></div></div>
-                  </div>
-                  <div class="mole__nose"></div>
-                  <div class="mole__cheeks">
-                    <div class="mole__cheek"></div>
-                    <div class="mole__cheek"></div>
-                  </div>
-                  <div class="mole__mouth"></div>
+                <div class="mole__nose"></div>
+                <div class="mole__cheeks">
+                  <div class="mole__cheek"></div>
+                  <div class="mole__cheek"></div>
                 </div>
-                <div class="mole__sign">
-                  <span class="mole__answer">{{ hole.content }}</span>
-                </div>
+                <div class="mole__mouth"></div>
+              </div>
+              <div class="mole__sign">
+                <span class="mole__answer">{{ hole.content }}</span>
               </div>
             </div>
           </div>
 
-          <!-- Dirt Mound -->
-          <div class="mound">
-            <div class="mound__dirt"></div>
-            <div class="mound__grass">
+          <!-- 3. The Dirt Mound (Front Mask) -->
+          <div class="mound-front">
+            <div class="mound-front__dirt"></div>
+            <div class="mound-front__grass">
               <span></span><span></span><span></span><span></span><span></span>
             </div>
           </div>
@@ -499,44 +497,32 @@ onUnmounted(() => {
   align-items: center;
   justify-content: flex-end;
   cursor: pointer;
-  overflow: hidden;
   border-radius: 0 0 20px 20px;
   isolation: isolate;
 }
 
-/* Masking Container for Mole */
-.mole-mask {
+/* 1. Hole Void (Back) */
+.hole-void {
   position: absolute;
-  bottom: 0; /* Start from the very bottom to avoid floating */
-  left: 10%;
+  bottom: 5%;
   width: 80%;
-  height: 100%;
-  overflow: hidden;
-  z-index: 5;
-  pointer-events: none;
-  border-radius: 0 0 40% 40%;
-}
-
-.hole-shadow {
-  position: absolute;
-  bottom: 18%;
-  width: 80%; /* Match mole width */
-  height: 20%;
+  height: 25%;
   left: 10%;
-  background: radial-gradient(ellipse, rgba(0,0,0,0.6) 0%, transparent 70%); /* Darker hole */
+  background: radial-gradient(ellipse, #3e2723 0%, #271c19 100%);
   border-radius: 50%;
-  z-index: 1; /* Behind mole */
+  z-index: 1;
+  box-shadow: inset 0 5px 10px rgba(0,0,0,0.5);
 }
 
-/* Mole */
+/* 2. Mole (Middle) */
 .mole {
   position: absolute;
-  bottom: 0; /* Relative to mask */
-  width: 100%; /* Relative to mask */
+  bottom: 10%; /* Sits slightly inside the hole */
+  width: 80%;
   height: auto;
-  z-index: 2; /* Inside mask */
-  transform: translateY(100%); /* Start fully down */
-  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 2;
+  transform: translateY(120%); /* Start fully hidden below mound */
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Bouncy pop */
 }
 
 .mole--up {
@@ -690,42 +676,44 @@ onUnmounted(() => {
 }
 
 /* Dirt Mound */
-.mound {
-  width: 100%;
+/* 3. Dirt Mound (Front Mask) */
+.mound-front {
   position: absolute;
   bottom: 0;
   left: 0;
-  z-index: 20; /* Above everything */
+  width: 100%;
+  height: 30%; /* Cover bottom part of hole */
+  z-index: 10; /* In front of mole */
   pointer-events: none;
 }
 
-.mound__dirt {
+.mound-front__dirt {
+  position: absolute;
+  bottom: 0;
   width: 100%;
-  height: clamp(24px, 6vw, 40px); /* Increased height for better coverage */
-  background: linear-gradient(180deg, #a67c52 0%, #704d2a 60%, #5d4037 100%);
+  height: 100%;
+  background: linear-gradient(180deg, #8d6e63 0%, #5d4037 100%);
   border-radius: 50% 50% 15% 15%;
-  box-shadow: inset 0 5px 10px rgba(255,255,255,0.15), 0 3px 8px rgba(0,0,0,0.25);
+  box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
 }
 
-.mound__grass {
+.mound-front__grass {
   position: absolute;
-  top: -4px;
-  left: 5%;
-  width: 90%;
+  top: -5px;
+  left: 10%;
+  width: 80%;
   display: flex;
   justify-content: space-around;
 }
 
-.mound__grass span {
-  width: 10%;
-  height: clamp(6px, 1.5vw, 12px);
-  background: linear-gradient(180deg, #4ade80, #22c55e);
+.mound-front__grass span {
+  width: 12%;
+  height: 10px;
+  background: #4ade80;
   border-radius: 50% 50% 0 0;
 }
-
-.mound__grass span:nth-child(1) { transform: rotate(-20deg); }
-.mound__grass span:nth-child(3) { height: 140%; }
-.mound__grass span:nth-child(5) { transform: rotate(20deg); }
+.mound-front__grass span:nth-child(odd) { height: 14px; transform: rotate(-10deg); }
+.mound-front__grass span:nth-child(even) { height: 8px; transform: rotate(10deg); }
 
 /* Hit Effect */
 .hit-effect {
