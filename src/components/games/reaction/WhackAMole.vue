@@ -449,6 +449,13 @@ onUnmounted(() => {
   position: relative;
 }
 
+@media (max-width: 768px) {
+  .question-banner {
+    margin-top: 80px; /* Push below HUD on small screens */
+    max-width: 95%;
+  }
+}
+
 .question-text {
   font-size: clamp(0.95rem, 2.5vw, 1.4rem);
   font-weight: 700;
