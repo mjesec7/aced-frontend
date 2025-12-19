@@ -1,5 +1,5 @@
 <template>
-  <div class="fixed inset-0 z-[1000] bg-white flex flex-col">
+  <div class="fixed inset-0 z-1000 bg-white flex flex-col">
     <!-- Top Bar -->
     <div class="flex items-center justify-center px-4 py-4 border-b border-slate-100">
       <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Lesson Complete</span>

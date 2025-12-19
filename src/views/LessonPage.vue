@@ -33,7 +33,7 @@
 
     <!-- Premium Content Modal -->
     <Teleport to="body">
-      <div v-if="showPaywallModal" class="fixed inset-0 z-[1000] bg-black/40 flex items-center justify-center p-4">
+      <div v-if="showPaywallModal" class="fixed inset-0 z-1000 bg-black/40 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl w-full max-w-xs p-6 text-center">
           <div class="w-16 h-16 mx-auto mb-4 bg-slate-100 rounded-full flex items-center justify-center">
             <svg class="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -56,7 +56,7 @@
 
     <!-- Exit Confirmation Modal -->
     <Teleport to="body">
-      <div v-if="showExitModal" class="fixed inset-0 z-[1000] bg-black/40 flex items-center justify-center p-4">
+      <div v-if="showExitModal" class="fixed inset-0 z-1000 bg-black/40 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl w-full max-w-xs p-6 text-center">
           <h3 class="text-lg font-bold text-slate-900 mb-2">Leave Lesson?</h3>
           <p class="text-slate-500 text-sm mb-6">Your progress will be saved</p>
@@ -74,7 +74,7 @@
 
     <!-- Problem Report Modal -->
     <Teleport to="body">
-      <div v-if="showProblemReportModal" class="fixed inset-0 z-[1000] bg-black/40 flex items-center justify-center p-4" @click.self="closeProblemReportModal">
+      <div v-if="showProblemReportModal" class="fixed inset-0 z-1000 bg-black/40 flex items-center justify-center p-4" @click.self="closeProblemReportModal">
         <div class="bg-white rounded-2xl w-full max-w-md max-h-[85vh] overflow-hidden flex flex-col">
           <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
             <h3 class="font-semibold text-slate-900">Report Issue</h3>
@@ -142,9 +142,9 @@
         leave-from-class="opacity-100 translate-x-0"
         leave-to-class="opacity-0 translate-x-full"
       >
-        <div v-if="showSuccessMessage" class="fixed top-4 right-4 z-[2000] max-w-sm w-full">
+        <div v-if="showSuccessMessage" class="fixed top-4 right-4 z-2000 max-w-sm w-full">
           <div class="bg-white rounded-2xl shadow-xl border border-emerald-100 p-4 flex items-start gap-4">
-            <div class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0">
+            <div class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center shrink-0">
               <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
               </svg>
@@ -201,7 +201,7 @@
           <div class="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             <button
               @click="confirmExit"
-              class="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-red-50 hover:text-red-500 transition-colors flex-shrink-0"
+              class="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-red-50 hover:text-red-500 transition-colors shrink-0"
               aria-label="Exit lesson"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -212,17 +212,17 @@
               <h2 class="text-sm font-semibold text-slate-800 truncate">{{ lesson?.title || 'Lesson' }}</h2>
               <p class="text-xs text-slate-400 truncate">{{ lesson?.subtitle || '' }}</p>
             </div>
-            <div class="flex items-center gap-2 flex-shrink-0">
+            <div class="flex items-center gap-2 shrink-0">
               <div class="w-20 sm:w-28 h-2 bg-slate-100 rounded-full overflow-hidden">
                 <div
-                  class="h-full bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full transition-all duration-500"
+                  class="h-full bg-linear-to-r from-indigo-500 to-blue-500 rounded-full transition-all duration-500"
                   :style="{ width: progressPercentage + '%' }"
                 ></div>
               </div>
               <span class="text-xs font-semibold text-slate-500 tabular-nums">{{ currentIndex + 1 }}/{{ steps.length }}</span>
             </div>
           </div>
-          <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <div class="flex items-center gap-1 px-2.5 py-1.5 bg-amber-50 rounded-lg">
               <svg class="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"/>
@@ -367,9 +367,9 @@
         leave-from-class="opacity-100 translate-y-0"
         leave-to-class="opacity-0 translate-y-full"
       >
-        <div v-if="showMigrationPanel" class="fixed bottom-4 right-4 z-[100] max-w-sm w-full">
+        <div v-if="showMigrationPanel" class="fixed bottom-4 right-4 z-100 max-w-sm w-full">
           <div class="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
-            <div class="px-5 py-4 border-b border-slate-100 bg-gradient-to-r from-blue-50 to-indigo-50">
+            <div class="px-5 py-4 border-b border-slate-100 bg-linear-to-r from-blue-50 to-indigo-50">
               <div class="flex items-center gap-3">
                 <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
                   <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
