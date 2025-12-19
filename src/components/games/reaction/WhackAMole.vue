@@ -507,14 +507,14 @@ onUnmounted(() => {
 /* Masking Container for Mole */
 .mole-mask {
   position: absolute;
-  bottom: 18%; /* Match shadow bottom */
+  bottom: 0; /* Start from the very bottom to avoid floating */
   left: 10%;
   width: 80%;
-  height: 100%; /* Go up from the bottom */
+  height: 100%;
   overflow: hidden;
   z-index: 5;
-  pointer-events: none; /* Let clicks pass through to mole */
-  border-radius: 0 0 40% 40%; /* Curve at bottom to match hole */
+  pointer-events: none;
+  border-radius: 0 0 40% 40%;
 }
 
 .hole-shadow {
@@ -701,7 +701,7 @@ onUnmounted(() => {
 
 .mound__dirt {
   width: 100%;
-  height: clamp(18px, 5vw, 32px);
+  height: clamp(24px, 6vw, 40px); /* Increased height for better coverage */
   background: linear-gradient(180deg, #a67c52 0%, #704d2a 60%, #5d4037 100%);
   border-radius: 50% 50% 15% 15%;
   box-shadow: inset 0 5px 10px rgba(255,255,255,0.15), 0 3px 8px rgba(0,0,0,0.25);
