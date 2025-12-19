@@ -497,6 +497,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: flex-end;
   cursor: pointer;
+  overflow: hidden; /* CRITICAL: Masks the mole when it goes down */
   border-radius: 0 0 20px 20px;
   isolation: isolate;
 }
@@ -682,7 +683,7 @@ onUnmounted(() => {
   bottom: 0;
   left: 0;
   width: 100%;
-  height: 30%; /* Cover bottom part of hole */
+  height: 35%; /* Increase height for better coverage */
   z-index: 10; /* In front of mole */
   pointer-events: none;
 }
@@ -693,7 +694,7 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   background: linear-gradient(180deg, #8d6e63 0%, #5d4037 100%);
-  border-radius: 50% 50% 15% 15%;
+  border-radius: 50% 50% 10px 10px; /* Flatter bottom to look like ground */
   box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
 }
 
