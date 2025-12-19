@@ -451,7 +451,7 @@ onUnmounted(() => {
 
 @media (max-width: 768px) {
   .question-banner {
-    margin-top: 80px; /* Push below HUD on small screens */
+    margin-top: 120px; /* Push further below HUD as requested */
     max-width: 95%;
   }
 }
@@ -498,7 +498,7 @@ onUnmounted(() => {
    ========================================== */
 .hole-wrapper {
   position: relative;
-  aspect-ratio: 1 / 1.15;
+  aspect-ratio: 1 / 1.4; /* Increased height to prevent mole clipping */
   display: flex;
   flex-direction: column;
   align-items: center;
