@@ -76,7 +76,6 @@
     <Teleport to="body">
       <div v-if="showProblemReportModal" class="fixed inset-0 z-[1000] bg-black/40 flex items-center justify-center p-4" @click.self="closeProblemReportModal">
         <div class="bg-white rounded-2xl w-full max-w-md max-h-[85vh] overflow-hidden flex flex-col">
-          <!-- Header -->
           <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
             <h3 class="font-semibold text-slate-900">Report Issue</h3>
             <button @click="closeProblemReportModal" class="w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
@@ -85,10 +84,7 @@
               </svg>
             </button>
           </div>
-
-          <!-- Body -->
           <div class="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-            <!-- Problem Type -->
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-1.5">Type</label>
               <select v-model="problemType" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent">
@@ -99,8 +95,6 @@
                 <option value="other">Other</option>
               </select>
             </div>
-
-            <!-- Description -->
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-1.5">Description *</label>
               <textarea
@@ -112,8 +106,6 @@
               ></textarea>
               <p v-if="showValidationError && !problemDescription.trim()" class="mt-1 text-xs text-red-500">Required</p>
             </div>
-
-            <!-- Contact -->
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-1.5">Contact (optional)</label>
               <input
@@ -124,8 +116,6 @@
               >
             </div>
           </div>
-
-          <!-- Footer -->
           <div class="px-5 py-4 border-t border-slate-100 flex gap-3">
             <button @click="closeProblemReportModal" class="flex-1 py-3 text-slate-600 font-medium rounded-xl hover:bg-slate-100 transition-colors">
               Cancel
@@ -205,11 +195,9 @@
     />
 
     <div v-else-if="started && !showPaywallModal && !loading && !error" class="lesson-container-new">
-
-      <!-- New Header - Mobile Optimized -->
+      <!-- Header -->
       <div class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 px-3 sm:px-4 py-2.5 sm:py-3">
         <div class="flex items-center justify-between gap-2 sm:gap-4">
-          <!-- Left side: Close + Title + Progress -->
           <div class="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             <button
               @click="confirmExit"
@@ -220,13 +208,10 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
               </svg>
             </button>
-
             <div class="min-w-0 flex-1 hidden sm:block">
               <h2 class="text-sm font-semibold text-slate-800 truncate">{{ lesson?.title || 'Lesson' }}</h2>
               <p class="text-xs text-slate-400 truncate">{{ lesson?.subtitle || '' }}</p>
             </div>
-
-            <!-- Progress Bar -->
             <div class="flex items-center gap-2 flex-shrink-0">
               <div class="w-20 sm:w-28 h-2 bg-slate-100 rounded-full overflow-hidden">
                 <div
@@ -237,8 +222,6 @@
               <span class="text-xs font-semibold text-slate-500 tabular-nums">{{ currentIndex + 1 }}/{{ steps.length }}</span>
             </div>
           </div>
-
-          <!-- Right side: Stats -->
           <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
             <div class="flex items-center gap-1 px-2.5 py-1.5 bg-amber-50 rounded-lg">
               <svg class="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
@@ -256,14 +239,8 @@
         </div>
       </div>
 
-      <!-- Modern Split Screen Layout with Resize -->
-      <div
-        class="split-content"
-        ref="splitContainer"
-        @mouseup="stopResize"
-        @mouseleave="stopResize"
-        @touchend="stopResize"
-      >
+      <!-- Split Screen Layout -->
+      <div class="split-content" ref="splitContainer">
         <div class="split-panel content-side" :style="leftPanelStyle">
           <ContentPanel
             :current-step="currentStep"
@@ -302,50 +279,49 @@
         </div>
 
         <div class="split-panel interactive-side" :style="rightPanelStyle">
-          
           <div v-if="isInteractiveStep || isGameStep" class="interactive-container">
-             <InteractivePanel
-                :key="currentStep?.id || currentStep?._id || currentIndex"
-                :current-step="currentStep"
-                :current-exercise="getCurrentExercise(currentStep)"
-                :current-quiz="getCurrentQuiz(currentStep)"
-                :exercise-index="currentExerciseIndex"
-                :quiz-index="currentQuizIndex"
-                :total-exercises="getTotalExercises(currentStep)"
-                :total-quizzes="getTotalQuizzes(currentStep)"
-                :user-answer="userAnswer"
-                :confirmation="confirmation"
-                :answer-was-correct="answerWasCorrect"
-                :current-hint="currentHint"
-                :smart-hint="smartHint"
-                :mistake-count="mistakeCount"
-                :fill-blank-answers="fillBlankAnswers"
-                :matching-pairs="matchingPairs"
-                :selected-matching-item="selectedMatchingItem"
-                :ordering-items="orderingItems"
-                :drag-drop-placements="dragDropPlacements"
-                :available-drag-items="availableDragItems"
-                :drop-zones="dropZones"
-                :attempt-count="attemptCount"
-                :max-attempts="maxAttempts"
-                :is-on-second-chance="isOnSecondChance"
-                :show-correct-answer="showCorrectAnswer"
-                :correct-answer-text="correctAnswerText"
-                @answer-changed="handleAnswerChanged"
-                @fill-blank-updated="updateFillBlankAnswer"
-                @submit="handleSubmitOrNext"
-                @next-exercise="goToNextExercise"
-                @next-quiz="goToNextQuiz"
-                @show-hint="showHint"
-                @clear-hint="clearSmartHint"
-                @matching-item-selected="handleMatchingItemSelected"
-                @remove-matching-pair="handleRemoveMatchingPair"
-                @drag-item-start="handleDragItemStart"
-                @drag-over-zone="handleDragOverZone"
-                @drag-leave-zone="handleDragLeaveZone"
-                @drop-in-zone="handleDropInZone"
-                @remove-dropped-item="handleRemoveDroppedItem"
-              />
+            <InteractivePanel
+              :key="currentStep?.id || currentStep?._id || currentIndex"
+              :current-step="currentStep"
+              :current-exercise="getCurrentExercise(currentStep)"
+              :current-quiz="getCurrentQuiz(currentStep)"
+              :exercise-index="currentExerciseIndex"
+              :quiz-index="currentQuizIndex"
+              :total-exercises="getTotalExercises(currentStep)"
+              :total-quizzes="getTotalQuizzes(currentStep)"
+              :user-answer="userAnswer"
+              :confirmation="confirmation"
+              :answer-was-correct="answerWasCorrect"
+              :current-hint="currentHint"
+              :smart-hint="smartHint"
+              :mistake-count="mistakeCount"
+              :fill-blank-answers="fillBlankAnswers"
+              :matching-pairs="matchingPairs"
+              :selected-matching-item="selectedMatchingItem"
+              :ordering-items="orderingItems"
+              :drag-drop-placements="dragDropPlacements"
+              :available-drag-items="availableDragItems"
+              :drop-zones="dropZones"
+              :attempt-count="attemptCount"
+              :max-attempts="maxAttempts"
+              :is-on-second-chance="isOnSecondChance"
+              :show-correct-answer="showCorrectAnswer"
+              :correct-answer-text="correctAnswerText"
+              @answer-changed="handleAnswerChanged"
+              @fill-blank-updated="updateFillBlankAnswer"
+              @submit="handleSubmitOrNext"
+              @next-exercise="goToNextExercise"
+              @next-quiz="goToNextQuiz"
+              @show-hint="showHint"
+              @clear-hint="clearSmartHint"
+              @matching-item-selected="handleMatchingItemSelected"
+              @remove-matching-pair="handleRemoveMatchingPair"
+              @drag-item-start="handleDragItemStart"
+              @drag-over-zone="handleDragOverZone"
+              @drag-leave-zone="handleDragLeaveZone"
+              @drop-in-zone="handleDropInZone"
+              @remove-dropped-item="handleRemoveDroppedItem"
+            />
           </div>
         </div>
       </div>
@@ -430,7 +406,7 @@
       </Transition>
     </Teleport>
 
-    <!-- Floating AI Assistant Button -->
+    <!-- Floating AI Button -->
     <button
       v-if="started && !lessonCompleted"
       @click="toggleFloatingAI"
@@ -461,7 +437,6 @@
 </template>
 
 <script>
-// ✅ COMPLETE LESSONPAGE.VUE SCRIPT with Guest Mode Support
 import { computed, ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 
@@ -503,13 +478,13 @@ export default {
   setup() {
     const router = useRouter()
     const route = useRoute()
-
+    
     // ==========================================
     // RESIZE CONSTANTS
     // ==========================================
-    const MIN_PANEL_WIDTH = 30;  // 30% minimum
-    const MAX_PANEL_WIDTH = 70;  // 70% maximum  
-    const RESIZE_THROTTLE_MS = 16; // ~60fps throttle
+    const MIN_PANEL_WIDTH = 30  // 30% minimum
+    const MAX_PANEL_WIDTH = 70  // 70% maximum
+    const RESIZE_THROTTLE_MS = 16 // ~60fps
     
     // ==========================================
     // GUEST MODE STATE
@@ -546,17 +521,15 @@ export default {
     // RESIZABLE SPLIT SCREEN STATE
     // ==========================================
     const isResizing = ref(false)
-    const currentLeftWidth = ref(60) // Initial %
-    const currentRightWidth = ref(40)
+    const currentLeftWidth = ref(60)  // Default 60%
+    const currentRightWidth = ref(40) // Default 40%
     const startX = ref(0)
     const startY = ref(0)
     const startWidthLeft = ref(60)
     const startWidthRight = ref(40)
     const resizeDirection = ref('horizontal')
-    
-    // Optimization refs
-    const lastResizeTime = ref(0);
-    const rafId = ref(null);
+    const lastResizeTime = ref(0)
+    const rafId = ref(null)
 
     // ==========================================
     // OTHER REACTIVE STATE
@@ -569,8 +542,6 @@ export default {
     const extractionResults = ref(null)
     const migrationLoading = ref(false)
     const showMigrationPanel = ref(false)
-
-    // Tab switching state
     const currentTab = ref('explanation')
 
     // Problem reporting state
@@ -594,18 +565,265 @@ export default {
     const showConfetti = ref(false)
 
     // ==========================================
+    // COMPUTED PROPERTIES
+    // ==========================================
+    const leftPanelStyle = computed(() => {
+      // On mobile portrait (width <= 640), CSS handles the layout
+      if (typeof window !== 'undefined' && window.innerWidth <= 640) {
+        return {}
+      }
+      
+      if (resizeDirection.value === 'vertical') {
+        return { height: `${currentLeftWidth.value}%` }
+      }
+      return { width: `${currentLeftWidth.value}%` }
+    })
+
+    const rightPanelStyle = computed(() => {
+      // On mobile portrait (width <= 640), CSS handles the layout
+      if (typeof window !== 'undefined' && window.innerWidth <= 640) {
+        return {}
+      }
+      
+      if (resizeDirection.value === 'vertical') {
+        return { height: `${currentRightWidth.value}%` }
+      }
+      return { width: `${currentRightWidth.value}%` }
+    })
+
+    const getUserProgress = computed(() => ({
+      currentStep: lessonOrchestrator.currentIndex.value,
+      completedSteps: Array.from({length: lessonOrchestrator.currentIndex.value}, (_, i) => i),
+      mistakes: lessonOrchestrator.mistakeCount.value,
+      stars: lessonOrchestrator.stars.value,
+      elapsedSeconds: lessonOrchestrator.elapsedSeconds.value
+    }))
+
+    const isLastStep = computed(() => {
+      return lessonOrchestrator.currentIndex.value >= lessonOrchestrator.steps.value.length - 1
+    })
+
+    const isGameStep = computed(() => {
+      const step = lessonOrchestrator.currentStep.value
+      return step?.type === 'game' || !!step?.gameType
+    })
+
+    const userToken = computed(() => {
+      return lessonOrchestrator.currentUser?.value?.token || localStorage.getItem('authToken')
+    })
+
+    // ==========================================
+    // OPTIMIZED RESIZE METHODS
+    // ==========================================
+    const startResize = (event) => {
+      event.preventDefault()
+      
+      isResizing.value = true
+      resizeDirection.value = window.innerWidth <= 1023 ? 'vertical' : 'horizontal'
+      
+      if (resizeDirection.value === 'horizontal') {
+        startX.value = event.clientX || event.touches?.[0]?.clientX || 0
+      } else {
+        startY.value = event.clientY || event.touches?.[0]?.clientY || 0
+      }
+      
+      startWidthLeft.value = currentLeftWidth.value
+      startWidthRight.value = currentRightWidth.value
+      
+      // Add class to body for smooth cursor
+      document.body.classList.add('is-resizing')
+      document.body.style.cursor = resizeDirection.value === 'horizontal' ? 'col-resize' : 'row-resize'
+      
+      document.addEventListener('mousemove', handleResize, { passive: false })
+      document.addEventListener('mouseup', stopResize)
+      document.addEventListener('touchmove', handleResize, { passive: false })
+      document.addEventListener('touchend', stopResize)
+    }
+
+    const handleResize = (event) => {
+      if (!isResizing.value) return
+      
+      event.preventDefault()
+      
+      // Throttle to ~60fps for smooth performance
+      const now = performance.now()
+      if (now - lastResizeTime.value < RESIZE_THROTTLE_MS) {
+        if (!rafId.value) {
+          rafId.value = requestAnimationFrame(() => {
+            performResize(event)
+            rafId.value = null
+          })
+        }
+        return
+      }
+      
+      lastResizeTime.value = now
+      performResize(event)
+    }
+
+    const performResize = (event) => {
+      const splitContent = document.querySelector('.split-content')
+      if (!splitContent) return
+      
+      let delta = 0
+      let containerSize = 0
+      
+      if (resizeDirection.value === 'horizontal') {
+        const currentX = event.clientX || event.touches?.[0]?.clientX || startX.value
+        delta = currentX - startX.value
+        containerSize = splitContent.offsetWidth
+      } else {
+        const currentY = event.clientY || event.touches?.[0]?.clientY || startY.value
+        delta = currentY - startY.value
+        containerSize = splitContent.offsetHeight
+      }
+      
+      if (containerSize === 0) return
+      
+      const deltaPercentage = (delta / containerSize) * 100
+      
+      let newLeftWidth = startWidthLeft.value + deltaPercentage
+      let newRightWidth = 100 - newLeftWidth
+      
+      // Different constraints for vertical vs horizontal
+      const minWidth = resizeDirection.value === 'vertical' ? 25 : MIN_PANEL_WIDTH // 25% min for vertical (more content visible)
+      const maxWidth = resizeDirection.value === 'vertical' ? 75 : MAX_PANEL_WIDTH // 75% max for vertical
+      
+      // Apply constraints
+      if (newLeftWidth < minWidth) {
+        newLeftWidth = minWidth
+        newRightWidth = 100 - minWidth
+      } else if (newLeftWidth > maxWidth) {
+        newLeftWidth = maxWidth
+        newRightWidth = 100 - maxWidth
+      }
+      
+      if (newRightWidth < minWidth) {
+        newRightWidth = minWidth
+        newLeftWidth = 100 - minWidth
+      } else if (newRightWidth > maxWidth) {
+        newRightWidth = maxWidth
+        newLeftWidth = 100 - maxWidth
+      }
+      
+      currentLeftWidth.value = newLeftWidth
+      currentRightWidth.value = newRightWidth
+    }
+
+    const stopResize = () => {
+      if (!isResizing.value) return
+      
+      isResizing.value = false
+      
+      if (rafId.value) {
+        cancelAnimationFrame(rafId.value)
+        rafId.value = null
+      }
+      
+      document.removeEventListener('mousemove', handleResize)
+      document.removeEventListener('mouseup', stopResize)
+      document.removeEventListener('touchmove', handleResize)
+      document.removeEventListener('touchend', stopResize)
+      
+      document.body.classList.remove('is-resizing')
+      document.body.style.cursor = ''
+      
+      try {
+        localStorage.setItem('lessonPageSplitSizes', JSON.stringify({
+          left: currentLeftWidth.value,
+          right: currentRightWidth.value,
+          timestamp: Date.now()
+        }))
+      } catch (error) {}
+    }
+
+    const setDefaultSizes = () => {
+      currentLeftWidth.value = 60
+      currentRightWidth.value = 40
+    }
+
+    const loadSavedSizes = () => {
+      try {
+        const saved = localStorage.getItem('lessonPageSplitSizes')
+        if (saved) {
+          const { left, right, timestamp } = JSON.parse(saved)
+          const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000)
+          if (timestamp && timestamp > thirtyDaysAgo) {
+            currentLeftWidth.value = Math.max(MIN_PANEL_WIDTH, Math.min(MAX_PANEL_WIDTH, left || 60))
+            currentRightWidth.value = Math.max(MIN_PANEL_WIDTH, Math.min(MAX_PANEL_WIDTH, right || 40))
+          } else {
+            localStorage.removeItem('lessonPageSplitSizes')
+            setDefaultSizes()
+          }
+        } else {
+          setDefaultSizes()
+        }
+      } catch (error) {
+        setDefaultSizes()
+      }
+    }
+
+    const resetSplitSizes = () => {
+      setDefaultSizes()
+      try {
+        localStorage.removeItem('lessonPageSplitSizes')
+      } catch (error) {}
+    }
+
+    const handleWindowResize = () => {
+      const width = window.innerWidth
+      const height = window.innerHeight
+      const isLandscape = width > height
+      
+      // Determine layout direction based on screen size and orientation
+      let newDirection = 'horizontal'
+      
+      if (width <= 640 && !isLandscape) {
+        // Mobile portrait - stacked layout, no resize
+        newDirection = 'vertical'
+      } else if (width <= 1023 && !isLandscape) {
+        // Tablet portrait - stacked layout with resize
+        newDirection = 'vertical'
+      } else if (height <= 500 && isLandscape) {
+        // Landscape mobile - side by side
+        newDirection = 'horizontal'
+      } else if (width > 1023) {
+        // Desktop - side by side
+        newDirection = 'horizontal'
+      } else {
+        // Default tablet landscape
+        newDirection = 'horizontal'
+      }
+      
+      const wasVertical = resizeDirection.value === 'vertical'
+      const isNowVertical = newDirection === 'vertical'
+      
+      if (wasVertical !== isNowVertical) {
+        resizeDirection.value = newDirection
+        
+        // Reset to sensible defaults when orientation changes
+        if (isNowVertical) {
+          // Vertical: content on top (50-60%), interactive on bottom
+          currentLeftWidth.value = 50
+          currentRightWidth.value = 50
+        } else {
+          // Horizontal: content on left (60%), interactive on right (40%)
+          currentLeftWidth.value = 60
+          currentRightWidth.value = 40
+        }
+      }
+    }
+
+    // ==========================================
     // GUEST MODE METHODS
     // ==========================================
     const handleGuestRegister = () => {
-// Save current lesson ID to return to after registration
       if (lessonOrchestrator.lesson.value?._id) {
         try {
           sessionStorage.setItem('returnToLesson', lessonOrchestrator.lesson.value._id)
-        } catch (error) {
-}
+        } catch (error) {}
       }
       
-      // Trigger registration modal
       const hero = document.getElementById("hero")
       if (hero) {
         hero.scrollIntoView({ behavior: "smooth" })
@@ -616,7 +834,6 @@ export default {
         window.dispatchEvent(new Event("open-Login-modal"))
       }
       
-      // Close any modals
       if (lessonOrchestrator.showExitModal) {
         lessonOrchestrator.showExitModal.value = false
       }
@@ -626,8 +843,7 @@ export default {
       guestBannerDismissed.value = true
       try {
         sessionStorage.setItem('guestBannerDismissed', 'true')
-      } catch (error) {
-}
+      } catch (error) {}
     }
     
     const saveGuestProgress = () => {
@@ -647,11 +863,9 @@ export default {
             timestamp: Date.now(),
             completed: lessonOrchestrator.lessonCompleted.value || false
           }
-          
           localStorage.setItem('guestProgress', JSON.stringify(guestProgress))
-}
-      } catch (error) {
-}
+        }
+      } catch (error) {}
     }
     
     const loadGuestProgress = () => {
@@ -662,18 +876,15 @@ export default {
         const lessonId = lessonOrchestrator.lesson.value?._id
         
         if (lessonId && guestProgress[lessonId]) {
-return guestProgress[lessonId]
+          return guestProgress[lessonId]
         }
-      } catch (error) {
-}
+      } catch (error) {}
       
       return null
     }
 
     const startGuestAutoSave = () => {
       if (!isGuestMode.value) return
-      
-      // Save every 30 seconds for guests
       guestAutoSaveInterval = setInterval(() => {
         if (lessonOrchestrator.started.value && !lessonOrchestrator.lessonCompleted.value) {
           saveGuestProgress()
@@ -689,327 +900,17 @@ return guestProgress[lessonId]
     }
 
     // ==========================================
-    // RESIZABLE SPLIT SCREEN COMPUTED PROPERTIES
-    // ==========================================
-    const leftPanelStyle = computed(() => {
-      // Show both panels for game steps - games stay in interactive panel
-      return { width: `${currentLeftWidth.value}%` }
-    })
-
-    const rightPanelStyle = computed(() => {
-      return { width: `${100 - currentLeftWidth.value}%` }
-    })
-
-    const widthIndicatorText = computed(() => {
-      return `Content: ${Math.round(currentLeftWidth.value)}% | Interactive: ${Math.round(currentRightWidth.value)}%`
-    })
-
-    // ==========================================
-    // OTHER COMPUTED PROPERTIES
-    // ==========================================
-    const getUserProgress = computed(() => ({
-      currentStep: lessonOrchestrator.currentIndex.value,
-      completedSteps: Array.from({length: lessonOrchestrator.currentIndex.value}, (_, i) => i),
-      mistakes: lessonOrchestrator.mistakeCount.value,
-      stars: lessonOrchestrator.stars.value,
-      elapsedSeconds: lessonOrchestrator.elapsedSeconds.value
-    }))
-
-    const isLastStep = computed(() => {
-      return lessonOrchestrator.currentIndex.value >= lessonOrchestrator.steps.value.length - 1
-    })
-
-    const isGameStep = computed(() => {
-      const step = lessonOrchestrator.currentStep.value;
-      return step?.type === 'game' || !!step?.gameType;
-    })
-
-    const userToken = computed(() => {
-      return lessonOrchestrator.currentUser?.value?.token || localStorage.getItem('authToken')
-    })
-
-    // ==========================================
-    // RESIZABLE SPLIT SCREEN METHODS
-    // ==========================================
-    
-    // OPTIMIZED startResize
-    const startResize = (event) => {
-      event.preventDefault();
-      
-      isResizing.value = true;
-      resizeDirection.value = window.innerWidth <= 1023 ? 'vertical' : 'horizontal';
-      
-      if (resizeDirection.value === 'horizontal') {
-        startX.value = event.clientX || event.touches?.[0]?.clientX || 0;
-      } else {
-        startY.value = event.clientY || event.touches?.[0]?.clientY || 0;
-      }
-      
-      startWidthLeft.value = currentLeftWidth.value;
-      startWidthRight.value = currentRightWidth.value;
-      
-      // Add class to body for smooth cursor and disable pointer events
-      document.body.classList.add('is-resizing');
-      document.body.style.cursor = resizeDirection.value === 'horizontal' ? 'col-resize' : 'row-resize';
-      
-      document.addEventListener('mousemove', handleResize, { passive: false });
-      document.addEventListener('mouseup', stopResize);
-      document.addEventListener('touchmove', handleResize, { passive: false });
-      document.addEventListener('touchend', stopResize);
-    };
-
-    // OPTIMIZED handleResize with throttling
-    const handleResize = (event) => {
-      if (!isResizing.value) return;
-      
-      event.preventDefault();
-      
-      // Throttle to ~60fps for smooth performance
-      const now = performance.now();
-      if (now - lastResizeTime.value < RESIZE_THROTTLE_MS) {
-        if (!rafId.value) {
-          rafId.value = requestAnimationFrame(() => {
-            performResize(event);
-            rafId.value = null;
-          });
-        }
-        return;
-      }
-      
-      lastResizeTime.value = now;
-      performResize(event);
-    };
-
-    // NEW performResize (actual resize logic)
-    const performResize = (event) => {
-      const splitContent = document.querySelector('.split-content');
-      if (!splitContent) return;
-      
-      let delta = 0;
-      let containerSize = 0;
-      
-      if (resizeDirection.value === 'horizontal') {
-        const currentX = event.clientX || event.touches?.[0]?.clientX || startX.value;
-        delta = currentX - startX.value;
-        containerSize = splitContent.offsetWidth;
-      } else {
-        const currentY = event.clientY || event.touches?.[0]?.clientY || startY.value;
-        delta = currentY - startY.value;
-        containerSize = splitContent.offsetHeight;
-      }
-      
-      if (containerSize === 0) return;
-      
-      const deltaPercentage = (delta / containerSize) * 100;
-      
-      let newLeftWidth = startWidthLeft.value + deltaPercentage;
-      let newRightWidth = 100 - newLeftWidth;
-      
-      // Apply MIN 30% / MAX 70% constraints
-      if (newLeftWidth < MIN_PANEL_WIDTH) {
-        newLeftWidth = MIN_PANEL_WIDTH;
-        newRightWidth = 100 - MIN_PANEL_WIDTH;
-      } else if (newLeftWidth > MAX_PANEL_WIDTH) {
-        newLeftWidth = MAX_PANEL_WIDTH;
-        newRightWidth = 100 - MAX_PANEL_WIDTH;
-      }
-      
-      if (newRightWidth < MIN_PANEL_WIDTH) {
-        newRightWidth = MIN_PANEL_WIDTH;
-        newLeftWidth = 100 - MIN_PANEL_WIDTH;
-      } else if (newRightWidth > MAX_PANEL_WIDTH) {
-        newRightWidth = MAX_PANEL_WIDTH;
-        newLeftWidth = 100 - MAX_PANEL_WIDTH;
-      }
-      
-      currentLeftWidth.value = newLeftWidth;
-      currentRightWidth.value = newRightWidth;
-    };
-
-    // OPTIMIZED stopResize
-    const stopResize = () => {
-      if (!isResizing.value) return;
-      
-      isResizing.value = false;
-      
-      // Cancel any pending animation frame
-      if (rafId.value) {
-        cancelAnimationFrame(rafId.value);
-        rafId.value = null;
-      }
-      
-      document.removeEventListener('mousemove', handleResize);
-      document.removeEventListener('mouseup', stopResize);
-      document.removeEventListener('touchmove', handleResize);
-      document.removeEventListener('touchend', stopResize);
-      
-      // Remove body styles
-      document.body.classList.remove('is-resizing');
-      document.body.style.cursor = '';
-      
-      // Save to localStorage
-      try {
-        localStorage.setItem('lessonPageSplitSizes', JSON.stringify({
-          left: currentLeftWidth.value,
-          right: currentRightWidth.value,
-          timestamp: Date.now()
-        }));
-      } catch (error) {
-        // Ignore localStorage errors
-      }
-    };
-
-    // NEW setDefaultSizes helper
-    const setDefaultSizes = () => {
-      // Default: 60% content, 40% interactive
-      currentLeftWidth.value = 60;
-      currentRightWidth.value = 40;
-    };
-
-    // OPTIMIZED loadSavedSizes
-    const loadSavedSizes = () => {
-      try {
-        const saved = localStorage.getItem('lessonPageSplitSizes');
-        if (saved) {
-          const { left, right, timestamp } = JSON.parse(saved);
-          
-          const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
-          if (timestamp && timestamp > thirtyDaysAgo) {
-            // Apply constraints when loading
-            currentLeftWidth.value = Math.max(MIN_PANEL_WIDTH, Math.min(MAX_PANEL_WIDTH, left || 60));
-            currentRightWidth.value = Math.max(MIN_PANEL_WIDTH, Math.min(MAX_PANEL_WIDTH, right || 40));
-          } else {
-            localStorage.removeItem('lessonPageSplitSizes');
-            setDefaultSizes();
-          }
-        } else {
-          setDefaultSizes();
-        }
-      } catch (error) {
-        setDefaultSizes();
-      }
-    };
-
-    // OPTIMIZED resetSplitSizes
-    const resetSplitSizes = () => {
-      setDefaultSizes();
-      try {
-        localStorage.removeItem('lessonPageSplitSizes');
-      } catch (error) {
-        // Ignore
-      }
-    };
-    
-    // Initialize sizes
-    onMounted(() => {
-      loadSavedSizes();
-    });
-
-    onUnmounted(() => {
-      // Add resize cleanup
-      if (isResizing.value) {
-        stopResize();
-      }
-      
-      if (rafId.value) {
-        cancelAnimationFrame(rafId.value);
-      }
-      
-      document.body.classList.remove('is-resizing');
-      document.body.style.cursor = '';
-    });
-
-
-    const handleResizeKeyboard = (event) => {
-      const step = 5
-      let newLeftWidth = currentLeftWidth.value
-      
-      switch (event.key) {
-        case 'ArrowLeft':
-          event.preventDefault()
-          newLeftWidth = Math.max(20, currentLeftWidth.value - step)
-          break
-        case 'ArrowRight':
-          event.preventDefault()
-          newLeftWidth = Math.min(85, currentLeftWidth.value + step)
-          break
-        case 'ArrowUp':
-          if (resizeDirection.value === 'vertical') {
-            event.preventDefault()
-            newLeftWidth = Math.max(20, currentLeftWidth.value - step)
-          }
-          break
-        case 'ArrowDown':
-          if (resizeDirection.value === 'vertical') {
-            event.preventDefault()
-            newLeftWidth = Math.min(85, currentLeftWidth.value + step)
-          }
-          break
-        case 'Home':
-          event.preventDefault()
-          newLeftWidth = 20
-          break
-        case 'End':
-          event.preventDefault()
-          newLeftWidth = 85
-          break
-        case ' ':
-        case 'Enter':
-          event.preventDefault()
-          newLeftWidth = 75
-          break
-        default:
-          return
-      }
-      
-      currentLeftWidth.value = newLeftWidth
-      currentRightWidth.value = 100 - newLeftWidth
-      
-      try {
-        localStorage.setItem('lessonPageSplitSizes', JSON.stringify({
-          left: currentLeftWidth.value,
-          right: currentRightWidth.value,
-          timestamp: Date.now()
-        }))
-      } catch (error) {
-}
-    }
-
-
-
-
-
-    const handleWindowResize = () => {
-      const wasVertical = resizeDirection.value === 'vertical'
-      const isNowVertical = window.innerWidth <= 1023
-      
-      if (wasVertical !== isNowVertical) {
-        resizeDirection.value = isNowVertical ? 'vertical' : 'horizontal'
-        
-        if (isNowVertical && currentLeftWidth.value < 65) {
-          currentLeftWidth.value = 70
-          currentRightWidth.value = 30
-        } else if (!isNowVertical && currentLeftWidth.value > 80) {
-          currentLeftWidth.value = 75
-          currentRightWidth.value = 25
-        }
-      }
-    }
-
-    // ==========================================
     // NAVIGATION METHODS
     // ==========================================
     const handleReturnToCatalogue = () => {
-      // STRICT REDIRECT: Always go to catalogue as requested
       router.push('/profile/catalogue').catch(err => {
-         console.warn('Router navigation failed, trying path:', err);
-         window.location.href = '/profile/catalogue';
-      });
+        window.location.href = '/profile/catalogue'
+      })
     }
 
     const handleGoToHomework = () => {
-if (isGuestMode.value) {
-handleGuestRegister()
+      if (isGuestMode.value) {
+        handleGuestRegister()
         return
       }
       
@@ -1022,22 +923,18 @@ handleGuestRegister()
               title: lessonOrchestrator.lesson.value.title || lessonOrchestrator.lesson.value.lessonName,
               subject: lessonOrchestrator.lesson.value.subject || 'general'
             }
-          }).catch(err => {
-            router.push({ 
-              name: 'HomeworkList' 
-            }).catch(err2 => {
-window.location.href = '/profile/homeworks'
+          }).catch(() => {
+            router.push({ name: 'HomeworkList' }).catch(() => {
+              window.location.href = '/profile/homeworks'
             })
           })
         } catch (error) {
-window.location.href = '/profile/homeworks'
+          window.location.href = '/profile/homeworks'
         }
       } else {
-try {
-          router.push({ 
-            name: 'HomeworkList' 
-          }).catch(err => {
-window.location.href = '/profile/homeworks'
+        try {
+          router.push({ name: 'HomeworkList' }).catch(() => {
+            window.location.href = '/profile/homeworks'
           })
         } catch (error) {
           window.location.href = '/profile/homeworks'
@@ -1046,11 +943,11 @@ window.location.href = '/profile/homeworks'
     }
 
     const addToMyCourses = async () => {
-      if (isGuestMode.value || !lessonOrchestrator.lesson.value) return;
+      if (isGuestMode.value || !lessonOrchestrator.lesson.value) return
 
       try {
-        const userId = lessonOrchestrator.currentUser.value?.uid;
-        const lesson = lessonOrchestrator.lesson.value;
+        const userId = lessonOrchestrator.currentUser.value?.uid
+        const lesson = lessonOrchestrator.lesson.value
 
         await fetch(`/api/users/${userId}/study-list`, {
           method: 'POST',
@@ -1059,33 +956,28 @@ window.location.href = '/profile/homeworks'
             'Authorization': `Bearer ${userToken.value}`
           },
           body: JSON.stringify({
-             topicId: lesson.topicId,
-             topicName: lesson.topic,
-             // Add metadata to help backend identify it
-             lessonId: lesson._id,
-             addedAt: new Date()
+            topicId: lesson.topicId,
+            topicName: lesson.topic,
+            lessonId: lesson._id,
+            addedAt: new Date()
           })
-        });
+        })
       } catch (e) {
-        console.error('Failed to add to courses silently', e);
+        console.error('Failed to add to courses', e)
       }
-    };
+    }
 
     const startLesson = async () => {
-       await lessonOrchestrator.startLesson();
-       addToMyCourses(); // Fire and forget
-    };
+      await lessonOrchestrator.startLesson()
+      addToMyCourses()
+    }
 
     const exitLesson = async () => {
       try {
-        // Save progress before exit
         if (isGuestMode.value) {
           saveGuestProgress()
         } else if (lessonOrchestrator.saveProgress) {
-          // Don't await for faster exit
-          lessonOrchestrator.saveProgress().catch(err => {
-            console.error('Error saving progress on exit:', err)
-          })
+          lessonOrchestrator.saveProgress().catch(() => {})
         }
 
         if (lessonOrchestrator.cleanup) {
@@ -1093,15 +985,9 @@ window.location.href = '/profile/homeworks'
         }
 
         lessonOrchestrator.showExitModal.value = false
-
-        // STRICT REDIRECT: Always go to catalogue for all users
         handleReturnToCatalogue()
-
       } catch (error) {
-        console.error('Error during exit:', error)
         lessonOrchestrator.showExitModal.value = false
-
-        // Fallback navigation
         router.push('/profile/catalogue')
       }
     }
@@ -1154,7 +1040,7 @@ window.location.href = '/profile/homeworks'
       message += `📚 Lesson: ${lessonInfo.lessonName}\n`
       message += `🆔 Lesson ID: ${lessonInfo.lessonId}\n`
       message += `📍 Current Step: ${lessonInfo.currentStep}/${lessonInfo.totalSteps}\n`
-      message += `👤 Mode: ${lessonInfo.isGuestMode ? 'Guest (trial)' : 'Registered'}\n`
+      message += `👤 Mode: ${lessonInfo.isGuestMode ? 'Guest' : 'Registered'}\n`
       message += `🕐 Time: ${lessonInfo.timestamp}\n\n`
 
       if (problemType.value) {
@@ -1187,9 +1073,7 @@ window.location.href = '/profile/homeworks'
     }
 
     const submitProblemReport = async () => {
-      if (!validateForm()) {
-        return
-      }
+      if (!validateForm()) return
       
       try {
         isSubmitting.value = true
@@ -1197,7 +1081,7 @@ window.location.href = '/profile/homeworks'
         const reportMessage = formatProblemReport()
         const encodedMessage = encodeURIComponent(reportMessage)
         const telegramLink = `https://t.me/aced_live?text=${encodedMessage}`
-// Only try analytics for authenticated users
+
         if (!isGuestMode.value) {
           try {
             await fetch('/api/analytics/problem-report', {
@@ -1217,13 +1101,10 @@ window.location.href = '/profile/homeworks'
                 timestamp: new Date().toISOString()
               })
             })
-          } catch (analyticsError) {
-// Don't block the report submission
-          }
+          } catch (analyticsError) {}
         }
         
         window.open(telegramLink, '_blank')
-        
         closeProblemReportModal()
         showSuccessMessage.value = true
         
@@ -1232,11 +1113,7 @@ window.location.href = '/profile/homeworks'
         }, 5000)
         
       } catch (error) {
-if (lessonOrchestrator.showToast) {
-          lessonOrchestrator.showToast('Error submitting report. Please try again.', 'error')
-        } else {
-          alert('Error submitting report. Please try again.')
-        }
+        alert('Error submitting report. Please try again.')
       } finally {
         isSubmitting.value = false
       }
@@ -1246,40 +1123,24 @@ if (lessonOrchestrator.showToast) {
       showSuccessMessage.value = false
     }
 
-    const handleKeyboardShortcuts = (event) => {
-      if (event.ctrlKey && event.shiftKey && event.key === 'R') {
-        event.preventDefault()
-        if (!showProblemReportModal.value && lessonOrchestrator.started.value && !lessonOrchestrator.lessonCompleted.value) {
-          openProblemReportModal()
-        }
-      }
-      
-      if (event.ctrlKey && event.altKey && event.key === 'R') {
-        event.preventDefault()
-        resetSplitSizes()
-      }
-    }
-
     // ==========================================
     // VOCABULARY METHODS
     // ==========================================
     const initializeVocabularyModal = (step) => {
-let vocabularyStep = step
+      let vocabularyStep = step
 
       if (!vocabularyStep) {
         vocabularyStep = lessonOrchestrator.currentStep.value
       }
 
-      if (!vocabularyStep) {
-return
-      }
+      if (!vocabularyStep) return
 
       if (vocabularyStep.type !== 'vocabulary') {
-const vocabularySteps = lessonOrchestrator.steps.value?.filter(s => s.type === 'vocabulary')
+        const vocabularySteps = lessonOrchestrator.steps.value?.filter(s => s.type === 'vocabulary')
         if (vocabularySteps && vocabularySteps.length > 0) {
           vocabularyStep = vocabularySteps[0]
         } else {
-return
+          return
         }
       }
 
@@ -1287,45 +1148,23 @@ return
     }
 
     const jumpToVocabWord = (index) => {
-if (index >= 0 && index < vocabulary.vocabularyModal.words.length) {
+      if (index >= 0 && index < vocabulary.vocabularyModal.words.length) {
         vocabulary.cardAnimation.isFlipping = false
         vocabulary.cardAnimation.showDefinition = false
-
         setTimeout(() => {
           vocabulary.vocabularyModal.currentIndex = index
         }, 50)
-      } else {
-}
+      }
     }
 
-    const showVocabDefinition = () => {
-      vocabulary.showVocabDefinition()
-    }
-
-    const hideVocabDefinition = () => {
-      vocabulary.hideVocabDefinition()
-    }
-
-    const markWordAsLearned = () => {
-      vocabulary.markWordAsLearned()
-    }
-
-    const nextVocabWord = () => {
-      vocabulary.nextVocabWord()
-    }
-
-    const previousVocabWord = () => {
-      vocabulary.previousVocabWord()
-    }
-
-    const skipVocabularyModal = () => {
-      vocabulary.skipVocabularyModal()
-    }
-
-    const restartVocabulary = () => {
-      vocabulary.restartVocabulary()
-    }
-
+    const showVocabDefinition = () => vocabulary.showVocabDefinition()
+    const hideVocabDefinition = () => vocabulary.hideVocabDefinition()
+    const markWordAsLearned = () => vocabulary.markWordAsLearned()
+    const nextVocabWord = () => vocabulary.nextVocabWord()
+    const previousVocabWord = () => vocabulary.previousVocabWord()
+    const skipVocabularyModal = () => vocabulary.skipVocabularyModal()
+    const restartVocabulary = () => vocabulary.restartVocabulary()
+    
     const closeVocabularyModal = () => {
       if (vocabulary.vocabularyModal) {
         vocabulary.vocabularyModal.isVisible = false
@@ -1333,9 +1172,7 @@ if (index >= 0 && index < vocabulary.vocabularyModal.words.length) {
     }
 
     const pronounceWord = (word) => {
-      if (!word || typeof word !== 'string') {
-        return
-      }
+      if (!word || typeof word !== 'string') return
       try {
         if ('speechSynthesis' in window) {
           window.speechSynthesis.cancel()
@@ -1343,13 +1180,12 @@ if (index >= 0 && index < vocabulary.vocabularyModal.words.length) {
           utterance.lang = 'en-US'
           utterance.rate = 0.8
           utterance.pitch = 1
-          utterance.onerror = (event) =>
-window.speechSynthesis.speak(utterance)
+          window.speechSynthesis.speak(utterance)
         } else {
           sound.pronounceWord?.(word)
         }
       } catch (error) {
-sound.pronounceWord?.(word)
+        sound.pronounceWord?.(word)
       }
     }
 
@@ -1360,10 +1196,6 @@ sound.pronounceWord?.(word)
       const step = lessonOrchestrator.currentStep.value
       if (!step) return null
 
-      // ✅ DEBUG: Check what step we are actually on
-
-
-      // ✅ CRITICAL FIX: Force Game Object Creation
       if (step.type === 'game' || step.gameType || (step.data && step.data.gameConfig)) {
         const specificGameType = step.gameType ||
                                 (step.gameConfig && step.gameConfig.type) ||
@@ -1372,9 +1204,7 @@ sound.pronounceWord?.(word)
                                 (step.data && step.data.type) ||
                                 (step.type === 'whack-a-mole' ? 'whack-a-mole' : null) || 
                                 (step.type === 'basket-catch' ? 'basket-catch' : null) ||
-                                'basket-catch';
-
-
+                                'basket-catch'
 
         return {
           ...step,
@@ -1392,10 +1222,9 @@ sound.pronounceWord?.(word)
           },
           questions: step.questions || step.gameConfig?.questions || step.data?.questions || [],
           instructions: step.instructions || step.description || "Play the game!",
-        };
+        }
       }
 
-      // ✅ FIX: Handle Steps with Data Arrays (Exercises/Quizzes)
       if (['exercise', 'quiz', 'practice'].includes(step.type) && Array.isArray(step.data)) {
         const index = exercises.currentExerciseIndex.value || 0
         const specificExercise = step.data[index]
@@ -1418,19 +1247,13 @@ sound.pronounceWord?.(word)
         }
       }
 
-      // ✅✅✅ CRITICAL FIX: Handle exercises with CONTENT.type (your lesson structure)
-      // This handles: histogram, map, block-coding, data_analysis, fraction_visual, etc.
       if (step.type === 'exercise' && step.content && step.content.type) {
-
-        const exerciseId = step.id || step._id || `${step.content.type}_${lessonOrchestrator.currentIndex.value}`;
+        const exerciseId = step.id || step._id || `${step.content.type}_${lessonOrchestrator.currentIndex.value}`
         
-        // Build normalized exercise object
-        // The key is to merge content.data into the exercise while preserving step metadata
         const normalizedExercise = {
-          // Step-level properties
           _id: step._id,
           id: step.id,
-          type: 'exercise',  // Keep as 'exercise' for InteractivePanel routing
+          type: 'exercise',
           order: step.order,
           title: step.title,
           instructions: step.instructions,
@@ -1438,87 +1261,73 @@ sound.pronounceWord?.(word)
           difficulty: step.difficulty,
           estimatedDuration: step.estimatedDuration,
           scoring: step.scoring,
-          
-          // Content structure (what InteractivePanel needs)
-          content: step.content,  // Keep original content object
-          
-          // Also provide data for backwards compatibility
+          content: step.content,
           data: step.content.data || step.content,
-          
-          // Exercise-specific type for InteractivePanel's exerciseType computed
           exerciseType: step.content.type,
-        };
-        
-        if (initializationTracker.value.currentExerciseId !== exerciseId) {
-          initializationTracker.value = { currentExerciseId: exerciseId, initialized: false };
-          nextTick(() => {
-            exercises.initializeCurrentExerciseData(normalizedExercise);
-            initializationTracker.value.initialized = true;
-          });
         }
         
-
-        return normalizedExercise;
+        if (initializationTracker.value.currentExerciseId !== exerciseId) {
+          initializationTracker.value = { currentExerciseId: exerciseId, initialized: false }
+          nextTick(() => {
+            exercises.initializeCurrentExerciseData(normalizedExercise)
+            initializationTracker.value.initialized = true
+          })
+        }
+        
+        return normalizedExercise
       }
 
-      // ✅ FIX: Handle exercises with DATA.type (alternative structure)
       if (step.type === 'exercise' && step.data && typeof step.data === 'object' && !Array.isArray(step.data) && step.data.type) {
-
-        const exerciseId = step.id || `${step.data.type}_${lessonOrchestrator.currentIndex.value}`;
+        const exerciseId = step.id || `${step.data.type}_${lessonOrchestrator.currentIndex.value}`
         
         const normalizedExercise = {
           ...step.data,
           ...step,
           exerciseType: step.data.type,
           data: step.data,
-          content: step.data  // Also set content for consistency
-        };
+          content: step.data
+        }
         
         if (initializationTracker.value.currentExerciseId !== exerciseId) {
-          initializationTracker.value = { currentExerciseId: exerciseId, initialized: false };
+          initializationTracker.value = { currentExerciseId: exerciseId, initialized: false }
           nextTick(() => {
-            exercises.initializeCurrentExerciseData(normalizedExercise);
-            initializationTracker.value.initialized = true;
-          });
+            exercises.initializeCurrentExerciseData(normalizedExercise)
+            initializationTracker.value.initialized = true
+          })
         }
-        return normalizedExercise;
+        return normalizedExercise
       }
 
-      // ✅ Handle direct interactive step types (data_analysis, fraction_visual, etc.)
       const directInteractiveTypes = [
         'data_analysis', 'fraction_visual', 'geometry_poly',
         'chem_mixing', 'chem_matching',
         'english_sentence_fix', 'english_sentence_order',
         'language_noun_bag', 'histogram', 'map', 'block-coding',
-        // New innovative language exercises
         'language_tone_transformer', 'language_idiom_bridge',
         'language_word_constellation', 'language_rhythm_match',
         'language_false_friends'
-      ];
+      ]
       
       if (directInteractiveTypes.includes(step.type)) {
-
-        const exerciseId = step.id || step._id || `${step.type}_${lessonOrchestrator.currentIndex.value}`;
+        const exerciseId = step.id || step._id || `${step.type}_${lessonOrchestrator.currentIndex.value}`
         
         const normalizedExercise = {
           ...step,
           exerciseType: step.type,
           content: step.content || step,
           data: step.content?.data || step.data || step
-        };
-
+        }
         
         if (initializationTracker.value.currentExerciseId !== exerciseId) {
-          initializationTracker.value = { currentExerciseId: exerciseId, initialized: false };
+          initializationTracker.value = { currentExerciseId: exerciseId, initialized: false }
           nextTick(() => {
-            exercises.initializeCurrentExerciseData(normalizedExercise);
-            initializationTracker.value.initialized = true;
-          });
+            exercises.initializeCurrentExerciseData(normalizedExercise)
+            initializationTracker.value.initialized = true
+          })
         }
-        return normalizedExercise;
+        return normalizedExercise
       }
 
-      // Fallback to existing logic (for single-item steps)
       const exercise = exercises.getCurrentExercise(step)
       if (exercise) {
         const exerciseId = exercise.id || `${exercise.type}_${exercise.question?.substring(0, 20)}`
@@ -1551,13 +1360,10 @@ sound.pronounceWord?.(word)
       return exercises.getTotalQuizzes(lessonOrchestrator.currentStep.value)
     }
 
-    // Drag and Drop event handlers
+    // Drag and Drop handlers
     const handleDragItemStart = ({ item, event }) => {
       exercises.handleDragItemStart({ item, event })
-      
-      if (sound.playClickSound) {
-        sound.playClickSound()
-      }
+      sound.playClickSound?.()
     }
 
     const handleDragOverZone = (zoneId) => {
@@ -1570,41 +1376,30 @@ sound.pronounceWord?.(word)
 
     const handleDropInZone = ({ zoneId, item }) => {
       exercises.handleDropInZone({ zoneId, item })
+      sound.playSuccessSound?.()
       
-      if (sound.playSuccessSound) {
-        sound.playSuccessSound()
-      }
-      
-      // Save guest progress after drop
       if (isGuestMode.value) {
         saveGuestProgress()
       } else if (lessonOrchestrator.saveProgress) {
-        lessonOrchestrator.saveProgress().catch(err => {
-})
+        lessonOrchestrator.saveProgress().catch(() => {})
       }
     }
 
     const handleRemoveDroppedItem = ({ zoneId, itemIndex, item }) => {
       exercises.handleRemoveDroppedItem({ zoneId, itemIndex, item })
-      
-      if (sound.playClickSound) {
-        sound.playClickSound()
-      }
+      sound.playClickSound?.()
     }
 
     const ensureDragDropInitialization = () => {
       const currentExercise = getCurrentExercise()
       
-      if (!currentExercise || currentExercise.type !== 'drag-drop') {
-        return
-      }
+      if (!currentExercise || currentExercise.type !== 'drag-drop') return
       
       if (exercises.availableDragItems.value.length === 0 || exercises.dropZones.value.length === 0) {
         exercises.initializeDragDropItems(currentExercise)
       }
     }
 
-    // Event handlers
     const handleAnswerChanged = (newAnswer) => {
       exercises.updateUserAnswer(newAnswer, getCurrentExercise())
     }
@@ -1624,9 +1419,8 @@ sound.pronounceWord?.(word)
     // Submission handler
     const handleSubmitOrNext = async () => {
       const currentStep = lessonOrchestrator.currentStep.value
-      if (!currentStep) {
-        return
-      }
+      if (!currentStep) return
+
       if (showCorrectAnswer.value) {
         moveToNextStep()
         return
@@ -1688,11 +1482,9 @@ sound.pronounceWord?.(word)
         }
       }
       
-      // Save progress based on mode
       if (isGuestMode.value) {
         saveGuestProgress()
       } else {
-        // Only save to server if authenticated
         await lessonOrchestrator.saveProgress()
       }
     }
@@ -1720,7 +1512,6 @@ sound.pronounceWord?.(word)
         }
       }
       
-      // Save progress after navigation
       if (isGuestMode.value) {
         saveGuestProgress()
       }
@@ -1729,52 +1520,41 @@ sound.pronounceWord?.(word)
     const goToNextExercise = () => {
       resetAttempts()
       exercises.goToNextExercise(lessonOrchestrator.currentStep.value, lessonOrchestrator.goNext)
-      if (isGuestMode.value) {
-        saveGuestProgress()
-      }
+      if (isGuestMode.value) saveGuestProgress()
     }
     
     const goToNextQuiz = () => {
       resetAttempts()
       exercises.goToNextQuiz(lessonOrchestrator.currentStep.value, lessonOrchestrator.goNext)
-      if (isGuestMode.value) {
-        saveGuestProgress()
-      }
+      if (isGuestMode.value) saveGuestProgress()
     }
     
     const goNext = () => {
       resetAttempts()
       lessonOrchestrator.goNext()
-      if (isGuestMode.value) {
-        saveGuestProgress()
-      }
+      if (isGuestMode.value) saveGuestProgress()
     }
     
     const goPrevious = () => {
       resetAttempts()
       lessonOrchestrator.goPrevious()
-      if (isGuestMode.value) {
-        saveGuestProgress()
-      }
+      if (isGuestMode.value) saveGuestProgress()
     }
 
-    // Simplified exercise methods
     const showHint = (exercise) => exercises.showHint(exercise)
     const clearSmartHint = () => exercises.clearSmartHint()
 
-    // AI help panel methods
+    // AI methods
     const toggleExplanationHelp = explanation.toggleExplanationHelp
     const askAboutExplanation = explanation.askAboutExplanation
     const sendAIMessage = explanation.sendAIMessage
     const askAI = explanation.askAI
     const clearAIChat = explanation.clearAIChat
-
-    // Floating AI assistant methods
     const toggleFloatingAI = explanation.toggleFloatingAI
     const closeFloatingAI = explanation.closeFloatingAI
     const sendFloatingAIMessage = explanation.sendFloatingAIMessage
 
-    // Confetti animation
+    // Confetti
     const startConfetti = () => {
       showConfetti.value = true
       nextTick(() => {
@@ -1784,10 +1564,10 @@ sound.pronounceWord?.(word)
       })
     }
 
-    // Migration functionality
+    // Migration
     const migrateLessonContent = async () => {
       if (isGuestMode.value) {
-handleGuestRegister()
+        handleGuestRegister()
         return
       }
       
@@ -1814,26 +1594,14 @@ handleGuestRegister()
 
         if (result.success) {
           const message = `✅ Migration completed! Created ${result.data?.homeworkCreated || 0} assignments and added ${result.data?.vocabularyAdded || 0} words to vocabulary.`
-
-          if (lessonOrchestrator.showToast) {
-            lessonOrchestrator.showToast(message, 'success')
-          } else {
-            alert(message)
-          }
-
+          alert(message)
           showMigrationPanel.value = false
         } else {
           throw new Error(result.error || 'Migration failed')
         }
 
       } catch (error) {
-const errorMessage = '❌ Migration error: ' + error.message
-
-        if (lessonOrchestrator.showToast) {
-          lessonOrchestrator.showToast(errorMessage, 'error')
-        } else {
-          alert(errorMessage)
-        }
+        alert('❌ Migration error: ' + error.message)
       } finally {
         migrationLoading.value = false
       }
@@ -1847,173 +1615,100 @@ const errorMessage = '❌ Migration error: ' + error.message
       showMigrationPanel.value = false
     }
 
-    // Lesson completion with extraction
-    const completeLessonWithExtraction = async () => {
-      try {
-        const completionResult = await lessonOrchestrator.completeLesson?.()
-
-        if (completionResult?.success || lessonOrchestrator.lessonCompleted.value) {
-          // Skip extraction for guest users
-          if (!isGuestMode.value) {
-            const extractionResult = await extractLessonContent()
-
-            if (extractionResult?.success) {
-              showCompletionMessage(extractionResult)
-            } else {
-              lessonOrchestrator.lessonCompleted.value = true
-            }
-          } else {
-            // For guests, just mark as completed
-            lessonOrchestrator.lessonCompleted.value = true
-            saveGuestProgress() // Save final state
-            
-            // Show guest-specific completion message
-            if (lessonOrchestrator.showToast) {
-              lessonOrchestrator.showToast(
-                '🎉 Lesson completed! Register to save your progress forever.',
-                'success'
-              )
-            }
-          }
+    // Keyboard shortcuts
+    const handleKeyboardShortcuts = (event) => {
+      if (event.ctrlKey && event.shiftKey && event.key === 'R') {
+        event.preventDefault()
+        if (!showProblemReportModal.value && lessonOrchestrator.started.value && !lessonOrchestrator.lessonCompleted.value) {
+          openProblemReportModal()
         }
-      } catch (error) {
-lessonOrchestrator.lessonCompleted.value = true
+      }
+      
+      if (event.ctrlKey && event.altKey && event.key === 'R') {
+        event.preventDefault()
+        resetSplitSizes()
       }
     }
 
-    const extractLessonContent = async () => {
-      try {
-        if (!lessonOrchestrator.currentUser?.value?.uid || !lessonOrchestrator.lesson.value?._id) {
-return { success: false, error: 'Missing user or lesson data' }
-        }
-
-        const response = await fetch('/api/lessons/complete-and-extract', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${userToken.value}`
-          },
-          body: JSON.stringify({
-            userId: lessonOrchestrator.currentUser.value.uid,
-            lessonId: lessonOrchestrator.lesson.value._id,
-            progress: getUserProgress.value
-          })
-        })
-
-        const result = await response.json()
-
-        if (!response.ok) {
-          throw new Error(result.error || 'Failed to extract content')
-        }
-
-        return result
-
-      } catch (error) {
-return { success: false, error: error.message }
-      }
-    }
-
-    const showCompletionMessage = (extractionResult) => {
-      let message = '🎉 Lesson completed successfully!'
-
-      if (extractionResult.homeworkCreated) {
-        message += '\n📝 New homework assignment created and available in the assignments section!'
-      }
-
-      if (extractionResult.vocabularyAdded) {
-        message += `\n📚 ${extractionResult.vocabularyCount} new words added to your vocabulary collection!`
-      }
-
-      if (lessonOrchestrator.showToast) {
-        lessonOrchestrator.showToast(message, 'success')
-      }
-
-      lessonOrchestrator.lessonCompleted.value = true
-      extractionResults.value = extractionResult
-    }
-
-    // Lifecycle hooks
+    // ==========================================
+    // LIFECYCLE HOOKS
+    // ==========================================
     onMounted(() => {
       document.addEventListener('keydown', handleKeyboardShortcuts)
       window.addEventListener('resize', handleWindowResize)
+      window.addEventListener('orientationchange', handleWindowResize)
       
-      // Load saved split sizes
+      // Also listen for visual viewport changes (iOS Safari address bar)
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', handleWindowResize)
+      }
+      
       loadSavedSizes()
-      
-      // Adjust for current screen size
       handleWindowResize()
       
-      // Check if guest banner was dismissed
       try {
         if (sessionStorage.getItem('guestBannerDismissed')) {
           guestBannerDismissed.value = true
         }
-      } catch (error) {
-}
+      } catch (error) {}
       
-      // Load guest progress if available
       if (isGuestMode.value) {
         const savedProgress = loadGuestProgress()
-        if (savedProgress) {
-}
         startGuestAutoSave()
-}
+      }
       
-      // Make debug functions globally available
       window.resetSplitSizes = resetSplitSizes
       window.loadSavedSizes = loadSavedSizes
-      window.getCurrentSplit = () => ({
-        left: currentLeftWidth.value,
-        right: currentRightWidth.value,
-        direction: resizeDirection.value
-      })
-})
+    })
 
     onUnmounted(() => {
       document.removeEventListener('keydown', handleKeyboardShortcuts)
       window.removeEventListener('resize', handleWindowResize)
+      window.removeEventListener('orientationchange', handleWindowResize)
       
-      // Clean up any active resize state
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleWindowResize)
+      }
+      
       if (isResizing.value) {
         stopResize()
       }
       
-      // Stop guest auto-save
+      if (rafId.value) {
+        cancelAnimationFrame(rafId.value)
+      }
+      
+      document.body.classList.remove('is-resizing')
+      document.body.style.cursor = ''
+      
       stopGuestAutoSave()
       
-      // Save guest progress one last time
       if (isGuestMode.value && lessonOrchestrator.started.value) {
         saveGuestProgress()
-}
+      }
       
-      // Clean up debug functions
       delete window.resetSplitSizes
       delete window.loadSavedSizes
-      delete window.getCurrentSplit
     })
 
-    // Watchers
+    // ==========================================
+    // WATCHERS
+    // ==========================================
     watch(() => lessonOrchestrator.lessonCompleted.value, (newVal, oldVal) => {
       if (newVal && !oldVal) {
         startConfetti()
         if (isGuestMode.value) {
           saveGuestProgress()
-}
+        }
       }
     })
 
-    // Watch for step changes and reset exercise index
     watch(() => lessonOrchestrator.currentStep.value, (newStep, oldStep) => {
-      // Reset exercise index when changing high-level steps
       if (newStep?.id !== oldStep?.id) {
-
         exercises.currentExerciseIndex.value = 0
-
-        // Also reset initialization tracker
         initializationTracker.value = { currentExerciseId: null, initialized: false }
       }
 
-      // Check for drag-drop exercises
       if (newStep && newStep.type === 'exercise') {
         const currentExercise = getCurrentExercise()
         if (currentExercise && currentExercise.type === 'drag-drop') {
@@ -2024,9 +1719,8 @@ return { success: false, error: error.message }
       }
     }, { immediate: false })
 
-    // Watch for exercise changes and ensure drag-drop is initialized
     watch(() => [lessonOrchestrator.currentStep.value, exercises.currentExerciseIndex.value],
-      ([newStep, newIndex], [oldStep, oldIndex]) => {
+      ([newStep]) => {
         if (newStep && newStep.type === 'exercise') {
           const currentExercise = getCurrentExercise()
           if (currentExercise && currentExercise.type === 'drag-drop') {
@@ -2038,19 +1732,16 @@ return { success: false, error: error.message }
       },
       { immediate: true }
     )
-
-    // Watch for resize direction changes
-    watch(() => resizeDirection.value, (newDirection) => {
-})
     
-    // Auto-save guest progress on step change
     watch(() => lessonOrchestrator.currentIndex.value, (newIndex, oldIndex) => {
       if (isGuestMode.value && lessonOrchestrator.started.value && newIndex !== oldIndex) {
         saveGuestProgress()
-}
+      }
     })
 
-    // Return all props and methods
+    // ==========================================
+    // RETURN ALL PROPS AND METHODS
+    // ==========================================
     return {
       // Guest Mode
       isGuestMode,
@@ -2060,27 +1751,23 @@ return { success: false, error: error.message }
       saveGuestProgress,
       loadGuestProgress,
 
-      // Resizable Split Screen State
+      // Resize State
       isResizing,
       currentLeftWidth,
       currentRightWidth,
       resizeDirection,
       leftPanelStyle,
       rightPanelStyle,
-      widthIndicatorText,
 
-      // Resizable Split Screen Methods
+      // Resize Methods
       startResize,
       handleResize,
       stopResize,
-      handleResizeKeyboard,
       resetSplitSizes,
       loadSavedSizes,
       handleWindowResize,
-      performResize,
-      setDefaultSizes,
 
-      // Data and state from lessonOrchestrator
+      // Orchestrator Data
       loading: lessonOrchestrator.loading,
       error: lessonOrchestrator.error,
       lesson: lessonOrchestrator.lesson,
@@ -2105,7 +1792,7 @@ return { success: false, error: error.message }
       previousProgress: lessonOrchestrator.previousProgress,
       formattedTime: lessonOrchestrator.formattedTime,
 
-      // Exercise state
+      // Exercise State
       userAnswer: exercises.userAnswer,
       confirmation: exercises.confirmation,
       answerWasCorrect: exercises.answerWasCorrect,
@@ -2121,7 +1808,7 @@ return { success: false, error: error.message }
       currentExerciseIndex: exercises.currentExerciseIndex,
       currentQuizIndex: exercises.currentQuizIndex,
 
-      // Local lesson state
+      // Local State
       attemptCount,
       maxAttempts,
       showCorrectAnswer,
@@ -2133,7 +1820,7 @@ return { success: false, error: error.message }
       currentTab,
       consecutiveCorrect: lessonOrchestrator.consecutiveCorrect,
 
-      // AI Explanation and Chat
+      // AI State
       showExplanationHelp: explanation.showExplanationHelp,
       explanationQuestion: explanation.explanationQuestion,
       explanationAIResponse: explanation.explanationAIResponse,
@@ -2147,7 +1834,7 @@ return { success: false, error: error.message }
       floatingAIInput: explanation.floatingAIInput,
       quickSuggestions: explanation.quickSuggestions,
 
-      // Vocabulary Modal
+      // Vocabulary
       vocabularyModal: vocabulary.vocabularyModal,
       cardAnimation: vocabulary.cardAnimation,
       currentVocabWord: vocabulary.currentWord,
@@ -2168,7 +1855,10 @@ return { success: false, error: error.message }
       confettiCanvas,
       showConfetti,
 
-      // Lesson orchestrator methods
+      // Computed
+      isLastStep,
+
+      // Methods
       retryLoad: lessonOrchestrator.retryLoad,
       startLesson,
       continuePreviousProgress: lessonOrchestrator.continuePreviousProgress,
@@ -2178,12 +1868,12 @@ return { success: false, error: error.message }
       goToVocabulary: lessonOrchestrator.goToVocabulary,
       getLessonProgress: lessonOrchestrator.getLessonProgress,
 
-      // Navigation methods
+      // Navigation
       exitLesson,
       handleReturnToCatalogue,
       handleGoToHomework,
 
-      // Exercise methods
+      // Exercise Methods
       getCurrentExercise,
       getCurrentQuiz,
       getTotalExercises,
@@ -2200,7 +1890,7 @@ return { success: false, error: error.message }
       handleMatchingItemSelected,
       handleRemoveMatchingPair,
 
-      // Drag and Drop methods
+      // Drag and Drop
       handleDragItemStart,
       handleDragOverZone,
       handleDragLeaveZone,
@@ -2208,19 +1898,17 @@ return { success: false, error: error.message }
       handleRemoveDroppedItem,
       ensureDragDropInitialization,
 
-      // AI Help Panel Methods
+      // AI Methods
       toggleExplanationHelp,
       askAboutExplanation,
       sendAIMessage,
       askAI,
       clearAIChat,
-
-      // Floating AI Assistant Methods
       toggleFloatingAI,
       closeFloatingAI,
       sendFloatingAIMessage,
 
-      // Vocabulary methods
+      // Vocabulary Methods
       initializeVocabularyModal,
       jumpToVocabWord,
       showVocabDefinition,
@@ -2233,21 +1921,16 @@ return { success: false, error: error.message }
       restartVocabulary,
       pronounceWord,
 
-      // Migration methods
+      // Migration
       migrateLessonContent,
       showMigrationPanelModal,
       closeMigrationPanel,
 
-      // Problem Reporting methods
+      // Problem Reporting
       openProblemReportModal,
       closeProblemReportModal,
       submitProblemReport,
-      closeSuccessMessage,
-
-      // Lesson completion methods
-      completeLessonWithExtraction,
-      extractLessonContent,
-      showCompletionMessage
+      closeSuccessMessage
     }
   }
 }
@@ -2256,483 +1939,6 @@ return { success: false, error: error.message }
 <style scoped>
 @import "@/assets/css/LessonPage.css";
 
-/* ==========================================
-   LESSON PAGE STYLES - COMPLETE & OPTIMIZED
-   ========================================== */
-
-.lesson-page {
-  min-height: 100vh;
-  background-color: #f8fafc;
-}
-
-.lesson-container-new {
-  display: flex;
-  flex-direction: column;
-  height: calc(100vh - 60px);
-  overflow: hidden;
-}
-
-/* ==========================================
-   SPLIT CONTENT LAYOUT
-   ========================================== */
-
-.split-content {
-  display: flex;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-  position: relative;
-}
-
-.split-panel {
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  /* GPU acceleration for smooth resize */
-  will-change: width;
-  transform: translateZ(0);
-  backface-visibility: hidden;
-  /* Prevent layout thrashing */
-  contain: layout style;
-}
-
-.split-panel.content-side {
-  background: #ffffff;
-  border-right: 1px solid #e2e8f0;
-  /* MIN 30% / MAX 70% constraints */
-  min-width: 30% !important;
-  max-width: 70% !important;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-}
-
-.split-panel.interactive-side {
-  background: #f8fafc;
-  /* MIN 30% / MAX 70% constraints */
-  min-width: 30% !important;
-  max-width: 70% !important;
-  overflow: hidden;
-}
-
-/* ==========================================
-   RESIZE HANDLE
-   ========================================== */
-
-.resize-handle {
-  width: 12px;
-  background: transparent;
-  cursor: col-resize;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  position: relative;
-  z-index: 20;
-  touch-action: none;
-  user-select: none;
-  -webkit-user-select: none;
-}
-
-/* Larger touch/click target */
-.resize-handle::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: -10px;
-  right: -10px;
-}
-
-.handle-bar {
-  width: 4px;
-  height: 48px;
-  background: #cbd5e1;
-  border-radius: 4px;
-  transition: all 0.15s ease;
-}
-
-.resize-handle:hover .handle-bar {
-  background: #6366f1;
-  height: 64px;
-  width: 5px;
-  box-shadow: 0 0 12px rgba(99, 102, 241, 0.4);
-}
-
-.resize-handle.is-resizing .handle-bar {
-  background: #6366f1;
-  height: 80px;
-  width: 6px;
-  box-shadow: 0 0 16px rgba(99, 102, 241, 0.5);
-}
-
-/* ==========================================
-   INTERACTIVE CONTAINER
-   ========================================== */
-
-.interactive-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
-  position: relative;
-  height: 100%;
-}
-
-.interactive-container > * {
-  flex: 1;
-  min-height: 0;
-}
-
-/* ==========================================
-   SCROLLBAR STYLING
-   ========================================== */
-
-.split-panel.content-side::-webkit-scrollbar {
-  width: 6px;
-}
-
-.split-panel.content-side::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.split-panel.content-side::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 3px;
-}
-
-.split-panel.content-side::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
-
-/* ==========================================
-   PERFORMANCE - RESIZE STATE
-   ========================================== */
-
-/* Applied to body during resize */
-body.is-resizing {
-  cursor: col-resize !important;
-  user-select: none !important;
-  -webkit-user-select: none !important;
-}
-
-body.is-resizing * {
-  cursor: col-resize !important;
-  user-select: none !important;
-}
-
-/* Disable transitions during resize for performance */
-body.is-resizing .split-panel {
-  transition: none !important;
-}
-
-/* Prevent iframe/content interference during resize */
-body.is-resizing iframe,
-body.is-resizing video,
-body.is-resizing canvas {
-  pointer-events: none !important;
-}
-
-/* ==========================================
-   CONFETTI
-   ========================================== */
-
-.confetti-canvas {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 9999;
-}
-
-/* ==========================================
-   RESPONSIVE - TABLET & MOBILE
-   ========================================== */
-
-@media (max-width: 1023px) {
-  .split-content {
-    flex-direction: column;
-  }
-  
-  .split-panel.content-side,
-  .split-panel.interactive-side {
-    width: 100% !important;
-    min-width: 100% !important;
-    max-width: 100% !important;
-    /* Vertical constraints */
-    min-height: 30% !important;
-    max-height: 70% !important;
-  }
-  
-  .split-panel.content-side {
-    border-right: none;
-    border-bottom: 1px solid #e2e8f0;
-  }
-  
-  .resize-handle {
-    width: 100%;
-    height: 14px;
-    cursor: row-resize;
-  }
-  
-  .resize-handle::before {
-    top: -10px;
-    bottom: -10px;
-    left: 0;
-    right: 0;
-  }
-  
-  .handle-bar {
-    width: 48px;
-    height: 4px;
-  }
-  
-  .resize-handle:hover .handle-bar,
-  .resize-handle.is-resizing .handle-bar {
-    width: 64px;
-    height: 5px;
-  }
-  
-  body.is-resizing,
-  body.is-resizing * {
-    cursor: row-resize !important;
-  }
-}
-
-@media (max-width: 640px) {
-  .lesson-container-new {
-    height: calc(100vh - 56px);
-  }
-  
-  /* Hide resize handle on small screens */
-  .resize-handle {
-    display: none;
-  }
-  
-  .split-panel.content-side {
-    height: auto !important;
-    max-height: none !important;
-    min-height: auto !important;
-    flex: 0 0 auto;
-  }
-  
-  .split-panel.interactive-side {
-    flex: 1;
-    min-height: 280px;
-    max-height: none !important;
-  }
-}
-
-/* ==========================================
-   ACCESSIBILITY
-   ========================================== */
-
-.resize-handle:focus-visible {
-  outline: 2px solid #6366f1;
-  outline-offset: 2px;
-}
-
-/* Reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  .handle-bar,
-  .split-panel {
-    transition: none !important;
-  }
-}
-
-/* ==========================================
-   CONTENT PANEL INNER STYLES
-   ========================================== */
-
-.content-panel-inner {
-  padding: 24px;
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-@media (max-width: 768px) {
-  .content-panel-inner {
-    padding: 16px;
-  }
-}
-
-/* ==========================================
-   INTERACTIVE PANEL STYLES
-   ========================================== */
-
-.interactive-panel-wrapper {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  background: #f8fafc;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Exercise card */
-.exercise-card {
-  background: white;
-  border-radius: 24px;
-  padding: 32px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  border: 1px solid #e2e8f0;
-  margin: 16px;
-  flex: 1;
-  overflow-y: auto;
-}
-
-@media (max-width: 768px) {
-  .exercise-card {
-    padding: 20px;
-    margin: 12px;
-    border-radius: 20px;
-  }
-}
-
-/* ==========================================
-   HEADER STYLES
-   ========================================== */
-
-.lesson-header {
-  position: sticky;
-  top: 0;
-  z-index: 40;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid #e2e8f0;
-}
-
-/* ==========================================
-   BUTTON STYLES
-   ========================================== */
-
-.btn-primary {
-  padding: 14px 32px;
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-  color: white;
-  border: none;
-  border-radius: 14px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.3);
-}
-
-.btn-primary:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
-}
-
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-success {
-  padding: 14px 32px;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
-  border: none;
-  border-radius: 14px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
-}
-
-.btn-success:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
-}
-
-/* ==========================================
-   TRANSITIONS
-   ========================================== */
-
-.slide-fade-enter-active {
-  transition: all 0.4s ease-out;
-}
-
-.slide-fade-leave-active {
-  transition: all 0.3s ease-in;
-}
-
-.slide-fade-enter-from,
-.slide-fade-leave-to {
-  transform: translateY(-10px);
-  opacity: 0;
-}
-
-/* ==========================================
-   UTILITY CLASSES
-   ========================================== */
-
-.text-center { text-align: center; }
-.text-left { text-align: left; }
-.text-right { text-align: right; }
-
-.flex { display: flex; }
-.flex-col { flex-direction: column; }
-.flex-1 { flex: 1; }
-.items-center { align-items: center; }
-.justify-center { justify-content: center; }
-.justify-between { justify-content: space-between; }
-.gap-2 { gap: 0.5rem; }
-.gap-3 { gap: 0.75rem; }
-.gap-4 { gap: 1rem; }
-
-.w-full { width: 100%; }
-.h-full { height: 100%; }
-.min-h-0 { min-height: 0; }
-
-.overflow-hidden { overflow: hidden; }
-.overflow-auto { overflow: auto; }
-
-.rounded-xl { border-radius: 0.75rem; }
-.rounded-2xl { border-radius: 1rem; }
-
-.shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
-
-.bg-white { background-color: white; }
-.bg-slate-50 { background-color: #f8fafc; }
-.bg-slate-100 { background-color: #f1f5f9; }
-
-.text-slate-500 { color: #64748b; }
-.text-slate-600 { color: #475569; }
-.text-slate-700 { color: #334155; }
-.text-slate-800 { color: #1e293b; }
-.text-slate-900 { color: #0f172a; }
-
-.font-medium { font-weight: 500; }
-.font-semibold { font-weight: 600; }
-.font-bold { font-weight: 700; }
-
-.p-4 { padding: 1rem; }
-.p-6 { padding: 1.5rem; }
-.px-4 { padding-left: 1rem; padding-right: 1rem; }
-.py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
-.py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
-
-.mb-2 { margin-bottom: 0.5rem; }
-.mb-4 { margin-bottom: 1rem; }
-.mb-6 { margin-bottom: 1.5rem; }
-.mt-4 { margin-top: 1rem; }
-.mt-6 { margin-top: 1.5rem; }
-
-.border { border-width: 1px; }
-.border-slate-200 { border-color: #e2e8f0; }
-
-.transition-all { transition: all 0.2s ease; }
-.transition-colors { transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease; }
-
-/* Modal animation */
 @keyframes modal-in {
   from {
     opacity: 0;
@@ -2748,18 +1954,15 @@ body.is-resizing canvas {
   animation: modal-in 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Ensure buttons have proper touch targets on mobile */
 button {
   min-height: 44px;
 }
 
-/* Focus states for accessibility */
 button:focus-visible {
   outline: 2px solid #3b82f6;
   outline-offset: 2px;
 }
 
-/* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
   .animate-modal-in {
     animation: none;
