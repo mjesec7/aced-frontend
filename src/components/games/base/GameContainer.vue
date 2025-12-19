@@ -1,9 +1,8 @@
 <template>
   <div class="game-container" :class="`game-${gameType}`">
-    <!-- Dynamic Game Component -->
+    <!-- Dynamic Game Component - handles its own start/completion UI -->
     <component
       :is="gameComponent"
-      v-if="!gameComplete"
       :game-data="gameData"
       :score="score"
       :lives="lives"
@@ -15,33 +14,17 @@
       @game-started="handleGameStarted"
     />
 
-    <!-- Game Complete Screen -->
-    <GameComplete
-      v-if="gameComplete"
-      :score="score"
-      :target-score="targetScore"
-      :stars="stars"
-      :time-spent="timeSpent"
-      :accuracy="accuracy"
-      :is-personal-best="isPersonalBest"
-      @retry="retryGame"
-      @continue="continueLesson"
-      @share="handleShare"
-    />
-
     <!-- Loading State -->
     <div v-if="isLoading" class="game-loading">
       <div class="loading-spinner"></div>
-      <p>Loading game...</p>
+      <p>Saving results...</p>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onUnmounted, watch } from 'vue';
+import { ref, computed, onUnmounted } from 'vue';
 import { submitGameResults } from '@/api';
-import GameHUD from './GameHUD.vue';
-import GameComplete from './GameComplete.vue';
 
 // Import game components
 import BasketCatch from '../throwing/BasketCatch.vue';
@@ -63,7 +46,6 @@ const emit = defineEmits(['game-complete', 'game-exit']);
 
 // State
 const gameStarted = ref(false);
-const gameComplete = ref(false);
 const isLoading = ref(false);
 const score = ref(0);
 const lives = ref(3);
@@ -72,9 +54,7 @@ const startTime = ref(0);
 const itemsCollected = ref(0);
 const correctItems = ref(0);
 const wrongItems = ref(0);
-const isPersonalBest = ref(false);
 const timerInterval = ref(null);
-const actions = ref([]);
 
 // Computed
 const gameComponent = computed(() => {
@@ -89,49 +69,8 @@ const gameComponent = computed(() => {
   return components[props.gameType] || BasketCatch;
 });
 
-const gameTitle = computed(() => {
-  const titles = {
-    'basket-catch': '🧺 Basket Catch',
-    'memory-cards': '🎴 Memory Cards',
-    'whack-a-mole': '🔨 Whack-a-Mole',
-    'lightning-round': '⚡ Lightning Round',
-    'pattern-builder': '🔵 Pattern Builder',
-    'maze-runner': '🏃 Maze Runner'
-  };
-  return titles[props.gameType] || 'Game';
-});
-
-const gameIcon = computed(() => {
-  const icons = {
-    'basket-catch': '🧺',
-    'memory-cards': '🎴',
-    'whack-a-mole': '🔨',
-    'lightning-round': '⚡',
-    'pattern-builder': '🔵',
-    'maze-runner': '🏃'
-  };
-  return icons[props.gameType] || '🎮';
-});
-
-const instructions = computed(() => {
-  return props.gameData.instructions || 'Complete the game to proceed!';
-});
-
-const targetScore = computed(() => props.gameData.targetScore || 100);
 const timeLimit = computed(() => props.gameData.timeLimit || 60);
 const maxLives = computed(() => props.gameData.lives || 3);
-
-const progress = computed(() => {
-  return (score.value / targetScore.value) * 100;
-});
-
-const stars = computed(() => {
-  const percentage = (score.value / targetScore.value) * 100;
-  if (percentage >= 90) return 3;
-  if (percentage >= 70) return 2;
-  if (percentage >= 50) return 1;
-  return 0;
-});
 
 const accuracy = computed(() => {
   if (itemsCollected.value === 0) return 0;
@@ -140,8 +79,7 @@ const accuracy = computed(() => {
 
 const timeSpent = computed(() => {
   if (!startTime.value) return 0;
-  const endTime = gameComplete.value ? Date.now() : Date.now();
-  return Math.floor((endTime - startTime.value) / 1000);
+  return Math.floor((Date.now() - startTime.value) / 1000);
 });
 
 // Methods
@@ -154,7 +92,6 @@ const handleGameStarted = () => {
   itemsCollected.value = 0;
   correctItems.value = 0;
   wrongItems.value = 0;
-  actions.value = [];
 
   startTimer();
 };
@@ -163,33 +100,19 @@ const startTimer = () => {
   timerInterval.value = setInterval(() => {
     if (timeRemaining.value > 0) {
       timeRemaining.value--;
-
-      if (timeRemaining.value === 10) {
-        // Warning at 10 seconds
-      }
     } else {
       clearInterval(timerInterval.value);
-      handleGameComplete({ reason: 'timeout' });
+      // Game component will handle its own timeout
     }
   }, 1000);
 };
 
 const handleScoreChange = (change) => {
-  score.value += change;
-
-  actions.value.push({
-    timestamp: new Date().toISOString(),
-    action: change > 0 ? 'correct' : 'wrong',
-    points: change
-  });
+  score.value = Math.max(0, score.value + change);
 };
 
 const handleLifeLost = () => {
-  lives.value--;
-
-  if (lives.value <= 0) {
-    handleGameComplete({ reason: 'no-lives' });
-  }
+  lives.value = Math.max(0, lives.value - 1);
 };
 
 const handleItemCollected = ({ isCorrect }) => {
@@ -201,9 +124,8 @@ const handleItemCollected = ({ isCorrect }) => {
   }
 };
 
+// When game component emits complete, save results and pass up
 const handleGameComplete = async (data = {}) => {
-  gameComplete.value = true;
-
   if (timerInterval.value) {
     clearInterval(timerInterval.value);
   }
@@ -211,7 +133,7 @@ const handleGameComplete = async (data = {}) => {
   // Submit results to backend
   try {
     isLoading.value = true;
-    const result = await submitGameResults({
+    await submitGameResults({
       userId: props.userId,
       lessonId: props.lessonId,
       stepIndex: props.stepIndex,
@@ -222,48 +144,26 @@ const handleGameComplete = async (data = {}) => {
       itemsCollected: itemsCollected.value,
       correctItems: correctItems.value,
       wrongItems: wrongItems.value,
-      completed: score.value >= targetScore.value * 0.5,
-      actions: actions.value,
+      completed: data.completed || false,
       metadata: {
-        stars: stars.value,
+        stars: data.stars || 0,
         livesRemaining: lives.value,
         ...data
       }
     });
-
-    if (result.success) {
-      isPersonalBest.value = result.result?.personalBest || false;
-    }
   } catch (error) {
     console.error('Error submitting game results:', error);
   } finally {
     isLoading.value = false;
   }
-};
 
-const retryGame = () => {
-  gameComplete.value = false;
-  gameStarted.value = false;
-  score.value = 0;
-  lives.value = maxLives.value;
-  timeRemaining.value = timeLimit.value;
-  itemsCollected.value = 0;
-  correctItems.value = 0;
-  wrongItems.value = 0;
-  actions.value = [];
-};
-
-const continueLesson = () => {
+  // Emit to parent (LessonPage) to move to next step
   emit('game-complete', {
     score: score.value,
-    stars: stars.value,
-    completed: true,
+    stars: data.stars || 0,
+    completed: data.completed || false,
     accuracy: accuracy.value
   });
-};
-
-const handleShare = (shareData) => {
-  // Handle share
 };
 
 // Lifecycle

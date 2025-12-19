@@ -1,6 +1,6 @@
 <template>
-  <div class="whack-game-container">
-    <!-- HUD Sidebar -->
+  <div class="whack-game-wrapper">
+    <!-- HUD Sidebar - Only during active gameplay -->
     <GameHUDSidebar
       v-if="gameActive"
       :score="score"
@@ -9,16 +9,15 @@
       :max-lives="3"
     />
 
-    <!-- Question Banner -->
+    <!-- Question Banner - During active gameplay -->
     <div v-if="gameActive" class="question-banner">
       <p class="question-text">{{ currentPrompt }}</p>
     </div>
 
-    <!-- Game Area -->
-    <div class="game-area">
+    <!-- Game Area - During active gameplay -->
+    <div v-if="gameActive" class="game-area">
       <div class="game-grid">
         <div v-for="(hole, index) in holes" :key="index" class="hole-wrapper">
-          <!-- Hole Shadow -->
           <div class="hole-shadow"></div>
 
           <!-- Cute Mole -->
@@ -33,42 +32,22 @@
             @touchstart.prevent="handleWhack(index)"
           >
             <div class="mole__body">
-              <!-- Ears -->
               <div class="mole__ears">
-                <div class="mole__ear mole__ear--left"></div>
-                <div class="mole__ear mole__ear--right"></div>
+                <div class="mole__ear"></div>
+                <div class="mole__ear"></div>
               </div>
-              
-              <!-- Head -->
               <div class="mole__head">
-                <!-- Eyes -->
                 <div class="mole__eyes">
-                  <div class="mole__eye">
-                    <div class="mole__pupil"></div>
-                    <div class="mole__eye-shine"></div>
-                  </div>
-                  <div class="mole__eye">
-                    <div class="mole__pupil"></div>
-                    <div class="mole__eye-shine"></div>
-                  </div>
+                  <div class="mole__eye"><div class="mole__pupil"></div></div>
+                  <div class="mole__eye"><div class="mole__pupil"></div></div>
                 </div>
-                
-                <!-- Nose -->
-                <div class="mole__nose">
-                  <div class="mole__nose-shine"></div>
-                </div>
-                
-                <!-- Cheeks -->
+                <div class="mole__nose"></div>
                 <div class="mole__cheeks">
                   <div class="mole__cheek"></div>
                   <div class="mole__cheek"></div>
                 </div>
-                
-                <!-- Mouth -->
                 <div class="mole__mouth"></div>
               </div>
-              
-              <!-- Answer Sign -->
               <div class="mole__sign">
                 <span class="mole__answer">{{ hole.content }}</span>
               </div>
@@ -83,48 +62,85 @@
             </div>
           </div>
 
-          <!-- Hit Effects -->
-          <transition name="pop">
-            <div v-if="hole.showEffect" class="effect">
-              {{ hole.state === 'hit' ? '✨' : '💥' }}
-            </div>
-          </transition>
+          <!-- Hit Effect -->
+          <div v-if="hole.showEffect" class="hit-effect">
+            {{ hole.state === 'hit' ? '✨' : '💥' }}
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Start Modal -->
-    <transition name="fade">
-      <div v-if="!gameActive && !isGameOver" class="modal-overlay">
-        <div class="start-modal">
-          <div class="start-modal__emoji">🐹</div>
-          <h3 class="start-modal__title">Whack-a-Mole!</h3>
-          <p class="start-modal__desc">Tap the moles with correct answers</p>
-          <button class="start-modal__btn" @click="startGame">
-            <span>Start Game</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <polygon points="5 3 19 12 5 21 5 3"></polygon>
-            </svg>
-          </button>
+    <!-- START SCREEN - Full screen, not a small modal -->
+    <div v-if="!gameActive && !isGameOver" class="start-screen">
+      <div class="start-content">
+        <div class="start-icon">🐹</div>
+        <h1 class="start-title">Whack-a-Mole!</h1>
+        <p class="start-description">
+          Tap the moles showing the <strong>correct answers</strong> to score points.
+          <br>Be quick - they won't stay up for long!
+        </p>
+        
+        <div class="start-stats">
+          <div class="start-stat">
+            <span class="start-stat-icon">❤️</span>
+            <span class="start-stat-value">{{ maxLives }} lives</span>
+          </div>
+          <div class="start-stat">
+            <span class="start-stat-icon">⏱️</span>
+            <span class="start-stat-value">{{ initialTime }}s</span>
+          </div>
+          <div class="start-stat">
+            <span class="start-stat-icon">🎯</span>
+            <span class="start-stat-value">{{ targetScore }} pts</span>
+          </div>
         </div>
-      </div>
-    </transition>
 
-    <!-- Completion Toast -->
-    <transition name="toast">
-      <div v-if="isGameOver && showCompletionToast" class="toast">
-        <div class="toast__content">
-          <div class="toast__emoji">{{ score >= 100 ? '🎉' : score >= 50 ? '👏' : '💪' }}</div>
-          <div class="toast__info">
-            <div class="toast__title">{{ score >= 100 ? 'Perfect!' : score >= 50 ? 'Great job!' : 'Nice try!' }}</div>
-            <div class="toast__score">{{ score }} points</div>
+        <button class="start-button" @click="startGame">
+          <span>Start Game</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- COMPLETION TOAST - Shows for 5 seconds then auto-emits complete -->
+    <transition name="slide-up">
+      <div v-if="isGameOver" class="completion-overlay">
+        <div class="completion-card">
+          <div class="completion-emoji">
+            {{ earnedStars >= 3 ? '🏆' : earnedStars >= 2 ? '🎉' : earnedStars >= 1 ? '👏' : '💪' }}
           </div>
-          <div class="toast__stars">
-            <span v-for="n in 3" :key="n" class="toast__star" :class="{ 'toast__star--filled': n <= earnedStars }">★</span>
+          
+          <h2 class="completion-title">
+            {{ earnedStars >= 3 ? 'Perfect!' : earnedStars >= 2 ? 'Great Job!' : earnedStars >= 1 ? 'Good Work!' : 'Nice Try!' }}
+          </h2>
+
+          <div class="completion-score">{{ score }} points</div>
+
+          <div class="completion-stars">
+            <span v-for="n in 3" :key="n" class="star" :class="{ 'star--earned': n <= earnedStars }">★</span>
           </div>
-        </div>
-        <div class="toast__progress">
-          <div class="toast__bar" :style="{ width: progressWidth + '%' }"></div>
+
+          <div class="completion-stats">
+            <div class="stat">
+              <span class="stat-label">Correct</span>
+              <span class="stat-value correct">{{ correctHits }}</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Wrong</span>
+              <span class="stat-value wrong">{{ wrongHits }}</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Accuracy</span>
+              <span class="stat-value">{{ accuracy }}%</span>
+            </div>
+          </div>
+
+          <div class="completion-progress">
+            <div class="progress-bar" :style="{ width: progressWidth + '%' }"></div>
+          </div>
+          <p class="completion-hint">Continuing in {{ Math.ceil(progressWidth / 20) }}s...</p>
         </div>
       </div>
     </transition>
@@ -148,6 +164,12 @@ const emit = defineEmits(['score-change', 'life-lost', 'game-complete', 'item-co
 const GRID_SIZE = 4;
 const BASE_SPEED = 2500;
 const MIN_SPEED = 1200;
+const AUTO_DISMISS_DURATION = 5000;
+
+// Game settings
+const maxLives = computed(() => props.gameData?.lives || 3);
+const initialTime = computed(() => props.gameData?.timeLimit || 60);
+const targetScore = computed(() => props.gameData?.targetScore || 100);
 
 // State
 const holes = ref([]);
@@ -156,28 +178,34 @@ const gameInterval = ref(null);
 const currentQuestionIndex = ref(0);
 const isGameOver = ref(false);
 const earnedStars = ref(0);
-const showCompletionToast = ref(false);
 const progressWidth = ref(100);
-const autoDismissTimer = ref(null);
 const progressTimer = ref(null);
-const AUTO_DISMISS_DURATION = 5000;
+const autoDismissTimer = ref(null);
+const correctHits = ref(0);
+const wrongHits = ref(0);
 
 // Computed
 const mode = computed(() => {
-  return (props.gameData.questions && props.gameData.questions.length > 0) ? 'question' : 'category';
+  return (props.gameData?.questions && props.gameData.questions.length > 0) ? 'question' : 'category';
 });
 
-const questions = computed(() => props.gameData.questions || []);
+const questions = computed(() => props.gameData?.questions || []);
 const currentQuestion = computed(() => questions.value[currentQuestionIndex.value]);
 
 const currentPrompt = computed(() => {
   if (mode.value === 'question') {
-    return currentQuestion.value?.q || "Get Ready!";
+    return currentQuestion.value?.q || currentQuestion.value?.question || "Find the correct answer!";
   }
-  return props.gameData.targetCategory || "Hit the correct items!";
+  return props.gameData?.targetCategory || props.gameData?.prompt || "Tap the correct items!";
 });
 
-// Methods
+const accuracy = computed(() => {
+  const total = correctHits.value + wrongHits.value;
+  if (total === 0) return 0;
+  return Math.round((correctHits.value / total) * 100);
+});
+
+// Initialize holes
 const initHoles = () => {
   holes.value = Array.from({ length: GRID_SIZE }, () => ({
     active: false,
@@ -189,6 +217,7 @@ const initHoles = () => {
   }));
 };
 
+// Spawn a mole
 const spawnMole = () => {
   if (!gameActive.value) return;
 
@@ -203,31 +232,32 @@ const spawnMole = () => {
 
   if (mode.value === 'question') {
     const q = currentQuestion.value;
-    isCorrect = Math.random() > 0.5;
+    if (!q) return;
+    
+    isCorrect = Math.random() > 0.4; // 60% chance of correct answer
     
     if (isCorrect) {
-      content = q.a || q.correctAnswer || "OK";
+      content = q.a || q.answer || q.correctAnswer || "✓";
     } else {
-      const wrong = q.wrong || ["0", "1", "2"];
+      const wrong = q.wrong || q.wrongAnswers || q.distractors || [];
       if (Array.isArray(wrong) && wrong.length > 0) {
         content = wrong[Math.floor(Math.random() * wrong.length)];
       } else {
-        content = "X";
+        content = "✗";
       }
     }
   } else {
-    const items = props.gameData.items || [];
+    const items = props.gameData?.items || [];
     if (items.length === 0) return;
 
-    const randomIndex = Math.floor(Math.random() * items.length);
-    const item = items[randomIndex];
+    const item = items[Math.floor(Math.random() * items.length)];
     
     if (typeof item === 'string') {
       content = item;
       isCorrect = true;
     } else {
-      content = item.text || item.word || "??";
-      isCorrect = item.isCorrect !== undefined ? item.isCorrect : true;
+      content = item.text || item.word || item.label || "?";
+      isCorrect = item.isCorrect !== undefined ? item.isCorrect : item.correct !== undefined ? item.correct : true;
     }
   }
 
@@ -236,7 +266,8 @@ const spawnMole = () => {
   hole.active = true;
   hole.state = 'idle';
 
-  const speed = Math.max(MIN_SPEED, BASE_SPEED - (props.score * 10));
+  // Speed increases as score goes up
+  const speed = Math.max(MIN_SPEED, BASE_SPEED - (props.score * 15));
   
   hole.timer = setTimeout(() => {
     if (hole.active && hole.state === 'idle') {
@@ -245,6 +276,7 @@ const spawnMole = () => {
   }, speed);
 };
 
+// Handle whacking a mole
 const handleWhack = (index) => {
   const hole = holes.value[index];
   
@@ -255,14 +287,16 @@ const handleWhack = (index) => {
 
   if (hole.isCorrect) {
     hole.state = 'hit';
+    correctHits.value++;
     emit('score-change', 10);
     emit('item-collected', { isCorrect: true });
 
     if (mode.value === 'question') {
-      setTimeout(() => nextQuestion(), 600);
+      setTimeout(() => nextQuestion(), 500);
     }
   } else {
     hole.state = 'miss';
+    wrongHits.value++;
     emit('score-change', -5);
     emit('life-lost');
     emit('item-collected', { isCorrect: false });
@@ -272,68 +306,107 @@ const handleWhack = (index) => {
     hole.active = false;
     hole.showEffect = false;
     hole.state = 'idle';
-  }, 500);
+  }, 400);
 };
 
+// Next question
 const nextQuestion = () => {
   if (currentQuestionIndex.value < questions.value.length - 1) {
     currentQuestionIndex.value++;
-    holes.value.forEach(h => { h.active = false; clearTimeout(h.timer); });
+    // Clear all active moles for new question
+    holes.value.forEach(h => { 
+      h.active = false; 
+      clearTimeout(h.timer); 
+    });
   } else {
     finishGame();
   }
 };
 
+// Calculate stars based on score
+const calculateStars = () => {
+  const percentage = (props.score / targetScore.value) * 100;
+  if (percentage >= 100) return 3;
+  if (percentage >= 70) return 2;
+  if (percentage >= 40) return 1;
+  return 0;
+};
+
+// Finish game - show completion for 5 seconds
 const finishGame = () => {
   stopGame();
   isGameOver.value = true;
-  showCompletionToast.value = true;
+  earnedStars.value = calculateStars();
   progressWidth.value = 100;
 
-  const percentage = (props.score / 100) * 100;
-  if (percentage >= 100) earnedStars.value = 3;
-  else if (percentage >= 70) earnedStars.value = 2;
-  else if (percentage >= 50) earnedStars.value = 1;
-  else earnedStars.value = 0;
-
+  // Animate progress bar countdown
   const startTime = Date.now();
   progressTimer.value = setInterval(() => {
     const elapsed = Date.now() - startTime;
     progressWidth.value = Math.max(0, 100 - (elapsed / AUTO_DISMISS_DURATION) * 100);
   }, 50);
 
+  // Auto-dismiss and emit complete after 5 seconds
   autoDismissTimer.value = setTimeout(() => {
     clearInterval(progressTimer.value);
-    showCompletionToast.value = false;
-    emit('game-complete', { score: props.score, completed: props.score >= 50 });
+    emit('game-complete', { 
+      score: props.score, 
+      stars: earnedStars.value,
+      accuracy: accuracy.value,
+      correctHits: correctHits.value,
+      wrongHits: wrongHits.value,
+      completed: props.score >= targetScore.value * 0.4
+    });
   }, AUTO_DISMISS_DURATION);
 };
 
+// Start game
 const startGame = () => {
   isGameOver.value = false;
   gameActive.value = true;
+  correctHits.value = 0;
+  wrongHits.value = 0;
+  currentQuestionIndex.value = 0;
   initHoles();
   
   emit('game-started');
   
+  // Start spawning moles after a brief delay
   setTimeout(() => {
-    gameInterval.value = setInterval(spawnMole, 1000);
-  }, 500);
+    gameInterval.value = setInterval(spawnMole, 900);
+  }, 600);
 };
 
+// Stop game
 const stopGame = () => {
   gameActive.value = false;
-  if (gameInterval.value) clearInterval(gameInterval.value);
-  holes.value.forEach(h => clearTimeout(h.timer));
+  if (gameInterval.value) {
+    clearInterval(gameInterval.value);
+    gameInterval.value = null;
+  }
+  holes.value.forEach(h => {
+    if (h.timer) clearTimeout(h.timer);
+  });
 };
 
-// Watchers
-watch(() => props.score, (val) => { if(val >= 100) finishGame(); });
-watch(() => props.lives, (val) => { if(val <= 0) finishGame(); });
-watch(() => props.timeRemaining, (val) => { if(val <= 0) finishGame(); });
+// Watch for game-ending conditions
+watch(() => props.score, (val) => { 
+  if (val >= targetScore.value && gameActive.value) finishGame(); 
+});
+
+watch(() => props.lives, (val) => { 
+  if (val <= 0 && gameActive.value) finishGame(); 
+});
+
+watch(() => props.timeRemaining, (val) => { 
+  if (val <= 0 && gameActive.value) finishGame(); 
+});
 
 // Lifecycle
-onMounted(initHoles);
+onMounted(() => {
+  initHoles();
+});
+
 onUnmounted(() => {
   stopGame();
   if (autoDismissTimer.value) clearTimeout(autoDismissTimer.value);
@@ -342,63 +415,69 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.whack-game-container {
+/* ==========================================
+   WRAPPER - FILLS ENTIRE CONTAINER
+   ========================================== */
+.whack-game-wrapper {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, #86efac 0%, #4ade80 50%, #22c55e 100%);
-  overflow: hidden;
+  background: linear-gradient(180deg, #86efac 0%, #4ade80 40%, #22c55e 100%);
   font-family: 'Nunito', 'Segoe UI', system-ui, sans-serif;
   user-select: none;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
 
-/* Question Banner */
+/* ==========================================
+   QUESTION BANNER
+   ========================================== */
 .question-banner {
   flex-shrink: 0;
   background: white;
-  margin: 12px auto;
-  padding: 12px 24px;
+  margin: 12px auto 8px;
+  padding: 10px 24px;
   border-radius: 50px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  z-index: 10;
-  max-width: min(500px, calc(100% - 120px));
+  max-width: min(90%, 500px);
   text-align: center;
+  z-index: 10;
 }
 
 .question-text {
-  font-size: clamp(1rem, 2.5vw, 1.5rem);
-  font-weight: 800;
+  font-size: clamp(0.95rem, 2.5vw, 1.4rem);
+  font-weight: 700;
   color: #1e293b;
   margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-/* Game Area */
+/* ==========================================
+   GAME AREA
+   ========================================== */
 .game-area {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
+  padding: 12px;
   min-height: 0;
-  overflow: hidden;
 }
 
 .game-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: clamp(10px, 3vw, 24px);
+  gap: clamp(12px, 3vw, 28px);
   width: 100%;
-  max-width: 650px;
+  max-width: 700px;
+  padding: 0 8px;
 }
 
-/* Hole */
+/* ==========================================
+   HOLE & MOLE
+   ========================================== */
 .hole-wrapper {
   position: relative;
-  aspect-ratio: 1 / 1.1;
+  aspect-ratio: 1 / 1.15;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -408,20 +487,20 @@ onUnmounted(() => {
 
 .hole-shadow {
   position: absolute;
-  bottom: 15%;
-  width: 85%;
-  height: 15%;
+  bottom: 18%;
+  width: 90%;
+  height: 18%;
   background: radial-gradient(ellipse, rgba(0,0,0,0.25) 0%, transparent 70%);
   border-radius: 50%;
 }
 
-/* Cute Mole */
+/* Mole */
 .mole {
   position: absolute;
-  bottom: 22%;
-  width: 75%;
+  bottom: 24%;
+  width: 80%;
   z-index: 5;
-  transform: translateY(105%);
+  transform: translateY(110%);
   transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -430,24 +509,21 @@ onUnmounted(() => {
 }
 
 .mole--hit {
-  transform: translateY(0) scale(0.92);
-  filter: brightness(1.15) saturate(1.1);
+  transform: translateY(0) scale(0.9);
+  filter: brightness(1.2);
 }
 
 .mole--wrong {
-  animation: moleShake 0.35s ease-in-out;
+  animation: shake 0.3s ease-in-out;
 }
 
-@keyframes moleShake {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  20% { transform: translateY(0) rotate(-10deg); }
-  40% { transform: translateY(0) rotate(10deg); }
-  60% { transform: translateY(0) rotate(-6deg); }
-  80% { transform: translateY(0) rotate(6deg); }
+@keyframes shake {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  25% { transform: translateY(0) rotate(-12deg); }
+  75% { transform: translateY(0) rotate(12deg); }
 }
 
 .mole__body {
-  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -456,21 +532,20 @@ onUnmounted(() => {
 /* Ears */
 .mole__ears {
   position: absolute;
-  top: 5%;
+  top: 8%;
   width: 100%;
   display: flex;
   justify-content: space-between;
-  padding: 0 8%;
+  padding: 0 10%;
   z-index: 1;
 }
 
 .mole__ear {
-  width: 30%;
+  width: 28%;
   aspect-ratio: 1;
-  background: linear-gradient(145deg, #d4a574 0%, #b8956e 100%);
+  background: linear-gradient(145deg, #d4a574, #b8956e);
   border-radius: 50%;
   position: relative;
-  box-shadow: inset -2px -2px 5px rgba(0,0,0,0.1);
 }
 
 .mole__ear::after {
@@ -480,7 +555,7 @@ onUnmounted(() => {
   left: 25%;
   width: 50%;
   height: 50%;
-  background: linear-gradient(145deg, #ffb5b5 0%, #f5a0a0 100%);
+  background: #ffb5b5;
   border-radius: 50%;
 }
 
@@ -488,13 +563,13 @@ onUnmounted(() => {
 .mole__head {
   width: 100%;
   aspect-ratio: 1 / 0.85;
-  background: linear-gradient(180deg, #d4a574 0%, #c4956a 40%, #b08060 100%);
+  background: linear-gradient(180deg, #d4a574 0%, #b08060 100%);
   border-radius: 48% 48% 42% 42%;
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-top: 18%;
+  padding-top: 20%;
   box-shadow: 
     inset 0 8px 15px rgba(255,255,255,0.2),
     inset 0 -8px 15px rgba(0,0,0,0.15),
@@ -505,19 +580,17 @@ onUnmounted(() => {
 /* Eyes */
 .mole__eyes {
   display: flex;
-  gap: 22%;
-  margin-bottom: 6%;
+  gap: 24%;
+  margin-bottom: 8%;
 }
 
 .mole__eye {
-  width: clamp(14px, 22%, 26px);
+  width: clamp(10px, 20%, 24px);
   aspect-ratio: 1;
-  background: linear-gradient(180deg, #ffffff 0%, #f0f0f0 100%);
+  background: white;
   border-radius: 50%;
   position: relative;
-  box-shadow: 
-    inset 0 2px 4px rgba(0,0,0,0.1),
-    0 1px 2px rgba(0,0,0,0.1);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .mole__pupil {
@@ -526,98 +599,62 @@ onUnmounted(() => {
   left: 22%;
   width: 56%;
   height: 56%;
-  background: radial-gradient(circle at 35% 35%, #4a3728 0%, #1a1210 100%);
-  border-radius: 50%;
-}
-
-.mole__eye-shine {
-  position: absolute;
-  top: 18%;
-  right: 22%;
-  width: 28%;
-  height: 28%;
-  background: white;
+  background: radial-gradient(circle at 35% 35%, #4a3728, #1a1210);
   border-radius: 50%;
 }
 
 /* Nose */
 .mole__nose {
-  width: clamp(16px, 28%, 32px);
+  width: clamp(12px, 26%, 28px);
   aspect-ratio: 1.4;
-  background: linear-gradient(180deg, #5a4030 0%, #3a2820 100%);
+  background: linear-gradient(180deg, #5a4030, #3a2820);
   border-radius: 50%;
-  position: relative;
-  margin-bottom: 4%;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-
-.mole__nose-shine {
-  position: absolute;
-  top: 18%;
-  left: 22%;
-  width: 25%;
-  height: 25%;
-  background: rgba(255,255,255,0.5);
-  border-radius: 50%;
+  margin-bottom: 5%;
 }
 
 /* Cheeks */
 .mole__cheeks {
   position: absolute;
-  top: 48%;
+  top: 50%;
   width: 100%;
   display: flex;
   justify-content: space-between;
-  padding: 0 10%;
+  padding: 0 12%;
 }
 
 .mole__cheek {
-  width: 20%;
-  aspect-ratio: 1.4;
-  background: radial-gradient(ellipse, #ffb5b5 0%, transparent 70%);
+  width: 18%;
+  aspect-ratio: 1.3;
+  background: radial-gradient(ellipse, rgba(255,150,150,0.6), transparent 70%);
   border-radius: 50%;
 }
 
 /* Mouth */
 .mole__mouth {
-  width: 20%;
-  height: 6%;
-  position: relative;
-}
-
-.mole__mouth::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 10%;
-  width: 80%;
-  height: 100%;
-  border-bottom: 3px solid #5d4037;
+  width: 18%;
+  height: 5%;
+  border-bottom: 2px solid #5d4037;
   border-radius: 0 0 50% 50%;
 }
 
-/* Sign */
+/* Answer Sign */
 .mole__sign {
-  background: linear-gradient(180deg, #ffffff 0%, #f8f8f8 100%);
-  padding: clamp(5px, 1.2vw, 10px) clamp(10px, 2.5vw, 18px);
-  border-radius: 12px;
-  margin-top: -3%;
-  box-shadow: 
-    0 4px 12px rgba(0,0,0,0.15),
-    inset 0 1px 0 rgba(255,255,255,0.8);
+  background: white;
+  padding: clamp(4px, 1vw, 10px) clamp(8px, 2vw, 16px);
+  border-radius: 10px;
+  margin-top: -2%;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.2);
   border: 2px solid #e8ddd0;
   z-index: 3;
 }
 
 .mole__answer {
-  font-size: clamp(0.85rem, 2.8vw, 1.25rem);
+  font-size: clamp(0.75rem, 2.5vw, 1.15rem);
   font-weight: 800;
   color: #2d1f1a;
-  display: block;
-  text-align: center;
 }
 
-/* Mound */
+/* Dirt Mound */
 .mound {
   width: 100%;
   position: relative;
@@ -626,23 +663,15 @@ onUnmounted(() => {
 
 .mound__dirt {
   width: 100%;
-  height: clamp(22px, 6vw, 38px);
-  background: linear-gradient(180deg, 
-    #a67c52 0%, 
-    #8b5e34 30%,
-    #704d2a 60%,
-    #5d4037 100%
-  );
-  border-radius: 50% 50% 18% 18%;
-  box-shadow: 
-    inset 0 6px 12px rgba(255,255,255,0.15),
-    inset 0 -4px 8px rgba(0,0,0,0.2),
-    0 4px 8px rgba(0,0,0,0.25);
+  height: clamp(18px, 5vw, 32px);
+  background: linear-gradient(180deg, #a67c52 0%, #704d2a 60%, #5d4037 100%);
+  border-radius: 50% 50% 15% 15%;
+  box-shadow: inset 0 5px 10px rgba(255,255,255,0.15), 0 3px 8px rgba(0,0,0,0.25);
 }
 
 .mound__grass {
   position: absolute;
-  top: -5px;
+  top: -4px;
   left: 5%;
   width: 90%;
   display: flex;
@@ -651,228 +680,355 @@ onUnmounted(() => {
 
 .mound__grass span {
   width: 10%;
-  height: clamp(8px, 2vw, 14px);
-  background: linear-gradient(180deg, #4ade80 0%, #22c55e 100%);
+  height: clamp(6px, 1.5vw, 12px);
+  background: linear-gradient(180deg, #4ade80, #22c55e);
   border-radius: 50% 50% 0 0;
-  transform-origin: bottom center;
 }
 
-.mound__grass span:nth-child(1) { transform: rotate(-25deg); height: 80%; }
-.mound__grass span:nth-child(2) { transform: rotate(-12deg); }
-.mound__grass span:nth-child(3) { height: 120%; }
-.mound__grass span:nth-child(4) { transform: rotate(12deg); }
-.mound__grass span:nth-child(5) { transform: rotate(25deg); height: 80%; }
+.mound__grass span:nth-child(1) { transform: rotate(-20deg); }
+.mound__grass span:nth-child(3) { height: 140%; }
+.mound__grass span:nth-child(5) { transform: rotate(20deg); }
 
-/* Effects */
-.effect {
+/* Hit Effect */
+.hit-effect {
   position: absolute;
-  top: 5%;
+  top: 10%;
   left: 50%;
   transform: translateX(-50%);
-  font-size: clamp(2.5rem, 8vw, 4.5rem);
+  font-size: clamp(2rem, 6vw, 4rem);
   z-index: 20;
   pointer-events: none;
-  animation: effectBurst 0.5s ease-out forwards;
+  animation: pop 0.4s ease-out forwards;
 }
 
-@keyframes effectBurst {
-  0% { transform: translateX(-50%) scale(0.3); opacity: 0; }
-  40% { transform: translateX(-50%) scale(1.4); opacity: 1; }
-  100% { transform: translateX(-50%) scale(1) translateY(-25px); opacity: 0; }
+@keyframes pop {
+  0% { transform: translateX(-50%) scale(0.5); opacity: 0; }
+  50% { transform: translateX(-50%) scale(1.3); opacity: 1; }
+  100% { transform: translateX(-50%) scale(1) translateY(-20px); opacity: 0; }
 }
 
-/* Modal */
-.modal-overlay {
+/* ==========================================
+   START SCREEN - FULL SIZE
+   ========================================== */
+.start-screen {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: linear-gradient(180deg, #86efac 0%, #22c55e 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 50;
+}
+
+.start-content {
+  text-align: center;
+  max-width: 400px;
+  width: 100%;
+}
+
+.start-icon {
+  font-size: clamp(5rem, 15vw, 8rem);
+  margin-bottom: 16px;
+  animation: bounce 1.5s ease-in-out infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-15px); }
+}
+
+.start-title {
+  font-size: clamp(2rem, 6vw, 3rem);
+  font-weight: 800;
+  color: white;
+  margin: 0 0 12px;
+  text-shadow: 0 3px 10px rgba(0,0,0,0.2);
+}
+
+.start-description {
+  font-size: clamp(1rem, 3vw, 1.2rem);
+  color: rgba(255,255,255,0.9);
+  margin: 0 0 28px;
+  line-height: 1.5;
+}
+
+.start-description strong {
+  color: white;
+}
+
+.start-stats {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+
+.start-stat {
+  background: rgba(255,255,255,0.2);
+  backdrop-filter: blur(10px);
+  padding: 12px 20px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.start-stat-icon {
+  font-size: 1.3rem;
+}
+
+.start-stat-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: white;
+}
+
+.start-button {
+  background: white;
+  color: #16a34a;
+  border: none;
+  padding: 18px 48px;
+  border-radius: 50px;
+  font-size: 1.3rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.2s;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+}
+
+.start-button:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+}
+
+.start-button:active {
+  transform: translateY(-1px);
+}
+
+.start-button svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* ==========================================
+   COMPLETION OVERLAY
+   ========================================== */
+.completion-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 24px;
   z-index: 100;
-  padding: 20px;
 }
 
-.start-modal {
+.completion-card {
   background: white;
-  padding: clamp(28px, 6vw, 44px);
   border-radius: 28px;
+  padding: clamp(24px, 5vw, 40px);
   text-align: center;
-  box-shadow: 0 25px 70px rgba(0,0,0,0.3);
-  max-width: 340px;
+  max-width: 380px;
   width: 100%;
-  animation: modalPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 25px 80px rgba(0,0,0,0.3);
+  animation: cardIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-@keyframes modalPop {
-  from { transform: scale(0.85) translateY(30px); opacity: 0; }
+@keyframes cardIn {
+  from { transform: scale(0.8) translateY(30px); opacity: 0; }
   to { transform: scale(1) translateY(0); opacity: 1; }
 }
 
-.start-modal__emoji {
+.completion-emoji {
   font-size: clamp(4rem, 12vw, 6rem);
   margin-bottom: 8px;
-  animation: emojiWiggle 2s ease-in-out infinite;
 }
 
-@keyframes emojiWiggle {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  25% { transform: translateY(-8px) rotate(-5deg); }
-  75% { transform: translateY(-8px) rotate(5deg); }
-}
-
-.start-modal__title {
+.completion-title {
   font-size: clamp(1.5rem, 5vw, 2rem);
   font-weight: 800;
   color: #1e293b;
   margin: 0 0 8px;
 }
 
-.start-modal__desc {
-  font-size: clamp(0.95rem, 3vw, 1.1rem);
-  color: #64748b;
-  margin: 0 0 28px;
+.completion-score {
+  font-size: clamp(1.8rem, 6vw, 2.5rem);
+  font-weight: 800;
+  color: #22c55e;
+  margin-bottom: 16px;
 }
 
-.start-modal__btn {
-  width: 100%;
-  padding: 18px 28px;
-  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-  color: white;
-  border: none;
-  border-radius: 18px;
-  font-size: 1.15rem;
-  font-weight: 700;
-  cursor: pointer;
+.completion-stars {
   display: flex;
-  align-items: center;
   justify-content: center;
-  gap: 12px;
-  transition: all 0.2s ease;
-  box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
+  gap: 8px;
+  margin-bottom: 20px;
 }
 
-.start-modal__btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 30px rgba(34, 197, 94, 0.5);
+.star {
+  font-size: clamp(2rem, 6vw, 2.5rem);
+  color: #e2e8f0;
+  transition: all 0.3s;
 }
 
-.start-modal__btn:active {
-  transform: translateY(-1px);
+.star--earned {
+  color: #fbbf24;
+  text-shadow: 0 2px 10px rgba(251, 191, 36, 0.5);
+  animation: starPop 0.4s ease-out;
 }
 
-.start-modal__btn svg {
-  width: 22px;
-  height: 22px;
+@keyframes starPop {
+  0% { transform: scale(0); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); }
 }
 
-/* Toast */
-.toast {
-  position: absolute;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: white;
-  border-radius: 22px;
-  padding: 18px 22px;
-  box-shadow: 0 12px 45px rgba(0,0,0,0.25);
-  z-index: 100;
-  min-width: 300px;
-  max-width: calc(100% - 48px);
-}
-
-.toast__content {
+.completion-stats {
   display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 14px;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 16px;
 }
 
-.toast__emoji {
-  font-size: 2.8rem;
-  flex-shrink: 0;
+.stat {
+  text-align: center;
 }
 
-.toast__info {
-  flex: 1;
-  min-width: 0;
+.stat-label {
+  display: block;
+  font-size: 0.75rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
 }
 
-.toast__title {
-  font-size: 1.15rem;
+.stat-value {
+  font-size: 1.25rem;
   font-weight: 700;
   color: #1e293b;
 }
 
-.toast__score {
-  font-size: 0.9rem;
-  color: #64748b;
+.stat-value.correct {
+  color: #22c55e;
 }
 
-.toast__stars {
-  display: flex;
-  gap: 3px;
+.stat-value.wrong {
+  color: #ef4444;
 }
 
-.toast__star {
-  font-size: 1.6rem;
-  color: #e2e8f0;
-  transition: all 0.3s ease;
-}
-
-.toast__star--filled {
-  color: #fbbf24;
-  text-shadow: 0 2px 8px rgba(251, 191, 36, 0.4);
-}
-
-.toast__progress {
-  height: 5px;
+.completion-progress {
+  height: 6px;
   background: #e2e8f0;
   border-radius: 3px;
   overflow: hidden;
+  margin-bottom: 8px;
 }
 
-.toast__bar {
+.progress-bar {
   height: 100%;
   background: linear-gradient(90deg, #22c55e, #16a34a);
-  transition: width 0.05s linear;
   border-radius: 3px;
+  transition: width 0.05s linear;
 }
 
-/* Transitions */
-.fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
+.completion-hint {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  margin: 0;
+}
 
-.toast-enter-active { transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
-.toast-leave-active { transition: all 0.25s ease-in; }
-.toast-enter-from { transform: translateX(-50%) translateY(120%); opacity: 0; }
-.toast-leave-to { transform: translateX(-50%) translateY(30px); opacity: 0; }
+/* Slide up animation */
+.slide-up-enter-active {
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
 
-.pop-enter-active, .pop-leave-active { transition: all 0.3s ease; }
-.pop-enter-from, .pop-leave-to { opacity: 0; transform: scale(0.5); }
+.slide-up-leave-active {
+  transition: all 0.3s ease-in;
+}
 
-/* Responsive */
+.slide-up-enter-from {
+  opacity: 0;
+  transform: translateY(100%);
+}
+
+.slide-up-leave-to {
+  opacity: 0;
+  transform: translateY(50px);
+}
+
+/* ==========================================
+   RESPONSIVE
+   ========================================== */
 @media (max-width: 500px) {
   .question-banner {
-    max-width: calc(100% - 100px);
-    padding: 10px 18px;
-    margin: 8px auto;
+    margin: 8px auto 6px;
+    padding: 8px 16px;
   }
   
   .game-grid {
     gap: 8px;
   }
+  
+  .start-stats {
+    gap: 12px;
+  }
+  
+  .start-stat {
+    padding: 10px 14px;
+  }
+  
+  .completion-stats {
+    gap: 16px;
+    padding: 12px;
+  }
 }
 
-@media (max-height: 450px) {
+@media (max-height: 500px) {
   .question-banner {
-    margin: 6px auto;
-    padding: 8px 16px;
+    margin: 6px auto 4px;
+    padding: 6px 14px;
   }
   
   .game-area {
     padding: 8px;
+  }
+  
+  .start-icon {
+    font-size: 4rem;
+    margin-bottom: 8px;
+  }
+  
+  .start-title {
+    font-size: 1.5rem;
+    margin-bottom: 8px;
+  }
+  
+  .start-description {
+    margin-bottom: 16px;
+    font-size: 0.9rem;
+  }
+  
+  .start-stats {
+    margin-bottom: 16px;
+  }
+  
+  .completion-card {
+    padding: 20px;
+  }
+  
+  .completion-emoji {
+    font-size: 3rem;
   }
 }
 </style>
