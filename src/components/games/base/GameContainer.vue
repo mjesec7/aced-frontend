@@ -197,7 +197,9 @@ onUnmounted(() => {
 
 .game-container.game-whack-a-mole {
   /* WhackAMole has its own green background */
+  /* WhackAMole has its own green background */
   background: transparent;
+  border-radius: 0;
 }
 
 .game-container.game-lightning-round {

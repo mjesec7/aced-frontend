@@ -2,7 +2,7 @@
   <div class="interactive-panel-wrapper">
     
     <!-- GAME MODE -->
-    <div v-if="isGameMode" class="w-full max-w-6xl mx-auto">
+    <div v-if="isGameMode" class="w-full h-full">
       <GameContainer
         :game-data="gameData"
         :game-type="gameType"
@@ -40,7 +40,7 @@
 
         <!-- Question Card -->
         <div class="mb-8">
-          <div class="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 shadow-lg rounded-2xl p-6 text-center">
+          <div class="bg-linear-to-r from-purple-50 to-pink-50 border-2 border-purple-200 shadow-lg rounded-2xl p-6 text-center">
             <h2 class="text-2xl font-bold text-slate-900 mb-2">
               {{ selectionCurrentQuestion.prompt }}
             </h2>
@@ -96,7 +96,7 @@
         v-if="!isSpecialInteractiveType"
         class="mb-8 text-center"
       >
-        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 text-white font-bold text-xl mb-4 shadow-lg">
+        <div class="w-12 h-12 rounded-xl bg-linear-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold shadow-lg shadow-purple-200">
           {{ exerciseIndex + 1 }}
         </div>
         <h2 class="text-2xl md:text-3xl font-bold text-slate-900 mb-3">{{ exerciseTitle }}</h2>
@@ -179,7 +179,7 @@
       <div v-else-if="isTrueFalseType" class="exercise-card text-center">
         
         <div class="mb-6">
-          <span class="inline-flex items-center px-4 py-1.5 rounded-full bg-gradient-to-r from-cyan-100 to-blue-100 text-cyan-700 font-semibold text-sm">
+          <span class="inline-flex items-center px-4 py-1.5 rounded-full bg-linear-to-r from-cyan-100 to-blue-100 text-cyan-700 font-semibold text-sm">
             True or False
           </span>
         </div>
