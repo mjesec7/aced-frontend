@@ -14,47 +14,50 @@
       <p class="question-text">{{ currentPrompt }}</p>
     </div>
 
-    <div class="game-grid">
-      <div v-for="(hole, index) in holes" :key="index" class="hole-wrapper">
-        <!-- Back of the mound -->
-        <div class="mound-back"></div>
+    <!-- Game Area -->
+    <div class="game-area">
+      <div class="game-grid">
+        <div v-for="(hole, index) in holes" :key="index" class="hole-wrapper">
+          <!-- Back of the mound -->
+          <div class="mound-back"></div>
 
-        <!-- The Mole -->
-        <div
-          class="mole-character"
-          :class="{
-            'visible': hole.active,
-            'hit': hole.state === 'hit',
-            'miss': hole.state === 'miss'
-          }"
-          @mousedown.prevent="handleWhack(index)"
-          @touchstart.prevent="handleWhack(index)"
-        >
-          <div class="mole-body">
-            <div class="mole-face">
-              <div class="eyes">
-                <span class="eye left"></span>
-                <span class="eye right"></span>
-              </div>
-              <div class="snout"></div>
-              <div class="content-sign">
-                {{ hole.content }}
+          <!-- The Mole -->
+          <div
+            class="mole-character"
+            :class="{
+              'visible': hole.active,
+              'hit': hole.state === 'hit',
+              'miss': hole.state === 'miss'
+            }"
+            @mousedown.prevent="handleWhack(index)"
+            @touchstart.prevent="handleWhack(index)"
+          >
+            <div class="mole-body">
+              <div class="mole-face">
+                <div class="eyes">
+                  <span class="eye left"></span>
+                  <span class="eye right"></span>
+                </div>
+                <div class="snout"></div>
+                <div class="content-sign">
+                  {{ hole.content }}
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Front of the mound -->
-        <div class="mound-front">
-          <div class="grass-tuft"></div>
-        </div>
-
-        <!-- Effects -->
-        <transition name="pop">
-          <div v-if="hole.showEffect" class="hit-spark">
-            {{ hole.state === 'hit' ? '✨' : '❌' }}
+          <!-- Front of the mound -->
+          <div class="mound-front">
+            <div class="grass-tuft"></div>
           </div>
-        </transition>
+
+          <!-- Effects -->
+          <transition name="pop">
+            <div v-if="hole.showEffect" class="hit-spark">
+              {{ hole.state === 'hit' ? '✨' : '❌' }}
+            </div>
+          </transition>
+        </div>
       </div>
     </div>
 
@@ -105,9 +108,9 @@ const props = defineProps({
 const emit = defineEmits(['score-change', 'life-lost', 'game-complete', 'item-collected', 'game-started']);
 
 // Config
-const GRID_SIZE = 4; // Reduced from 9 to 4
-const BASE_SPEED = 2500; // Slower for better playability (was 1500)
-const MIN_SPEED = 1200; // Slower minimum speed (was 700)
+const GRID_SIZE = 4;
+const BASE_SPEED = 2500;
+const MIN_SPEED = 1200;
 
 // State
 const holes = ref([]);
@@ -120,7 +123,7 @@ const showCompletionToast = ref(false);
 const progressWidth = ref(100);
 const autoDismissTimer = ref(null);
 const progressTimer = ref(null);
-const AUTO_DISMISS_DURATION = 5000; // 5 seconds
+const AUTO_DISMISS_DURATION = 5000;
 
 // --- Computed Logic ---
 
@@ -149,7 +152,7 @@ const initHoles = () => {
     active: false,
     content: '',
     isCorrect: false,
-    state: 'idle', // idle, hit, miss
+    state: 'idle',
     showEffect: false,
     timer: null
   }));
@@ -158,40 +161,33 @@ const initHoles = () => {
 const spawnMole = () => {
   if (!gameActive.value) return;
 
-  // Find empty hole
   const available = holes.value.map((h, i) => (!h.active ? i : null)).filter(i => i !== null);
   if (available.length === 0) return;
 
   const holeIdx = available[Math.floor(Math.random() * available.length)];
   const hole = holes.value[holeIdx];
 
-  // Determine Content
   let content = "";
   let isCorrect = false;
 
   if (mode.value === 'question') {
     const q = currentQuestion.value;
-    // 50% chance for correct answer to appear
     isCorrect = Math.random() > 0.5;
     
     if (isCorrect) {
-      // Ensure we have a valid correct answer
       content = q.a || q.correctAnswer || "OK";
     } else {
-      // Robustly pick a wrong answer
       const wrong = q.wrong || ["0", "1", "2"];
       if (Array.isArray(wrong) && wrong.length > 0) {
         content = wrong[Math.floor(Math.random() * wrong.length)];
       } else {
-        content = "X"; // Fallback
+        content = "X";
       }
     }
   } else {
-    // Category Mode (Vocab/Grammar)
     const items = props.gameData.items || [];
     if (items.length === 0) return; 
 
-    // Ensure we pick a random item each time
     const randomIndex = Math.floor(Math.random() * items.length);
     const item = items[randomIndex];
     
@@ -204,13 +200,11 @@ const spawnMole = () => {
     }
   }
 
-  // Activate Hole
   hole.content = content;
   hole.isCorrect = isCorrect;
   hole.active = true;
   hole.state = 'idle';
 
-  // Calculate speed based on score
   const speed = Math.max(MIN_SPEED, BASE_SPEED - (props.score * 10));
   
   hole.timer = setTimeout(() => {
@@ -223,7 +217,6 @@ const spawnMole = () => {
 const handleWhack = (index) => {
   const hole = holes.value[index];
   
-  // Prevent double hits or hitting inactive moles
   if (!hole.active || hole.state !== 'idle') return;
 
   clearTimeout(hole.timer);
@@ -234,7 +227,6 @@ const handleWhack = (index) => {
     emit('score-change', 10);
     emit('item-collected', { isCorrect: true });
 
-    // Advance Question if needed
     if (mode.value === 'question') {
       setTimeout(() => nextQuestion(), 600);
     }
@@ -245,7 +237,6 @@ const handleWhack = (index) => {
     emit('item-collected', { isCorrect: false });
   }
 
-  // Reset visual
   setTimeout(() => {
     hole.active = false;
     hole.showEffect = false;
@@ -256,7 +247,6 @@ const handleWhack = (index) => {
 const nextQuestion = () => {
   if (currentQuestionIndex.value < questions.value.length - 1) {
     currentQuestionIndex.value++;
-    // Clear board briefly
     holes.value.forEach(h => { h.active = false; clearTimeout(h.timer); });
   } else {
     finishGame();
@@ -269,21 +259,18 @@ const finishGame = () => {
   showCompletionToast.value = true;
   progressWidth.value = 100;
 
-  // Calculate stars based on score (100 is target)
   const percentage = (props.score / 100) * 100;
   if (percentage >= 100) earnedStars.value = 3;
   else if (percentage >= 70) earnedStars.value = 2;
   else if (percentage >= 50) earnedStars.value = 1;
   else earnedStars.value = 0;
 
-  // Start progress bar animation
   const startTime = Date.now();
   progressTimer.value = setInterval(() => {
     const elapsed = Date.now() - startTime;
     progressWidth.value = Math.max(0, 100 - (elapsed / AUTO_DISMISS_DURATION) * 100);
   }, 50);
 
-  // Auto-dismiss after 5 seconds and continue to next step
   autoDismissTimer.value = setTimeout(() => {
     clearInterval(progressTimer.value);
     showCompletionToast.value = false;
@@ -292,7 +279,6 @@ const finishGame = () => {
 };
 
 const continueLesson = () => {
-  // Clear any running timers
   if (autoDismissTimer.value) clearTimeout(autoDismissTimer.value);
   if (progressTimer.value) clearInterval(progressTimer.value);
   showCompletionToast.value = false;
@@ -306,10 +292,8 @@ const startGame = () => {
   gameActive.value = true;
   initHoles();
   
-  // Notify parent container that game has started
   emit('game-started');
   
-  // Initial delay before first mole
   setTimeout(() => {
     gameInterval.value = setInterval(spawnMole, 1000);
   }, 500);
@@ -321,7 +305,6 @@ const stopGame = () => {
   holes.value.forEach(h => clearTimeout(h.timer));
 };
 
-// Watch for win condition (100 points) or loss conditions
 watch(() => props.score, (val) => { if(val >= 100) finishGame(); });
 watch(() => props.lives, (val) => { if(val <= 0) finishGame(); });
 watch(() => props.timeRemaining, (val) => { if(val <= 0) finishGame(); });
@@ -341,8 +324,9 @@ onUnmounted(() => {
   position: relative;
   width: 100%;
   height: 100%;
-  min-height: 400px;
-  background: linear-gradient(180deg, #4ade80 0%, #22c55e 50%, #166534 100%);
+  min-height: 450px;
+  /* FIXED: Solid green background - no gradient that could show blue */
+  background: #22c55e;
   overflow: hidden;
   border-radius: 16px;
   user-select: none;
@@ -355,18 +339,19 @@ onUnmounted(() => {
 .question-banner {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(240, 240, 255, 0.98));
   backdrop-filter: blur(12px);
-  padding: 20px 32px;
+  padding: 16px 28px;
   margin: 16px auto 0;
-  border-radius: 24px;
-  max-width: 700px;
+  border-radius: 20px;
+  max-width: 600px;
   text-align: center;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15), 0 0 0 3px rgba(59, 130, 246, 0.2);
   z-index: 50;
   border: 2px solid rgba(59, 130, 246, 0.3);
+  flex-shrink: 0;
 }
 
 .question-text {
-  font-size: 2rem;
+  font-size: 1.75rem;
   font-weight: 900;
   color: #1e293b;
   margin: 0;
@@ -374,18 +359,25 @@ onUnmounted(() => {
   text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
 }
 
+/* Game Area - fills remaining space */
+.game-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  min-height: 0;
+  /* Gradient from lighter to darker green - NO BLUE */
+  background: linear-gradient(180deg, #4ade80 0%, #22c55e 60%, #16a34a 100%);
+}
 
 /* GRID */
 .game-grid {
-  flex: 1;
   display: grid;
-  grid-template-columns: repeat(4, 1fr); /* Changed from 9 to 4 */
-  gap: 20px;
-  padding: 40px;
-  max-width: 800px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  max-width: 700px;
   width: 100%;
-  margin: 0 auto;
-  align-content: center;
 }
 
 .hole-wrapper {
@@ -395,9 +387,8 @@ onUnmounted(() => {
   justify-content: center;
   align-items: flex-end;
   cursor: pointer;
-  /* CRITICAL FIX: Hide mole when it goes down */
   overflow: hidden;
-  border-radius: 0 0 20px 20px; /* Match mound shape roughly */
+  border-radius: 0 0 20px 20px;
 }
 
 /* DIRT MOUNDS */
@@ -408,7 +399,7 @@ onUnmounted(() => {
   height: 35%;
   background: linear-gradient(to bottom, #5d4037, #3e2723);
   border-radius: 50% 50% 0 0;
-  z-index: 1; /* Behind mole */
+  z-index: 1;
   box-shadow: inset 0 5px 10px rgba(0,0,0,0.3);
 }
 
@@ -419,7 +410,7 @@ onUnmounted(() => {
   height: 25%;
   background: linear-gradient(to bottom, #795548, #5d4037);
   border-radius: 50% 50% 15px 15px;
-  z-index: 10; /* In front of mole */
+  z-index: 10;
   box-shadow: 0 5px 15px rgba(0,0,0,0.2);
 }
 
@@ -441,7 +432,7 @@ onUnmounted(() => {
   bottom: 15%;
   width: 75%;
   height: 85%;
-  z-index: 5; /* Between back and front mounds */
+  z-index: 5;
   transform: translateY(110%);
   transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   will-change: transform;
@@ -449,7 +440,7 @@ onUnmounted(() => {
 
 .mole-character.visible { transform: translateY(0); }
 .mole-character.hit { transform: scale(0.95) translateY(15px); filter: brightness(1.1); }
-.mole-character.miss { filter: hue-rotate(320deg) saturate(1.5); } /* Reddish tint */
+.mole-character.miss { filter: hue-rotate(320deg) saturate(1.5); }
 
 .mole-body {
   width: 100%;
@@ -546,8 +537,8 @@ onUnmounted(() => {
 
 .small-modal {
   background: white;
-  padding: 24px;
-  border-radius: 20px;
+  padding: 28px 32px;
+  border-radius: 24px;
   text-align: center;
   box-shadow: 0 20px 50px rgba(0,0,0,0.3);
   max-width: 350px;
@@ -561,15 +552,15 @@ onUnmounted(() => {
 }
 
 .modal-icon {
-  font-size: 3.5rem;
-  margin-bottom: 12px;
+  font-size: 4rem;
+  margin-bottom: 16px;
 }
 
 .modal-title {
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   font-weight: 800;
   color: #1e293b;
-  margin: 0 0 8px;
+  margin: 0 0 10px;
 }
 
 .modal-score {
@@ -587,11 +578,11 @@ onUnmounted(() => {
 
 .modal-btn {
   width: 100%;
-  padding: 12px 24px;
+  padding: 14px 28px;
   border: none;
-  border-radius: 12px;
+  border-radius: 14px;
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 1.1rem;
   cursor: pointer;
   transition: all 0.3s;
   margin-bottom: 8px;
@@ -619,34 +610,34 @@ onUnmounted(() => {
 
 .modal-desc {
   color: #64748b;
-  font-size: 0.9rem;
-  margin-bottom: 16px;
+  font-size: 1rem;
+  margin-bottom: 20px;
 }
 
 /* Completion Toast */
 .completion-toast {
   position: absolute;
-  bottom: 20px;
+  bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
   background: white;
-  border-radius: 16px;
-  padding: 16px 20px;
+  border-radius: 20px;
+  padding: 18px 24px;
   box-shadow: 0 10px 40px rgba(0,0,0,0.2);
   z-index: 200;
-  min-width: 280px;
+  min-width: 300px;
   max-width: 90%;
 }
 
 .toast-content {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: 14px;
+  margin-bottom: 14px;
 }
 
 .toast-icon {
-  font-size: 2.5rem;
+  font-size: 2.8rem;
   flex-shrink: 0;
 }
 
@@ -655,21 +646,21 @@ onUnmounted(() => {
 }
 
 .toast-title {
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   font-weight: 700;
   color: #1e293b;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
 }
 
 .toast-score {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   color: #64748b;
 }
 
 .toast-stars {
   display: flex;
-  gap: 2px;
-  font-size: 1.5rem;
+  gap: 4px;
+  font-size: 1.6rem;
 }
 
 .star-filled {
@@ -681,9 +672,9 @@ onUnmounted(() => {
 }
 
 .toast-progress {
-  height: 4px;
+  height: 5px;
   background: #e2e8f0;
-  border-radius: 2px;
+  border-radius: 3px;
   overflow: hidden;
 }
 
@@ -729,25 +720,30 @@ onUnmounted(() => {
 .pop-enter-active, .pop-leave-active { transition: opacity 0.3s; }
 .pop-enter-from, .pop-leave-to { opacity: 0; }
 
-.slide-up-enter-active, .slide-up-leave-active { transition: all 0.3s ease; }
-.slide-up-enter-from { transform: translateY(10px); opacity: 0; }
-.slide-up-leave-to { transform: translateY(-10px); opacity: 0; }
-
 .fade-enter-active, .fade-leave-active { transition: opacity 0.3s; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 
 /* RESPONSIVE */
 @media (max-width: 768px) {
-  .hud-glass {
-    margin: 10px;
-    padding: 8px 16px;
+  .whack-game-container {
+    min-height: 400px;
   }
   
-  .prompt-text { font-size: 1.2rem; }
+  .question-banner {
+    padding: 12px 20px;
+    margin: 12px auto 0;
+  }
+  
+  .question-text { 
+    font-size: 1.4rem; 
+  }
+  
+  .game-area {
+    padding: 12px;
+  }
   
   .game-grid {
     gap: 10px;
-    padding: 10px 15px;
   }
   
   .content-sign {
@@ -755,9 +751,26 @@ onUnmounted(() => {
     padding: 4px 8px;
   }
   
-  .glass-card { padding: 24px; }
-  .icon-bounce { font-size: 3rem; }
-  .glass-card h2 { font-size: 1.5rem; }
+  .small-modal {
+    padding: 24px;
+  }
+  
+  .modal-icon { 
+    font-size: 3.5rem; 
+  }
+  
+  .modal-title { 
+    font-size: 1.4rem; 
+  }
+}
+
+@media (max-width: 480px) {
+  .game-grid {
+    gap: 8px;
+  }
+  
+  .question-text {
+    font-size: 1.2rem;
+  }
 }
 </style>
-```

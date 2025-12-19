@@ -275,7 +275,7 @@ const handleGameComplete = async (data = {}) => {
       isPersonalBest.value = result.result?.personalBest || false;
     }
   } catch (error) {
-} finally {
+  } finally {
     isLoading.value = false;
   }
 };
@@ -327,8 +327,36 @@ onUnmounted(() => {
   height: 100%;
   min-height: 500px;
   overflow: hidden;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  /* FIXED: Changed from blue/purple gradient to transparent */
+  /* Each game component now handles its own background */
+  background: transparent;
   border-radius: 12px;
+}
+
+/* Game-specific container backgrounds (fallbacks) */
+.game-container.game-basket-catch {
+  background: linear-gradient(180deg, #87CEEB 0%, #98D8C8 100%);
+}
+
+.game-container.game-memory-cards {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.game-container.game-whack-a-mole {
+  /* WhackAMole has its own green background, keep container transparent */
+  background: transparent;
+}
+
+.game-container.game-lightning-round {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.game-container.game-pattern-builder {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.game-container.game-maze-runner {
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
 }
 
 .instructions-overlay {
@@ -351,7 +379,7 @@ onUnmounted(() => {
   width: 100%;
   text-align: center;
   animation: slideUp 0.4s ease-out;
-  font-family: 'Fredoka', sans-serif; /* Applied funny font as requested */
+  font-family: 'Fredoka', sans-serif;
 }
 
 @keyframes slideUp {
