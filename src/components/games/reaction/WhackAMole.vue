@@ -1,5 +1,6 @@
 <template>
-  <div class="whack-game-wrapper">
+  <div class="absolute inset-0 bg-gradient-to-b from-emerald-400 to-green-500 font-sans select-none overflow-hidden flex flex-col">
+    
     <!-- HUD Sidebar - Top Right -->
     <GameHUDSidebar
       v-if="gameActive"
@@ -9,77 +10,174 @@
       :max-lives="3"
     />
 
-    <!-- Question Banner - Below HUD, Centered -->
-    <div v-if="gameActive" class="question-banner">
-      <p class="question-text">{{ currentPrompt }}</p>
+    <!-- Question Banner - Responsive positioning -->
+    <div 
+      v-if="gameActive" 
+      class="absolute z-50 transition-all duration-300 ease-out
+             top-20 left-1/2 -translate-x-1/2 max-w-[85%]
+             sm:top-[72px]
+             min-[400px]:top-24
+             min-[350px]:top-28"
+      :class="containerClass"
+    >
+      <div class="bg-white px-5 py-3 rounded-full shadow-lg shadow-black/15 border-2 border-amber-300">
+        <p class="text-sm sm:text-base lg:text-lg font-bold text-slate-800 text-center whitespace-nowrap
+                  max-[400px]:text-xs max-[400px]:whitespace-normal">
+          {{ currentPrompt }}
+        </p>
+      </div>
     </div>
 
-    <!-- Game Area - During active gameplay -->
-    <div v-if="gameActive" class="game-area">
-      <div class="game-grid">
-        <div v-for="(hole, index) in holes" :key="index" class="hole-wrapper">
-          
-          <!-- Answer Sign - Only when mole is active -->
-          <transition name="sign-pop">
+    <!-- Game Area -->
+    <div 
+      v-if="gameActive" 
+      class="flex-1 flex items-center justify-center pt-36 pb-4 px-3
+             sm:pt-32
+             min-[400px]:pt-40
+             min-[350px]:pt-44"
+    >
+      <div 
+        class="grid gap-3 w-full max-w-full
+               grid-cols-2 sm:grid-cols-4
+               max-[350px]:gap-2"
+      >
+        <div 
+          v-for="(hole, index) in holes" 
+          :key="index" 
+          class="relative flex flex-col items-center cursor-pointer"
+          @mousedown.prevent="handleWhack(index)"
+          @touchstart.prevent="handleWhack(index)"
+        >
+          <!-- Answer Sign - Speech bubble above hole -->
+          <transition name="sign">
             <div 
               v-if="hole.active"
-              class="answer-sign"
-              :class="{ 
-                'answer-sign--hit': hole.state === 'hit',
-                'answer-sign--wrong': hole.state === 'miss'
-              }"
+              class="relative mb-2 z-30"
             >
-              <span class="answer-text">{{ hole.content }}</span>
+              <div 
+                class="bg-white px-3 py-2 rounded-xl shadow-lg border-3 transition-colors duration-150"
+                :class="{
+                  'border-amber-400': hole.state === 'idle',
+                  'border-green-500 bg-green-50': hole.state === 'hit',
+                  'border-red-500 bg-red-50 animate-shake': hole.state === 'miss'
+                }"
+              >
+                <span class="text-sm sm:text-base lg:text-lg font-extrabold text-slate-800 whitespace-nowrap">
+                  {{ hole.content }}
+                </span>
+              </div>
+              <!-- Speech bubble pointer -->
+              <div 
+                class="absolute left-1/2 -translate-x-1/2 -bottom-2 w-0 h-0 
+                       border-l-[10px] border-l-transparent 
+                       border-r-[10px] border-r-transparent 
+                       border-t-[10px]"
+                :class="{
+                  'border-t-amber-400': hole.state === 'idle',
+                  'border-t-green-500': hole.state === 'hit',
+                  'border-t-red-500': hole.state === 'miss'
+                }"
+              ></div>
+              <div 
+                class="absolute left-1/2 -translate-x-1/2 -bottom-1.5 w-0 h-0 
+                       border-l-[8px] border-l-transparent 
+                       border-r-[8px] border-r-transparent 
+                       border-t-[8px]"
+                :class="{
+                  'border-t-white': hole.state === 'idle',
+                  'border-t-green-50': hole.state === 'hit',
+                  'border-t-red-50': hole.state === 'miss'
+                }"
+              ></div>
             </div>
           </transition>
 
-          <!-- Hole Container - clips the mole -->
-          <div class="hole-container">
-            <!-- The Dark Hole Void (Back) -->
-            <div class="hole-void"></div>
+          <!-- Hole Container - This clips the mole -->
+          <div class="relative w-full aspect-square overflow-hidden">
+            
+            <!-- Dark hole background -->
+            <div class="absolute bottom-[25%] left-[10%] w-[80%] h-[22%] 
+                        bg-gradient-radial from-amber-900 to-amber-950 
+                        rounded-[50%] shadow-inner z-[1]">
+            </div>
 
-            <!-- The Mole - hidden by default, pops up when active -->
-            <div
-              class="mole"
+            <!-- Mole Character -->
+            <div 
+              class="absolute bottom-[30%] left-1/2 w-[65%] z-[5]
+                     transition-transform duration-200 ease-[cubic-bezier(0.175,0.885,0.32,1.275)]"
               :class="{
-                'mole--up': hole.active,
-                'mole--hit': hole.state === 'hit',
-                'mole--wrong': hole.state === 'miss'
+                '-translate-x-1/2 translate-y-full': !hole.active,
+                '-translate-x-1/2 translate-y-0': hole.active && hole.state === 'idle',
+                '-translate-x-1/2 translate-y-0 scale-90': hole.state === 'hit',
+                '-translate-x-1/2 translate-y-0 animate-mole-shake': hole.state === 'miss'
               }"
-              @mousedown.prevent="handleWhack(index)"
-              @touchstart.prevent="handleWhack(index)"
             >
-              <div class="mole__body">
-                <div class="mole__ears">
-                  <div class="mole__ear"></div>
-                  <div class="mole__ear"></div>
-                </div>
-                <div class="mole__head">
-                  <div class="mole__eyes">
-                    <div class="mole__eye"><div class="mole__pupil"></div></div>
-                    <div class="mole__eye"><div class="mole__pupil"></div></div>
+              <!-- Mole Body -->
+              <div class="flex flex-col items-center">
+                <!-- Ears -->
+                <div class="absolute top-[5%] w-full flex justify-between px-[5%] z-[1]">
+                  <div class="w-[32%] aspect-square bg-gradient-to-br from-amber-600 to-amber-700 rounded-full relative">
+                    <div class="absolute top-1/4 left-1/4 w-1/2 h-1/2 bg-pink-300 rounded-full"></div>
                   </div>
-                  <div class="mole__nose"></div>
-                  <div class="mole__cheeks">
-                    <div class="mole__cheek"></div>
-                    <div class="mole__cheek"></div>
+                  <div class="w-[32%] aspect-square bg-gradient-to-br from-amber-600 to-amber-700 rounded-full relative">
+                    <div class="absolute top-1/4 left-1/4 w-1/2 h-1/2 bg-pink-300 rounded-full"></div>
+                  </div>
+                </div>
+                
+                <!-- Head -->
+                <div class="w-full aspect-[1/0.85] bg-gradient-to-b from-amber-600 to-amber-700 
+                            rounded-[48%_48%_42%_42%] relative flex flex-col items-center pt-[25%] z-[2]
+                            shadow-[inset_0_6px_12px_rgba(255,255,255,0.2),inset_0_-6px_12px_rgba(0,0,0,0.15),0_4px_10px_rgba(0,0,0,0.2)]">
+                  
+                  <!-- Eyes -->
+                  <div class="flex gap-[30%] mb-[10%]">
+                    <div class="w-3 sm:w-4 aspect-square bg-white rounded-full shadow-inner relative">
+                      <div class="absolute top-[20%] left-[20%] w-[60%] h-[60%] 
+                                  bg-gradient-radial from-amber-800 to-amber-950 rounded-full">
+                      </div>
+                    </div>
+                    <div class="w-3 sm:w-4 aspect-square bg-white rounded-full shadow-inner relative">
+                      <div class="absolute top-[20%] left-[20%] w-[60%] h-[60%] 
+                                  bg-gradient-radial from-amber-800 to-amber-950 rounded-full">
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Nose -->
+                  <div class="w-4 sm:w-5 aspect-[1.3] bg-gradient-to-b from-amber-800 to-amber-900 rounded-full"></div>
+                  
+                  <!-- Cheeks -->
+                  <div class="absolute top-[55%] w-full flex justify-between px-[8%]">
+                    <div class="w-[22%] aspect-[1.2] bg-gradient-radial from-pink-300/50 to-transparent rounded-full"></div>
+                    <div class="w-[22%] aspect-[1.2] bg-gradient-radial from-pink-300/50 to-transparent rounded-full"></div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- The Dirt Mound (Front Mask) -->
-            <div class="mound-front">
-              <div class="mound-front__dirt"></div>
-              <div class="mound-front__grass">
-                <span></span><span></span><span></span><span></span><span></span>
+            <!-- Dirt Mound Front (covers mole when down) -->
+            <div class="absolute bottom-0 left-0 w-full h-[38%] z-10 pointer-events-none">
+              <div class="absolute bottom-0 w-full h-full 
+                          bg-gradient-to-b from-amber-700 to-amber-800 
+                          rounded-[50%_50%_8px_8px] shadow-[0_-2px_4px_rgba(0,0,0,0.1)]">
+              </div>
+              <!-- Grass tufts -->
+              <div class="absolute -top-1 left-[10%] w-[80%] flex justify-around">
+                <span class="w-[10%] h-2 bg-emerald-400 rounded-t-full -rotate-6"></span>
+                <span class="w-[10%] h-3 bg-emerald-400 rounded-t-full rotate-3"></span>
+                <span class="w-[10%] h-1.5 bg-emerald-400 rounded-t-full -rotate-3"></span>
+                <span class="w-[10%] h-3 bg-emerald-400 rounded-t-full rotate-6"></span>
+                <span class="w-[10%] h-2 bg-emerald-400 rounded-t-full -rotate-3"></span>
               </div>
             </div>
           </div>
 
           <!-- Hit Effect -->
-          <transition name="effect-pop">
-            <div v-if="hole.showEffect" class="hit-effect">
+          <transition name="effect">
+            <div 
+              v-if="hole.showEffect" 
+              class="absolute top-0 left-1/2 -translate-x-1/2 text-3xl sm:text-4xl z-40 pointer-events-none"
+            >
               {{ hole.state === 'hit' ? '✨' : '💥' }}
             </div>
           </transition>
@@ -88,33 +186,45 @@
     </div>
 
     <!-- START SCREEN -->
-    <div v-if="!gameActive && !isGameOver" class="start-screen">
-      <div class="start-content">
-        <div class="start-icon">🐹</div>
-        <h1 class="start-title">Whack-a-Mole!</h1>
-        <p class="start-description">
-          Tap the moles showing the <strong>correct answers</strong> to score points.
+    <div 
+      v-if="!gameActive && !isGameOver" 
+      class="absolute inset-0 bg-gradient-to-b from-emerald-300 to-green-500 
+             flex items-center justify-center p-6 z-50"
+    >
+      <div class="text-center max-w-md w-full">
+        <div class="text-6xl sm:text-7xl mb-4 animate-bounce">🐹</div>
+        <h1 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white mb-3 drop-shadow-lg">
+          Whack-a-Mole!
+        </h1>
+        <p class="text-sm sm:text-base text-white/90 mb-6 leading-relaxed">
+          Tap the moles showing the <strong class="text-white">correct answers</strong> to score points.
           <br>Be quick - they won't stay up for long!
         </p>
         
-        <div class="start-stats">
-          <div class="start-stat">
-            <span class="start-stat-icon">❤️</span>
-            <span class="start-stat-value">{{ maxLives }} lives</span>
+        <div class="flex justify-center gap-3 mb-7 flex-wrap">
+          <div class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-xl flex items-center gap-2">
+            <span>❤️</span>
+            <span class="text-sm font-bold text-white">{{ maxLives }} lives</span>
           </div>
-          <div class="start-stat">
-            <span class="start-stat-icon">⏱️</span>
-            <span class="start-stat-value">{{ initialTime }}s</span>
+          <div class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-xl flex items-center gap-2">
+            <span>⏱️</span>
+            <span class="text-sm font-bold text-white">{{ initialTime }}s</span>
           </div>
-          <div class="start-stat">
-            <span class="start-stat-icon">🎯</span>
-            <span class="start-stat-value">{{ targetScore }} pts</span>
+          <div class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-xl flex items-center gap-2">
+            <span>🎯</span>
+            <span class="text-sm font-bold text-white">{{ targetScore }} pts</span>
           </div>
         </div>
 
-        <button class="start-button" @click="startGame">
+        <button 
+          @click="startGame"
+          class="bg-white text-green-600 px-10 py-4 rounded-full text-lg font-bold 
+                 shadow-xl shadow-black/20 hover:-translate-y-1 hover:shadow-2xl 
+                 active:translate-y-0 transition-all duration-200
+                 flex items-center gap-3 mx-auto"
+        >
           <span>Start Game</span>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <polygon points="5 3 19 12 5 21 5 3"></polygon>
           </svg>
         </button>
@@ -123,41 +233,60 @@
 
     <!-- COMPLETION OVERLAY -->
     <transition name="slide-up">
-      <div v-if="isGameOver" class="completion-overlay">
-        <div class="completion-card">
-          <div class="completion-emoji">
+      <div 
+        v-if="isGameOver" 
+        class="absolute inset-0 bg-black/70 backdrop-blur-sm 
+               flex items-center justify-center p-5 z-[100]"
+      >
+        <div class="bg-white rounded-3xl p-6 sm:p-8 text-center max-w-sm w-full shadow-2xl animate-card-in">
+          <div class="text-5xl sm:text-6xl mb-2">
             {{ earnedStars >= 3 ? '🏆' : earnedStars >= 2 ? '🎉' : earnedStars >= 1 ? '👏' : '💪' }}
           </div>
           
-          <h2 class="completion-title">
+          <h2 class="text-xl sm:text-2xl font-extrabold text-slate-800 mb-1">
             {{ earnedStars >= 3 ? 'Perfect!' : earnedStars >= 2 ? 'Great Job!' : earnedStars >= 1 ? 'Good Work!' : 'Nice Try!' }}
           </h2>
 
-          <div class="completion-score">{{ score }} points</div>
-
-          <div class="completion-stars">
-            <span v-for="n in 3" :key="n" class="star" :class="{ 'star--earned': n <= earnedStars }">★</span>
+          <div class="text-3xl sm:text-4xl font-extrabold text-green-500 mb-4">
+            {{ score }} points
           </div>
 
-          <div class="completion-stats">
-            <div class="stat">
-              <span class="stat-label">Correct</span>
-              <span class="stat-value correct">{{ correctHits }}</span>
+          <div class="flex justify-center gap-1.5 mb-5">
+            <span 
+              v-for="n in 3" 
+              :key="n" 
+              class="text-3xl sm:text-4xl transition-all duration-300"
+              :class="n <= earnedStars ? 'text-amber-400 drop-shadow-[0_2px_8px_rgba(251,191,36,0.5)] animate-star-pop' : 'text-slate-200'"
+              :style="{ animationDelay: `${n * 0.1}s` }"
+            >
+              ★
+            </span>
+          </div>
+
+          <div class="flex justify-center gap-5 mb-5 p-4 bg-slate-50 rounded-2xl">
+            <div class="text-center">
+              <div class="text-xs text-slate-400 uppercase tracking-wider mb-1">Correct</div>
+              <div class="text-lg font-bold text-green-500">{{ correctHits }}</div>
             </div>
-            <div class="stat">
-              <span class="stat-label">Wrong</span>
-              <span class="stat-value wrong">{{ wrongHits }}</span>
+            <div class="text-center">
+              <div class="text-xs text-slate-400 uppercase tracking-wider mb-1">Wrong</div>
+              <div class="text-lg font-bold text-red-500">{{ wrongHits }}</div>
             </div>
-            <div class="stat">
-              <span class="stat-label">Accuracy</span>
-              <span class="stat-value">{{ accuracy }}%</span>
+            <div class="text-center">
+              <div class="text-xs text-slate-400 uppercase tracking-wider mb-1">Accuracy</div>
+              <div class="text-lg font-bold text-slate-700">{{ accuracy }}%</div>
             </div>
           </div>
 
-          <div class="completion-progress">
-            <div class="progress-bar" :style="{ width: progressWidth + '%' }"></div>
+          <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden mb-2">
+            <div 
+              class="h-full bg-gradient-to-r from-green-500 to-green-400 rounded-full transition-all duration-50"
+              :style="{ width: progressWidth + '%' }"
+            ></div>
           </div>
-          <p class="completion-hint">Continuing in {{ Math.ceil(progressWidth / 20) }}s...</p>
+          <p class="text-xs text-slate-400">
+            Continuing in {{ Math.ceil(progressWidth / 20) }}s...
+          </p>
         </div>
       </div>
     </transition>
@@ -200,6 +329,9 @@ const progressTimer = ref(null);
 const autoDismissTimer = ref(null);
 const correctHits = ref(0);
 const wrongHits = ref(0);
+
+// Container size class for responsive question positioning
+const containerClass = ref('');
 
 // Computed
 const mode = computed(() => {
@@ -427,772 +559,104 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* ==========================================
-   WRAPPER
-   ========================================== */
-.whack-game-wrapper {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, #4ade80 0%, #22c55e 100%);
-  font-family: 'Nunito', 'Segoe UI', system-ui, sans-serif;
-  user-select: none;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+/* Radial gradient utilities not in Tailwind by default */
+.bg-gradient-radial {
+  background: radial-gradient(circle, var(--tw-gradient-stops));
 }
 
-/* ==========================================
-   QUESTION BANNER - BELOW HUD, CENTERED
-   Moves down + left on narrower panels
-   ========================================== */
-.question-banner {
-  position: absolute;
-  top: 80px; /* Below the HUD with gap */
-  left: 50%;
-  transform: translateX(-50%);
-  background: white;
-  padding: 12px 28px;
-  border-radius: 50px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  z-index: 90;
-  max-width: 85%;
-  transition: top 0.2s ease;
+/* Border width 3 */
+.border-3 {
+  border-width: 3px;
 }
 
-.question-text {
-  font-size: clamp(1rem, 2.5vw, 1.3rem);
-  font-weight: 700;
-  color: #1e293b;
-  margin: 0;
-  text-align: center;
-  white-space: nowrap;
-}
-
-/* Responsive - move down and adjust on narrower panels */
-@media (max-width: 700px) {
-  .question-banner {
-    top: 85px;
-  }
-}
-
-@media (max-width: 550px) {
-  .question-banner {
-    top: 90px;
-    padding: 10px 20px;
-  }
-  
-  .question-text {
-    font-size: 0.95rem;
-  }
-}
-
-@media (max-width: 450px) {
-  .question-banner {
-    top: 95px;
-    padding: 8px 16px;
-    border-radius: 16px;
-    max-width: 90%;
-  }
-  
-  .question-text {
-    font-size: 0.9rem;
-    white-space: normal;
-  }
-}
-
-@media (max-width: 380px) {
-  .question-banner {
-    top: 100px;
-    padding: 8px 14px;
-  }
-  
-  .question-text {
-    font-size: 0.85rem;
-  }
-}
-
-/* ==========================================
-   GAME AREA
-   ========================================== */
-.game-area {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 140px 16px 20px;
-  min-height: 0;
-  overflow: hidden;
-}
-
-@media (max-width: 550px) {
-  .game-area {
-    padding-top: 150px;
-  }
-}
-
-@media (max-width: 450px) {
-  .game-area {
-    padding-top: 160px;
-    padding-left: 8px;
-    padding-right: 8px;
-  }
-}
-
-/* ==========================================
-   GAME GRID
-   ========================================== */
-.game-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: clamp(6px, 1.5vw, 16px);
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-}
-
-@media (max-width: 400px) {
-  .game-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-  }
-}
-
-/* ==========================================
-   HOLE WRAPPER
-   ========================================== */
-.hole-wrapper {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  cursor: pointer;
-}
-
-/* ==========================================
-   ANSWER SIGN - FLOATS ABOVE HOLE
-   ========================================== */
-.answer-sign {
-  position: relative;
-  margin-bottom: 8px;
-  background: white;
-  padding: 8px 16px;
-  border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
-  border: 3px solid #fbbf24;
-  z-index: 30;
-}
-
-/* Speech bubble pointer */
-.answer-sign::after {
-  content: '';
-  position: absolute;
-  bottom: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-  border-left: 10px solid transparent;
-  border-right: 10px solid transparent;
-  border-top: 10px solid white;
-}
-
-.answer-sign::before {
-  content: '';
-  position: absolute;
-  bottom: -14px;
-  left: 50%;
-  transform: translateX(-50%);
-  border-left: 12px solid transparent;
-  border-right: 12px solid transparent;
-  border-top: 12px solid #fbbf24;
-}
-
-.answer-sign--hit {
-  border-color: #22c55e;
-  background: #dcfce7;
-}
-
-.answer-sign--hit::before {
-  border-top-color: #22c55e;
-}
-
-.answer-sign--wrong {
-  border-color: #ef4444;
-  background: #fee2e2;
-  animation: signShake 0.3s ease-in-out;
-}
-
-.answer-sign--wrong::before {
-  border-top-color: #ef4444;
-}
-
-@keyframes signShake {
-  0%, 100% { transform: translateX(-50%) rotate(0); }
-  25% { transform: translateX(-50%) rotate(-10deg); }
-  75% { transform: translateX(-50%) rotate(10deg); }
-}
-
-.answer-text {
-  font-size: clamp(1rem, 4vw, 1.4rem);
-  font-weight: 800;
-  color: #1e293b;
-  white-space: nowrap;
-}
-
-/* Sign pop animation */
-.sign-pop-enter-active {
+/* Sign transition */
+.sign-enter-active {
   animation: signPopIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-
-.sign-pop-leave-active {
+.sign-leave-active {
   animation: signPopOut 0.15s ease-in;
 }
 
 @keyframes signPopIn {
-  0% { 
-    opacity: 0; 
-    transform: scale(0.5) translateY(10px); 
-  }
-  100% { 
-    opacity: 1; 
-    transform: scale(1) translateY(0); 
-  }
+  0% { opacity: 0; transform: scale(0.5) translateY(10px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 @keyframes signPopOut {
-  0% { 
-    opacity: 1; 
-    transform: scale(1); 
-  }
-  100% { 
-    opacity: 0; 
-    transform: scale(0.8) translateY(-10px); 
-  }
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.8) translateY(-10px); }
 }
 
-@media (max-width: 500px) {
-  .answer-sign {
-    padding: 6px 12px;
-    border-width: 2px;
-    border-radius: 10px;
-    margin-bottom: 6px;
-  }
-  
-  .answer-text {
-    font-size: clamp(0.85rem, 3.5vw, 1.1rem);
-  }
+/* Effect transition */
+.effect-enter-active {
+  animation: effectPop 0.4s ease-out;
+}
+.effect-leave-active {
+  animation: effectFade 0.2s ease-in;
 }
 
-/* ==========================================
-   HOLE CONTAINER - CLIPS THE MOLE
-   This is the key to hiding moles!
-   ========================================== */
-.hole-container {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 1 / 0.9;
-  overflow: hidden; /* THIS HIDES THE MOLE WHEN DOWN */
+@keyframes effectPop {
+  0% { transform: translateX(-50%) scale(0.3); opacity: 0; }
+  50% { transform: translateX(-50%) scale(1.3); opacity: 1; }
+  100% { transform: translateX(-50%) scale(1) translateY(-20px); opacity: 0.8; }
 }
 
-/* ==========================================
-   HOLE VOID
-   ========================================== */
-.hole-void {
-  position: absolute;
-  bottom: 25%;
-  width: 80%;
-  height: 22%;
-  left: 10%;
-  background: radial-gradient(ellipse, #3e2723 0%, #271c19 100%);
-  border-radius: 50%;
-  z-index: 1;
-  box-shadow: inset 0 4px 8px rgba(0,0,0,0.5);
+@keyframes effectFade {
+  to { opacity: 0; transform: translateX(-50%) translateY(-30px); }
 }
 
-/* ==========================================
-   MOLE - HIDDEN BELOW MOUND BY DEFAULT
-   ========================================== */
-.mole {
-  position: absolute;
-  bottom: 30%;
-  left: 50%;
-  width: 65%;
-  transform: translateX(-50%) translateY(100%); /* Hidden below */
-  z-index: 2;
-  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+/* Slide up transition */
+.slide-up-enter-active {
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.slide-up-leave-active {
+  transition: all 0.3s ease-in;
+}
+.slide-up-enter-from {
+  opacity: 0;
+  transform: translateY(100%);
+}
+.slide-up-leave-to {
+  opacity: 0;
+  transform: translateY(50px);
 }
 
-.mole--up {
-  transform: translateX(-50%) translateY(0); /* Pop up */
+/* Shake animation */
+@keyframes shake {
+  0%, 100% { transform: translateX(0) rotate(0); }
+  25% { transform: translateX(-5px) rotate(-5deg); }
+  75% { transform: translateX(5px) rotate(5deg); }
+}
+.animate-shake {
+  animation: shake 0.3s ease-in-out;
 }
 
-.mole--hit {
-  transform: translateX(-50%) translateY(0) scale(0.9);
-  filter: brightness(1.2);
-}
-
-.mole--wrong {
-  animation: moleShake 0.3s ease-in-out;
-}
-
+/* Mole shake */
 @keyframes moleShake {
   0%, 100% { transform: translateX(-50%) translateY(0) rotate(0); }
   25% { transform: translateX(-50%) translateY(0) rotate(-15deg); }
   75% { transform: translateX(-50%) translateY(0) rotate(15deg); }
 }
-
-.mole__body {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+.animate-mole-shake {
+  animation: moleShake 0.3s ease-in-out;
 }
 
-/* Ears */
-.mole__ears {
-  position: absolute;
-  top: 5%;
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  padding: 0 5%;
-  z-index: 1;
-}
-
-.mole__ear {
-  width: 32%;
-  aspect-ratio: 1;
-  background: linear-gradient(145deg, #d4a574, #b8956e);
-  border-radius: 50%;
-  position: relative;
-}
-
-.mole__ear::after {
-  content: '';
-  position: absolute;
-  top: 25%;
-  left: 25%;
-  width: 50%;
-  height: 50%;
-  background: #ffb5b5;
-  border-radius: 50%;
-}
-
-/* Head */
-.mole__head {
-  width: 100%;
-  aspect-ratio: 1 / 0.85;
-  background: linear-gradient(180deg, #d4a574 0%, #b08060 100%);
-  border-radius: 48% 48% 42% 42%;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding-top: 25%;
-  box-shadow: 
-    inset 0 6px 12px rgba(255,255,255,0.2),
-    inset 0 -6px 12px rgba(0,0,0,0.15),
-    0 4px 10px rgba(0,0,0,0.2);
-  z-index: 2;
-}
-
-/* Eyes */
-.mole__eyes {
-  display: flex;
-  gap: 30%;
-  margin-bottom: 10%;
-}
-
-.mole__eye {
-  width: clamp(6px, 18%, 18px);
-  aspect-ratio: 1;
-  background: white;
-  border-radius: 50%;
-  position: relative;
-  box-shadow: inset 0 2px 3px rgba(0,0,0,0.1);
-}
-
-.mole__pupil {
-  position: absolute;
-  top: 20%;
-  left: 20%;
-  width: 60%;
-  height: 60%;
-  background: radial-gradient(circle at 35% 35%, #4a3728, #1a1210);
-  border-radius: 50%;
-}
-
-/* Nose */
-.mole__nose {
-  width: clamp(8px, 24%, 22px);
-  aspect-ratio: 1.3;
-  background: linear-gradient(180deg, #5a4030, #3a2820);
-  border-radius: 50%;
-}
-
-/* Cheeks */
-.mole__cheeks {
-  position: absolute;
-  top: 55%;
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  padding: 0 8%;
-}
-
-.mole__cheek {
-  width: 22%;
-  aspect-ratio: 1.2;
-  background: radial-gradient(ellipse, rgba(255,150,150,0.5), transparent 70%);
-  border-radius: 50%;
-}
-
-/* ==========================================
-   DIRT MOUND - SITS IN FRONT
-   ========================================== */
-.mound-front {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 38%;
-  z-index: 10;
-  pointer-events: none;
-}
-
-.mound-front__dirt {
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(180deg, #8d6e63 0%, #5d4037 100%);
-  border-radius: 50% 50% 8px 8px;
-  box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
-}
-
-.mound-front__grass {
-  position: absolute;
-  top: -4px;
-  left: 10%;
-  width: 80%;
-  display: flex;
-  justify-content: space-around;
-}
-
-.mound-front__grass span {
-  width: 10%;
-  height: 8px;
-  background: #4ade80;
-  border-radius: 50% 50% 0 0;
-}
-
-.mound-front__grass span:nth-child(odd) { 
-  height: 12px; 
-  transform: rotate(-8deg); 
-}
-
-.mound-front__grass span:nth-child(even) { 
-  height: 6px; 
-  transform: rotate(8deg); 
-}
-
-/* ==========================================
-   HIT EFFECT
-   ========================================== */
-.hit-effect {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: clamp(1.5rem, 6vw, 3rem);
-  z-index: 35;
-  pointer-events: none;
-}
-
-.effect-pop-enter-active {
-  animation: effectPop 0.4s ease-out;
-}
-
-.effect-pop-leave-active {
-  animation: effectFade 0.2s ease-in;
-}
-
-@keyframes effectPop {
-  0% { 
-    transform: translateX(-50%) scale(0.3); 
-    opacity: 0; 
-  }
-  50% { 
-    transform: translateX(-50%) scale(1.3); 
-    opacity: 1; 
-  }
-  100% { 
-    transform: translateX(-50%) scale(1) translateY(-20px); 
-    opacity: 0.8; 
-  }
-}
-
-@keyframes effectFade {
-  to { 
-    opacity: 0; 
-    transform: translateX(-50%) translateY(-30px); 
-  }
-}
-
-/* ==========================================
-   START SCREEN
-   ========================================== */
-.start-screen {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, #86efac 0%, #22c55e 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  z-index: 50;
-}
-
-.start-content {
-  text-align: center;
-  max-width: 400px;
-  width: 100%;
-}
-
-.start-icon {
-  font-size: clamp(4rem, 12vw, 7rem);
-  margin-bottom: 16px;
-  animation: bounce 1.5s ease-in-out infinite;
-}
-
-@keyframes bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-12px); }
-}
-
-.start-title {
-  font-size: clamp(1.8rem, 5vw, 2.8rem);
-  font-weight: 800;
-  color: white;
-  margin: 0 0 12px;
-  text-shadow: 0 3px 8px rgba(0,0,0,0.2);
-}
-
-.start-description {
-  font-size: clamp(0.95rem, 2.5vw, 1.1rem);
-  color: rgba(255,255,255,0.9);
-  margin: 0 0 24px;
-  line-height: 1.5;
-}
-
-.start-description strong {
-  color: white;
-}
-
-.start-stats {
-  display: flex;
-  justify-content: center;
-  gap: 16px;
-  margin-bottom: 28px;
-  flex-wrap: wrap;
-}
-
-.start-stat {
-  background: rgba(255,255,255,0.2);
-  backdrop-filter: blur(10px);
-  padding: 10px 18px;
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.start-stat-icon {
-  font-size: 1.2rem;
-}
-
-.start-stat-value {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: white;
-}
-
-.start-button {
-  background: white;
-  color: #16a34a;
-  border: none;
-  padding: 16px 40px;
-  border-radius: 50px;
-  font-size: 1.2rem;
-  font-weight: 700;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  transition: all 0.2s;
-  box-shadow: 0 6px 24px rgba(0,0,0,0.2);
-}
-
-.start-button:hover {
-  transform: translateY(-3px) scale(1.02);
-  box-shadow: 0 10px 32px rgba(0,0,0,0.25);
-}
-
-.start-button:active {
-  transform: translateY(-1px);
-}
-
-.start-button svg {
-  width: 22px;
-  height: 22px;
-}
-
-/* ==========================================
-   COMPLETION OVERLAY
-   ========================================== */
-.completion-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  z-index: 100;
-}
-
-.completion-card {
-  background: white;
-  border-radius: 24px;
-  padding: clamp(20px, 4vw, 36px);
-  text-align: center;
-  max-width: 360px;
-  width: 100%;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-  animation: cardIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-@keyframes cardIn {
-  from { transform: scale(0.8) translateY(30px); opacity: 0; }
-  to { transform: scale(1) translateY(0); opacity: 1; }
-}
-
-.completion-emoji {
-  font-size: clamp(3.5rem, 10vw, 5rem);
-  margin-bottom: 8px;
-}
-
-.completion-title {
-  font-size: clamp(1.4rem, 4vw, 1.8rem);
-  font-weight: 800;
-  color: #1e293b;
-  margin: 0 0 6px;
-}
-
-.completion-score {
-  font-size: clamp(1.6rem, 5vw, 2.2rem);
-  font-weight: 800;
-  color: #22c55e;
-  margin-bottom: 14px;
-}
-
-.completion-stars {
-  display: flex;
-  justify-content: center;
-  gap: 6px;
-  margin-bottom: 18px;
-}
-
-.star {
-  font-size: clamp(1.8rem, 5vw, 2.2rem);
-  color: #e2e8f0;
-  transition: all 0.3s;
-}
-
-.star--earned {
-  color: #fbbf24;
-  text-shadow: 0 2px 8px rgba(251, 191, 36, 0.5);
-  animation: starPop 0.4s ease-out;
-}
-
+/* Star pop animation */
 @keyframes starPop {
   0% { transform: scale(0); }
   50% { transform: scale(1.3); }
   100% { transform: scale(1); }
 }
-
-.completion-stats {
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-  margin-bottom: 20px;
-  padding: 14px;
-  background: #f8fafc;
-  border-radius: 14px;
+.animate-star-pop {
+  animation: starPop 0.4s ease-out backwards;
 }
 
-.stat {
-  text-align: center;
+/* Card entrance */
+@keyframes cardIn {
+  from { transform: scale(0.8) translateY(30px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
 }
-
-.stat-label {
-  display: block;
-  font-size: 0.7rem;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 3px;
-}
-
-.stat-value {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-.stat-value.correct {
-  color: #22c55e;
-}
-
-.stat-value.wrong {
-  color: #ef4444;
-}
-
-.completion-progress {
-  height: 5px;
-  background: #e2e8f0;
-  border-radius: 3px;
-  overflow: hidden;
-  margin-bottom: 6px;
-}
-
-.progress-bar {
-  height: 100%;
-  background: linear-gradient(90deg, #22c55e, #16a34a);
-  border-radius: 3px;
-  transition: width 0.05s linear;
-}
-
-.completion-hint {
-  font-size: 0.8rem;
-  color: #94a3b8;
-  margin: 0;
-}
-
-/* Slide up animation */
-.slide-up-enter-active {
-  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.slide-up-leave-active {
-  transition: all 0.3s ease-in;
-}
-
-.slide-up-enter-from {
-  opacity: 0;
-  transform: translateY(100%);
-}
-
-.slide-up-leave-to {
-  opacity: 0;
-  transform: translateY(50px);
+.animate-card-in {
+  animation: cardIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 </style>
