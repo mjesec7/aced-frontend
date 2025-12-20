@@ -18,7 +18,8 @@
     <div v-if="gameActive" class="game-area">
       <div class="game-grid">
         <div v-for="(hole, index) in holes" :key="index" class="hole-wrapper">
-          <!-- Answer Sign ABOVE the mole - only visible when mole is active -->
+          
+          <!-- Answer Sign - Only when mole is active -->
           <transition name="sign-pop">
             <div 
               v-if="hole.active"
@@ -32,44 +33,47 @@
             </div>
           </transition>
 
-          <!-- The Dark Hole Void (Back) -->
-          <div class="hole-void"></div>
+          <!-- Hole Container - clips the mole -->
+          <div class="hole-container">
+            <!-- The Dark Hole Void (Back) -->
+            <div class="hole-void"></div>
 
-          <!-- The Mole -->
-          <div
-            class="mole"
-            :class="{
-              'mole--up': hole.active,
-              'mole--hit': hole.state === 'hit',
-              'mole--wrong': hole.state === 'miss'
-            }"
-            @mousedown.prevent="handleWhack(index)"
-            @touchstart.prevent="handleWhack(index)"
-          >
-            <div class="mole__body">
-              <div class="mole__ears">
-                <div class="mole__ear"></div>
-                <div class="mole__ear"></div>
-              </div>
-              <div class="mole__head">
-                <div class="mole__eyes">
-                  <div class="mole__eye"><div class="mole__pupil"></div></div>
-                  <div class="mole__eye"><div class="mole__pupil"></div></div>
+            <!-- The Mole - hidden by default, pops up when active -->
+            <div
+              class="mole"
+              :class="{
+                'mole--up': hole.active,
+                'mole--hit': hole.state === 'hit',
+                'mole--wrong': hole.state === 'miss'
+              }"
+              @mousedown.prevent="handleWhack(index)"
+              @touchstart.prevent="handleWhack(index)"
+            >
+              <div class="mole__body">
+                <div class="mole__ears">
+                  <div class="mole__ear"></div>
+                  <div class="mole__ear"></div>
                 </div>
-                <div class="mole__nose"></div>
-                <div class="mole__cheeks">
-                  <div class="mole__cheek"></div>
-                  <div class="mole__cheek"></div>
+                <div class="mole__head">
+                  <div class="mole__eyes">
+                    <div class="mole__eye"><div class="mole__pupil"></div></div>
+                    <div class="mole__eye"><div class="mole__pupil"></div></div>
+                  </div>
+                  <div class="mole__nose"></div>
+                  <div class="mole__cheeks">
+                    <div class="mole__cheek"></div>
+                    <div class="mole__cheek"></div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <!-- The Dirt Mound (Front Mask) -->
-          <div class="mound-front">
-            <div class="mound-front__dirt"></div>
-            <div class="mound-front__grass">
-              <span></span><span></span><span></span><span></span><span></span>
+            <!-- The Dirt Mound (Front Mask) -->
+            <div class="mound-front">
+              <div class="mound-front__dirt"></div>
+              <div class="mound-front__grass">
+                <span></span><span></span><span></span><span></span><span></span>
+              </div>
             </div>
           </div>
 
@@ -439,6 +443,7 @@ onUnmounted(() => {
 
 /* ==========================================
    QUESTION BANNER - BELOW HUD, CENTERED
+   Moves down + left on narrower panels
    ========================================== */
 .question-banner {
   position: absolute;
@@ -450,7 +455,8 @@ onUnmounted(() => {
   border-radius: 50px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   z-index: 90;
-  max-width: 90%;
+  max-width: 85%;
+  transition: top 0.2s ease;
 }
 
 .question-text {
@@ -462,10 +468,16 @@ onUnmounted(() => {
   white-space: nowrap;
 }
 
-/* Responsive adjustments */
-@media (max-width: 500px) {
+/* Responsive - move down and adjust on narrower panels */
+@media (max-width: 700px) {
   .question-banner {
-    top: 75px;
+    top: 85px;
+  }
+}
+
+@media (max-width: 550px) {
+  .question-banner {
+    top: 90px;
     padding: 10px 20px;
   }
   
@@ -474,16 +486,28 @@ onUnmounted(() => {
   }
 }
 
+@media (max-width: 450px) {
+  .question-banner {
+    top: 95px;
+    padding: 8px 16px;
+    border-radius: 16px;
+    max-width: 90%;
+  }
+  
+  .question-text {
+    font-size: 0.9rem;
+    white-space: normal;
+  }
+}
+
 @media (max-width: 380px) {
   .question-banner {
-    top: 70px;
-    padding: 8px 16px;
-    border-radius: 12px;
+    top: 100px;
+    padding: 8px 14px;
   }
   
   .question-text {
     font-size: 0.85rem;
-    white-space: normal;
   }
 }
 
@@ -495,36 +519,41 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 140px 16px 20px; /* Top padding for HUD + Question */
+  padding: 140px 16px 20px;
   min-height: 0;
   overflow: hidden;
 }
 
-@media (max-width: 500px) {
+@media (max-width: 550px) {
   .game-area {
-    padding-top: 130px;
+    padding-top: 150px;
+  }
+}
+
+@media (max-width: 450px) {
+  .game-area {
+    padding-top: 160px;
     padding-left: 8px;
     padding-right: 8px;
   }
 }
 
 /* ==========================================
-   GAME GRID - 4 COLUMNS, FITS IN VIEW
+   GAME GRID
    ========================================== */
 .game-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: clamp(8px, 2vw, 20px);
+  gap: clamp(6px, 1.5vw, 16px);
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
 }
 
-/* Switch to 2x2 on very narrow screens */
 @media (max-width: 400px) {
   .game-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+    gap: 10px;
   }
 }
 
@@ -533,23 +562,18 @@ onUnmounted(() => {
    ========================================== */
 .hole-wrapper {
   position: relative;
-  aspect-ratio: 1 / 1.2;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-end;
   cursor: pointer;
-  overflow: visible;
 }
 
 /* ==========================================
-   ANSWER SIGN - FLOATS ABOVE MOLE
+   ANSWER SIGN - FLOATS ABOVE HOLE
    ========================================== */
 .answer-sign {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
+  position: relative;
+  margin-bottom: 8px;
   background: white;
   padding: 8px 16px;
   border-radius: 12px;
@@ -619,28 +643,28 @@ onUnmounted(() => {
 }
 
 .sign-pop-leave-active {
-  animation: signPopOut 0.2s ease-in;
+  animation: signPopOut 0.15s ease-in;
 }
 
 @keyframes signPopIn {
   0% { 
     opacity: 0; 
-    transform: translateX(-50%) scale(0.5) translateY(10px); 
+    transform: scale(0.5) translateY(10px); 
   }
   100% { 
     opacity: 1; 
-    transform: translateX(-50%) scale(1) translateY(0); 
+    transform: scale(1) translateY(0); 
   }
 }
 
 @keyframes signPopOut {
   0% { 
     opacity: 1; 
-    transform: translateX(-50%) scale(1); 
+    transform: scale(1); 
   }
   100% { 
     opacity: 0; 
-    transform: translateX(-50%) scale(0.8) translateY(-10px); 
+    transform: scale(0.8) translateY(-10px); 
   }
 }
 
@@ -649,6 +673,7 @@ onUnmounted(() => {
     padding: 6px 12px;
     border-width: 2px;
     border-radius: 10px;
+    margin-bottom: 6px;
   }
   
   .answer-text {
@@ -657,14 +682,25 @@ onUnmounted(() => {
 }
 
 /* ==========================================
+   HOLE CONTAINER - CLIPS THE MOLE
+   This is the key to hiding moles!
+   ========================================== */
+.hole-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 0.9;
+  overflow: hidden; /* THIS HIDES THE MOLE WHEN DOWN */
+}
+
+/* ==========================================
    HOLE VOID
    ========================================== */
 .hole-void {
   position: absolute;
-  bottom: 15%;
-  width: 75%;
-  height: 18%;
-  left: 12.5%;
+  bottom: 25%;
+  width: 80%;
+  height: 22%;
+  left: 10%;
   background: radial-gradient(ellipse, #3e2723 0%, #271c19 100%);
   border-radius: 50%;
   z-index: 1;
@@ -672,23 +708,24 @@ onUnmounted(() => {
 }
 
 /* ==========================================
-   MOLE
+   MOLE - HIDDEN BELOW MOUND BY DEFAULT
    ========================================== */
 .mole {
   position: absolute;
-  bottom: 18%;
-  width: 60%;
+  bottom: 30%;
+  left: 50%;
+  width: 65%;
+  transform: translateX(-50%) translateY(100%); /* Hidden below */
   z-index: 2;
-  transform: translateY(100%);
   transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .mole--up {
-  transform: translateY(0);
+  transform: translateX(-50%) translateY(0); /* Pop up */
 }
 
 .mole--hit {
-  transform: translateY(0) scale(0.9);
+  transform: translateX(-50%) translateY(0) scale(0.9);
   filter: brightness(1.2);
 }
 
@@ -697,9 +734,9 @@ onUnmounted(() => {
 }
 
 @keyframes moleShake {
-  0%, 100% { transform: translateY(0) rotate(0); }
-  25% { transform: translateY(0) rotate(-15deg); }
-  75% { transform: translateY(0) rotate(15deg); }
+  0%, 100% { transform: translateX(-50%) translateY(0) rotate(0); }
+  25% { transform: translateX(-50%) translateY(0) rotate(-15deg); }
+  75% { transform: translateX(-50%) translateY(0) rotate(15deg); }
 }
 
 .mole__body {
@@ -808,14 +845,14 @@ onUnmounted(() => {
 }
 
 /* ==========================================
-   DIRT MOUND
+   DIRT MOUND - SITS IN FRONT
    ========================================== */
 .mound-front {
   position: absolute;
   bottom: 0;
   left: 0;
   width: 100%;
-  height: 30%;
+  height: 38%;
   z-index: 10;
   pointer-events: none;
 }
@@ -861,7 +898,7 @@ onUnmounted(() => {
    ========================================== */
 .hit-effect {
   position: absolute;
-  top: -10px;
+  top: 0;
   left: 50%;
   transform: translateX(-50%);
   font-size: clamp(1.5rem, 6vw, 3rem);
