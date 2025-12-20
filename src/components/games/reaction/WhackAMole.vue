@@ -434,33 +434,45 @@ onUnmounted(() => {
 }
 
 /* ==========================================
-   QUESTION BANNER
+   QUESTION BANNER - POSITIONED BELOW HUD
    ========================================== */
 .question-banner {
   flex-shrink: 0;
   background: white;
-  margin: 12px auto 8px;
+  margin: 70px auto 8px; /* Push below HUD which is at top-right */
   padding: 10px 24px;
   border-radius: 50px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  max-width: min(90%, 800px);
+  max-width: min(85%, 600px); /* Smaller max-width to avoid HUD */
   text-align: center;
-  z-index: 110; /* Ensure above everything including HUD (z-index 100) */
+  z-index: 90; /* Below HUD (z-index 100) */
   position: relative;
 }
 
 @media (max-width: 768px) {
   .question-banner {
-    margin-top: 120px; /* Push further below HUD as requested */
+    margin-top: 75px;
+    max-width: 90%;
+    padding: 8px 16px;
+  }
+}
+
+/* When panel is very narrow */
+@media (max-width: 400px) {
+  .question-banner {
+    margin-top: 80px;
+    padding: 8px 12px;
+    border-radius: 16px;
     max-width: 95%;
   }
 }
 
 .question-text {
-  font-size: clamp(0.95rem, 2.5vw, 1.4rem);
+  font-size: clamp(0.8rem, 2.5vw, 1.3rem);
   font-weight: 700;
   color: #1e293b;
   margin: 0;
+  line-height: 1.3;
 }
 
 /* ==========================================
@@ -473,38 +485,36 @@ onUnmounted(() => {
   justify-content: center;
   padding: 0;
   min-height: 0;
-  overflow-y: auto; /* Allow scrolling if height is too small */
+  overflow-y: auto;
   overflow-x: hidden;
 }
 
 .game-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: clamp(16px, 4vw, 40px);
+  gap: clamp(12px, 3vw, 40px);
   width: 100%;
   max-width: 100%;
   height: 100%;
   align-content: center;
   padding: 0 8px;
-  max-width: 100%;
   margin: 0 auto;
-  height: auto; /* Allow height to fit content */
+  height: auto;
   min-height: 0;
-  align-content: center;
 }
 
 /* ==========================================
-   HOLE & MOLE
+   HOLE & MOLE - FIXED VISIBILITY
    ========================================== */
 .hole-wrapper {
   position: relative;
-  aspect-ratio: 1 / 1.4; /* Increased height to prevent mole clipping */
+  aspect-ratio: 1 / 1.6; /* Taller to show more of mole */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
   cursor: pointer;
-  overflow: hidden; /* CRITICAL: Masks the mole when it goes down */
+  overflow: hidden;
   border-radius: 0 0 20px 20px;
   isolation: isolate;
 }
@@ -512,25 +522,25 @@ onUnmounted(() => {
 /* 1. Hole Void (Back) */
 .hole-void {
   position: absolute;
-  bottom: 5%;
-  width: 80%;
-  height: 25%;
-  left: 10%;
+  bottom: 8%;
+  width: 85%;
+  height: 20%;
+  left: 7.5%;
   background: radial-gradient(ellipse, #3e2723 0%, #271c19 100%);
   border-radius: 50%;
   z-index: 1;
   box-shadow: inset 0 5px 10px rgba(0,0,0,0.5);
 }
 
-/* 2. Mole (Middle) */
+/* 2. Mole (Middle) - Positioned higher to show sign */
 .mole {
   position: absolute;
-  bottom: 10%; /* Sits slightly inside the hole */
-  width: 80%;
+  bottom: 18%; /* Higher position so sign is visible above mound */
+  width: 75%;
   height: auto;
   z-index: 2;
-  transform: translateY(120%); /* Start fully hidden below mound */
-  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Bouncy pop */
+  transform: translateY(130%); /* Start fully hidden below mound */
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .mole--up {
@@ -614,7 +624,7 @@ onUnmounted(() => {
 }
 
 .mole__eye {
-  width: clamp(10px, 20%, 24px);
+  width: clamp(8px, 18%, 20px);
   aspect-ratio: 1;
   background: white;
   border-radius: 50%;
@@ -634,7 +644,7 @@ onUnmounted(() => {
 
 /* Nose */
 .mole__nose {
-  width: clamp(12px, 26%, 28px);
+  width: clamp(10px, 24%, 24px);
   aspect-ratio: 1.4;
   background: linear-gradient(180deg, #5a4030, #3a2820);
   border-radius: 50%;
@@ -666,32 +676,33 @@ onUnmounted(() => {
   border-radius: 0 0 50% 50%;
 }
 
-/* Answer Sign */
+/* Answer Sign - More prominent and visible */
 .mole__sign {
   background: white;
-  padding: clamp(4px, 1vw, 10px) clamp(8px, 2vw, 16px);
-  border-radius: 10px;
-  margin-top: -2%;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.2);
-  border: 2px solid #e8ddd0;
-  z-index: 3;
+  padding: clamp(6px, 1.5vw, 12px) clamp(10px, 2.5vw, 20px);
+  border-radius: 12px;
+  margin-top: 4px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  border: 3px solid #4ade80;
+  z-index: 5;
+  position: relative;
 }
 
 .mole__answer {
-  font-size: clamp(0.75rem, 2.5vw, 1.15rem);
+  font-size: clamp(0.85rem, 3vw, 1.3rem);
   font-weight: 800;
-  color: #2d1f1a;
+  color: #1e293b;
+  white-space: nowrap;
 }
 
-/* Dirt Mound */
-/* 3. Dirt Mound (Front Mask) */
+/* 3. Dirt Mound (Front Mask) - Lower to show more of mole */
 .mound-front {
   position: absolute;
   bottom: 0;
   left: 0;
   width: 100%;
-  height: 35%; /* Increase height for better coverage */
-  z-index: 10; /* In front of mole */
+  height: 25%; /* Reduced height to show more of mole */
+  z-index: 10;
   pointer-events: none;
 }
 
@@ -701,7 +712,7 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   background: linear-gradient(180deg, #8d6e63 0%, #5d4037 100%);
-  border-radius: 50% 50% 10px 10px; /* Flatter bottom to look like ground */
+  border-radius: 50% 50% 10px 10px;
   box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
 }
 
@@ -1002,16 +1013,29 @@ onUnmounted(() => {
 }
 
 /* ==========================================
-   RESPONSIVE
+   RESPONSIVE - NARROW PANELS
    ========================================== */
 @media (max-width: 500px) {
   .question-banner {
-    margin: 8px auto 6px;
-    padding: 8px 16px;
+    margin: 75px auto 6px;
+    padding: 8px 14px;
   }
   
   .game-grid {
     gap: 8px;
+  }
+  
+  .hole-wrapper {
+    aspect-ratio: 1 / 1.5;
+  }
+  
+  .mole__sign {
+    padding: 4px 8px;
+    border-width: 2px;
+  }
+  
+  .mole__answer {
+    font-size: clamp(0.7rem, 2.5vw, 1rem);
   }
   
   .start-stats {
@@ -1066,5 +1090,34 @@ onUnmounted(() => {
   }
 }
 
-
+/* Very narrow panels (30% width scenario) */
+@media (max-width: 350px) {
+  .question-banner {
+    margin-top: 85px;
+    padding: 6px 10px;
+    border-radius: 12px;
+  }
+  
+  .question-text {
+    font-size: 0.75rem;
+  }
+  
+  .game-grid {
+    grid-template-columns: repeat(2, 1fr); /* 2 columns for very narrow */
+    gap: 6px;
+  }
+  
+  .hole-wrapper {
+    aspect-ratio: 1 / 1.4;
+  }
+  
+  .mole__sign {
+    padding: 3px 6px;
+    border-radius: 8px;
+  }
+  
+  .mole__answer {
+    font-size: 0.65rem;
+  }
+}
 </style>
