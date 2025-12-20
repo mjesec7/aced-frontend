@@ -1,5 +1,8 @@
 <template>
-  <div class="absolute inset-0 bg-gradient-to-b from-emerald-400 to-green-500 font-sans select-none overflow-hidden flex flex-col">
+  <div 
+    ref="gameWrapper"
+    class="absolute inset-0 bg-gradient-to-b from-emerald-400 to-green-500 font-sans select-none overflow-hidden flex flex-col"
+  >
     
     <!-- HUD Sidebar - Top Right -->
     <GameHUDSidebar
@@ -10,19 +13,17 @@
       :max-lives="3"
     />
 
-    <!-- Question Banner - Responsive positioning -->
+    <!-- Question Banner - Responds to container size -->
     <div 
       v-if="gameActive" 
-      class="absolute z-50 transition-all duration-300 ease-out
-             top-20 left-1/2 -translate-x-1/2 max-w-[85%]
-             sm:top-[72px]
-             min-[400px]:top-24
-             min-[350px]:top-28"
-      :class="containerClass"
+      class="absolute z-50 left-1/2 -translate-x-1/2 transition-all duration-300 ease-out px-3"
+      :style="questionBannerStyle"
     >
-      <div class="bg-white px-5 py-3 rounded-full shadow-lg shadow-black/15 border-2 border-amber-300">
-        <p class="text-sm sm:text-base lg:text-lg font-bold text-slate-800 text-center whitespace-nowrap
-                  max-[400px]:text-xs max-[400px]:whitespace-normal">
+      <div class="bg-white/95 backdrop-blur-sm px-4 py-2.5 rounded-2xl shadow-lg shadow-black/10 border border-amber-200">
+        <p 
+          class="font-bold text-slate-800 text-center leading-snug"
+          :class="containerSize === 'xs' ? 'text-xs' : containerSize === 'sm' ? 'text-sm' : 'text-base'"
+        >
           {{ currentPrompt }}
         </p>
       </div>
@@ -31,15 +32,12 @@
     <!-- Game Area -->
     <div 
       v-if="gameActive" 
-      class="flex-1 flex items-center justify-center pt-36 pb-4 px-3
-             sm:pt-32
-             min-[400px]:pt-40
-             min-[350px]:pt-44"
+      class="flex-1 flex items-center justify-center px-3 pb-4"
+      :style="{ paddingTop: gameAreaPaddingTop }"
     >
       <div 
-        class="grid gap-3 w-full max-w-full
-               grid-cols-2 sm:grid-cols-4
-               max-[350px]:gap-2"
+        class="grid gap-2 w-full"
+        :class="gridClass"
       >
         <div 
           v-for="(hole, index) in holes" 
@@ -52,122 +50,107 @@
           <transition name="sign">
             <div 
               v-if="hole.active"
-              class="relative mb-2 z-30"
+              class="relative mb-1 z-30"
             >
               <div 
-                class="bg-white px-3 py-2 rounded-xl shadow-lg border-3 transition-colors duration-150"
+                class="bg-white px-2.5 py-1.5 rounded-xl shadow-md border-2 transition-colors duration-150"
                 :class="{
-                  'border-amber-400': hole.state === 'idle',
-                  'border-green-500 bg-green-50': hole.state === 'hit',
-                  'border-red-500 bg-red-50 animate-shake': hole.state === 'miss'
+                  'border-amber-300': hole.state === 'idle',
+                  'border-green-400 bg-green-50': hole.state === 'hit',
+                  'border-red-400 bg-red-50 animate-shake': hole.state === 'miss'
                 }"
               >
-                <span class="text-sm sm:text-base lg:text-lg font-extrabold text-slate-800 whitespace-nowrap">
+                <span 
+                  class="font-bold text-slate-700 whitespace-nowrap"
+                  :class="containerSize === 'xs' ? 'text-xs' : 'text-sm'"
+                >
                   {{ hole.content }}
                 </span>
               </div>
               <!-- Speech bubble pointer -->
-              <div 
-                class="absolute left-1/2 -translate-x-1/2 -bottom-2 w-0 h-0 
-                       border-l-[10px] border-l-transparent 
-                       border-r-[10px] border-r-transparent 
-                       border-t-[10px]"
-                :class="{
-                  'border-t-amber-400': hole.state === 'idle',
-                  'border-t-green-500': hole.state === 'hit',
-                  'border-t-red-500': hole.state === 'miss'
-                }"
-              ></div>
-              <div 
-                class="absolute left-1/2 -translate-x-1/2 -bottom-1.5 w-0 h-0 
-                       border-l-[8px] border-l-transparent 
-                       border-r-[8px] border-r-transparent 
-                       border-t-[8px]"
-                :class="{
-                  'border-t-white': hole.state === 'idle',
-                  'border-t-green-50': hole.state === 'hit',
-                  'border-t-red-50': hole.state === 'miss'
-                }"
-              ></div>
+              <div class="absolute left-1/2 -translate-x-1/2 -bottom-1.5">
+                <div 
+                  class="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px]"
+                  :class="{
+                    'border-t-amber-300': hole.state === 'idle',
+                    'border-t-green-400': hole.state === 'hit',
+                    'border-t-red-400': hole.state === 'miss'
+                  }"
+                ></div>
+              </div>
             </div>
           </transition>
 
-          <!-- Hole Container - This clips the mole -->
-          <div class="relative w-full aspect-square overflow-hidden">
+          <!-- Hole Container -->
+          <div class="relative w-full aspect-[1/0.8] overflow-hidden">
             
-            <!-- Dark hole background -->
-            <div class="absolute bottom-[25%] left-[10%] w-[80%] h-[22%] 
-                        bg-gradient-radial from-amber-900 to-amber-950 
-                        rounded-[50%] shadow-inner z-[1]">
-            </div>
+            <!-- Dark hole ellipse -->
+            <div class="absolute bottom-[28%] left-[15%] w-[70%] h-[18%] bg-amber-900 rounded-[50%] z-[1]"></div>
 
-            <!-- Mole Character -->
+            <!-- CUTE MOLE -->
             <div 
-              class="absolute bottom-[30%] left-1/2 w-[65%] z-[5]
-                     transition-transform duration-200 ease-[cubic-bezier(0.175,0.885,0.32,1.275)]"
-              :class="{
-                '-translate-x-1/2 translate-y-full': !hole.active,
-                '-translate-x-1/2 translate-y-0': hole.active && hole.state === 'idle',
-                '-translate-x-1/2 translate-y-0 scale-90': hole.state === 'hit',
-                '-translate-x-1/2 translate-y-0 animate-mole-shake': hole.state === 'miss'
-              }"
+              class="absolute bottom-[32%] left-1/2 w-[55%] z-[5] transition-transform duration-200"
+              :class="getMoleClass(hole)"
             >
-              <!-- Mole Body -->
-              <div class="flex flex-col items-center">
-                <!-- Ears -->
-                <div class="absolute top-[5%] w-full flex justify-between px-[5%] z-[1]">
-                  <div class="w-[32%] aspect-square bg-gradient-to-br from-amber-600 to-amber-700 rounded-full relative">
-                    <div class="absolute top-1/4 left-1/4 w-1/2 h-1/2 bg-pink-300 rounded-full"></div>
-                  </div>
-                  <div class="w-[32%] aspect-square bg-gradient-to-br from-amber-600 to-amber-700 rounded-full relative">
-                    <div class="absolute top-1/4 left-1/4 w-1/2 h-1/2 bg-pink-300 rounded-full"></div>
-                  </div>
-                </div>
+              <!-- Mole SVG - Cute Cartoon Style -->
+              <svg viewBox="0 0 100 90" class="w-full h-auto drop-shadow-md">
+                <!-- Body/Head - main brown circle -->
+                <ellipse cx="50" cy="50" rx="38" ry="35" fill="#8B6914"/>
+                <ellipse cx="50" cy="52" rx="35" ry="32" fill="#A67C00"/>
                 
-                <!-- Head -->
-                <div class="w-full aspect-[1/0.85] bg-gradient-to-b from-amber-600 to-amber-700 
-                            rounded-[48%_48%_42%_42%] relative flex flex-col items-center pt-[25%] z-[2]
-                            shadow-[inset_0_6px_12px_rgba(255,255,255,0.2),inset_0_-6px_12px_rgba(0,0,0,0.15),0_4px_10px_rgba(0,0,0,0.2)]">
-                  
-                  <!-- Eyes -->
-                  <div class="flex gap-[30%] mb-[10%]">
-                    <div class="w-3 sm:w-4 aspect-square bg-white rounded-full shadow-inner relative">
-                      <div class="absolute top-[20%] left-[20%] w-[60%] h-[60%] 
-                                  bg-gradient-radial from-amber-800 to-amber-950 rounded-full">
-                      </div>
-                    </div>
-                    <div class="w-3 sm:w-4 aspect-square bg-white rounded-full shadow-inner relative">
-                      <div class="absolute top-[20%] left-[20%] w-[60%] h-[60%] 
-                                  bg-gradient-radial from-amber-800 to-amber-950 rounded-full">
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <!-- Nose -->
-                  <div class="w-4 sm:w-5 aspect-[1.3] bg-gradient-to-b from-amber-800 to-amber-900 rounded-full"></div>
-                  
-                  <!-- Cheeks -->
-                  <div class="absolute top-[55%] w-full flex justify-between px-[8%]">
-                    <div class="w-[22%] aspect-[1.2] bg-gradient-radial from-pink-300/50 to-transparent rounded-full"></div>
-                    <div class="w-[22%] aspect-[1.2] bg-gradient-radial from-pink-300/50 to-transparent rounded-full"></div>
-                  </div>
-                </div>
-              </div>
+                <!-- Ears -->
+                <circle cx="18" cy="30" r="12" fill="#8B6914"/>
+                <circle cx="18" cy="30" r="7" fill="#FFCDD2"/>
+                <circle cx="82" cy="30" r="12" fill="#8B6914"/>
+                <circle cx="82" cy="30" r="7" fill="#FFCDD2"/>
+                
+                <!-- Face highlight -->
+                <ellipse cx="50" cy="48" rx="28" ry="25" fill="#C4980A"/>
+                
+                <!-- Eyes - big and cute -->
+                <ellipse cx="35" cy="42" rx="10" ry="11" fill="white"/>
+                <ellipse cx="65" cy="42" rx="10" ry="11" fill="white"/>
+                
+                <!-- Pupils - looking up slightly -->
+                <circle cx="36" cy="40" r="5" fill="#2D1B00"/>
+                <circle cx="66" cy="40" r="5" fill="#2D1B00"/>
+                
+                <!-- Eye shine -->
+                <circle cx="38" cy="38" r="2" fill="white"/>
+                <circle cx="68" cy="38" r="2" fill="white"/>
+                
+                <!-- Cute pink nose -->
+                <ellipse cx="50" cy="58" rx="8" ry="6" fill="#E91E63"/>
+                <ellipse cx="50" cy="56" rx="3" ry="2" fill="#F48FB1" opacity="0.6"/>
+                
+                <!-- Smile -->
+                <path d="M 40 68 Q 50 76 60 68" stroke="#5D4037" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+                
+                <!-- Rosy cheeks -->
+                <circle cx="25" cy="55" r="6" fill="#FFCDD2" opacity="0.7"/>
+                <circle cx="75" cy="55" r="6" fill="#FFCDD2" opacity="0.7"/>
+                
+                <!-- Whisker dots -->
+                <circle cx="38" cy="62" r="1.5" fill="#5D4037"/>
+                <circle cx="42" cy="65" r="1.5" fill="#5D4037"/>
+                <circle cx="58" cy="65" r="1.5" fill="#5D4037"/>
+                <circle cx="62" cy="62" r="1.5" fill="#5D4037"/>
+              </svg>
             </div>
 
-            <!-- Dirt Mound Front (covers mole when down) -->
-            <div class="absolute bottom-0 left-0 w-full h-[38%] z-10 pointer-events-none">
-              <div class="absolute bottom-0 w-full h-full 
-                          bg-gradient-to-b from-amber-700 to-amber-800 
-                          rounded-[50%_50%_8px_8px] shadow-[0_-2px_4px_rgba(0,0,0,0.1)]">
-              </div>
+            <!-- Dirt Mound (front - covers mole when down) -->
+            <div class="absolute bottom-0 left-0 w-full h-[40%] z-10 pointer-events-none">
+              <!-- Main dirt mound -->
+              <div class="absolute bottom-0 w-full h-full bg-gradient-to-t from-amber-800 to-amber-700 rounded-t-[50%]"></div>
+              <!-- Dirt highlight -->
+              <div class="absolute bottom-0 left-[10%] w-[80%] h-[85%] bg-gradient-to-t from-amber-700 to-amber-600 rounded-t-[50%]"></div>
               <!-- Grass tufts -->
-              <div class="absolute -top-1 left-[10%] w-[80%] flex justify-around">
-                <span class="w-[10%] h-2 bg-emerald-400 rounded-t-full -rotate-6"></span>
-                <span class="w-[10%] h-3 bg-emerald-400 rounded-t-full rotate-3"></span>
-                <span class="w-[10%] h-1.5 bg-emerald-400 rounded-t-full -rotate-3"></span>
-                <span class="w-[10%] h-3 bg-emerald-400 rounded-t-full rotate-6"></span>
-                <span class="w-[10%] h-2 bg-emerald-400 rounded-t-full -rotate-3"></span>
+              <div class="absolute -top-1 left-[5%] w-[90%] flex justify-around">
+                <div class="w-1.5 h-3 bg-green-500 rounded-t-full -rotate-12"></div>
+                <div class="w-1.5 h-4 bg-green-400 rounded-t-full rotate-6"></div>
+                <div class="w-1.5 h-2.5 bg-green-500 rounded-t-full -rotate-6"></div>
+                <div class="w-1.5 h-3.5 bg-green-400 rounded-t-full rotate-12"></div>
+                <div class="w-1.5 h-3 bg-green-500 rounded-t-full -rotate-3"></div>
               </div>
             </div>
           </div>
@@ -176,7 +159,8 @@
           <transition name="effect">
             <div 
               v-if="hole.showEffect" 
-              class="absolute top-0 left-1/2 -translate-x-1/2 text-3xl sm:text-4xl z-40 pointer-events-none"
+              class="absolute top-0 left-1/2 -translate-x-1/2 z-40 pointer-events-none"
+              :class="containerSize === 'xs' ? 'text-2xl' : 'text-3xl'"
             >
               {{ hole.state === 'hit' ? '✨' : '💥' }}
             </div>
@@ -189,42 +173,41 @@
     <div 
       v-if="!gameActive && !isGameOver" 
       class="absolute inset-0 bg-gradient-to-b from-emerald-300 to-green-500 
-             flex items-center justify-center p-6 z-50"
+             flex items-center justify-center p-4 z-50"
     >
-      <div class="text-center max-w-md w-full">
-        <div class="text-6xl sm:text-7xl mb-4 animate-bounce">🐹</div>
-        <h1 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white mb-3 drop-shadow-lg">
+      <div class="text-center max-w-sm w-full">
+        <div class="text-5xl sm:text-6xl mb-3 animate-bounce">🐹</div>
+        <h1 class="text-xl sm:text-2xl font-extrabold text-white mb-2 drop-shadow-md">
           Whack-a-Mole!
         </h1>
-        <p class="text-sm sm:text-base text-white/90 mb-6 leading-relaxed">
-          Tap the moles showing the <strong class="text-white">correct answers</strong> to score points.
-          <br>Be quick - they won't stay up for long!
+        <p class="text-sm text-white/90 mb-5 leading-relaxed px-2">
+          Tap the moles with <strong class="text-white">correct answers</strong> to score!
         </p>
         
-        <div class="flex justify-center gap-3 mb-7 flex-wrap">
-          <div class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-xl flex items-center gap-2">
-            <span>❤️</span>
-            <span class="text-sm font-bold text-white">{{ maxLives }} lives</span>
+        <div class="flex justify-center gap-2 mb-5 flex-wrap">
+          <div class="bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+            <span class="text-sm">❤️</span>
+            <span class="text-xs font-bold text-white">{{ maxLives }}</span>
           </div>
-          <div class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-xl flex items-center gap-2">
-            <span>⏱️</span>
-            <span class="text-sm font-bold text-white">{{ initialTime }}s</span>
+          <div class="bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+            <span class="text-sm">⏱️</span>
+            <span class="text-xs font-bold text-white">{{ initialTime }}s</span>
           </div>
-          <div class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-xl flex items-center gap-2">
-            <span>🎯</span>
-            <span class="text-sm font-bold text-white">{{ targetScore }} pts</span>
+          <div class="bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+            <span class="text-sm">🎯</span>
+            <span class="text-xs font-bold text-white">{{ targetScore }}pts</span>
           </div>
         </div>
 
         <button 
           @click="startGame"
-          class="bg-white text-green-600 px-10 py-4 rounded-full text-lg font-bold 
-                 shadow-xl shadow-black/20 hover:-translate-y-1 hover:shadow-2xl 
-                 active:translate-y-0 transition-all duration-200
-                 flex items-center gap-3 mx-auto"
+          class="bg-white text-green-600 px-8 py-3 rounded-full text-base font-bold 
+                 shadow-lg hover:-translate-y-0.5 hover:shadow-xl 
+                 active:translate-y-0 transition-all duration-150
+                 inline-flex items-center gap-2"
         >
           <span>Start Game</span>
-          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
             <polygon points="5 3 19 12 5 21 5 3"></polygon>
           </svg>
         </button>
@@ -235,56 +218,55 @@
     <transition name="slide-up">
       <div 
         v-if="isGameOver" 
-        class="absolute inset-0 bg-black/70 backdrop-blur-sm 
-               flex items-center justify-center p-5 z-[100]"
+        class="absolute inset-0 bg-black/60 backdrop-blur-sm 
+               flex items-center justify-center p-4 z-[100]"
       >
-        <div class="bg-white rounded-3xl p-6 sm:p-8 text-center max-w-sm w-full shadow-2xl animate-card-in">
-          <div class="text-5xl sm:text-6xl mb-2">
+        <div class="bg-white rounded-2xl p-5 text-center max-w-xs w-full shadow-2xl animate-card-in">
+          <div class="text-4xl mb-1">
             {{ earnedStars >= 3 ? '🏆' : earnedStars >= 2 ? '🎉' : earnedStars >= 1 ? '👏' : '💪' }}
           </div>
           
-          <h2 class="text-xl sm:text-2xl font-extrabold text-slate-800 mb-1">
+          <h2 class="text-lg font-extrabold text-slate-800 mb-0.5">
             {{ earnedStars >= 3 ? 'Perfect!' : earnedStars >= 2 ? 'Great Job!' : earnedStars >= 1 ? 'Good Work!' : 'Nice Try!' }}
           </h2>
 
-          <div class="text-3xl sm:text-4xl font-extrabold text-green-500 mb-4">
+          <div class="text-2xl font-extrabold text-green-500 mb-3">
             {{ score }} points
           </div>
 
-          <div class="flex justify-center gap-1.5 mb-5">
+          <div class="flex justify-center gap-1 mb-4">
             <span 
               v-for="n in 3" 
               :key="n" 
-              class="text-3xl sm:text-4xl transition-all duration-300"
-              :class="n <= earnedStars ? 'text-amber-400 drop-shadow-[0_2px_8px_rgba(251,191,36,0.5)] animate-star-pop' : 'text-slate-200'"
-              :style="{ animationDelay: `${n * 0.1}s` }"
+              class="text-2xl transition-all duration-300"
+              :class="n <= earnedStars ? 'text-amber-400 drop-shadow-sm' : 'text-slate-200'"
             >
               ★
             </span>
           </div>
 
-          <div class="flex justify-center gap-5 mb-5 p-4 bg-slate-50 rounded-2xl">
-            <div class="text-center">
-              <div class="text-xs text-slate-400 uppercase tracking-wider mb-1">Correct</div>
-              <div class="text-lg font-bold text-green-500">{{ correctHits }}</div>
+          <div class="flex justify-center gap-4 mb-4 p-3 bg-slate-50 rounded-xl text-center">
+            <div>
+              <div class="text-[10px] text-slate-400 uppercase">Correct</div>
+              <div class="text-base font-bold text-green-500">{{ correctHits }}</div>
             </div>
-            <div class="text-center">
-              <div class="text-xs text-slate-400 uppercase tracking-wider mb-1">Wrong</div>
-              <div class="text-lg font-bold text-red-500">{{ wrongHits }}</div>
+            <div>
+              <div class="text-[10px] text-slate-400 uppercase">Wrong</div>
+              <div class="text-base font-bold text-red-500">{{ wrongHits }}</div>
             </div>
-            <div class="text-center">
-              <div class="text-xs text-slate-400 uppercase tracking-wider mb-1">Accuracy</div>
-              <div class="text-lg font-bold text-slate-700">{{ accuracy }}%</div>
+            <div>
+              <div class="text-[10px] text-slate-400 uppercase">Accuracy</div>
+              <div class="text-base font-bold text-slate-700">{{ accuracy }}%</div>
             </div>
           </div>
 
-          <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden mb-2">
+          <div class="h-1 bg-slate-100 rounded-full overflow-hidden mb-1">
             <div 
-              class="h-full bg-gradient-to-r from-green-500 to-green-400 rounded-full transition-all duration-50"
+              class="h-full bg-green-500 rounded-full transition-all duration-50"
               :style="{ width: progressWidth + '%' }"
             ></div>
           </div>
-          <p class="text-xs text-slate-400">
+          <p class="text-[10px] text-slate-400">
             Continuing in {{ Math.ceil(progressWidth / 20) }}s...
           </p>
         </div>
@@ -312,6 +294,54 @@ const BASE_SPEED = 2500;
 const MIN_SPEED = 1200;
 const AUTO_DISMISS_DURATION = 5000;
 
+// Refs
+const gameWrapper = ref(null);
+const containerWidth = ref(500);
+const containerHeight = ref(400);
+let resizeObserver = null;
+
+// Container size category
+const containerSize = computed(() => {
+  if (containerWidth.value < 280) return 'xs';
+  if (containerWidth.value < 400) return 'sm';
+  if (containerWidth.value < 550) return 'md';
+  return 'lg';
+});
+
+// Question banner positioning based on container size
+const questionBannerStyle = computed(() => {
+  // The smaller the container, the lower and more compact the banner
+  if (containerWidth.value < 280) {
+    return { top: '100px', maxWidth: '95%' };
+  } else if (containerWidth.value < 350) {
+    return { top: '90px', maxWidth: '92%' };
+  } else if (containerWidth.value < 450) {
+    return { top: '80px', maxWidth: '88%' };
+  } else if (containerWidth.value < 550) {
+    return { top: '75px', maxWidth: '85%' };
+  }
+  return { top: '70px', maxWidth: '80%' };
+});
+
+// Game area padding to account for banner position
+const gameAreaPaddingTop = computed(() => {
+  if (containerWidth.value < 280) return '140px';
+  if (containerWidth.value < 350) return '130px';
+  if (containerWidth.value < 450) return '120px';
+  if (containerWidth.value < 550) return '115px';
+  return '110px';
+});
+
+// Grid class based on container size
+const gridClass = computed(() => {
+  if (containerWidth.value < 320) {
+    return 'grid-cols-2 gap-1.5 max-w-[280px] mx-auto';
+  } else if (containerWidth.value < 450) {
+    return 'grid-cols-2 gap-2 max-w-[350px] mx-auto';
+  }
+  return 'grid-cols-4 gap-2 max-w-[600px] mx-auto';
+});
+
 // Game settings
 const maxLives = computed(() => props.gameData?.lives || 3);
 const initialTime = computed(() => props.gameData?.timeLimit || 60);
@@ -329,9 +359,6 @@ const progressTimer = ref(null);
 const autoDismissTimer = ref(null);
 const correctHits = ref(0);
 const wrongHits = ref(0);
-
-// Container size class for responsive question positioning
-const containerClass = ref('');
 
 // Computed
 const mode = computed(() => {
@@ -353,6 +380,21 @@ const accuracy = computed(() => {
   if (total === 0) return 0;
   return Math.round((correctHits.value / total) * 100);
 });
+
+// Get mole transform class
+const getMoleClass = (hole) => {
+  const base = '-translate-x-1/2';
+  if (!hole.active) {
+    return `${base} translate-y-[120%]`; // Hidden below mound
+  }
+  if (hole.state === 'hit') {
+    return `${base} translate-y-0 scale-90 brightness-110`;
+  }
+  if (hole.state === 'miss') {
+    return `${base} translate-y-0 animate-mole-shake`;
+  }
+  return `${base} translate-y-0`; // Popped up
+};
 
 // Initialize holes
 const initHoles = () => {
@@ -533,6 +575,24 @@ const stopGame = () => {
   });
 };
 
+// Setup resize observer to track container size
+const setupResizeObserver = () => {
+  if (!gameWrapper.value) return;
+  
+  resizeObserver = new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      containerWidth.value = entry.contentRect.width;
+      containerHeight.value = entry.contentRect.height;
+    }
+  });
+  
+  resizeObserver.observe(gameWrapper.value);
+  
+  // Initial measurement
+  containerWidth.value = gameWrapper.value.offsetWidth;
+  containerHeight.value = gameWrapper.value.offsetHeight;
+};
+
 // Watchers
 watch(() => props.score, (val) => { 
   if (val >= targetScore.value && gameActive.value) finishGame(); 
@@ -549,114 +609,100 @@ watch(() => props.timeRemaining, (val) => {
 // Lifecycle
 onMounted(() => {
   initHoles();
+  setupResizeObserver();
 });
 
 onUnmounted(() => {
   stopGame();
   if (autoDismissTimer.value) clearTimeout(autoDismissTimer.value);
   if (progressTimer.value) clearInterval(progressTimer.value);
+  if (resizeObserver) {
+    resizeObserver.disconnect();
+  }
 });
 </script>
 
 <style scoped>
-/* Radial gradient utilities not in Tailwind by default */
-.bg-gradient-radial {
-  background: radial-gradient(circle, var(--tw-gradient-stops));
-}
-
-/* Border width 3 */
-.border-3 {
-  border-width: 3px;
-}
-
 /* Sign transition */
 .sign-enter-active {
-  animation: signPopIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  animation: signPopIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .sign-leave-active {
-  animation: signPopOut 0.15s ease-in;
+  animation: signPopOut 0.15s ease-out;
 }
 
 @keyframes signPopIn {
-  0% { opacity: 0; transform: scale(0.5) translateY(10px); }
+  0% { opacity: 0; transform: scale(0.6) translateY(8px); }
   100% { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 @keyframes signPopOut {
   0% { opacity: 1; transform: scale(1); }
-  100% { opacity: 0; transform: scale(0.8) translateY(-10px); }
+  100% { opacity: 0; transform: scale(0.8) translateY(-5px); }
 }
 
 /* Effect transition */
 .effect-enter-active {
-  animation: effectPop 0.4s ease-out;
+  animation: effectPop 0.35s ease-out;
 }
 .effect-leave-active {
-  animation: effectFade 0.2s ease-in;
+  animation: effectFade 0.2s ease-out;
 }
 
 @keyframes effectPop {
   0% { transform: translateX(-50%) scale(0.3); opacity: 0; }
-  50% { transform: translateX(-50%) scale(1.3); opacity: 1; }
-  100% { transform: translateX(-50%) scale(1) translateY(-20px); opacity: 0.8; }
+  50% { transform: translateX(-50%) scale(1.2); opacity: 1; }
+  100% { transform: translateX(-50%) scale(1) translateY(-15px); opacity: 0.7; }
 }
 
 @keyframes effectFade {
-  to { opacity: 0; transform: translateX(-50%) translateY(-30px); }
+  to { opacity: 0; transform: translateX(-50%) translateY(-25px); }
 }
 
 /* Slide up transition */
 .slide-up-enter-active {
-  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .slide-up-leave-active {
-  transition: all 0.3s ease-in;
+  transition: all 0.25s ease-in;
 }
 .slide-up-enter-from {
   opacity: 0;
-  transform: translateY(100%);
+  transform: translateY(60px);
 }
 .slide-up-leave-to {
   opacity: 0;
-  transform: translateY(50px);
+  transform: translateY(40px);
 }
 
 /* Shake animation */
 @keyframes shake {
-  0%, 100% { transform: translateX(0) rotate(0); }
-  25% { transform: translateX(-5px) rotate(-5deg); }
-  75% { transform: translateX(5px) rotate(5deg); }
+  0%, 100% { transform: rotate(0); }
+  25% { transform: rotate(-4deg); }
+  75% { transform: rotate(4deg); }
 }
 .animate-shake {
-  animation: shake 0.3s ease-in-out;
+  animation: shake 0.25s ease-in-out;
 }
 
 /* Mole shake */
 @keyframes moleShake {
   0%, 100% { transform: translateX(-50%) translateY(0) rotate(0); }
-  25% { transform: translateX(-50%) translateY(0) rotate(-15deg); }
-  75% { transform: translateX(-50%) translateY(0) rotate(15deg); }
+  20% { transform: translateX(-50%) translateY(0) rotate(-12deg); }
+  40% { transform: translateX(-50%) translateY(0) rotate(10deg); }
+  60% { transform: translateX(-50%) translateY(0) rotate(-8deg); }
+  80% { transform: translateX(-50%) translateY(0) rotate(5deg); }
 }
 .animate-mole-shake {
-  animation: moleShake 0.3s ease-in-out;
-}
-
-/* Star pop animation */
-@keyframes starPop {
-  0% { transform: scale(0); }
-  50% { transform: scale(1.3); }
-  100% { transform: scale(1); }
-}
-.animate-star-pop {
-  animation: starPop 0.4s ease-out backwards;
+  animation: moleShake 0.35s ease-in-out;
 }
 
 /* Card entrance */
 @keyframes cardIn {
-  from { transform: scale(0.8) translateY(30px); opacity: 0; }
+  from { transform: scale(0.85) translateY(20px); opacity: 0; }
   to { transform: scale(1) translateY(0); opacity: 1; }
 }
 .animate-card-in {
-  animation: cardIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: cardIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 </style>
