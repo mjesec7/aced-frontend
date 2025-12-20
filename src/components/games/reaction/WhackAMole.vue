@@ -9,8 +9,6 @@
       :max-lives="3"
     />
 
-
-
     <!-- Question Banner - During active gameplay -->
     <div v-if="gameActive" class="question-banner">
       <p class="question-text">{{ currentPrompt }}</p>
@@ -20,6 +18,18 @@
     <div v-if="gameActive" class="game-area">
       <div class="game-grid">
         <div v-for="(hole, index) in holes" :key="index" class="hole-wrapper">
+          <!-- Answer Sign ABOVE the mole -->
+          <div 
+            class="answer-sign"
+            :class="{ 
+              'answer-sign--visible': hole.active,
+              'answer-sign--hit': hole.state === 'hit',
+              'answer-sign--wrong': hole.state === 'miss'
+            }"
+          >
+            <span class="answer-text">{{ hole.content }}</span>
+          </div>
+
           <!-- 1. The Dark Hole Void (Back) -->
           <div class="hole-void"></div>
 
@@ -50,9 +60,6 @@
                   <div class="mole__cheek"></div>
                 </div>
                 <div class="mole__mouth"></div>
-              </div>
-              <div class="mole__sign">
-                <span class="mole__answer">{{ hole.content }}</span>
               </div>
             </div>
           </div>
@@ -424,8 +431,8 @@ onUnmounted(() => {
 .whack-game-wrapper {
   position: absolute;
   inset: 0;
-  background: #4ade80; /* Fallback */
-  background: linear-gradient(180deg, #4ade80 0%, #22c55e 100%); /* Lush green land */
+  background: #4ade80;
+  background: linear-gradient(180deg, #4ade80 0%, #22c55e 100%);
   font-family: 'Nunito', 'Segoe UI', system-ui, sans-serif;
   user-select: none;
   overflow: hidden;
@@ -434,45 +441,62 @@ onUnmounted(() => {
 }
 
 /* ==========================================
-   QUESTION BANNER - POSITIONED BELOW HUD
+   QUESTION BANNER - SAME LEVEL AS HUD (left side)
+   On narrow screens, moves below HUD
    ========================================== */
 .question-banner {
-  flex-shrink: 0;
+  position: absolute;
+  top: 20px; /* Same top as HUD */
+  left: 20px;
   background: white;
-  margin: 70px auto 8px; /* Push below HUD which is at top-right */
-  padding: 10px 24px;
-  border-radius: 50px;
+  padding: 12px 24px;
+  border-radius: 16px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  max-width: min(85%, 600px); /* Smaller max-width to avoid HUD */
-  text-align: center;
-  z-index: 90; /* Below HUD (z-index 100) */
-  position: relative;
-}
-
-@media (max-width: 768px) {
-  .question-banner {
-    margin-top: 75px;
-    max-width: 90%;
-    padding: 8px 16px;
-  }
-}
-
-/* When panel is very narrow */
-@media (max-width: 400px) {
-  .question-banner {
-    margin-top: 80px;
-    padding: 8px 12px;
-    border-radius: 16px;
-    max-width: 95%;
-  }
+  max-width: calc(100% - 260px); /* Leave space for HUD on right */
+  z-index: 100;
 }
 
 .question-text {
-  font-size: clamp(0.8rem, 2.5vw, 1.3rem);
+  font-size: clamp(0.9rem, 2vw, 1.2rem);
   font-weight: 700;
   color: #1e293b;
   margin: 0;
   line-height: 1.3;
+}
+
+/* When panel gets narrower, move question below HUD */
+@media (max-width: 600px) {
+  .question-banner {
+    top: 75px; /* Move below HUD */
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: 90%;
+    text-align: center;
+  }
+}
+
+@media (max-width: 450px) {
+  .question-banner {
+    top: 80px;
+    padding: 10px 16px;
+    max-width: 95%;
+  }
+  
+  .question-text {
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 350px) {
+  .question-banner {
+    top: 85px;
+    padding: 8px 12px;
+    border-radius: 12px;
+  }
+  
+  .question-text {
+    font-size: 0.8rem;
+  }
 }
 
 /* ==========================================
@@ -483,63 +507,188 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
+  padding: 70px 10px 10px; /* Top padding for header space */
   min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden;
+}
+
+@media (max-width: 600px) {
+  .game-area {
+    padding-top: 130px; /* More space when question moves down */
+  }
+}
+
+@media (max-width: 450px) {
+  .game-area {
+    padding-top: 140px;
+  }
 }
 
 .game-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: clamp(12px, 3vw, 40px);
+  gap: clamp(8px, 2vw, 24px);
   width: 100%;
   max-width: 100%;
-  height: 100%;
   align-content: center;
-  padding: 0 8px;
-  margin: 0 auto;
-  height: auto;
-  min-height: 0;
+  padding: 0 4px;
+}
+
+@media (max-width: 350px) {
+  .game-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
 }
 
 /* ==========================================
-   HOLE & MOLE - FIXED VISIBILITY
+   HOLE WRAPPER WITH ANSWER SIGN ON TOP
    ========================================== */
 .hole-wrapper {
   position: relative;
-  aspect-ratio: 1 / 1.6; /* Taller to show more of mole */
+  aspect-ratio: 1 / 1.4;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
   cursor: pointer;
-  overflow: hidden;
-  border-radius: 0 0 20px 20px;
-  isolation: isolate;
+  overflow: visible; /* Allow sign to show above */
 }
 
-/* 1. Hole Void (Back) */
+/* ==========================================
+   ANSWER SIGN - FLOATS ABOVE MOLE HEAD
+   ========================================== */
+.answer-sign {
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px) scale(0);
+  background: white;
+  padding: 10px 18px;
+  border-radius: 14px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  border: 4px solid #fbbf24;
+  z-index: 30;
+  opacity: 0;
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  pointer-events: none;
+}
+
+/* Speech bubble arrow pointing down */
+.answer-sign::after {
+  content: '';
+  position: absolute;
+  bottom: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 12px solid white;
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
+}
+
+.answer-sign::before {
+  content: '';
+  position: absolute;
+  bottom: -17px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 13px solid transparent;
+  border-right: 13px solid transparent;
+  border-top: 15px solid #fbbf24;
+}
+
+.answer-sign--visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.answer-sign--hit {
+  border-color: #22c55e;
+  background: #dcfce7;
+}
+
+.answer-sign--hit::before {
+  border-top-color: #22c55e;
+}
+
+.answer-sign--wrong {
+  border-color: #ef4444;
+  background: #fee2e2;
+  animation: signShake 0.3s ease-in-out;
+}
+
+.answer-sign--wrong::before {
+  border-top-color: #ef4444;
+}
+
+@keyframes signShake {
+  0%, 100% { transform: translateX(-50%) rotate(0); }
+  25% { transform: translateX(-50%) rotate(-8deg); }
+  75% { transform: translateX(-50%) rotate(8deg); }
+}
+
+.answer-text {
+  font-size: clamp(1.1rem, 5vw, 1.5rem);
+  font-weight: 800;
+  color: #1e293b;
+  white-space: nowrap;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.5);
+}
+
+@media (max-width: 500px) {
+  .answer-sign {
+    padding: 8px 14px;
+    border-width: 3px;
+    border-radius: 10px;
+  }
+  
+  .answer-text {
+    font-size: clamp(0.9rem, 4vw, 1.2rem);
+  }
+}
+
+@media (max-width: 350px) {
+  .answer-sign {
+    padding: 6px 10px;
+    border-radius: 8px;
+  }
+  
+  .answer-text {
+    font-size: 0.85rem;
+  }
+}
+
+/* ==========================================
+   HOLE VOID
+   ========================================== */
 .hole-void {
   position: absolute;
-  bottom: 8%;
-  width: 85%;
+  bottom: 12%;
+  width: 80%;
   height: 20%;
-  left: 7.5%;
+  left: 10%;
   background: radial-gradient(ellipse, #3e2723 0%, #271c19 100%);
   border-radius: 50%;
   z-index: 1;
   box-shadow: inset 0 5px 10px rgba(0,0,0,0.5);
 }
 
-/* 2. Mole (Middle) - Positioned higher to show sign */
+/* ==========================================
+   MOLE - SIMPLE BODY, NO SIGN
+   ========================================== */
 .mole {
   position: absolute;
-  bottom: 18%; /* Higher position so sign is visible above mound */
-  width: 75%;
+  bottom: 15%;
+  width: 65%;
   height: auto;
   z-index: 2;
-  transform: translateY(130%); /* Start fully hidden below mound */
+  transform: translateY(100%);
   transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -553,10 +702,10 @@ onUnmounted(() => {
 }
 
 .mole--wrong {
-  animation: shake 0.3s ease-in-out;
+  animation: moleShake 0.3s ease-in-out;
 }
 
-@keyframes shake {
+@keyframes moleShake {
   0%, 100% { transform: translateY(0) rotate(0); }
   25% { transform: translateY(0) rotate(-12deg); }
   75% { transform: translateY(0) rotate(12deg); }
@@ -571,16 +720,16 @@ onUnmounted(() => {
 /* Ears */
 .mole__ears {
   position: absolute;
-  top: 8%;
+  top: 5%;
   width: 100%;
   display: flex;
   justify-content: space-between;
-  padding: 0 10%;
+  padding: 0 8%;
   z-index: 1;
 }
 
 .mole__ear {
-  width: 28%;
+  width: 30%;
   aspect-ratio: 1;
   background: linear-gradient(145deg, #d4a574, #b8956e);
   border-radius: 50%;
@@ -601,14 +750,14 @@ onUnmounted(() => {
 /* Head */
 .mole__head {
   width: 100%;
-  aspect-ratio: 1 / 0.85;
+  aspect-ratio: 1 / 0.9;
   background: linear-gradient(180deg, #d4a574 0%, #b08060 100%);
   border-radius: 48% 48% 42% 42%;
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-top: 20%;
+  padding-top: 22%;
   box-shadow: 
     inset 0 8px 15px rgba(255,255,255,0.2),
     inset 0 -8px 15px rgba(0,0,0,0.15),
@@ -619,12 +768,12 @@ onUnmounted(() => {
 /* Eyes */
 .mole__eyes {
   display: flex;
-  gap: 24%;
+  gap: 28%;
   margin-bottom: 8%;
 }
 
 .mole__eye {
-  width: clamp(8px, 18%, 20px);
+  width: clamp(8px, 20%, 22px);
   aspect-ratio: 1;
   background: white;
   border-radius: 50%;
@@ -644,7 +793,7 @@ onUnmounted(() => {
 
 /* Nose */
 .mole__nose {
-  width: clamp(10px, 24%, 24px);
+  width: clamp(10px, 26%, 26px);
   aspect-ratio: 1.4;
   background: linear-gradient(180deg, #5a4030, #3a2820);
   border-radius: 50%;
@@ -654,15 +803,15 @@ onUnmounted(() => {
 /* Cheeks */
 .mole__cheeks {
   position: absolute;
-  top: 50%;
+  top: 52%;
   width: 100%;
   display: flex;
   justify-content: space-between;
-  padding: 0 12%;
+  padding: 0 10%;
 }
 
 .mole__cheek {
-  width: 18%;
+  width: 20%;
   aspect-ratio: 1.3;
   background: radial-gradient(ellipse, rgba(255,150,150,0.6), transparent 70%);
   border-radius: 50%;
@@ -670,38 +819,21 @@ onUnmounted(() => {
 
 /* Mouth */
 .mole__mouth {
-  width: 18%;
-  height: 5%;
+  width: 20%;
+  height: 6%;
   border-bottom: 2px solid #5d4037;
   border-radius: 0 0 50% 50%;
 }
 
-/* Answer Sign - More prominent and visible */
-.mole__sign {
-  background: white;
-  padding: clamp(6px, 1.5vw, 12px) clamp(10px, 2.5vw, 20px);
-  border-radius: 12px;
-  margin-top: 4px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-  border: 3px solid #4ade80;
-  z-index: 5;
-  position: relative;
-}
-
-.mole__answer {
-  font-size: clamp(0.85rem, 3vw, 1.3rem);
-  font-weight: 800;
-  color: #1e293b;
-  white-space: nowrap;
-}
-
-/* 3. Dirt Mound (Front Mask) - Lower to show more of mole */
+/* ==========================================
+   DIRT MOUND
+   ========================================== */
 .mound-front {
   position: absolute;
   bottom: 0;
   left: 0;
   width: 100%;
-  height: 25%; /* Reduced height to show more of mole */
+  height: 28%;
   z-index: 10;
   pointer-events: none;
 }
@@ -734,14 +866,16 @@ onUnmounted(() => {
 .mound-front__grass span:nth-child(odd) { height: 14px; transform: rotate(-10deg); }
 .mound-front__grass span:nth-child(even) { height: 8px; transform: rotate(10deg); }
 
-/* Hit Effect */
+/* ==========================================
+   HIT EFFECT
+   ========================================== */
 .hit-effect {
   position: absolute;
-  top: 10%;
+  top: 0;
   left: 50%;
   transform: translateX(-50%);
-  font-size: clamp(2rem, 6vw, 4rem);
-  z-index: 20;
+  font-size: clamp(2rem, 8vw, 4rem);
+  z-index: 35;
   pointer-events: none;
   animation: pop 0.4s ease-out forwards;
 }
@@ -749,11 +883,11 @@ onUnmounted(() => {
 @keyframes pop {
   0% { transform: translateX(-50%) scale(0.5); opacity: 0; }
   50% { transform: translateX(-50%) scale(1.3); opacity: 1; }
-  100% { transform: translateX(-50%) scale(1) translateY(-20px); opacity: 0; }
+  100% { transform: translateX(-50%) scale(1) translateY(-30px); opacity: 0; }
 }
 
 /* ==========================================
-   START SCREEN - FULL SIZE
+   START SCREEN
    ========================================== */
 .start-screen {
   position: absolute;
@@ -1010,114 +1144,5 @@ onUnmounted(() => {
 .slide-up-leave-to {
   opacity: 0;
   transform: translateY(50px);
-}
-
-/* ==========================================
-   RESPONSIVE - NARROW PANELS
-   ========================================== */
-@media (max-width: 500px) {
-  .question-banner {
-    margin: 75px auto 6px;
-    padding: 8px 14px;
-  }
-  
-  .game-grid {
-    gap: 8px;
-  }
-  
-  .hole-wrapper {
-    aspect-ratio: 1 / 1.5;
-  }
-  
-  .mole__sign {
-    padding: 4px 8px;
-    border-width: 2px;
-  }
-  
-  .mole__answer {
-    font-size: clamp(0.7rem, 2.5vw, 1rem);
-  }
-  
-  .start-stats {
-    gap: 12px;
-  }
-  
-  .start-stat {
-    padding: 10px 14px;
-  }
-  
-  .completion-stats {
-    gap: 16px;
-    padding: 12px;
-  }
-}
-
-@media (max-height: 500px) {
-  .question-banner {
-    margin: 6px auto 4px;
-    padding: 6px 14px;
-  }
-  
-  .game-area {
-    padding: 8px;
-  }
-  
-  .start-icon {
-    font-size: 4rem;
-    margin-bottom: 8px;
-  }
-  
-  .start-title {
-    font-size: 1.5rem;
-    margin-bottom: 8px;
-  }
-  
-  .start-description {
-    margin-bottom: 16px;
-    font-size: 0.9rem;
-  }
-  
-  .start-stats {
-    margin-bottom: 16px;
-  }
-  
-  .completion-card {
-    padding: 20px;
-  }
-  
-  .completion-emoji {
-    font-size: 3rem;
-  }
-}
-
-/* Very narrow panels (30% width scenario) */
-@media (max-width: 350px) {
-  .question-banner {
-    margin-top: 85px;
-    padding: 6px 10px;
-    border-radius: 12px;
-  }
-  
-  .question-text {
-    font-size: 0.75rem;
-  }
-  
-  .game-grid {
-    grid-template-columns: repeat(2, 1fr); /* 2 columns for very narrow */
-    gap: 6px;
-  }
-  
-  .hole-wrapper {
-    aspect-ratio: 1 / 1.4;
-  }
-  
-  .mole__sign {
-    padding: 3px 6px;
-    border-radius: 8px;
-  }
-  
-  .mole__answer {
-    font-size: 0.65rem;
-  }
 }
 </style>
