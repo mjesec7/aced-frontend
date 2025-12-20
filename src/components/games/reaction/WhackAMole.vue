@@ -1,6 +1,6 @@
 <template>
   <div class="whack-game-wrapper">
-    <!-- HUD Sidebar - Only during active gameplay -->
+    <!-- HUD Sidebar - Top Right -->
     <GameHUDSidebar
       v-if="gameActive"
       :score="score"
@@ -9,7 +9,7 @@
       :max-lives="3"
     />
 
-    <!-- Question Banner - During active gameplay -->
+    <!-- Question Banner - Below HUD, Centered -->
     <div v-if="gameActive" class="question-banner">
       <p class="question-text">{{ currentPrompt }}</p>
     </div>
@@ -18,22 +18,24 @@
     <div v-if="gameActive" class="game-area">
       <div class="game-grid">
         <div v-for="(hole, index) in holes" :key="index" class="hole-wrapper">
-          <!-- Answer Sign ABOVE the mole -->
-          <div 
-            class="answer-sign"
-            :class="{ 
-              'answer-sign--visible': hole.active,
-              'answer-sign--hit': hole.state === 'hit',
-              'answer-sign--wrong': hole.state === 'miss'
-            }"
-          >
-            <span class="answer-text">{{ hole.content }}</span>
-          </div>
+          <!-- Answer Sign ABOVE the mole - only visible when mole is active -->
+          <transition name="sign-pop">
+            <div 
+              v-if="hole.active"
+              class="answer-sign"
+              :class="{ 
+                'answer-sign--hit': hole.state === 'hit',
+                'answer-sign--wrong': hole.state === 'miss'
+              }"
+            >
+              <span class="answer-text">{{ hole.content }}</span>
+            </div>
+          </transition>
 
-          <!-- 1. The Dark Hole Void (Back) -->
+          <!-- The Dark Hole Void (Back) -->
           <div class="hole-void"></div>
 
-          <!-- 2. The Mole (Middle) -->
+          <!-- The Mole -->
           <div
             class="mole"
             :class="{
@@ -59,12 +61,11 @@
                   <div class="mole__cheek"></div>
                   <div class="mole__cheek"></div>
                 </div>
-                <div class="mole__mouth"></div>
               </div>
             </div>
           </div>
 
-          <!-- 3. The Dirt Mound (Front Mask) -->
+          <!-- The Dirt Mound (Front Mask) -->
           <div class="mound-front">
             <div class="mound-front__dirt"></div>
             <div class="mound-front__grass">
@@ -73,14 +74,16 @@
           </div>
 
           <!-- Hit Effect -->
-          <div v-if="hole.showEffect" class="hit-effect">
-            {{ hole.state === 'hit' ? '✨' : '💥' }}
-          </div>
+          <transition name="effect-pop">
+            <div v-if="hole.showEffect" class="hit-effect">
+              {{ hole.state === 'hit' ? '✨' : '💥' }}
+            </div>
+          </transition>
         </div>
       </div>
     </div>
 
-    <!-- START SCREEN - Full screen, not a small modal -->
+    <!-- START SCREEN -->
     <div v-if="!gameActive && !isGameOver" class="start-screen">
       <div class="start-content">
         <div class="start-icon">🐹</div>
@@ -114,7 +117,7 @@
       </div>
     </div>
 
-    <!-- COMPLETION TOAST - Shows for 5 seconds then auto-emits complete -->
+    <!-- COMPLETION OVERLAY -->
     <transition name="slide-up">
       <div v-if="isGameOver" class="completion-overlay">
         <div class="completion-card">
@@ -244,7 +247,7 @@ const spawnMole = () => {
     const q = currentQuestion.value;
     if (!q) return;
     
-    isCorrect = Math.random() > 0.4; // 60% chance of correct answer
+    isCorrect = Math.random() > 0.4;
     
     if (isCorrect) {
       content = q.a || q.answer || q.correctAnswer || "✓";
@@ -276,7 +279,6 @@ const spawnMole = () => {
   hole.active = true;
   hole.state = 'idle';
 
-  // Speed increases as score goes up
   const speed = Math.max(MIN_SPEED, BASE_SPEED - (props.score * 15));
   
   hole.timer = setTimeout(() => {
@@ -323,7 +325,6 @@ const handleWhack = (index) => {
 const nextQuestion = () => {
   if (currentQuestionIndex.value < questions.value.length - 1) {
     currentQuestionIndex.value++;
-    // Clear all active moles for new question
     holes.value.forEach(h => { 
       h.active = false; 
       clearTimeout(h.timer); 
@@ -333,7 +334,7 @@ const nextQuestion = () => {
   }
 };
 
-// Calculate stars based on score
+// Calculate stars
 const calculateStars = () => {
   const percentage = (props.score / targetScore.value) * 100;
   if (percentage >= 100) return 3;
@@ -342,21 +343,19 @@ const calculateStars = () => {
   return 0;
 };
 
-// Finish game - show completion for 5 seconds
+// Finish game
 const finishGame = () => {
   stopGame();
   isGameOver.value = true;
   earnedStars.value = calculateStars();
   progressWidth.value = 100;
 
-  // Animate progress bar countdown
   const startTime = Date.now();
   progressTimer.value = setInterval(() => {
     const elapsed = Date.now() - startTime;
     progressWidth.value = Math.max(0, 100 - (elapsed / AUTO_DISMISS_DURATION) * 100);
   }, 50);
 
-  // Auto-dismiss and emit complete after 5 seconds
   autoDismissTimer.value = setTimeout(() => {
     clearInterval(progressTimer.value);
     emit('game-complete', { 
@@ -381,7 +380,6 @@ const startGame = () => {
   
   emit('game-started');
   
-  // Start spawning moles after a brief delay
   setTimeout(() => {
     gameInterval.value = setInterval(spawnMole, 900);
   }, 600);
@@ -399,7 +397,7 @@ const stopGame = () => {
   });
 };
 
-// Watch for game-ending conditions
+// Watchers
 watch(() => props.score, (val) => { 
   if (val >= targetScore.value && gameActive.value) finishGame(); 
 });
@@ -426,12 +424,11 @@ onUnmounted(() => {
 
 <style scoped>
 /* ==========================================
-   WRAPPER - FILLS ENTIRE CONTAINER
+   WRAPPER
    ========================================== */
 .whack-game-wrapper {
   position: absolute;
   inset: 0;
-  background: #4ade80;
   background: linear-gradient(180deg, #4ade80 0%, #22c55e 100%);
   font-family: 'Nunito', 'Segoe UI', system-ui, sans-serif;
   user-select: none;
@@ -441,61 +438,52 @@ onUnmounted(() => {
 }
 
 /* ==========================================
-   QUESTION BANNER - SAME LEVEL AS HUD (left side)
-   On narrow screens, moves below HUD
+   QUESTION BANNER - BELOW HUD, CENTERED
    ========================================== */
 .question-banner {
   position: absolute;
-  top: 20px; /* Same top as HUD */
-  left: 20px;
+  top: 80px; /* Below the HUD with gap */
+  left: 50%;
+  transform: translateX(-50%);
   background: white;
-  padding: 12px 24px;
-  border-radius: 16px;
+  padding: 12px 28px;
+  border-radius: 50px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  max-width: calc(100% - 260px); /* Leave space for HUD on right */
-  z-index: 100;
+  z-index: 90;
+  max-width: 90%;
 }
 
 .question-text {
-  font-size: clamp(0.9rem, 2vw, 1.2rem);
+  font-size: clamp(1rem, 2.5vw, 1.3rem);
   font-weight: 700;
   color: #1e293b;
   margin: 0;
-  line-height: 1.3;
+  text-align: center;
+  white-space: nowrap;
 }
 
-/* When panel gets narrower, move question below HUD */
-@media (max-width: 600px) {
+/* Responsive adjustments */
+@media (max-width: 500px) {
   .question-banner {
-    top: 75px; /* Move below HUD */
-    left: 50%;
-    transform: translateX(-50%);
-    max-width: 90%;
-    text-align: center;
-  }
-}
-
-@media (max-width: 450px) {
-  .question-banner {
-    top: 80px;
-    padding: 10px 16px;
-    max-width: 95%;
+    top: 75px;
+    padding: 10px 20px;
   }
   
   .question-text {
-    font-size: 0.85rem;
+    font-size: 0.95rem;
   }
 }
 
-@media (max-width: 350px) {
+@media (max-width: 380px) {
   .question-banner {
-    top: 85px;
-    padding: 8px 12px;
+    top: 70px;
+    padding: 8px 16px;
     border-radius: 12px;
   }
   
   .question-text {
-    font-size: 0.8rem;
+    font-size: 0.85rem;
+    white-space: normal;
   }
 }
 
@@ -507,105 +495,90 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 70px 10px 10px; /* Top padding for header space */
+  padding: 140px 16px 20px; /* Top padding for HUD + Question */
   min-height: 0;
   overflow: hidden;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 500px) {
   .game-area {
-    padding-top: 130px; /* More space when question moves down */
-  }
-}
-
-@media (max-width: 450px) {
-  .game-area {
-    padding-top: 140px;
-  }
-}
-
-.game-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: clamp(8px, 2vw, 24px);
-  width: 100%;
-  max-width: 100%;
-  align-content: center;
-  padding: 0 4px;
-}
-
-@media (max-width: 350px) {
-  .game-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
+    padding-top: 130px;
+    padding-left: 8px;
+    padding-right: 8px;
   }
 }
 
 /* ==========================================
-   HOLE WRAPPER WITH ANSWER SIGN ON TOP
+   GAME GRID - 4 COLUMNS, FITS IN VIEW
+   ========================================== */
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: clamp(8px, 2vw, 20px);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Switch to 2x2 on very narrow screens */
+@media (max-width: 400px) {
+  .game-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+}
+
+/* ==========================================
+   HOLE WRAPPER
    ========================================== */
 .hole-wrapper {
   position: relative;
-  aspect-ratio: 1 / 1.4;
+  aspect-ratio: 1 / 1.2;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
   cursor: pointer;
-  overflow: visible; /* Allow sign to show above */
+  overflow: visible;
 }
 
 /* ==========================================
-   ANSWER SIGN - FLOATS ABOVE MOLE HEAD
+   ANSWER SIGN - FLOATS ABOVE MOLE
    ========================================== */
 .answer-sign {
   position: absolute;
-  top: -5px;
+  top: 0;
   left: 50%;
-  transform: translateX(-50%) translateY(20px) scale(0);
+  transform: translateX(-50%);
   background: white;
-  padding: 10px 18px;
-  border-radius: 14px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-  border: 4px solid #fbbf24;
+  padding: 8px 16px;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  border: 3px solid #fbbf24;
   z-index: 30;
-  opacity: 0;
-  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  pointer-events: none;
 }
 
-/* Speech bubble arrow pointing down */
+/* Speech bubble pointer */
 .answer-sign::after {
   content: '';
   position: absolute;
-  bottom: -12px;
+  bottom: -10px;
   left: 50%;
   transform: translateX(-50%);
-  width: 0;
-  height: 0;
   border-left: 10px solid transparent;
   border-right: 10px solid transparent;
-  border-top: 12px solid white;
-  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
+  border-top: 10px solid white;
 }
 
 .answer-sign::before {
   content: '';
   position: absolute;
-  bottom: -17px;
+  bottom: -14px;
   left: 50%;
   transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 13px solid transparent;
-  border-right: 13px solid transparent;
-  border-top: 15px solid #fbbf24;
-}
-
-.answer-sign--visible {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0) scale(1);
-  pointer-events: auto;
+  border-left: 12px solid transparent;
+  border-right: 12px solid transparent;
+  border-top: 12px solid #fbbf24;
 }
 
 .answer-sign--hit {
@@ -629,38 +602,57 @@ onUnmounted(() => {
 
 @keyframes signShake {
   0%, 100% { transform: translateX(-50%) rotate(0); }
-  25% { transform: translateX(-50%) rotate(-8deg); }
-  75% { transform: translateX(-50%) rotate(8deg); }
+  25% { transform: translateX(-50%) rotate(-10deg); }
+  75% { transform: translateX(-50%) rotate(10deg); }
 }
 
 .answer-text {
-  font-size: clamp(1.1rem, 5vw, 1.5rem);
+  font-size: clamp(1rem, 4vw, 1.4rem);
   font-weight: 800;
   color: #1e293b;
   white-space: nowrap;
-  text-shadow: 0 1px 0 rgba(255,255,255,0.5);
+}
+
+/* Sign pop animation */
+.sign-pop-enter-active {
+  animation: signPopIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.sign-pop-leave-active {
+  animation: signPopOut 0.2s ease-in;
+}
+
+@keyframes signPopIn {
+  0% { 
+    opacity: 0; 
+    transform: translateX(-50%) scale(0.5) translateY(10px); 
+  }
+  100% { 
+    opacity: 1; 
+    transform: translateX(-50%) scale(1) translateY(0); 
+  }
+}
+
+@keyframes signPopOut {
+  0% { 
+    opacity: 1; 
+    transform: translateX(-50%) scale(1); 
+  }
+  100% { 
+    opacity: 0; 
+    transform: translateX(-50%) scale(0.8) translateY(-10px); 
+  }
 }
 
 @media (max-width: 500px) {
   .answer-sign {
-    padding: 8px 14px;
-    border-width: 3px;
+    padding: 6px 12px;
+    border-width: 2px;
     border-radius: 10px;
   }
   
   .answer-text {
-    font-size: clamp(0.9rem, 4vw, 1.2rem);
-  }
-}
-
-@media (max-width: 350px) {
-  .answer-sign {
-    padding: 6px 10px;
-    border-radius: 8px;
-  }
-  
-  .answer-text {
-    font-size: 0.85rem;
+    font-size: clamp(0.85rem, 3.5vw, 1.1rem);
   }
 }
 
@@ -669,24 +661,23 @@ onUnmounted(() => {
    ========================================== */
 .hole-void {
   position: absolute;
-  bottom: 12%;
-  width: 80%;
-  height: 20%;
-  left: 10%;
+  bottom: 15%;
+  width: 75%;
+  height: 18%;
+  left: 12.5%;
   background: radial-gradient(ellipse, #3e2723 0%, #271c19 100%);
   border-radius: 50%;
   z-index: 1;
-  box-shadow: inset 0 5px 10px rgba(0,0,0,0.5);
+  box-shadow: inset 0 4px 8px rgba(0,0,0,0.5);
 }
 
 /* ==========================================
-   MOLE - SIMPLE BODY, NO SIGN
+   MOLE
    ========================================== */
 .mole {
   position: absolute;
-  bottom: 15%;
-  width: 65%;
-  height: auto;
+  bottom: 18%;
+  width: 60%;
   z-index: 2;
   transform: translateY(100%);
   transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -707,8 +698,8 @@ onUnmounted(() => {
 
 @keyframes moleShake {
   0%, 100% { transform: translateY(0) rotate(0); }
-  25% { transform: translateY(0) rotate(-12deg); }
-  75% { transform: translateY(0) rotate(12deg); }
+  25% { transform: translateY(0) rotate(-15deg); }
+  75% { transform: translateY(0) rotate(15deg); }
 }
 
 .mole__body {
@@ -724,12 +715,12 @@ onUnmounted(() => {
   width: 100%;
   display: flex;
   justify-content: space-between;
-  padding: 0 8%;
+  padding: 0 5%;
   z-index: 1;
 }
 
 .mole__ear {
-  width: 30%;
+  width: 32%;
   aspect-ratio: 1;
   background: linear-gradient(145deg, #d4a574, #b8956e);
   border-radius: 50%;
@@ -750,79 +741,70 @@ onUnmounted(() => {
 /* Head */
 .mole__head {
   width: 100%;
-  aspect-ratio: 1 / 0.9;
+  aspect-ratio: 1 / 0.85;
   background: linear-gradient(180deg, #d4a574 0%, #b08060 100%);
   border-radius: 48% 48% 42% 42%;
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-top: 22%;
+  padding-top: 25%;
   box-shadow: 
-    inset 0 8px 15px rgba(255,255,255,0.2),
-    inset 0 -8px 15px rgba(0,0,0,0.15),
-    0 6px 12px rgba(0,0,0,0.2);
+    inset 0 6px 12px rgba(255,255,255,0.2),
+    inset 0 -6px 12px rgba(0,0,0,0.15),
+    0 4px 10px rgba(0,0,0,0.2);
   z-index: 2;
 }
 
 /* Eyes */
 .mole__eyes {
   display: flex;
-  gap: 28%;
-  margin-bottom: 8%;
+  gap: 30%;
+  margin-bottom: 10%;
 }
 
 .mole__eye {
-  width: clamp(8px, 20%, 22px);
+  width: clamp(6px, 18%, 18px);
   aspect-ratio: 1;
   background: white;
   border-radius: 50%;
   position: relative;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: inset 0 2px 3px rgba(0,0,0,0.1);
 }
 
 .mole__pupil {
   position: absolute;
-  top: 22%;
-  left: 22%;
-  width: 56%;
-  height: 56%;
+  top: 20%;
+  left: 20%;
+  width: 60%;
+  height: 60%;
   background: radial-gradient(circle at 35% 35%, #4a3728, #1a1210);
   border-radius: 50%;
 }
 
 /* Nose */
 .mole__nose {
-  width: clamp(10px, 26%, 26px);
-  aspect-ratio: 1.4;
+  width: clamp(8px, 24%, 22px);
+  aspect-ratio: 1.3;
   background: linear-gradient(180deg, #5a4030, #3a2820);
   border-radius: 50%;
-  margin-bottom: 5%;
 }
 
 /* Cheeks */
 .mole__cheeks {
   position: absolute;
-  top: 52%;
+  top: 55%;
   width: 100%;
   display: flex;
   justify-content: space-between;
-  padding: 0 10%;
+  padding: 0 8%;
 }
 
 .mole__cheek {
-  width: 20%;
-  aspect-ratio: 1.3;
-  background: radial-gradient(ellipse, rgba(255,150,150,0.6), transparent 70%);
+  width: 22%;
+  aspect-ratio: 1.2;
+  background: radial-gradient(ellipse, rgba(255,150,150,0.5), transparent 70%);
   border-radius: 50%;
-}
-
-/* Mouth */
-.mole__mouth {
-  width: 20%;
-  height: 6%;
-  border-bottom: 2px solid #5d4037;
-  border-radius: 0 0 50% 50%;
 }
 
 /* ==========================================
@@ -833,7 +815,7 @@ onUnmounted(() => {
   bottom: 0;
   left: 0;
   width: 100%;
-  height: 28%;
+  height: 30%;
   z-index: 10;
   pointer-events: none;
 }
@@ -844,13 +826,13 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   background: linear-gradient(180deg, #8d6e63 0%, #5d4037 100%);
-  border-radius: 50% 50% 10px 10px;
-  box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+  border-radius: 50% 50% 8px 8px;
+  box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
 }
 
 .mound-front__grass {
   position: absolute;
-  top: -5px;
+  top: -4px;
   left: 10%;
   width: 80%;
   display: flex;
@@ -858,32 +840,63 @@ onUnmounted(() => {
 }
 
 .mound-front__grass span {
-  width: 12%;
-  height: 10px;
+  width: 10%;
+  height: 8px;
   background: #4ade80;
   border-radius: 50% 50% 0 0;
 }
-.mound-front__grass span:nth-child(odd) { height: 14px; transform: rotate(-10deg); }
-.mound-front__grass span:nth-child(even) { height: 8px; transform: rotate(10deg); }
+
+.mound-front__grass span:nth-child(odd) { 
+  height: 12px; 
+  transform: rotate(-8deg); 
+}
+
+.mound-front__grass span:nth-child(even) { 
+  height: 6px; 
+  transform: rotate(8deg); 
+}
 
 /* ==========================================
    HIT EFFECT
    ========================================== */
 .hit-effect {
   position: absolute;
-  top: 0;
+  top: -10px;
   left: 50%;
   transform: translateX(-50%);
-  font-size: clamp(2rem, 8vw, 4rem);
+  font-size: clamp(1.5rem, 6vw, 3rem);
   z-index: 35;
   pointer-events: none;
-  animation: pop 0.4s ease-out forwards;
 }
 
-@keyframes pop {
-  0% { transform: translateX(-50%) scale(0.5); opacity: 0; }
-  50% { transform: translateX(-50%) scale(1.3); opacity: 1; }
-  100% { transform: translateX(-50%) scale(1) translateY(-30px); opacity: 0; }
+.effect-pop-enter-active {
+  animation: effectPop 0.4s ease-out;
+}
+
+.effect-pop-leave-active {
+  animation: effectFade 0.2s ease-in;
+}
+
+@keyframes effectPop {
+  0% { 
+    transform: translateX(-50%) scale(0.3); 
+    opacity: 0; 
+  }
+  50% { 
+    transform: translateX(-50%) scale(1.3); 
+    opacity: 1; 
+  }
+  100% { 
+    transform: translateX(-50%) scale(1) translateY(-20px); 
+    opacity: 0.8; 
+  }
+}
+
+@keyframes effectFade {
+  to { 
+    opacity: 0; 
+    transform: translateX(-50%) translateY(-30px); 
+  }
 }
 
 /* ==========================================
@@ -907,28 +920,28 @@ onUnmounted(() => {
 }
 
 .start-icon {
-  font-size: clamp(5rem, 15vw, 8rem);
+  font-size: clamp(4rem, 12vw, 7rem);
   margin-bottom: 16px;
   animation: bounce 1.5s ease-in-out infinite;
 }
 
 @keyframes bounce {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-15px); }
+  50% { transform: translateY(-12px); }
 }
 
 .start-title {
-  font-size: clamp(2rem, 6vw, 3rem);
+  font-size: clamp(1.8rem, 5vw, 2.8rem);
   font-weight: 800;
   color: white;
   margin: 0 0 12px;
-  text-shadow: 0 3px 10px rgba(0,0,0,0.2);
+  text-shadow: 0 3px 8px rgba(0,0,0,0.2);
 }
 
 .start-description {
-  font-size: clamp(1rem, 3vw, 1.2rem);
+  font-size: clamp(0.95rem, 2.5vw, 1.1rem);
   color: rgba(255,255,255,0.9);
-  margin: 0 0 28px;
+  margin: 0 0 24px;
   line-height: 1.5;
 }
 
@@ -939,27 +952,27 @@ onUnmounted(() => {
 .start-stats {
   display: flex;
   justify-content: center;
-  gap: 20px;
-  margin-bottom: 32px;
+  gap: 16px;
+  margin-bottom: 28px;
   flex-wrap: wrap;
 }
 
 .start-stat {
   background: rgba(255,255,255,0.2);
   backdrop-filter: blur(10px);
-  padding: 12px 20px;
-  border-radius: 16px;
+  padding: 10px 18px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
 .start-stat-icon {
-  font-size: 1.3rem;
+  font-size: 1.2rem;
 }
 
 .start-stat-value {
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 700;
   color: white;
 }
@@ -968,21 +981,21 @@ onUnmounted(() => {
   background: white;
   color: #16a34a;
   border: none;
-  padding: 18px 48px;
+  padding: 16px 40px;
   border-radius: 50px;
-  font-size: 1.3rem;
+  font-size: 1.2rem;
   font-weight: 700;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   transition: all 0.2s;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+  box-shadow: 0 6px 24px rgba(0,0,0,0.2);
 }
 
 .start-button:hover {
   transform: translateY(-3px) scale(1.02);
-  box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+  box-shadow: 0 10px 32px rgba(0,0,0,0.25);
 }
 
 .start-button:active {
@@ -990,8 +1003,8 @@ onUnmounted(() => {
 }
 
 .start-button svg {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
 }
 
 /* ==========================================
@@ -1005,18 +1018,18 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: 20px;
   z-index: 100;
 }
 
 .completion-card {
   background: white;
-  border-radius: 28px;
-  padding: clamp(24px, 5vw, 40px);
+  border-radius: 24px;
+  padding: clamp(20px, 4vw, 36px);
   text-align: center;
-  max-width: 380px;
+  max-width: 360px;
   width: 100%;
-  box-shadow: 0 25px 80px rgba(0,0,0,0.3);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
   animation: cardIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -1026,40 +1039,40 @@ onUnmounted(() => {
 }
 
 .completion-emoji {
-  font-size: clamp(4rem, 12vw, 6rem);
+  font-size: clamp(3.5rem, 10vw, 5rem);
   margin-bottom: 8px;
 }
 
 .completion-title {
-  font-size: clamp(1.5rem, 5vw, 2rem);
+  font-size: clamp(1.4rem, 4vw, 1.8rem);
   font-weight: 800;
   color: #1e293b;
-  margin: 0 0 8px;
+  margin: 0 0 6px;
 }
 
 .completion-score {
-  font-size: clamp(1.8rem, 6vw, 2.5rem);
+  font-size: clamp(1.6rem, 5vw, 2.2rem);
   font-weight: 800;
   color: #22c55e;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .completion-stars {
   display: flex;
   justify-content: center;
-  gap: 8px;
-  margin-bottom: 20px;
+  gap: 6px;
+  margin-bottom: 18px;
 }
 
 .star {
-  font-size: clamp(2rem, 6vw, 2.5rem);
+  font-size: clamp(1.8rem, 5vw, 2.2rem);
   color: #e2e8f0;
   transition: all 0.3s;
 }
 
 .star--earned {
   color: #fbbf24;
-  text-shadow: 0 2px 10px rgba(251, 191, 36, 0.5);
+  text-shadow: 0 2px 8px rgba(251, 191, 36, 0.5);
   animation: starPop 0.4s ease-out;
 }
 
@@ -1072,11 +1085,11 @@ onUnmounted(() => {
 .completion-stats {
   display: flex;
   justify-content: center;
-  gap: 24px;
-  margin-bottom: 24px;
-  padding: 16px;
+  gap: 20px;
+  margin-bottom: 20px;
+  padding: 14px;
   background: #f8fafc;
-  border-radius: 16px;
+  border-radius: 14px;
 }
 
 .stat {
@@ -1085,15 +1098,15 @@ onUnmounted(() => {
 
 .stat-label {
   display: block;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 
 .stat-value {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: #1e293b;
 }
@@ -1107,11 +1120,11 @@ onUnmounted(() => {
 }
 
 .completion-progress {
-  height: 6px;
+  height: 5px;
   background: #e2e8f0;
   border-radius: 3px;
   overflow: hidden;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .progress-bar {
@@ -1122,7 +1135,7 @@ onUnmounted(() => {
 }
 
 .completion-hint {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: #94a3b8;
   margin: 0;
 }
