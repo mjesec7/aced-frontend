@@ -264,32 +264,32 @@ const questionBannerStyle = computed(() => {
     left = 50;
     translateX = -50;
   } else if (w >= 500) {
-    top = 75;
+    top = 85;
     left = 50;
     translateX = -50;
   } else if (w >= 400) {
     // Medium - start moving down
-    top = 85;
+    top = 100;
     left = 52;
     translateX = -50;
   } else if (w >= 350) {
     // Smaller - move more down and slightly right
-    top = 95;
+    top = 115;
     left = 54;
     translateX = -50;
   } else if (w >= 300) {
     // Small - well below HUD
-    top = 105;
+    top = 130;
     left = 55;
     translateX = -50;
   } else if (w >= 250) {
     // Very small
-    top = 115;
+    top = 145;
     left = 55;
     translateX = -50;
   } else {
     // Tiny
-    top = 125;
+    top = 160;
     left = 55;
     translateX = -50;
   }
@@ -305,12 +305,12 @@ const questionBannerStyle = computed(() => {
 const gameAreaPadding = computed(() => {
   const w = containerWidth.value;
   if (w >= 600) return '110px';
-  if (w >= 500) return '115px';
-  if (w >= 400) return '125px';
-  if (w >= 350) return '135px';
-  if (w >= 300) return '145px';
-  if (w >= 250) return '155px';
-  return '165px';
+  if (w >= 500) return '125px';
+  if (w >= 400) return '140px';
+  if (w >= 350) return '155px';
+  if (w >= 300) return '170px';
+  if (w >= 250) return '185px';
+  return '200px';
 });
 
 // Grid responsive
