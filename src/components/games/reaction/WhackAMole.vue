@@ -43,18 +43,18 @@
         <div 
           v-for="(hole, index) in holes" 
           :key="index" 
-          class="relative flex flex-col items-center cursor-pointer active:scale-95 transition-transform"
+          class="relative cursor-pointer active:scale-95 transition-transform"
           @mousedown.prevent="handleWhack(index)"
           @touchstart.prevent="handleWhack(index)"
         >
-          <!-- Answer Bubble -->
+          <!-- Answer Bubble - positioned above everything -->
           <transition name="pop">
             <div 
               v-if="hole.active"
-              class="mb-1 z-30"
+              class="absolute -top-8 left-1/2 -translate-x-1/2 z-30"
             >
               <div 
-                class="bg-white px-2 py-1 rounded-lg shadow border-2 transition-all duration-100"
+                class="bg-white px-2 py-1 rounded-lg shadow border-2 transition-all duration-100 whitespace-nowrap"
                 :class="getAnswerBubbleClass(hole)"
               >
                 <span 
@@ -67,60 +67,64 @@
             </div>
           </transition>
 
-          <!-- Hole with Mole -->
+          <!-- Hole Container - fixed size -->
           <div class="relative w-full aspect-square">
             
-            <!-- Hole shadow/depth (STATIC - never moves) -->
-            <div class="absolute bottom-[20%] left-[12%] w-[76%] h-[25%] bg-amber-950 rounded-[50%] z-[1]"></div>
+            <!-- Dark hole background (static) -->
+            <div class="absolute bottom-[15%] left-[10%] w-[80%] h-[30%] bg-amber-950 rounded-[50%]"></div>
 
-            <!-- MOLE ONLY - this is what animates -->
-            <div 
-              class="absolute bottom-[38%] left-1/2 w-[55%] z-[5] transition-all duration-150 ease-out"
-              :class="getMoleTransform(hole)"
-            >
-              <div class="relative w-full aspect-[1/0.85]">
-                
-                <!-- Main body - simple oval blob -->
+            <!-- Mole area - clipped so mole hides behind dirt -->
+            <div class="absolute bottom-[28%] left-[15%] w-[70%] h-[50%] overflow-hidden">
+              <!-- The mole that slides up/down -->
+              <div 
+                class="absolute bottom-0 left-1/2 -translate-x-1/2 w-[80%] transition-all duration-150 ease-out"
+                :class="hole.active ? 'translate-y-[5%]' : 'translate-y-[100%]'"
+              >
                 <div 
-                  class="absolute inset-0 rounded-[50%] shadow-md"
-                  :class="getMoleBodyClass(hole)"
-                  style="background: linear-gradient(180deg, #D4A574 0%, #B8845A 100%);"
-                ></div>
-                
-                <!-- Left ear - tiny bump -->
-                <div 
-                  class="absolute -top-[6%] left-[18%] w-[18%] aspect-square rounded-full"
-                  style="background: #C4956A;"
-                ></div>
-                
-                <!-- Right ear - tiny bump -->
-                <div 
-                  class="absolute -top-[6%] right-[18%] w-[18%] aspect-square rounded-full"
-                  style="background: #C4956A;"
-                ></div>
-                
-                <!-- Just two simple dot eyes -->
-                <div class="absolute top-[38%] left-[30%] w-[10%] aspect-square bg-slate-800 rounded-full"></div>
-                <div class="absolute top-[38%] right-[30%] w-[10%] aspect-square bg-slate-800 rounded-full"></div>
-                
-                <!-- Tiny pink nose dot -->
-                <div class="absolute top-[58%] left-1/2 -translate-x-1/2 w-[7%] aspect-square bg-pink-400 rounded-full"></div>
+                  class="relative w-full aspect-[1/0.85]"
+                  :class="getMoleEffectClass(hole)"
+                >
+                  <!-- Main body -->
+                  <div 
+                    class="absolute inset-0 rounded-[50%] shadow-md"
+                    style="background: linear-gradient(180deg, #D4A574 0%, #B8845A 100%);"
+                  ></div>
+                  
+                  <!-- Left ear -->
+                  <div 
+                    class="absolute -top-[6%] left-[18%] w-[18%] aspect-square rounded-full"
+                    style="background: #C4956A;"
+                  ></div>
+                  
+                  <!-- Right ear -->
+                  <div 
+                    class="absolute -top-[6%] right-[18%] w-[18%] aspect-square rounded-full"
+                    style="background: #C4956A;"
+                  ></div>
+                  
+                  <!-- Two dot eyes -->
+                  <div class="absolute top-[38%] left-[30%] w-[10%] aspect-square bg-slate-800 rounded-full"></div>
+                  <div class="absolute top-[38%] right-[30%] w-[10%] aspect-square bg-slate-800 rounded-full"></div>
+                  
+                  <!-- Pink nose -->
+                  <div class="absolute top-[58%] left-1/2 -translate-x-1/2 w-[7%] aspect-square bg-pink-400 rounded-full"></div>
+                </div>
               </div>
             </div>
 
-            <!-- DIRT MOUND (STATIC - never moves, always visible) -->
-            <div class="absolute bottom-0 left-0 w-full h-[42%] z-10 pointer-events-none overflow-hidden">
+            <!-- DIRT MOUND - completely static, rendered last so it's on top -->
+            <div class="absolute bottom-0 left-0 w-full h-[38%] pointer-events-none">
               <div 
-                class="absolute bottom-0 w-full h-[120%] rounded-t-[100%]"
-                style="background: linear-gradient(0deg, #5D4037 0%, #795548 40%, #8D6E63 100%);"
+                class="absolute bottom-0 w-full h-full rounded-t-[100%]"
+                style="background: linear-gradient(0deg, #5D4037 0%, #795548 50%, #8D6E63 100%);"
               ></div>
-              <!-- Grass -->
-              <div class="absolute -top-1 left-[10%] w-[80%] flex justify-around">
-                <div class="w-1 h-2.5 bg-emerald-500 rounded-t-full -rotate-12 origin-bottom"></div>
-                <div class="w-1 h-3.5 bg-emerald-400 rounded-t-full rotate-6 origin-bottom"></div>
-                <div class="w-1 h-2 bg-emerald-500 rounded-t-full -rotate-6 origin-bottom"></div>
-                <div class="w-1 h-3 bg-emerald-400 rounded-t-full rotate-12 origin-bottom"></div>
-                <div class="w-1 h-2.5 bg-emerald-500 rounded-t-full rotate-3 origin-bottom"></div>
+              <!-- Grass blades -->
+              <div class="absolute top-0 left-[10%] w-[80%] flex justify-around">
+                <div class="w-1 h-2.5 bg-emerald-500 rounded-t-full -rotate-12 origin-bottom -translate-y-1"></div>
+                <div class="w-1 h-3.5 bg-emerald-400 rounded-t-full rotate-6 origin-bottom -translate-y-1"></div>
+                <div class="w-1 h-2 bg-emerald-500 rounded-t-full -rotate-6 origin-bottom -translate-y-1"></div>
+                <div class="w-1 h-3 bg-emerald-400 rounded-t-full rotate-12 origin-bottom -translate-y-1"></div>
+                <div class="w-1 h-2.5 bg-emerald-500 rounded-t-full rotate-3 origin-bottom -translate-y-1"></div>
               </div>
             </div>
           </div>
@@ -260,7 +264,7 @@ const questionBannerStyle = computed(() => {
   return { top: '72px' };
 });
 
-// Game area padding matches banner position
+// Game area padding
 const gameAreaPadding = computed(() => {
   const w = containerWidth.value;
   if (w < 250) return '165px';
@@ -333,17 +337,10 @@ const accuracy = computed(() => {
   return total === 0 ? 0 : Math.round((correctHits.value / total) * 100);
 });
 
-// Helpers - MOLE ONLY transforms (dirt stays put)
-const getMoleTransform = (hole) => {
-  if (!hole.active) return '-translate-x-1/2 translate-y-[80%] opacity-0';
-  if (hole.state === 'hit') return '-translate-x-1/2 translate-y-0 scale-90';
-  if (hole.state === 'miss') return '-translate-x-1/2 translate-y-0 animate-wiggle';
-  return '-translate-x-1/2 translate-y-0';
-};
-
-const getMoleBodyClass = (hole) => {
-  if (hole.state === 'hit') return 'brightness-125';
-  if (hole.state === 'miss') return 'brightness-75';
+// Mole effect class for hit/miss states
+const getMoleEffectClass = (hole) => {
+  if (hole.state === 'hit') return 'scale-90 brightness-125';
+  if (hole.state === 'miss') return 'animate-wiggle brightness-75';
   return '';
 };
 
@@ -544,12 +541,12 @@ onUnmounted(() => {
 .pop-leave-active { animation: popOut 0.1s ease-in; }
 
 @keyframes popIn {
-  from { opacity: 0; transform: scale(0.7); }
-  to { opacity: 1; transform: scale(1); }
+  from { opacity: 0; transform: scale(0.7) translateX(-50%); }
+  to { opacity: 1; transform: scale(1) translateX(-50%); }
 }
 @keyframes popOut {
-  from { opacity: 1; transform: scale(1); }
-  to { opacity: 0; transform: scale(0.8); }
+  from { opacity: 1; transform: scale(1) translateX(-50%); }
+  to { opacity: 0; transform: scale(0.8) translateX(-50%); }
 }
 
 .hit-enter-active { animation: hitPop 0.3s ease-out; }
@@ -569,9 +566,9 @@ onUnmounted(() => {
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 
 @keyframes wiggle {
-  0%, 100% { transform: translateX(-50%) rotate(0deg); }
-  25% { transform: translateX(-50%) rotate(-8deg); }
-  75% { transform: translateX(-50%) rotate(8deg); }
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-8deg); }
+  75% { transform: rotate(8deg); }
 }
 .animate-wiggle { animation: wiggle 0.25s ease-in-out; }
 </style>
