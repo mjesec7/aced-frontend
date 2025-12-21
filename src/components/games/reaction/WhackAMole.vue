@@ -17,7 +17,7 @@
     <!-- Question Banner -->
     <div 
       v-if="gameActive" 
-      class="absolute z-50 left-1/2 -translate-x-1/2 transition-all duration-200 ease-out w-[90%] max-w-md"
+      class="absolute z-50 left-1/2 -translate-x-1/2 w-[90%] max-w-md"
       :style="questionBannerStyle"
     >
       <div class="bg-white px-4 py-2 rounded-xl shadow-md">
@@ -43,42 +43,41 @@
         <div 
           v-for="(hole, index) in holes" 
           :key="index" 
-          class="relative cursor-pointer active:scale-95 transition-transform"
+          class="relative cursor-pointer"
           @mousedown.prevent="handleWhack(index)"
           @touchstart.prevent="handleWhack(index)"
         >
-          <!-- Answer Bubble - positioned above everything -->
-          <transition name="pop">
+          <!-- Answer Bubble - completely independent, no animations that cause shake -->
+          <div 
+            v-if="hole.active"
+            class="absolute -top-8 left-1/2 z-30"
+            style="transform: translateX(-50%);"
+          >
             <div 
-              v-if="hole.active"
-              class="absolute -top-8 left-1/2 -translate-x-1/2 z-30"
+              class="bg-white px-2 py-1 rounded-lg shadow-md border-2 whitespace-nowrap"
+              :class="getAnswerBubbleClass(hole)"
             >
-              <div 
-                class="bg-white px-2 py-1 rounded-lg shadow border-2 transition-all duration-100 whitespace-nowrap"
-                :class="getAnswerBubbleClass(hole)"
+              <span 
+                class="font-bold text-slate-700"
+                :class="answerTextClass"
               >
-                <span 
-                  class="font-bold text-slate-700"
-                  :class="answerTextClass"
-                >
-                  {{ hole.content }}
-                </span>
-              </div>
+                {{ hole.content }}
+              </span>
             </div>
-          </transition>
+          </div>
 
-          <!-- Hole Container - fixed size -->
+          <!-- Hole Container -->
           <div class="relative w-full aspect-square">
             
-            <!-- Dark hole background (static) -->
+            <!-- Dark hole background -->
             <div class="absolute bottom-[15%] left-[10%] w-[80%] h-[30%] bg-amber-950 rounded-[50%]"></div>
 
-            <!-- Mole area - clipped so mole hides behind dirt -->
+            <!-- Mole clip area -->
             <div class="absolute bottom-[28%] left-[15%] w-[70%] h-[50%] overflow-hidden">
-              <!-- The mole that slides up/down -->
               <div 
-                class="absolute bottom-0 left-1/2 -translate-x-1/2 w-[80%] transition-all duration-150 ease-out"
-                :class="hole.active ? 'translate-y-[5%]' : 'translate-y-[100%]'"
+                class="absolute bottom-0 left-1/2 w-[80%] mole-slide"
+                :class="hole.active ? 'mole-up' : 'mole-down'"
+                style="transform: translateX(-50%);"
               >
                 <div 
                   class="relative w-full aspect-[1/0.85]"
@@ -107,37 +106,36 @@
                   <div class="absolute top-[38%] right-[30%] w-[10%] aspect-square bg-slate-800 rounded-full"></div>
                   
                   <!-- Pink nose -->
-                  <div class="absolute top-[58%] left-1/2 -translate-x-1/2 w-[7%] aspect-square bg-pink-400 rounded-full"></div>
+                  <div class="absolute top-[58%] left-1/2 w-[7%] aspect-square bg-pink-400 rounded-full" style="transform: translateX(-50%);"></div>
                 </div>
               </div>
             </div>
 
-            <!-- DIRT MOUND - completely static, rendered last so it's on top -->
+            <!-- Dirt mound - static -->
             <div class="absolute bottom-0 left-0 w-full h-[38%] pointer-events-none">
               <div 
                 class="absolute bottom-0 w-full h-full rounded-t-[100%]"
                 style="background: linear-gradient(0deg, #5D4037 0%, #795548 50%, #8D6E63 100%);"
               ></div>
-              <!-- Grass blades -->
+              <!-- Grass -->
               <div class="absolute top-0 left-[10%] w-[80%] flex justify-around">
-                <div class="w-1 h-2.5 bg-emerald-500 rounded-t-full -rotate-12 origin-bottom -translate-y-1"></div>
-                <div class="w-1 h-3.5 bg-emerald-400 rounded-t-full rotate-6 origin-bottom -translate-y-1"></div>
-                <div class="w-1 h-2 bg-emerald-500 rounded-t-full -rotate-6 origin-bottom -translate-y-1"></div>
-                <div class="w-1 h-3 bg-emerald-400 rounded-t-full rotate-12 origin-bottom -translate-y-1"></div>
-                <div class="w-1 h-2.5 bg-emerald-500 rounded-t-full rotate-3 origin-bottom -translate-y-1"></div>
+                <div class="w-1 h-2.5 bg-emerald-500 rounded-t-full origin-bottom" style="transform: rotate(-12deg) translateY(-4px);"></div>
+                <div class="w-1 h-3.5 bg-emerald-400 rounded-t-full origin-bottom" style="transform: rotate(6deg) translateY(-4px);"></div>
+                <div class="w-1 h-2 bg-emerald-500 rounded-t-full origin-bottom" style="transform: rotate(-6deg) translateY(-4px);"></div>
+                <div class="w-1 h-3 bg-emerald-400 rounded-t-full origin-bottom" style="transform: rotate(12deg) translateY(-4px);"></div>
+                <div class="w-1 h-2.5 bg-emerald-500 rounded-t-full origin-bottom" style="transform: rotate(3deg) translateY(-4px);"></div>
               </div>
             </div>
           </div>
 
           <!-- Hit Effect -->
-          <transition name="hit">
-            <div 
-              v-if="hole.showEffect" 
-              class="absolute top-0 left-1/2 -translate-x-1/2 text-2xl z-40 pointer-events-none"
-            >
-              {{ hole.state === 'hit' ? '⭐' : '❌' }}
-            </div>
-          </transition>
+          <div 
+            v-if="hole.showEffect" 
+            class="absolute top-0 left-1/2 text-2xl z-40 pointer-events-none"
+            style="transform: translateX(-50%);"
+          >
+            {{ hole.state === 'hit' ? '⭐' : '❌' }}
+          </div>
         </div>
       </div>
     </div>
@@ -178,53 +176,51 @@
     </div>
 
     <!-- GAME OVER -->
-    <transition name="fade">
-      <div 
-        v-if="isGameOver" 
-        class="absolute inset-0 bg-black/50 flex items-center justify-center p-4 z-[100]"
-      >
-        <div class="bg-white rounded-2xl p-6 text-center max-w-xs w-full shadow-xl">
-          <div class="text-4xl mb-2">
-            {{ earnedStars >= 3 ? '🏆' : earnedStars >= 2 ? '🎉' : earnedStars >= 1 ? '👍' : '💪' }}
-          </div>
-          
-          <h2 class="text-xl font-bold text-slate-800">
-            {{ earnedStars >= 3 ? 'Perfect!' : earnedStars >= 2 ? 'Great!' : earnedStars >= 1 ? 'Good!' : 'Try Again!' }}
-          </h2>
-
-          <div class="text-3xl font-bold text-indigo-500 my-2">{{ score }}</div>
-
-          <div class="flex justify-center gap-1 mb-4">
-            <span 
-              v-for="n in 3" 
-              :key="n" 
-              class="text-2xl"
-              :class="n <= earnedStars ? 'text-amber-400' : 'text-slate-200'"
-            >★</span>
-          </div>
-
-          <div class="flex justify-around mb-4 text-sm">
-            <div>
-              <div class="text-slate-400">Correct</div>
-              <div class="font-bold text-green-500">{{ correctHits }}</div>
-            </div>
-            <div>
-              <div class="text-slate-400">Wrong</div>
-              <div class="font-bold text-red-500">{{ wrongHits }}</div>
-            </div>
-            <div>
-              <div class="text-slate-400">Accuracy</div>
-              <div class="font-bold">{{ accuracy }}%</div>
-            </div>
-          </div>
-
-          <div class="h-1 bg-slate-100 rounded-full overflow-hidden">
-            <div class="h-full bg-indigo-500 transition-all" :style="{ width: progressWidth + '%' }"></div>
-          </div>
-          <p class="text-xs text-slate-400 mt-1">{{ Math.ceil(progressWidth / 20) }}s...</p>
+    <div 
+      v-if="isGameOver" 
+      class="absolute inset-0 bg-black/50 flex items-center justify-center p-4 z-[100]"
+    >
+      <div class="bg-white rounded-2xl p-6 text-center max-w-xs w-full shadow-xl">
+        <div class="text-4xl mb-2">
+          {{ earnedStars >= 3 ? '🏆' : earnedStars >= 2 ? '🎉' : earnedStars >= 1 ? '👍' : '💪' }}
         </div>
+        
+        <h2 class="text-xl font-bold text-slate-800">
+          {{ earnedStars >= 3 ? 'Perfect!' : earnedStars >= 2 ? 'Great!' : earnedStars >= 1 ? 'Good!' : 'Try Again!' }}
+        </h2>
+
+        <div class="text-3xl font-bold text-indigo-500 my-2">{{ score }}</div>
+
+        <div class="flex justify-center gap-1 mb-4">
+          <span 
+            v-for="n in 3" 
+            :key="n" 
+            class="text-2xl"
+            :class="n <= earnedStars ? 'text-amber-400' : 'text-slate-200'"
+          >★</span>
+        </div>
+
+        <div class="flex justify-around mb-4 text-sm">
+          <div>
+            <div class="text-slate-400">Correct</div>
+            <div class="font-bold text-green-500">{{ correctHits }}</div>
+          </div>
+          <div>
+            <div class="text-slate-400">Wrong</div>
+            <div class="font-bold text-red-500">{{ wrongHits }}</div>
+          </div>
+          <div>
+            <div class="text-slate-400">Accuracy</div>
+            <div class="font-bold">{{ accuracy }}%</div>
+          </div>
+        </div>
+
+        <div class="h-1 bg-slate-100 rounded-full overflow-hidden">
+          <div class="h-full bg-indigo-500 transition-all" :style="{ width: progressWidth + '%' }"></div>
+        </div>
+        <p class="text-xs text-slate-400 mt-1">{{ Math.ceil(progressWidth / 20) }}s...</p>
       </div>
-    </transition>
+    </div>
   </div>
 </template>
 
@@ -339,15 +335,15 @@ const accuracy = computed(() => {
 
 // Mole effect class for hit/miss states
 const getMoleEffectClass = (hole) => {
-  if (hole.state === 'hit') return 'scale-90 brightness-125';
-  if (hole.state === 'miss') return 'animate-wiggle brightness-75';
+  if (hole.state === 'hit') return 'mole-hit';
+  if (hole.state === 'miss') return 'mole-miss';
   return '';
 };
 
 const getAnswerBubbleClass = (hole) => {
   if (hole.state === 'hit') return 'border-green-400 bg-green-50';
   if (hole.state === 'miss') return 'border-red-400 bg-red-50';
-  return 'border-amber-300';
+  return 'border-amber-300 bg-white';
 };
 
 // Initialize holes
@@ -537,38 +533,33 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.pop-enter-active { animation: popIn 0.15s ease-out; }
-.pop-leave-active { animation: popOut 0.1s ease-in; }
-
-@keyframes popIn {
-  from { opacity: 0; transform: scale(0.7) translateX(-50%); }
-  to { opacity: 1; transform: scale(1) translateX(-50%); }
-}
-@keyframes popOut {
-  from { opacity: 1; transform: scale(1) translateX(-50%); }
-  to { opacity: 0; transform: scale(0.8) translateX(-50%); }
+/* Mole slide animation - only vertical movement */
+.mole-slide {
+  transition: transform 0.15s ease-out;
 }
 
-.hit-enter-active { animation: hitPop 0.3s ease-out; }
-.hit-leave-active { animation: hitFade 0.15s ease-out; }
-
-@keyframes hitPop {
-  0% { transform: translateX(-50%) scale(0.5); opacity: 0; }
-  50% { transform: translateX(-50%) scale(1.3); opacity: 1; }
-  100% { transform: translateX(-50%) translateY(-10px) scale(1); opacity: 0.8; }
-}
-@keyframes hitFade {
-  to { opacity: 0; transform: translateX(-50%) translateY(-15px); }
+.mole-up {
+  transform: translateX(-50%) translateY(5%);
 }
 
-.fade-enter-active { transition: opacity 0.2s; }
-.fade-leave-active { transition: opacity 0.15s; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
+.mole-down {
+  transform: translateX(-50%) translateY(100%);
+}
+
+/* Mole hit/miss effects */
+.mole-hit {
+  filter: brightness(1.25);
+  transform: scale(0.9);
+}
+
+.mole-miss {
+  filter: brightness(0.75);
+  animation: wiggle 0.25s ease-in-out;
+}
 
 @keyframes wiggle {
   0%, 100% { transform: rotate(0deg); }
   25% { transform: rotate(-8deg); }
   75% { transform: rotate(8deg); }
 }
-.animate-wiggle { animation: wiggle 0.25s ease-in-out; }
 </style>
