@@ -20,13 +20,26 @@
       class="absolute z-40 question-banner"
       :style="questionBannerStyle"
     >
-      <div class="bg-white py-2 px-4 rounded-xl shadow-md inline-block">
-        <p 
-          class="font-bold text-slate-700 text-center whitespace-nowrap"
-          :class="bannerTextClass"
-        >
-          {{ currentPrompt }}
-        </p>
+      <div 
+        :key="currentQuestionIndex"
+        class="relative group banner-float banner-pop"
+      >
+        <!-- Premium background with glow -->
+        <div class="absolute -inset-1 bg-linear-to-r from-indigo-500 to-purple-600 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+        
+        <div class="relative bg-white py-3 px-6 rounded-2xl shadow-2xl border-2 border-indigo-50 inline-block min-w-[180px]">
+          <!-- Question Label -->
+          <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-indigo-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest shadow-sm">
+            Question
+          </div>
+          
+          <p 
+            class="font-black text-indigo-950 text-center whitespace-nowrap tracking-tight"
+            :class="bannerTextClass"
+          >
+            {{ currentPrompt }}
+          </p>
+        </div>
       </div>
     </div>
 
@@ -310,9 +323,9 @@ const gridClass = computed(() => {
 // Text sizes
 const bannerTextClass = computed(() => {
   const w = containerWidth.value;
-  if (w < 300) return 'text-xs';
-  if (w < 400) return 'text-sm';
-  return 'text-base';
+  if (w < 300) return 'text-sm';
+  if (w < 400) return 'text-base';
+  return 'text-xl';
 });
 
 const answerTextClass = computed(() => {
@@ -562,6 +575,24 @@ onUnmounted(() => {
 /* Question banner - smooth transition when resizing */
 .question-banner {
   transition: top 0.3s ease-out, left 0.3s ease-out, transform 0.3s ease-out;
+}
+
+.banner-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.banner-pop {
+  animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes pop {
+  0% { transform: scale(0.9); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 /* Mole wrapper - handles the up/down animation */
