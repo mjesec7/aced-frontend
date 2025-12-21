@@ -269,22 +269,9 @@ const questionBannerStyle = computed(() => {
   // Wide: centered near top
   // Narrow: lower and more to the right to avoid HUD overlap
   
-  // Formula-based positioning for smooth transition
-  // Starts moving at 900px, stops at 300px
-  const startW = 900;
-  const endW = 300;
-  
-  // Calculate progress 0..1 (0 at startW, 1 at endW)
-  const progress = Math.min(Math.max((startW - w) / (startW - endW), 0), 1);
-  
-  // Interpolate values
-  // Top: 70px -> 200px
-  const top = 70 + (200 - 70) * progress;
-  
-  // Left: 50% -> 55%
-  const left = 50 + (55 - 50) * progress;
-  
-  // TranslateX is constant
+  // Fixed positioning for stability
+  const top = 100;
+  const left = 50;
   const translateX = -50;
   
   return {
@@ -295,21 +282,7 @@ const questionBannerStyle = computed(() => {
 });
 
 // Game area padding - matches banner position
-const gameAreaPadding = computed(() => {
-  const w = containerWidth.value;
-  // Formula-based padding
-  // Starts at 900px, stops at 300px
-  const startW = 900;
-  const endW = 300;
-  
-  // Calculate progress 0..1
-  const progress = Math.min(Math.max((startW - w) / (startW - endW), 0), 1);
-  
-  // Padding: 110px -> 220px
-  const padding = 110 + (220 - 110) * progress;
-  
-  return `${padding}px`;
-});
+const gameAreaPadding = computed(() => '140px');
 
 // Grid responsive
 const gridClass = computed(() => {
