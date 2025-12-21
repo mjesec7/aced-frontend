@@ -17,8 +17,8 @@
     <!-- Question Banner -->
     <div 
       v-if="gameActive" 
-      class="absolute z-50 left-1/2 -translate-x-1/2 w-[90%] max-w-md"
-      :style="questionBannerStyle"
+      class="absolute z-50 left-1/2 w-[90%] max-w-md"
+      :style="{ ...questionBannerStyle, transform: 'translateX(-50%)' }"
     >
       <div class="bg-white px-4 py-2 rounded-xl shadow-md">
         <p 
@@ -47,11 +47,11 @@
           @mousedown.prevent="handleWhack(index)"
           @touchstart.prevent="handleWhack(index)"
         >
-          <!-- Answer Bubble - completely independent, no animations that cause shake -->
+          <!-- Answer Bubble -->
           <div 
             v-if="hole.active"
-            class="absolute -top-8 left-1/2 z-30"
-            style="transform: translateX(-50%);"
+            class="absolute z-30 left-1/2 bubble-position"
+            style="top: -32px;"
           >
             <div 
               class="bg-white px-2 py-1 rounded-lg shadow-md border-2 whitespace-nowrap"
@@ -75,9 +75,8 @@
             <!-- Mole clip area -->
             <div class="absolute bottom-[28%] left-[15%] w-[70%] h-[50%] overflow-hidden">
               <div 
-                class="absolute bottom-0 left-1/2 w-[80%] mole-slide"
-                :class="hole.active ? 'mole-up' : 'mole-down'"
-                style="transform: translateX(-50%);"
+                class="mole-wrapper"
+                :style="{ transform: `translateX(-50%) translateY(${hole.active ? '5%' : '100%'})` }"
               >
                 <div 
                   class="relative w-full aspect-[1/0.85]"
@@ -91,22 +90,22 @@
                   
                   <!-- Left ear -->
                   <div 
-                    class="absolute -top-[6%] left-[18%] w-[18%] aspect-square rounded-full"
-                    style="background: #C4956A;"
+                    class="absolute w-[18%] aspect-square rounded-full"
+                    style="top: -6%; left: 18%; background: #C4956A;"
                   ></div>
                   
                   <!-- Right ear -->
                   <div 
-                    class="absolute -top-[6%] right-[18%] w-[18%] aspect-square rounded-full"
-                    style="background: #C4956A;"
+                    class="absolute w-[18%] aspect-square rounded-full"
+                    style="top: -6%; right: 18%; background: #C4956A;"
                   ></div>
                   
                   <!-- Two dot eyes -->
-                  <div class="absolute top-[38%] left-[30%] w-[10%] aspect-square bg-slate-800 rounded-full"></div>
-                  <div class="absolute top-[38%] right-[30%] w-[10%] aspect-square bg-slate-800 rounded-full"></div>
+                  <div class="absolute w-[10%] aspect-square bg-slate-800 rounded-full" style="top: 38%; left: 30%;"></div>
+                  <div class="absolute w-[10%] aspect-square bg-slate-800 rounded-full" style="top: 38%; right: 30%;"></div>
                   
                   <!-- Pink nose -->
-                  <div class="absolute top-[58%] left-1/2 w-[7%] aspect-square bg-pink-400 rounded-full" style="transform: translateX(-50%);"></div>
+                  <div class="absolute w-[7%] aspect-square bg-pink-400 rounded-full" style="top: 58%; left: 50%; transform: translateX(-50%);"></div>
                 </div>
               </div>
             </div>
@@ -119,11 +118,11 @@
               ></div>
               <!-- Grass -->
               <div class="absolute top-0 left-[10%] w-[80%] flex justify-around">
-                <div class="w-1 h-2.5 bg-emerald-500 rounded-t-full origin-bottom" style="transform: rotate(-12deg) translateY(-4px);"></div>
-                <div class="w-1 h-3.5 bg-emerald-400 rounded-t-full origin-bottom" style="transform: rotate(6deg) translateY(-4px);"></div>
-                <div class="w-1 h-2 bg-emerald-500 rounded-t-full origin-bottom" style="transform: rotate(-6deg) translateY(-4px);"></div>
-                <div class="w-1 h-3 bg-emerald-400 rounded-t-full origin-bottom" style="transform: rotate(12deg) translateY(-4px);"></div>
-                <div class="w-1 h-2.5 bg-emerald-500 rounded-t-full origin-bottom" style="transform: rotate(3deg) translateY(-4px);"></div>
+                <div class="grass-blade" style="height: 10px; transform: rotate(-12deg) translateY(-4px);"></div>
+                <div class="grass-blade" style="height: 14px; transform: rotate(6deg) translateY(-4px); background: #34d399;"></div>
+                <div class="grass-blade" style="height: 8px; transform: rotate(-6deg) translateY(-4px);"></div>
+                <div class="grass-blade" style="height: 12px; transform: rotate(12deg) translateY(-4px); background: #34d399;"></div>
+                <div class="grass-blade" style="height: 10px; transform: rotate(3deg) translateY(-4px);"></div>
               </div>
             </div>
           </div>
@@ -533,25 +532,35 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* Mole slide animation - only vertical movement */
-.mole-slide {
+/* Mole wrapper - handles the up/down animation */
+.mole-wrapper {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 80%;
   transition: transform 0.15s ease-out;
 }
 
-.mole-up {
-  transform: translateX(-50%) translateY(5%);
+/* Answer bubble positioning */
+.bubble-position {
+  transform: translateX(-50%);
 }
 
-.mole-down {
-  transform: translateX(-50%) translateY(100%);
+/* Grass blade styling */
+.grass-blade {
+  width: 4px;
+  background: #10b981;
+  border-radius: 2px 2px 0 0;
+  transform-origin: bottom center;
 }
 
-/* Mole hit/miss effects */
+/* Mole hit effect */
 .mole-hit {
   filter: brightness(1.25);
   transform: scale(0.9);
 }
 
+/* Mole miss effect */
 .mole-miss {
   filter: brightness(0.75);
   animation: wiggle 0.25s ease-in-out;
