@@ -265,8 +265,8 @@ const questionBannerStyle = computed(() => {
   const progress = Math.min(Math.max((startW - w) / (startW - endW), 0), 1);
   
   // Interpolate values
-  // Top: 70px -> 260px
-  const top = 70 + (260 - 70) * progress;
+  // Top: 70px -> 230px
+  const top = 70 + (230 - 70) * progress;
   
   // Left: 50% -> 55%
   const left = 50 + (55 - 50) * progress;
@@ -292,8 +292,8 @@ const gameAreaPadding = computed(() => {
   // Calculate progress 0..1
   const progress = Math.min(Math.max((startW - w) / (startW - endW), 0), 1);
   
-  // Padding: 110px -> 280px
-  const padding = 110 + (280 - 110) * progress;
+  // Padding: 110px -> 250px
+  const padding = 110 + (250 - 110) * progress;
   
   return `${padding}px`;
 });
