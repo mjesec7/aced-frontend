@@ -1,7 +1,8 @@
 <template>
   <div 
     ref="gameWrapper"
-    class="absolute inset-0 bg-gradient-to-b from-green-400 via-emerald-500 to-green-600 font-sans select-none overflow-hidden flex flex-col"
+    class="absolute inset-0 font-sans select-none overflow-hidden flex flex-col"
+    style="background: linear-gradient(180deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);"
   >
     
     <!-- HUD Sidebar -->
@@ -69,12 +70,12 @@
           <!-- Hole with Mole -->
           <div class="relative w-full aspect-square">
             
-            <!-- Hole shadow/depth -->
+            <!-- Hole shadow/depth (STATIC - never moves) -->
             <div class="absolute bottom-[20%] left-[12%] w-[76%] h-[25%] bg-amber-950 rounded-[50%] z-[1]"></div>
 
-            <!-- ✨ SUPER SIMPLE BLOB MOLE ✨ -->
+            <!-- MOLE ONLY - this is what animates -->
             <div 
-              class="absolute bottom-[22%] left-1/2 w-[55%] z-[5] transition-all duration-150 ease-out"
+              class="absolute bottom-[38%] left-1/2 w-[55%] z-[5] transition-all duration-150 ease-out"
               :class="getMoleTransform(hole)"
             >
               <div class="relative w-full aspect-[1/0.85]">
@@ -107,19 +108,19 @@
               </div>
             </div>
 
-            <!-- Dirt mound (hides mole) -->
+            <!-- DIRT MOUND (STATIC - never moves, always visible) -->
             <div class="absolute bottom-0 left-0 w-full h-[42%] z-10 pointer-events-none overflow-hidden">
               <div 
                 class="absolute bottom-0 w-full h-[120%] rounded-t-[100%]"
-                style="background: linear-gradient(0deg, #7A5230 0%, #9A6B42 40%, #B8845A 100%);"
+                style="background: linear-gradient(0deg, #5D4037 0%, #795548 40%, #8D6E63 100%);"
               ></div>
               <!-- Grass -->
               <div class="absolute -top-1 left-[10%] w-[80%] flex justify-around">
-                <div class="w-1 h-2.5 bg-green-500 rounded-t-full -rotate-12 origin-bottom"></div>
-                <div class="w-1 h-3.5 bg-green-400 rounded-t-full rotate-6 origin-bottom"></div>
-                <div class="w-1 h-2 bg-green-500 rounded-t-full -rotate-6 origin-bottom"></div>
-                <div class="w-1 h-3 bg-green-400 rounded-t-full rotate-12 origin-bottom"></div>
-                <div class="w-1 h-2.5 bg-green-500 rounded-t-full rotate-3 origin-bottom"></div>
+                <div class="w-1 h-2.5 bg-emerald-500 rounded-t-full -rotate-12 origin-bottom"></div>
+                <div class="w-1 h-3.5 bg-emerald-400 rounded-t-full rotate-6 origin-bottom"></div>
+                <div class="w-1 h-2 bg-emerald-500 rounded-t-full -rotate-6 origin-bottom"></div>
+                <div class="w-1 h-3 bg-emerald-400 rounded-t-full rotate-12 origin-bottom"></div>
+                <div class="w-1 h-2.5 bg-emerald-500 rounded-t-full rotate-3 origin-bottom"></div>
               </div>
             </div>
           </div>
@@ -140,7 +141,8 @@
     <!-- START SCREEN -->
     <div 
       v-if="!gameActive && !isGameOver" 
-      class="absolute inset-0 bg-gradient-to-b from-green-400 to-emerald-600 flex items-center justify-center p-4 z-50"
+      class="absolute inset-0 flex items-center justify-center p-4 z-50"
+      style="background: linear-gradient(180deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);"
     >
       <div class="text-center max-w-xs w-full">
         <div class="text-6xl mb-4 animate-bounce">🐹</div>
@@ -163,7 +165,7 @@
 
         <button 
           @click="startGame"
-          class="bg-white text-green-600 px-8 py-3 rounded-full font-bold shadow-lg 
+          class="bg-white text-indigo-600 px-8 py-3 rounded-full font-bold shadow-lg 
                  hover:scale-105 active:scale-100 transition-transform"
         >
           Start Game ▶
@@ -186,7 +188,7 @@
             {{ earnedStars >= 3 ? 'Perfect!' : earnedStars >= 2 ? 'Great!' : earnedStars >= 1 ? 'Good!' : 'Try Again!' }}
           </h2>
 
-          <div class="text-3xl font-bold text-green-500 my-2">{{ score }}</div>
+          <div class="text-3xl font-bold text-indigo-500 my-2">{{ score }}</div>
 
           <div class="flex justify-center gap-1 mb-4">
             <span 
@@ -213,7 +215,7 @@
           </div>
 
           <div class="h-1 bg-slate-100 rounded-full overflow-hidden">
-            <div class="h-full bg-green-500 transition-all" :style="{ width: progressWidth + '%' }"></div>
+            <div class="h-full bg-indigo-500 transition-all" :style="{ width: progressWidth + '%' }"></div>
           </div>
           <p class="text-xs text-slate-400 mt-1">{{ Math.ceil(progressWidth / 20) }}s...</p>
         </div>
@@ -331,9 +333,9 @@ const accuracy = computed(() => {
   return total === 0 ? 0 : Math.round((correctHits.value / total) * 100);
 });
 
-// Helpers
+// Helpers - MOLE ONLY transforms (dirt stays put)
 const getMoleTransform = (hole) => {
-  if (!hole.active) return '-translate-x-1/2 translate-y-[100%]';
+  if (!hole.active) return '-translate-x-1/2 translate-y-[80%] opacity-0';
   if (hole.state === 'hit') return '-translate-x-1/2 translate-y-0 scale-90';
   if (hole.state === 'miss') return '-translate-x-1/2 translate-y-0 animate-wiggle';
   return '-translate-x-1/2 translate-y-0';
