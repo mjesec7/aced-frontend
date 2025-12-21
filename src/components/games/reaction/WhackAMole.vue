@@ -256,44 +256,23 @@ const questionBannerStyle = computed(() => {
   // Wide: centered near top
   // Narrow: lower and more to the right to avoid HUD overlap
   
-  let top, left, translateX;
+  // Formula-based positioning for smooth transition
+  // Starts moving at 900px, stops at 300px
+  const startW = 900;
+  const endW = 300;
   
-  if (w >= 600) {
-    // Large - centered at top
-    top = 70;
-    left = 50;
-    translateX = -50;
-  } else if (w >= 550) {
-    // Start moving down earlier
-    top = 110;
-    left = 50;
-    translateX = -50;
-  } else if (w >= 500) {
-    top = 140;
-    left = 50;
-    translateX = -50;
-  } else if (w >= 450) {
-    top = 160;
-    left = 52;
-    translateX = -50;
-  } else if (w >= 400) {
-    top = 180;
-    left = 52;
-    translateX = -50;
-  } else if (w >= 350) {
-    top = 200;
-    left = 54;
-    translateX = -50;
-  } else if (w >= 300) {
-    top = 220;
-    left = 55;
-    translateX = -50;
-  } else {
-    // Small
-    top = 240;
-    left = 55;
-    translateX = -50;
-  }
+  // Calculate progress 0..1 (0 at startW, 1 at endW)
+  const progress = Math.min(Math.max((startW - w) / (startW - endW), 0), 1);
+  
+  // Interpolate values
+  // Top: 70px -> 260px
+  const top = 70 + (260 - 70) * progress;
+  
+  // Left: 50% -> 55%
+  const left = 50 + (55 - 50) * progress;
+  
+  // TranslateX is constant
+  const translateX = -50;
   
   return {
     top: `${top}px`,
@@ -305,14 +284,18 @@ const questionBannerStyle = computed(() => {
 // Game area padding - matches banner position
 const gameAreaPadding = computed(() => {
   const w = containerWidth.value;
-  if (w >= 600) return '110px';
-  if (w >= 550) return '150px';
-  if (w >= 500) return '180px';
-  if (w >= 450) return '200px';
-  if (w >= 400) return '220px';
-  if (w >= 350) return '240px';
-  if (w >= 300) return '260px';
-  return '280px';
+  // Formula-based padding
+  // Starts at 900px, stops at 300px
+  const startW = 900;
+  const endW = 300;
+  
+  // Calculate progress 0..1
+  const progress = Math.min(Math.max((startW - w) / (startW - endW), 0), 1);
+  
+  // Padding: 110px -> 280px
+  const padding = 110 + (280 - 110) * progress;
+  
+  return `${padding}px`;
 });
 
 // Grid responsive
