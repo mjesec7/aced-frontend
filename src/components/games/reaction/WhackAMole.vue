@@ -72,85 +72,38 @@
             <!-- Hole shadow/depth -->
             <div class="absolute bottom-[20%] left-[12%] w-[76%] h-[25%] bg-amber-950 rounded-[50%] z-[1]"></div>
 
-            <!-- ✨ CUTE FRIENDLY MOLE ✨ -->
+            <!-- ✨ SUPER SIMPLE BLOB MOLE ✨ -->
             <div 
-              class="absolute bottom-[22%] left-1/2 w-[65%] z-[5] transition-all duration-150 ease-out"
+              class="absolute bottom-[22%] left-1/2 w-[55%] z-[5] transition-all duration-150 ease-out"
               :class="getMoleTransform(hole)"
             >
-              <div class="relative w-full aspect-square">
+              <div class="relative w-full aspect-[1/0.85]">
                 
-                <!-- Main body - warm brown, rounder shape -->
+                <!-- Main body - simple oval blob -->
                 <div 
-                  class="absolute inset-[5%] rounded-[45%] shadow-lg"
+                  class="absolute inset-0 rounded-[50%] shadow-md"
                   :class="getMoleBodyClass(hole)"
-                  style="background: linear-gradient(160deg, #8B6914 0%, #6B4E12 60%, #5A4210 100%);"
+                  style="background: linear-gradient(180deg, #D4A574 0%, #B8845A 100%);"
                 ></div>
                 
-                <!-- Face/belly lighter area - cream colored -->
+                <!-- Left ear - tiny bump -->
                 <div 
-                  class="absolute top-[18%] left-[18%] w-[64%] h-[65%] rounded-[45%]"
-                  style="background: linear-gradient(180deg, #F5E6C8 0%, #E8D4A8 50%, #DFC894 100%);"
+                  class="absolute -top-[6%] left-[18%] w-[18%] aspect-square rounded-full"
+                  style="background: #C4956A;"
                 ></div>
                 
-                <!-- Left ear - small and round -->
-                <div class="absolute top-[2%] left-[12%] w-[22%] aspect-square">
-                  <div class="w-full h-full rounded-full" style="background: linear-gradient(135deg, #8B6914 0%, #6B4E12 100%);"></div>
-                  <div class="absolute top-[28%] left-[28%] w-[44%] h-[44%] rounded-full bg-pink-300/70"></div>
-                </div>
+                <!-- Right ear - tiny bump -->
+                <div 
+                  class="absolute -top-[6%] right-[18%] w-[18%] aspect-square rounded-full"
+                  style="background: #C4956A;"
+                ></div>
                 
-                <!-- Right ear - small and round -->
-                <div class="absolute top-[2%] right-[12%] w-[22%] aspect-square">
-                  <div class="w-full h-full rounded-full" style="background: linear-gradient(135deg, #8B6914 0%, #6B4E12 100%);"></div>
-                  <div class="absolute top-[28%] left-[28%] w-[44%] h-[44%] rounded-full bg-pink-300/70"></div>
-                </div>
+                <!-- Just two simple dot eyes -->
+                <div class="absolute top-[38%] left-[30%] w-[10%] aspect-square bg-slate-800 rounded-full"></div>
+                <div class="absolute top-[38%] right-[30%] w-[10%] aspect-square bg-slate-800 rounded-full"></div>
                 
-                <!-- Eyes - big friendly eyes with sparkle -->
-                <div class="absolute top-[30%] left-[20%] w-[60%] flex justify-between">
-                  <!-- Left eye -->
-                  <div class="w-[40%] aspect-square bg-white rounded-full shadow-inner flex items-center justify-center border border-gray-100">
-                    <div class="w-[60%] aspect-square rounded-full relative" style="background: linear-gradient(180deg, #2D1B0E 0%, #1A0F08 100%);">
-                      <!-- Eye shine - big -->
-                      <div class="absolute top-[12%] left-[15%] w-[40%] aspect-square bg-white rounded-full"></div>
-                      <!-- Eye shine - small -->
-                      <div class="absolute bottom-[25%] right-[20%] w-[18%] aspect-square bg-white/70 rounded-full"></div>
-                    </div>
-                  </div>
-                  <!-- Right eye -->
-                  <div class="w-[40%] aspect-square bg-white rounded-full shadow-inner flex items-center justify-center border border-gray-100">
-                    <div class="w-[60%] aspect-square rounded-full relative" style="background: linear-gradient(180deg, #2D1B0E 0%, #1A0F08 100%);">
-                      <!-- Eye shine - big -->
-                      <div class="absolute top-[12%] left-[15%] w-[40%] aspect-square bg-white rounded-full"></div>
-                      <!-- Eye shine - small -->
-                      <div class="absolute bottom-[25%] right-[20%] w-[18%] aspect-square bg-white/70 rounded-full"></div>
-                    </div>
-                  </div>
-                </div>
-                
-                <!-- Nose - cute pink oval -->
-                <div class="absolute top-[58%] left-1/2 -translate-x-1/2 w-[18%] aspect-[1.3/1] rounded-[50%] shadow-sm" style="background: linear-gradient(180deg, #E8A0B0 0%, #D4808F 100%);"></div>
-                
-                <!-- Mouth - happy smile -->
-                <div class="absolute top-[70%] left-1/2 -translate-x-1/2 w-[28%]">
-                  <svg viewBox="0 0 40 20" class="w-full">
-                    <path 
-                      d="M5 8 Q20 18 35 8" 
-                      fill="none" 
-                      stroke="#5A4210" 
-                      stroke-width="2.5" 
-                      stroke-linecap="round"
-                    />
-                  </svg>
-                </div>
-                
-                <!-- Blush - soft pink circles -->
-                <div class="absolute top-[55%] left-[8%] w-[16%] aspect-[1.4/1] bg-pink-300/50 rounded-full blur-[1px]"></div>
-                <div class="absolute top-[55%] right-[8%] w-[16%] aspect-[1.4/1] bg-pink-300/50 rounded-full blur-[1px]"></div>
-                
-                <!-- Optional whisker dots -->
-                <div class="absolute top-[62%] left-[22%] w-[4%] aspect-square bg-amber-800/40 rounded-full"></div>
-                <div class="absolute top-[66%] left-[18%] w-[4%] aspect-square bg-amber-800/40 rounded-full"></div>
-                <div class="absolute top-[62%] right-[22%] w-[4%] aspect-square bg-amber-800/40 rounded-full"></div>
-                <div class="absolute top-[66%] right-[18%] w-[4%] aspect-square bg-amber-800/40 rounded-full"></div>
+                <!-- Tiny pink nose dot -->
+                <div class="absolute top-[58%] left-1/2 -translate-x-1/2 w-[7%] aspect-square bg-pink-400 rounded-full"></div>
               </div>
             </div>
 
@@ -160,14 +113,13 @@
                 class="absolute bottom-0 w-full h-[120%] rounded-t-[100%]"
                 style="background: linear-gradient(0deg, #7A5230 0%, #9A6B42 40%, #B8845A 100%);"
               ></div>
-              <!-- Grass blades -->
-              <div class="absolute -top-1 left-[8%] w-[84%] flex justify-around">
-                <div class="w-1.5 h-3 bg-green-500 rounded-t-full -rotate-12 origin-bottom"></div>
-                <div class="w-1 h-4 bg-green-400 rounded-t-full rotate-6 origin-bottom"></div>
-                <div class="w-1.5 h-2.5 bg-green-500 rounded-t-full -rotate-6 origin-bottom"></div>
-                <div class="w-1 h-3.5 bg-green-400 rounded-t-full rotate-12 origin-bottom"></div>
-                <div class="w-1.5 h-2.5 bg-green-500 rounded-t-full rotate-3 origin-bottom"></div>
-                <div class="w-1 h-3 bg-green-400 rounded-t-full -rotate-8 origin-bottom"></div>
+              <!-- Grass -->
+              <div class="absolute -top-1 left-[10%] w-[80%] flex justify-around">
+                <div class="w-1 h-2.5 bg-green-500 rounded-t-full -rotate-12 origin-bottom"></div>
+                <div class="w-1 h-3.5 bg-green-400 rounded-t-full rotate-6 origin-bottom"></div>
+                <div class="w-1 h-2 bg-green-500 rounded-t-full -rotate-6 origin-bottom"></div>
+                <div class="w-1 h-3 bg-green-400 rounded-t-full rotate-12 origin-bottom"></div>
+                <div class="w-1 h-2.5 bg-green-500 rounded-t-full rotate-3 origin-bottom"></div>
               </div>
             </div>
           </div>
@@ -388,8 +340,8 @@ const getMoleTransform = (hole) => {
 };
 
 const getMoleBodyClass = (hole) => {
-  if (hole.state === 'hit') return 'brightness-125 saturate-110';
-  if (hole.state === 'miss') return 'brightness-90 hue-rotate-15';
+  if (hole.state === 'hit') return 'brightness-125';
+  if (hole.state === 'miss') return 'brightness-75';
   return '';
 };
 
