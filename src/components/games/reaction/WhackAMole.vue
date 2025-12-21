@@ -155,10 +155,10 @@
     <!-- START SCREEN -->
     <div 
       v-if="!gameActive && !isGameOver" 
-      class="absolute inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto"
+      class="absolute inset-0 flex flex-col items-center z-50 overflow-y-auto p-4"
       style="background: linear-gradient(180deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);"
     >
-      <div class="text-center max-w-xs w-full py-8">
+      <div class="text-center max-w-xs w-full py-8 my-auto">
         <div class="text-4xl sm:text-6xl mb-2 sm:mb-4 animate-bounce">🐹</div>
         <h1 class="text-xl sm:text-2xl font-extrabold text-white mb-1 sm:mb-2">Whack-a-Mole!</h1>
         <p class="text-xs sm:text-sm text-white/80 mb-4 sm:mb-6">
@@ -270,7 +270,7 @@ const questionBannerStyle = computed(() => {
   // Narrow: lower and more to the right to avoid HUD overlap
   
   // Fixed positioning for stability
-  const top = 120;
+  const top = 140;
   const left = 50;
   const translateX = -50;
   
@@ -282,7 +282,7 @@ const questionBannerStyle = computed(() => {
 });
 
 // Game area padding - matches banner position
-const gameAreaPadding = computed(() => '160px');
+const gameAreaPadding = computed(() => '180px');
 
 // Grid responsive
 const gridClass = computed(() => {

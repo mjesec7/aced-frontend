@@ -123,7 +123,7 @@
   height: 100%;
 }
 
-.interactive-container > * {
+.interactive-container>* {
   flex: 1;
   min-height: 0;
 }
@@ -199,7 +199,7 @@ body.is-resizing canvas {
   .split-content {
     flex-direction: column;
   }
-  
+
   .split-panel.content-side,
   .split-panel.interactive-side {
     width: 100% !important;
@@ -209,17 +209,17 @@ body.is-resizing canvas {
     min-height: 30% !important;
     max-height: 70% !important;
   }
-  
+
   .split-panel.content-side {
     border-right: none;
     border-bottom: 1px solid #e2e8f0;
     overflow-y: auto;
   }
-  
+
   .split-panel.interactive-side {
     overflow: hidden;
   }
-  
+
   /* Horizontal resize handle for vertical split */
   .resize-handle {
     width: 100%;
@@ -227,27 +227,27 @@ body.is-resizing canvas {
     cursor: row-resize;
     flex-shrink: 0;
   }
-  
+
   .resize-handle::before {
     top: -12px;
     bottom: -12px;
     left: 0;
     right: 0;
   }
-  
+
   .handle-bar {
     width: 60px;
     height: 5px;
     border-radius: 3px;
   }
-  
+
   .resize-handle:hover .handle-bar,
   .resize-handle.is-resizing .handle-bar {
     width: 80px;
     height: 6px;
     background: #6366f1;
   }
-  
+
   body.is-resizing,
   body.is-resizing * {
     cursor: row-resize !important;
@@ -261,44 +261,45 @@ body.is-resizing canvas {
 @media (max-width: 640px) {
   .lesson-container-new {
     height: calc(100vh - 56px);
-    height: calc(100dvh - 56px); /* Dynamic viewport height for mobile browsers */
+    height: calc(100dvh - 56px);
+    /* Dynamic viewport height for mobile browsers */
   }
-  
+
   .split-content {
     flex-direction: column;
   }
-  
+
   /* Hide resize handle on mobile - fixed layout */
   .resize-handle {
     display: none !important;
   }
-  
+
   .split-panel.content-side,
   .split-panel.interactive-side {
     width: 100% !important;
     min-width: 100% !important;
     max-width: 100% !important;
   }
-  
+
   .split-panel.content-side {
     /* Content panel takes minimum needed space */
     height: auto !important;
-    max-height: 40vh !important;
-    min-height: 120px !important;
+    max-height: 35vh !important;
+    min-height: 100px !important;
     flex: 0 0 auto;
     border-right: none;
     border-bottom: 1px solid #e2e8f0;
     overflow-y: auto;
   }
-  
+
   .split-panel.interactive-side {
     /* Interactive/Game panel takes remaining space */
     flex: 1 1 auto;
-    min-height: 50vh !important;
+    min-height: 60vh !important;
     max-height: none !important;
     overflow: hidden;
   }
-  
+
   /* Ensure games fill mobile container */
   .interactive-container {
     height: 100%;
@@ -315,7 +316,7 @@ body.is-resizing canvas {
     max-height: 35vh !important;
     min-height: 100px !important;
   }
-  
+
   .split-panel.interactive-side {
     min-height: 55vh !important;
   }
@@ -330,23 +331,24 @@ body.is-resizing canvas {
     height: calc(100vh - 48px);
     height: calc(100dvh - 48px);
   }
-  
+
   .split-content {
-    flex-direction: row; /* Side by side in landscape */
+    flex-direction: row;
+    /* Side by side in landscape */
   }
-  
+
   .resize-handle {
     display: flex !important;
     width: 12px;
     height: auto;
     cursor: col-resize;
   }
-  
+
   .handle-bar {
     width: 4px;
     height: 48px;
   }
-  
+
   .split-panel.content-side,
   .split-panel.interactive-side {
     width: auto !important;
@@ -356,12 +358,12 @@ body.is-resizing canvas {
     min-width: 30% !important;
     max-width: 70% !important;
   }
-  
+
   .split-panel.content-side {
     border-right: 1px solid #e2e8f0;
     border-bottom: none;
   }
-  
+
   body.is-resizing,
   body.is-resizing * {
     cursor: col-resize !important;
@@ -373,30 +375,31 @@ body.is-resizing canvas {
    ========================================== */
 
 @media (hover: none) and (pointer: coarse) {
+
   /* Larger touch targets */
   .resize-handle {
     min-height: 20px;
   }
-  
+
   .resize-handle::before {
     top: -16px;
     bottom: -16px;
     left: -8px;
     right: -8px;
   }
-  
+
   .handle-bar {
     width: 70px;
     height: 6px;
   }
-  
+
   /* Prevent text selection on touch */
   .split-content {
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
   }
-  
+
   /* Better touch feedback */
   .resize-handle:active .handle-bar {
     background: #6366f1;
@@ -415,6 +418,7 @@ body.is-resizing canvas {
 
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
+
   .handle-bar,
   .split-panel {
     transition: none !important;
@@ -551,60 +555,185 @@ body.is-resizing canvas {
    UTILITY CLASSES
    ========================================== */
 
-.text-center { text-align: center; }
-.text-left { text-align: left; }
-.text-right { text-align: right; }
+.text-center {
+  text-align: center;
+}
 
-.flex { display: flex; }
-.flex-col { flex-direction: column; }
-.flex-1 { flex: 1; }
-.items-center { align-items: center; }
-.justify-center { justify-content: center; }
-.justify-between { justify-content: space-between; }
-.gap-2 { gap: 0.5rem; }
-.gap-3 { gap: 0.75rem; }
-.gap-4 { gap: 1rem; }
+.text-left {
+  text-align: left;
+}
 
-.w-full { width: 100%; }
-.h-full { height: 100%; }
-.min-h-0 { min-height: 0; }
+.text-right {
+  text-align: right;
+}
 
-.overflow-hidden { overflow: hidden; }
-.overflow-auto { overflow: auto; }
+.flex {
+  display: flex;
+}
 
-.rounded-xl { border-radius: 0.75rem; }
-.rounded-2xl { border-radius: 1rem; }
+.flex-col {
+  flex-direction: column;
+}
 
-.shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+.flex-1 {
+  flex: 1;
+}
 
-.bg-white { background-color: white; }
-.bg-slate-50 { background-color: #f8fafc; }
-.bg-slate-100 { background-color: #f1f5f9; }
+.items-center {
+  align-items: center;
+}
 
-.text-slate-500 { color: #64748b; }
-.text-slate-600 { color: #475569; }
-.text-slate-700 { color: #334155; }
-.text-slate-800 { color: #1e293b; }
-.text-slate-900 { color: #0f172a; }
+.justify-center {
+  justify-content: center;
+}
 
-.font-medium { font-weight: 500; }
-.font-semibold { font-weight: 600; }
-.font-bold { font-weight: 700; }
+.justify-between {
+  justify-content: space-between;
+}
 
-.p-4 { padding: 1rem; }
-.p-6 { padding: 1.5rem; }
-.px-4 { padding-left: 1rem; padding-right: 1rem; }
-.py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
-.py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+.gap-2 {
+  gap: 0.5rem;
+}
 
-.mb-2 { margin-bottom: 0.5rem; }
-.mb-4 { margin-bottom: 1rem; }
-.mb-6 { margin-bottom: 1.5rem; }
-.mt-4 { margin-top: 1rem; }
-.mt-6 { margin-top: 1.5rem; }
+.gap-3 {
+  gap: 0.75rem;
+}
 
-.border { border-width: 1px; }
-.border-slate-200 { border-color: #e2e8f0; }
+.gap-4 {
+  gap: 1rem;
+}
 
-.transition-all { transition: all 0.2s ease; }
-.transition-colors { transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease; }
+.w-full {
+  width: 100%;
+}
+
+.h-full {
+  height: 100%;
+}
+
+.min-h-0 {
+  min-height: 0;
+}
+
+.overflow-hidden {
+  overflow: hidden;
+}
+
+.overflow-auto {
+  overflow: auto;
+}
+
+.rounded-xl {
+  border-radius: 0.75rem;
+}
+
+.rounded-2xl {
+  border-radius: 1rem;
+}
+
+.shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.bg-white {
+  background-color: white;
+}
+
+.bg-slate-50 {
+  background-color: #f8fafc;
+}
+
+.bg-slate-100 {
+  background-color: #f1f5f9;
+}
+
+.text-slate-500 {
+  color: #64748b;
+}
+
+.text-slate-600 {
+  color: #475569;
+}
+
+.text-slate-700 {
+  color: #334155;
+}
+
+.text-slate-800 {
+  color: #1e293b;
+}
+
+.text-slate-900 {
+  color: #0f172a;
+}
+
+.font-medium {
+  font-weight: 500;
+}
+
+.font-semibold {
+  font-weight: 600;
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+.p-4 {
+  padding: 1rem;
+}
+
+.p-6 {
+  padding: 1.5rem;
+}
+
+.px-4 {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.py-2 {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.py-3 {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+
+.mb-4 {
+  margin-bottom: 1rem;
+}
+
+.mb-6 {
+  margin-bottom: 1.5rem;
+}
+
+.mt-4 {
+  margin-top: 1rem;
+}
+
+.mt-6 {
+  margin-top: 1.5rem;
+}
+
+.border {
+  border-width: 1px;
+}
+
+.border-slate-200 {
+  border-color: #e2e8f0;
+}
+
+.transition-all {
+  transition: all 0.2s ease;
+}
+
+.transition-colors {
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+}

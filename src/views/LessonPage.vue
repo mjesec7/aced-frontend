@@ -521,8 +521,8 @@ export default {
     // RESIZABLE SPLIT SCREEN STATE
     // ==========================================
     const isResizing = ref(false)
-    const currentLeftWidth = ref(60)  // Default 60%
-    const currentRightWidth = ref(40) // Default 40%
+    const currentLeftWidth = ref(50)  // Default 50%
+    const currentRightWidth = ref(50) // Default 50%
     const startX = ref(0)
     const startY = ref(0)
     const startWidthLeft = ref(60)
