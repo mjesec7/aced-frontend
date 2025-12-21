@@ -155,31 +155,31 @@
     <!-- START SCREEN -->
     <div 
       v-if="!gameActive && !isGameOver" 
-      class="absolute inset-0 flex items-center justify-center p-4 z-50"
+      class="absolute inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto"
       style="background: linear-gradient(180deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);"
     >
-      <div class="text-center max-w-xs w-full">
-        <div class="text-6xl mb-4 animate-bounce">🐹</div>
-        <h1 class="text-2xl font-extrabold text-white mb-2">Whack-a-Mole!</h1>
-        <p class="text-sm text-white/80 mb-6">
+      <div class="text-center max-w-xs w-full py-8">
+        <div class="text-4xl sm:text-6xl mb-2 sm:mb-4 animate-bounce">🐹</div>
+        <h1 class="text-xl sm:text-2xl font-extrabold text-white mb-1 sm:mb-2">Whack-a-Mole!</h1>
+        <p class="text-xs sm:text-sm text-white/80 mb-4 sm:mb-6">
           Tap moles with <strong class="text-white">correct answers</strong>!
         </p>
         
-        <div class="flex justify-center gap-3 mb-6">
-          <div class="bg-white/20 px-3 py-1.5 rounded-lg">
-            <span class="text-xs font-bold text-white">❤️ {{ maxLives }}</span>
+        <div class="flex justify-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+          <div class="bg-white/20 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg">
+            <span class="text-[10px] sm:text-xs font-bold text-white">❤️ {{ maxLives }}</span>
           </div>
-          <div class="bg-white/20 px-3 py-1.5 rounded-lg">
-            <span class="text-xs font-bold text-white">⏱️ {{ initialTime }}s</span>
+          <div class="bg-white/20 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg">
+            <span class="text-[10px] sm:text-xs font-bold text-white">⏱️ {{ initialTime }}s</span>
           </div>
-          <div class="bg-white/20 px-3 py-1.5 rounded-lg">
-            <span class="text-xs font-bold text-white">🎯 {{ targetScore }}</span>
+          <div class="bg-white/20 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg">
+            <span class="text-[10px] sm:text-xs font-bold text-white">🎯 {{ targetScore }}</span>
           </div>
         </div>
 
         <button 
           @click="startGame"
-          class="bg-white text-indigo-600 px-8 py-3 rounded-full font-bold shadow-lg 
+          class="bg-white text-indigo-600 px-6 sm:px-8 py-2.5 sm:py-3 rounded-full font-bold shadow-lg 
                  hover:scale-105 active:scale-100 transition-transform"
         >
           Start Game ▶
@@ -270,7 +270,7 @@ const questionBannerStyle = computed(() => {
   // Narrow: lower and more to the right to avoid HUD overlap
   
   // Fixed positioning for stability
-  const top = 100;
+  const top = 120;
   const left = 50;
   const translateX = -50;
   
@@ -282,7 +282,7 @@ const questionBannerStyle = computed(() => {
 });
 
 // Game area padding - matches banner position
-const gameAreaPadding = computed(() => '140px');
+const gameAreaPadding = computed(() => '160px');
 
 // Grid responsive
 const gridClass = computed(() => {
