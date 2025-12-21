@@ -14,15 +14,15 @@
       :max-lives="3"
     />
 
-    <!-- Question Banner -->
+    <!-- Question Banner - smoothly animates position -->
     <div 
       v-if="gameActive" 
-      class="absolute z-50 left-1/2 w-[90%] max-w-md"
-      :style="{ ...questionBannerStyle, transform: 'translateX(-50%)' }"
+      class="absolute z-40 question-banner"
+      :style="questionBannerStyle"
     >
-      <div class="bg-white px-4 py-2 rounded-xl shadow-md">
+      <div class="bg-white py-2 px-4 rounded-xl shadow-md inline-block">
         <p 
-          class="font-bold text-slate-700 text-center"
+          class="font-bold text-slate-700 text-center whitespace-nowrap"
           :class="bannerTextClass"
         >
           {{ currentPrompt }}
@@ -47,18 +47,18 @@
           @mousedown.prevent="handleWhack(index)"
           @touchstart.prevent="handleWhack(index)"
         >
-          <!-- Answer Bubble -->
+          <!-- Answer Bubble - closer to head, auto-width -->
           <div 
             v-if="hole.active"
             class="absolute z-30 left-1/2 bubble-position"
-            style="top: -32px;"
+            style="bottom: 75%;"
           >
             <div 
-              class="bg-white px-2 py-1 rounded-lg shadow-md border-2 whitespace-nowrap"
+              class="py-1 px-2 rounded-lg shadow-md border-2 inline-block"
               :class="getAnswerBubbleClass(hole)"
             >
               <span 
-                class="font-bold text-slate-700"
+                class="font-bold text-slate-700 whitespace-nowrap"
                 :class="answerTextClass"
               >
                 {{ hole.content }}
@@ -247,28 +247,70 @@ const gameWrapper = ref(null);
 const containerWidth = ref(600);
 let resizeObserver = null;
 
-// Question banner positioning
+// Question banner - smoothly transitions position based on container width
+// As container gets smaller, banner moves down (below HUD) and slightly right
 const questionBannerStyle = computed(() => {
   const w = containerWidth.value;
-  if (w < 250) return { top: '130px' };
-  if (w < 300) return { top: '120px' };
-  if (w < 350) return { top: '110px' };
-  if (w < 400) return { top: '100px' };
-  if (w < 500) return { top: '90px' };
-  if (w < 600) return { top: '80px' };
-  return { top: '72px' };
+  
+  // Calculate position based on width
+  // Wide: centered near top
+  // Narrow: lower and more to the right to avoid HUD overlap
+  
+  let top, left, translateX;
+  
+  if (w >= 600) {
+    // Large - centered at top
+    top = 70;
+    left = 50;
+    translateX = -50;
+  } else if (w >= 500) {
+    top = 75;
+    left = 50;
+    translateX = -50;
+  } else if (w >= 400) {
+    // Medium - start moving down
+    top = 85;
+    left = 52;
+    translateX = -50;
+  } else if (w >= 350) {
+    // Smaller - move more down and slightly right
+    top = 95;
+    left = 54;
+    translateX = -50;
+  } else if (w >= 300) {
+    // Small - well below HUD
+    top = 105;
+    left = 55;
+    translateX = -50;
+  } else if (w >= 250) {
+    // Very small
+    top = 115;
+    left = 55;
+    translateX = -50;
+  } else {
+    // Tiny
+    top = 125;
+    left = 55;
+    translateX = -50;
+  }
+  
+  return {
+    top: `${top}px`,
+    left: `${left}%`,
+    transform: `translateX(${translateX}%)`
+  };
 });
 
-// Game area padding
+// Game area padding - matches banner position
 const gameAreaPadding = computed(() => {
   const w = containerWidth.value;
-  if (w < 250) return '165px';
-  if (w < 300) return '155px';
-  if (w < 350) return '145px';
-  if (w < 400) return '135px';
-  if (w < 500) return '125px';
-  if (w < 600) return '115px';
-  return '108px';
+  if (w >= 600) return '110px';
+  if (w >= 500) return '115px';
+  if (w >= 400) return '125px';
+  if (w >= 350) return '135px';
+  if (w >= 300) return '145px';
+  if (w >= 250) return '155px';
+  return '165px';
 });
 
 // Grid responsive
@@ -532,6 +574,11 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* Question banner - smooth transition when resizing */
+.question-banner {
+  transition: top 0.3s ease-out, left 0.3s ease-out, transform 0.3s ease-out;
+}
+
 /* Mole wrapper - handles the up/down animation */
 .mole-wrapper {
   position: absolute;
@@ -541,7 +588,7 @@ onUnmounted(() => {
   transition: transform 0.15s ease-out;
 }
 
-/* Answer bubble positioning */
+/* Answer bubble positioning - centered above mole */
 .bubble-position {
   transform: translateX(-50%);
 }
