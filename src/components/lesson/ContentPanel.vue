@@ -1,12 +1,12 @@
 <template>
-  <div class="content-panel">
+  <div class="content-panel" :class="{ 'game-mode': isGameStep }">
     <header class="content-step-header">
       <h3 class="header-title">
         <span class="step-number">{{ currentIndex + 1 }}</span>
         <span class="step-icon">{{ getStepIcon(currentStep?.type) }}</span>
         <span class="step-text">{{ getStepTypeText(currentStep?.type) }}</span>
         
-        <span v-if="isInteractiveStep" class="exercise-counter">
+        <span v-if="isInteractiveStep && !isGameStep" class="exercise-counter">
           ({{ exerciseIndex + 1 }}/{{ totalExercises || 1 }})
         </span>
       </h3>
@@ -34,7 +34,7 @@
           </p>
         </div>
 
-        <!-- GAME STEPS -->
+        <!-- GAME STEPS - COMPACT VERSION -->
         <div v-else-if="isGameStep" class="game-context-view">
           <div class="game-intro-card">
             <div class="intro-header">
@@ -176,7 +176,6 @@ export default {
         'chem_mixing', 'chem_matching',
         'english_sentence_fix', 'english_sentence_order',
         'language_noun_bag', 'geometry', 'selection_game',
-        // New innovative language exercises
         'language_tone_transformer', 'language_idiom_bridge',
         'language_word_constellation', 'language_rhythm_match',
         'language_false_friends'
@@ -276,7 +275,55 @@ export default {
   font-family: var(--font-sans, sans-serif);
   background-color: var(--background);
   color: var(--foreground);
-  overflow: hidden; /* CRITICAL: Prevent any overflow */
+  overflow: hidden;
+}
+
+/* ============================================
+   GAME MODE - COMPACT LAYOUT
+   ============================================ */
+.content-panel.game-mode {
+  max-height: 100%;
+}
+
+.content-panel.game-mode .content-step-container {
+  flex: 0 1 auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.content-panel.game-mode .content-padding {
+  padding: 1rem;
+}
+
+.content-panel.game-mode .game-intro-card {
+  padding: 1rem;
+}
+
+.content-panel.game-mode .intro-header {
+  margin-bottom: 0.75rem;
+}
+
+.content-panel.game-mode .intro-header h3 {
+  font-size: 1rem;
+}
+
+.content-panel.game-mode .game-icon {
+  font-size: 1.25rem;
+}
+
+.content-panel.game-mode .game-instructions-box h4 {
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.content-panel.game-mode .instruction-list {
+  font-size: 0.85rem;
+  line-height: 1.4;
+  padding-left: 1rem;
+}
+
+.content-panel.game-mode .instruction-list li {
+  margin-bottom: 2px;
 }
 
 /* Header */
@@ -307,6 +354,7 @@ export default {
   justify-content: center;
   font-weight: 700;
   font-size: 1rem;
+  flex-shrink: 0;
 }
 
 .step-icon {
@@ -324,10 +372,11 @@ export default {
   margin-left: 0.5rem;
 }
 
-/* Body - NO SCROLL */
+/* Body */
 .content-step-container {
   flex: 1;
-  overflow: hidden; /* CRITICAL: No scroll here */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
 }
@@ -337,8 +386,7 @@ export default {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center; /* Center content vertically */
-  overflow: hidden; /* CRITICAL: No scroll */
+  justify-content: flex-start;
 }
 
 /* Content Text */
@@ -437,56 +485,58 @@ export default {
 .game-context-view {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
   max-width: 600px;
   margin: 0 auto;
+  width: 100%;
 }
 
 .game-intro-card {
   background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
   border: 1px solid #bae6fd;
-  border-radius: 16px;
-  padding: 24px;
+  border-radius: 12px;
+  padding: 1.25rem;
 }
 
 .intro-header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 10px;
+  margin-bottom: 12px;
 }
 
 .game-icon {
-  font-size: 28px;
+  font-size: 1.5rem;
 }
 
 .intro-header h3 {
   margin: 0;
   color: #0369a1;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
+  line-height: 1.3;
 }
 
 .game-instructions-box {
-  margin-top: 12px;
+  margin-top: 8px;
 }
 
 .game-instructions-box h4 {
   color: #0c4a6e;
-  font-size: 1.05rem;
+  font-size: 0.95rem;
   font-weight: 600;
-  margin: 0 0 8px 0;
+  margin: 0 0 6px 0;
 }
 
 .instruction-list {
   margin: 0;
-  padding-left: 20px;
+  padding-left: 18px;
   color: #334155;
-  font-size: 0.95rem;
-  line-height: 1.6;
+  font-size: 0.875rem;
+  line-height: 1.5;
 }
 
 .instruction-list li {
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 
 /* Vocabulary */
@@ -583,6 +633,7 @@ export default {
   transition: all 0.2s ease;
   flex: 1;
   font-size: 1rem;
+  min-height: 44px;
 }
 
 .prev-button {
@@ -606,7 +657,9 @@ export default {
   box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 
-/* MOBILE RESPONSIVE */
+/* ============================================
+   MOBILE RESPONSIVE
+   ============================================ */
 @media (max-width: 768px) {
   .content-step-header {
     padding: 0.75rem 1rem;
@@ -632,7 +685,7 @@ export default {
   }
 
   .content-padding {
-    padding: 1.25rem 1rem;
+    padding: 1rem;
   }
 
   .content-text {
@@ -683,6 +736,35 @@ export default {
     padding: 0.5rem 1rem;
     font-size: 0.875rem;
   }
+
+  /* Game mode on mobile - even more compact */
+  .content-panel.game-mode .content-step-header {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .content-panel.game-mode .content-padding {
+    padding: 0.75rem;
+  }
+
+  .content-panel.game-mode .game-intro-card {
+    padding: 0.75rem;
+  }
+
+  .content-panel.game-mode .intro-header h3 {
+    font-size: 0.9rem;
+  }
+
+  .content-panel.game-mode .game-instructions-box h4 {
+    font-size: 0.8rem;
+  }
+
+  .content-panel.game-mode .instruction-list {
+    font-size: 0.75rem;
+  }
+
+  .content-panel.game-mode .content-navigation {
+    padding: 0.5rem 0.75rem;
+  }
 }
 
 @media (max-width: 480px) {
@@ -720,6 +802,40 @@ export default {
   .instruction-text,
   .empty-text {
     font-size: 0.875rem;
+  }
+
+  /* Game mode on small mobile */
+  .content-panel.game-mode .header-title {
+    font-size: 0.8rem;
+  }
+
+  .content-panel.game-mode .step-number {
+    width: 20px;
+    height: 20px;
+    font-size: 0.7rem;
+  }
+}
+
+/* ============================================
+   LANDSCAPE MOBILE - HIDE CONTENT FOR GAMES
+   ============================================ */
+@media (max-height: 500px) and (orientation: landscape) {
+  .content-panel.game-mode .content-step-container {
+    display: none;
+  }
+
+  .content-panel.game-mode .content-step-header {
+    padding: 0.4rem 0.75rem;
+  }
+
+  .content-panel.game-mode .content-navigation {
+    padding: 0.4rem 0.75rem;
+  }
+
+  .content-panel.game-mode .nav-button {
+    padding: 0.4rem 0.75rem;
+    min-height: 36px;
+    font-size: 0.8rem;
   }
 }
 </style>

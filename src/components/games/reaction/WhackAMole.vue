@@ -17,8 +17,8 @@
     <!-- Question Banner -->
     <div 
       v-if="gameActive" 
-      class="absolute top-0 left-0 right-0 z-40 flex justify-center pt-3 px-3 pointer-events-none"
-      :class="bannerTopClass"
+      class="absolute top-0 left-0 right-0 z-40 flex justify-center px-3 pointer-events-none"
+      :class="bannerPaddingClass"
     >
       <div 
         :key="currentQuestionIndex"
@@ -27,9 +27,15 @@
         <!-- Premium background with glow -->
         <div class="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
         
-        <div class="relative bg-white py-2.5 px-5 sm:py-3 sm:px-6 rounded-2xl shadow-2xl border-2 border-indigo-50 inline-block min-w-[140px] sm:min-w-[180px]">
+        <div 
+          class="relative bg-white rounded-2xl shadow-2xl border-2 border-indigo-50 inline-block"
+          :class="bannerSizeClass"
+        >
           <!-- Question Label -->
-          <div class="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-indigo-600 text-white text-[9px] sm:text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest shadow-sm whitespace-nowrap">
+          <div 
+            class="absolute -top-2 left-1/2 -translate-x-1/2 bg-indigo-600 text-white font-black px-2 py-0.5 rounded-full uppercase tracking-widest shadow-sm whitespace-nowrap"
+            :class="labelSizeClass"
+          >
             Question
           </div>
           
@@ -46,12 +52,13 @@
     <!-- Game Area -->
     <div 
       v-if="gameActive" 
-      class="flex-1 flex items-center justify-center px-2 pb-3 min-h-0 overflow-hidden"
+      class="flex-1 flex items-center justify-center px-2 min-h-0 overflow-hidden"
       :class="gameAreaPaddingClass"
     >
       <div 
-        class="grid w-full h-full"
+        class="grid w-full"
         :class="gridClass"
+        :style="gridStyle"
       >
         <div 
           v-for="(hole, index) in holes" 
@@ -67,7 +74,7 @@
             style="bottom: 75%;"
           >
             <div 
-              class="py-1 px-2 sm:px-3 rounded-lg shadow-md border-2 inline-block"
+              class="py-0.5 px-1.5 sm:py-1 sm:px-2 rounded-lg shadow-md border-2 inline-block"
               :class="getAnswerBubbleClass(hole)"
             >
               <span 
@@ -143,7 +150,8 @@
           <!-- Hit Effect -->
           <div 
             v-if="hole.showEffect" 
-            class="absolute top-0 left-1/2 -translate-x-1/2 text-xl sm:text-2xl z-40 pointer-events-none hit-float"
+            class="absolute top-0 left-1/2 -translate-x-1/2 z-40 pointer-events-none hit-float"
+            :class="hitEffectSizeClass"
           >
             {{ hole.state === 'hit' ? '⭐' : '❌' }}
           </div>
@@ -151,37 +159,41 @@
       </div>
     </div>
 
-    <!-- START SCREEN -->
+    <!-- START SCREEN - SCROLLABLE & CENTERED -->
     <div 
       v-if="!gameActive && !isGameOver" 
-      class="absolute inset-0 flex flex-col items-center justify-center z-50 overflow-y-auto p-4 sm:p-6 safe-area-padding"
+      class="absolute inset-0 flex items-center justify-center z-50 overflow-auto p-3 safe-area-padding"
       style="background: linear-gradient(180deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%); -webkit-overflow-scrolling: touch;"
     >
-      <div class="text-center w-full max-w-xs mx-auto py-6 sm:py-8 my-auto flex flex-col items-center">
-        <div class="text-5xl sm:text-6xl mb-3 sm:mb-4 animate-bounce">🐹</div>
-        <h1 class="text-xl sm:text-2xl font-extrabold text-white mb-1 sm:mb-2">Whack-a-Mole!</h1>
-        <p class="text-xs sm:text-sm text-white/80 mb-5 sm:mb-6 px-2">
+      <div 
+        class="text-center w-full max-w-xs mx-auto flex flex-col items-center"
+        :class="startScreenPaddingClass"
+      >
+        <div :class="startIconClass" class="animate-bounce">🐹</div>
+        <h1 :class="startTitleClass" class="font-extrabold text-white mb-1">Whack-a-Mole!</h1>
+        <p :class="startDescClass" class="text-white/80 mb-3 px-2">
           Tap moles with <strong class="text-white">correct answers</strong>!
         </p>
         
-        <div class="flex flex-wrap justify-center gap-2 sm:gap-3 mb-5 sm:mb-6">
-          <div class="bg-white/20 backdrop-blur-sm px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-white/10">
-            <span class="text-xs sm:text-sm font-bold text-white">❤️ {{ maxLives }}</span>
+        <div class="flex flex-wrap justify-center gap-2 mb-4">
+          <div class="bg-white/20 backdrop-blur-sm px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl border border-white/10">
+            <span class="text-[11px] sm:text-xs font-bold text-white">❤️ {{ maxLives }}</span>
           </div>
-          <div class="bg-white/20 backdrop-blur-sm px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-white/10">
-            <span class="text-xs sm:text-sm font-bold text-white">⏱️ {{ initialTime }}s</span>
+          <div class="bg-white/20 backdrop-blur-sm px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl border border-white/10">
+            <span class="text-[11px] sm:text-xs font-bold text-white">⏱️ {{ initialTime }}s</span>
           </div>
-          <div class="bg-white/20 backdrop-blur-sm px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-white/10">
-            <span class="text-xs sm:text-sm font-bold text-white">🎯 {{ targetScore }}</span>
+          <div class="bg-white/20 backdrop-blur-sm px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl border border-white/10">
+            <span class="text-[11px] sm:text-xs font-bold text-white">🎯 {{ targetScore }}</span>
           </div>
         </div>
 
         <button 
           @click="startGame"
           @touchend.prevent="handleStartTouch"
-          class="bg-white text-indigo-600 px-8 sm:px-10 py-3.5 sm:py-4 rounded-full font-bold text-base sm:text-lg shadow-xl 
+          class="bg-white text-indigo-600 rounded-full font-bold shadow-xl 
                  hover:scale-105 active:scale-95 transition-transform duration-150 
-                 min-h-[48px] min-w-[160px] tap-highlight-none touch-manipulation"
+                 tap-highlight-none touch-manipulation"
+          :class="startButtonClass"
         >
           Start Game ▶
         </button>
@@ -191,47 +203,50 @@
     <!-- GAME OVER -->
     <div 
       v-if="isGameOver" 
-      class="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[100]"
+      class="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-3 z-[100]"
     >
-      <div class="bg-white rounded-2xl p-5 sm:p-6 text-center max-w-xs w-full shadow-2xl animate-modal-pop">
-        <div class="text-4xl sm:text-5xl mb-2">
+      <div 
+        class="bg-white rounded-2xl text-center w-full shadow-2xl animate-modal-pop"
+        :class="gameOverModalClass"
+      >
+        <div :class="gameOverIconClass">
           {{ earnedStars >= 3 ? '🏆' : earnedStars >= 2 ? '🎉' : earnedStars >= 1 ? '👍' : '💪' }}
         </div>
         
-        <h2 class="text-lg sm:text-xl font-bold text-slate-800">
+        <h2 :class="gameOverTitleClass" class="font-bold text-slate-800">
           {{ earnedStars >= 3 ? 'Perfect!' : earnedStars >= 2 ? 'Great!' : earnedStars >= 1 ? 'Good!' : 'Try Again!' }}
         </h2>
 
-        <div class="text-3xl sm:text-4xl font-bold text-indigo-500 my-2">{{ score }}</div>
+        <div :class="gameOverScoreClass" class="font-bold text-indigo-500 my-1">{{ score }}</div>
 
-        <div class="flex justify-center gap-1 mb-4">
+        <div class="flex justify-center gap-1 mb-3">
           <span 
             v-for="n in 3" 
             :key="n" 
-            class="text-2xl sm:text-3xl transition-colors"
-            :class="n <= earnedStars ? 'text-amber-400' : 'text-slate-200'"
+            class="transition-colors"
+            :class="[starSizeClass, n <= earnedStars ? 'text-amber-400' : 'text-slate-200']"
           >★</span>
         </div>
 
-        <div class="flex justify-around mb-4 text-sm">
+        <div class="flex justify-around mb-3 text-xs sm:text-sm">
           <div class="flex-1">
-            <div class="text-slate-400 text-xs">Correct</div>
+            <div class="text-slate-400 text-[10px] sm:text-xs">Correct</div>
             <div class="font-bold text-green-500">{{ correctHits }}</div>
           </div>
           <div class="flex-1">
-            <div class="text-slate-400 text-xs">Wrong</div>
+            <div class="text-slate-400 text-[10px] sm:text-xs">Wrong</div>
             <div class="font-bold text-red-500">{{ wrongHits }}</div>
           </div>
           <div class="flex-1">
-            <div class="text-slate-400 text-xs">Accuracy</div>
+            <div class="text-slate-400 text-[10px] sm:text-xs">Accuracy</div>
             <div class="font-bold text-slate-700">{{ accuracy }}%</div>
           </div>
         </div>
 
-        <div class="h-1 bg-slate-100 rounded-full overflow-hidden">
+        <div class="h-1 bg-slate-100 rounded-full overflow-hidden mx-3">
           <div class="h-full bg-indigo-500 transition-all duration-50" :style="{ width: progressWidth + '%' }"></div>
         </div>
-        <p class="text-xs text-slate-400 mt-1">{{ Math.ceil(progressWidth / 20) }}s...</p>
+        <p class="text-[10px] sm:text-xs text-slate-400 mt-1">{{ Math.ceil(progressWidth / 20) }}s...</p>
       </div>
     </div>
   </div>
@@ -261,51 +276,179 @@ const containerWidth = ref(400);
 const containerHeight = ref(600);
 let resizeObserver = null;
 
-// Responsive computed classes
-const bannerTopClass = computed(() => {
-  // Add extra top padding on small screens to account for HUD
-  return containerWidth.value < 400 ? 'pt-2' : 'pt-3';
+// Size category for responsive classes
+const sizeCategory = computed(() => {
+  const w = containerWidth.value;
+  const h = containerHeight.value;
+  
+  // Extremely constrained (split panel on mobile)
+  if (h < 350 || (w < 300 && h < 450)) return 'xs';
+  // Small
+  if (h < 450 || w < 350) return 'sm';
+  // Medium
+  if (h < 600 || w < 500) return 'md';
+  // Large
+  return 'lg';
+});
+
+// Responsive class computed properties
+const bannerPaddingClass = computed(() => {
+  const cat = sizeCategory.value;
+  if (cat === 'xs') return 'pt-1.5';
+  if (cat === 'sm') return 'pt-2';
+  return 'pt-3';
+});
+
+const bannerSizeClass = computed(() => {
+  const cat = sizeCategory.value;
+  if (cat === 'xs') return 'py-1.5 px-3 min-w-[100px]';
+  if (cat === 'sm') return 'py-2 px-4 min-w-[120px]';
+  return 'py-2.5 px-5 min-w-[140px] sm:py-3 sm:px-6 sm:min-w-[180px]';
+});
+
+const labelSizeClass = computed(() => {
+  const cat = sizeCategory.value;
+  if (cat === 'xs') return 'text-[7px] px-1.5';
+  if (cat === 'sm') return 'text-[8px] px-1.5';
+  return 'text-[9px] sm:text-[10px] px-2';
 });
 
 const bannerTextClass = computed(() => {
-  const w = containerWidth.value;
-  if (w < 300) return 'text-sm';
-  if (w < 400) return 'text-base';
-  return 'text-lg sm:text-xl';
+  const cat = sizeCategory.value;
+  if (cat === 'xs') return 'text-xs';
+  if (cat === 'sm') return 'text-sm';
+  return 'text-base sm:text-lg';
 });
 
 const answerTextClass = computed(() => {
-  const w = containerWidth.value;
-  if (w < 350) return 'text-[10px] sm:text-xs';
+  const cat = sizeCategory.value;
+  if (cat === 'xs') return 'text-[9px]';
+  if (cat === 'sm') return 'text-[10px]';
   return 'text-xs sm:text-sm';
 });
 
 const gameAreaPaddingClass = computed(() => {
-  // Responsive top padding for game area based on container size
-  const w = containerWidth.value;
-  const h = containerHeight.value;
-  
-  if (h < 450) return 'pt-14';
-  if (w < 350) return 'pt-16';
-  return 'pt-20 sm:pt-24';
+  const cat = sizeCategory.value;
+  if (cat === 'xs') return 'pt-10 pb-1';
+  if (cat === 'sm') return 'pt-12 pb-2';
+  return 'pt-16 pb-3 sm:pt-20';
 });
 
-// Grid responsive - adapts to container size
 const gridClass = computed(() => {
   const w = containerWidth.value;
   const h = containerHeight.value;
-  const isLandscape = w > h;
   
-  // Very small screens or landscape mobile - 4 columns
-  if (h < 400 && isLandscape) {
-    return 'grid-cols-4 gap-1 max-w-[400px] max-h-[120px] mx-auto place-items-center';
+  // Always 2x2 grid but with different sizing
+  if (h < 350 || w < 280) {
+    return 'grid-cols-2 gap-1 mx-auto place-items-center';
+  }
+  if (h < 450 || w < 350) {
+    return 'grid-cols-2 gap-1.5 mx-auto place-items-center';
+  }
+  if (w < 500) {
+    return 'grid-cols-2 gap-2 mx-auto place-items-center';
+  }
+  return 'grid-cols-4 gap-2 sm:gap-3 mx-auto place-items-center';
+});
+
+const gridStyle = computed(() => {
+  const w = containerWidth.value;
+  const h = containerHeight.value;
+  const availableHeight = h - (sizeCategory.value === 'xs' ? 60 : sizeCategory.value === 'sm' ? 80 : 100);
+  
+  // Calculate max size based on available space
+  let maxSize;
+  if (w < 500) {
+    // 2x2 grid
+    maxSize = Math.min(w - 16, availableHeight - 20, 340);
+  } else {
+    // 4x1 grid
+    maxSize = Math.min(w - 32, 500);
   }
   
-  if (w < 280) return 'grid-cols-2 gap-1 max-w-[200px] max-h-[220px] mx-auto place-items-center';
-  if (w < 350) return 'grid-cols-2 gap-1.5 max-w-[260px] max-h-[280px] mx-auto place-items-center';
-  if (w < 450) return 'grid-cols-2 gap-2 max-w-[320px] max-h-[340px] mx-auto place-items-center';
-  
-  return 'grid-cols-4 gap-2 sm:gap-3 max-w-[500px] max-h-[280px] mx-auto place-items-center';
+  return {
+    maxWidth: `${Math.max(160, maxSize)}px`,
+    maxHeight: `${Math.max(120, availableHeight - 10)}px`
+  };
+});
+
+const hitEffectSizeClass = computed(() => {
+  const cat = sizeCategory.value;
+  if (cat === 'xs') return 'text-base';
+  if (cat === 'sm') return 'text-lg';
+  return 'text-xl sm:text-2xl';
+});
+
+// Start screen responsive classes
+const startScreenPaddingClass = computed(() => {
+  const cat = sizeCategory.value;
+  if (cat === 'xs') return 'py-2';
+  if (cat === 'sm') return 'py-3';
+  return 'py-6 sm:py-8';
+});
+
+const startIconClass = computed(() => {
+  const cat = sizeCategory.value;
+  if (cat === 'xs') return 'text-3xl mb-1';
+  if (cat === 'sm') return 'text-4xl mb-2';
+  return 'text-5xl sm:text-6xl mb-3 sm:mb-4';
+});
+
+const startTitleClass = computed(() => {
+  const cat = sizeCategory.value;
+  if (cat === 'xs') return 'text-base';
+  if (cat === 'sm') return 'text-lg';
+  return 'text-xl sm:text-2xl';
+});
+
+const startDescClass = computed(() => {
+  const cat = sizeCategory.value;
+  if (cat === 'xs') return 'text-[10px]';
+  if (cat === 'sm') return 'text-xs';
+  return 'text-xs sm:text-sm';
+});
+
+const startButtonClass = computed(() => {
+  const cat = sizeCategory.value;
+  if (cat === 'xs') return 'px-5 py-2.5 text-sm min-h-[40px] min-w-[130px]';
+  if (cat === 'sm') return 'px-6 py-3 text-sm min-h-[44px] min-w-[140px]';
+  return 'px-8 sm:px-10 py-3.5 sm:py-4 text-base sm:text-lg min-h-[48px] min-w-[160px]';
+});
+
+// Game over responsive classes
+const gameOverModalClass = computed(() => {
+  const cat = sizeCategory.value;
+  if (cat === 'xs') return 'p-3 max-w-[260px]';
+  if (cat === 'sm') return 'p-4 max-w-[280px]';
+  return 'p-5 sm:p-6 max-w-xs';
+});
+
+const gameOverIconClass = computed(() => {
+  const cat = sizeCategory.value;
+  if (cat === 'xs') return 'text-3xl mb-1';
+  if (cat === 'sm') return 'text-4xl mb-1';
+  return 'text-4xl sm:text-5xl mb-2';
+});
+
+const gameOverTitleClass = computed(() => {
+  const cat = sizeCategory.value;
+  if (cat === 'xs') return 'text-base';
+  if (cat === 'sm') return 'text-lg';
+  return 'text-lg sm:text-xl';
+});
+
+const gameOverScoreClass = computed(() => {
+  const cat = sizeCategory.value;
+  if (cat === 'xs') return 'text-2xl';
+  if (cat === 'sm') return 'text-2xl';
+  return 'text-3xl sm:text-4xl';
+});
+
+const starSizeClass = computed(() => {
+  const cat = sizeCategory.value;
+  if (cat === 'xs') return 'text-xl';
+  if (cat === 'sm') return 'text-2xl';
+  return 'text-2xl sm:text-3xl';
 });
 
 // Game settings
@@ -601,7 +744,7 @@ onUnmounted(() => {
 
 @keyframes float {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
+  50% { transform: translateY(-4px); }
 }
 
 @keyframes pop {
@@ -669,7 +812,7 @@ onUnmounted(() => {
 
 @keyframes hit-float {
   0% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
-  100% { opacity: 0; transform: translateX(-50%) translateY(-30px) scale(1.3); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-20px) scale(1.2); }
 }
 
 /* Modal pop animation */
@@ -682,17 +825,14 @@ onUnmounted(() => {
   100% { transform: scale(1); opacity: 1; }
 }
 
-/* Responsive adjustments for very small screens */
-@media (max-height: 500px) {
+/* Disable animations on very small containers */
+@media (max-height: 400px) {
   .banner-float {
     animation: none;
   }
-}
-
-/* Landscape mobile specific */
-@media (max-height: 450px) and (orientation: landscape) {
-  .safe-area-padding {
-    padding-top: 8px !important;
+  
+  .animate-bounce {
+    animation: none;
   }
 }
 </style>
