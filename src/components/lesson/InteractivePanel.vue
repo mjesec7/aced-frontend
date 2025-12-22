@@ -1,8 +1,8 @@
 <template>
-  <div class="interactive-panel-wrapper">
+  <div class="interactive-panel-wrapper" :class="{ 'game-mode': isGameMode }">
     
-    <!-- GAME MODE -->
-    <div v-if="isGameMode" class="w-full h-full">
+    <!-- GAME MODE - Full container for games -->
+    <div v-if="isGameMode" class="game-wrapper">
       <GameContainer
         :game-data="gameData"
         :game-type="gameType"
@@ -15,43 +15,42 @@
     </div>
 
     <!-- SELECTION GAME MODE -->
-    <div v-else-if="isSelectionGame && selectionCurrentQuestion" class="w-full max-w-6xl mx-auto">
-      <!-- ... keep existing selection game code ... -->
-      <div class="bg-white p-8">
+    <div v-else-if="isSelectionGame && selectionCurrentQuestion" class="selection-game-wrapper">
+      <div class="bg-white p-4 sm:p-8">
         <!-- Header -->
-        <div class="text-center mb-8">
-          <h1 class="text-2xl font-bold text-slate-900 mb-2">
+        <div class="text-center mb-6 sm:mb-8">
+          <h1 class="text-xl sm:text-2xl font-bold text-slate-900 mb-2">
             Shape Recognition Lesson
           </h1>
-          <p class="text-base text-purple-600">
+          <p class="text-sm sm:text-base text-purple-600">
             Click on the correct shape!
           </p>
 
           <!-- Score -->
           <div class="flex items-center justify-center gap-2 mt-3">
-            <svg class="w-6 h-6 text-yellow-500 fill-yellow-500" viewBox="0 0 24 24" fill="currentColor">
+            <svg class="w-5 h-5 sm:w-6 sm:h-6 text-yellow-500 fill-yellow-500" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
             </svg>
-            <span class="text-base font-semibold text-slate-900">
+            <span class="text-sm sm:text-base font-semibold text-slate-900">
               Score: {{ selectionScore }} / {{ selectionQuestions.length }}
             </span>
           </div>
         </div>
 
         <!-- Question Card -->
-        <div class="mb-8">
-          <div class="bg-linear-to-r from-purple-50 to-pink-50 border-2 border-purple-200 shadow-lg rounded-2xl p-6 text-center">
-            <h2 class="text-2xl font-bold text-slate-900 mb-2">
+        <div class="mb-6 sm:mb-8">
+          <div class="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 shadow-lg rounded-2xl p-4 sm:p-6 text-center">
+            <h2 class="text-lg sm:text-2xl font-bold text-slate-900 mb-2">
               {{ selectionCurrentQuestion.prompt }}
             </h2>
-            <p class="text-base text-purple-600">
+            <p class="text-sm sm:text-base text-purple-600">
               {{ selectionCurrentQuestion.hint || 'Click on the shape below' }}
             </p>
           </div>
         </div>
 
         <!-- Shapes Grid -->
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-8">
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6 mb-6 sm:mb-8">
           <div
             v-for="(item, index) in selectionCurrentQuestion.items"
             :key="item.id"
@@ -69,16 +68,16 @@
                 selectionFeedback !== null ? 'cursor-not-allowed' : 'cursor-pointer'
               ]"
             >
-              <div class="flex flex-col items-center justify-center h-full p-4">
+              <div class="flex flex-col items-center justify-center h-full p-2 sm:p-4">
                 <img
                   v-if="item.image"
                   :src="item.image"
                   :alt="item.name"
-                  class="w-24 h-24 md:w-28 md:h-28 object-contain mb-2"
+                  class="w-16 h-16 sm:w-24 sm:h-24 md:w-28 md:h-28 object-contain mb-2"
                 />
-                <div v-else-if="item.shape" v-html="item.shape" class="w-24 h-24 md:w-28 md:h-28 mb-2"></div>
-                <div v-else v-html="getShapeSVG(item.name, 120)" class="w-24 h-24 md:w-28 md:h-28 mb-2"></div>
-                <p class="text-sm md:text-base font-medium text-slate-700">
+                <div v-else-if="item.shape" v-html="item.shape" class="w-16 h-16 sm:w-24 sm:h-24 md:w-28 md:h-28 mb-2"></div>
+                <div v-else v-html="getShapeSVG(item.name, 120)" class="w-16 h-16 sm:w-24 sm:h-24 md:w-28 md:h-28 mb-2"></div>
+                <p class="text-xs sm:text-sm md:text-base font-medium text-slate-700">
                   {{ item.name }}
                 </p>
               </div>
@@ -89,18 +88,18 @@
     </div>
 
     <!-- EXERCISE MODE -->
-    <div v-else-if="currentExercise" class="w-full mx-auto px-4 py-6">
+    <div v-else-if="currentExercise" class="exercise-wrapper">
 
       <!-- Exercise Header -->
       <header 
         v-if="!isSpecialInteractiveType"
-        class="mb-8 text-center"
+        class="exercise-header"
       >
-        <div class="w-12 h-12 rounded-xl bg-linear-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold shadow-lg shadow-purple-200">
+        <div class="exercise-number">
           {{ exerciseIndex + 1 }}
         </div>
-        <h2 class="text-2xl md:text-3xl font-bold text-slate-900 mb-3">{{ exerciseTitle }}</h2>
-        <p v-if="exerciseDescription" class="text-slate-500 max-w-xl mx-auto">{{ exerciseDescription }}</p>
+        <h2 class="exercise-title">{{ exerciseTitle }}</h2>
+        <p v-if="exerciseDescription" class="exercise-description">{{ exerciseDescription }}</p>
       </header>
 
       <!-- ======================= -->
@@ -109,19 +108,19 @@
       <div v-if="isMultipleChoiceType" class="exercise-card">
         
         <!-- Question Badge -->
-        <div class="mb-6">
-          <span class="inline-flex items-center px-4 py-1.5 rounded-full bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 font-semibold text-sm">
+        <div class="mb-4 sm:mb-6">
+          <span class="inline-flex items-center px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 font-semibold text-xs sm:text-sm">
             {{ exerciseTypeLabel }}
           </span>
         </div>
 
         <!-- Question Text -->
-        <h3 class="text-xl md:text-2xl font-bold text-slate-900 leading-relaxed mb-8">
+        <h3 class="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 leading-relaxed mb-6 sm:mb-8">
           {{ questionText }}
         </h3>
 
         <!-- Options Grid -->
-        <div class="space-y-3">
+        <div class="space-y-2 sm:space-y-3">
           <button
             v-for="(option, idx) in normalizedOptions"
             :key="idx"
@@ -145,7 +144,7 @@
 
             <!-- Selection Indicator -->
             <div v-if="userAnswer === idx" class="option-check">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
               </svg>
             </div>
@@ -154,12 +153,12 @@
 
         <!-- Feedback Section -->
         <transition name="slide-fade">
-          <div v-if="showCorrectAnswer" class="feedback-box mt-8" :class="answerWasCorrect ? 'success' : 'error'">
+          <div v-if="showCorrectAnswer" class="feedback-box mt-6 sm:mt-8" :class="answerWasCorrect ? 'success' : 'error'">
             <div class="feedback-icon">
-              <svg v-if="answerWasCorrect" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg v-if="answerWasCorrect" class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
               </svg>
-              <svg v-else class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg v-else class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/>
               </svg>
             </div>
@@ -178,26 +177,26 @@
       <!-- ======================= -->
       <div v-else-if="isTrueFalseType" class="exercise-card text-center">
         
-        <div class="mb-6">
-          <span class="inline-flex items-center px-4 py-1.5 rounded-full bg-linear-to-r from-cyan-100 to-blue-100 text-cyan-700 font-semibold text-sm">
+        <div class="mb-4 sm:mb-6">
+          <span class="inline-flex items-center px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-gradient-to-r from-cyan-100 to-blue-100 text-cyan-700 font-semibold text-xs sm:text-sm">
             True or False
           </span>
         </div>
 
-        <h3 class="text-xl md:text-2xl font-bold text-slate-900 leading-relaxed mb-10">
+        <h3 class="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 leading-relaxed mb-8 sm:mb-10">
           {{ questionText }}
         </h3>
 
         <!-- True/False Buttons -->
-        <div class="flex flex-col sm:flex-row justify-center gap-6">
+        <div class="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6">
           <button
             @click="userAnswer = true"
             :disabled="showCorrectAnswer"
             class="tf-button"
             :class="userAnswer === true ? 'tf-true-selected' : 'tf-default'"
           >
-            <span class="text-4xl mb-2">👍</span>
-            <span class="text-lg font-bold">True</span>
+            <span class="text-3xl sm:text-4xl mb-2">👍</span>
+            <span class="text-base sm:text-lg font-bold">True</span>
           </button>
 
           <button
@@ -206,19 +205,19 @@
             class="tf-button"
             :class="userAnswer === false ? 'tf-false-selected' : 'tf-default'"
           >
-            <span class="text-4xl mb-2">👎</span>
-            <span class="text-lg font-bold">False</span>
+            <span class="text-3xl sm:text-4xl mb-2">👎</span>
+            <span class="text-base sm:text-lg font-bold">False</span>
           </button>
         </div>
 
         <!-- Feedback -->
         <transition name="slide-fade">
-          <div v-if="showCorrectAnswer" class="feedback-box mt-8 mx-auto max-w-md" :class="answerWasCorrect ? 'success' : 'error'">
+          <div v-if="showCorrectAnswer" class="feedback-box mt-6 sm:mt-8 mx-auto max-w-md" :class="answerWasCorrect ? 'success' : 'error'">
             <div class="feedback-icon">
-              <svg v-if="answerWasCorrect" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg v-if="answerWasCorrect" class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
               </svg>
-              <svg v-else class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg v-else class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/>
               </svg>
             </div>
@@ -305,13 +304,13 @@
       <!-- FALLBACK / SHORT ANSWER -->
       <!-- ======================= -->
       <div v-else class="exercise-card">
-        <div class="mb-6">
-          <span class="inline-flex items-center px-4 py-1.5 rounded-full bg-slate-100 text-slate-600 font-semibold text-sm">
+        <div class="mb-4 sm:mb-6">
+          <span class="inline-flex items-center px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-slate-100 text-slate-600 font-semibold text-xs sm:text-sm">
             {{ exerciseType || 'Exercise' }}
           </span>
         </div>
 
-        <h3 v-if="questionText" class="text-xl md:text-2xl font-bold text-slate-900 leading-relaxed mb-6">
+        <h3 v-if="questionText" class="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 leading-relaxed mb-4 sm:mb-6">
           {{ questionText }}
         </h3>
 
@@ -319,16 +318,16 @@
           v-model="userAnswer"
           placeholder="Type your answer here..." 
           :disabled="showCorrectAnswer" 
-          class="w-full p-4 rounded-xl border-2 border-slate-200 bg-slate-50 focus:bg-white focus:border-purple-500 focus:ring-0 transition-all outline-none resize-none h-40 text-lg text-slate-800 placeholder-slate-400"
+          class="w-full p-3 sm:p-4 rounded-xl border-2 border-slate-200 bg-slate-50 focus:bg-white focus:border-purple-500 focus:ring-0 transition-all outline-none resize-none h-32 sm:h-40 text-base sm:text-lg text-slate-800 placeholder-slate-400"
         ></textarea>
 
         <transition name="slide-fade">
-          <div v-if="showCorrectAnswer" class="feedback-box mt-6" :class="answerWasCorrect ? 'success' : 'error'">
+          <div v-if="showCorrectAnswer" class="feedback-box mt-4 sm:mt-6" :class="answerWasCorrect ? 'success' : 'error'">
             <div class="feedback-icon">
-              <svg v-if="answerWasCorrect" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg v-if="answerWasCorrect" class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
               </svg>
-              <svg v-else class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg v-else class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/>
               </svg>
             </div>
@@ -341,9 +340,9 @@
       </div>
 
       <!-- Submit/Next Button -->
-      <footer class="mt-8 flex justify-end">
+      <footer v-if="!isSpecialInteractiveType" class="exercise-footer">
         <button 
-          v-if="!showCorrectAnswer && !isSpecialInteractiveType" 
+          v-if="!showCorrectAnswer" 
           @click="submit" 
           :disabled="!canSubmit"
           class="btn-primary"
@@ -351,7 +350,7 @@
           Check Answer
         </button>
         <button 
-          v-else-if="showCorrectAnswer && !isSpecialInteractiveType" 
+          v-else 
           @click="handleNext" 
           class="btn-success"
         >
@@ -361,10 +360,10 @@
     </div>
     
     <!-- Loading State -->
-    <div v-else class="flex items-center justify-center min-h-[60vh]">
+    <div v-else class="loading-wrapper">
       <div class="text-center">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-        <p class="text-slate-500">Loading exercise...</p>
+        <div class="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+        <p class="text-slate-500 text-sm sm:text-base">Loading exercise...</p>
       </div>
     </div>
   </div>
@@ -473,7 +472,6 @@ const exerciseType = computed(() => {
   }
   
   const type = possibleTypes[0] || ex.type || 'short-answer';
-  console.log('InteractivePanel: Detected exercise type:', type);
   return type;
 });
 
@@ -500,28 +498,21 @@ const isTrueFalseType = computed(() => {
 });
 
 const isSpecialInteractiveType = computed(() => {
-  const isSpecial = specialInteractiveTypes.includes(exerciseType.value);
-  console.log(`InteractivePanel: Is special type '${exerciseType.value}'?`, isSpecial);
-  return isSpecial;
+  return specialInteractiveTypes.includes(exerciseType.value);
 });
 
 // --- COMPUTED: EXERCISE CONTENT DATA ---
 const exerciseContentData = computed(() => {
   if (!props.currentExercise) return {};
   const ex = props.currentExercise;
-  
-  console.log('InteractivePanel: Computing content data for:', ex.type);
 
   if (ex.content && typeof ex.content === 'object') {
-    console.log('InteractivePanel: Using ex.content');
     return ex.content;
   }
   if (ex.data && typeof ex.data === 'object' && !Array.isArray(ex.data)) {
-    console.log('InteractivePanel: Using ex.data');
     return ex.data;
   }
   
-  console.log('InteractivePanel: Using ex directly');
   return ex;
 });
 
@@ -732,34 +723,178 @@ watch(() => props.currentExercise, (newEx) => {
 </script>
 
 <style scoped>
+/* ============================================
+   MAIN WRAPPER
+   ============================================ */
 .interactive-panel-wrapper {
   width: 100%;
   height: 100%;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   background: #f8fafc;
+  overflow: hidden;
 }
 
-/* Exercise Card */
+/* Game mode - no padding, full height */
+.interactive-panel-wrapper.game-mode {
+  background: transparent;
+}
+
+/* ============================================
+   GAME WRAPPER - CRITICAL FOR GAMES
+   ============================================ */
+.game-wrapper {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ============================================
+   SELECTION GAME WRAPPER
+   ============================================ */
+.selection-game-wrapper {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ============================================
+   EXERCISE WRAPPER - SCROLLABLE
+   ============================================ */
+.exercise-wrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 1rem;
+}
+
+@media (min-width: 640px) {
+  .exercise-wrapper {
+    padding: 1.5rem;
+  }
+}
+
+/* ============================================
+   EXERCISE HEADER
+   ============================================ */
+.exercise-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  flex-shrink: 0;
+}
+
+@media (min-width: 640px) {
+  .exercise-header {
+    margin-bottom: 2rem;
+  }
+}
+
+.exercise-number {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 0.75rem;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #8b5cf6, #ec4899);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 1rem;
+  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.3);
+}
+
+@media (min-width: 640px) {
+  .exercise-number {
+    width: 48px;
+    height: 48px;
+    font-size: 1.125rem;
+  }
+}
+
+.exercise-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 0.5rem 0;
+}
+
+@media (min-width: 640px) {
+  .exercise-title {
+    font-size: 1.5rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .exercise-title {
+    font-size: 1.875rem;
+  }
+}
+
+.exercise-description {
+  color: #64748b;
+  font-size: 0.875rem;
+  margin: 0;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (min-width: 640px) {
+  .exercise-description {
+    font-size: 1rem;
+  }
+}
+
+/* ============================================
+   EXERCISE CARD
+   ============================================ */
 .exercise-card {
   background: white;
-  border-radius: 24px;
-  padding: 32px;
+  border-radius: 16px;
+  padding: 1.25rem;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   border: 1px solid #e2e8f0;
+  flex: 1;
 }
 
-/* Option Button Styles */
+@media (min-width: 640px) {
+  .exercise-card {
+    border-radius: 24px;
+    padding: 2rem;
+  }
+}
+
+/* ============================================
+   OPTION BUTTONS
+   ============================================ */
 .option-button {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px 20px;
-  border-radius: 16px;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
   border: 2px solid;
   text-align: left;
   transition: all 0.2s ease;
   cursor: pointer;
+  min-height: 48px;
+}
+
+@media (min-width: 640px) {
+  .option-button {
+    gap: 16px;
+    padding: 16px 20px;
+    border-radius: 16px;
+  }
 }
 
 .option-default {
@@ -799,16 +934,25 @@ watch(() => props.currentExercise, (newEx) => {
 
 /* Option Letter */
 .option-letter {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 16px;
+  font-size: 14px;
   flex-shrink: 0;
   transition: all 0.2s ease;
+}
+
+@media (min-width: 640px) {
+  .option-letter {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    font-size: 16px;
+  }
 }
 
 .letter-default {
@@ -839,30 +983,56 @@ watch(() => props.currentExercise, (newEx) => {
 /* Option Text */
 .option-text {
   flex: 1;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 500;
   color: #334155;
 }
 
-/* Option Check */
-.option-check {
-  width: 24px;
-  height: 24px;
-  color: #8b5cf6;
+@media (min-width: 640px) {
+  .option-text {
+    font-size: 16px;
+  }
 }
 
-/* True/False Buttons */
+/* Option Check */
+.option-check {
+  width: 20px;
+  height: 20px;
+  color: #8b5cf6;
+  flex-shrink: 0;
+}
+
+@media (min-width: 640px) {
+  .option-check {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+/* ============================================
+   TRUE/FALSE BUTTONS
+   ============================================ */
 .tf-button {
   flex: 1;
-  max-width: 200px;
-  padding: 24px;
-  border-radius: 20px;
+  max-width: 160px;
+  padding: 16px;
+  border-radius: 16px;
   border: 3px solid;
   display: flex;
   flex-direction: column;
   align-items: center;
   cursor: pointer;
   transition: all 0.3s ease;
+  min-height: 100px;
+}
+
+@media (min-width: 640px) {
+  .tf-button {
+    max-width: 200px;
+    padding: 24px;
+    border-radius: 20px;
+    min-height: 120px;
+  }
 }
 
 .tf-default {
@@ -889,14 +1059,24 @@ watch(() => props.currentExercise, (newEx) => {
   box-shadow: 0 8px 24px rgba(239, 68, 68, 0.25);
 }
 
-/* Feedback Box */
+/* ============================================
+   FEEDBACK BOX
+   ============================================ */
 .feedback-box {
   display: flex;
-  gap: 16px;
-  padding: 20px 24px;
-  border-radius: 16px;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
   border: 2px solid;
   align-items: flex-start;
+}
+
+@media (min-width: 640px) {
+  .feedback-box {
+    gap: 16px;
+    padding: 20px 24px;
+    border-radius: 16px;
+  }
 }
 
 .feedback-box.success {
@@ -910,13 +1090,20 @@ watch(() => props.currentExercise, (newEx) => {
 }
 
 .feedback-icon {
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+}
+
+@media (min-width: 640px) {
+  .feedback-icon {
+    width: 40px;
+    height: 40px;
+  }
 }
 
 .feedback-box.success .feedback-icon {
@@ -931,8 +1118,14 @@ watch(() => props.currentExercise, (newEx) => {
 
 .feedback-content h4 {
   margin: 0 0 4px 0;
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 700;
+}
+
+@media (min-width: 640px) {
+  .feedback-content h4 {
+    font-size: 18px;
+  }
 }
 
 .feedback-box.success .feedback-content h4 {
@@ -945,7 +1138,13 @@ watch(() => props.currentExercise, (newEx) => {
 
 .feedback-content p {
   margin: 0;
-  font-size: 14px;
+  font-size: 12px;
+}
+
+@media (min-width: 640px) {
+  .feedback-content p {
+    font-size: 14px;
+  }
 }
 
 .feedback-box.success .feedback-content p {
@@ -956,18 +1155,46 @@ watch(() => props.currentExercise, (newEx) => {
   color: #b91c1c;
 }
 
-/* Buttons */
+/* ============================================
+   EXERCISE FOOTER
+   ============================================ */
+.exercise-footer {
+  margin-top: 1.5rem;
+  display: flex;
+  justify-content: flex-end;
+  flex-shrink: 0;
+  padding-top: 1rem;
+}
+
+@media (min-width: 640px) {
+  .exercise-footer {
+    margin-top: 2rem;
+  }
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
 .btn-primary {
-  padding: 14px 32px;
+  padding: 12px 24px;
   background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
   color: white;
   border: none;
-  border-radius: 14px;
-  font-size: 16px;
+  border-radius: 12px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: 0 4px 14px rgba(139, 92, 246, 0.3);
+  min-height: 44px;
+}
+
+@media (min-width: 640px) {
+  .btn-primary {
+    padding: 14px 32px;
+    border-radius: 14px;
+    font-size: 16px;
+  }
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -981,16 +1208,25 @@ watch(() => props.currentExercise, (newEx) => {
 }
 
 .btn-success {
-  padding: 14px 32px;
+  padding: 12px 24px;
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
   border: none;
-  border-radius: 14px;
-  font-size: 16px;
+  border-radius: 12px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+  min-height: 44px;
+}
+
+@media (min-width: 640px) {
+  .btn-success {
+    padding: 14px 32px;
+    border-radius: 14px;
+    font-size: 16px;
+  }
 }
 
 .btn-success:hover {
@@ -998,7 +1234,21 @@ watch(() => props.currentExercise, (newEx) => {
   box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
 }
 
-/* Transitions */
+/* ============================================
+   LOADING WRAPPER
+   ============================================ */
+.loading-wrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+/* ============================================
+   TRANSITIONS
+   ============================================ */
 .slide-fade-enter-active {
   transition: all 0.4s ease-out;
 }
@@ -1011,28 +1261,5 @@ watch(() => props.currentExercise, (newEx) => {
 .slide-fade-leave-to {
   transform: translateY(-10px);
   opacity: 0;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .exercise-card {
-    padding: 20px;
-    border-radius: 20px;
-  }
-  
-  .option-button {
-    padding: 14px 16px;
-  }
-  
-  .option-letter {
-    width: 36px;
-    height: 36px;
-    font-size: 14px;
-  }
-  
-  .tf-button {
-    padding: 20px;
-    max-width: 160px;
-  }
 }
 </style>

@@ -372,21 +372,29 @@ export default {
   margin-left: 0.5rem;
 }
 
-/* Body */
+/* Body - SCROLLABLE */
 .content-step-container {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
+  min-height: 0; /* Critical for flex scroll */
 }
 
 .content-padding {
-  padding: 2rem 1.5rem;
-  flex: 1;
+  padding: 1.5rem 1.25rem;
+  flex: 1 0 auto; /* Allow growth but not shrink below content */
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
+}
+
+@media (min-width: 640px) {
+  .content-padding {
+    padding: 2rem 1.5rem;
+  }
 }
 
 /* Content Text */
