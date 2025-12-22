@@ -1,7 +1,7 @@
 <template>
   <div 
     ref="gameWrapper"
-    class="absolute inset-0 font-sans select-none overflow-hidden flex flex-col"
+    class="absolute inset-0 font-sans select-none overflow-hidden flex flex-col safe-area-padding"
     style="background: linear-gradient(180deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);"
   >
     
@@ -14,27 +14,27 @@
       :max-lives="3"
     />
 
-    <!-- Question Banner - smoothly animates position -->
+    <!-- Question Banner -->
     <div 
       v-if="gameActive" 
-      class="absolute z-40 question-banner"
-      :style="questionBannerStyle"
+      class="absolute top-0 left-0 right-0 z-40 flex justify-center pt-3 px-3 pointer-events-none"
+      :class="bannerTopClass"
     >
       <div 
         :key="currentQuestionIndex"
-        class="relative group banner-float banner-pop"
+        class="relative group pointer-events-auto banner-float banner-pop"
       >
         <!-- Premium background with glow -->
-        <div class="absolute -inset-1 bg-linear-to-r from-indigo-500 to-purple-600 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+        <div class="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
         
-        <div class="relative bg-white py-3 px-6 rounded-2xl shadow-2xl border-2 border-indigo-50 inline-block min-w-[180px]">
+        <div class="relative bg-white py-2.5 px-5 sm:py-3 sm:px-6 rounded-2xl shadow-2xl border-2 border-indigo-50 inline-block min-w-[140px] sm:min-w-[180px]">
           <!-- Question Label -->
-          <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-indigo-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest shadow-sm">
+          <div class="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-indigo-600 text-white text-[9px] sm:text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest shadow-sm whitespace-nowrap">
             Question
           </div>
           
           <p 
-            class="font-black text-indigo-950 text-center whitespace-nowrap tracking-tight"
+            class="font-black text-indigo-950 text-center tracking-tight leading-tight break-words"
             :class="bannerTextClass"
           >
             {{ currentPrompt }}
@@ -46,28 +46,28 @@
     <!-- Game Area -->
     <div 
       v-if="gameActive" 
-      class="flex-1 flex items-center justify-center px-2 pb-3"
-      :style="{ paddingTop: gameAreaPadding }"
+      class="flex-1 flex items-center justify-center px-2 pb-3 min-h-0 overflow-hidden"
+      :class="gameAreaPaddingClass"
     >
       <div 
-        class="grid w-full"
+        class="grid w-full h-full"
         :class="gridClass"
       >
         <div 
           v-for="(hole, index) in holes" 
           :key="index" 
-          class="relative cursor-pointer"
+          class="relative cursor-pointer tap-highlight-none touch-manipulation"
           @mousedown.prevent="handleWhack(index)"
-          @touchstart.prevent="handleWhack(index)"
+          @touchstart="handleTouchWhack(index, $event)"
         >
-          <!-- Answer Bubble - closer to head, auto-width -->
+          <!-- Answer Bubble -->
           <div 
             v-if="hole.active"
-            class="absolute z-30 left-1/2 bubble-position"
+            class="absolute z-30 left-1/2 -translate-x-1/2 bubble-pop"
             style="bottom: 75%;"
           >
             <div 
-              class="py-1 px-2 rounded-lg shadow-md border-2 inline-block"
+              class="py-1 px-2 sm:px-3 rounded-lg shadow-md border-2 inline-block"
               :class="getAnswerBubbleClass(hole)"
             >
               <span 
@@ -88,11 +88,11 @@
             <!-- Mole clip area -->
             <div class="absolute bottom-[28%] left-[15%] w-[70%] h-[50%] overflow-hidden">
               <div 
-                class="mole-wrapper"
-                :style="{ transform: `translateX(-50%) translateY(${hole.active ? '5%' : '100%'})` }"
+                class="mole-wrapper absolute bottom-0 left-1/2 w-[80%]"
+                :class="hole.active ? 'mole-up' : 'mole-down'"
               >
                 <div 
-                  class="relative w-full aspect-[1/0.85]"
+                  class="relative w-full aspect-[1/0.85] transition-all duration-150"
                   :class="getMoleEffectClass(hole)"
                 >
                   <!-- Main body -->
@@ -132,9 +132,9 @@
               <!-- Grass -->
               <div class="absolute top-0 left-[10%] w-[80%] flex justify-around">
                 <div class="grass-blade" style="height: 10px; transform: rotate(-12deg) translateY(-4px);"></div>
-                <div class="grass-blade" style="height: 14px; transform: rotate(6deg) translateY(-4px); background: #34d399;"></div>
+                <div class="grass-blade grass-light" style="height: 14px; transform: rotate(6deg) translateY(-4px);"></div>
                 <div class="grass-blade" style="height: 8px; transform: rotate(-6deg) translateY(-4px);"></div>
-                <div class="grass-blade" style="height: 12px; transform: rotate(12deg) translateY(-4px); background: #34d399;"></div>
+                <div class="grass-blade grass-light" style="height: 12px; transform: rotate(12deg) translateY(-4px);"></div>
                 <div class="grass-blade" style="height: 10px; transform: rotate(3deg) translateY(-4px);"></div>
               </div>
             </div>
@@ -143,8 +143,7 @@
           <!-- Hit Effect -->
           <div 
             v-if="hole.showEffect" 
-            class="absolute top-0 left-1/2 text-2xl z-40 pointer-events-none"
-            style="transform: translateX(-50%);"
+            class="absolute top-0 left-1/2 -translate-x-1/2 text-xl sm:text-2xl z-40 pointer-events-none hit-float"
           >
             {{ hole.state === 'hit' ? '⭐' : '❌' }}
           </div>
@@ -155,32 +154,34 @@
     <!-- START SCREEN -->
     <div 
       v-if="!gameActive && !isGameOver" 
-      class="absolute inset-0 flex flex-col items-center z-50 overflow-y-auto p-4"
-      style="background: linear-gradient(180deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);"
+      class="absolute inset-0 flex flex-col items-center justify-center z-50 overflow-y-auto p-4 sm:p-6 safe-area-padding"
+      style="background: linear-gradient(180deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%); -webkit-overflow-scrolling: touch;"
     >
-      <div class="text-center max-w-xs w-full py-8 my-auto">
-        <div class="text-4xl sm:text-6xl mb-2 sm:mb-4 animate-bounce">🐹</div>
+      <div class="text-center w-full max-w-xs mx-auto py-6 sm:py-8 my-auto flex flex-col items-center">
+        <div class="text-5xl sm:text-6xl mb-3 sm:mb-4 animate-bounce">🐹</div>
         <h1 class="text-xl sm:text-2xl font-extrabold text-white mb-1 sm:mb-2">Whack-a-Mole!</h1>
-        <p class="text-xs sm:text-sm text-white/80 mb-4 sm:mb-6">
+        <p class="text-xs sm:text-sm text-white/80 mb-5 sm:mb-6 px-2">
           Tap moles with <strong class="text-white">correct answers</strong>!
         </p>
         
-        <div class="flex justify-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-          <div class="bg-white/20 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg">
-            <span class="text-[10px] sm:text-xs font-bold text-white">❤️ {{ maxLives }}</span>
+        <div class="flex flex-wrap justify-center gap-2 sm:gap-3 mb-5 sm:mb-6">
+          <div class="bg-white/20 backdrop-blur-sm px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-white/10">
+            <span class="text-xs sm:text-sm font-bold text-white">❤️ {{ maxLives }}</span>
           </div>
-          <div class="bg-white/20 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg">
-            <span class="text-[10px] sm:text-xs font-bold text-white">⏱️ {{ initialTime }}s</span>
+          <div class="bg-white/20 backdrop-blur-sm px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-white/10">
+            <span class="text-xs sm:text-sm font-bold text-white">⏱️ {{ initialTime }}s</span>
           </div>
-          <div class="bg-white/20 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg">
-            <span class="text-[10px] sm:text-xs font-bold text-white">🎯 {{ targetScore }}</span>
+          <div class="bg-white/20 backdrop-blur-sm px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-white/10">
+            <span class="text-xs sm:text-sm font-bold text-white">🎯 {{ targetScore }}</span>
           </div>
         </div>
 
         <button 
           @click="startGame"
-          class="bg-white text-indigo-600 px-6 sm:px-8 py-2.5 sm:py-3 rounded-full font-bold shadow-lg 
-                 hover:scale-105 active:scale-100 transition-transform"
+          @touchend.prevent="handleStartTouch"
+          class="bg-white text-indigo-600 px-8 sm:px-10 py-3.5 sm:py-4 rounded-full font-bold text-base sm:text-lg shadow-xl 
+                 hover:scale-105 active:scale-95 transition-transform duration-150 
+                 min-h-[48px] min-w-[160px] tap-highlight-none touch-manipulation"
         >
           Start Game ▶
         </button>
@@ -190,45 +191,45 @@
     <!-- GAME OVER -->
     <div 
       v-if="isGameOver" 
-      class="absolute inset-0 bg-black/50 flex items-center justify-center p-4 z-[100]"
+      class="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[100]"
     >
-      <div class="bg-white rounded-2xl p-6 text-center max-w-xs w-full shadow-xl">
-        <div class="text-4xl mb-2">
+      <div class="bg-white rounded-2xl p-5 sm:p-6 text-center max-w-xs w-full shadow-2xl animate-modal-pop">
+        <div class="text-4xl sm:text-5xl mb-2">
           {{ earnedStars >= 3 ? '🏆' : earnedStars >= 2 ? '🎉' : earnedStars >= 1 ? '👍' : '💪' }}
         </div>
         
-        <h2 class="text-xl font-bold text-slate-800">
+        <h2 class="text-lg sm:text-xl font-bold text-slate-800">
           {{ earnedStars >= 3 ? 'Perfect!' : earnedStars >= 2 ? 'Great!' : earnedStars >= 1 ? 'Good!' : 'Try Again!' }}
         </h2>
 
-        <div class="text-3xl font-bold text-indigo-500 my-2">{{ score }}</div>
+        <div class="text-3xl sm:text-4xl font-bold text-indigo-500 my-2">{{ score }}</div>
 
         <div class="flex justify-center gap-1 mb-4">
           <span 
             v-for="n in 3" 
             :key="n" 
-            class="text-2xl"
+            class="text-2xl sm:text-3xl transition-colors"
             :class="n <= earnedStars ? 'text-amber-400' : 'text-slate-200'"
           >★</span>
         </div>
 
         <div class="flex justify-around mb-4 text-sm">
-          <div>
-            <div class="text-slate-400">Correct</div>
+          <div class="flex-1">
+            <div class="text-slate-400 text-xs">Correct</div>
             <div class="font-bold text-green-500">{{ correctHits }}</div>
           </div>
-          <div>
-            <div class="text-slate-400">Wrong</div>
+          <div class="flex-1">
+            <div class="text-slate-400 text-xs">Wrong</div>
             <div class="font-bold text-red-500">{{ wrongHits }}</div>
           </div>
-          <div>
-            <div class="text-slate-400">Accuracy</div>
-            <div class="font-bold">{{ accuracy }}%</div>
+          <div class="flex-1">
+            <div class="text-slate-400 text-xs">Accuracy</div>
+            <div class="font-bold text-slate-700">{{ accuracy }}%</div>
           </div>
         </div>
 
         <div class="h-1 bg-slate-100 rounded-full overflow-hidden">
-          <div class="h-full bg-indigo-500 transition-all" :style="{ width: progressWidth + '%' }"></div>
+          <div class="h-full bg-indigo-500 transition-all duration-50" :style="{ width: progressWidth + '%' }"></div>
         </div>
         <p class="text-xs text-slate-400 mt-1">{{ Math.ceil(progressWidth / 20) }}s...</p>
       </div>
@@ -237,7 +238,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import GameHUDSidebar from '../base/GameHUDSidebar.vue';
 
 const props = defineProps({
@@ -250,61 +251,61 @@ const props = defineProps({
 const emit = defineEmits(['score-change', 'life-lost', 'game-complete', 'item-collected', 'game-started']);
 
 // Config
-const GRID_SIZE = 4;
 const BASE_SPEED = 2500;
 const MIN_SPEED = 1200;
 const AUTO_DISMISS_DURATION = 5000;
 
 // Refs
 const gameWrapper = ref(null);
-const containerWidth = ref(600);
+const containerWidth = ref(400);
+const containerHeight = ref(600);
 let resizeObserver = null;
 
-// Question banner - smoothly transitions position based on container width
-// As container gets smaller, banner moves down (below HUD) and slightly right
-const questionBannerStyle = computed(() => {
-  const w = containerWidth.value;
-  
-  // Calculate position based on width
-  // Wide: centered near top
-  // Narrow: lower and more to the right to avoid HUD overlap
-  
-  // Fixed positioning for stability
-  const top = 140;
-  const left = 50;
-  const translateX = -50;
-  
-  return {
-    top: `${top}px`,
-    left: `${left}%`,
-    transform: `translateX(${translateX}%)`
-  };
+// Responsive computed classes
+const bannerTopClass = computed(() => {
+  // Add extra top padding on small screens to account for HUD
+  return containerWidth.value < 400 ? 'pt-2' : 'pt-3';
 });
 
-// Game area padding - matches banner position
-const gameAreaPadding = computed(() => '180px');
-
-// Grid responsive
-const gridClass = computed(() => {
-  const w = containerWidth.value;
-  if (w < 300) return 'grid-cols-2 gap-1 max-w-[240px] mx-auto';
-  if (w < 400) return 'grid-cols-2 gap-2 max-w-[300px] mx-auto';
-  if (w < 500) return 'grid-cols-2 gap-2 max-w-[340px] mx-auto';
-  return 'grid-cols-4 gap-2 max-w-[500px] mx-auto';
-});
-
-// Text sizes
 const bannerTextClass = computed(() => {
   const w = containerWidth.value;
   if (w < 300) return 'text-sm';
   if (w < 400) return 'text-base';
-  return 'text-xl';
+  return 'text-lg sm:text-xl';
 });
 
 const answerTextClass = computed(() => {
   const w = containerWidth.value;
-  if (w < 350) return 'text-xs';
-  return 'text-sm';
+  if (w < 350) return 'text-[10px] sm:text-xs';
+  return 'text-xs sm:text-sm';
+});
+
+const gameAreaPaddingClass = computed(() => {
+  // Responsive top padding for game area based on container size
+  const w = containerWidth.value;
+  const h = containerHeight.value;
+  
+  if (h < 450) return 'pt-14';
+  if (w < 350) return 'pt-16';
+  return 'pt-20 sm:pt-24';
+});
+
+// Grid responsive - adapts to container size
+const gridClass = computed(() => {
+  const w = containerWidth.value;
+  const h = containerHeight.value;
+  const isLandscape = w > h;
+  
+  // Very small screens or landscape mobile - 4 columns
+  if (h < 400 && isLandscape) {
+    return 'grid-cols-4 gap-1 max-w-[400px] max-h-[120px] mx-auto place-items-center';
+  }
+  
+  if (w < 280) return 'grid-cols-2 gap-1 max-w-[200px] max-h-[220px] mx-auto place-items-center';
+  if (w < 350) return 'grid-cols-2 gap-1.5 max-w-[260px] max-h-[280px] mx-auto place-items-center';
+  if (w < 450) return 'grid-cols-2 gap-2 max-w-[320px] max-h-[340px] mx-auto place-items-center';
+  
+  return 'grid-cols-4 gap-2 sm:gap-3 max-w-[500px] max-h-[280px] mx-auto place-items-center';
 });
 
 // Game settings
@@ -360,7 +361,7 @@ const getAnswerBubbleClass = (hole) => {
 
 // Initialize holes
 const initHoles = () => {
-  holes.value = Array.from({ length: GRID_SIZE }, () => ({
+  holes.value = Array.from({ length: 4 }, () => ({
     active: false,
     content: '',
     isCorrect: false,
@@ -424,10 +425,24 @@ const spawnMole = () => {
   }, speed);
 };
 
+// Separate touch handler to prevent ghost clicks
+const handleTouchWhack = (index, event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  handleWhack(index);
+};
+
+// Handle start button touch separately
+const handleStartTouch = (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  startGame();
+};
+
 // Whack handler
 const handleWhack = (index) => {
   const hole = holes.value[index];
-  if (!hole.active || hole.state !== 'idle') return;
+  if (!hole || !hole.active || hole.state !== 'idle') return;
 
   clearTimeout(hole.timer);
   hole.showEffect = true;
@@ -503,6 +518,8 @@ const startGame = () => {
   currentQuestionIndex.value = 0;
   initHoles();
   emit('game-started');
+  
+  // Small delay before spawning to ensure UI is ready
   setTimeout(() => {
     gameInterval.value = setInterval(spawnMole, 900);
   }, 500);
@@ -519,11 +536,19 @@ const stopGame = () => {
 
 const setupResizeObserver = () => {
   if (!gameWrapper.value) return;
+  
   resizeObserver = new ResizeObserver((entries) => {
-    containerWidth.value = entries[0].contentRect.width;
+    const entry = entries[0];
+    if (entry) {
+      containerWidth.value = entry.contentRect.width;
+      containerHeight.value = entry.contentRect.height;
+    }
   });
   resizeObserver.observe(gameWrapper.value);
+  
+  // Initial measurement
   containerWidth.value = gameWrapper.value.offsetWidth;
+  containerHeight.value = gameWrapper.value.offsetHeight;
 };
 
 // Watchers
@@ -533,7 +558,9 @@ watch(() => props.timeRemaining, (val) => { if (val <= 0 && gameActive.value) fi
 
 onMounted(() => {
   initHoles();
-  setupResizeObserver();
+  nextTick(() => {
+    setupResizeObserver();
+  });
 });
 
 onUnmounted(() => {
@@ -545,11 +572,25 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* Question banner - smooth transition when resizing */
-.question-banner {
-  transition: top 0.3s ease-out, left 0.3s ease-out, transform 0.3s ease-out;
+/* Safe area padding for notched devices (iPhone X+, etc.) */
+.safe-area-padding {
+  padding-top: env(safe-area-inset-top, 0);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  padding-left: env(safe-area-inset-left, 0);
+  padding-right: env(safe-area-inset-right, 0);
 }
 
+/* Disable tap highlight on mobile */
+.tap-highlight-none {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Touch manipulation for better touch response */
+.touch-manipulation {
+  touch-action: manipulation;
+}
+
+/* Question banner animations */
 .banner-float {
   animation: float 3s ease-in-out infinite;
 }
@@ -568,18 +609,27 @@ onUnmounted(() => {
   100% { transform: scale(1); opacity: 1; }
 }
 
+/* Answer bubble pop animation */
+.bubble-pop {
+  animation: bubble-pop 0.2s ease-out;
+}
+
+@keyframes bubble-pop {
+  0% { transform: translateX(-50%) scale(0.8); opacity: 0; }
+  100% { transform: translateX(-50%) scale(1); opacity: 1; }
+}
+
 /* Mole wrapper - handles the up/down animation */
 .mole-wrapper {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  width: 80%;
   transition: transform 0.15s ease-out;
 }
 
-/* Answer bubble positioning - centered above mole */
-.bubble-position {
-  transform: translateX(-50%);
+.mole-up {
+  transform: translateX(-50%) translateY(5%);
+}
+
+.mole-down {
+  transform: translateX(-50%) translateY(100%);
 }
 
 /* Grass blade styling */
@@ -588,6 +638,10 @@ onUnmounted(() => {
   background: #10b981;
   border-radius: 2px 2px 0 0;
   transform-origin: bottom center;
+}
+
+.grass-light {
+  background: #34d399;
 }
 
 /* Mole hit effect */
@@ -606,5 +660,39 @@ onUnmounted(() => {
   0%, 100% { transform: rotate(0deg); }
   25% { transform: rotate(-8deg); }
   75% { transform: rotate(8deg); }
+}
+
+/* Hit effect floating animation */
+.hit-float {
+  animation: hit-float 0.5s ease-out forwards;
+}
+
+@keyframes hit-float {
+  0% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-30px) scale(1.3); }
+}
+
+/* Modal pop animation */
+.animate-modal-pop {
+  animation: modal-pop 0.3s ease-out;
+}
+
+@keyframes modal-pop {
+  0% { transform: scale(0.9); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Responsive adjustments for very small screens */
+@media (max-height: 500px) {
+  .banner-float {
+    animation: none;
+  }
+}
+
+/* Landscape mobile specific */
+@media (max-height: 450px) and (orientation: landscape) {
+  .safe-area-padding {
+    padding-top: 8px !important;
+  }
 }
 </style>
