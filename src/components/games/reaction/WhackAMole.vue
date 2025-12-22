@@ -1,252 +1,154 @@
 <template>
   <div 
     ref="gameWrapper"
-    class="absolute inset-0 font-sans select-none overflow-hidden flex flex-col safe-area-padding"
-    style="background: linear-gradient(180deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);"
+    class="game-root"
   >
-    
-    <!-- HUD Sidebar -->
-    <GameHUDSidebar
-      v-if="gameActive"
-      :score="score"
-      :time-remaining="timeRemaining"
-      :lives="lives"
-      :max-lives="3"
-    />
-
-    <!-- Question Banner -->
-    <div 
-      v-if="gameActive" 
-      class="absolute top-0 left-0 right-0 z-40 flex justify-center px-3 pointer-events-none"
-      :class="bannerPaddingClass"
-    >
-      <div 
-        :key="currentQuestionIndex"
-        class="relative group pointer-events-auto banner-float banner-pop"
-      >
-        <!-- Premium background with glow -->
-        <div class="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
-        
-        <div 
-          class="relative bg-white rounded-2xl shadow-2xl border-2 border-indigo-50 inline-block"
-          :class="bannerSizeClass"
-        >
-          <!-- Question Label -->
-          <div 
-            class="absolute -top-2 left-1/2 -translate-x-1/2 bg-indigo-600 text-white font-black px-2 py-0.5 rounded-full uppercase tracking-widest shadow-sm whitespace-nowrap"
-            :class="labelSizeClass"
-          >
-            Question
-          </div>
-          
-          <p 
-            class="font-black text-indigo-950 text-center tracking-tight leading-tight break-words"
-            :class="bannerTextClass"
-          >
-            {{ currentPrompt }}
-          </p>
-        </div>
+    <!-- HUD - Top Bar -->
+    <div v-if="gameActive" class="game-hud">
+      <div class="hud-item hud-score">
+        <span class="hud-icon">🎯</span>
+        <span class="hud-value">{{ score }}</span>
+      </div>
+      <div class="hud-item hud-timer">
+        <span class="hud-icon">⏱️</span>
+        <span class="hud-value">{{ timeRemaining }}s</span>
+      </div>
+      <div class="hud-item hud-lives">
+        <span v-for="i in 3" :key="i" class="heart" :class="{ 'heart-empty': i > lives }">
+          {{ i <= lives ? '❤️' : '🖤' }}
+        </span>
       </div>
     </div>
 
-    <!-- Game Area -->
-    <div 
-      v-if="gameActive" 
-      class="flex-1 flex items-center justify-center px-2 min-h-0 overflow-hidden"
-      :class="gameAreaPaddingClass"
-    >
-      <div 
-        class="grid w-full"
-        :class="gridClass"
-        :style="gridStyle"
-      >
+    <!-- Question Banner -->
+    <div v-if="gameActive" class="question-section">
+      <div class="question-banner" :key="currentQuestionIndex">
+        <div class="question-label">QUESTION</div>
+        <div class="question-text">{{ currentPrompt }}</div>
+      </div>
+    </div>
+
+    <!-- Game Grid Area -->
+    <div v-if="gameActive" class="game-grid-area">
+      <div class="holes-container" :class="gridLayoutClass">
         <div 
           v-for="(hole, index) in holes" 
           :key="index" 
-          class="relative cursor-pointer tap-highlight-none touch-manipulation"
+          class="hole-wrapper"
           @mousedown.prevent="handleWhack(index)"
-          @touchstart="handleTouchWhack(index, $event)"
+          @touchstart.prevent="handleWhack(index)"
         >
-          <!-- Answer Bubble -->
-          <div 
-            v-if="hole.active"
-            class="absolute z-30 left-1/2 -translate-x-1/2 bubble-pop"
-            style="bottom: 75%;"
-          >
+          <!-- Answer Label - Above the hole -->
+          <div class="answer-label-wrapper">
             <div 
-              class="py-0.5 px-1.5 sm:py-1 sm:px-2 rounded-lg shadow-md border-2 inline-block"
-              :class="getAnswerBubbleClass(hole)"
+              v-if="hole.active" 
+              class="answer-label"
+              :class="getAnswerLabelClass(hole)"
             >
-              <span 
-                class="font-bold text-slate-700 whitespace-nowrap"
-                :class="answerTextClass"
-              >
-                {{ hole.content }}
-              </span>
+              {{ hole.content }}
             </div>
           </div>
-
-          <!-- Hole Container -->
-          <div class="relative w-full aspect-square">
+          
+          <!-- The Hole with Mole -->
+          <div class="hole">
+            <!-- Hole shadow (dark ellipse at bottom) -->
+            <div class="hole-shadow"></div>
             
-            <!-- Dark hole background -->
-            <div class="absolute bottom-[15%] left-[10%] w-[80%] h-[30%] bg-amber-950 rounded-[50%]"></div>
-
-            <!-- Mole clip area -->
-            <div class="absolute bottom-[28%] left-[15%] w-[70%] h-[50%] overflow-hidden">
+            <!-- Mole container with clipping -->
+            <div class="mole-container">
               <div 
-                class="mole-wrapper absolute bottom-0 left-1/2 w-[80%]"
-                :class="hole.active ? 'mole-up' : 'mole-down'"
+                class="mole"
+                :class="[
+                  hole.active ? 'mole-visible' : 'mole-hidden',
+                  getMoleStateClass(hole)
+                ]"
               >
-                <div 
-                  class="relative w-full aspect-[1/0.85] transition-all duration-150"
-                  :class="getMoleEffectClass(hole)"
-                >
-                  <!-- Main body -->
-                  <div 
-                    class="absolute inset-0 rounded-[50%] shadow-md"
-                    style="background: linear-gradient(180deg, #D4A574 0%, #B8845A 100%);"
-                  ></div>
-                  
-                  <!-- Left ear -->
-                  <div 
-                    class="absolute w-[18%] aspect-square rounded-full"
-                    style="top: -6%; left: 18%; background: #C4956A;"
-                  ></div>
-                  
-                  <!-- Right ear -->
-                  <div 
-                    class="absolute w-[18%] aspect-square rounded-full"
-                    style="top: -6%; right: 18%; background: #C4956A;"
-                  ></div>
-                  
-                  <!-- Two dot eyes -->
-                  <div class="absolute w-[10%] aspect-square bg-slate-800 rounded-full" style="top: 38%; left: 30%;"></div>
-                  <div class="absolute w-[10%] aspect-square bg-slate-800 rounded-full" style="top: 38%; right: 30%;"></div>
-                  
-                  <!-- Pink nose -->
-                  <div class="absolute w-[7%] aspect-square bg-pink-400 rounded-full" style="top: 58%; left: 50%; transform: translateX(-50%);"></div>
+                <!-- Mole face -->
+                <div class="mole-face">
+                  <div class="mole-ear mole-ear-left"></div>
+                  <div class="mole-ear mole-ear-right"></div>
+                  <div class="mole-head">
+                    <div class="mole-eye mole-eye-left"></div>
+                    <div class="mole-eye mole-eye-right"></div>
+                    <div class="mole-nose"></div>
+                  </div>
                 </div>
               </div>
             </div>
-
-            <!-- Dirt mound - static -->
-            <div class="absolute bottom-0 left-0 w-full h-[38%] pointer-events-none">
-              <div 
-                class="absolute bottom-0 w-full h-full rounded-t-[100%]"
-                style="background: linear-gradient(0deg, #5D4037 0%, #795548 50%, #8D6E63 100%);"
-              ></div>
-              <!-- Grass -->
-              <div class="absolute top-0 left-[10%] w-[80%] flex justify-around">
-                <div class="grass-blade" style="height: 10px; transform: rotate(-12deg) translateY(-4px);"></div>
-                <div class="grass-blade grass-light" style="height: 14px; transform: rotate(6deg) translateY(-4px);"></div>
-                <div class="grass-blade" style="height: 8px; transform: rotate(-6deg) translateY(-4px);"></div>
-                <div class="grass-blade grass-light" style="height: 12px; transform: rotate(12deg) translateY(-4px);"></div>
-                <div class="grass-blade" style="height: 10px; transform: rotate(3deg) translateY(-4px);"></div>
-              </div>
+            
+            <!-- Dirt mound (covers bottom of mole) -->
+            <div class="dirt-mound">
+              <div class="grass"></div>
             </div>
           </div>
 
           <!-- Hit Effect -->
-          <div 
-            v-if="hole.showEffect" 
-            class="absolute top-0 left-1/2 -translate-x-1/2 z-40 pointer-events-none hit-float"
-            :class="hitEffectSizeClass"
-          >
+          <div v-if="hole.showEffect" class="hit-effect">
             {{ hole.state === 'hit' ? '⭐' : '❌' }}
           </div>
         </div>
       </div>
     </div>
 
-    <!-- START SCREEN - SCROLLABLE & CENTERED -->
-    <div 
-      v-if="!gameActive && !isGameOver" 
-      class="absolute inset-0 flex items-center justify-center z-50 overflow-auto p-3 safe-area-padding"
-      style="background: linear-gradient(180deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%); -webkit-overflow-scrolling: touch;"
-    >
-      <div 
-        class="text-center w-full max-w-xs mx-auto flex flex-col items-center"
-        :class="startScreenPaddingClass"
-      >
-        <div :class="startIconClass" class="animate-bounce">🐹</div>
-        <h1 :class="startTitleClass" class="font-extrabold text-white mb-1">Whack-a-Mole!</h1>
-        <p :class="startDescClass" class="text-white/80 mb-3 px-2">
-          Tap moles with <strong class="text-white">correct answers</strong>!
-        </p>
+    <!-- START SCREEN -->
+    <div v-if="!gameActive && !isGameOver" class="start-screen">
+      <div class="start-content">
+        <div class="start-mascot">🐹</div>
+        <h1 class="start-title">Whack-a-Mole!</h1>
+        <p class="start-subtitle">Tap moles with <strong>correct answers</strong>!</p>
         
-        <div class="flex flex-wrap justify-center gap-2 mb-4">
-          <div class="bg-white/20 backdrop-blur-sm px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl border border-white/10">
-            <span class="text-[11px] sm:text-xs font-bold text-white">❤️ {{ maxLives }}</span>
+        <div class="start-stats">
+          <div class="stat-item">
+            <span class="stat-icon">❤️</span>
+            <span class="stat-value">{{ maxLives }}</span>
           </div>
-          <div class="bg-white/20 backdrop-blur-sm px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl border border-white/10">
-            <span class="text-[11px] sm:text-xs font-bold text-white">⏱️ {{ initialTime }}s</span>
+          <div class="stat-item">
+            <span class="stat-icon">⏱️</span>
+            <span class="stat-value">{{ initialTime }}s</span>
           </div>
-          <div class="bg-white/20 backdrop-blur-sm px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl border border-white/10">
-            <span class="text-[11px] sm:text-xs font-bold text-white">🎯 {{ targetScore }}</span>
+          <div class="stat-item">
+            <span class="stat-icon">🎯</span>
+            <span class="stat-value">{{ targetScore }}</span>
           </div>
         </div>
 
-        <button 
-          @click="startGame"
-          @touchend.prevent="handleStartTouch"
-          class="bg-white text-indigo-600 rounded-full font-bold shadow-xl 
-                 hover:scale-105 active:scale-95 transition-transform duration-150 
-                 tap-highlight-none touch-manipulation"
-          :class="startButtonClass"
-        >
+        <button class="start-btn" @click="startGame">
           Start Game ▶
         </button>
       </div>
     </div>
 
-    <!-- GAME OVER -->
-    <div 
-      v-if="isGameOver" 
-      class="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-3 z-[100]"
-    >
-      <div 
-        class="bg-white rounded-2xl text-center w-full shadow-2xl animate-modal-pop"
-        :class="gameOverModalClass"
-      >
-        <div :class="gameOverIconClass">
+    <!-- GAME OVER SCREEN -->
+    <div v-if="isGameOver" class="gameover-overlay">
+      <div class="gameover-modal">
+        <div class="gameover-emoji">
           {{ earnedStars >= 3 ? '🏆' : earnedStars >= 2 ? '🎉' : earnedStars >= 1 ? '👍' : '💪' }}
         </div>
-        
-        <h2 :class="gameOverTitleClass" class="font-bold text-slate-800">
+        <h2 class="gameover-title">
           {{ earnedStars >= 3 ? 'Perfect!' : earnedStars >= 2 ? 'Great!' : earnedStars >= 1 ? 'Good!' : 'Try Again!' }}
         </h2>
-
-        <div :class="gameOverScoreClass" class="font-bold text-indigo-500 my-1">{{ score }}</div>
-
-        <div class="flex justify-center gap-1 mb-3">
-          <span 
-            v-for="n in 3" 
-            :key="n" 
-            class="transition-colors"
-            :class="[starSizeClass, n <= earnedStars ? 'text-amber-400' : 'text-slate-200']"
-          >★</span>
+        <div class="gameover-score">{{ score }}</div>
+        <div class="gameover-stars">
+          <span v-for="n in 3" :key="n" :class="n <= earnedStars ? 'star-filled' : 'star-empty'">★</span>
         </div>
-
-        <div class="flex justify-around mb-3 text-xs sm:text-sm">
-          <div class="flex-1">
-            <div class="text-slate-400 text-[10px] sm:text-xs">Correct</div>
-            <div class="font-bold text-green-500">{{ correctHits }}</div>
+        <div class="gameover-stats">
+          <div class="gstat">
+            <div class="gstat-label">Correct</div>
+            <div class="gstat-value gstat-correct">{{ correctHits }}</div>
           </div>
-          <div class="flex-1">
-            <div class="text-slate-400 text-[10px] sm:text-xs">Wrong</div>
-            <div class="font-bold text-red-500">{{ wrongHits }}</div>
+          <div class="gstat">
+            <div class="gstat-label">Wrong</div>
+            <div class="gstat-value gstat-wrong">{{ wrongHits }}</div>
           </div>
-          <div class="flex-1">
-            <div class="text-slate-400 text-[10px] sm:text-xs">Accuracy</div>
-            <div class="font-bold text-slate-700">{{ accuracy }}%</div>
+          <div class="gstat">
+            <div class="gstat-label">Accuracy</div>
+            <div class="gstat-value">{{ accuracy }}%</div>
           </div>
         </div>
-
-        <div class="h-1 bg-slate-100 rounded-full overflow-hidden mx-3">
-          <div class="h-full bg-indigo-500 transition-all duration-50" :style="{ width: progressWidth + '%' }"></div>
+        <div class="gameover-progress">
+          <div class="progress-bar" :style="{ width: progressWidth + '%' }"></div>
         </div>
-        <p class="text-[10px] sm:text-xs text-slate-400 mt-1">{{ Math.ceil(progressWidth / 20) }}s...</p>
+        <div class="gameover-timer">{{ Math.ceil(progressWidth / 20) }}s...</div>
       </div>
     </div>
   </div>
@@ -254,7 +156,6 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
-import GameHUDSidebar from '../base/GameHUDSidebar.vue';
 
 const props = defineProps({
   gameData: { type: Object, required: true },
@@ -269,187 +170,13 @@ const emit = defineEmits(['score-change', 'life-lost', 'game-complete', 'item-co
 const BASE_SPEED = 2500;
 const MIN_SPEED = 1200;
 const AUTO_DISMISS_DURATION = 5000;
+const HOLE_COUNT = 4;
 
 // Refs
 const gameWrapper = ref(null);
 const containerWidth = ref(400);
-const containerHeight = ref(600);
+const containerHeight = ref(500);
 let resizeObserver = null;
-
-// Size category for responsive classes
-const sizeCategory = computed(() => {
-  const w = containerWidth.value;
-  const h = containerHeight.value;
-  
-  // Extremely constrained (split panel on mobile)
-  if (h < 350 || (w < 300 && h < 450)) return 'xs';
-  // Small
-  if (h < 450 || w < 350) return 'sm';
-  // Medium
-  if (h < 600 || w < 500) return 'md';
-  // Large
-  return 'lg';
-});
-
-// Responsive class computed properties
-const bannerPaddingClass = computed(() => {
-  const cat = sizeCategory.value;
-  if (cat === 'xs') return 'pt-1.5';
-  if (cat === 'sm') return 'pt-2';
-  return 'pt-3';
-});
-
-const bannerSizeClass = computed(() => {
-  const cat = sizeCategory.value;
-  if (cat === 'xs') return 'py-1.5 px-3 min-w-[100px]';
-  if (cat === 'sm') return 'py-2 px-4 min-w-[120px]';
-  return 'py-2.5 px-5 min-w-[140px] sm:py-3 sm:px-6 sm:min-w-[180px]';
-});
-
-const labelSizeClass = computed(() => {
-  const cat = sizeCategory.value;
-  if (cat === 'xs') return 'text-[7px] px-1.5';
-  if (cat === 'sm') return 'text-[8px] px-1.5';
-  return 'text-[9px] sm:text-[10px] px-2';
-});
-
-const bannerTextClass = computed(() => {
-  const cat = sizeCategory.value;
-  if (cat === 'xs') return 'text-xs';
-  if (cat === 'sm') return 'text-sm';
-  return 'text-base sm:text-lg';
-});
-
-const answerTextClass = computed(() => {
-  const cat = sizeCategory.value;
-  if (cat === 'xs') return 'text-[9px]';
-  if (cat === 'sm') return 'text-[10px]';
-  return 'text-xs sm:text-sm';
-});
-
-const gameAreaPaddingClass = computed(() => {
-  const cat = sizeCategory.value;
-  if (cat === 'xs') return 'pt-10 pb-1';
-  if (cat === 'sm') return 'pt-12 pb-2';
-  return 'pt-16 pb-3 sm:pt-20';
-});
-
-const gridClass = computed(() => {
-  const w = containerWidth.value;
-  const h = containerHeight.value;
-  
-  // Always 2x2 grid but with different sizing
-  if (h < 350 || w < 280) {
-    return 'grid-cols-2 gap-1 mx-auto place-items-center';
-  }
-  if (h < 450 || w < 350) {
-    return 'grid-cols-2 gap-1.5 mx-auto place-items-center';
-  }
-  if (w < 500) {
-    return 'grid-cols-2 gap-2 mx-auto place-items-center';
-  }
-  return 'grid-cols-4 gap-2 sm:gap-3 mx-auto place-items-center';
-});
-
-const gridStyle = computed(() => {
-  const w = containerWidth.value;
-  const h = containerHeight.value;
-  const availableHeight = h - (sizeCategory.value === 'xs' ? 60 : sizeCategory.value === 'sm' ? 80 : 100);
-  
-  // Calculate max size based on available space
-  let maxSize;
-  if (w < 500) {
-    // 2x2 grid
-    maxSize = Math.min(w - 16, availableHeight - 20, 340);
-  } else {
-    // 4x1 grid
-    maxSize = Math.min(w - 32, 500);
-  }
-  
-  return {
-    maxWidth: `${Math.max(160, maxSize)}px`,
-    maxHeight: `${Math.max(120, availableHeight - 10)}px`
-  };
-});
-
-const hitEffectSizeClass = computed(() => {
-  const cat = sizeCategory.value;
-  if (cat === 'xs') return 'text-base';
-  if (cat === 'sm') return 'text-lg';
-  return 'text-xl sm:text-2xl';
-});
-
-// Start screen responsive classes
-const startScreenPaddingClass = computed(() => {
-  const cat = sizeCategory.value;
-  if (cat === 'xs') return 'py-2';
-  if (cat === 'sm') return 'py-3';
-  return 'py-6 sm:py-8';
-});
-
-const startIconClass = computed(() => {
-  const cat = sizeCategory.value;
-  if (cat === 'xs') return 'text-3xl mb-1';
-  if (cat === 'sm') return 'text-4xl mb-2';
-  return 'text-5xl sm:text-6xl mb-3 sm:mb-4';
-});
-
-const startTitleClass = computed(() => {
-  const cat = sizeCategory.value;
-  if (cat === 'xs') return 'text-base';
-  if (cat === 'sm') return 'text-lg';
-  return 'text-xl sm:text-2xl';
-});
-
-const startDescClass = computed(() => {
-  const cat = sizeCategory.value;
-  if (cat === 'xs') return 'text-[10px]';
-  if (cat === 'sm') return 'text-xs';
-  return 'text-xs sm:text-sm';
-});
-
-const startButtonClass = computed(() => {
-  const cat = sizeCategory.value;
-  if (cat === 'xs') return 'px-5 py-2.5 text-sm min-h-[40px] min-w-[130px]';
-  if (cat === 'sm') return 'px-6 py-3 text-sm min-h-[44px] min-w-[140px]';
-  return 'px-8 sm:px-10 py-3.5 sm:py-4 text-base sm:text-lg min-h-[48px] min-w-[160px]';
-});
-
-// Game over responsive classes
-const gameOverModalClass = computed(() => {
-  const cat = sizeCategory.value;
-  if (cat === 'xs') return 'p-3 max-w-[260px]';
-  if (cat === 'sm') return 'p-4 max-w-[280px]';
-  return 'p-5 sm:p-6 max-w-xs';
-});
-
-const gameOverIconClass = computed(() => {
-  const cat = sizeCategory.value;
-  if (cat === 'xs') return 'text-3xl mb-1';
-  if (cat === 'sm') return 'text-4xl mb-1';
-  return 'text-4xl sm:text-5xl mb-2';
-});
-
-const gameOverTitleClass = computed(() => {
-  const cat = sizeCategory.value;
-  if (cat === 'xs') return 'text-base';
-  if (cat === 'sm') return 'text-lg';
-  return 'text-lg sm:text-xl';
-});
-
-const gameOverScoreClass = computed(() => {
-  const cat = sizeCategory.value;
-  if (cat === 'xs') return 'text-2xl';
-  if (cat === 'sm') return 'text-2xl';
-  return 'text-3xl sm:text-4xl';
-});
-
-const starSizeClass = computed(() => {
-  const cat = sizeCategory.value;
-  if (cat === 'xs') return 'text-xl';
-  if (cat === 'sm') return 'text-2xl';
-  return 'text-2xl sm:text-3xl';
-});
 
 // Game settings
 const maxLives = computed(() => props.gameData?.lives || 3);
@@ -469,7 +196,14 @@ const autoDismissTimer = ref(null);
 const correctHits = ref(0);
 const wrongHits = ref(0);
 
-// Computed
+// Layout - always 2x2 for mobile-first design
+const gridLayoutClass = computed(() => {
+  const w = containerWidth.value;
+  if (w >= 600) return 'grid-4x1';
+  return 'grid-2x2';
+});
+
+// Mode detection
 const mode = computed(() => {
   return (props.gameData?.questions?.length > 0) ? 'question' : 'category';
 });
@@ -489,22 +223,22 @@ const accuracy = computed(() => {
   return total === 0 ? 0 : Math.round((correctHits.value / total) * 100);
 });
 
-// Mole effect class for hit/miss states
-const getMoleEffectClass = (hole) => {
+// Mole state classes
+const getMoleStateClass = (hole) => {
   if (hole.state === 'hit') return 'mole-hit';
   if (hole.state === 'miss') return 'mole-miss';
   return '';
 };
 
-const getAnswerBubbleClass = (hole) => {
-  if (hole.state === 'hit') return 'border-green-400 bg-green-50';
-  if (hole.state === 'miss') return 'border-red-400 bg-red-50';
-  return 'border-amber-300 bg-white';
+const getAnswerLabelClass = (hole) => {
+  if (hole.state === 'hit') return 'answer-correct';
+  if (hole.state === 'miss') return 'answer-wrong';
+  return 'answer-default';
 };
 
 // Initialize holes
 const initHoles = () => {
-  holes.value = Array.from({ length: 4 }, () => ({
+  holes.value = Array.from({ length: HOLE_COUNT }, () => ({
     active: false,
     content: '',
     isCorrect: false,
@@ -518,7 +252,10 @@ const initHoles = () => {
 const spawnMole = () => {
   if (!gameActive.value) return;
 
-  const available = holes.value.map((h, i) => (!h.active ? i : null)).filter(i => i !== null);
+  const available = holes.value
+    .map((h, i) => (!h.active ? i : null))
+    .filter(i => i !== null);
+  
   if (available.length === 0) return;
 
   const holeIdx = available[Math.floor(Math.random() * available.length)];
@@ -537,7 +274,9 @@ const spawnMole = () => {
       content = q.a || q.answer || q.correctAnswer || "✓";
     } else {
       const wrong = q.wrong || q.wrongAnswers || q.distractors || [];
-      content = wrong.length > 0 ? wrong[Math.floor(Math.random() * wrong.length)] : "✗";
+      content = wrong.length > 0 
+        ? wrong[Math.floor(Math.random() * wrong.length)] 
+        : "✗";
     }
   } else {
     const items = props.gameData?.items || [];
@@ -568,20 +307,6 @@ const spawnMole = () => {
   }, speed);
 };
 
-// Separate touch handler to prevent ghost clicks
-const handleTouchWhack = (index, event) => {
-  event.preventDefault();
-  event.stopPropagation();
-  handleWhack(index);
-};
-
-// Handle start button touch separately
-const handleStartTouch = (event) => {
-  event.preventDefault();
-  event.stopPropagation();
-  startGame();
-};
-
 // Whack handler
 const handleWhack = (index) => {
   const hole = holes.value[index];
@@ -595,7 +320,9 @@ const handleWhack = (index) => {
     correctHits.value++;
     emit('score-change', 10);
     emit('item-collected', { isCorrect: true });
-    if (mode.value === 'question') setTimeout(() => nextQuestion(), 400);
+    if (mode.value === 'question') {
+      setTimeout(() => nextQuestion(), 400);
+    }
   } else {
     hole.state = 'miss';
     wrongHits.value++;
@@ -614,7 +341,10 @@ const handleWhack = (index) => {
 const nextQuestion = () => {
   if (currentQuestionIndex.value < questions.value.length - 1) {
     currentQuestionIndex.value++;
-    holes.value.forEach(h => { h.active = false; clearTimeout(h.timer); });
+    holes.value.forEach(h => {
+      h.active = false;
+      clearTimeout(h.timer);
+    });
   } else {
     finishGame();
   }
@@ -642,8 +372,8 @@ const finishGame = () => {
 
   autoDismissTimer.value = setTimeout(() => {
     clearInterval(progressTimer.value);
-    emit('game-complete', { 
-      score: props.score, 
+    emit('game-complete', {
+      score: props.score,
       stars: earnedStars.value,
       accuracy: accuracy.value,
       correctHits: correctHits.value,
@@ -661,8 +391,7 @@ const startGame = () => {
   currentQuestionIndex.value = 0;
   initHoles();
   emit('game-started');
-  
-  // Small delay before spawning to ensure UI is ready
+
   setTimeout(() => {
     gameInterval.value = setInterval(spawnMole, 900);
   }, 500);
@@ -674,12 +403,14 @@ const stopGame = () => {
     clearInterval(gameInterval.value);
     gameInterval.value = null;
   }
-  holes.value.forEach(h => { if (h.timer) clearTimeout(h.timer); });
+  holes.value.forEach(h => {
+    if (h.timer) clearTimeout(h.timer);
+  });
 };
 
 const setupResizeObserver = () => {
   if (!gameWrapper.value) return;
-  
+
   resizeObserver = new ResizeObserver((entries) => {
     const entry = entries[0];
     if (entry) {
@@ -688,16 +419,21 @@ const setupResizeObserver = () => {
     }
   });
   resizeObserver.observe(gameWrapper.value);
-  
-  // Initial measurement
+
   containerWidth.value = gameWrapper.value.offsetWidth;
   containerHeight.value = gameWrapper.value.offsetHeight;
 };
 
 // Watchers
-watch(() => props.score, (val) => { if (val >= targetScore.value && gameActive.value) finishGame(); });
-watch(() => props.lives, (val) => { if (val <= 0 && gameActive.value) finishGame(); });
-watch(() => props.timeRemaining, (val) => { if (val <= 0 && gameActive.value) finishGame(); });
+watch(() => props.score, (val) => {
+  if (val >= targetScore.value && gameActive.value) finishGame();
+});
+watch(() => props.lives, (val) => {
+  if (val <= 0 && gameActive.value) finishGame();
+});
+watch(() => props.timeRemaining, (val) => {
+  if (val <= 0 && gameActive.value) finishGame();
+});
 
 onMounted(() => {
   initHoles();
@@ -715,124 +451,709 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* Safe area padding for notched devices (iPhone X+, etc.) */
-.safe-area-padding {
-  padding-top: env(safe-area-inset-top, 0);
-  padding-bottom: env(safe-area-inset-bottom, 0);
-  padding-left: env(safe-area-inset-left, 0);
-  padding-right: env(safe-area-inset-right, 0);
-}
-
-/* Disable tap highlight on mobile */
-.tap-highlight-none {
+/* =============================================
+   ROOT CONTAINER
+   ============================================= */
+.game-root {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+  font-family: system-ui, -apple-system, sans-serif;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Touch manipulation for better touch response */
-.touch-manipulation {
-  touch-action: manipulation;
+/* =============================================
+   HUD - TOP BAR
+   ============================================= */
+.game-hud {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
 }
 
-/* Question banner animations */
-.banner-float {
-  animation: float 3s ease-in-out infinite;
+.hud-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 4px 10px;
+  border-radius: 20px;
+  backdrop-filter: blur(4px);
 }
 
-.banner-pop {
-  animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+.hud-icon {
+  font-size: 14px;
 }
 
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
+.hud-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: white;
 }
 
-@keyframes pop {
-  0% { transform: scale(0.9); opacity: 0; }
+.hud-lives {
+  gap: 2px;
+}
+
+.heart {
+  font-size: 14px;
+  transition: transform 0.2s;
+}
+
+.heart-empty {
+  opacity: 0.4;
+}
+
+/* =============================================
+   QUESTION SECTION
+   ============================================= */
+.question-section {
+  display: flex;
+  justify-content: center;
+  padding: 8px 12px;
+  flex-shrink: 0;
+}
+
+.question-banner {
+  background: white;
+  border-radius: 12px;
+  padding: 8px 16px;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  position: relative;
+  animation: popIn 0.3s ease-out;
+  max-width: 90%;
+}
+
+.question-label {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #6366f1;
+  color: white;
+  font-size: 8px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 10px;
+  letter-spacing: 0.5px;
+}
+
+.question-text {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e1b4b;
+  margin-top: 4px;
+  word-break: break-word;
+}
+
+@keyframes popIn {
+  0% { transform: scale(0.8); opacity: 0; }
   100% { transform: scale(1); opacity: 1; }
 }
 
-/* Answer bubble pop animation */
-.bubble-pop {
-  animation: bubble-pop 0.2s ease-out;
+/* =============================================
+   GAME GRID AREA
+   ============================================= */
+.game-grid-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  min-height: 0;
+  overflow: hidden;
 }
 
-@keyframes bubble-pop {
-  0% { transform: translateX(-50%) scale(0.8); opacity: 0; }
-  100% { transform: translateX(-50%) scale(1); opacity: 1; }
+.holes-container {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  max-width: 100%;
 }
 
-/* Mole wrapper - handles the up/down animation */
-.mole-wrapper {
+/* 2x2 grid for mobile */
+.holes-container.grid-2x2 {
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  max-width: 280px;
+  max-height: 320px;
+}
+
+/* 4x1 grid for wider screens */
+.holes-container.grid-4x1 {
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: 1fr;
+  max-width: 500px;
+  max-height: 150px;
+}
+
+/* =============================================
+   HOLE WRAPPER - CONTAINS LABEL + HOLE
+   ============================================= */
+.hole-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  touch-action: manipulation;
+  position: relative;
+}
+
+/* Answer label above the hole */
+.answer-label-wrapper {
+  height: 28px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.answer-label {
+  padding: 3px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+  border: 2px solid;
+  animation: labelPop 0.2s ease-out;
+  white-space: nowrap;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.answer-default {
+  background: white;
+  border-color: #fbbf24;
+}
+
+.answer-correct {
+  background: #ecfdf5;
+  border-color: #34d399;
+}
+
+.answer-wrong {
+  background: #fef2f2;
+  border-color: #f87171;
+}
+
+@keyframes labelPop {
+  0% { transform: scale(0.7); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* =============================================
+   THE HOLE
+   ============================================= */
+.hole {
+  width: 80px;
+  height: 70px;
+  position: relative;
+}
+
+@media (min-width: 400px) {
+  .hole {
+    width: 100px;
+    height: 85px;
+  }
+}
+
+@media (min-width: 600px) {
+  .hole {
+    width: 90px;
+    height: 80px;
+  }
+}
+
+/* Dark hole shadow at bottom */
+.hole-shadow {
+  position: absolute;
+  bottom: 20%;
+  left: 10%;
+  width: 80%;
+  height: 25%;
+  background: #3d2817;
+  border-radius: 50%;
+  z-index: 1;
+}
+
+/* Mole container - clips the mole */
+.mole-container {
+  position: absolute;
+  bottom: 35%;
+  left: 15%;
+  width: 70%;
+  height: 55%;
+  overflow: hidden;
+  z-index: 2;
+}
+
+/* The mole itself */
+.mole {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 85%;
+  transform: translateX(-50%);
   transition: transform 0.15s ease-out;
 }
 
-.mole-up {
-  transform: translateX(-50%) translateY(5%);
-}
-
-.mole-down {
+.mole-hidden {
   transform: translateX(-50%) translateY(100%);
 }
 
-/* Grass blade styling */
-.grass-blade {
-  width: 4px;
-  background: #10b981;
-  border-radius: 2px 2px 0 0;
-  transform-origin: bottom center;
+.mole-visible {
+  transform: translateX(-50%) translateY(0);
 }
 
-.grass-light {
-  background: #34d399;
-}
-
-/* Mole hit effect */
 .mole-hit {
-  filter: brightness(1.25);
+  filter: brightness(1.3);
+}
+
+.mole-hit .mole-head {
   transform: scale(0.9);
 }
 
-/* Mole miss effect */
 .mole-miss {
-  filter: brightness(0.75);
-  animation: wiggle 0.25s ease-in-out;
+  filter: brightness(0.7);
+  animation: shake 0.25s ease-in-out;
 }
 
-@keyframes wiggle {
-  0%, 100% { transform: rotate(0deg); }
-  25% { transform: rotate(-8deg); }
-  75% { transform: rotate(8deg); }
+@keyframes shake {
+  0%, 100% { transform: translateX(-50%) rotate(0deg); }
+  25% { transform: translateX(-50%) rotate(-8deg); }
+  75% { transform: translateX(-50%) rotate(8deg); }
 }
 
-/* Hit effect floating animation */
-.hit-float {
-  animation: hit-float 0.5s ease-out forwards;
+/* Mole face parts */
+.mole-face {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 0.9;
 }
 
-@keyframes hit-float {
+.mole-head {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, #D4A574 0%, #B8845A 100%);
+  border-radius: 50%;
+  position: relative;
+  transition: transform 0.15s;
+}
+
+.mole-ear {
+  position: absolute;
+  width: 20%;
+  aspect-ratio: 1;
+  background: #C4956A;
+  border-radius: 50%;
+  top: -5%;
+}
+
+.mole-ear-left { left: 15%; }
+.mole-ear-right { right: 15%; }
+
+.mole-eye {
+  position: absolute;
+  width: 12%;
+  aspect-ratio: 1;
+  background: #1e293b;
+  border-radius: 50%;
+  top: 35%;
+}
+
+.mole-eye-left { left: 28%; }
+.mole-eye-right { right: 28%; }
+
+.mole-nose {
+  position: absolute;
+  width: 10%;
+  aspect-ratio: 1;
+  background: #f472b6;
+  border-radius: 50%;
+  top: 55%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Dirt mound */
+.dirt-mound {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 40%;
+  z-index: 3;
+}
+
+.dirt-mound::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(0deg, #5D4037 0%, #795548 50%, #8D6E63 100%);
+  border-radius: 100% 100% 0 0;
+}
+
+.grass {
+  position: absolute;
+  top: 0;
+  left: 10%;
+  width: 80%;
+  height: 8px;
+  display: flex;
+  justify-content: space-around;
+}
+
+.grass::before,
+.grass::after {
+  content: '';
+  width: 3px;
+  height: 8px;
+  background: #10b981;
+  border-radius: 2px 2px 0 0;
+  transform: rotate(-10deg) translateY(-3px);
+}
+
+.grass::after {
+  background: #34d399;
+  transform: rotate(10deg) translateY(-3px);
+}
+
+/* Hit effect */
+.hit-effect {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 20px;
+  z-index: 10;
+  pointer-events: none;
+  animation: floatUp 0.5s ease-out forwards;
+}
+
+@keyframes floatUp {
   0% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
-  100% { opacity: 0; transform: translateX(-50%) translateY(-20px) scale(1.2); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-25px) scale(1.2); }
 }
 
-/* Modal pop animation */
-.animate-modal-pop {
-  animation: modal-pop 0.3s ease-out;
+/* =============================================
+   START SCREEN
+   ============================================= */
+.start-screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+  padding: 16px;
+  z-index: 50;
 }
 
-@keyframes modal-pop {
-  0% { transform: scale(0.9); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
+.start-content {
+  text-align: center;
+  max-width: 300px;
+  width: 100%;
 }
 
-/* Disable animations on very small containers */
-@media (max-height: 400px) {
-  .banner-float {
-    animation: none;
+.start-mascot {
+  font-size: 48px;
+  margin-bottom: 8px;
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.start-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: white;
+  margin: 0 0 4px 0;
+}
+
+.start-subtitle {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0 0 16px 0;
+}
+
+.start-subtitle strong {
+  color: white;
+}
+
+.start-stats {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 6px 12px;
+  border-radius: 12px;
+}
+
+.stat-icon {
+  font-size: 14px;
+}
+
+.stat-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: white;
+}
+
+.start-btn {
+  background: white;
+  color: #6366f1;
+  border: none;
+  padding: 14px 32px;
+  border-radius: 50px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s, box-shadow 0.2s;
+  min-height: 48px;
+  touch-action: manipulation;
+}
+
+.start-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.25);
+}
+
+.start-btn:active {
+  transform: scale(0.98);
+}
+
+/* =============================================
+   GAME OVER SCREEN
+   ============================================= */
+.gameover-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 100;
+  backdrop-filter: blur(4px);
+}
+
+.gameover-modal {
+  background: white;
+  border-radius: 20px;
+  padding: 20px;
+  text-align: center;
+  max-width: 280px;
+  width: 100%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  animation: popIn 0.3s ease-out;
+}
+
+.gameover-emoji {
+  font-size: 40px;
+  margin-bottom: 4px;
+}
+
+.gameover-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 4px 0;
+}
+
+.gameover-score {
+  font-size: 32px;
+  font-weight: 800;
+  color: #6366f1;
+  margin: 4px 0;
+}
+
+.gameover-stars {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.gameover-stars span {
+  font-size: 24px;
+}
+
+.star-filled {
+  color: #fbbf24;
+}
+
+.star-empty {
+  color: #e2e8f0;
+}
+
+.gameover-stats {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 12px;
+}
+
+.gstat {
+  flex: 1;
+}
+
+.gstat-label {
+  font-size: 10px;
+  color: #94a3b8;
+  margin-bottom: 2px;
+}
+
+.gstat-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.gstat-correct { color: #10b981; }
+.gstat-wrong { color: #ef4444; }
+
+.gameover-progress {
+  height: 4px;
+  background: #f1f5f9;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: #6366f1;
+  transition: width 0.05s linear;
+}
+
+.gameover-timer {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 6px;
+}
+
+/* =============================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================= */
+
+/* Very small height - compact everything */
+@media (max-height: 450px) {
+  .game-hud {
+    padding: 4px 8px;
   }
   
-  .animate-bounce {
-    animation: none;
+  .hud-item {
+    padding: 2px 8px;
+  }
+  
+  .hud-icon, .heart {
+    font-size: 12px;
+  }
+  
+  .hud-value {
+    font-size: 11px;
+  }
+  
+  .question-section {
+    padding: 4px 8px;
+  }
+  
+  .question-banner {
+    padding: 6px 12px;
+  }
+  
+  .question-text {
+    font-size: 12px;
+  }
+  
+  .game-grid-area {
+    padding: 4px;
+  }
+  
+  .holes-container.grid-2x2 {
+    max-width: 220px;
+    max-height: 240px;
+    gap: 4px;
+  }
+  
+  .hole {
+    width: 70px;
+    height: 60px;
+  }
+  
+  .answer-label-wrapper {
+    height: 22px;
+    margin-bottom: 2px;
+  }
+  
+  .answer-label {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+}
+
+/* Medium height */
+@media (min-height: 500px) and (max-height: 650px) {
+  .holes-container.grid-2x2 {
+    max-width: 260px;
+    max-height: 300px;
+  }
+}
+
+/* Larger screens */
+@media (min-height: 700px) {
+  .question-text {
+    font-size: 16px;
+  }
+  
+  .holes-container.grid-2x2 {
+    max-width: 320px;
+    max-height: 360px;
+    gap: 12px;
+  }
+  
+  .hole {
+    width: 110px;
+    height: 95px;
+  }
+  
+  .answer-label {
+    font-size: 14px;
+    padding: 4px 12px;
+  }
+}
+
+/* Wide screens - 4 column layout */
+@media (min-width: 600px) {
+  .holes-container.grid-4x1 {
+    gap: 12px;
+  }
+  
+  .answer-label-wrapper {
+    height: 32px;
   }
 }
 </style>
