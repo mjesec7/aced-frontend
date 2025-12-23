@@ -514,14 +514,14 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   bottom: 0;
   left: 15%;
   width: 70%;
-  height: 90%; /* Increased height */
-  transform: translateY(100%);
+  height: 85%; /* Adjusted height */
+  transform: translateY(120%); /* Start further down for better masking */
   transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   z-index: 2;
 }
 
 :deep(.mole-up) {
-  transform: translateY(0%); /* Pop up fully */
+  transform: translateY(-10%); /* Pop up higher to show sign and face */
 }
 
 :deep(.mole-hit) .mole-body {
@@ -602,20 +602,32 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 /* Wooden Sign */
 :deep(.mole-sign) {
   position: absolute;
-  top: 0%; /* Position on the forehead */
+  top: -45%; /* Position ABOVE the head */
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
   height: 40%;
-  background: #d2b48c;
-  background-image: repeating-linear-gradient(90deg, transparent, transparent 15px, rgba(139, 69, 19, 0.1) 15px, rgba(139, 69, 19, 0.1) 30px);
+  background: linear-gradient(180deg, #d2b48c 0%, #bc8f8f 100%);
   border: 2px solid #8b4513;
-  border-radius: 4px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-  z-index: 10; /* Ensure it's on top of the face */
+  z-index: 10;
+}
+
+/* Sign Connector (Stick) */
+:deep(.mole-sign::after) {
+  content: '';
+  position: absolute;
+  bottom: -20%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 8px;
+  height: 20%;
+  background: #8b4513;
+  z-index: -1;
 }
 
 :deep(.sign-text) {
@@ -633,7 +645,7 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   bottom: 0;
   left: 0;
   width: 100%;
-  height: 45%; /* Slightly lower to reveal more mole */
+  height: 40%; /* Lowered to show more mole */
   background: radial-gradient(circle at 50% 100%, #8d6e63 0%, #6d4c41 60%, #4e342e 100%);
   border-radius: 50% 50% 10px 10px;
   z-index: 3;
