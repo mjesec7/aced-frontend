@@ -163,7 +163,7 @@ const MoleHole = defineComponent({
             'mole-miss': props.hole?.state === 'miss'
           }]
         }, [
-          h('div', { class: 'mole-body' }, [
+          h('div', { class: 'mole-character' }, [
             // Cute mole head
             h('div', { class: 'mole-head' }, [
               // Ears
@@ -188,6 +188,13 @@ const MoleHole = defineComponent({
                 // Cute smile
                 h('div', { class: 'mole-mouth' })
               ])
+            ]),
+            // Mole body (torso)
+            h('div', { class: 'mole-body' }, [
+              h('div', { class: 'mole-body-inner' }),
+              // Little arms/paws
+              h('div', { class: 'mole-paw mole-paw-l' }),
+              h('div', { class: 'mole-paw mole-paw-r' })
             ])
           ])
         ]),
@@ -556,20 +563,20 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
    ============================================ */
 :deep(.mole-wrapper) {
   position: absolute;
-  bottom: 25%;
+  bottom: 20%;
   left: 50%;
   transform: translateX(-50%) translateY(150%);
-  width: 55%;
-  height: 70%;
+  width: 60%;
+  height: 80%;
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   z-index: 2;
 }
 
 :deep(.mole-up) {
-  transform: translateX(-50%) translateY(10%) !important;
+  transform: translateX(-50%) translateY(5%) !important;
 }
 
-:deep(.mole-hit) .mole-body {
+:deep(.mole-hit) .mole-character {
   transform: scale(0.9);
 }
 
@@ -577,11 +584,11 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   animation: happyBounce 0.3s ease-out;
 }
 
-:deep(.mole-miss) .mole-body {
+:deep(.mole-miss) .mole-character {
   animation: shake 0.3s ease-in-out;
 }
 
-:deep(.mole-body) {
+:deep(.mole-character) {
   position: relative;
   width: 100%;
   height: 100%;
@@ -596,8 +603,8 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
    ============================================ */
 :deep(.mole-head) {
   position: relative;
-  width: 100%;
-  padding-bottom: 85%;
+  width: 90%;
+  padding-bottom: 75%;
   flex-shrink: 0;
 }
 
@@ -711,6 +718,79 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   left: 50%;
   transform: translateX(-50%);
   background: transparent;
+}
+
+/* ============================================
+   MOLE BODY - Torso
+   ============================================ */
+:deep(.mole-body) {
+  position: relative;
+  width: 110%;
+  height: 60%;
+  margin-top: -8%;
+  display: flex;
+  justify-content: center;
+}
+
+:deep(.mole-body-inner) {
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 20%, #e8c9a0 0%, transparent 50%),
+    linear-gradient(180deg, #c9915e 0%, #b07d4f 40%, #a06a3a 100%);
+  border-radius: 50% 50% 50% 50% / 30% 30% 70% 70%;
+  box-shadow:
+    inset 0 -10px 20px rgba(139, 90, 43, 0.3),
+    inset 0 5px 10px rgba(255, 255, 255, 0.1);
+}
+
+/* Belly highlight */
+:deep(.mole-body-inner::before) {
+  content: '';
+  position: absolute;
+  width: 60%;
+  height: 50%;
+  top: 15%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse, rgba(232, 201, 160, 0.6) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+/* Little paws */
+:deep(.mole-paw) {
+  position: absolute;
+  width: 22%;
+  height: 28%;
+  background: linear-gradient(180deg, #d4a574 0%, #c9915e 100%);
+  border-radius: 50% 50% 45% 45%;
+  top: 5%;
+  box-shadow:
+    inset 0 -3px 6px rgba(139, 90, 43, 0.3),
+    0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+:deep(.mole-paw-l) {
+  left: -5%;
+  transform: rotate(-15deg);
+}
+
+:deep(.mole-paw-r) {
+  right: -5%;
+  transform: rotate(15deg);
+}
+
+/* Paw pads */
+:deep(.mole-paw::after) {
+  content: '';
+  position: absolute;
+  width: 60%;
+  height: 40%;
+  bottom: 15%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse, #b07d4f 0%, transparent 70%);
+  border-radius: 50%;
 }
 
 /* ============================================
