@@ -163,11 +163,9 @@ const MoleHole = defineComponent({
           }]
         }, [
           h('div', { class: 'mole-body' }, [
-            // Wooden Sign
-            h('div', { class: 'mole-sign' }, [
-              h('div', { class: 'sign-text' }, props.hole?.content || '')
-            ]),
             h('div', { class: 'mole-face' }, [
+              // Floating Answer
+              h('div', { class: 'floating-answer' }, props.hole?.content || ''),
               h('div', { class: 'mole-eyebrow mole-eyebrow-l' }),
               h('div', { class: 'mole-eyebrow mole-eyebrow-r' }),
               h('div', { class: 'mole-eye mole-eye-l' }),
@@ -458,10 +456,13 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 .moles-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  grid-template-rows: repeat(2, 1fr);
-  gap: 48px 12px;
+  gap: 20px;
+  row-gap: 80px; /* Even larger gap between rows */
   width: 100%;
-  max-width: 340px;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+  box-sizing: border-box;
   aspect-ratio: 1 / 1.1;
 }
 
@@ -492,7 +493,7 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 :deep(.hole-visual) {
   position: relative;
   width: 100%;
-  height: 150px; /* Increased to accommodate floating sign */
+  height: 180px; /* More room for the floating sign */
   overflow: hidden;
 }
 
@@ -521,7 +522,7 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 }
 
 :deep(.mole-up) {
-  transform: translateY(0%); /* Pop up fully */
+  transform: translateY(-25%) !important; /* Raised higher as requested */
 }
 
 :deep(.mole-hit) .mole-body {
@@ -599,50 +600,30 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   transform: translateX(-50%);
 }
 
-/* Wooden Sign */
-:deep(.mole-sign) {
-  position: absolute;
-  top: -35%; /* Adjusted position */
-  left: 50%;
-  transform: translateX(-50%);
-  width: 110%;
-  height: 45%;
-  background: linear-gradient(180deg, #d2b48c 0%, #bc8f8f 100%);
-  border: 2px solid #8b4513;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-  z-index: 10;
+/* Floating Answer */
+:deep(.floating-answer) {
+  position: absolute !important;
+  top: -45px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  color: white !important;
+  font-weight: 900 !important;
+  font-size: 26px !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  text-shadow: 
+    -2px -2px 0 #4e342e,  
+     2px -2px 0 #4e342e,
+    -2px  2px 0 #4e342e,
+     2px  2px 0 #4e342e,
+     0px 4px 8px rgba(0,0,0,0.4) !important;
+  z-index: 10 !important;
+  animation: floatText 2s ease-in-out infinite !important;
 }
 
-:deep(.sign-text) {
-  color: #4e342e;
-  font-weight: 900;
-  font-size: 20px; /* Larger text */
-  text-shadow: 0 1px 2px rgba(255,255,255,0.5);
-  line-height: 1;
-}
-
-/* Sign Connector (Stick) */
-:deep(.mole-sign::after) {
-  content: '';
-  position: absolute;
-  bottom: -20%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 8px;
-  height: 20%;
-  background: #8b4513;
-  z-index: -1;
-}
-
-:deep(.sign-text) {
-  color: #4e342e;
-  font-weight: 900;
-  font-size: 18px;
-  text-shadow: 0 1px 2px rgba(255,255,255,0.5);
+@keyframes floatText {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-5px); }
 }
 
 /* ============================================
