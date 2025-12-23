@@ -537,17 +537,18 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 :deep(.mole-body) {
   position: relative;
   width: 100%;
-  padding-bottom: 100%;
+  height: 100%;
   transition: transform 0.15s, filter 0.15s;
 }
 
 /* Mole face (the round brown part) */
 :deep(.mole-face) {
   position: absolute;
-  inset: 0 10% 20% 10%;
+  inset: 0;
   background: linear-gradient(180deg, #d4a574 0%, #b8845a 100%);
   border-radius: 50% 50% 40% 40%;
   box-shadow: inset 0 -4px 8px rgba(0,0,0,0.1);
+  z-index: 1;
 }
 
 /* Eyebrows */
@@ -601,11 +602,11 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 /* Wooden Sign */
 :deep(.mole-sign) {
   position: absolute;
-  top: -25%;
+  top: -10%;
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
-  height: 40%;
+  height: 45%;
   background: #d2b48c;
   background-image: repeating-linear-gradient(90deg, transparent, transparent 15px, rgba(139, 69, 19, 0.1) 15px, rgba(139, 69, 19, 0.1) 30px);
   border: 2px solid #8b4513;
@@ -614,7 +615,7 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-  z-index: 5;
+  z-index: 10; /* Ensure it's on top of the face */
 }
 
 :deep(.sign-text) {
