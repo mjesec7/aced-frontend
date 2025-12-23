@@ -270,6 +270,7 @@
         </div>
 
         <div
+          v-if="!resizeDisabled"
           class="resize-handle"
           @mousedown="startResize"
           @touchstart="startResize"
@@ -530,6 +531,19 @@ export default {
     const resizeDirection = ref('horizontal')
     const lastResizeTime = ref(0)
     const rafId = ref(null)
+    const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024)
+
+    // Detect if user is on tablet (iPad, etc.)
+    const isTablet = computed(() => {
+      const width = windowWidth.value
+      // Tablet range: 768px - 1366px (covers iPad Mini through iPad Pro 12.9")
+      return width >= 768 && width <= 1366
+    })
+
+    // Disable resizing on tablets OR when game is active
+    const resizeDisabled = computed(() => {
+      return isTablet.value || isGameStep.value
+    })
 
     // ==========================================
     // OTHER REACTIVE STATE
@@ -572,7 +586,15 @@ export default {
       if (typeof window !== 'undefined' && window.innerWidth <= 640) {
         return {}
       }
-      
+
+      // When resize is disabled (tablet or game active), force 30% for content
+      if (resizeDisabled.value) {
+        if (resizeDirection.value === 'vertical') {
+          return { height: '30%' }
+        }
+        return { width: '30%' }
+      }
+
       if (resizeDirection.value === 'vertical') {
         return { height: `${currentLeftWidth.value}%` }
       }
@@ -584,7 +606,15 @@ export default {
       if (typeof window !== 'undefined' && window.innerWidth <= 640) {
         return {}
       }
-      
+
+      // When resize is disabled (tablet or game active), force 70% for game/interactive
+      if (resizeDisabled.value) {
+        if (resizeDirection.value === 'vertical') {
+          return { height: '70%' }
+        }
+        return { width: '70%' }
+      }
+
       if (resizeDirection.value === 'vertical') {
         return { height: `${currentRightWidth.value}%` }
       }
@@ -616,8 +646,11 @@ export default {
     // OPTIMIZED RESIZE METHODS
     // ==========================================
     const startResize = (event) => {
+      // Don't allow resizing when disabled (tablet or game active)
+      if (resizeDisabled.value) return
+
       event.preventDefault()
-      
+
       isResizing.value = true
       resizeDirection.value = window.innerWidth <= 1023 ? 'vertical' : 'horizontal'
       
@@ -774,6 +807,9 @@ export default {
       const width = window.innerWidth
       const height = window.innerHeight
       const isLandscape = width > height
+
+      // Update windowWidth for tablet detection
+      windowWidth.value = width
       
       // Determine layout direction based on screen size and orientation
       let newDirection = 'horizontal'
@@ -1758,6 +1794,8 @@ export default {
       resizeDirection,
       leftPanelStyle,
       rightPanelStyle,
+      resizeDisabled,
+      isTablet,
 
       // Resize Methods
       startResize,
