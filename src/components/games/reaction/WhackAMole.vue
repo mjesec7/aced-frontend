@@ -492,7 +492,7 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 :deep(.hole-visual) {
   position: relative;
   width: 100%;
-  height: 120px;
+  height: 150px; /* Increased to accommodate floating sign */
   overflow: hidden;
 }
 
@@ -512,16 +512,16 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 :deep(.mole-wrapper) {
   position: absolute;
   bottom: 0;
-  left: 15%;
-  width: 70%;
-  height: 85%; /* Adjusted height */
-  transform: translateY(120%); /* Start further down for better masking */
+  left: 25%;
+  width: 50%; /* Smaller mole */
+  height: 65%; /* Smaller mole */
+  transform: translateY(150%); /* Start further down for better masking */
   transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   z-index: 2;
 }
 
 :deep(.mole-up) {
-  transform: translateY(-10%); /* Pop up higher to show sign and face */
+  transform: translateY(25%); /* Pop up to show sign and face */
 }
 
 :deep(.mole-hit) .mole-body {
@@ -602,11 +602,11 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 /* Wooden Sign */
 :deep(.mole-sign) {
   position: absolute;
-  top: -45%; /* Position ABOVE the head */
+  top: -40%; /* Position ABOVE the head */
   left: 50%;
   transform: translateX(-50%);
-  width: 100%;
-  height: 40%;
+  width: 110%;
+  height: 45%; /* Taller sign for text visibility */
   background: linear-gradient(180deg, #d2b48c 0%, #bc8f8f 100%);
   border: 2px solid #8b4513;
   border-radius: 6px;
@@ -615,6 +615,14 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   justify-content: center;
   box-shadow: 0 4px 8px rgba(0,0,0,0.2);
   z-index: 10;
+}
+
+:deep(.sign-text) {
+  color: #4e342e;
+  font-weight: 900;
+  font-size: 20px; /* Larger text */
+  text-shadow: 0 1px 2px rgba(255,255,255,0.5);
+  line-height: 1;
 }
 
 /* Sign Connector (Stick) */
@@ -645,7 +653,7 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   bottom: 0;
   left: 0;
   width: 100%;
-  height: 40%; /* Lowered to show more mole */
+  height: 35%; /* Lowered to match smaller mole */
   background: radial-gradient(circle at 50% 100%, #8d6e63 0%, #6d4c41 60%, #4e342e 100%);
   border-radius: 50% 50% 10px 10px;
   z-index: 3;
