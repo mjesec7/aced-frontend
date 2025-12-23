@@ -175,26 +175,15 @@ const MoleHole = defineComponent({
           }]
         }, [
           h('div', { class: 'mole-body' }, [
-            h('div', { class: 'mole-ear mole-ear-l' }),
-            h('div', { class: 'mole-ear mole-ear-r' }),
             h('div', { class: 'mole-face' }, [
-              h('div', { class: 'mole-eye mole-eye-l' }, [h('div', { class: 'eye-shine' })]),
-              h('div', { class: 'mole-eye mole-eye-r' }, [h('div', { class: 'eye-shine' })]),
-              h('div', { class: 'mole-nose' }),
-              h('div', { class: 'mole-cheek mole-cheek-l' }),
-              h('div', { class: 'mole-cheek mole-cheek-r' }),
-              h('div', { class: 'mole-mouth' })
+              h('div', { class: 'mole-eye mole-eye-l' }),
+              h('div', { class: 'mole-eye mole-eye-r' }),
+              h('div', { class: 'mole-nose' })
             ])
           ])
         ]),
         // Dirt mound (front layer)
-        h('div', { class: 'dirt-mound' }, [
-          h('div', { class: 'grass-blade grass-1' }),
-          h('div', { class: 'grass-blade grass-2' }),
-          h('div', { class: 'grass-blade grass-3' }),
-          h('div', { class: 'grass-blade grass-4' }),
-          h('div', { class: 'grass-blade grass-5' })
-        ])
+        h('div', { class: 'dirt-mound' })
       ]),
       // Hit effect
       props.hole?.showEffect ? h('div', { class: 'hit-effect' }, props.hole.state === 'hit' ? '⭐' : '❌') : null
@@ -475,7 +464,7 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   grid-template-rows: repeat(2, 1fr);
-  gap: 12px;
+  gap: 48px 12px;
   width: 100%;
   max-width: 340px;
   aspect-ratio: 1 / 1.1;
@@ -561,8 +550,8 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 :deep(.mole-wrapper) {
   position: absolute;
   bottom: 32%;
-  left: 20%;
-  width: 60%;
+  left: 25%;
+  width: 50%;
   transform: translateY(100%);
   transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
   z-index: 2;
@@ -595,9 +584,6 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   inset: 10%;
   background: linear-gradient(180deg, #e8c9a0 0%, #d4a574 30%, #b8845a 100%);
   border-radius: 50%;
-  box-shadow: 
-    inset 0 -8px 16px rgba(0,0,0,0.15),
-    0 4px 12px rgba(0,0,0,0.2);
 }
 
 /* Ears */
