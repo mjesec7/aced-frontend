@@ -353,7 +353,7 @@ onMounted(() => {
   line-height: 1.3;
 }
 
-/* Responsive */
+/* Responsive - Mobile */
 @media (max-width: 768px) {
   .cards-grid {
     gap: 10px;
@@ -381,6 +381,179 @@ onMounted(() => {
   .game-instructions {
     font-size: 14px;
     padding: 8px 16px;
+  }
+}
+
+/* ============================================
+   TABLET RESPONSIVE (768px - 1366px)
+   ============================================ */
+
+/* iPad Mini & Small Tablets */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .memory-cards-game {
+    padding: 12px;
+  }
+
+  .cards-grid {
+    gap: 12px;
+    max-width: 600px;
+    padding: 12px;
+  }
+
+  .card-wrapper {
+    min-width: 70px;
+    min-height: 70px;
+  }
+
+  .card-front,
+  .card-back {
+    border-radius: 10px;
+  }
+
+  .card-icon {
+    font-size: 32px;
+  }
+
+  .card-content {
+    font-size: 1rem;
+    padding: 10px;
+  }
+
+  .instruction-banner {
+    top: 12px;
+    padding: 10px 18px;
+    border-radius: 14px;
+    max-width: 450px;
+  }
+
+  .instruction-text {
+    font-size: 0.9rem;
+  }
+}
+
+/* iPad Air & Larger Tablets */
+@media (min-width: 1024px) and (max-width: 1366px) {
+  .memory-cards-game {
+    padding: 16px;
+  }
+
+  .cards-grid {
+    gap: 16px;
+    max-width: 700px;
+    padding: 16px;
+  }
+
+  .card-wrapper {
+    min-width: 80px;
+    min-height: 80px;
+  }
+
+  .card-icon {
+    font-size: 38px;
+  }
+
+  .card-content {
+    font-size: 1.2rem;
+  }
+
+  .instruction-banner {
+    top: 14px;
+    padding: 12px 22px;
+  }
+
+  .instruction-text {
+    font-size: 1rem;
+  }
+}
+
+/* Tablet Landscape - compact */
+@media (min-width: 768px) and (max-height: 800px) and (orientation: landscape) {
+  .memory-cards-game {
+    padding: 8px;
+  }
+
+  .cards-grid {
+    gap: 8px;
+    max-width: 500px;
+    padding: 8px;
+  }
+
+  .card-wrapper {
+    min-width: 55px;
+    min-height: 55px;
+  }
+
+  .card-front,
+  .card-back {
+    border-radius: 8px;
+    border-width: 2px;
+  }
+
+  .card-icon {
+    font-size: 26px;
+  }
+
+  .card-content {
+    font-size: 0.85rem;
+    padding: 6px;
+  }
+
+  .instruction-banner {
+    top: 8px;
+    padding: 8px 14px;
+    border-radius: 12px;
+    max-width: 350px;
+  }
+
+  .instruction-text {
+    font-size: 0.8rem;
+  }
+}
+
+/* Short screens */
+@media (max-height: 600px) {
+  .memory-cards-game {
+    padding: 6px;
+  }
+
+  .cards-grid {
+    gap: 6px;
+    max-width: 400px;
+    padding: 6px;
+  }
+
+  .card-wrapper {
+    min-width: 45px;
+    min-height: 45px;
+  }
+
+  .card-front,
+  .card-back {
+    border-radius: 6px;
+    border-width: 2px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  }
+
+  .card-icon {
+    font-size: 20px;
+  }
+
+  .card-content {
+    font-size: 0.7rem;
+    padding: 4px;
+    line-height: 1.1;
+  }
+
+  .instruction-banner {
+    top: 5px;
+    padding: 6px 10px;
+    border-radius: 10px;
+    max-width: 280px;
+  }
+
+  .instruction-text {
+    font-size: 0.7rem;
+    line-height: 1.2;
   }
 }
 </style>
