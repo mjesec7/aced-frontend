@@ -494,6 +494,7 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   width: 100%;
   flex: 1;
   min-height: 80px;
+  overflow: hidden;
 }
 
 :deep(.hole-bg) {
@@ -511,7 +512,7 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
    ============================================ */
 :deep(.mole-wrapper) {
   position: absolute;
-  bottom: 20%;
+  bottom: 0;
   left: 20%;
   width: 60%;
   transform: translateY(100%);
@@ -520,7 +521,7 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 }
 
 :deep(.mole-up) {
-  transform: translateY(0%);
+  transform: translateY(30%);
 }
 
 :deep(.mole-hit) .mole-body {
@@ -600,11 +601,11 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 /* Wooden Sign */
 :deep(.mole-sign) {
   position: absolute;
-  bottom: 12%;
+  top: -25%;
   left: 50%;
   transform: translateX(-50%);
-  width: 85%;
-  height: 32%;
+  width: 90%;
+  height: 35%;
   background: #d2b48c;
   background-image: repeating-linear-gradient(90deg, transparent, transparent 15px, rgba(139, 69, 19, 0.1) 15px, rgba(139, 69, 19, 0.1) 30px);
   border: 2px solid #8b4513;
@@ -628,10 +629,10 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
    ============================================ */
 :deep(.dirt-mound) {
   position: absolute;
-  bottom: -5%;
+  bottom: -10%;
   left: 0;
   width: 100%;
-  height: 55%;
+  height: 60%;
   background: radial-gradient(circle at 50% 100%, #8d6e63 0%, #6d4c41 60%, #4e342e 100%);
   border-radius: 50% 50% 15% 15% / 100% 100% 15% 15%;
   z-index: 3;
