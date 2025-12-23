@@ -1287,33 +1287,205 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 /* iPad Mini & Small Tablets (768px - 819px) */
 @media (min-width: 768px) {
   .top-section {
-    padding: 16px 24px;
-    gap: 12px;
+    padding: 12px 20px;
+    gap: 8px;
   }
 
   .question-card {
-    padding: 20px 28px;
-    border-radius: 24px;
-    max-width: 500px;
+    padding: 14px 20px;
+    border-radius: 20px;
+    max-width: 440px;
     margin: 0 auto;
   }
 
   .question-label {
-    font-size: 12px;
+    font-size: 11px;
+    padding: 4px 12px;
+  }
+
+  .question-text {
+    font-size: 18px;
+  }
+
+  .stats-row {
+    gap: 10px;
+  }
+
+  .stat-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+  }
+
+  .stat-icon { font-size: 14px; }
+  .stat-value { font-size: 14px; }
+  .heart { font-size: 14px; }
+
+  .game-area {
+    padding: 12px;
+  }
+
+  .moles-grid {
+    gap: 24px;
+    row-gap: 32px;
+    max-width: 380px;
+    padding: 16px;
+  }
+
+  .mole-cell {
+    aspect-ratio: 1 / 1.1;
+  }
+
+  :deep(.hole-visual) {
+    min-height: 120px;
+  }
+
+  :deep(.mole-wrapper) {
+    width: 52%;
+    height: 70%;
+  }
+
+  :deep(.sign-board) {
     padding: 6px 16px;
+    min-width: 50px;
+    border-width: 3px;
+  }
+
+  :deep(.sign-text) {
+    font-size: 20px;
+  }
+
+  :deep(.dirt-mound-front) {
+    height: 28%;
+  }
+
+  .gameover-card {
+    max-width: 340px;
+    padding: 28px 24px;
+  }
+
+  .gameover-emoji {
+    font-size: 56px;
+  }
+
+  .gameover-title {
+    font-size: 24px;
+  }
+
+  .gameover-score {
+    font-size: 56px;
+  }
+
+  .star {
+    font-size: 36px;
+  }
+}
+
+/* iPad Air (820px - 1023px) */
+@media (min-width: 820px) {
+  .top-section {
+    padding: 14px 24px;
+    gap: 10px;
+  }
+
+  .question-card {
+    padding: 16px 24px;
+    max-width: 480px;
+  }
+
+  .question-text {
+    font-size: 20px;
+  }
+
+  .stat-badge {
+    padding: 8px 14px;
+  }
+
+  .stat-icon { font-size: 16px; }
+  .stat-value { font-size: 16px; }
+  .heart { font-size: 16px; }
+
+  .game-area {
+    padding: 16px;
+  }
+
+  .moles-grid {
+    gap: 28px;
+    row-gap: 38px;
+    max-width: 420px;
+    padding: 20px;
+  }
+
+  :deep(.hole-visual) {
+    min-height: 130px;
+  }
+
+  :deep(.mole-wrapper) {
+    width: 54%;
+    height: 72%;
+  }
+
+  :deep(.sign-board) {
+    padding: 8px 18px;
+    min-width: 55px;
+    border-width: 3px;
+    border-radius: 8px;
+  }
+
+  :deep(.sign-text) {
+    font-size: 22px;
+  }
+
+  .start-mole {
+    width: 130px;
+    height: 130px;
+  }
+
+  .start-title {
+    font-size: 36px;
+  }
+
+  .start-subtitle {
+    font-size: 18px;
+  }
+
+  .info-item {
+    padding: 12px 18px;
+  }
+
+  .info-icon { font-size: 26px; }
+  .info-value { font-size: 20px; }
+
+  .start-button {
+    padding: 16px 40px;
+    font-size: 18px;
+  }
+}
+
+/* iPad Pro 11" and larger tablets (1024px+) */
+@media (min-width: 1024px) {
+  .top-section {
+    padding: 16px 28px;
+    gap: 12px;
+  }
+
+  .question-card {
+    padding: 18px 28px;
+    max-width: 520px;
+    border-radius: 24px;
+  }
+
+  .question-label {
+    font-size: 12px;
+    padding: 5px 14px;
   }
 
   .question-text {
     font-size: 22px;
   }
 
-  .stats-row {
-    gap: 12px;
-  }
-
   .stat-badge {
     padding: 8px 16px;
-    border-radius: 24px;
+    border-radius: 22px;
   }
 
   .stat-icon { font-size: 18px; }
@@ -1325,37 +1497,29 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   }
 
   .moles-grid {
-    gap: 40px;
-    row-gap: 50px;
-    max-width: 500px;
+    gap: 32px;
+    row-gap: 44px;
+    max-width: 480px;
     padding: 24px;
   }
 
-  .mole-cell {
-    aspect-ratio: 1 / 1.15;
-  }
-
   :deep(.hole-visual) {
-    min-height: 160px;
+    min-height: 140px;
   }
 
   :deep(.mole-wrapper) {
-    width: 62%;
-    height: 82%;
+    width: 55%;
+    height: 74%;
   }
 
   :deep(.sign-board) {
-    padding: 10px 24px;
+    padding: 10px 22px;
     min-width: 60px;
     border-width: 4px;
   }
 
   :deep(.sign-text) {
-    font-size: 26px;
-  }
-
-  :deep(.dirt-mound-front) {
-    height: 32%;
+    font-size: 24px;
   }
 
   .gameover-card {
@@ -1364,7 +1528,7 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   }
 
   .gameover-emoji {
-    font-size: 72px;
+    font-size: 64px;
   }
 
   .gameover-title {
@@ -1372,210 +1536,51 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   }
 
   .gameover-score {
-    font-size: 72px;
+    font-size: 64px;
   }
 
   .star {
     font-size: 44px;
   }
-}
-
-/* iPad Air (820px - 1023px) */
-@media (min-width: 820px) {
-  .top-section {
-    padding: 20px 32px;
-    gap: 16px;
-  }
-
-  .question-card {
-    padding: 24px 36px;
-    max-width: 550px;
-  }
-
-  .question-text {
-    font-size: 26px;
-  }
-
-  .stat-badge {
-    padding: 10px 20px;
-  }
-
-  .stat-icon { font-size: 20px; }
-  .stat-value { font-size: 18px; }
-  .heart { font-size: 20px; }
-
-  .game-area {
-    padding: 24px;
-  }
-
-  .moles-grid {
-    gap: 48px;
-    row-gap: 60px;
-    max-width: 580px;
-    padding: 32px;
-  }
-
-  :deep(.hole-visual) {
-    min-height: 180px;
-  }
-
-  :deep(.mole-wrapper) {
-    width: 64%;
-    height: 84%;
-  }
-
-  :deep(.sign-board) {
-    padding: 12px 28px;
-    min-width: 70px;
-    border-width: 5px;
-    border-radius: 10px;
-  }
-
-  :deep(.sign-text) {
-    font-size: 30px;
-  }
-
-  .start-mole {
-    width: 160px;
-    height: 160px;
-  }
-
-  .start-title {
-    font-size: 42px;
-  }
-
-  .start-subtitle {
-    font-size: 20px;
-  }
-
-  .info-item {
-    padding: 16px 24px;
-  }
-
-  .info-icon { font-size: 32px; }
-  .info-value { font-size: 24px; }
-
-  .start-button {
-    padding: 20px 50px;
-    font-size: 22px;
-  }
-}
-
-/* iPad Pro 11" and larger tablets (1024px+) */
-@media (min-width: 1024px) {
-  .top-section {
-    padding: 24px 40px;
-    gap: 20px;
-  }
-
-  .question-card {
-    padding: 28px 44px;
-    max-width: 620px;
-    border-radius: 28px;
-  }
-
-  .question-label {
-    font-size: 14px;
-    padding: 8px 20px;
-  }
-
-  .question-text {
-    font-size: 30px;
-  }
-
-  .stat-badge {
-    padding: 12px 24px;
-    border-radius: 28px;
-  }
-
-  .stat-icon { font-size: 22px; }
-  .stat-value { font-size: 20px; }
-  .heart { font-size: 22px; }
-
-  .game-area {
-    padding: 32px;
-  }
-
-  .moles-grid {
-    gap: 56px;
-    row-gap: 70px;
-    max-width: 680px;
-    padding: 40px;
-  }
-
-  :deep(.hole-visual) {
-    min-height: 200px;
-  }
-
-  :deep(.mole-wrapper) {
-    width: 65%;
-    height: 85%;
-  }
-
-  :deep(.sign-board) {
-    padding: 14px 32px;
-    min-width: 80px;
-    border-width: 5px;
-  }
-
-  :deep(.sign-text) {
-    font-size: 34px;
-  }
-
-  .gameover-card {
-    max-width: 450px;
-    padding: 44px 40px;
-  }
-
-  .gameover-emoji {
-    font-size: 84px;
-  }
-
-  .gameover-title {
-    font-size: 32px;
-  }
-
-  .gameover-score {
-    font-size: 84px;
-  }
-
-  .star {
-    font-size: 52px;
-  }
 
   .gstat-value {
-    font-size: 28px;
+    font-size: 24px;
   }
 
   .gstat-label {
-    font-size: 13px;
+    font-size: 12px;
   }
 }
 
 /* iPad Pro 12.9" and large screens (1366px+) */
 @media (min-width: 1280px) {
   .moles-grid {
-    gap: 64px;
-    row-gap: 80px;
-    max-width: 750px;
+    gap: 36px;
+    row-gap: 48px;
+    max-width: 520px;
   }
 
   :deep(.hole-visual) {
-    min-height: 220px;
+    min-height: 150px;
+  }
+
+  :deep(.mole-wrapper) {
+    width: 56%;
+    height: 76%;
   }
 
   :deep(.sign-board) {
-    padding: 16px 36px;
-    min-width: 90px;
-    border-width: 6px;
+    padding: 10px 24px;
+    min-width: 65px;
+    border-width: 4px;
   }
 
   :deep(.sign-text) {
-    font-size: 38px;
+    font-size: 26px;
   }
 
   .question-text {
-    font-size: 34px;
+    font-size: 24px;
   }
 }
 
@@ -1584,62 +1589,67 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
    =========================================== */
 @media (min-width: 768px) and (max-height: 900px) and (orientation: landscape) {
   .top-section {
-    padding: 12px 24px;
-    gap: 10px;
+    padding: 8px 16px;
+    gap: 6px;
   }
 
   .question-card {
-    padding: 14px 24px;
-    max-width: 450px;
+    padding: 10px 18px;
+    max-width: 380px;
   }
 
   .question-text {
-    font-size: 20px;
+    font-size: 16px;
   }
 
   .game-area {
-    padding: 12px;
+    padding: 8px;
   }
 
   .moles-grid {
-    gap: 32px;
-    row-gap: 36px;
-    max-width: 520px;
-    padding: 16px;
+    gap: 20px;
+    row-gap: 26px;
+    max-width: 400px;
+    padding: 12px;
   }
 
   :deep(.hole-visual) {
-    min-height: 130px;
+    min-height: 100px;
   }
 
   :deep(.mole-wrapper) {
-    width: 58%;
-    height: 78%;
+    width: 50%;
+    height: 68%;
   }
 
   :deep(.sign-board) {
-    padding: 8px 18px;
+    padding: 5px 12px;
   }
 
   :deep(.sign-text) {
-    font-size: 22px;
+    font-size: 18px;
   }
 }
 
 /* iPad Air Landscape specific */
 @media (min-width: 1100px) and (max-height: 850px) and (orientation: landscape) {
   .moles-grid {
-    gap: 40px;
-    row-gap: 44px;
-    max-width: 600px;
+    gap: 24px;
+    row-gap: 32px;
+    max-width: 440px;
   }
 
   :deep(.hole-visual) {
-    min-height: 140px;
+    min-height: 110px;
+  }
+
+  :deep(.mole-wrapper) {
+    width: 52%;
+    height: 70%;
   }
 
   :deep(.sign-text) {
-    font-size: 26px;
+    font-size: 20px;
   }
 }
 
