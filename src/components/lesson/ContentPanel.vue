@@ -1,849 +1,550 @@
 <template>
-  <div class="content-panel" :class="{ 'game-mode': isGameStep }">
-    <header class="content-step-header">
-      <h3 class="header-title">
-        <span class="step-number">{{ currentIndex + 1 }}</span>
-        <span class="step-icon">{{ getStepIcon(currentStep?.type) }}</span>
-        <span class="step-text">{{ getStepTypeText(currentStep?.type) }}</span>
-        
-        <span v-if="isInteractiveStep && !isGameStep" class="exercise-counter">
-          ({{ exerciseIndex + 1 }}/{{ totalExercises || 1 }})
-        </span>
-      </h3>
-    </header>
-    
-    <div class="content-step-container">
-      <div class="content-padding">
-        
-        <!-- EXPLANATION/EXAMPLE/READING STEPS -->
-        <div v-if="['explanation', 'example', 'reading'].includes(currentStep?.type)">
-          <div v-if="hasEmptyContent" class="empty-content-card">
-            <div class="empty-icon">📭</div>
-            <h3 class="empty-heading">Content Not Available</h3>
-            <p class="empty-text">This step doesn't have content yet. Click Next to continue with the lesson.</p>
-          </div>
-          <div v-else class="content-text" v-html="formatContent(getStepContent(currentStep))"></div>
+  <div 
+    class="content-panel"
+    :class="{ 
+      'game-mode': isGameStep,
+      'panel-hidden': isGameStep && isPanelHidden
+    }"
+  >
+    <!-- Toggle Button - Shows when panel is hidden during game -->
+    <button 
+      v-if="isGameStep && isPanelHidden" 
+      class="panel-toggle-btn"
+      @click="isPanelHidden = false"
+    >
+      <span class="toggle-icon">📖</span>
+      <span class="toggle-text">Info</span>
+    </button>
+
+    <!-- Panel Content -->
+    <div v-show="!isGameStep || !isPanelHidden" class="panel-content">
+      
+      <!-- Header -->
+      <header class="panel-header">
+        <div class="header-left">
+          <span class="step-icon">{{ stepIcon }}</span>
+          <span class="step-type">{{ stepTypeLabel }}</span>
         </div>
         
-        <!-- EXERCISE STEPS -->
-        <div v-else-if="isExerciseStep" class="interactive-instruction-card">
-          <div class="instruction-icon">✏️</div>
-          <h3 class="instruction-heading">Complete the exercise on the right</h3>
-          <p class="instruction-text">
-            Use the interactive panel to answer the question and continue with the lesson.
-          </p>
-        </div>
+        <!-- Close button during game mode -->
+        <button 
+          v-if="isGameStep" 
+          class="close-btn"
+          @click="isPanelHidden = true"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </header>
 
-        <!-- GAME STEPS - COMPACT VERSION -->
-        <div v-else-if="isGameStep" class="game-context-view">
-          <div class="game-intro-card">
-            <div class="intro-header">
-              <span class="game-icon">🎮</span>
-              <h3>Game Time: {{ currentStep.title || 'Interactive Challenge' }}</h3>
-            </div>
-
-            <div class="game-instructions-box">
-              <h4>How to Play:</h4>
-              <ul class="instruction-list">
+      <!-- Scrollable Content Area -->
+      <div class="panel-body">
+        
+        <!-- Game Step: Compact Instructions -->
+        <template v-if="isGameStep">
+          <div class="game-info-card">
+            <h2 class="game-title">{{ currentStep?.title || 'Game Time: Interactive Challenge' }}</h2>
+            
+            <div class="game-instructions">
+              <h3 class="instructions-label">How to Play:</h3>
+              <ul class="instructions-list">
                 <li>Follow the instructions in the game panel</li>
                 <li>Complete all objectives to proceed</li>
                 <li>Have fun learning!</li>
               </ul>
             </div>
           </div>
-        </div>
+        </template>
 
-        <!-- SPECIAL INTERACTIVE STEPS -->
-        <div v-else-if="isSpecialInteractive" class="interactive-instruction-card">
-          <div class="instruction-icon">🎮</div>
-          <h3 class="instruction-heading">Interactive Exercise</h3>
-          <p class="instruction-text">Complete the interactive exercise on the right to continue.</p>
-        </div>
+        <!-- Regular Content Step -->
+        <template v-else>
+          <div class="content-area">
+            <!-- Title -->
+            <h1 v-if="currentStep?.title" class="content-title">
+              {{ currentStep.title }}
+            </h1>
 
-        <!-- OTHER INTERACTIVE STEPS -->
-        <div v-else-if="isInteractiveStep && !isExerciseStep && !isGameStep" class="interactive-instruction-card">
-          <div class="instruction-icon">{{ currentStep?.type === 'practice' ? '🧪' : '🧩' }}</div>
-          <h3 class="instruction-heading">Complete the {{ getStepTypeText(currentStep?.type).toLowerCase() }} on the right</h3>
-          <p class="instruction-text">Use the interactive panel to complete this activity.</p>
-        </div>
+            <!-- Main Content -->
+            <div 
+              v-if="currentStep?.content" 
+              class="content-body prose"
+              v-html="processedContent"
+            ></div>
 
-        <!-- VOCABULARY -->
-        <div v-else-if="currentStep?.type === 'vocabulary'" class="vocabulary-content">
-          <div v-if="!currentStep?.data?.modalCompleted" class="vocabulary-trigger">
-            <div class="trigger-icon">📚</div>
-            <h3 class="trigger-heading">Vocabulary Learning</h3>
-            <p class="trigger-subheading">{{ Array.isArray(currentStep?.data) ? currentStep.data.length : 1 }} new words await you!</p>
-            <button @click="$emit('init-vocabulary')" class="trigger-button">
-              🚀 Start Learning
-            </button>
-          </div>
-
-          <div v-else class="vocabulary-list-view">
-            <div class="vocabulary-header">
-              <h3>📖 Learned Words</h3>
-              <button @click="$emit('init-vocabulary')" class="review-button">
-                🔄 Review
-              </button>
+            <!-- Media -->
+            <div v-if="currentStep?.media" class="content-media">
+              <img 
+                v-if="currentStep.media.type === 'image'" 
+                :src="currentStep.media.url" 
+                :alt="currentStep.media.alt || 'Content image'"
+                class="media-image"
+              />
+              <video 
+                v-else-if="currentStep.media.type === 'video'" 
+                :src="currentStep.media.url" 
+                controls
+                class="media-video"
+              ></video>
             </div>
 
-            <div class="vocabulary-list">
-              <div
-                v-for="(vocab, vocabIndex) in (currentStep?.data?.allWords || currentStep?.data || [])"
-                :key="vocab?.id || `vocab-list-${vocabIndex}`"
-                class="vocabulary-item"
-                :class="{ 'is-learned': vocab?.learned }"
-              >
-                <div class="vocab-item-header">
-                  <div class="vocab-term">
-                    {{ vocab?.term || 'Term' }}
-                    <button
-                      v-if="vocab?.term"
-                      @click="$emit('pronounce', vocab.term)"
-                      class="pronunciation-button"
-                      title="Pronunciation"
-                    >
-                      🔊
-                    </button>
-                  </div>
-                  <div v-if="vocab?.learned" class="learned-badge">✅</div>
-                </div>
-                <div class="vocab-definition">{{ vocab?.definition || 'Definition' }}</div>
-                <div v-if="vocab?.example" class="vocab-example">
-                  <strong>Example:</strong> {{ vocab.example }}
-                </div>
-              </div>
+            <!-- Tips/Notes -->
+            <div v-if="currentStep?.tip" class="content-tip">
+              <span class="tip-icon">💡</span>
+              <p class="tip-text">{{ currentStep.tip }}</p>
             </div>
           </div>
-        </div>
-
-        <!-- MEDIA PLACEHOLDER -->
-        <div v-else-if="['video', 'audio'].includes(currentStep?.type)" class="media-placeholder">
-          <div class="media-icon">{{ currentStep?.type === 'video' ? '🎬' : '🎵' }}</div>
-          <h4 class="media-title">{{ currentStep?.type === 'video' ? 'Video Lesson' : 'Audio Lesson' }}</h4>
-          <p class="media-description">{{ currentStep?.data?.description || 'Multimedia content' }}</p>
-        </div>
-
-        <!-- DEFAULT CONTENT -->
-        <div v-else class="content-text" v-html="formatContent(getStepContent(currentStep))"></div>
+        </template>
       </div>
+
+      <!-- Footer with Navigation -->
+      <footer class="panel-footer">
+        <button 
+          class="nav-btn nav-btn-back"
+          :disabled="!canGoBack"
+          @click="$emit('go-back')"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+          Back
+        </button>
+        
+        <button 
+          class="nav-btn nav-btn-finish"
+          @click="$emit('finish')"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+          Finish
+        </button>
+      </footer>
     </div>
-    
-    <footer class="content-navigation">
-      <button v-if="currentIndex > 0" class="nav-button prev-button" @click="$emit('previous')">
-        ⬅️ Back
-      </button>
-      <button
-        v-if="!isInteractiveStep || hasEmptyContent"
-        class="nav-button next-button"
-        @click="$emit('next')"
-      >
-        {{ isLastStep ? '🏁 Finish' : '➡️ Next' }}
-      </button>
-    </footer>
   </div>
 </template>
 
-<script>
-export default {
-  name: 'ContentPanel',
-  props: {
-    currentStep: Object,
-    currentIndex: Number,
-    isInteractiveStep: Boolean,
-    isGameStep: Boolean,
-    showExplanationAlways: Boolean,
-    totalExercises: Number,
-    exerciseIndex: Number,
-    isLastStep: Boolean,
-  },
-  emits: ['init-vocabulary', 'pronounce', 'next', 'previous'],
+<script setup>
+import { ref, computed, watch } from 'vue';
+import { marked } from 'marked';
 
-  computed: {
-    isExerciseStep() {
-      return (this.currentStep?.type === 'exercise' || this.currentStep?.type === 'practice') &&
-             !this.currentStep?.gameType;
-    },
-    hasEmptyContent() {
-      const content = this.getStepContent(this.currentStep);
-      if (!content || typeof content !== 'string') return true;
-      const trimmed = content.trim();
-      return !trimmed || trimmed.includes('is not available') || trimmed.includes('not found') || trimmed.length < 3;
-    },
-    specialInteractiveTypes() {
-      return [
-        'histogram', 'map', 'block-coding',
-        'data_analysis', 'fraction_visual', 'geometry_poly',
-        'chem_mixing', 'chem_matching',
-        'english_sentence_fix', 'english_sentence_order',
-        'language_noun_bag', 'geometry', 'selection_game',
-        'language_tone_transformer', 'language_idiom_bridge',
-        'language_word_constellation', 'language_rhythm_match',
-        'language_false_friends'
-      ];
-    },
-    isSpecialInteractive() {
-      return this.specialInteractiveTypes.includes(this.currentStep?.type);
-    },
-    totalExercisesInStep() {
-      if (!this.currentStep) return 0;
-      if (Array.isArray(this.currentStep.data)) return this.currentStep.data.length;
-      if (this.currentStep.data?.exercises) return this.currentStep.data.exercises.length;
-      if (this.currentStep.exercises) return this.currentStep.exercises.length;
-      return 1;
-    }
-  },
+const props = defineProps({
+  currentStep: Object,
+  stepIndex: Number,
+  totalSteps: Number,
+  canGoBack: { type: Boolean, default: true },
+  isGameStep: { type: Boolean, default: false }
+});
 
-  methods: {
-    getStepIcon(stepType) {
-      const icons = {
-        explanation: '📚', example: '💡', reading: '📖', exercise: '✏️',
-        practice: '🧪', quiz: '🧩', vocabulary: '📝', video: '🎬', audio: '🎵', game: '🎮'
-      };
-      return icons[stepType] || '📄';
-    },
-    getStepTypeText(stepType) {
-      const texts = {
-        explanation: 'Explanation', example: 'Example', reading: 'Reading',
-        exercise: 'Exercise', practice: 'Practice', quiz: 'Quiz',
-        vocabulary: 'Vocabulary', video: 'Video', audio: 'Audio', game: 'Game'
-      };
-      return texts[stepType] || 'Content';
-    },
-    getStepContent(step) {
-      if (!step) return 'Step not found';
-      if (step.gameType) return step.instructions || step.description || 'Complete the game to proceed';
+const emit = defineEmits(['go-back', 'finish']);
 
-      let content = null;
-      if (step.data?.content) content = step.data.content;
-      else if (step.data?.text) content = step.data.text;
-      else if (step.content?.text) content = step.content.text;
-      else if (step.content?.content) content = step.content.content;
-      else if (typeof step.content === 'string') content = step.content;
-      else if (typeof step.data === 'string') content = step.data;
-      else if (step.description) content = step.description;
-      else if (step.text) content = step.text;
+// Panel visibility state for games
+const isPanelHidden = ref(false);
 
-      if (!content) return `Content for "${step.type}" step is not available`;
-      return content;
-    },
-    formatContent(content) {
-      if (!content) return '';
-      let formatted = String(content);
-
-      formatted = formatted.replace(/\[card title="(.*?)"\]([\s\S]*?)\[\/card\]/g, (match, title, innerContent) => {
-        return `<div class="content-card"><h3 class="card-heading">${title}</h3><div class="card-content">${innerContent}</div></div>`;
-      });
-      formatted = formatted.replace(/\[card\]([\s\S]*?)\[\/card\]/g, (match, innerContent) => {
-        return `<div class="content-card">${innerContent}</div>`;
-      });
-
-      formatted = formatted
-        .replace(/^## (.*$)/gim, '<h2 class="content-h2">$1</h2>')
-        .replace(/^### (.*$)/gim, '<h3 class="content-h3">$1</h3>')
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.*?)\*/g, '<em>$1</em>')
-        .replace(/`(.+?)`/g, '<code>$1</code>')
-        .replace(/\n\n/g, '</p><p>')
-        .replace(/\n/g, '<br>');
-
-      return `<p>${formatted}</p>`;
-    }
+// Auto-hide panel when entering game mode on mobile
+watch(() => props.isGameStep, (isGame) => {
+  if (isGame && window.innerWidth < 768) {
+    isPanelHidden.value = true;
+  } else {
+    isPanelHidden.value = false;
   }
-}
+}, { immediate: true });
+
+// Step icon based on type
+const stepIcon = computed(() => {
+  if (props.isGameStep) return '🎮';
+  const type = props.currentStep?.type;
+  switch (type) {
+    case 'video': return '🎬';
+    case 'quiz': return '❓';
+    case 'exercise': return '✏️';
+    case 'reading': return '📖';
+    default: return '📚';
+  }
+});
+
+// Step type label
+const stepTypeLabel = computed(() => {
+  if (props.isGameStep) return 'Game';
+  const type = props.currentStep?.type;
+  switch (type) {
+    case 'video': return 'Video';
+    case 'quiz': return 'Quiz';
+    case 'exercise': return 'Exercise';
+    case 'reading': return 'Reading';
+    case 'content': return 'Lesson';
+    default: return 'Content';
+  }
+});
+
+// Process markdown content
+const processedContent = computed(() => {
+  if (!props.currentStep?.content) return '';
+  if (typeof props.currentStep.content === 'string') {
+    return marked(props.currentStep.content);
+  }
+  return props.currentStep.content;
+});
 </script>
 
 <style scoped>
+/* ============================================
+   CONTENT PANEL - Base Styles
+   ============================================ */
 .content-panel {
-  --background: #fff;
-  --foreground: #27272a;
-  --card: #fff;
-  --card-foreground: #27272a;
-  --primary: #030213;
-  --primary-foreground: #ffffff;
-  --secondary: #f4f4f5;
-  --muted-foreground: #71717a;
-  --border: #e4e4e7;
-  --radius: 0.625rem;
-  --lesson-purple: #8b7cf6;
-  --lesson-purple-light: #f8f7ff;
-  --lesson-blue: #3b82f6;
-  --lesson-blue-light: #eff6ff;
-
-  height: 100%;
   display: flex;
   flex-direction: column;
-  font-family: var(--font-sans, sans-serif);
-  background-color: var(--background);
-  color: var(--foreground);
-  overflow: hidden;
+  height: 100%;
+  background: white;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.panel-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 /* ============================================
-   GAME MODE - COMPACT LAYOUT
+   GAME MODE - Panel Collapses on Mobile
    ============================================ */
 .content-panel.game-mode {
-  max-height: 100%;
+  /* On mobile, take minimal space */
 }
 
-.content-panel.game-mode .content-step-container {
-  flex: 0 1 auto;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+.content-panel.panel-hidden {
+  /* Hidden state - just show toggle button */
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: auto;
+  height: auto;
+  background: transparent;
+  z-index: 50;
 }
 
-.content-panel.game-mode .content-padding {
-  padding: 1rem;
-}
-
-.content-panel.game-mode .game-intro-card {
-  padding: 1rem;
-}
-
-.content-panel.game-mode .intro-header {
-  margin-bottom: 0.75rem;
-}
-
-.content-panel.game-mode .intro-header h3 {
-  font-size: 1rem;
-}
-
-.content-panel.game-mode .game-icon {
-  font-size: 1.25rem;
-}
-
-.content-panel.game-mode .game-instructions-box h4 {
-  font-size: 0.9rem;
-  margin-bottom: 0.5rem;
-}
-
-.content-panel.game-mode .instruction-list {
-  font-size: 0.85rem;
-  line-height: 1.4;
-  padding-left: 1rem;
-}
-
-.content-panel.game-mode .instruction-list li {
-  margin-bottom: 2px;
-}
-
-/* Header */
-.content-step-header {
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-}
-
-.header-title {
-  font-size: 1.25rem;
-  color: var(--foreground);
-  margin: 0;
+/* Toggle Button */
+.panel-toggle-btn {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 6px;
+  background: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 13px;
   font-weight: 600;
+  color: #6366f1;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-.step-number {
-  background-color: var(--primary);
-  color: var(--primary-foreground);
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
+.panel-toggle-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+
+.toggle-icon {
+  font-size: 16px;
+}
+
+/* ============================================
+   HEADER
+   ============================================ */
+.panel-header {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 1rem;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f1f5f9;
   flex-shrink: 0;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .step-icon {
-  font-size: 1.3rem;
+  font-size: 18px;
 }
 
-.step-text {
-  font-weight: 700;
+.step-type {
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
 }
 
-.exercise-counter {
-  font-size: 1rem;
-  color: var(--muted-foreground);
-  font-weight: 500;
-  margin-left: 0.5rem;
+.close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: #f1f5f9;
+  border: none;
+  border-radius: 8px;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-/* Body - SCROLLABLE */
-.content-step-container {
+.close-btn:hover {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+/* ============================================
+   BODY - Scrollable Content
+   ============================================ */
+.panel-body {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
+  padding: 16px;
   -webkit-overflow-scrolling: touch;
+}
+
+/* Game Info Card */
+.game-info-card {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #bae6fd;
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.game-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0c4a6e;
+  margin: 0 0 16px 0;
   display: flex;
-  flex-direction: column;
-  min-height: 0; /* Critical for flex scroll */
+  align-items: center;
+  gap: 8px;
 }
 
-.content-padding {
-  padding: 1.5rem 1.25rem;
-  flex: 1 0 auto; /* Allow growth but not shrink below content */
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
+.game-title::before {
+  content: '🎮';
+  font-size: 20px;
 }
 
-@media (min-width: 640px) {
-  .content-padding {
-    padding: 2rem 1.5rem;
-  }
+.game-instructions {
+  background: white;
+  border-radius: 12px;
+  padding: 14px;
 }
 
-/* Content Text */
-.content-text {
-  line-height: 1.7;
-  color: var(--muted-foreground);
-  font-size: 1rem;
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-.content-text :deep(p) {
-  margin-bottom: 1rem;
-}
-
-.content-text :deep(h2.content-h2) {
-  font-size: 1.5rem;
+.instructions-label {
+  font-size: 13px;
   font-weight: 600;
-  color: var(--foreground);
-  margin-bottom: 1rem;
-  margin-top: 1.5rem;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 0.5rem;
+  color: #0369a1;
+  margin: 0 0 10px 0;
 }
 
-.content-text :deep(h3.content-h3) {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--card-foreground);
-  margin-bottom: 0.75rem;
-  margin-top: 1.25rem;
-}
-
-/* Interactive Instruction Card */
-.interactive-instruction-card {
-  background: var(--lesson-blue-light);
-  border: 2px solid var(--lesson-blue);
-  border-radius: 1rem;
-  padding: 2.5rem;
-  text-align: center;
-  max-width: 500px;
-  margin: 0 auto;
-}
-
-.instruction-icon {
-  font-size: 3rem;
-  margin-bottom: 1.25rem;
-}
-
-.instruction-heading {
-  margin: 0 0 1rem 0;
-  color: var(--foreground);
-  font-size: 1.3rem;
-  font-weight: 600;
-}
-
-.instruction-text {
+.instructions-list {
   margin: 0;
-  color: var(--muted-foreground);
-  font-size: 1rem;
-  line-height: 1.5;
+  padding-left: 20px;
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.6;
 }
 
-/* Empty Content Card */
-.empty-content-card {
-  background: var(--secondary);
-  border: 2px dashed var(--border);
-  border-radius: 1rem;
-  padding: 3rem 2rem;
-  text-align: center;
-  max-width: 500px;
-  margin: 0 auto;
+.instructions-list li {
+  margin-bottom: 6px;
 }
 
-.empty-icon {
-  font-size: 3rem;
-  margin-bottom: 1.25rem;
-  opacity: 0.7;
+.instructions-list li:last-child {
+  margin-bottom: 0;
 }
 
-.empty-heading {
-  margin: 0 0 1rem 0;
-  color: var(--foreground);
-  font-size: 1.3rem;
-  font-weight: 600;
-}
-
-.empty-text {
-  margin: 0;
-  color: var(--muted-foreground);
-  font-size: 1rem;
-  line-height: 1.5;
-}
-
-/* Game Context View */
-.game-context-view {
+/* Regular Content Area */
+.content-area {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  max-width: 600px;
-  margin: 0 auto;
-  width: 100%;
 }
 
-.game-intro-card {
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-  border: 1px solid #bae6fd;
-  border-radius: 12px;
-  padding: 1.25rem;
-}
-
-.intro-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.game-icon {
-  font-size: 1.5rem;
-}
-
-.intro-header h3 {
+.content-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1e293b;
   margin: 0;
-  color: #0369a1;
-  font-size: 1.1rem;
   line-height: 1.3;
 }
 
-.game-instructions-box {
-  margin-top: 8px;
+.content-body {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #475569;
 }
 
-.game-instructions-box h4 {
-  color: #0c4a6e;
-  font-size: 0.95rem;
-  font-weight: 600;
-  margin: 0 0 6px 0;
+.content-body :deep(h1),
+.content-body :deep(h2),
+.content-body :deep(h3) {
+  color: #1e293b;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
 }
 
-.instruction-list {
+.content-body :deep(p) {
+  margin: 0 0 1em 0;
+}
+
+.content-body :deep(ul),
+.content-body :deep(ol) {
+  margin: 0 0 1em 0;
+  padding-left: 1.5em;
+}
+
+.content-body :deep(code) {
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.content-body :deep(pre) {
+  background: #1e293b;
+  color: #e2e8f0;
+  padding: 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+/* Media */
+.content-media {
+  margin: 8px 0;
+}
+
+.media-image,
+.media-video {
+  width: 100%;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* Tip */
+.content-tip {
+  display: flex;
+  gap: 10px;
+  background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%);
+  border: 1px solid #fde047;
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.tip-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.tip-text {
   margin: 0;
-  padding-left: 18px;
-  color: #334155;
-  font-size: 0.875rem;
+  font-size: 14px;
+  color: #854d0e;
   line-height: 1.5;
 }
 
-.instruction-list li {
-  margin-bottom: 3px;
-}
-
-/* Vocabulary */
-.vocabulary-trigger {
-  text-align: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 3rem 2.25rem;
-  border-radius: 1.25rem;
-  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
-  max-width: 500px;
-  margin: 0 auto;
-}
-
-.trigger-icon {
-  font-size: 3.5rem;
-  margin-bottom: 1.25rem;
-}
-
-.trigger-heading {
-  margin: 0 0 1rem 0;
-  font-size: 1.8rem;
-  font-weight: 700;
-}
-
-.trigger-subheading {
-  margin: 0 0 1.75rem 0;
-  opacity: 0.9;
-  font-size: 1.2rem;
-}
-
-.trigger-button {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  border: none;
-  padding: 1rem 2rem;
-  border-radius: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 1.2rem;
-}
-
-.trigger-button:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: translateY(-2px);
-}
-
-/* Media Placeholder */
-.media-placeholder {
-  background: var(--secondary);
-  padding: 3rem;
-  border-radius: 1rem;
-  border: 2px dashed var(--border);
-  text-align: center;
-  max-width: 500px;
-  margin: 0 auto;
-}
-
-.media-icon {
-  font-size: 3.5rem;
-  margin-bottom: 1.25rem;
-}
-
-.media-title {
-  margin: 0 0 1rem 0;
-  color: var(--foreground);
-  font-size: 1.3rem;
-  font-weight: 600;
-}
-
-.media-description {
-  margin: 0;
-  color: var(--muted-foreground);
-  font-size: 1.1rem;
-}
-
-/* Navigation */
-.content-navigation {
-  padding: 1rem 1.5rem;
-  border-top: 1px solid var(--border);
-  flex-shrink: 0;
+/* ============================================
+   FOOTER - Navigation Buttons
+   ============================================ */
+.panel-footer {
   display: flex;
-  gap: 0.75rem;
-  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 16px;
+  border-top: 1px solid #f1f5f9;
+  flex-shrink: 0;
 }
 
-.nav-button {
-  padding: 0.6rem 1.25rem;
-  border-radius: 0.375rem;
-  font-weight: 600;
-  cursor: pointer;
-  border: 1px solid transparent;
-  transition: all 0.2s ease;
+.nav-btn {
   flex: 1;
-  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
   min-height: 44px;
 }
 
-.prev-button {
-  background-color: var(--secondary);
-  color: var(--muted-foreground);
-  border-color: var(--border);
+.nav-btn-back {
+  background: #f1f5f9;
+  color: #64748b;
 }
 
-.prev-button:hover {
-  background-color: var(--border);
+.nav-btn-back:hover:not(:disabled) {
+  background: #e2e8f0;
 }
 
-.next-button {
-  background-color: var(--primary);
-  color: var(--primary-foreground);
+.nav-btn-back:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-.next-button:hover {
-  opacity: 0.9;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+.nav-btn-finish {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.nav-btn-finish:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
 }
 
 /* ============================================
-   MOBILE RESPONSIVE
+   RESPONSIVE - Mobile Adjustments
    ============================================ */
 @media (max-width: 768px) {
-  .content-step-header {
-    padding: 0.75rem 1rem;
+  .content-panel.game-mode:not(.panel-hidden) {
+    /* When visible during game, show as overlay */
+    position: absolute;
+    inset: 0;
+    z-index: 40;
+    background: white;
   }
-
-  .header-title {
-    font-size: 1rem;
-    gap: 0.5rem;
+  
+  .panel-header {
+    padding: 10px 14px;
   }
-
-  .step-number {
-    width: 26px;
-    height: 26px;
-    font-size: 0.875rem;
+  
+  .panel-body {
+    padding: 14px;
   }
-
-  .step-icon {
-    font-size: 1.1rem;
+  
+  .panel-footer {
+    padding: 10px 14px;
   }
-
-  .step-text {
-    font-size: 0.875rem;
+  
+  .content-title {
+    font-size: 20px;
   }
-
-  .content-padding {
-    padding: 1rem;
-  }
-
-  .content-text {
-    font-size: 0.9375rem;
-    line-height: 1.6;
-  }
-
-  .interactive-instruction-card,
-  .empty-content-card {
-    padding: 1.5rem 1rem;
-    margin: 0;
-    max-width: none;
-  }
-
-  .instruction-icon,
-  .empty-icon {
-    font-size: 2rem;
-    margin-bottom: 0.75rem;
-  }
-
-  .instruction-heading,
-  .empty-heading {
-    font-size: 1.1rem;
-  }
-
-  .vocabulary-trigger {
-    padding: 2rem 1.25rem;
-    max-width: none;
-  }
-
-  .trigger-icon {
-    font-size: 2.5rem;
-  }
-
-  .trigger-heading {
-    font-size: 1.4rem;
-  }
-
-  .trigger-subheading {
-    font-size: 1rem;
-  }
-
-  .content-navigation {
-    padding: 0.75rem 1rem;
-  }
-
-  .nav-button {
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
-  }
-
-  /* Game mode on mobile - even more compact */
-  .content-panel.game-mode .content-step-header {
-    padding: 0.5rem 0.75rem;
-  }
-
-  .content-panel.game-mode .content-padding {
-    padding: 0.75rem;
-  }
-
-  .content-panel.game-mode .game-intro-card {
-    padding: 0.75rem;
-  }
-
-  .content-panel.game-mode .intro-header h3 {
-    font-size: 0.9rem;
-  }
-
-  .content-panel.game-mode .game-instructions-box h4 {
-    font-size: 0.8rem;
-  }
-
-  .content-panel.game-mode .instruction-list {
-    font-size: 0.75rem;
-  }
-
-  .content-panel.game-mode .content-navigation {
-    padding: 0.5rem 0.75rem;
+  
+  .content-body {
+    font-size: 14px;
   }
 }
 
-@media (max-width: 480px) {
-  .content-step-header {
-    padding: 0.625rem 0.75rem;
+/* Very small screens */
+@media (max-width: 380px) {
+  .game-info-card {
+    padding: 14px;
   }
-
-  .header-title {
-    font-size: 0.875rem;
+  
+  .game-title {
+    font-size: 16px;
   }
-
-  .step-number {
-    width: 22px;
-    height: 22px;
-    font-size: 0.75rem;
-  }
-
-  .exercise-counter {
-    font-size: 0.8rem;
-  }
-
-  .content-padding {
-    padding: 1rem 0.75rem;
-  }
-
-  .content-text {
-    font-size: 0.875rem;
-  }
-
-  .instruction-heading,
-  .empty-heading {
-    font-size: 1rem;
-  }
-
-  .instruction-text,
-  .empty-text {
-    font-size: 0.875rem;
-  }
-
-  /* Game mode on small mobile */
-  .content-panel.game-mode .header-title {
-    font-size: 0.8rem;
-  }
-
-  .content-panel.game-mode .step-number {
-    width: 20px;
-    height: 20px;
-    font-size: 0.7rem;
-  }
-}
-
-/* ============================================
-   LANDSCAPE MOBILE - HIDE CONTENT FOR GAMES
-   ============================================ */
-@media (max-height: 500px) and (orientation: landscape) {
-  .content-panel.game-mode .content-step-container {
-    display: none;
-  }
-
-  .content-panel.game-mode .content-step-header {
-    padding: 0.4rem 0.75rem;
-  }
-
-  .content-panel.game-mode .content-navigation {
-    padding: 0.4rem 0.75rem;
-  }
-
-  .content-panel.game-mode .nav-button {
-    padding: 0.4rem 0.75rem;
-    min-height: 36px;
-    font-size: 0.8rem;
+  
+  .instructions-list {
+    font-size: 12px;
   }
 }
 </style>
