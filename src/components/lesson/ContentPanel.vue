@@ -135,6 +135,7 @@
       <button
         v-if="!isInteractiveStep || hasEmptyContent"
         class="nav-button next-button"
+        :class="{ 'hide-on-mobile-game': isGameStep }"
         @click="$emit('next')"
       >
         {{ isLastStep ? '🏁 Finish' : '➡️ Next' }}
@@ -772,6 +773,10 @@ export default {
 
   .content-panel.game-mode .content-navigation {
     padding: 0.5rem 0.75rem;
+  }
+
+  .hide-on-mobile-game {
+    display: none !important;
   }
 }
 

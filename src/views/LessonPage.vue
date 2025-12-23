@@ -240,7 +240,7 @@
       </div>
 
       <!-- Split Screen Layout -->
-      <div class="split-content" ref="splitContainer">
+      <div class="split-content" :class="{ 'is-game-active': isGameStep }" ref="splitContainer">
         <div class="split-panel content-side" :style="leftPanelStyle">
           <ContentPanel
             :current-step="currentStep"

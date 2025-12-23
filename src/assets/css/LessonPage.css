@@ -300,6 +300,17 @@ body.is-resizing canvas {
     overflow: hidden;
   }
 
+  /* Hide content panel on mobile when game is active */
+  .is-game-active .split-panel.content-side {
+    display: none !important;
+  }
+
+  /* Ensure game panel takes full height when content is hidden */
+  .is-game-active .split-panel.interactive-side {
+    height: 100% !important;
+    min-height: 100% !important;
+  }
+
   /* Ensure games fill mobile container */
   .interactive-container {
     height: 100%;
