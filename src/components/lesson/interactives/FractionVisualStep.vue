@@ -143,3 +143,204 @@ const checkAnswer = () => {
   }
 };
 </script>
+
+<style scoped>
+/* Base responsive styles for FractionVisualStep */
+.interactive-step {
+  padding: 1rem;
+}
+
+/* ============================================
+   TABLET RESPONSIVE (768px - 1366px)
+   ============================================ */
+
+/* iPad Mini & Small Tablets */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .interactive-step {
+    padding: 0.75rem;
+  }
+
+  .text-lg {
+    font-size: 0.9rem;
+  }
+
+  .mb-6 {
+    margin-bottom: 1rem;
+  }
+
+  .gap-8 {
+    gap: 1.5rem;
+  }
+
+  .w-12 {
+    width: 2.5rem;
+  }
+
+  .h-12 {
+    height: 2.5rem;
+  }
+
+  .text-4xl {
+    font-size: 2rem;
+  }
+
+  .mt-8 {
+    margin-top: 1.5rem;
+  }
+
+  .py-4 {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .text-lg.font-bold {
+    font-size: 0.9rem;
+  }
+}
+
+/* iPad Air & Larger Tablets */
+@media (min-width: 1024px) and (max-width: 1366px) {
+  .interactive-step {
+    padding: 1rem;
+  }
+
+  .text-lg {
+    font-size: 1rem;
+  }
+
+  .w-12 {
+    width: 2.75rem;
+  }
+
+  .h-12 {
+    height: 2.75rem;
+  }
+}
+
+/* Tablet Landscape */
+@media (min-width: 768px) and (max-height: 800px) and (orientation: landscape) {
+  .interactive-step {
+    padding: 0.5rem;
+  }
+
+  .text-lg {
+    font-size: 0.8rem;
+  }
+
+  .mb-6 {
+    margin-bottom: 0.5rem;
+  }
+
+  .gap-8 {
+    gap: 1rem;
+  }
+
+  .w-12 {
+    width: 2rem;
+  }
+
+  .h-12 {
+    height: 2rem;
+  }
+
+  .p-3 {
+    padding: 0.5rem;
+  }
+
+  .gap-2 {
+    gap: 0.25rem;
+  }
+
+  .text-4xl {
+    font-size: 1.5rem;
+  }
+
+  .text-sm {
+    font-size: 0.65rem;
+  }
+
+  .mt-8 {
+    margin-top: 0.75rem;
+  }
+
+  .py-4 {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  button.rounded-xl {
+    border-radius: 0.75rem;
+  }
+}
+
+/* Short screens */
+@media (max-height: 600px) {
+  .interactive-step {
+    padding: 0.375rem;
+  }
+
+  .text-lg {
+    font-size: 0.7rem;
+    line-height: 1.3;
+  }
+
+  .mb-6 {
+    margin-bottom: 0.375rem;
+  }
+
+  .gap-8 {
+    gap: 0.75rem;
+  }
+
+  .gap-3 {
+    gap: 0.25rem;
+  }
+
+  .w-12 {
+    width: 1.5rem;
+  }
+
+  .h-12 {
+    height: 1.5rem;
+  }
+
+  .p-3 {
+    padding: 0.375rem;
+  }
+
+  .gap-2 {
+    gap: 0.2rem;
+  }
+
+  .text-4xl {
+    font-size: 1.25rem;
+  }
+
+  .text-sm {
+    font-size: 0.55rem;
+  }
+
+  .mt-8 {
+    margin-top: 0.5rem;
+  }
+
+  .mt-4 {
+    margin-top: 0.25rem;
+  }
+
+  .py-4 {
+    padding-top: 0.375rem;
+    padding-bottom: 0.375rem;
+  }
+
+  button.rounded-xl {
+    border-radius: 0.5rem;
+    font-size: 0.7rem;
+  }
+
+  .step-feedback {
+    font-size: 0.65rem;
+    padding: 0.25rem 0.5rem;
+  }
+}
+</style>

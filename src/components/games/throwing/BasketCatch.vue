@@ -506,4 +506,275 @@ onUnmounted(stopGame);
     font-size: 2.5rem;
   }
 }
+
+/* ============================================
+   TABLET RESPONSIVE (768px - 1366px)
+   ============================================ */
+
+/* iPad Mini & Small Tablets */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .basket-catch-game {
+    min-height: 350px;
+    border-radius: 12px;
+    border-width: 3px;
+  }
+
+  .sun {
+    top: 20px;
+    left: 20px;
+    font-size: 3rem;
+  }
+
+  .cloud {
+    font-size: 2rem;
+  }
+
+  .cloud-1 { font-size: 2.5rem; }
+  .cloud-3 { font-size: 3rem; }
+  .cloud-6 { font-size: 2.8rem; }
+
+  .question-display {
+    top: 12px;
+    padding: 10px 20px;
+    border-radius: 14px;
+    gap: 8px;
+    border-width: 2px;
+  }
+
+  .question-icon {
+    font-size: 1.4rem;
+  }
+
+  .question-text {
+    font-size: 1rem;
+  }
+
+  .falling-orb {
+    width: 55px;
+    height: 55px;
+    border-width: 2px;
+  }
+
+  .orb-text {
+    font-size: 1.3rem;
+  }
+
+  .basket-wrapper {
+    bottom: 20px;
+  }
+
+  .basket-body {
+    font-size: 3rem;
+  }
+
+  .feedback-splash {
+    padding: 14px 28px;
+    border-radius: 14px;
+  }
+
+  .splash-icon {
+    font-size: 2rem;
+  }
+
+  .splash-text {
+    font-size: 1.3rem;
+  }
+
+  .small-modal {
+    padding: 18px;
+    max-width: 300px;
+  }
+
+  .modal-icon {
+    font-size: 2.5rem;
+    margin-bottom: 8px;
+  }
+
+  .modal-title {
+    font-size: 1.2rem;
+  }
+
+  .modal-text {
+    font-size: 0.875rem;
+    margin-bottom: 12px;
+  }
+
+  .modal-btn {
+    padding: 10px 20px;
+    font-size: 0.875rem;
+  }
+}
+
+/* iPad Air & Larger Tablets */
+@media (min-width: 1024px) and (max-width: 1366px) {
+  .basket-catch-game {
+    min-height: 400px;
+  }
+
+  .sun {
+    top: 30px;
+    left: 30px;
+    font-size: 4rem;
+  }
+
+  .question-display {
+    top: 16px;
+    padding: 12px 24px;
+    border-radius: 16px;
+  }
+
+  .question-icon {
+    font-size: 1.6rem;
+  }
+
+  .question-text {
+    font-size: 1.2rem;
+  }
+
+  .falling-orb {
+    width: 65px;
+    height: 65px;
+  }
+
+  .orb-text {
+    font-size: 1.5rem;
+  }
+
+  .basket-body {
+    font-size: 3.5rem;
+  }
+}
+
+/* Tablet Landscape - compact */
+@media (min-width: 768px) and (max-height: 800px) and (orientation: landscape) {
+  .basket-catch-game {
+    min-height: 280px;
+    border-radius: 10px;
+  }
+
+  .sun {
+    top: 10px;
+    left: 10px;
+    font-size: 2.5rem;
+  }
+
+  .cloud {
+    font-size: 1.5rem;
+  }
+
+  .cloud-1, .cloud-3, .cloud-6 { font-size: 2rem; }
+
+  .question-display {
+    top: 8px;
+    padding: 8px 16px;
+    border-radius: 12px;
+    gap: 6px;
+  }
+
+  .question-icon {
+    font-size: 1.2rem;
+  }
+
+  .question-text {
+    font-size: 0.9rem;
+  }
+
+  .falling-orb {
+    width: 50px;
+    height: 50px;
+  }
+
+  .orb-text {
+    font-size: 1.1rem;
+  }
+
+  .basket-wrapper {
+    bottom: 15px;
+  }
+
+  .basket-body {
+    font-size: 2.5rem;
+  }
+
+  .feedback-splash {
+    padding: 12px 24px;
+    border-radius: 12px;
+  }
+
+  .splash-icon {
+    font-size: 1.8rem;
+  }
+
+  .splash-text {
+    font-size: 1.1rem;
+  }
+}
+
+/* Short screens */
+@media (max-height: 600px) {
+  .basket-catch-game {
+    min-height: 220px;
+    border-radius: 8px;
+    border-width: 2px;
+  }
+
+  .sun {
+    top: 8px;
+    left: 8px;
+    font-size: 2rem;
+  }
+
+  .cloud {
+    font-size: 1.2rem;
+    opacity: 0.5;
+  }
+
+  .question-display {
+    top: 6px;
+    padding: 6px 12px;
+    border-radius: 10px;
+    gap: 4px;
+    border-width: 2px;
+  }
+
+  .question-icon {
+    font-size: 1rem;
+  }
+
+  .question-text {
+    font-size: 0.8rem;
+  }
+
+  .falling-orb {
+    width: 40px;
+    height: 40px;
+    border-width: 2px;
+  }
+
+  .orb-text {
+    font-size: 0.9rem;
+  }
+
+  .basket-wrapper {
+    bottom: 10px;
+  }
+
+  .basket-body {
+    font-size: 2rem;
+  }
+
+  .feedback-splash {
+    padding: 10px 20px;
+    border-radius: 10px;
+  }
+
+  .splash-icon {
+    font-size: 1.5rem;
+    margin-bottom: 2px;
+  }
+
+  .splash-text {
+    font-size: 1rem;
+  }
+}
 </style>

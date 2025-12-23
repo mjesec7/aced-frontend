@@ -688,4 +688,223 @@ watch(() => props.currentExercise, () => { resetExerciseState(); userAnswer.valu
 .slide-fade-enter-active { transition: all 0.4s ease-out; }
 .slide-fade-leave-active { transition: all 0.3s ease-in; }
 .slide-fade-enter-from, .slide-fade-leave-to { transform: translateY(-10px); opacity: 0; }
+
+/* ============================================
+   TABLET RESPONSIVE (768px - 1366px)
+   ============================================ */
+
+/* iPad Mini & Small Tablets */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .exercise-content {
+    padding: 0.875rem;
+  }
+
+  .exercise-card {
+    padding: 1rem;
+    border-radius: 1rem;
+  }
+
+  .option-btn {
+    padding: 0.625rem 0.875rem;
+    gap: 0.625rem;
+    min-height: 44px;
+  }
+
+  .option-letter {
+    width: 1.75rem;
+    height: 1.75rem;
+    font-size: 0.75rem;
+  }
+
+  .option-text {
+    font-size: 0.8rem;
+  }
+
+  .tf-btn {
+    max-width: 120px;
+    padding: 0.75rem;
+    min-height: 80px;
+  }
+
+  .feedback-box {
+    padding: 0.75rem;
+    gap: 0.625rem;
+  }
+
+  .feedback-icon {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+
+  .btn-primary,
+  .btn-success {
+    padding: 0.625rem 1.25rem;
+    font-size: 0.8rem;
+    min-height: 40px;
+  }
+}
+
+/* iPad Air & Larger Tablets */
+@media (min-width: 1024px) and (max-width: 1366px) {
+  .exercise-content {
+    padding: 1rem;
+  }
+
+  .exercise-card {
+    padding: 1.25rem;
+  }
+
+  .option-btn {
+    padding: 0.75rem 1rem;
+    min-height: 46px;
+  }
+
+  .option-letter {
+    width: 2rem;
+    height: 2rem;
+    font-size: 0.875rem;
+  }
+
+  .tf-btn {
+    max-width: 140px;
+    padding: 1rem;
+    min-height: 90px;
+  }
+}
+
+/* Tablet Landscape - more compact */
+@media (min-width: 768px) and (max-height: 800px) and (orientation: landscape) {
+  .exercise-content {
+    padding: 0.5rem;
+  }
+
+  .exercise-card {
+    padding: 0.75rem;
+  }
+
+  header.text-center {
+    margin-bottom: 0.5rem;
+  }
+
+  header .w-10 {
+    width: 2rem;
+    height: 2rem;
+    margin-bottom: 0.25rem;
+  }
+
+  header h2 {
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .option-btn {
+    padding: 0.5rem 0.75rem;
+    min-height: 38px;
+  }
+
+  .option-letter {
+    width: 1.5rem;
+    height: 1.5rem;
+    font-size: 0.7rem;
+  }
+
+  .option-text {
+    font-size: 0.75rem;
+  }
+
+  .space-y-2 > :not([hidden]) ~ :not([hidden]),
+  .space-y-3 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.375rem;
+  }
+
+  .feedback-box {
+    padding: 0.5rem;
+    margin-top: 0.5rem;
+  }
+
+  footer.mt-6 {
+    margin-top: 0.5rem;
+  }
+}
+
+/* Short screens - compact everything */
+@media (max-height: 600px) {
+  .exercise-content {
+    padding: 0.5rem;
+  }
+
+  .exercise-card {
+    padding: 0.625rem;
+    border-radius: 0.75rem;
+  }
+
+  header.text-center {
+    margin-bottom: 0.375rem;
+  }
+
+  header .w-10,
+  header .w-12 {
+    width: 1.75rem;
+    height: 1.75rem;
+    font-size: 0.7rem;
+    margin-bottom: 0.25rem;
+  }
+
+  header h2 {
+    font-size: 0.875rem;
+    margin-bottom: 0.125rem;
+  }
+
+  header p {
+    font-size: 0.7rem;
+  }
+
+  .option-btn {
+    padding: 0.375rem 0.625rem;
+    min-height: 32px;
+    border-radius: 0.5rem;
+  }
+
+  .option-letter {
+    width: 1.25rem;
+    height: 1.25rem;
+    font-size: 0.625rem;
+    border-radius: 0.25rem;
+  }
+
+  .option-text {
+    font-size: 0.7rem;
+  }
+
+  .tf-btn {
+    max-width: 100px;
+    padding: 0.5rem;
+    min-height: 60px;
+    border-radius: 0.75rem;
+  }
+
+  .tf-btn .text-3xl {
+    font-size: 1.5rem;
+  }
+
+  .feedback-box {
+    padding: 0.5rem;
+    gap: 0.5rem;
+    border-radius: 0.5rem;
+    margin-top: 0.375rem;
+  }
+
+  .feedback-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  .btn-primary,
+  .btn-success {
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+    min-height: 36px;
+    border-radius: 0.5rem;
+  }
+}
 </style>

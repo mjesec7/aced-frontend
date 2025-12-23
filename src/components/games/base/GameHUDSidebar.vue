@@ -144,7 +144,7 @@ defineProps({
   display: none;
 }
 
-/* Responsive */
+/* Responsive - Mobile */
 @media (max-width: 768px) {
   .game-hud-sidebar {
     right: 10px;
@@ -167,6 +167,125 @@ defineProps({
 
   .heart {
     font-size: 1rem;
+  }
+}
+
+/* ============================================
+   TABLET RESPONSIVE (768px - 1366px)
+   ============================================ */
+
+/* iPad Mini & Small Tablets */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .game-hud-sidebar {
+    right: 12px;
+    top: 12px;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 12px;
+  }
+
+  .hud-section {
+    padding: 5px 8px;
+    border-radius: 10px;
+  }
+
+  .hud-icon {
+    font-size: 1.4rem;
+  }
+
+  .hud-value {
+    font-size: 1rem;
+  }
+
+  .heart {
+    font-size: 1rem;
+  }
+}
+
+/* iPad Air & Larger Tablets */
+@media (min-width: 1024px) and (max-width: 1366px) {
+  .game-hud-sidebar {
+    right: 14px;
+    top: 14px;
+    gap: 10px;
+    padding: 10px 14px;
+  }
+
+  .hud-section {
+    padding: 6px 10px;
+  }
+
+  .hud-icon {
+    font-size: 1.5rem;
+  }
+
+  .hud-value {
+    font-size: 1.1rem;
+  }
+
+  .heart {
+    font-size: 1.1rem;
+  }
+}
+
+/* Tablet Landscape */
+@media (min-width: 768px) and (max-height: 800px) and (orientation: landscape) {
+  .game-hud-sidebar {
+    right: 10px;
+    top: 10px;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 10px;
+  }
+
+  .hud-section {
+    padding: 4px 6px;
+    border-radius: 8px;
+  }
+
+  .hud-icon {
+    font-size: 1.2rem;
+  }
+
+  .hud-value {
+    font-size: 0.9rem;
+  }
+
+  .heart {
+    font-size: 0.9rem;
+  }
+}
+
+/* Short screens */
+@media (max-height: 600px) {
+  .game-hud-sidebar {
+    right: 8px;
+    top: 8px;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 8px;
+  }
+
+  .hud-section {
+    padding: 3px 5px;
+    border-radius: 6px;
+    gap: 4px;
+  }
+
+  .hud-icon {
+    font-size: 1rem;
+  }
+
+  .hud-value {
+    font-size: 0.8rem;
+  }
+
+  .hearts {
+    gap: 2px;
+  }
+
+  .heart {
+    font-size: 0.8rem;
   }
 }
 </style>
