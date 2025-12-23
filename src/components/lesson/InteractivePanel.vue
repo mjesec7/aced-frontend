@@ -505,6 +505,7 @@ watch(() => props.currentExercise, () => { resetExerciseState(); userAnswer.valu
   flex-direction: column;
   background: #f8fafc;
   overflow: hidden;
+  position: relative;
 }
 
 /* Game mode - no background, full height */

@@ -506,7 +506,7 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   margin-bottom: 4px;
 }
 
-.answer-bubble {
+:deep(.answer-bubble) {
   padding: 6px 14px;
   border-radius: 12px;
   font-size: 14px;
@@ -517,19 +517,19 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   white-space: nowrap;
 }
 
-.answer-default {
+:deep(.answer-default) {
   background: white;
   border-color: #fbbf24;
   box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
 }
 
-.answer-correct {
+:deep(.answer-correct) {
   background: #d1fae5;
   border-color: #10b981;
   transform: scale(1.1);
 }
 
-.answer-wrong {
+:deep(.answer-wrong) {
   background: #fee2e2;
   border-color: #ef4444;
   animation: shake 0.3s ease-in-out;
@@ -538,14 +538,14 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 /* ============================================
    HOLE VISUAL - The Actual Hole + Mole
    ============================================ */
-.hole-visual {
+:deep(.hole-visual) {
   position: relative;
   width: 100%;
   flex: 1;
   min-height: 80px;
 }
 
-.hole-bg {
+:deep(.hole-bg) {
   position: absolute;
   bottom: 20%;
   left: 15%;
@@ -558,7 +558,7 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 /* ============================================
    MOLE - The Character
    ============================================ */
-.mole-wrapper {
+:deep(.mole-wrapper) {
   position: absolute;
   bottom: 32%;
   left: 20%;
@@ -568,21 +568,21 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   z-index: 2;
 }
 
-.mole-up {
+:deep(.mole-up) {
   transform: translateY(0%);
 }
 
-.mole-hit .mole-body {
+:deep(.mole-hit) .mole-body {
   transform: scale(0.85);
   filter: brightness(1.2);
 }
 
-.mole-miss .mole-body {
+:deep(.mole-miss) .mole-body {
   animation: shake 0.3s ease-in-out;
   filter: brightness(0.8);
 }
 
-.mole-body {
+:deep(.mole-body) {
   position: relative;
   width: 100%;
   padding-bottom: 100%;
@@ -590,7 +590,7 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 }
 
 /* Mole face (the round brown part) */
-.mole-face {
+:deep(.mole-face) {
   position: absolute;
   inset: 10%;
   background: linear-gradient(180deg, #e8c9a0 0%, #d4a574 30%, #b8845a 100%);
@@ -601,7 +601,7 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 }
 
 /* Ears */
-.mole-ear {
+:deep(.mole-ear) {
   position: absolute;
   width: 28%;
   padding-bottom: 28%;
@@ -610,11 +610,11 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   top: 0;
   box-shadow: inset 0 -2px 4px rgba(0,0,0,0.1);
 }
-.mole-ear-l { left: 8%; }
-.mole-ear-r { right: 8%; }
+:deep(.mole-ear-l) { left: 8%; }
+:deep(.mole-ear-r) { right: 8%; }
 
 /* Eyes */
-.mole-eye {
+:deep(.mole-eye) {
   position: absolute;
   width: 22%;
   padding-bottom: 26%;
@@ -622,10 +622,10 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   border-radius: 50%;
   top: 32%;
 }
-.mole-eye-l { left: 22%; }
-.mole-eye-r { right: 22%; }
+:deep(.mole-eye-l) { left: 22%; }
+:deep(.mole-eye-r) { right: 22%; }
 
-.eye-shine {
+:deep(.eye-shine) {
   position: absolute;
   width: 35%;
   height: 35%;
@@ -636,7 +636,7 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 }
 
 /* Nose */
-.mole-nose {
+:deep(.mole-nose) {
   position: absolute;
   width: 18%;
   padding-bottom: 14%;
@@ -649,7 +649,7 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 }
 
 /* Cheeks */
-.mole-cheek {
+:deep(.mole-cheek) {
   position: absolute;
   width: 20%;
   padding-bottom: 12%;
@@ -657,11 +657,11 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   border-radius: 50%;
   top: 52%;
 }
-.mole-cheek-l { left: 8%; }
-.mole-cheek-r { right: 8%; }
+:deep(.mole-cheek-l) { left: 8%; }
+:deep(.mole-cheek-r) { right: 8%; }
 
 /* Mouth */
-.mole-mouth {
+:deep(.mole-mouth) {
   position: absolute;
   width: 20%;
   height: 8%;
@@ -675,7 +675,7 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 /* ============================================
    DIRT MOUND - Front Layer
    ============================================ */
-.dirt-mound {
+:deep(.dirt-mound) {
   position: absolute;
   bottom: 0;
   left: 5%;
@@ -686,7 +686,7 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   z-index: 3;
 }
 
-.grass-blade {
+:deep(.grass-blade) {
   position: absolute;
   width: 4px;
   background: linear-gradient(180deg, #66bb6a 0%, #43a047 100%);
@@ -694,14 +694,14 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   top: 0;
   transform-origin: bottom center;
 }
-.grass-1 { left: 15%; height: 12px; transform: rotate(-15deg) translateY(-8px); }
-.grass-2 { left: 30%; height: 16px; transform: rotate(8deg) translateY(-10px); }
-.grass-3 { left: 50%; height: 14px; transform: rotate(-5deg) translateY(-9px); }
-.grass-4 { left: 68%; height: 18px; transform: rotate(12deg) translateY(-11px); }
-.grass-5 { left: 82%; height: 13px; transform: rotate(-10deg) translateY(-8px); }
+:deep(.grass-1) { left: 15%; height: 12px; transform: rotate(-15deg) translateY(-8px); }
+:deep(.grass-2) { left: 30%; height: 16px; transform: rotate(8deg) translateY(-10px); }
+:deep(.grass-3) { left: 50%; height: 14px; transform: rotate(-5deg) translateY(-9px); }
+:deep(.grass-4) { left: 68%; height: 18px; transform: rotate(12deg) translateY(-11px); }
+:deep(.grass-5) { left: 82%; height: 13px; transform: rotate(-10deg) translateY(-8px); }
 
 /* Hit effect */
-.hit-effect {
+:deep(.hit-effect) {
   position: absolute;
   top: 10%;
   left: 50%;
