@@ -188,18 +188,19 @@ const MoleHole = defineComponent({
                 // Cute smile
                 h('div', { class: 'mole-mouth' })
               ])
-            ]),
-            // Wooden sign with answer
-            h('div', { class: 'wooden-sign' }, [
-              h('div', { class: 'sign-board' }, [
-                h('span', { class: 'sign-text' }, props.hole?.content || '')
-              ]),
-              h('div', { class: 'sign-post' })
             ])
           ])
         ]),
         // Dirt mound front (covers bottom of mole)
-        h('div', { class: 'dirt-mound-front' })
+        h('div', { class: 'dirt-mound-front' }),
+        // Wooden sign with answer - OUTSIDE mole wrapper for proper z-index
+        h('div', {
+          class: ['wooden-sign', { 'sign-visible': props.hole?.active }]
+        }, [
+          h('div', { class: 'sign-board' }, [
+            h('span', { class: 'sign-text' }, props.hole?.content || '')
+          ])
+        ])
       ]),
       // Hit effect
       props.hole?.showEffect ? h('div', { class: 'hit-effect' }, props.hole.state === 'hit' ? '⭐' : '❌') : null
@@ -713,30 +714,39 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 }
 
 /* ============================================
-   WOODEN SIGN - Answer Display
+   WOODEN SIGN - Answer Display (positioned outside mole)
    ============================================ */
 :deep(.wooden-sign) {
   position: absolute;
-  bottom: -5px;
+  bottom: 8%;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translateX(-50%) translateY(100%) scale(0.8);
   display: flex;
   flex-direction: column;
   align-items: center;
   z-index: 10;
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+}
+
+:deep(.wooden-sign.sign-visible) {
+  transform: translateX(-50%) translateY(0) scale(1);
+  opacity: 1;
 }
 
 :deep(.sign-board) {
-  background: linear-gradient(180deg, #f5e6d3 0%, #e8d5b5 30%, #d4bc96 100%);
-  border: 3px solid #8b5a2b;
-  border-radius: 6px;
-  padding: 4px 14px;
-  min-width: 36px;
+  background: linear-gradient(180deg, #fff8f0 0%, #f5e6d3 20%, #e8d5b5 60%, #d4bc96 100%);
+  border: 4px solid #6d4c41;
+  border-radius: 8px;
+  padding: 8px 20px;
+  min-width: 50px;
   text-align: center;
   box-shadow:
-    inset 0 2px 4px rgba(255, 255, 255, 0.4),
-    inset 0 -2px 4px rgba(139, 90, 43, 0.2),
-    0 4px 8px rgba(0, 0, 0, 0.3);
+    inset 0 3px 6px rgba(255, 255, 255, 0.5),
+    inset 0 -3px 6px rgba(139, 90, 43, 0.15),
+    0 6px 12px rgba(0, 0, 0, 0.35),
+    0 2px 4px rgba(0, 0, 0, 0.2);
   position: relative;
 }
 
@@ -744,33 +754,29 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 :deep(.sign-board::before) {
   content: '';
   position: absolute;
-  inset: 2px;
+  inset: 3px;
   background:
     repeating-linear-gradient(
       90deg,
       transparent 0px,
-      transparent 6px,
-      rgba(139, 90, 43, 0.08) 6px,
-      rgba(139, 90, 43, 0.08) 7px
+      transparent 8px,
+      rgba(139, 90, 43, 0.06) 8px,
+      rgba(139, 90, 43, 0.06) 10px
     );
-  border-radius: 3px;
+  border-radius: 4px;
   pointer-events: none;
 }
 
 :deep(.sign-text) {
-  font-size: 18px;
-  font-weight: 800;
-  color: #4a3728;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+  font-size: clamp(18px, 5vw, 28px);
+  font-weight: 900;
+  color: #3d2817;
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.8),
+    0 2px 4px rgba(0, 0, 0, 0.1);
   position: relative;
   z-index: 1;
-}
-
-:deep(.sign-post) {
-  width: 6px;
-  height: 8px;
-  background: linear-gradient(90deg, #8b5a2b 0%, #6d4c41 50%, #8b5a2b 100%);
-  border-radius: 0 0 2px 2px;
+  line-height: 1.2;
 }
 
 /* ============================================
@@ -1191,78 +1197,247 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 }
 
 /* ============================================
-   MOBILE OPTIMIZATIONS
+   RESPONSIVE DESIGN - All Device Types
    ============================================ */
-@media (max-width: 400px) {
+
+/* Large phones and small tablets (481px - 768px) */
+@media (min-width: 481px) {
   .moles-grid {
-    gap: 20px;
-    row-gap: 32px;
-    padding: 12px;
-    max-width: 320px;
-  }
-
-  .question-text {
-    font-size: 16px;
-  }
-
-  .top-section {
-    padding: 8px 12px;
-    gap: 8px;
-  }
-
-  :deep(.sign-text) {
-    font-size: 16px;
+    gap: 32px;
+    row-gap: 48px;
+    max-width: 450px;
   }
 
   :deep(.sign-board) {
+    padding: 10px 24px;
+    min-width: 60px;
+  }
+
+  :deep(.sign-text) {
+    font-size: 24px;
+  }
+}
+
+/* Tablets and larger (769px+) */
+@media (min-width: 769px) {
+  .moles-grid {
+    gap: 40px;
+    row-gap: 60px;
+    max-width: 550px;
+  }
+
+  .question-text {
+    font-size: 22px;
+  }
+
+  :deep(.sign-board) {
+    padding: 12px 28px;
+    min-width: 70px;
+    border-width: 5px;
+  }
+
+  :deep(.sign-text) {
+    font-size: 28px;
+  }
+}
+
+/* Small phones (max-width: 400px) */
+@media (max-width: 400px) {
+  .moles-grid {
+    gap: 16px;
+    row-gap: 28px;
+    padding: 10px;
+    max-width: 100%;
+  }
+
+  .question-text {
+    font-size: 15px;
+  }
+
+  .top-section {
+    padding: 8px 10px;
+    gap: 6px;
+  }
+
+  .question-card {
+    padding: 12px 14px;
+  }
+
+  :deep(.sign-board) {
+    padding: 6px 14px;
+    min-width: 40px;
+    border-width: 3px;
+  }
+
+  :deep(.mole-wrapper) {
+    width: 52%;
+    height: 68%;
+  }
+
+  .stat-badge {
+    padding: 4px 8px;
+  }
+
+  .stat-icon, .stat-value, .heart {
+    font-size: 12px;
+  }
+}
+
+/* Short screens (landscape or small height) */
+@media (max-height: 700px) {
+  .top-section {
+    padding: 6px 12px;
+    gap: 4px;
+  }
+
+  .question-card {
+    padding: 10px 14px;
+  }
+
+  .question-label {
+    top: -8px;
+    font-size: 9px;
     padding: 3px 10px;
-    min-width: 30px;
+  }
+
+  .question-text {
+    font-size: 14px;
+    margin-top: 4px;
+  }
+
+  .stats-row {
+    gap: 6px;
+  }
+
+  .stat-badge {
+    padding: 4px 8px;
+  }
+
+  .moles-grid {
+    row-gap: 24px;
+    gap: 16px;
+    padding: 8px;
+  }
+
+  :deep(.hole-visual) {
+    min-height: 110px;
+  }
+}
+
+/* Very short screens */
+@media (max-height: 600px) {
+  .game-area {
+    padding: 4px;
+  }
+
+  .top-section {
+    padding: 4px 8px;
+    gap: 4px;
+  }
+
+  .question-card {
+    padding: 8px 12px;
+    border-radius: 12px;
+  }
+
+  .moles-grid {
+    gap: 12px;
+    row-gap: 20px;
+    padding: 6px;
+  }
+
+  :deep(.hole-visual) {
+    min-height: 95px;
   }
 
   :deep(.mole-wrapper) {
     width: 50%;
     height: 65%;
   }
-}
 
-@media (max-height: 700px) {
-  .moles-grid {
-    row-gap: 28px;
-  }
-
-  .top-section {
-    padding: 8px 12px;
-    gap: 6px;
-  }
-
-  .question-card {
-    padding: 12px 16px;
-  }
-
-  .stat-badge {
+  :deep(.sign-board) {
     padding: 4px 10px;
+    min-width: 35px;
   }
 }
 
-/* Very small phones */
-@media (max-height: 600px) {
-  .game-area {
-    padding: 5px;
-  }
-
+/* Extra small phones (iPhone SE, etc) */
+@media (max-width: 375px) {
   .moles-grid {
-    gap: 16px;
+    gap: 12px;
     row-gap: 24px;
     padding: 8px;
   }
 
+  :deep(.mole-wrapper) {
+    width: 48%;
+    height: 62%;
+  }
+
+  :deep(.sign-board) {
+    padding: 4px 10px;
+    min-width: 35px;
+    border-width: 2px;
+  }
+
+  .stat-badge {
+    padding: 3px 6px;
+  }
+
+  .stat-icon, .stat-value {
+    font-size: 11px;
+  }
+
+  .heart {
+    font-size: 11px;
+  }
+}
+
+/* Landscape mode on phones */
+@media (max-height: 500px) and (orientation: landscape) {
+  .game-container {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .top-section {
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 12px;
+  }
+
+  .question-card {
+    flex: 1;
+    margin-right: 12px;
+  }
+
+  .stats-row {
+    flex-shrink: 0;
+  }
+
+  .game-area {
+    width: 100%;
+  }
+
+  .moles-grid {
+    row-gap: 16px;
+    gap: 20px;
+    max-width: 400px;
+  }
+
   :deep(.hole-visual) {
-    min-height: 100px;
+    min-height: 85px;
   }
 
   :deep(.mole-wrapper) {
-    width: 48%;
+    width: 45%;
     height: 60%;
+  }
+
+  :deep(.sign-board) {
+    padding: 3px 8px;
   }
 }
 </style>
