@@ -152,19 +152,7 @@ const MoleHole = defineComponent({
   props: { hole: Object },
   setup(props) {
     return () => h('div', { class: 'hole-container' }, [
-      // Answer bubble
-      h('div', { class: 'answer-wrapper' }, [
-        props.hole?.active ? h('div', { 
-          class: ['answer-bubble', {
-            'answer-correct': props.hole.state === 'hit',
-            'answer-wrong': props.hole.state === 'miss',
-            'answer-default': props.hole.state === 'idle'
-          }]
-        }, props.hole.content) : null
-      ]),
-      // The hole with mole
       h('div', { class: 'hole-visual' }, [
-        // Hole background
         h('div', { class: 'hole-bg' }),
         // Mole
         h('div', { 
@@ -176,9 +164,16 @@ const MoleHole = defineComponent({
         }, [
           h('div', { class: 'mole-body' }, [
             h('div', { class: 'mole-face' }, [
+              h('div', { class: 'mole-eyebrow mole-eyebrow-l' }),
+              h('div', { class: 'mole-eyebrow mole-eyebrow-r' }),
               h('div', { class: 'mole-eye mole-eye-l' }),
               h('div', { class: 'mole-eye mole-eye-r' }),
-              h('div', { class: 'mole-nose' })
+              h('div', { class: 'mole-nose' }),
+              h('div', { class: 'mole-mouth' })
+            ]),
+            // Wooden Sign
+            h('div', { class: 'mole-sign' }, [
+              h('div', { class: 'sign-text' }, props.hole?.content || '')
             ])
           ])
         ]),
@@ -488,40 +483,7 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 }
 
 .answer-wrapper {
-  height: 32px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  margin-bottom: 4px;
-}
-
-:deep(.answer-bubble) {
-  padding: 6px 14px;
-  border-radius: 12px;
-  font-size: 14px;
-  font-weight: 700;
-  color: #333;
-  border: 2px solid;
-  animation: popIn 0.2s ease-out;
-  white-space: nowrap;
-}
-
-:deep(.answer-default) {
-  background: white;
-  border-color: #fbbf24;
-  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
-}
-
-:deep(.answer-correct) {
-  background: #d1fae5;
-  border-color: #10b981;
-  transform: scale(1.1);
-}
-
-:deep(.answer-wrong) {
-  background: #fee2e2;
-  border-color: #ef4444;
-  animation: shake 0.3s ease-in-out;
+  display: none;
 }
 
 /* ============================================
@@ -549,9 +511,9 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
    ============================================ */
 :deep(.mole-wrapper) {
   position: absolute;
-  bottom: 25%;
-  left: 25%;
-  width: 50%;
+  bottom: 20%;
+  left: 20%;
+  width: 60%;
   transform: translateY(100%);
   transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
   z-index: 2;
@@ -581,70 +543,84 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 /* Mole face (the round brown part) */
 :deep(.mole-face) {
   position: absolute;
-  inset: 10%;
-  background: linear-gradient(180deg, #e8c9a0 0%, #d4a574 30%, #b8845a 100%);
-  border-radius: 50%;
+  inset: 0 10% 20% 10%;
+  background: linear-gradient(180deg, #d4a574 0%, #b8845a 100%);
+  border-radius: 50% 50% 40% 40%;
+  box-shadow: inset 0 -4px 8px rgba(0,0,0,0.1);
 }
 
-/* Ears */
-:deep(.mole-ear) {
+/* Eyebrows */
+:deep(.mole-eyebrow) {
   position: absolute;
-  width: 28%;
-  padding-bottom: 28%;
-  background: linear-gradient(180deg, #d4a574 0%, #b8845a 100%);
-  border-radius: 50%;
-  top: 0;
-  box-shadow: inset 0 -2px 4px rgba(0,0,0,0.1);
+  width: 15%;
+  height: 4%;
+  background: #4e342e;
+  border-radius: 2px;
+  top: 28%;
 }
-:deep(.mole-ear-l) { left: 8%; }
-:deep(.mole-ear-r) { right: 8%; }
+:deep(.mole-eyebrow-l) { left: 28%; transform: rotate(-10deg); }
+:deep(.mole-eyebrow-r) { right: 28%; transform: rotate(10deg); }
 
 /* Eyes */
 :deep(.mole-eye) {
   position: absolute;
-  width: 12%;
-  padding-bottom: 12%;
+  width: 10%;
+  padding-bottom: 10%;
   background: #1a1a2e;
   border-radius: 50%;
-  top: 35%;
+  top: 38%;
 }
-:deep(.mole-eye-l) { left: 30%; }
-:deep(.mole-eye-r) { right: 30%; }
+:deep(.mole-eye-l) { left: 32%; }
+:deep(.mole-eye-r) { right: 32%; }
 
 /* Nose */
 :deep(.mole-nose) {
   position: absolute;
-  width: 14%;
-  padding-bottom: 10%;
+  width: 12%;
+  padding-bottom: 8%;
   background: #ff6b8a;
   border-radius: 50%;
-  top: 55%;
+  top: 52%;
   left: 50%;
   transform: translateX(-50%);
 }
-
-/* Cheeks */
-:deep(.mole-cheek) {
-  position: absolute;
-  width: 20%;
-  padding-bottom: 12%;
-  background: rgba(255, 182, 193, 0.5);
-  border-radius: 50%;
-  top: 52%;
-}
-:deep(.mole-cheek-l) { left: 8%; }
-:deep(.mole-cheek-r) { right: 8%; }
 
 /* Mouth */
 :deep(.mole-mouth) {
   position: absolute;
-  width: 20%;
-  height: 8%;
-  background: #8b5a3c;
-  border-radius: 0 0 50% 50%;
-  top: 72%;
+  width: 15%;
+  height: 6%;
+  background: #4e342e;
+  border-radius: 0 0 10px 10px;
+  top: 65%;
   left: 50%;
   transform: translateX(-50%);
+}
+
+/* Wooden Sign */
+:deep(.mole-sign) {
+  position: absolute;
+  bottom: 12%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 85%;
+  height: 32%;
+  background: #d2b48c;
+  background-image: repeating-linear-gradient(90deg, transparent, transparent 15px, rgba(139, 69, 19, 0.1) 15px, rgba(139, 69, 19, 0.1) 30px);
+  border: 2px solid #8b4513;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  z-index: 5;
+}
+
+:deep(.sign-text) {
+  color: #4e342e;
+  font-weight: 900;
+  font-size: 18px;
+  text-shadow: 0 1px 2px rgba(255,255,255,0.5);
 }
 
 /* ============================================
@@ -652,13 +628,24 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
    ============================================ */
 :deep(.dirt-mound) {
   position: absolute;
-  bottom: 0;
-  left: 5%;
-  width: 90%;
-  height: 45%;
-  background: linear-gradient(180deg, #8d6e63 0%, #6d4c41 50%, #4e342e 100%);
-  border-radius: 50% 50% 0 0;
+  bottom: -5%;
+  left: 0;
+  width: 100%;
+  height: 55%;
+  background: radial-gradient(circle at 50% 100%, #8d6e63 0%, #6d4c41 60%, #4e342e 100%);
+  border-radius: 50% 50% 15% 15% / 100% 100% 15% 15%;
   z-index: 3;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+:deep(.dirt-mound::after) {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(#4e342e 1.5px, transparent 1.5px);
+  background-size: 10px 10px;
+  opacity: 0.2;
 }
 
 :deep(.grass-blade) {
