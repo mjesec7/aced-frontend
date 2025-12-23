@@ -163,6 +163,10 @@ const MoleHole = defineComponent({
           }]
         }, [
           h('div', { class: 'mole-body' }, [
+            // Wooden Sign
+            h('div', { class: 'mole-sign' }, [
+              h('div', { class: 'sign-text' }, props.hole?.content || '')
+            ]),
             h('div', { class: 'mole-face' }, [
               h('div', { class: 'mole-eyebrow mole-eyebrow-l' }),
               h('div', { class: 'mole-eyebrow mole-eyebrow-r' }),
@@ -170,10 +174,6 @@ const MoleHole = defineComponent({
               h('div', { class: 'mole-eye mole-eye-r' }),
               h('div', { class: 'mole-nose' }),
               h('div', { class: 'mole-mouth' })
-            ]),
-            // Wooden Sign
-            h('div', { class: 'mole-sign' }, [
-              h('div', { class: 'sign-text' }, props.hole?.content || '')
             ])
           ])
         ]),
@@ -492,8 +492,7 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 :deep(.hole-visual) {
   position: relative;
   width: 100%;
-  flex: 1;
-  min-height: 80px;
+  height: 120px;
   overflow: hidden;
 }
 
@@ -513,15 +512,16 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 :deep(.mole-wrapper) {
   position: absolute;
   bottom: 0;
-  left: 20%;
-  width: 60%;
+  left: 15%;
+  width: 70%;
+  height: 75%; /* Leave space for sign at top */
   transform: translateY(100%);
-  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   z-index: 2;
 }
 
 :deep(.mole-up) {
-  transform: translateY(30%);
+  transform: translateY(15%);
 }
 
 :deep(.mole-hit) .mole-body {
@@ -604,8 +604,8 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   top: -25%;
   left: 50%;
   transform: translateX(-50%);
-  width: 90%;
-  height: 35%;
+  width: 100%;
+  height: 40%;
   background: #d2b48c;
   background-image: repeating-linear-gradient(90deg, transparent, transparent 15px, rgba(139, 69, 19, 0.1) 15px, rgba(139, 69, 19, 0.1) 30px);
   border: 2px solid #8b4513;
@@ -629,12 +629,12 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
    ============================================ */
 :deep(.dirt-mound) {
   position: absolute;
-  bottom: -10%;
+  bottom: 0;
   left: 0;
   width: 100%;
-  height: 60%;
+  height: 50%;
   background: radial-gradient(circle at 50% 100%, #8d6e63 0%, #6d4c41 60%, #4e342e 100%);
-  border-radius: 50% 50% 15% 15% / 100% 100% 15% 15%;
+  border-radius: 50% 50% 10px 10px;
   z-index: 3;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
