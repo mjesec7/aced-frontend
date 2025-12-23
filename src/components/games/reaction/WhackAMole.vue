@@ -514,14 +514,14 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   bottom: 0;
   left: 15%;
   width: 70%;
-  height: 75%; /* Leave space for sign at top */
+  height: 90%; /* Increased height */
   transform: translateY(100%);
   transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   z-index: 2;
 }
 
 :deep(.mole-up) {
-  transform: translateY(15%);
+  transform: translateY(0%); /* Pop up fully */
 }
 
 :deep(.mole-hit) .mole-body {
@@ -602,11 +602,11 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 /* Wooden Sign */
 :deep(.mole-sign) {
   position: absolute;
-  top: -10%;
+  top: 0%; /* Position on the forehead */
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
-  height: 45%;
+  height: 40%;
   background: #d2b48c;
   background-image: repeating-linear-gradient(90deg, transparent, transparent 15px, rgba(139, 69, 19, 0.1) 15px, rgba(139, 69, 19, 0.1) 30px);
   border: 2px solid #8b4513;
@@ -633,7 +633,7 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   bottom: 0;
   left: 0;
   width: 100%;
-  height: 50%;
+  height: 45%; /* Slightly lower to reveal more mole */
   background: radial-gradient(circle at 50% 100%, #8d6e63 0%, #6d4c41 60%, #4e342e 100%);
   border-radius: 50% 50% 10px 10px;
   z-index: 3;
