@@ -482,10 +482,10 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 .moles-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-  row-gap: 24px;
+  gap: 24px;
+  row-gap: 40px;
   width: 100%;
-  max-width: 400px;
+  max-width: 360px;
   margin: 0 auto;
   padding: 16px;
   box-sizing: border-box;
@@ -516,7 +516,8 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   position: relative;
   width: 100%;
   height: 100%;
-  min-height: 140px;
+  min-height: 120px;
+  overflow: hidden; /* Hide mole when it goes down */
 }
 
 /* ============================================
@@ -554,17 +555,17 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
    ============================================ */
 :deep(.mole-wrapper) {
   position: absolute;
-  bottom: 15%;
+  bottom: 25%;
   left: 50%;
-  transform: translateX(-50%) translateY(120%);
-  width: 70%;
-  height: 85%;
+  transform: translateX(-50%) translateY(150%);
+  width: 55%;
+  height: 70%;
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   z-index: 2;
 }
 
 :deep(.mole-up) {
-  transform: translateX(-50%) translateY(0%) !important;
+  transform: translateX(-50%) translateY(10%) !important;
 }
 
 :deep(.mole-hit) .mole-body {
@@ -716,26 +717,26 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
    ============================================ */
 :deep(.wooden-sign) {
   position: absolute;
-  bottom: 0;
+  bottom: -5px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  z-index: 5;
+  z-index: 10;
 }
 
 :deep(.sign-board) {
-  background: linear-gradient(180deg, #e8d5b5 0%, #d4bc96 30%, #c9a876 100%);
+  background: linear-gradient(180deg, #f5e6d3 0%, #e8d5b5 30%, #d4bc96 100%);
   border: 3px solid #8b5a2b;
-  border-radius: 8px;
-  padding: 6px 16px;
-  min-width: 40px;
+  border-radius: 6px;
+  padding: 4px 14px;
+  min-width: 36px;
   text-align: center;
   box-shadow:
-    inset 0 2px 4px rgba(255, 255, 255, 0.3),
+    inset 0 2px 4px rgba(255, 255, 255, 0.4),
     inset 0 -2px 4px rgba(139, 90, 43, 0.2),
-    0 3px 8px rgba(0, 0, 0, 0.2);
+    0 4px 8px rgba(0, 0, 0, 0.3);
   position: relative;
 }
 
@@ -748,26 +749,26 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
     repeating-linear-gradient(
       90deg,
       transparent 0px,
-      transparent 8px,
-      rgba(139, 90, 43, 0.1) 8px,
-      rgba(139, 90, 43, 0.1) 9px
+      transparent 6px,
+      rgba(139, 90, 43, 0.08) 6px,
+      rgba(139, 90, 43, 0.08) 7px
     );
-  border-radius: 4px;
+  border-radius: 3px;
   pointer-events: none;
 }
 
 :deep(.sign-text) {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 800;
-  color: #5d4037;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+  color: #4a3728;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
   position: relative;
   z-index: 1;
 }
 
 :deep(.sign-post) {
-  width: 8px;
-  height: 12px;
+  width: 6px;
+  height: 8px;
   background: linear-gradient(90deg, #8b5a2b 0%, #6d4c41 50%, #8b5a2b 100%);
   border-radius: 0 0 2px 2px;
 }
@@ -780,12 +781,12 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 105%;
-  height: 35%;
+  width: 100%;
+  height: 30%;
   background:
     radial-gradient(ellipse 100% 80% at 50% 100%, #c9915e 0%, #b07d4f 50%, #8b5a2b 100%);
   border-radius: 50% 50% 45% 45% / 50% 50% 50% 50%;
-  z-index: 4;
+  z-index: 3;
   box-shadow:
     inset 0 8px 16px rgba(232, 197, 160, 0.4),
     0 4px 12px rgba(0, 0, 0, 0.15);
@@ -1194,9 +1195,10 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
    ============================================ */
 @media (max-width: 400px) {
   .moles-grid {
-    gap: 12px;
-    row-gap: 20px;
+    gap: 20px;
+    row-gap: 32px;
     padding: 12px;
+    max-width: 320px;
   }
 
   .question-text {
@@ -1209,17 +1211,23 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   }
 
   :deep(.sign-text) {
-    font-size: 18px;
+    font-size: 16px;
   }
 
   :deep(.sign-board) {
-    padding: 4px 12px;
+    padding: 3px 10px;
+    min-width: 30px;
+  }
+
+  :deep(.mole-wrapper) {
+    width: 50%;
+    height: 65%;
   }
 }
 
 @media (max-height: 700px) {
   .moles-grid {
-    row-gap: 16px;
+    row-gap: 28px;
   }
 
   .top-section {
@@ -1243,13 +1251,18 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   }
 
   .moles-grid {
-    gap: 10px;
-    row-gap: 12px;
+    gap: 16px;
+    row-gap: 24px;
     padding: 8px;
   }
 
   :deep(.hole-visual) {
-    min-height: 120px;
+    min-height: 100px;
+  }
+
+  :deep(.mole-wrapper) {
+    width: 48%;
+    height: 60%;
   }
 }
 </style>
