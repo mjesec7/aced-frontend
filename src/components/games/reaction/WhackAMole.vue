@@ -1,244 +1,292 @@
 <template>
   <div 
     ref="gameWrapper"
-    class="absolute inset-0 font-sans select-none overflow-hidden flex flex-col"
-    style="background: linear-gradient(180deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);"
+    class="w-full h-full flex flex-col select-none overflow-hidden"
+    :style="{ background: 'linear-gradient(180deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%)' }"
   >
-    
-    <!-- HUD Sidebar -->
-    <GameHUDSidebar
-      v-if="gameActive"
-      :score="score"
-      :time-remaining="timeRemaining"
-      :lives="lives"
-      :max-lives="3"
-    />
-
-    <!-- Question Banner -->
-    <div 
-      v-if="gameActive" 
-      class="w-full flex justify-center px-3 pt-2 pb-1 flex-shrink-0"
-    >
-      <div 
-        :key="currentQuestionIndex"
-        class="relative animate-bounce-in"
-      >
-        <div class="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl blur opacity-20"></div>
-        <div class="relative bg-white py-2 px-4 rounded-xl shadow-lg border border-indigo-100">
-          <div class="absolute -top-2 left-1/2 -translate-x-1/2 bg-indigo-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">
-            Question
+    <!-- GAME ACTIVE STATE -->
+    <template v-if="gameActive">
+      
+      <!-- Question Banner - TOP, always visible -->
+      <div class="flex-shrink-0 w-full flex justify-center px-3 py-2">
+        <div class="relative" :key="currentQuestionIndex">
+          <div class="absolute -inset-1 bg-white/20 rounded-xl blur-sm"></div>
+          <div class="relative bg-white py-2 px-4 rounded-xl shadow-lg">
+            <div class="absolute -top-2 left-1/2 -translate-x-1/2 bg-indigo-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">
+              Question
+            </div>
+            <p class="font-bold text-indigo-900 text-center text-sm mt-1">
+              {{ currentPrompt }}
+            </p>
           </div>
-          <p class="font-bold text-indigo-950 text-center text-sm leading-tight mt-1">
-            {{ currentPrompt }}
-          </p>
         </div>
       </div>
-    </div>
 
-    <!-- Game Area - Takes all remaining space -->
-    <div 
-      v-if="gameActive" 
-      class="flex-1 flex items-center justify-center p-2 min-h-0"
-    >
-      <div class="grid grid-cols-2 gap-3 w-full max-w-[300px]">
-        <div 
-          v-for="(hole, index) in holes" 
-          :key="index" 
-          class="relative cursor-pointer"
-          style="-webkit-tap-highlight-color: transparent; touch-action: manipulation;"
-          @mousedown.prevent="handleWhack(index)"
-          @touchstart.prevent="handleWhack(index)"
-        >
-          <!-- Answer Bubble - Positioned above hole -->
-          <div class="h-7 flex items-end justify-center mb-1">
-            <div 
-              v-if="hole.active"
-              class="py-1 px-2 rounded-lg shadow-md border-2 animate-pop-in"
-              :class="[
-                hole.state === 'hit' ? 'border-green-400 bg-green-50' :
-                hole.state === 'miss' ? 'border-red-400 bg-red-50' :
-                'border-amber-300 bg-white'
-              ]"
-            >
-              <span class="font-bold text-slate-700 text-xs whitespace-nowrap">
-                {{ hole.content }}
-              </span>
-            </div>
+      <!-- HUD Bar - Below question -->
+      <div class="flex-shrink-0 flex justify-center px-3 pb-2">
+        <div class="flex items-center gap-2 bg-black/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
+          <div class="flex items-center gap-1 text-white text-xs font-bold">
+            <span>🎯</span>
+            <span>{{ score }}</span>
           </div>
+          <div class="w-px h-4 bg-white/30"></div>
+          <div class="flex items-center gap-1 text-white text-xs font-bold">
+            <span>⏱️</span>
+            <span>{{ timeRemaining }}s</span>
+          </div>
+          <div class="w-px h-4 bg-white/30"></div>
+          <div class="flex items-center gap-0.5">
+            <span v-for="i in maxLives" :key="i" class="text-sm">
+              {{ i <= lives ? '❤️' : '🖤' }}
+            </span>
+          </div>
+        </div>
+      </div>
 
-          <!-- Hole Container -->
-          <div class="relative w-full" style="aspect-ratio: 1 / 0.85;">
-            
-            <!-- Dark hole background -->
-            <div class="absolute bottom-[15%] left-[10%] w-[80%] h-[28%] bg-amber-950 rounded-[50%]"></div>
-
-            <!-- Mole clip area -->
-            <div class="absolute bottom-[28%] left-[12%] w-[76%] h-[52%] overflow-hidden">
+      <!-- Game Grid Area - Takes ALL remaining space -->
+      <div class="flex-1 min-h-0 flex items-center justify-center px-2 pb-2">
+        <div class="grid grid-cols-2 gap-x-4 gap-y-2 w-full max-w-[320px]">
+          <div 
+            v-for="(hole, index) in holes" 
+            :key="index" 
+            class="relative cursor-pointer"
+            :style="{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }"
+            @mousedown.prevent="handleWhack(index)"
+            @touchstart.prevent="handleWhack(index)"
+          >
+            <!-- Answer Bubble -->
+            <div class="h-8 flex items-end justify-center mb-1">
               <div 
-                class="absolute bottom-0 left-1/2 w-[85%] transition-transform duration-150 ease-out"
-                :style="{ transform: `translateX(-50%) translateY(${hole.active ? '5%' : '105%'})` }"
+                v-if="hole.active"
+                class="py-1 px-3 rounded-lg shadow-md border-2 transform transition-all duration-150"
+                :class="[
+                  hole.state === 'hit' ? 'border-green-400 bg-green-50 scale-110' :
+                  hole.state === 'miss' ? 'border-red-400 bg-red-50 scale-95' :
+                  'border-amber-300 bg-white animate-bounce-subtle'
+                ]"
+              >
+                <span class="font-bold text-slate-700 text-xs whitespace-nowrap">
+                  {{ hole.content }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Mole Hole Assembly -->
+            <div class="relative w-full mx-auto" style="max-width: 120px; aspect-ratio: 1 / 1;">
+              
+              <!-- Dark hole ellipse -->
+              <div 
+                class="absolute rounded-full bg-amber-950"
+                style="bottom: 22%; left: 10%; width: 80%; height: 20%;"
+              ></div>
+
+              <!-- Mole body area - NO overflow hidden here, mole clips itself -->
+              <div 
+                class="absolute"
+                style="bottom: 30%; left: 10%; width: 80%; height: 55%;"
+              >
+                <!-- The Mole -->
+                <div 
+                  class="absolute bottom-0 left-1/2 w-full transition-transform duration-200 ease-out"
+                  :style="{ 
+                    transform: `translateX(-50%) translateY(${hole.active ? '0%' : '110%'})`,
+                  }"
+                >
+                  <div 
+                    class="relative w-full transition-all duration-150"
+                    style="aspect-ratio: 1 / 0.9;"
+                    :class="[
+                      hole.state === 'hit' ? 'scale-90' : '',
+                      hole.state === 'miss' ? 'animate-shake' : ''
+                    ]"
+                  >
+                    <!-- Mole main body -->
+                    <div 
+                      class="absolute inset-0 rounded-full shadow-lg"
+                      :style="{ background: 'linear-gradient(180deg, #D4A574 0%, #A67B5B 100%)' }"
+                    ></div>
+                    
+                    <!-- Left ear -->
+                    <div 
+                      class="absolute w-[22%] rounded-full bg-amber-600"
+                      style="aspect-ratio: 1; top: -8%; left: 12%;"
+                    ></div>
+                    
+                    <!-- Right ear -->
+                    <div 
+                      class="absolute w-[22%] rounded-full bg-amber-600"
+                      style="aspect-ratio: 1; top: -8%; right: 12%;"
+                    ></div>
+                    
+                    <!-- Left eye -->
+                    <div 
+                      class="absolute rounded-full bg-slate-900"
+                      style="width: 16%; aspect-ratio: 1; top: 30%; left: 22%;"
+                    >
+                      <!-- Eye shine -->
+                      <div class="absolute w-1/3 h-1/3 bg-white rounded-full top-1 left-1"></div>
+                    </div>
+                    
+                    <!-- Right eye -->
+                    <div 
+                      class="absolute rounded-full bg-slate-900"
+                      style="width: 16%; aspect-ratio: 1; top: 30%; right: 22%;"
+                    >
+                      <!-- Eye shine -->
+                      <div class="absolute w-1/3 h-1/3 bg-white rounded-full top-1 left-1"></div>
+                    </div>
+                    
+                    <!-- Nose -->
+                    <div 
+                      class="absolute rounded-full bg-pink-400"
+                      style="width: 14%; aspect-ratio: 1; top: 52%; left: 50%; transform: translateX(-50%);"
+                    ></div>
+                    
+                    <!-- Left cheek -->
+                    <div 
+                      class="absolute rounded-full bg-pink-300/50"
+                      style="width: 18%; aspect-ratio: 1; top: 48%; left: 8%;"
+                    ></div>
+                    
+                    <!-- Right cheek -->
+                    <div 
+                      class="absolute rounded-full bg-pink-300/50"
+                      style="width: 18%; aspect-ratio: 1; top: 48%; right: 8%;"
+                    ></div>
+                    
+                    <!-- Smile -->
+                    <div 
+                      class="absolute bg-amber-800 rounded-b-full"
+                      style="width: 20%; height: 8%; top: 68%; left: 50%; transform: translateX(-50%);"
+                    ></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Dirt mound - covers bottom of mole -->
+              <div 
+                class="absolute left-0 right-0 pointer-events-none"
+                style="bottom: 0; height: 38%;"
               >
                 <div 
-                  class="relative w-full transition-all duration-150"
-                  style="aspect-ratio: 1 / 0.85;"
-                  :class="[
-                    hole.state === 'hit' ? 'scale-90 brightness-125' : '',
-                    hole.state === 'miss' ? 'brightness-75 animate-wiggle' : ''
-                  ]"
-                >
-                  <!-- Main body -->
-                  <div 
-                    class="absolute inset-0 rounded-[50%] shadow-md"
-                    style="background: linear-gradient(180deg, #D4A574 0%, #B8845A 100%);"
-                  ></div>
-                  
-                  <!-- Left ear -->
-                  <div 
-                    class="absolute w-[18%] rounded-full"
-                    style="aspect-ratio: 1; top: -6%; left: 18%; background: #C4956A;"
-                  ></div>
-                  
-                  <!-- Right ear -->
-                  <div 
-                    class="absolute w-[18%] rounded-full"
-                    style="aspect-ratio: 1; top: -6%; right: 18%; background: #C4956A;"
-                  ></div>
-                  
-                  <!-- Eyes -->
-                  <div class="absolute w-[12%] bg-slate-800 rounded-full" style="aspect-ratio: 1; top: 35%; left: 28%;"></div>
-                  <div class="absolute w-[12%] bg-slate-800 rounded-full" style="aspect-ratio: 1; top: 35%; right: 28%;"></div>
-                  
-                  <!-- Eye shine -->
-                  <div class="absolute w-[4%] bg-white rounded-full opacity-80" style="aspect-ratio: 1; top: 36%; left: 30%;"></div>
-                  <div class="absolute w-[4%] bg-white rounded-full opacity-80" style="aspect-ratio: 1; top: 36%; right: 30%;"></div>
-                  
-                  <!-- Pink nose -->
-                  <div class="absolute w-[10%] bg-pink-400 rounded-full" style="aspect-ratio: 1; top: 55%; left: 50%; transform: translateX(-50%);"></div>
-                  
-                  <!-- Cheeks -->
-                  <div class="absolute w-[12%] bg-pink-300 rounded-full opacity-50" style="aspect-ratio: 1; top: 50%; left: 12%;"></div>
-                  <div class="absolute w-[12%] bg-pink-300 rounded-full opacity-50" style="aspect-ratio: 1; top: 50%; right: 12%;"></div>
+                  class="absolute bottom-0 w-full h-full rounded-t-[100%]"
+                  :style="{ background: 'linear-gradient(0deg, #4E342E 0%, #6D4C41 40%, #8D6E63 100%)' }"
+                ></div>
+                <!-- Grass blades -->
+                <div class="absolute top-0 left-[15%] w-[70%] flex justify-between">
+                  <div class="w-1 h-2 bg-green-500 rounded-t-sm -rotate-12 -translate-y-1"></div>
+                  <div class="w-1 h-2.5 bg-green-400 rounded-t-sm rotate-6 -translate-y-1"></div>
+                  <div class="w-1 h-2 bg-green-500 rounded-t-sm -rotate-6 -translate-y-1"></div>
+                  <div class="w-1 h-3 bg-green-400 rounded-t-sm rotate-12 -translate-y-1"></div>
                 </div>
               </div>
             </div>
 
-            <!-- Dirt mound -->
-            <div class="absolute bottom-0 left-0 w-full h-[38%] pointer-events-none">
-              <div 
-                class="absolute bottom-0 w-full h-full rounded-t-[100%]"
-                style="background: linear-gradient(0deg, #5D4037 0%, #795548 50%, #8D6E63 100%);"
-              ></div>
-              <!-- Grass blades -->
-              <div class="absolute top-0 left-[10%] w-[80%] flex justify-around">
-                <div class="w-1 h-2.5 bg-emerald-500 rounded-t-sm" style="transform: rotate(-12deg) translateY(-3px);"></div>
-                <div class="w-1 h-3 bg-emerald-400 rounded-t-sm" style="transform: rotate(6deg) translateY(-3px);"></div>
-                <div class="w-1 h-2 bg-emerald-500 rounded-t-sm" style="transform: rotate(-6deg) translateY(-3px);"></div>
-                <div class="w-1 h-3 bg-emerald-400 rounded-t-sm" style="transform: rotate(12deg) translateY(-3px);"></div>
-                <div class="w-1 h-2.5 bg-emerald-500 rounded-t-sm" style="transform: rotate(3deg) translateY(-3px);"></div>
-              </div>
+            <!-- Hit Effect -->
+            <div 
+              v-if="hole.showEffect" 
+              class="absolute top-0 left-1/2 -translate-x-1/2 text-2xl z-50 pointer-events-none animate-float-up"
+            >
+              {{ hole.state === 'hit' ? '⭐' : '❌' }}
             </div>
-          </div>
-
-          <!-- Hit Effect -->
-          <div 
-            v-if="hole.showEffect" 
-            class="absolute top-0 left-1/2 -translate-x-1/2 text-xl z-40 pointer-events-none animate-float-up"
-          >
-            {{ hole.state === 'hit' ? '⭐' : '❌' }}
           </div>
         </div>
       </div>
-    </div>
+    </template>
 
     <!-- START SCREEN -->
     <div 
       v-if="!gameActive && !isGameOver" 
       class="absolute inset-0 flex items-center justify-center z-50 p-4"
-      style="background: linear-gradient(180deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);"
+      :style="{ background: 'linear-gradient(180deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%)' }"
     >
       <div class="text-center w-full max-w-xs">
-        <div class="text-5xl mb-3 animate-bounce">🐹</div>
-        <h1 class="text-xl font-extrabold text-white mb-1">Whack-a-Mole!</h1>
-        <p class="text-xs text-white/80 mb-4">
-          Tap moles with <strong class="text-white">correct answers</strong>!
+        <div class="text-6xl mb-4 animate-bounce">🐹</div>
+        <h1 class="text-2xl font-extrabold text-white mb-2">Whack-a-Mole!</h1>
+        <p class="text-sm text-white/80 mb-6">
+          Tap the moles with <strong class="text-white">correct answers</strong>!
         </p>
         
-        <div class="flex justify-center gap-2 mb-5">
-          <div class="bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-xl">
-            <span class="text-xs font-bold text-white">❤️ {{ maxLives }}</span>
+        <div class="flex justify-center gap-3 mb-6">
+          <div class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-xl">
+            <span class="text-sm font-bold text-white">❤️ {{ maxLives }}</span>
           </div>
-          <div class="bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-xl">
-            <span class="text-xs font-bold text-white">⏱️ {{ initialTime }}s</span>
+          <div class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-xl">
+            <span class="text-sm font-bold text-white">⏱️ {{ initialTime }}s</span>
           </div>
-          <div class="bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-xl">
-            <span class="text-xs font-bold text-white">🎯 {{ targetScore }}</span>
+          <div class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-xl">
+            <span class="text-sm font-bold text-white">🎯 {{ targetScore }}</span>
           </div>
         </div>
 
         <button 
           @click="startGame"
           @touchend.prevent="startGame"
-          class="bg-white text-indigo-600 px-8 py-3 rounded-full font-bold text-base shadow-xl 
-                 hover:scale-105 active:scale-95 transition-transform min-h-[48px]"
-          style="-webkit-tap-highlight-color: transparent; touch-action: manipulation;"
+          class="bg-white text-indigo-600 px-10 py-4 rounded-full font-bold text-lg shadow-xl 
+                 hover:scale-105 active:scale-95 transition-transform"
+          :style="{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation', minHeight: '56px' }"
         >
           Start Game ▶
         </button>
       </div>
     </div>
 
-    <!-- GAME OVER -->
+    <!-- GAME OVER SCREEN -->
     <div 
       v-if="isGameOver" 
       class="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[100]"
     >
-      <div class="bg-white rounded-2xl p-5 text-center max-w-[280px] w-full shadow-2xl animate-pop-in">
-        <div class="text-4xl mb-1">
+      <div class="bg-white rounded-3xl p-6 text-center max-w-[300px] w-full shadow-2xl animate-pop-in">
+        <div class="text-5xl mb-2">
           {{ earnedStars >= 3 ? '🏆' : earnedStars >= 2 ? '🎉' : earnedStars >= 1 ? '👍' : '💪' }}
         </div>
         
-        <h2 class="text-lg font-bold text-slate-800">
-          {{ earnedStars >= 3 ? 'Perfect!' : earnedStars >= 2 ? 'Great!' : earnedStars >= 1 ? 'Good!' : 'Try Again!' }}
+        <h2 class="text-xl font-bold text-slate-800 mb-1">
+          {{ earnedStars >= 3 ? 'Perfect!' : earnedStars >= 2 ? 'Great Job!' : earnedStars >= 1 ? 'Good Try!' : 'Keep Practicing!' }}
         </h2>
 
-        <div class="text-3xl font-bold text-indigo-500 my-2">{{ score }}</div>
+        <div class="text-4xl font-extrabold text-indigo-500 my-3">{{ score }}</div>
 
-        <div class="flex justify-center gap-1 mb-3">
+        <div class="flex justify-center gap-1 mb-4">
           <span 
             v-for="n in 3" 
             :key="n" 
-            class="text-2xl"
-            :class="n <= earnedStars ? 'text-amber-400' : 'text-slate-200'"
+            class="text-3xl transition-all"
+            :class="n <= earnedStars ? 'text-amber-400 scale-110' : 'text-slate-200'"
           >★</span>
         </div>
 
-        <div class="flex justify-around mb-3 text-sm">
-          <div class="flex-1">
-            <div class="text-slate-400 text-xs">Correct</div>
-            <div class="font-bold text-green-500">{{ correctHits }}</div>
+        <div class="flex justify-around mb-4 py-3 bg-slate-50 rounded-xl">
+          <div class="text-center">
+            <div class="text-slate-400 text-xs mb-1">Correct</div>
+            <div class="font-bold text-green-500 text-lg">{{ correctHits }}</div>
           </div>
-          <div class="flex-1">
-            <div class="text-slate-400 text-xs">Wrong</div>
-            <div class="font-bold text-red-500">{{ wrongHits }}</div>
+          <div class="w-px bg-slate-200"></div>
+          <div class="text-center">
+            <div class="text-slate-400 text-xs mb-1">Wrong</div>
+            <div class="font-bold text-red-500 text-lg">{{ wrongHits }}</div>
           </div>
-          <div class="flex-1">
-            <div class="text-slate-400 text-xs">Accuracy</div>
-            <div class="font-bold text-slate-700">{{ accuracy }}%</div>
+          <div class="w-px bg-slate-200"></div>
+          <div class="text-center">
+            <div class="text-slate-400 text-xs mb-1">Accuracy</div>
+            <div class="font-bold text-slate-700 text-lg">{{ accuracy }}%</div>
           </div>
         </div>
 
-        <div class="h-1 bg-slate-100 rounded-full overflow-hidden">
-          <div class="h-full bg-indigo-500 transition-all" :style="{ width: progressWidth + '%' }"></div>
+        <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+          <div 
+            class="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-100" 
+            :style="{ width: progressWidth + '%' }"
+          ></div>
         </div>
-        <p class="text-xs text-slate-400 mt-1">{{ Math.ceil(progressWidth / 20) }}s...</p>
+        <p class="text-xs text-slate-400 mt-2">Continuing in {{ Math.ceil(progressWidth / 20) }}s...</p>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
-import GameHUDSidebar from '../base/GameHUDSidebar.vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 
 const props = defineProps({
   gameData: { type: Object, required: true },
@@ -276,10 +324,7 @@ const correctHits = ref(0);
 const wrongHits = ref(0);
 
 // Computed
-const mode = computed(() => {
-  return (props.gameData?.questions?.length > 0) ? 'question' : 'category';
-});
-
+const mode = computed(() => (props.gameData?.questions?.length > 0) ? 'question' : 'category');
 const questions = computed(() => props.gameData?.questions || []);
 const currentQuestion = computed(() => questions.value[currentQuestionIndex.value]);
 
@@ -460,9 +505,7 @@ watch(() => props.score, (val) => { if (val >= targetScore.value && gameActive.v
 watch(() => props.lives, (val) => { if (val <= 0 && gameActive.value) finishGame(); });
 watch(() => props.timeRemaining, (val) => { if (val <= 0 && gameActive.value) finishGame(); });
 
-onMounted(() => {
-  initHoles();
-});
+onMounted(() => { initHoles(); });
 
 onUnmounted(() => {
   stopGame();
@@ -472,42 +515,43 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* Animations */
-@keyframes bounce-in {
-  0% { transform: scale(0.9); opacity: 0; }
-  50% { transform: scale(1.02); }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-@keyframes pop-in {
-  0% { transform: scale(0.8); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
+@keyframes bounce-subtle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
 }
 
 @keyframes float-up {
   0% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
-  100% { opacity: 0; transform: translateX(-50%) translateY(-20px) scale(1.2); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-30px) scale(1.3); }
 }
 
-@keyframes wiggle {
+@keyframes shake {
   0%, 100% { transform: rotate(0deg); }
-  25% { transform: rotate(-8deg); }
-  75% { transform: rotate(8deg); }
+  20% { transform: rotate(-10deg); }
+  40% { transform: rotate(10deg); }
+  60% { transform: rotate(-10deg); }
+  80% { transform: rotate(10deg); }
 }
 
-.animate-bounce-in {
-  animation: bounce-in 0.3s ease-out;
+@keyframes pop-in {
+  0% { transform: scale(0.8); opacity: 0; }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); opacity: 1; }
 }
 
-.animate-pop-in {
-  animation: pop-in 0.2s ease-out;
+.animate-bounce-subtle {
+  animation: bounce-subtle 0.6s ease-in-out infinite;
 }
 
 .animate-float-up {
-  animation: float-up 0.5s ease-out forwards;
+  animation: float-up 0.6s ease-out forwards;
 }
 
-.animate-wiggle {
-  animation: wiggle 0.25s ease-in-out;
+.animate-shake {
+  animation: shake 0.3s ease-in-out;
+}
+
+.animate-pop-in {
+  animation: pop-in 0.3s ease-out;
 }
 </style>
