@@ -147,36 +147,59 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, defineComponent, h } from 'vue';
 
-// Inline MoleHole component for cleaner code
+// Inline MoleHole component - Cute design with wooden sign
 const MoleHole = defineComponent({
   props: { hole: Object },
   setup(props) {
     return () => h('div', { class: 'hole-container' }, [
       h('div', { class: 'hole-visual' }, [
-        h('div', { class: 'hole-bg' }),
+        // Dirt mound background (behind mole)
+        h('div', { class: 'dirt-mound-back' }),
         // Mole
-        h('div', { 
-          class: ['mole-wrapper', { 
+        h('div', {
+          class: ['mole-wrapper', {
             'mole-up': props.hole?.active,
             'mole-hit': props.hole?.state === 'hit',
             'mole-miss': props.hole?.state === 'miss'
           }]
         }, [
           h('div', { class: 'mole-body' }, [
-            h('div', { class: 'mole-face' }, [
-              // Floating Answer
-              h('div', { class: 'floating-answer' }, props.hole?.content || ''),
-              h('div', { class: 'mole-eyebrow mole-eyebrow-l' }),
-              h('div', { class: 'mole-eyebrow mole-eyebrow-r' }),
-              h('div', { class: 'mole-eye mole-eye-l' }),
-              h('div', { class: 'mole-eye mole-eye-r' }),
-              h('div', { class: 'mole-nose' }),
-              h('div', { class: 'mole-mouth' })
+            // Cute mole head
+            h('div', { class: 'mole-head' }, [
+              // Ears
+              h('div', { class: 'mole-ear mole-ear-l' }),
+              h('div', { class: 'mole-ear mole-ear-r' }),
+              // Face features
+              h('div', { class: 'mole-face' }, [
+                // Eyes
+                h('div', { class: 'mole-eye mole-eye-l' }, [
+                  h('div', { class: 'mole-pupil' }),
+                  h('div', { class: 'mole-eye-shine' })
+                ]),
+                h('div', { class: 'mole-eye mole-eye-r' }, [
+                  h('div', { class: 'mole-pupil' }),
+                  h('div', { class: 'mole-eye-shine' })
+                ]),
+                // Rosy cheeks
+                h('div', { class: 'mole-cheek mole-cheek-l' }),
+                h('div', { class: 'mole-cheek mole-cheek-r' }),
+                // Nose
+                h('div', { class: 'mole-nose' }),
+                // Cute smile
+                h('div', { class: 'mole-mouth' })
+              ])
+            ]),
+            // Wooden sign with answer
+            h('div', { class: 'wooden-sign' }, [
+              h('div', { class: 'sign-board' }, [
+                h('span', { class: 'sign-text' }, props.hole?.content || '')
+              ]),
+              h('div', { class: 'sign-post' })
             ])
           ])
         ]),
-        // Dirt mound (front layer)
-        h('div', { class: 'dirt-mound' })
+        // Dirt mound front (covers bottom of mole)
+        h('div', { class: 'dirt-mound-front' })
       ]),
       // Hit effect
       props.hole?.showEffect ? h('div', { class: 'hit-effect' }, props.hole.state === 'hit' ? '⭐' : '❌') : null
@@ -360,14 +383,14 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 
 <style scoped>
 /* ============================================
-   GAME CONTAINER - Mobile First
+   GAME CONTAINER - Mobile First (Cute Design)
    ============================================ */
 .game-container {
   position: absolute;
   inset: 0;
   display: flex;
   flex-direction: column;
-  background: #7c3aed;
+  background: linear-gradient(180deg, #f5f0eb 0%, #e8ddd4 100%);
   font-family: 'Nunito', system-ui, -apple-system, sans-serif;
   overflow: hidden;
   user-select: none;
@@ -388,12 +411,13 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 
 .question-card {
   background: white;
-  border-radius: 16px;
-  padding: 14px 18px;
+  border-radius: 20px;
+  padding: 16px 20px;
   text-align: center;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 20px rgba(139, 90, 43, 0.15);
   position: relative;
   animation: slideDown 0.3s ease-out;
+  border: 3px solid #d4a574;
 }
 
 .question-label {
@@ -401,20 +425,21 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   top: -10px;
   left: 50%;
   transform: translateX(-50%);
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #c9915e, #a67744);
   color: white;
   font-size: 10px;
   font-weight: 800;
-  padding: 4px 12px;
+  padding: 4px 14px;
   border-radius: 20px;
   text-transform: uppercase;
   letter-spacing: 1px;
+  box-shadow: 0 2px 8px rgba(139, 90, 43, 0.3);
 }
 
 .question-text {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
-  color: #1a1a2e;
+  color: #5d4037;
   margin: 6px 0 0 0;
   line-height: 1.4;
 }
@@ -429,15 +454,16 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   display: flex;
   align-items: center;
   gap: 4px;
-  background: rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.9);
   backdrop-filter: blur(10px);
   padding: 6px 12px;
   border-radius: 20px;
-  border: 1px solid rgba(255,255,255,0.3);
+  border: 2px solid #d4a574;
+  box-shadow: 0 2px 8px rgba(139, 90, 43, 0.1);
 }
 
 .stat-icon { font-size: 14px; }
-.stat-value { font-size: 14px; font-weight: 700; color: white; }
+.stat-value { font-size: 14px; font-weight: 700; color: #5d4037; }
 .stat-lives { gap: 2px; }
 .heart { font-size: 14px; }
 
@@ -456,20 +482,20 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 .moles-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-  row-gap: 80px; /* Even larger gap between rows */
+  gap: 16px;
+  row-gap: 24px;
   width: 100%;
-  max-width: 600px;
+  max-width: 400px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 16px;
   box-sizing: border-box;
-  aspect-ratio: 1 / 1.1;
 }
 
 .mole-cell {
   position: relative;
   cursor: pointer;
   touch-action: manipulation;
+  aspect-ratio: 1 / 1.2;
 }
 
 /* ============================================
@@ -483,202 +509,315 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   align-items: center;
 }
 
-.answer-wrapper {
-  display: none;
-}
-
 /* ============================================
-   HOLE VISUAL - The Actual Hole + Mole
+   HOLE VISUAL - The Cute Mole Design
    ============================================ */
 :deep(.hole-visual) {
   position: relative;
   width: 100%;
-  height: 180px; /* More room for the floating sign */
-  overflow: hidden;
-}
-
-:deep(.hole-bg) {
-  position: absolute;
-  bottom: 20%;
-  left: 15%;
-  width: 70%;
-  height: 22%;
-  background: radial-gradient(ellipse, #3d2817 0%, #2a1a0f 100%);
-  border-radius: 50%;
+  height: 100%;
+  min-height: 140px;
 }
 
 /* ============================================
-   MOLE - The Character
+   DIRT MOUND - Back Layer (Behind Mole)
+   ============================================ */
+:deep(.dirt-mound-back) {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  height: 65%;
+  background:
+    radial-gradient(ellipse 120% 100% at 50% 100%, #c9915e 0%, #b07d4f 40%, #8b5a2b 70%, #6d4c41 100%);
+  border-radius: 50% 50% 45% 45% / 40% 40% 60% 60%;
+  z-index: 1;
+}
+
+/* Texture dots on dirt */
+:deep(.dirt-mound-back::before) {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(139, 90, 43, 0.4) 2px, transparent 2px),
+    radial-gradient(circle at 70% 50%, rgba(139, 90, 43, 0.3) 3px, transparent 3px),
+    radial-gradient(circle at 40% 70%, rgba(139, 90, 43, 0.35) 2px, transparent 2px),
+    radial-gradient(circle at 80% 25%, rgba(139, 90, 43, 0.3) 2px, transparent 2px),
+    radial-gradient(circle at 30% 55%, rgba(139, 90, 43, 0.25) 2px, transparent 2px);
+  border-radius: inherit;
+}
+
+/* ============================================
+   MOLE - The Cute Character
    ============================================ */
 :deep(.mole-wrapper) {
   position: absolute;
-  bottom: 0;
-  left: 25%;
-  width: 50%;
-  height: 75%; /* Increased height */
-  transform: translateY(150%); /* Start further down for better masking */
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  bottom: 15%;
+  left: 50%;
+  transform: translateX(-50%) translateY(120%);
+  width: 70%;
+  height: 85%;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   z-index: 2;
 }
 
 :deep(.mole-up) {
-  transform: translateY(-25%) !important; /* Raised higher as requested */
+  transform: translateX(-50%) translateY(0%) !important;
 }
 
 :deep(.mole-hit) .mole-body {
-  transform: scale(0.85);
-  filter: brightness(1.2);
+  transform: scale(0.9);
+}
+
+:deep(.mole-hit) .mole-head {
+  animation: happyBounce 0.3s ease-out;
 }
 
 :deep(.mole-miss) .mole-body {
   animation: shake 0.3s ease-in-out;
-  filter: brightness(0.8);
 }
 
 :deep(.mole-body) {
   position: relative;
   width: 100%;
   height: 100%;
-  transition: transform 0.15s, filter 0.15s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.15s;
 }
 
-/* Mole face (the round brown part) */
+/* ============================================
+   MOLE HEAD - Cute Round Face
+   ============================================ */
+:deep(.mole-head) {
+  position: relative;
+  width: 100%;
+  padding-bottom: 85%;
+  flex-shrink: 0;
+}
+
 :deep(.mole-face) {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, #d4a574 0%, #b8845a 100%);
-  border-radius: 50% 50% 40% 40%;
-  box-shadow: inset 0 -4px 8px rgba(0,0,0,0.1);
-  z-index: 1;
+  background:
+    radial-gradient(ellipse 80% 70% at 50% 30%, #e8c9a0 0%, transparent 50%),
+    linear-gradient(180deg, #d4a574 0%, #c9915e 50%, #b07d4f 100%);
+  border-radius: 50% 50% 45% 45%;
+  box-shadow:
+    inset 0 -8px 16px rgba(139, 90, 43, 0.2),
+    0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-/* Eyebrows */
-:deep(.mole-eyebrow) {
+/* Ears */
+:deep(.mole-ear) {
   position: absolute;
-  width: 15%;
-  height: 4%;
-  background: #4e342e;
-  border-radius: 2px;
-  top: 28%;
+  width: 28%;
+  height: 28%;
+  background: linear-gradient(180deg, #d4a574 0%, #c9915e 100%);
+  border-radius: 50%;
+  top: 5%;
+  z-index: -1;
+  box-shadow: inset 0 -2px 4px rgba(139, 90, 43, 0.3);
 }
-:deep(.mole-eyebrow-l) { left: 28%; transform: rotate(-10deg); }
-:deep(.mole-eyebrow-r) { right: 28%; transform: rotate(10deg); }
+:deep(.mole-ear-l) { left: 5%; }
+:deep(.mole-ear-r) { right: 5%; }
+
+/* Inner ear */
+:deep(.mole-ear::after) {
+  content: '';
+  position: absolute;
+  width: 50%;
+  height: 50%;
+  background: #b07d4f;
+  border-radius: 50%;
+  top: 25%;
+  left: 25%;
+}
 
 /* Eyes */
 :deep(.mole-eye) {
   position: absolute;
-  width: 10%;
-  padding-bottom: 10%;
-  background: #1a1a2e;
+  width: 22%;
+  height: 26%;
+  background: white;
   border-radius: 50%;
-  top: 38%;
+  top: 32%;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
 }
-:deep(.mole-eye-l) { left: 32%; }
-:deep(.mole-eye-r) { right: 32%; }
+:deep(.mole-eye-l) { left: 18%; }
+:deep(.mole-eye-r) { right: 18%; }
+
+/* Pupil */
+:deep(.mole-pupil) {
+  position: absolute;
+  width: 55%;
+  height: 55%;
+  background: #3d2817;
+  border-radius: 50%;
+  top: 30%;
+  left: 25%;
+}
+
+/* Eye shine */
+:deep(.mole-eye-shine) {
+  position: absolute;
+  width: 25%;
+  height: 25%;
+  background: white;
+  border-radius: 50%;
+  top: 25%;
+  left: 20%;
+}
+
+/* Rosy cheeks */
+:deep(.mole-cheek) {
+  position: absolute;
+  width: 20%;
+  height: 12%;
+  background: radial-gradient(ellipse, rgba(255, 182, 193, 0.7) 0%, transparent 70%);
+  border-radius: 50%;
+  top: 55%;
+}
+:deep(.mole-cheek-l) { left: 8%; }
+:deep(.mole-cheek-r) { right: 8%; }
 
 /* Nose */
 :deep(.mole-nose) {
   position: absolute;
-  width: 12%;
-  padding-bottom: 8%;
-  background: #ff6b8a;
-  border-radius: 50%;
+  width: 18%;
+  height: 12%;
+  background: linear-gradient(180deg, #8b5a2b 0%, #6d4c41 100%);
+  border-radius: 50% 50% 40% 40%;
   top: 52%;
   left: 50%;
   transform: translateX(-50%);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-/* Mouth */
+/* Cute smile */
 :deep(.mole-mouth) {
   position: absolute;
-  width: 15%;
-  height: 6%;
-  background: #4e342e;
-  border-radius: 0 0 10px 10px;
+  width: 30%;
+  height: 10%;
+  border: 3px solid #6d4c41;
+  border-top: none;
+  border-radius: 0 0 50% 50%;
   top: 65%;
   left: 50%;
   transform: translateX(-50%);
-}
-
-/* Floating Answer */
-:deep(.floating-answer) {
-  position: absolute !important;
-  top: -45px !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-  color: white !important;
-  font-weight: 900 !important;
-  font-size: 26px !important;
-  text-align: center !important;
-  white-space: nowrap !important;
-  text-shadow: 
-    -2px -2px 0 #4e342e,  
-     2px -2px 0 #4e342e,
-    -2px  2px 0 #4e342e,
-     2px  2px 0 #4e342e,
-     0px 4px 8px rgba(0,0,0,0.4) !important;
-  z-index: 10 !important;
-  animation: floatText 2s ease-in-out infinite !important;
-}
-
-@keyframes floatText {
-  0%, 100% { transform: translateX(-50%) translateY(0); }
-  50% { transform: translateX(-50%) translateY(-5px); }
+  background: transparent;
 }
 
 /* ============================================
-   DIRT MOUND - Front Layer
+   WOODEN SIGN - Answer Display
    ============================================ */
-:deep(.dirt-mound) {
+:deep(.wooden-sign) {
   position: absolute;
   bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 30%; /* Lowered to reveal more mole */
-  background: radial-gradient(circle at 50% 100%, #8d6e63 0%, #6d4c41 60%, #4e342e 100%);
-  border-radius: 50% 50% 10px 10px;
-  z-index: 3;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 5;
 }
 
-:deep(.dirt-mound::after) {
+:deep(.sign-board) {
+  background: linear-gradient(180deg, #e8d5b5 0%, #d4bc96 30%, #c9a876 100%);
+  border: 3px solid #8b5a2b;
+  border-radius: 8px;
+  padding: 6px 16px;
+  min-width: 40px;
+  text-align: center;
+  box-shadow:
+    inset 0 2px 4px rgba(255, 255, 255, 0.3),
+    inset 0 -2px 4px rgba(139, 90, 43, 0.2),
+    0 3px 8px rgba(0, 0, 0, 0.2);
+  position: relative;
+}
+
+/* Wood grain effect */
+:deep(.sign-board::before) {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0px,
+      transparent 8px,
+      rgba(139, 90, 43, 0.1) 8px,
+      rgba(139, 90, 43, 0.1) 9px
+    );
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+:deep(.sign-text) {
+  font-size: 20px;
+  font-weight: 800;
+  color: #5d4037;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+  position: relative;
+  z-index: 1;
+}
+
+:deep(.sign-post) {
+  width: 8px;
+  height: 12px;
+  background: linear-gradient(90deg, #8b5a2b 0%, #6d4c41 50%, #8b5a2b 100%);
+  border-radius: 0 0 2px 2px;
+}
+
+/* ============================================
+   DIRT MOUND - Front Layer (Covers Mole Bottom)
+   ============================================ */
+:deep(.dirt-mound-front) {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 105%;
+  height: 35%;
+  background:
+    radial-gradient(ellipse 100% 80% at 50% 100%, #c9915e 0%, #b07d4f 50%, #8b5a2b 100%);
+  border-radius: 50% 50% 45% 45% / 50% 50% 50% 50%;
+  z-index: 4;
+  box-shadow:
+    inset 0 8px 16px rgba(232, 197, 160, 0.4),
+    0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Texture on front mound */
+:deep(.dirt-mound-front::before) {
   content: '';
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(#4e342e 1.5px, transparent 1.5px);
-  background-size: 10px 10px;
-  opacity: 0.2;
+  background-image:
+    radial-gradient(circle at 25% 40%, rgba(139, 90, 43, 0.3) 3px, transparent 3px),
+    radial-gradient(circle at 65% 35%, rgba(139, 90, 43, 0.25) 2px, transparent 2px),
+    radial-gradient(circle at 45% 60%, rgba(139, 90, 43, 0.3) 2px, transparent 2px),
+    radial-gradient(circle at 75% 55%, rgba(139, 90, 43, 0.2) 3px, transparent 3px);
+  border-radius: inherit;
 }
-
-:deep(.grass-blade) {
-  position: absolute;
-  width: 4px;
-  background: linear-gradient(180deg, #66bb6a 0%, #43a047 100%);
-  border-radius: 2px 2px 0 0;
-  top: 0;
-  transform-origin: bottom center;
-}
-:deep(.grass-1) { left: 15%; height: 12px; transform: rotate(-15deg) translateY(-8px); }
-:deep(.grass-2) { left: 30%; height: 16px; transform: rotate(8deg) translateY(-10px); }
-:deep(.grass-3) { left: 50%; height: 14px; transform: rotate(-5deg) translateY(-9px); }
-:deep(.grass-4) { left: 68%; height: 18px; transform: rotate(12deg) translateY(-11px); }
-:deep(.grass-5) { left: 82%; height: 13px; transform: rotate(-10deg) translateY(-8px); }
 
 /* Hit effect */
 :deep(.hit-effect) {
   position: absolute;
-  top: 10%;
+  top: 5%;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 28px;
+  font-size: 32px;
   z-index: 10;
   animation: floatUp 0.6s ease-out forwards;
   pointer-events: none;
 }
 
 /* ============================================
-   START SCREEN
+   START SCREEN - Cute Theme
    ============================================ */
 .start-screen {
   position: absolute;
@@ -686,7 +825,7 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  background: linear-gradient(180deg, #f5f0eb 0%, #e8ddd4 50%, #d4c4b0 100%);
   padding: 24px;
 }
 
@@ -697,8 +836,8 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 }
 
 .start-mole {
-  width: 100px;
-  height: 100px;
+  width: 120px;
+  height: 120px;
   margin: 0 auto 20px;
   animation: bounce 2s ease-in-out infinite;
 }
@@ -711,78 +850,119 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 
 .preview-body {
   position: absolute;
-  inset: 10%;
-  background: linear-gradient(180deg, #e8c9a0 0%, #d4a574 30%, #b8845a 100%);
-  border-radius: 50%;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+  inset: 8%;
+  background:
+    radial-gradient(ellipse 80% 70% at 50% 30%, #e8c9a0 0%, transparent 50%),
+    linear-gradient(180deg, #d4a574 0%, #c9915e 50%, #b07d4f 100%);
+  border-radius: 50% 50% 45% 45%;
+  box-shadow:
+    inset 0 -8px 16px rgba(139, 90, 43, 0.2),
+    0 8px 24px rgba(139, 90, 43, 0.3);
 }
 
 .preview-ear {
   position: absolute;
   width: 26%;
   height: 26%;
-  background: #d4a574;
+  background: linear-gradient(180deg, #d4a574 0%, #c9915e 100%);
   border-radius: 50%;
   top: 5%;
+  box-shadow: inset 0 -2px 4px rgba(139, 90, 43, 0.3);
 }
-.preview-ear-l { left: 12%; }
-.preview-ear-r { right: 12%; }
+.preview-ear-l { left: 10%; }
+.preview-ear-r { right: 10%; }
+
+.preview-ear::after {
+  content: '';
+  position: absolute;
+  width: 50%;
+  height: 50%;
+  background: #b07d4f;
+  border-radius: 50%;
+  top: 25%;
+  left: 25%;
+}
 
 .preview-eye {
   position: absolute;
-  width: 18%;
-  height: 22%;
-  background: #1a1a2e;
+  width: 20%;
+  height: 24%;
+  background: white;
   border-radius: 50%;
   top: 35%;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
 }
-.preview-eye-l { left: 28%; }
-.preview-eye-r { right: 28%; }
+.preview-eye-l { left: 24%; }
+.preview-eye-r { right: 24%; }
+
+.preview-eye::before {
+  content: '';
+  position: absolute;
+  width: 55%;
+  height: 55%;
+  background: #3d2817;
+  border-radius: 50%;
+  top: 30%;
+  left: 25%;
+}
+
+.preview-eye::after {
+  content: '';
+  position: absolute;
+  width: 20%;
+  height: 20%;
+  background: white;
+  border-radius: 50%;
+  top: 25%;
+  left: 20%;
+}
 
 .preview-nose {
   position: absolute;
-  width: 14%;
+  width: 16%;
   height: 10%;
-  background: #ff6b8a;
-  border-radius: 50%;
+  background: linear-gradient(180deg, #8b5a2b 0%, #6d4c41 100%);
+  border-radius: 50% 50% 40% 40%;
   top: 55%;
   left: 50%;
   transform: translateX(-50%);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .preview-cheek {
   position: absolute;
-  width: 16%;
-  height: 10%;
-  background: rgba(255,182,193,0.6);
+  width: 18%;
+  height: 12%;
+  background: radial-gradient(ellipse, rgba(255, 182, 193, 0.7) 0%, transparent 70%);
   border-radius: 50%;
   top: 52%;
 }
-.preview-cheek-l { left: 15%; }
-.preview-cheek-r { right: 15%; }
+.preview-cheek-l { left: 12%; }
+.preview-cheek-r { right: 12%; }
 
 .start-title {
   font-size: 32px;
   font-weight: 800;
-  color: white;
+  color: #5d4037;
   margin: 0 0 8px 0;
-  text-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  text-shadow: 0 2px 4px rgba(139, 90, 43, 0.2);
 }
 
 .start-subtitle {
   font-size: 16px;
-  color: rgba(255,255,255,0.9);
+  color: #8b7355;
   margin: 0 0 28px 0;
 }
 
 .start-subtitle strong {
-  color: #fbbf24;
+  color: #c9915e;
 }
 
 .start-info {
   display: flex;
   justify-content: center;
-  gap: 16px;
+  gap: 12px;
   margin-bottom: 32px;
 }
 
@@ -790,37 +970,37 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: rgba(255,255,255,0.15);
-  backdrop-filter: blur(10px);
-  padding: 12px 18px;
+  background: white;
+  padding: 12px 16px;
   border-radius: 16px;
-  border: 1px solid rgba(255,255,255,0.2);
+  border: 2px solid #d4a574;
+  box-shadow: 0 4px 12px rgba(139, 90, 43, 0.15);
 }
 
 .info-icon { font-size: 24px; margin-bottom: 4px; }
-.info-label { font-size: 11px; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 0.5px; }
-.info-value { font-size: 18px; font-weight: 700; color: white; }
+.info-label { font-size: 11px; color: #a08060; text-transform: uppercase; letter-spacing: 0.5px; }
+.info-value { font-size: 18px; font-weight: 700; color: #5d4037; }
 
 .start-button {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  background: white;
-  color: #764ba2;
+  background: linear-gradient(135deg, #c9915e 0%, #a67744 100%);
+  color: white;
   border: none;
   padding: 16px 40px;
   border-radius: 50px;
   font-size: 18px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+  box-shadow: 0 8px 24px rgba(139, 90, 43, 0.3);
   transition: transform 0.2s, box-shadow 0.2s;
   touch-action: manipulation;
 }
 
 .start-button:hover {
   transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+  box-shadow: 0 12px 32px rgba(139, 90, 43, 0.4);
 }
 
 .start-button:active {
@@ -832,12 +1012,12 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 }
 
 /* ============================================
-   GAME OVER SCREEN
+   GAME OVER SCREEN - Cute Theme
    ============================================ */
 .gameover-screen {
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,0.6);
+  background: rgba(93, 64, 55, 0.7);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
@@ -853,8 +1033,9 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   text-align: center;
   width: 100%;
   max-width: 300px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  box-shadow: 0 20px 60px rgba(139, 90, 43, 0.3);
   animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border: 3px solid #d4a574;
 }
 
 .gameover-emoji {
@@ -865,14 +1046,14 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 .gameover-title {
   font-size: 24px;
   font-weight: 800;
-  color: #1a1a2e;
+  color: #5d4037;
   margin: 0 0 4px 0;
 }
 
 .gameover-score {
   font-size: 56px;
   font-weight: 800;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #c9915e, #8b5a2b);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -881,7 +1062,7 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 
 .gameover-score-label {
   font-size: 14px;
-  color: #94a3b8;
+  color: #a08060;
   margin-bottom: 12px;
 }
 
@@ -904,7 +1085,7 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 }
 
 .star-empty {
-  color: #e2e8f0;
+  color: #e8ddd4;
 }
 
 .gameover-stats {
@@ -913,9 +1094,10 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   justify-content: center;
   gap: 16px;
   padding: 16px;
-  background: #f8fafc;
+  background: #f5f0eb;
   border-radius: 16px;
   margin-bottom: 16px;
+  border: 2px solid #e8ddd4;
 }
 
 .gstat {
@@ -925,15 +1107,15 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 .gstat-value {
   font-size: 22px;
   font-weight: 700;
-  color: #1a1a2e;
+  color: #5d4037;
 }
 
-.gstat-correct { color: #10b981; }
-.gstat-wrong { color: #ef4444; }
+.gstat-correct { color: #4caf50; }
+.gstat-wrong { color: #e57373; }
 
 .gstat-label {
   font-size: 11px;
-  color: #94a3b8;
+  color: #a08060;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -941,25 +1123,25 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 .gstat-divider {
   width: 1px;
   height: 32px;
-  background: #e2e8f0;
+  background: #d4a574;
 }
 
 .gameover-progress {
   height: 6px;
-  background: #e2e8f0;
+  background: #e8ddd4;
   border-radius: 3px;
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #667eea, #764ba2);
+  background: linear-gradient(90deg, #c9915e, #8b5a2b);
   transition: width 0.1s linear;
 }
 
 .gameover-timer {
   font-size: 13px;
-  color: #94a3b8;
+  color: #a08060;
   margin-top: 8px;
 }
 
@@ -999,5 +1181,75 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   0% { transform: scale(0); }
   50% { transform: scale(1.3); }
   100% { transform: scale(1); }
+}
+
+@keyframes happyBounce {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+/* ============================================
+   MOBILE OPTIMIZATIONS
+   ============================================ */
+@media (max-width: 400px) {
+  .moles-grid {
+    gap: 12px;
+    row-gap: 20px;
+    padding: 12px;
+  }
+
+  .question-text {
+    font-size: 16px;
+  }
+
+  .top-section {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+
+  :deep(.sign-text) {
+    font-size: 18px;
+  }
+
+  :deep(.sign-board) {
+    padding: 4px 12px;
+  }
+}
+
+@media (max-height: 700px) {
+  .moles-grid {
+    row-gap: 16px;
+  }
+
+  .top-section {
+    padding: 8px 12px;
+    gap: 6px;
+  }
+
+  .question-card {
+    padding: 12px 16px;
+  }
+
+  .stat-badge {
+    padding: 4px 10px;
+  }
+}
+
+/* Very small phones */
+@media (max-height: 600px) {
+  .game-area {
+    padding: 5px;
+  }
+
+  .moles-grid {
+    gap: 10px;
+    row-gap: 12px;
+    padding: 8px;
+  }
+
+  :deep(.hole-visual) {
+    min-height: 120px;
+  }
 }
 </style>
