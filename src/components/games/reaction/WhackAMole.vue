@@ -374,7 +374,7 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   inset: 0;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  background: #7c3aed;
   font-family: 'Nunito', system-ui, -apple-system, sans-serif;
   overflow: hidden;
   user-select: none;
@@ -549,7 +549,7 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
    ============================================ */
 :deep(.mole-wrapper) {
   position: absolute;
-  bottom: 32%;
+  bottom: 25%;
   left: 25%;
   width: 50%;
   transform: translateY(100%);
@@ -602,36 +602,25 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
 /* Eyes */
 :deep(.mole-eye) {
   position: absolute;
-  width: 22%;
-  padding-bottom: 26%;
+  width: 12%;
+  padding-bottom: 12%;
   background: #1a1a2e;
   border-radius: 50%;
-  top: 32%;
+  top: 35%;
 }
-:deep(.mole-eye-l) { left: 22%; }
-:deep(.mole-eye-r) { right: 22%; }
-
-:deep(.eye-shine) {
-  position: absolute;
-  width: 35%;
-  height: 35%;
-  background: white;
-  border-radius: 50%;
-  top: 15%;
-  left: 15%;
-}
+:deep(.mole-eye-l) { left: 30%; }
+:deep(.mole-eye-r) { right: 30%; }
 
 /* Nose */
 :deep(.mole-nose) {
   position: absolute;
-  width: 18%;
-  padding-bottom: 14%;
-  background: linear-gradient(180deg, #ff9eb5 0%, #ff6b8a 100%);
+  width: 14%;
+  padding-bottom: 10%;
+  background: #ff6b8a;
   border-radius: 50%;
   top: 55%;
   left: 50%;
   transform: translateX(-50%);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 /* Cheeks */
@@ -666,7 +655,7 @@ onUnmounted(() => { stopGame(); if (autoDismissTimer.value) clearTimeout(autoDis
   bottom: 0;
   left: 5%;
   width: 90%;
-  height: 35%;
+  height: 45%;
   background: linear-gradient(180deg, #8d6e63 0%, #6d4c41 50%, #4e342e 100%);
   border-radius: 50% 50% 0 0;
   z-index: 3;
