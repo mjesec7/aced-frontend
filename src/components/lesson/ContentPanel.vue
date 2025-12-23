@@ -126,7 +126,6 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue';
-import { marked } from 'marked';
 
 const props = defineProps({
   currentStep: Object,
@@ -143,7 +142,7 @@ const isPanelHidden = ref(false);
 
 // Auto-hide panel when entering game mode on mobile
 watch(() => props.isGameStep, (isGame) => {
-  if (isGame && window.innerWidth < 768) {
+  if (isGame && typeof window !== 'undefined' && window.innerWidth < 768) {
     isPanelHidden.value = true;
   } else {
     isPanelHidden.value = false;
@@ -177,13 +176,22 @@ const stepTypeLabel = computed(() => {
   }
 });
 
-// Process markdown content
+// Simple content processing (no external dependency)
 const processedContent = computed(() => {
   if (!props.currentStep?.content) return '';
-  if (typeof props.currentStep.content === 'string') {
-    return marked(props.currentStep.content);
+  const content = props.currentStep.content;
+  
+  // If already HTML, return as-is
+  if (typeof content === 'string') {
+    // Basic markdown-like processing
+    return content
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/`(.*?)`/g, '<code>$1</code>')
+      .replace(/\n\n/g, '</p><p>')
+      .replace(/\n/g, '<br>');
   }
-  return props.currentStep.content;
+  return content;
 });
 </script>
 
