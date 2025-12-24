@@ -6,9 +6,7 @@
         <!-- Brand Column -->
         <div class="lg:col-span-2">
           <div class="flex items-center gap-3 mb-4">
-            <div class="w-10 h-10 rounded-xl bg-violet-600 flex items-center justify-center text-white font-bold text-lg">
-              A
-            </div>
+            <img src="@/assets/logo.png" alt="ACED" class="h-10 w-10 object-contain" />
             <span class="text-xl font-bold text-gray-900">ACED</span>
           </div>
           <p class="text-gray-500 text-sm leading-relaxed mb-6 max-w-sm">

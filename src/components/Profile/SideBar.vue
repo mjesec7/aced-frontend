@@ -5,9 +5,7 @@
 
       <div class="sidebar-content">
         <div class="sidebar-brand">
-          <div class="brand-logo">
-            <span class="logo-text">A</span>
-          </div>
+          <img src="@/assets/logo.png" alt="ACED" class="brand-logo-img" />
           <div class="brand-info">
             <h1 class="brand-name">ACED</h1>
             <span class="brand-tagline">Learning Platform</span>
@@ -643,23 +641,11 @@ export default {
   margin-bottom: 8px;
 }
 
-.brand-logo {
+.brand-logo-img {
   width: 40px;
   height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-  border-radius: 10px;
-  position: relative;
+  object-fit: contain;
   flex-shrink: 0;
-  box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3);
-}
-
-.logo-text {
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: white;
 }
 
 .brand-info {
