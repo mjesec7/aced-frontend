@@ -3,7 +3,7 @@
     <div class="dashboard-header">
       <div class="header-content">
         <div class="welcome-section">
-          <h1 class="main-title">Dashboard</h1>
+          <h1 class="main-title">{{ $t('dashboard.title') }}</h1>
           <p class="date-text">{{ currentDate }}</p>
         </div>
         <div class="header-stats">
@@ -15,8 +15,8 @@
               <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
             </svg>
             <div class="stat-info">
-              <div class="stat-label">Streak</div>
-              <div class="stat-value">{{ displayStreak }} days</div>
+              <div class="stat-label">{{ $t('dashboard.streak') }}</div>
+              <div class="stat-value">{{ displayStreak }} {{ $t('dashboard.days') }}</div>
             </div>
           </div>
           <div class="stat-badge points">
@@ -24,7 +24,7 @@
               <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
             </svg>
             <div class="stat-info">
-              <div class="stat-label">Points</div>
+              <div class="stat-label">{{ $t('dashboard.points') }}</div>
               <div class="stat-value">{{ displayPoints }}</div>
             </div>
           </div>
@@ -47,13 +47,13 @@
               </svg>
             </div>
             <div class="test-card-info">
-              <h3 class="test-card-title">Discover Your Level</h3>
+              <h3 class="test-card-title">{{ $t('dashboard.discoverLevel') }}</h3>
               <p class="test-card-description">
-                Take a quick test to determine your knowledge level and unlock appropriate courses
+                {{ $t('dashboard.discoverLevelDesc') }}
               </p>
             </div>
             <button class="take-test-action-btn" @click="goToPlacementTest">
-              <span>Take Placement Test</span>
+              <span>{{ $t('dashboard.takePlacementTest') }}</span>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M5 12h14M12 5l7 7-7 7"/>
               </svg>
@@ -77,14 +77,14 @@
           <!-- No courses state -->
           <div v-else class="empty-pathway-card">
             <div class="empty-pathway-icon">🎮</div>
-            <h3 class="empty-pathway-title">Your Learning Journey</h3>
-            <p class="empty-pathway-text">Add a course to see your interactive lesson pathway!</p>
+            <h3 class="empty-pathway-title">{{ $t('dashboard.yourLearningJourney') }}</h3>
+            <p class="empty-pathway-text">{{ $t('dashboard.addCourseToSeePathway') }}</p>
             <router-link to="/profile/catalogue" class="add-course-pathway-btn">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="12" y1="5" x2="12" y2="19"/>
                 <line x1="5" y1="12" x2="19" y2="12"/>
               </svg>
-              Browse Courses
+              {{ $t('dashboard.browseCourses') }}
             </router-link>
           </div>
         </div>
@@ -99,8 +99,8 @@
                 </svg>
               </div>
               <div>
-                <h2 class="section-title">🧬 Your Learning DNA</h2>
-                <p class="section-subtitle">AI-powered personalization</p>
+                <h2 class="section-title">🧬 {{ $t('dashboard.yourLearningDNA') }}</h2>
+                <p class="section-subtitle">{{ $t('dashboard.aiPoweredPersonalization') }}</p>
               </div>
             </div>
             <button @click="refreshLearningData" class="refresh-btn-small" title="Refresh data">
@@ -121,21 +121,21 @@
             <div class="dna-stat">
               <span class="dna-icon">{{ getLearningStyleIcon() }}</span>
               <div class="dna-stat-content">
-                <span class="dna-stat-label">Learning Style</span>
+                <span class="dna-stat-label">{{ $t('dashboard.learningStyle') }}</span>
                 <span class="dna-stat-value">{{ getLearningStyleText() }}</span>
               </div>
             </div>
             <div class="dna-stat">
               <span class="dna-icon">{{ getChronotypeIcon() }}</span>
               <div class="dna-stat-content">
-                <span class="dna-stat-label">Best Time</span>
+                <span class="dna-stat-label">{{ $t('dashboard.bestTime') }}</span>
                 <span class="dna-stat-value">{{ getChronotypeText() }}</span>
               </div>
             </div>
           </div>
 
           <div v-if="learningProfile.cognitiveProfile" class="cognitive-section">
-            <h4>🧠 Cognitive Strengths</h4>
+            <h4>🧠 {{ $t('dashboard.cognitiveStrengths') }}</h4>
             <div v-for="(value, key) in learningProfile.cognitiveProfile" :key="key" class="cognitive-bar">
               <span class="cognitive-label">{{ formatCognitiveLabel(key) }}</span>
               <div class="cognitive-progress">
@@ -146,33 +146,33 @@
           </div>
 
           <div v-if="recommendations" class="recommendations-section">
-            <h4>💡 Smart Tips for You</h4>
+            <h4>💡 {{ $t('dashboard.smartTips') }}</h4>
             <div class="rec-grid">
               <div class="rec-item">
                 <span class="rec-icon">🎯</span>
                 <div class="rec-content">
-                  <span class="rec-label">Learning Path</span>
+                  <span class="rec-label">{{ $t('dashboard.learningPath') }}</span>
                   <span class="rec-value">{{ capitalize(recommendations.preferredPath) }}</span>
                 </div>
               </div>
               <div class="rec-item">
                 <span class="rec-icon">⏰</span>
                 <div class="rec-content">
-                  <span class="rec-label">Optimal Time</span>
+                  <span class="rec-label">{{ $t('dashboard.optimalTime') }}</span>
                   <span class="rec-value">{{ formatOptimalTime(recommendations.optimalTime) }}</span>
                 </div>
               </div>
               <div class="rec-item">
                 <span class="rec-icon">📊</span>
                 <div class="rec-content">
-                  <span class="rec-label">Session Length</span>
-                  <span class="rec-value">{{ recommendations.sessionLength }} min</span>
+                  <span class="rec-label">{{ $t('dashboard.sessionLength') }}</span>
+                  <span class="rec-value">{{ recommendations.sessionLength }} {{ $t('dashboard.min') }}</span>
                 </div>
               </div>
               <div class="rec-item">
                 <span class="rec-icon">🎚️</span>
                 <div class="rec-content">
-                  <span class="rec-label">Difficulty</span>
+                  <span class="rec-label">{{ $t('dashboard.difficulty') }}</span>
                   <span class="rec-value">{{ (recommendations.difficultyLevel * 100).toFixed(0) }}%</span>
                 </div>
               </div>
@@ -196,15 +196,15 @@
                 </svg>
               </div>
               <div>
-                <h2 class="section-title">🧬 Unlock Your Learning DNA</h2>
-                <p class="section-subtitle">Complete lessons to reveal your profile</p>
+                <h2 class="section-title">🧬 {{ $t('dashboard.unlockLearningDNA') }}</h2>
+                <p class="section-subtitle">{{ $t('dashboard.completeLessonsToReveal') }}</p>
               </div>
             </div>
           </div>
-          
+
           <div class="unlock-requirements">
             <p class="requirements-text">
-              Complete at least {{ learningProfileRequirements.required }} lessons to unlock your personalized Learning DNA and AI-powered recommendations.
+              {{ $t('dashboard.completeAtLeast', { count: learningProfileRequirements.required }) }}
             </p>
             <div class="requirements-progress">
               <div class="requirement-item" v-for="i in learningProfileRequirements.required" :key="i">
@@ -214,11 +214,11 @@
                   </svg>
                   <span v-else>{{ i }}</span>
                 </div>
-                <span class="requirement-label">Lesson {{ i }}</span>
+                <span class="requirement-label">{{ $t('dashboard.lesson') }} {{ i }}</span>
               </div>
             </div>
             <router-link to="/profile/my-courses" class="start-learning-btn">
-              Start Learning
+              {{ $t('dashboard.startLearning') }}
             </router-link>
           </div>
         </div>
@@ -232,21 +232,21 @@
                 </svg>
               </div>
               <div>
-                <h2 class="section-title">🎮 Your Progress</h2>
-                <p class="section-subtitle">Level {{ rewards.level }} • {{ formatNumber(rewards.totalPoints) }} points</p>
+                <h2 class="section-title">🎮 {{ $t('dashboard.yourProgress') }}</h2>
+                <p class="section-subtitle">{{ $t('dashboard.level') }} {{ rewards.level }} • {{ formatNumber(rewards.totalPoints) }} {{ $t('dashboard.points').toLowerCase() }}</p>
               </div>
             </div>
           </div>
 
           <div class="level-progress-section">
             <div class="level-header">
-              <span class="current-level">Level {{ rewards.level }}</span>
-              <span class="next-level">Level {{ rewards.level + 1 }}</span>
+              <span class="current-level">{{ $t('dashboard.level') }} {{ rewards.level }}</span>
+              <span class="next-level">{{ $t('dashboard.level') }} {{ rewards.level + 1 }}</span>
             </div>
             <div class="progress-bar-container large">
               <div class="progress-bar-fill gold" :style="{ width: rewards.currentLevelProgress + '%' }"></div>
             </div>
-            <span class="progress-text">{{ Math.round(rewards.currentLevelProgress) }}% to next level</span>
+            <span class="progress-text">{{ Math.round(rewards.currentLevelProgress) }}% {{ $t('dashboard.toNextLevel') }}</span>
           </div>
 
           <div class="rewards-stats-grid">
@@ -254,27 +254,27 @@
               <div class="reward-stat-icon fire">🔥</div>
               <div class="reward-stat-content">
                 <span class="reward-stat-value">{{ rewards.streak || 0 }}</span>
-                <span class="reward-stat-label">Day Streak</span>
+                <span class="reward-stat-label">{{ $t('dashboard.dayStreak') }}</span>
               </div>
             </div>
             <div class="reward-stat-card">
               <div class="reward-stat-icon trophy">🏆</div>
               <div class="reward-stat-content">
                 <span class="reward-stat-value">{{ rewards.achievements?.length || 0 }}</span>
-                <span class="reward-stat-label">Achievements</span>
+                <span class="reward-stat-label">{{ $t('dashboard.achievements') }}</span>
               </div>
             </div>
             <div class="reward-stat-card">
               <div class="reward-stat-icon target">🎯</div>
               <div class="reward-stat-content">
                 <span class="reward-stat-value">{{ rewards.nextRewardIn || 0 }}</span>
-                <span class="reward-stat-label">Steps to Reward</span>
+                <span class="reward-stat-label">{{ $t('dashboard.stepsToReward') }}</span>
               </div>
             </div>
           </div>
 
           <div v-if="rewards.achievements?.length" class="achievements-section-mini">
-            <h4>🏅 Recent Achievements</h4>
+            <h4>🏅 {{ $t('dashboard.recentAchievements') }}</h4>
             <div class="achievements-grid-mini">
               <div 
                 v-for="achievement in rewards.achievements.slice(0, 4)" 
@@ -287,7 +287,7 @@
               </div>
             </div>
             <router-link v-if="rewards.achievements.length > 4" to="/profile/achievements" class="view-all-achievements">
-              View all {{ rewards.achievements.length }} achievements →
+              {{ $t('dashboard.viewAllAchievements', { count: rewards.achievements.length }) }} →
             </router-link>
           </div>
         </div>
@@ -302,7 +302,7 @@
             </div>
             <div class="stat-data">
               <div class="stat-number">{{ studyList.length }}</div>
-              <div class="stat-text">Total Courses</div>
+              <div class="stat-text">{{ $t('dashboard.totalCourses') }}</div>
             </div>
           </div>
 
@@ -314,7 +314,7 @@
             </div>
             <div class="stat-data">
               <div class="stat-number">{{ completedCourses }}</div>
-              <div class="stat-text">Completed</div>
+              <div class="stat-text">{{ $t('dashboard.completed') }}</div>
             </div>
           </div>
 
@@ -327,7 +327,7 @@
             </div>
             <div class="stat-data">
               <div class="stat-number">{{ totalHoursStudied }}</div>
-              <div class="stat-text">Hours Studied</div>
+              <div class="stat-text">{{ $t('dashboard.hoursStudied') }}</div>
             </div>
           </div>
 
@@ -340,7 +340,7 @@
             </div>
             <div class="stat-data">
               <div class="stat-number">{{ weekProgress }}%</div>
-              <div class="stat-text">Weekly Progress</div>
+              <div class="stat-text">{{ $t('dashboard.weeklyProgress') }}</div>
             </div>
           </div>
         </div>
@@ -356,12 +356,12 @@
                 </svg>
               </div>
               <div>
-                <h2 class="section-title">{{ isSchoolMode ? 'Current Lessons' : 'Active Courses' }}</h2>
-                <p class="section-subtitle">{{ inProgressCourses }} in progress</p>
+                <h2 class="section-title">{{ isSchoolMode ? $t('dashboard.currentLessons') : $t('dashboard.activeCourses') }}</h2>
+                <p class="section-subtitle">{{ inProgressCourses }} {{ $t('dashboard.inProgress') }}</p>
               </div>
             </div>
             <router-link to="/profile/my-courses" class="view-all-link">
-              {{ isSchoolMode ? 'All Lessons' : 'All Courses' }}
+              {{ isSchoolMode ? $t('dashboard.allLessons') : $t('dashboard.allCourses') }}
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="9 18 15 12 9 6"/>
               </svg>
@@ -370,7 +370,7 @@
 
           <div v-if="loadingStudyList" class="loading-state">
             <div class="spinner"></div>
-            <p>Loading courses...</p>
+            <p>{{ $t('dashboard.loadingCourses') }}</p>
           </div>
 
           <div v-else-if="filteredStudyList.length === 0" class="empty-state">
@@ -378,9 +378,9 @@
               <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
               <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
             </svg>
-            <p class="empty-text">You don't have any active courses yet</p>
+            <p class="empty-text">{{ $t('dashboard.noActiveCourses') }}</p>
             <router-link to="/profile/catalogue" class="add-course-btn">
-              Add Course
+              {{ $t('dashboard.addCourse') }}
             </router-link>
           </div>
 
@@ -405,7 +405,7 @@
                         <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
                         <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
                       </svg>
-                      Level {{ course.level || 1 }}
+                      {{ $t('dashboard.level') }} {{ course.level || 1 }}
                     </span>
                     <span class="meta-item">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -435,14 +435,14 @@
               <div class="course-progress-section">
                 <div class="progress-header">
                   <span class="next-lesson">
-                    Next lesson: {{ getNextLesson(course) }}
+                    {{ $t('dashboard.nextLesson') }}: {{ getNextLesson(course) }}
                   </span>
                   <span class="lessons-count">
                     {{ course.progress?.completedLessons || 0 }}/{{ course.lessons?.length || 0 }}
                   </span>
                 </div>
                 <div class="progress-bar-container">
-                  <div 
+                  <div
                     class="progress-bar-fill"
                     :style="{ width: `${course.progress?.percent || 0}%` }"
                     :class="getProgressColorClass(course.progress?.percent || 0)"
@@ -452,10 +452,10 @@
 
               <div class="course-footer">
                 <span class="progress-percent">
-                  {{ course.progress?.percent || 0 }}% complete
+                  {{ course.progress?.percent || 0 }}% {{ $t('dashboard.complete') }}
                 </span>
                 <button class="continue-btn" @click.stop="startCourse(course)">
-                  Continue
+                  {{ $t('dashboard.continue') }}
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="9 18 15 12 9 6"/>
                   </svg>
@@ -470,7 +470,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
             </svg>
-            Quick Access
+            {{ $t('dashboard.quickAccess') }}
           </h2>
           <div class="quick-actions-grid">
             <router-link
@@ -510,8 +510,8 @@
               </svg>
             </div>
             <div>
-              <h3 class="section-title small">Weekly Goals</h3>
-              <p class="section-subtitle">{{ completedGoals }}/{{ weeklyGoals.length }} completed</p>
+              <h3 class="section-title small">{{ $t('dashboard.weeklyGoals') }}</h3>
+              <p class="section-subtitle">{{ completedGoals }}/{{ weeklyGoals.length }} {{ $t('dashboard.completed').toLowerCase() }}</p>
             </div>
           </div>
           <div class="goals-list">
@@ -537,10 +537,10 @@
                 <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
               </svg>
             </div>
-            <h3 class="section-title small">Recent Activity</h3>
+            <h3 class="section-title small">{{ $t('dashboard.recentActivity') }}</h3>
           </div>
           <div v-if="recentActivity.length === 0" class="empty-activity">
-            <p>No recent activity</p>
+            <p>{{ $t('dashboard.noRecentActivity') }}</p>
           </div>
           <div v-else class="activity-list">
             <div 
@@ -565,16 +565,16 @@
               <path d="M21.21 15.89A10 10 0 1 1 8 2.83"/>
               <path d="M22 12A10 10 0 0 0 12 2v10z"/>
             </svg>
-            <h3 class="insights-title">Learning Statistics</h3>
+            <h3 class="insights-title">{{ $t('dashboard.learningStatistics') }}</h3>
           </div>
           <div class="insights-content">
             <div class="insight-item">
               <div class="insight-header">
-                <span class="insight-label">Weekly Progress</span>
+                <span class="insight-label">{{ $t('dashboard.weeklyProgress') }}</span>
                 <span class="insight-value">{{ weekProgress }}%</span>
               </div>
               <div class="progress-bar-container">
-                <div 
+                <div
                   class="progress-bar-fill white"
                   :style="{ width: `${weekProgress}%` }"
                 ></div>
@@ -582,7 +582,7 @@
             </div>
             <div class="insight-divider"></div>
             <div class="insight-stat">
-              <div class="insight-stat-label">Average Test Score</div>
+              <div class="insight-stat-label">{{ $t('dashboard.averageTestScore') }}</div>
               <div class="insight-stat-value">{{ averageTestScore }}%</div>
             </div>
           </div>
@@ -673,66 +673,66 @@ export default {
       quickActionsBase: [
         {
           id: 1,
-          titleSchool: 'My Curriculum',
-          titleStudyCentre: 'Course Catalog',
-          descriptionSchool: 'View your learning path',
-          descriptionStudyCentre: 'Browse all available courses',
+          titleSchoolKey: 'dashboard.myCurriculum',
+          titleStudyCentreKey: 'dashboard.courseCatalog',
+          descriptionSchoolKey: 'dashboard.viewLearningPath',
+          descriptionStudyCentreKey: 'dashboard.browseAllCourses',
           icon: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
           path: '/profile/catalogue',
           color: 'purple',
           premium: false
         },
-        { 
-          id: 2, 
-          title: 'Analytics', 
-          description: 'Detailed learning statistics',
-          icon: '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>', 
-          path: '/profile/analytics', 
+        {
+          id: 2,
+          titleKey: 'analytics.title',
+          descriptionKey: 'dashboard.detailedStatistics',
+          icon: '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>',
+          path: '/profile/analytics',
           color: 'blue',
-          premium: true 
+          premium: true
         },
-        { 
-          id: 3, 
-          title: 'Homework', 
-          description: 'Practice problems and exercises',
-          icon: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>', 
-          path: '/profile/homeworks', 
+        {
+          id: 3,
+          titleKey: 'homework.title',
+          descriptionKey: 'dashboard.practiceExercises',
+          icon: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>',
+          path: '/profile/homeworks',
           color: 'green',
-          premium: false 
+          premium: false
         },
-        { 
-          id: 4, 
-          title: 'Tests & Quizzes', 
-          description: 'Test your knowledge',
-          icon: '<polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>', 
-          path: '/profile/tests', 
+        {
+          id: 4,
+          titleKey: 'dashboard.testsQuizzes',
+          descriptionKey: 'dashboard.testKnowledge',
+          icon: '<polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+          path: '/profile/tests',
           color: 'orange',
-          premium: true 
+          premium: true
         },
-        { 
-          id: 5, 
-          title: 'My Goals', 
-          description: 'Track your progress',
-          icon: '<circle cx="12" cy="12" r="10"/><path d="M22 12h-4l-3 9L9 3l-3 9H2"/>', 
-          path: '/profile/goal', 
+        {
+          id: 5,
+          titleKey: 'dashboard.myGoals',
+          descriptionKey: 'dashboard.trackProgress',
+          icon: '<circle cx="12" cy="12" r="10"/><path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',
+          path: '/profile/goal',
           color: 'pink',
-          premium: true 
+          premium: true
         },
-        { 
-          id: 6, 
-          title: 'Vocabulary', 
-          description: 'Learned terms and concepts',
-          icon: '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>', 
-          path: '/profile/vocabulary', 
+        {
+          id: 6,
+          titleKey: 'dashboard.vocabulary',
+          descriptionKey: 'dashboard.learnedTerms',
+          icon: '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
+          path: '/profile/vocabulary',
           color: 'indigo',
-          premium: true 
+          premium: true
         }
       ],
-      
-      weeklyGoals: [
-        { id: 1, title: 'Complete 5 lessons', current: 0, target: 5, progress: 0 },
-        { id: 2, title: 'Study 2 hours', current: 0, target: 2, progress: 0 },
-        { id: 3, title: 'Pass 3 tests', current: 0, target: 3, progress: 0 }
+
+      weeklyGoalsKeys: [
+        { id: 1, titleKey: 'dashboard.complete5Lessons', current: 0, target: 5, progress: 0 },
+        { id: 2, titleKey: 'dashboard.study2Hours', current: 0, target: 2, progress: 0 },
+        { id: 3, titleKey: 'dashboard.pass3Tests', current: 0, target: 3, progress: 0 }
       ],
       
       recentActivity: []
@@ -832,19 +832,31 @@ export default {
       return this.rewards?.totalPoints || this.totalPoints || 0;
     },
 
-    // 🎓 NEW: Mode-aware quick actions
+    // 🎓 NEW: Mode-aware quick actions with translations
     quickActions() {
       return this.quickActionsBase.map(action => {
         // For the first action (Catalog/Curriculum), use mode-specific titles
         if (action.id === 1) {
           return {
             ...action,
-            title: this.isSchoolMode ? action.titleSchool : action.titleStudyCentre,
-            description: this.isSchoolMode ? action.descriptionSchool : action.descriptionStudyCentre
+            title: this.isSchoolMode ? this.$t(action.titleSchoolKey) : this.$t(action.titleStudyCentreKey),
+            description: this.isSchoolMode ? this.$t(action.descriptionSchoolKey) : this.$t(action.descriptionStudyCentreKey)
           };
         }
-        return action;
+        return {
+          ...action,
+          title: this.$t(action.titleKey),
+          description: this.$t(action.descriptionKey)
+        };
       });
+    },
+
+    // Weekly goals with translations
+    weeklyGoals() {
+      return this.weeklyGoalsKeys.map(goal => ({
+        ...goal,
+        title: this.$t(goal.titleKey)
+      }));
     },
 
     averageTestScore() {

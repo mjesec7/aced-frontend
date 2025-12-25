@@ -8,15 +8,15 @@
             <span class="text-2xl">📚</span>
           </div>
           <div>
-            <h1 class="text-2xl font-bold text-slate-800">Catalogue</h1>
-            <p class="text-slate-500 text-sm">{{ filteredCourses.length }} courses</p>
+            <h1 class="text-2xl font-bold text-slate-800">{{ $t('catalogue.title') }}</h1>
+            <p class="text-slate-500 text-sm">{{ filteredCourses.length }} {{ $t('catalogue.courses') }}</p>
           </div>
         </div>
-        
+
         <!-- Status + Stats -->
         <div class="hidden md:flex items-center gap-3">
           <div class="px-4 py-2 rounded-full bg-purple-50 text-purple-600 text-sm font-medium">
-            📋 {{ studyPlanTopics.length }} in plan
+            📋 {{ studyPlanTopics.length }} {{ $t('catalogue.inPlan') }}
           </div>
           <div 
             class="px-4 py-2 rounded-full text-sm font-bold"
@@ -40,7 +40,7 @@
             v-model="searchQuery"
             type="text"
             class="w-full px-4 py-2.5 pl-10 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all"
-            placeholder="Find a course..."
+            :placeholder="$t('catalogue.findCourse')"
           />
           <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="8"/>
@@ -49,37 +49,37 @@
         </div>
 
         <!-- Filter Pills -->
-        <select 
-          v-model="selectedSubjectFilter" 
+        <select
+          v-model="selectedSubjectFilter"
           class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-slate-600 bg-white focus:outline-none focus:border-indigo-400 cursor-pointer hover:border-gray-300 transition-all"
         >
-          <option :value="null">All Subjects</option>
+          <option :value="null">{{ $t('catalogue.allSubjects') }}</option>
           <option v-for="subject in availableSubjects" :key="subject" :value="subject">{{ subject }}</option>
         </select>
 
-        <select 
-          v-model="selectedLevelFilter" 
+        <select
+          v-model="selectedLevelFilter"
           class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-slate-600 bg-white focus:outline-none focus:border-indigo-400 cursor-pointer hover:border-gray-300 transition-all"
         >
-          <option :value="null">All Levels</option>
-          <option v-for="level in availableLevels" :key="level" :value="level">Level {{ level }}</option>
+          <option :value="null">{{ $t('catalogue.allLevels') }}</option>
+          <option v-for="level in availableLevels" :key="level" :value="level">{{ $t('dashboard.level') }} {{ level }}</option>
         </select>
 
-        <select 
-          v-model="typeFilter" 
+        <select
+          v-model="typeFilter"
           class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-slate-600 bg-white focus:outline-none focus:border-indigo-400 cursor-pointer hover:border-gray-300 transition-all"
         >
-          <option value="all">All Types</option>
-          <option value="free">Free</option>
-          <option value="premium">Premium</option>
+          <option value="all">{{ $t('catalogue.allTypes') }}</option>
+          <option value="free">{{ $t('catalogue.free') }}</option>
+          <option value="premium">{{ $t('catalogue.premium') }}</option>
         </select>
 
-        <button 
-          v-if="hasActiveFilters" 
+        <button
+          v-if="hasActiveFilters"
           @click="clearFilters"
           class="px-4 py-2.5 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 transition-all"
         >
-          Clear
+          {{ $t('catalogue.clear') }}
         </button>
 
         <button 
@@ -101,7 +101,7 @@
     <!-- Loading -->
     <div v-if="isLoading" class="flex flex-col items-center justify-center py-24">
       <div class="w-8 h-8 border-2 border-indigo-200 border-t-indigo-500 rounded-full animate-spin"></div>
-      <p class="mt-4 text-slate-500 text-sm">Loading courses...</p>
+      <p class="mt-4 text-slate-500 text-sm">{{ $t('catalogue.loadingCourses') }}</p>
     </div>
 
     <!-- Content -->
@@ -109,8 +109,8 @@
       <!-- Empty State -->
       <div v-if="!filteredCourses.length" class="text-center py-24">
         <div class="text-6xl mb-4">🔍</div>
-        <h3 class="text-lg font-semibold text-slate-800 mb-2">No courses found</h3>
-        <p class="text-slate-500 text-sm">Try adjusting your filters</p>
+        <h3 class="text-lg font-semibold text-slate-800 mb-2">{{ $t('catalogue.noCoursesFound') }}</h3>
+        <p class="text-slate-500 text-sm">{{ $t('catalogue.tryAdjustingFilters') }}</p>
       </div>
 
       <!-- School Mode: Grouped by Subject -->
@@ -132,7 +132,7 @@
               <!-- Top Row -->
               <div class="flex items-center justify-between mb-3">
                 <span class="px-2 py-1 rounded-lg bg-slate-100 text-slate-600 text-xs font-medium">
-                  Lvl {{ course.level }}
+                  {{ $t('catalogue.lvl') }} {{ course.level }}
                 </span>
                 <div class="flex items-center gap-2">
                   <span 
@@ -165,7 +165,7 @@
                   <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                   </svg>
-                  {{ course.lessonCount }} lessons
+                  {{ course.lessonCount }} {{ $t('catalogue.lessons') }}
                 </span>
                 <span class="flex items-center gap-1">
                   <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -179,7 +179,7 @@
               <!-- Progress Bar -->
               <div class="mb-3">
                 <div class="flex justify-between text-xs mb-1">
-                  <span class="text-slate-400">Progress</span>
+                  <span class="text-slate-400">{{ $t('catalogue.progress') }}</span>
                   <span class="font-medium text-slate-600">{{ course.progress }}%</span>
                 </div>
                 <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden">
@@ -246,7 +246,7 @@
             </h3>
 
             <!-- Level -->
-            <div class="text-xs text-slate-500 mb-3">Level {{ course.level }} · {{ getLevelDescription(course.level) }}</div>
+            <div class="text-xs text-slate-500 mb-3">{{ $t('dashboard.level') }} {{ course.level }} · {{ getLevelDescription(course.level) }}</div>
 
             <!-- Meta -->
             <div class="flex items-center gap-4 text-xs text-slate-500 mb-4">
@@ -254,7 +254,7 @@
                 <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                 </svg>
-                {{ course.lessonCount }} lessons
+                {{ course.lessonCount }} {{ $t('catalogue.lessons') }}
               </span>
               <span class="flex items-center gap-1">
                 <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -268,7 +268,7 @@
             <!-- Progress Bar -->
             <div class="mb-3">
               <div class="flex justify-between text-xs mb-1">
-                <span class="text-slate-400">Progress</span>
+                <span class="text-slate-400">{{ $t('catalogue.progress') }}</span>
                 <span class="font-medium text-slate-600">{{ course.progress }}%</span>
               </div>
               <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden">
@@ -325,14 +325,14 @@
         <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6" @click.stop>
           <div class="text-center mb-4">
             <div class="text-4xl mb-3">📋</div>
-            <h3 class="text-lg font-bold text-slate-800">Add to Study Plan?</h3>
+            <h3 class="text-lg font-bold text-slate-800">{{ $t('catalogue.addToStudyPlan') }}</h3>
           </div>
           <p class="text-slate-500 text-sm text-center mb-6" v-if="selectedCourse">
             <strong class="text-slate-800">{{ selectedCourse.name }}</strong>
           </p>
           <div class="flex gap-3">
-            <button @click="showAddModal = false" class="flex-1 py-2.5 border border-gray-200 rounded-xl font-medium text-slate-600 hover:bg-gray-50 transition-all">Cancel</button>
-            <button @click="confirmAddToStudyPlan" class="flex-1 py-2.5 bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 transition-all">Add</button>
+            <button @click="showAddModal = false" class="flex-1 py-2.5 border border-gray-200 rounded-xl font-medium text-slate-600 hover:bg-gray-50 transition-all">{{ $t('catalogue.cancel') }}</button>
+            <button @click="confirmAddToStudyPlan" class="flex-1 py-2.5 bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 transition-all">{{ $t('catalogue.add') }}</button>
           </div>
         </div>
       </div>
@@ -343,9 +343,9 @@
       <div v-if="showSuccessModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" @click="showSuccessModal = false">
         <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 text-center" @click.stop>
           <div class="text-5xl mb-3">✅</div>
-          <h3 class="text-lg font-bold text-slate-800 mb-2">Added!</h3>
+          <h3 class="text-lg font-bold text-slate-800 mb-2">{{ $t('catalogue.added') }}</h3>
           <p class="text-slate-500 text-sm mb-6" v-if="selectedCourse">{{ selectedCourse.name }}</p>
-          <button @click="showSuccessModal = false" class="w-full py-2.5 bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 transition-all">Great</button>
+          <button @click="showSuccessModal = false" class="w-full py-2.5 bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 transition-all">{{ $t('catalogue.great') }}</button>
         </div>
       </div>
     </transition>
@@ -540,9 +540,12 @@ export default {
       if (l?.lessonName) return `Topic: ${l.lessonName.trim()}`;
       return 'Untitled';
     },
-    getLevelDescription(l) { const d = { 1: 'Beginner', 2: 'Elementary', 3: 'Basic', 4: 'Intermediate', 5: 'Advanced', 6: 'Pro' }; return d[parseInt(l)] || `Level ${l}`; },
+    getLevelDescription(l) {
+      const keys = { 1: 'catalogue.beginner', 2: 'catalogue.elementary', 3: 'catalogue.intermediate', 4: 'catalogue.intermediate', 5: 'catalogue.upperIntermediate', 6: 'catalogue.advanced' };
+      return keys[parseInt(l)] ? this.$t(keys[parseInt(l)]) : `${this.$t('dashboard.level')} ${l}`;
+    },
     getProgressColor(p) { if (p >= 80) return 'bg-green-500'; if (p >= 40) return 'bg-indigo-500'; if (p > 0) return 'bg-amber-500'; return 'bg-gray-200'; },
-    getButtonText(p) { if (p === 100) return 'Completed'; if (p > 0) return 'Continue'; return 'Start'; },
+    getButtonText(p) { if (p === 100) return this.$t('catalogue.review'); if (p > 0) return this.$t('catalogue.continueBtn'); return this.$t('catalogue.start'); },
     hasTopicAccess(type) { return type === 'free' || this.userStatus === 'pro' || this.userStatus === 'start'; },
     getSubjectEmoji(s) { const e = { 'Mathematics': '📐', 'Math': '📐', 'English': '📚', 'Science': '🔬', 'Physics': '⚛️', 'Chemistry': '⚗️', 'Biology': '🧬', 'History': '📜', 'Geography': '🌍', 'Computer Science': '💻', 'Programming': '👨‍💻', 'Art': '🎨', 'Music': '🎵', 'Languages': '🗣️' }; return e[s] || '📖'; },
   },
