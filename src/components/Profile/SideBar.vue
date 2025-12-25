@@ -8,7 +8,7 @@
           <img src="@/assets/logo.png" alt="ACED" class="brand-logo-img" />
           <div class="brand-info">
             <h1 class="brand-name">ACED</h1>
-            <span class="brand-tagline">Learning Platform</span>
+            <span class="brand-tagline">{{ $t('sidebar.learningPlatform') }}</span>
           </div>
           <button class="close-btn" @click="closeSidebar">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -28,18 +28,18 @@
           <div class="user-stats">
             <div class="stat-item">
               <span class="stat-value">{{ userLevel }}</span>
-              <span class="stat-label">Level</span>
+              <span class="stat-label">{{ $t('sidebar.level') }}</span>
             </div>
             <div class="stat-divider"></div>
             <div class="stat-item">
               <span class="stat-value">{{ userStreak }}</span>
-              <span class="stat-label">Streak</span>
+              <span class="stat-label">{{ $t('sidebar.streak') }}</span>
             </div>
           </div>
         </div>
 
         <div class="mode-selector" v-if="hasSelectedMode">
-          <div class="mode-label">Learning Mode</div>
+          <div class="mode-label">{{ $t('sidebar.learningMode') }}</div>
           <div class="mode-toggle">
             <button
               class="mode-option"
@@ -52,7 +52,7 @@
                   <path d="M6 12v5c3 3 9 3 12 0v-5"/>
                 </svg>
               </span>
-              <span class="mode-text">School</span>
+              <span class="mode-text">{{ $t('sidebar.school') }}</span>
             </button>
             <button
               class="mode-option"
@@ -64,15 +64,15 @@
                   <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
                 </svg>
               </span>
-              <span class="mode-text">Study Centre</span>
+              <span class="mode-text">{{ $t('sidebar.studyCentre') }}</span>
             </button>
           </div>
         </div>
 
         <div class="mode-selection" v-if="!hasSelectedMode">
           <div class="selection-header">
-            <h4>Choose Your Path</h4>
-            <p>Select how you want to learn</p>
+            <h4>{{ $t('sidebar.chooseYourPath') }}</h4>
+            <p>{{ $t('sidebar.selectHowToLearn') }}</p>
           </div>
           <div class="selection-options">
             <button
@@ -87,8 +87,8 @@
                   <path d="M6 12v5c3 3 9 3 12 0v-5"/>
                 </svg>
               </div>
-              <h5>School Mode</h5>
-              <p>Structured curriculum</p>
+              <h5>{{ $t('sidebar.schoolMode') }}</h5>
+              <p>{{ $t('sidebar.structuredCurriculum') }}</p>
             </button>
             <button
               class="selection-card"
@@ -101,15 +101,15 @@
                   <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
                 </svg>
               </div>
-              <h5>Study Centre</h5>
-              <p>Free exploration</p>
+              <h5>{{ $t('sidebar.studyCentre') }}</h5>
+              <p>{{ $t('sidebar.freeExploration') }}</p>
             </button>
           </div>
         </div>
 
         <nav class="nav-menu">
           <div class="nav-section">
-            <span class="nav-section-title">Menu</span>
+            <span class="nav-section-title">{{ $t('sidebar.menu') }}</span>
             <button
               v-for="link in navigationLinks"
               :key="link.name"
@@ -124,8 +124,8 @@
                 <component :is="link.icon" />
               </div>
               <div class="nav-content">
-                <span class="nav-title">{{ link.label }}</span>
-                <span class="nav-desc">{{ link.description }}</span>
+                <span class="nav-title">{{ getNavLabel(link.name) }}</span>
+                <span class="nav-desc">{{ getNavDesc(link.name) }}</span>
               </div>
               <div class="nav-badge" v-if="link.premium && !hasAccess(link)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -150,8 +150,8 @@
               </svg>
             </div>
             <div class="upgrade-text">
-              <h4>Upgrade to Pro</h4>
-              <p>Unlock all features</p>
+              <h4>{{ $t('sidebar.upgradeToPro') }}</h4>
+              <p>{{ $t('sidebar.unlockAllFeatures') }}</p>
             </div>
             <button class="upgrade-btn" @click="goToUpgrade">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -168,8 +168,12 @@
               <polyline points="16 17 21 12 16 7"/>
               <line x1="21" y1="12" x2="9" y2="12"/>
             </svg>
-            <span>Log Out</span>
+            <span>{{ $t('sidebar.logOut') }}</span>
           </button>
+          <!-- Language Switcher in Sidebar Footer -->
+          <div class="language-section">
+            <LanguageSwitcher />
+          </div>
         </div>
       </div>
     </aside>
@@ -190,11 +194,11 @@
               <line x1="21" y1="12" x2="9" y2="12"/>
             </svg>
           </div>
-          <h3 class="modal-title">Log Out</h3>
-          <p class="modal-text">Are you sure you want to log out of your account?</p>
+          <h3 class="modal-title">{{ $t('sidebar.logOut') }}</h3>
+          <p class="modal-text">{{ $t('sidebar.confirmLogout') }}</p>
           <div class="modal-actions">
-            <button class="modal-btn secondary" @click="showLogoutModal = false">Cancel</button>
-            <button class="modal-btn danger" @click="logout">Log Out</button>
+            <button class="modal-btn secondary" @click="showLogoutModal = false">{{ $t('common.cancel') }}</button>
+            <button class="modal-btn danger" @click="logout">{{ $t('sidebar.logOut') }}</button>
           </div>
         </div>
       </div>
@@ -209,8 +213,8 @@
                 <path d="M2 20h20M4 16V8l4 4 4-6 4 6 4-4v8"/>
               </svg>
             </div>
-            <h3>Premium Feature</h3>
-            <p>Unlock with Start or Pro plan</p>
+            <h3>{{ $t('sidebar.premiumFeature') }}</h3>
+            <p>{{ $t('sidebar.unlockWithPlan') }}</p>
           </div>
           <div class="premium-benefits">
             <div class="benefit">
@@ -219,7 +223,7 @@
                   <polyline points="20 6 9 17 4 12"/>
                 </svg>
               </span>
-              <span>Unlimited practice tests</span>
+              <span>{{ $t('sidebar.unlimitedTests') }}</span>
             </div>
             <div class="benefit">
               <span class="benefit-icon">
@@ -227,7 +231,7 @@
                   <polyline points="20 6 9 17 4 12"/>
                 </svg>
               </span>
-              <span>Detailed analytics</span>
+              <span>{{ $t('sidebar.detailedAnalytics') }}</span>
             </div>
             <div class="benefit">
               <span class="benefit-icon">
@@ -235,12 +239,12 @@
                   <polyline points="20 6 9 17 4 12"/>
                 </svg>
               </span>
-              <span>AI-powered homework help</span>
+              <span>{{ $t('sidebar.aiHomeworkHelp') }}</span>
             </div>
           </div>
           <div class="modal-actions">
-            <button class="modal-btn secondary" @click="showPremiumModal = false">Maybe Later</button>
-            <button class="modal-btn primary" @click="goToUpgrade">Upgrade Now</button>
+            <button class="modal-btn secondary" @click="showPremiumModal = false">{{ $t('sidebar.maybeLater') }}</button>
+            <button class="modal-btn primary" @click="goToUpgrade">{{ $t('sidebar.upgradeNow') }}</button>
           </div>
         </div>
       </div>
@@ -254,6 +258,7 @@ import { auth } from '@/firebase';
 import { mapState, mapMutations, mapGetters } from 'vuex';
 import { userStatusMixin } from '@/composables/useUserStatus';
 import { switchLearningMode } from '@/api/user';
+import LanguageSwitcher from '@/components/LanguageSwitcher.vue';
 
 // Icon components (Unchanged)
 const HomeIcon = {
@@ -284,7 +289,8 @@ export default {
     BookOpenIcon,
     FileTextIcon,
     ClipboardCheckIcon,
-    SettingsIcon
+    SettingsIcon,
+    LanguageSwitcher
   },
 
   mixins: [userStatusMixin],
@@ -562,6 +568,28 @@ export default {
       }
 
       return path.includes(`/profile/${name}`);
+    },
+
+    getNavLabel(name) {
+      const labels = {
+        main: this.$t('sidebar.dashboard'),
+        catalogue: this.$t('sidebar.myCourses'),
+        homeworks: this.$t('sidebar.assignments'),
+        tests: this.$t('sidebar.tests'),
+        settings: this.$t('sidebar.settings')
+      };
+      return labels[name] || name;
+    },
+
+    getNavDesc(name) {
+      const descriptions = {
+        main: this.$t('sidebar.overviewStats'),
+        catalogue: this.$t('sidebar.browseLessons'),
+        homeworks: this.$t('sidebar.practiceHomework'),
+        tests: this.$t('sidebar.assessmentAnalytics'),
+        settings: this.$t('sidebar.accountPreferences')
+      };
+      return descriptions[name] || '';
     }
   }
 };
@@ -1150,6 +1178,11 @@ export default {
 .upgrade-btn svg {
   width: 18px;
   height: 18px;
+}
+
+/* === LANGUAGE SECTION === */
+.language-section {
+  margin-top: 16px;
 }
 
 /* === FOOTER === */

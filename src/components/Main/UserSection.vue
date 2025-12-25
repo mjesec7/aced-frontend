@@ -1,12 +1,15 @@
 <template>
-  <div>
+  <div class="user-section-wrapper">
+    <!-- Language Switcher -->
+    <LanguageSwitcher :compact="true" />
+
     <div v-if="!currentUser" class="auth-buttons">
       <button class="auth-btn login-btn" @click="openModal('Login')">
-        <span class="btn-text">Login</span>
+        <span class="btn-text">{{ $t('userSection.login') }}</span>
         <span class="btn-icon">→</span>
       </button>
       <button class="auth-btn register-btn" @click="openModal('register')">
-        <span class="btn-text">Register</span>
+        <span class="btn-text">{{ $t('userSection.register') }}</span>
         <span class="btn-glow"></span>
       </button>
     </div>
@@ -14,34 +17,34 @@
     <div v-else class="user-section">
       <button class="auth-btn profile-btn" @click="$router.push('/profile')">
         <span class="profile-icon">👤</span>
-        <span>Profile</span>
+        <span>{{ $t('userSection.profile') }}</span>
       </button>
-      
+
       <div class="user-menu">
-        <button 
-          class="user-button" 
+        <button
+          class="user-button"
           :class="{ active: dropdownOpen }"
           @click="toggleDropdown"
         >
-          <span class="user-greeting">Hello, {{ currentUser.name }}</span>
+          <span class="user-greeting">{{ $t('userSection.greeting', { name: currentUser.name }) }}</span>
           <span class="badge" :class="planClass">
             {{ displayPlan }}
           </span>
           <span class="dropdown-arrow" :class="{ rotated: dropdownOpen }">▼</span>
         </button>
-        <div 
-          v-if="dropdownOpen" 
+        <div
+          v-if="dropdownOpen"
           class="dropdown-menu show"
           @click.stop
         >
           <ul>
             <li @click="$router.push('/settings')">
               <span class="menu-icon">⚙️</span>
-              <span>Settings</span>
+              <span>{{ $t('userSection.settings') }}</span>
             </li>
             <li @click="logout">
               <span class="menu-icon">🚪</span>
-              <span>Logout</span>
+              <span>{{ $t('userSection.logout') }}</span>
             </li>
           </ul>
         </div>
@@ -61,33 +64,33 @@
 
         <div v-else-if="authMode === 'register'" class="auth-form">
           <div class="modal-header">
-            <h2>Create an Account</h2>
-            <p class="modal-subtitle">Start your learning journey</p>
+            <h2>{{ $t('userSection.createAccount') }}</h2>
+            <p class="modal-subtitle">{{ $t('userSection.startJourney') }}</p>
           </div>
 
           <div class="form-group">
-            <input v-model="user.name" placeholder="First Name" :disabled="isLoading" class="form-input" />
+            <input v-model="user.name" :placeholder="$t('userSection.firstName')" :disabled="isLoading" class="form-input" />
           </div>
           <div class="form-group">
-            <input v-model="user.surname" placeholder="Last Name" :disabled="isLoading" class="form-input" />
+            <input v-model="user.surname" :placeholder="$t('userSection.lastName')" :disabled="isLoading" class="form-input" />
           </div>
           <div class="form-group">
-            <input v-model="user.email" type="email" placeholder="Email" :disabled="isLoading" class="form-input" />
+            <input v-model="user.email" type="email" :placeholder="$t('userSection.email')" :disabled="isLoading" class="form-input" />
           </div>
           <div class="form-group">
-            <input v-model="user.password" type="password" placeholder="Password" :disabled="isLoading" class="form-input" />
+            <input v-model="user.password" type="password" :placeholder="$t('userSection.password')" :disabled="isLoading" class="form-input" />
           </div>
           <div class="form-group">
-            <input v-model="user.confirmPassword" type="password" placeholder="Confirm Password" :disabled="isLoading" class="form-input" />
+            <input v-model="user.confirmPassword" type="password" :placeholder="$t('userSection.confirmPassword')" :disabled="isLoading" class="form-input" />
           </div>
 
           <button class="auth-submit" @click="register" :disabled="isLoading">
-            <span>{{ isLoading ? 'Registering...' : 'Sign Up' }}</span>
+            <span>{{ isLoading ? $t('userSection.registering') : $t('userSection.signUp') }}</span>
             <span class="submit-glow"></span>
           </button>
 
           <div class="divider">
-            <span>or</span>
+            <span>{{ $t('common.or') }}</span>
           </div>
 
           <button class="google-auth" @click="LoginWithGoogle" :disabled="isLoading">
@@ -97,35 +100,35 @@
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
-            <span>{{ isLoading ? 'Loading...' : 'Continue with Google' }}</span>
+            <span>{{ isLoading ? $t('common.loading') : $t('userSection.continueWithGoogle') }}</span>
           </button>
 
           <p class="switch-text">
-            Already have an account? 
-            <span class="switch-link" @click="switchAuth('Login')">Sign In</span>
+            {{ $t('userSection.alreadyHaveAccount') }}
+            <span class="switch-link" @click="switchAuth('Login')">{{ $t('userSection.signIn') }}</span>
           </p>
         </div>
 
         <div v-else class="auth-form">
           <div class="modal-header">
-            <h2>Welcome Back!</h2>
-            <p class="modal-subtitle">Continue your learning</p>
+            <h2>{{ $t('userSection.welcomeBack') }}</h2>
+            <p class="modal-subtitle">{{ $t('userSection.continuelearning') }}</p>
           </div>
 
           <div class="form-group">
-            <input v-model="Login.email" type="email" placeholder="Email" :disabled="isLoading" class="form-input" />
+            <input v-model="Login.email" type="email" :placeholder="$t('userSection.email')" :disabled="isLoading" class="form-input" />
           </div>
           <div class="form-group">
-            <input v-model="Login.password" type="password" placeholder="Password" :disabled="isLoading" class="form-input" />
+            <input v-model="Login.password" type="password" :placeholder="$t('userSection.password')" :disabled="isLoading" class="form-input" />
           </div>
 
           <button class="auth-submit" @click="handleEmailLogin" :disabled="isLoading">
-            <span>{{ isLoading ? 'Signing in...' : 'Sign In' }}</span>
+            <span>{{ isLoading ? $t('userSection.signingIn') : $t('userSection.signIn') }}</span>
             <span class="submit-glow"></span>
           </button>
 
           <div class="divider">
-            <span>or</span>
+            <span>{{ $t('common.or') }}</span>
           </div>
 
           <button class="google-auth" @click="LoginWithGoogle" :disabled="isLoading">
@@ -135,12 +138,12 @@
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
-            <span>{{ isLoading ? 'Loading...' : 'Continue with Google' }}</span>
+            <span>{{ isLoading ? $t('common.loading') : $t('userSection.continueWithGoogle') }}</span>
           </button>
 
           <p class="switch-text">
-            Don't have an account? 
-            <span class="switch-link" @click="switchAuth('register')">Sign Up</span>
+            {{ $t('userSection.dontHaveAccount') }}
+            <span class="switch-link" @click="switchAuth('register')">{{ $t('userSection.signUp') }}</span>
           </p>
         </div>
 
@@ -148,7 +151,7 @@
           <span class="message-icon">⚠️</span>
           <span>{{ errorMessage }}</span>
         </div>
-        
+
         <div v-if="successMessage" class="success-message">
           <span class="message-icon">✓</span>
           <span>{{ successMessage }}</span>
@@ -171,10 +174,17 @@ import {
   onAuthStateChanged
 } from "firebase/auth";
 import { mapMutations, mapActions, mapGetters } from "vuex";
+import { useI18n } from 'vue-i18n';
 import AcedSettings from "@/components/Main/AcedSettings.vue";
+import LanguageSwitcher from "@/components/LanguageSwitcher.vue";
 
 export default {
-  components: { AcedSettings },
+  components: { AcedSettings, LanguageSwitcher },
+
+  setup() {
+    const { t } = useI18n();
+    return { t };
+  },
 
   data() {
     return {
@@ -185,7 +195,7 @@ export default {
       isLoading: false,
       errorMessage: '',
       successMessage: '',
-      loadingMessage: 'Loading...',
+      loadingMessage: '',
       user: { name: "", surname: "", email: "", password: "", confirmPassword: "" },
       Login: { email: "", password: "" },
     };
@@ -198,27 +208,28 @@ export default {
       return this.getUser;
     },
     displayPlan() {
-      // Priority: Vuex store (server-authoritative) > currentUser > localStorage
-      const plan = this.userStatus || 
+      const plan = this.userStatus ||
                    this.$store?.state?.user?.userStatus ||
-                   this.currentUser?.subscriptionPlan || 
+                   this.currentUser?.subscriptionPlan ||
                    localStorage.getItem("userStatus") ||
-                   localStorage.getItem("plan") || 
+                   localStorage.getItem("plan") ||
                    'free';
       return plan.toUpperCase();
     },
     planClass() {
-      const plan = (this.userStatus || 
+      const plan = (this.userStatus ||
                     this.$store?.state?.user?.userStatus ||
-                    this.currentUser?.subscriptionPlan || 
+                    this.currentUser?.subscriptionPlan ||
                     localStorage.getItem("userStatus") ||
-                    localStorage.getItem("plan") || 
+                    localStorage.getItem("plan") ||
                     'free').toLowerCase();
       return `badge-${plan}`;
     }
   },
 
   mounted() {
+    this.loadingMessage = this.$t('common.loading');
+
     onAuthStateChanged(auth, (user) => {
       if (user && !this.currentUser) {
         this.handleAuthStateChange(user);
@@ -229,7 +240,6 @@ export default {
       this.openModal("Login");
     });
 
-    // Listen for subscription updates from anywhere in the app
     window.addEventListener('userStatusChanged', this.handleStatusUpdate);
     window.addEventListener('subscriptionUpdated', this.handleStatusUpdate);
     window.addEventListener('forceUpdate', this.handleStatusUpdate);
@@ -251,36 +261,34 @@ export default {
     ...mapMutations(["setUser", "setFirebaseUserId", "setToken"]),
     ...mapActions(["LoginUser", "logoutUser"]),
 
-    // Handler for subscription status updates
     handleStatusUpdate() {
-      // Force Vue to re-render computed properties by accessing forceUpdateKey
       this.$forceUpdate();
     },
 
     getApiBase() {
       const envUrl = import.meta.env.VITE_API_BASE_URL;
-      
+
       if (window.location.hostname === 'aced.live') {
         return 'https://api.aced.live';
       }
-      
+
       if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
         return envUrl || 'http://localhost:5000';
       }
-      
+
       return envUrl || 'https://api.aced.live';
     },
 
     async saveUserToBackend(firebaseUser, token, additionalData = {}) {
       try {
         const apiBase = this.getApiBase();
-        
+
         const userData = {
           uid: firebaseUser.uid,
           firebaseId: firebaseUser.uid,
-          name: additionalData.name || 
-                firebaseUser.displayName || 
-                firebaseUser.email?.split('@')[0] || 
+          name: additionalData.name ||
+                firebaseUser.displayName ||
+                firebaseUser.email?.split('@')[0] ||
                 'User',
           email: firebaseUser.email,
           Login: firebaseUser.email,
@@ -322,9 +330,9 @@ export default {
           _id: firebaseUser.uid,
           firebaseId: firebaseUser.uid,
           email: firebaseUser.email,
-          name: additionalData.name || 
-                firebaseUser.displayName || 
-                firebaseUser.email?.split('@')[0] || 
+          name: additionalData.name ||
+                firebaseUser.displayName ||
+                firebaseUser.email?.split('@')[0] ||
                 'User',
           displayName: firebaseUser.displayName || '',
           subscriptionPlan: additionalData.subscriptionPlan || 'free',
@@ -349,7 +357,7 @@ export default {
 
     async handleAuthStateChange(firebaseUser) {
       try {
-        this.loadingMessage = 'Setting up account...';
+        this.loadingMessage = this.$t('common.loading');
         const token = await firebaseUser.getIdToken(true);
         const saveResult = await this.saveUserToBackend(firebaseUser, token);
 
@@ -362,7 +370,7 @@ export default {
         };
 
         this.setUserData(userData, firebaseUser.uid, token);
-        
+
       } catch (error) {
         try {
           const fallbackUserData = {
@@ -375,41 +383,41 @@ export default {
           const token = await firebaseUser.getIdToken(true);
           this.setUserData(fallbackUserData, firebaseUser.uid, token);
         } catch (fallbackError) {
-          this.showError('Login system error');
+          this.showError(this.$t('errors.loginError'));
         }
       }
     },
 
     async handleEmailLogin() {
       if (!this.Login.email || !this.Login.password) {
-        this.showError("Please enter email and password");
+        this.showError(this.$t('errors.fillAllFields'));
         return;
       }
       this.isLoading = true;
       this.clearMessages();
-      this.loadingMessage = 'Signing in...';
+      this.loadingMessage = this.$t('userSection.signingIn');
       try {
         const result = await signInWithEmailAndPassword(auth, this.Login.email, this.Login.password);
-        this.loadingMessage = 'Setting up profile...';
+        this.loadingMessage = this.$t('common.loading');
         await this.handleAuthStateChange(result.user);
-        this.showSuccess('Successfully signed in!');
+        this.showSuccess(this.$t('success.signedIn'));
         setTimeout(() => {
           this.closeModal();
         }, 1000);
       } catch (error) {
-        let errorMsg = "Login error";
+        let errorMsg = this.$t('errors.loginError');
         if (error.code === 'auth/user-not-found') {
-          errorMsg = "User not found";
+          errorMsg = this.$t('errors.userNotFound');
         } else if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-          errorMsg = "Invalid password or email";
+          errorMsg = this.$t('errors.invalidPassword');
         } else if (error.code === 'auth/invalid-email') {
-          errorMsg = "Invalid email format";
+          errorMsg = this.$t('errors.invalidEmail');
         } else if (error.code === 'auth/too-many-requests') {
-          errorMsg = "Too many attempts. Please try later";
+          errorMsg = this.$t('errors.tooManyAttempts');
         } else if (error.code === 'auth/user-disabled') {
-          errorMsg = "Account disabled";
+          errorMsg = this.$t('errors.accountDisabled');
         } else if (error.code === 'auth/network-request-failed') {
-          errorMsg = "Internet connection problem";
+          errorMsg = this.$t('errors.networkError');
         }
         this.showError(errorMsg);
       } finally {
@@ -421,25 +429,25 @@ export default {
       if (this.isLoading) return;
       this.isLoading = true;
       this.clearMessages();
-      this.loadingMessage = 'Connecting to Google...';
+      this.loadingMessage = this.$t('common.loading');
       try {
         const provider = new GoogleAuthProvider();
         const result = await signInWithPopup(auth, provider);
-        this.loadingMessage = 'Setting up profile...';
+        this.loadingMessage = this.$t('common.loading');
         await this.handleAuthStateChange(result.user);
-        this.showSuccess('Successfully signed in with Google!');
+        this.showSuccess(this.$t('success.signedInGoogle'));
         setTimeout(() => {
           this.closeModal();
           this.$router.push("/profile");
         }, 1000);
       } catch (error) {
-        let errorMsg = "Google sign-in error";
+        let errorMsg = this.$t('errors.googleSignInError');
         if (error.code === 'auth/popup-closed-by-user') {
-          errorMsg = "Sign-in window was closed";
+          errorMsg = this.$t('errors.popupClosed');
         } else if (error.code === 'auth/popup-blocked') {
-          errorMsg = "Popup window blocked";
+          errorMsg = this.$t('errors.popupBlocked');
         } else if (error.code === 'auth/network-request-failed') {
-          errorMsg = "Internet connection problem";
+          errorMsg = this.$t('errors.networkError');
         }
         this.showError(errorMsg);
       } finally {
@@ -449,24 +457,24 @@ export default {
 
     async register() {
       if (!this.user.name || !this.user.email || !this.user.password) {
-        this.showError("Please fill all required fields");
+        this.showError(this.$t('errors.fillAllFields'));
         return;
       }
       if (this.user.password !== this.user.confirmPassword) {
-        this.showError("Passwords don't match");
+        this.showError(this.$t('errors.passwordsMismatch'));
         return;
       }
       if (this.user.password.length < 6) {
-        this.showError("Password must be at least 6 characters");
+        this.showError(this.$t('errors.passwordMinLength'));
         return;
       }
       this.isLoading = true;
       this.clearMessages();
-      this.loadingMessage = 'Creating account...';
+      this.loadingMessage = this.$t('userSection.registering');
       try {
         const result = await createUserWithEmailAndPassword(auth, this.user.email, this.user.password);
         const firebaseUser = result.user;
-        this.loadingMessage = 'Setting up profile...';
+        this.loadingMessage = this.$t('common.loading');
         const registrationData = {
           name: this.user.name,
           surname: this.user.surname,
@@ -482,20 +490,20 @@ export default {
           ...saveResult.user
         };
         this.setUserData(userData, firebaseUser.uid, token);
-        this.showSuccess("Registration successful!");
+        this.showSuccess(this.$t('success.registrationSuccess'));
         setTimeout(() => {
           this.closeModal();
         }, 1500);
       } catch (error) {
-        let errorMsg = "Registration error";
+        let errorMsg = this.$t('errors.registrationError');
         if (error.code === 'auth/email-already-in-use') {
-          errorMsg = "Email already in use";
+          errorMsg = this.$t('errors.emailInUse');
         } else if (error.code === 'auth/invalid-email') {
-          errorMsg = "Invalid email format";
+          errorMsg = this.$t('errors.invalidEmail');
         } else if (error.code === 'auth/weak-password') {
-          errorMsg = "Password too weak";
+          errorMsg = this.$t('errors.weakPassword');
         } else if (error.code === 'auth/network-request-failed') {
-          errorMsg = "Internet connection problem";
+          errorMsg = this.$t('errors.networkError');
         }
         this.showError(errorMsg);
       } finally {
@@ -578,6 +586,13 @@ export default {
 
 * {
   font-family: 'Inter', sans-serif;
+}
+
+/* User Section Wrapper */
+.user-section-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 /* Auth Buttons */
@@ -1061,15 +1076,15 @@ export default {
     margin: 16px;
     width: auto;
   }
-  
+
   .auth-buttons .btn-text {
     display: none;
   }
-  
+
   .auth-btn {
     padding: 10px;
   }
-  
+
   .user-greeting {
     display: none;
   }

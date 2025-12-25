@@ -1,625 +1,1067 @@
 {
-    "topics": {
-      "title": {
-        "ru": "Темы для изучения",
-        "en": "Topics to study",
-        "uz": "Ўрганиш мавзулари"
-      },
-      "loading": {
-        "ru": "Загрузка тем...",
-        "en": "Loading topics...",
-        "uz": "Мавзулар юкланмоқда..."
-      },
-      "loadError": {
-        "ru": "❌ Ошибка загрузки тем:",
-        "en": "❌ Error loading topics:",
-        "uz": "❌ Мавзуларни юклашда хатолик:"
-      },
-      "added": {
-        "ru": "✅ Тема добавлена в список!",
-        "en": "✅ Topic added to the list!",
-        "uz": "✅ Мавзу рўйхатга қўшилди!"
-      },
-      "addError": {
-        "ru": "❌ Ошибка при добавлении темы:",
-        "en": "❌ Error adding topic:",
-        "uz": "❌ Мавзуни қўшишда хатолик:"
-      }
-    },
-    "topicCard": {
-      "add": {
-        "ru": "➕ Добавить",
-        "en": "➕ Add",
-        "uz": "➕ Қўшиш"
-      },
-      "start": {
-        "ru": "🚀 Начать",
-        "en": "🚀 Start",
-        "uz": "🚀 Бошлаш"
-      },
-      "subjectMissing": {
-        "ru": "❌ Предмет не указан.",
-        "en": "❌ Subject not specified.",
-        "uz": "❌ Фан кўрсатилмаган."
-      }
-    },
-    "heroSection": {
-      "headline": {
-        "ru": "Разблокируйте будущее образования вместе с ACED",
-        "en": "Unlock the future of education with ACED",
-        "uz": "ACED билан таълимнинг келажагини очинг"
-      },
-      "learnMore": {
-        "ru": "Узнать больше",
-        "en": "Learn more",
-        "uz": "Қўшимча маълумот"
-      }
-    },
-    "aboutUs": {
-      "title": {
-        "ru": "О компании ACED",
-        "en": "About ACED",
-        "uz": "ACED ҳақида"
-      },
-      "desc1": {
-        "ru": "Мы создаем образовательные технологии нового поколения, которые делают знания доступными каждому человеку в мире.",
-        "en": "We create next-generation educational technologies that make knowledge accessible to everyone in the world.",
-        "uz": "Биз билимни дунёдаги ҳар бир инсон учун эркин ва осон етказишга имкон берадиган янги авлод таълим технологияларини яратамиз."
-      },
-      "desc2": {
-        "ru": "Наша цель — разрушить барьеры, сделать обучение гибким, персонализированным и вдохновляющим.",
-        "en": "Our goal is to break down barriers and make learning flexible, personalized, and inspiring.",
-        "uz": "Мақсадимиз – барқарор тўсиқларни йўқ қилиш, таълимни мослашувчан, шахсийлаштирилган ва илҳомлантирувчи қилиш."
-      },
-      "desc3": {
-        "ru": "С ACED ты не просто учишься. Ты становишься свободнее, сильнее и готов менять свою реальность.",
-        "en": "With ACED, you're not just learning. You become freer, stronger, and ready to change your reality.",
-        "uz": "ACED билан сен фақат ўрганиб қолмайсан. Сен эркинроқ, кучлироқ бўлиб, ўз ҳаётингизни ўзгартиришга тайёр бўлиб қоласан."
-      },
-      "chartTitle": {
-        "ru": "Как ACED изменил мою жизнь",
-        "en": "How ACED changed my life",
-        "uz": "ACED ҳаётимни қандай ўзгартирди"
-      },
-      "chartLabels": {
-        "happiness": {
-          "ru": "Уровень счастья",
-          "en": "Happiness level",
-          "uz": "Бахт даражаси"
-        },
-        "confidence": {
-          "ru": "Уверенность в себе",
-          "en": "Self-confidence",
-          "uz": "Ўз-ўзига ишонч"
-        },
-        "motivation": {
-          "ru": "Мотивация учиться",
-          "en": "Motivation to learn",
-          "uz": "Ўқишга бўлган мотивация"
-        },
-        "freedom": {
-          "ru": "Чувство свободы",
-          "en": "Sense of freedom",
-          "uz": "Эркинлик ҳисси"
-        },
-        "changeWorld": {
-          "ru": "Готовность менять мир",
-          "en": "Readiness to change the world",
-          "uz": "Дунёни ўзгартиришга тайёрлик"
-        }
-      }
-    },
-    "navbar": {
-      "test": {
-        "ru": "Тест",
-        "en": "Test",
-        "uz": "Тест"
-      },
-      "scientists": {
-        "ru": "Учёные",
-        "en": "Scientists",
-        "uz": "Олимлар"
-      },
-      "fields": {
-        "ru": "Направления",
-        "en": "Directions",
-        "uz": "Йўналишлар"
-      },
-      "about": {
-        "ru": "О нас",
-        "en": "About us",
-        "uz": "Биз ҳақимизда"
-      },
-      "contacts": {
-        "ru": "Контакты",
-        "en": "Contacts",
-        "uz": "Алоқа"
-      }
-    },
-    "footer": {
-      "slogan": {
-        "ru": "Образование нового поколения. Мы рядом, чтобы помочь тебе расти.",
-        "en": "New-generation education. We’re here to help you grow.",
-        "uz": "Янги авлод таълими. Биз сизга ўсишда ёрдам бериш учун янимиздамиз."
-      },
-      "navigation": {
-        "ru": "Навигация",
-        "en": "Navigation",
-        "uz": "Навигация"
-      },
-      "aboutUs": {
-        "ru": "О Нас",
-        "en": "About Us",
-        "uz": "Биз ҳақимизда"
-      },
-      "features": {
-        "ru": "Возможности",
-        "en": "Features",
-        "uz": "Мумкинликлар"
-      },
-      "test": {
-        "ru": "Тест",
-        "en": "Test",
-        "uz": "Тест"
-      },
-      "assistant": {
-        "ru": "AI Помощник",
-        "en": "AI Assistant",
-        "uz": "ИИ ёрдамчи"
-      },
-      "contacts": {
-        "ru": "Контакты",
-        "en": "Contacts",
-        "uz": "Алоқа"
-      },
-      "rights": {
-        "ru": "© 2025 ACED. Все права защищены.",
-        "en": "© 2025 ACED. All rights reserved.",
-        "uz": "© 2025 ACED. Ҳуқуқлар ҳимояланган."
-      }
+  "en": {
+    "common": {
+      "login": "Login",
+      "register": "Register",
+      "logout": "Log Out",
+      "save": "Save",
+      "cancel": "Cancel",
+      "back": "Back",
+      "continue": "Continue",
+      "loading": "Loading...",
+      "or": "or",
+      "yes": "Yes",
+      "no": "No",
+      "free": "Free",
+      "pro": "Pro",
+      "start": "Start",
+      "close": "Close",
+      "search": "Search",
+      "apply": "Apply",
+      "update": "Update",
+      "delete": "Delete",
+      "edit": "Edit",
+      "verified": "Verified",
+      "active": "Active",
+      "language": "Language",
+      "selectLanguage": "Select Language",
+      "english": "English",
+      "russian": "Русский",
+      "uzbek": "O'zbekcha"
     },
     "userSection": {
-      "register": {
-        "ru": "Регистрация",
-        "en": "Register",
-        "uz": "Рўйхатдан ўтиш"
-      },
-      "Login": {
-        "ru": "Вход",
-        "en": "Login",
-        "uz": "Кириш"
-      },
-      "greeting": {
-        "ru": "Привет, {name}",
-        "en": "Hello, {name}",
-        "uz": "Салом, {name}"
-      },
-      "profile": {
-        "ru": "Профиль",
-        "en": "Profile",
-        "uz": "Профил"
-      },
-      "settings": {
-        "ru": "Настройки",
-        "en": "Settings",
-        "uz": "Созламалар"
-      },
-      "logout": {
-        "ru": "Выйти",
-        "en": "Log Out",
-        "uz": "Чиқиш"
-      },
-      "registerTitle": {
-        "ru": "Регистрация",
-        "en": "Register",
-        "uz": "Рўйхатдан ўтиш"
-      },
-      "firstName": {
-        "ru": "Имя",
-        "en": "First Name",
-        "uz": "Исм"
-      },
-      "lastName": {
-        "ru": "Фамилия",
-        "en": "Last Name",
-        "uz": "Фамилия"
-      },
-      "email": {
-        "ru": "Email",
-        "en": "Email",
-        "uz": "Электрон почта"
-      },
-      "password": {
-        "ru": "Пароль",
-        "en": "Password",
-        "uz": "Пароль"
-      },
-      "confirmPassword": {
-        "ru": "Повторите пароль",
-        "en": "Confirm Password",
-        "uz": "Паролни такрорланг"
-      },
-      "registerButton": {
-        "ru": "Зарегистрироваться",
-        "en": "Sign Up",
-        "uz": "Рўйхатдан ўтиш"
-      },
-      "alreadyAccount": {
-        "ru": "Уже есть аккаунт? Войти",
-        "en": "Already have an account? Log in",
-        "uz": "Ҳисобингиз борми? Кириш"
-      },
-      "LoginTitle": {
-        "ru": "Вход",
-        "en": "Login",
-        "uz": "Кириш"
-      },
-      "LoginButton": {
-        "ru": "Войти",
-        "en": "Sign In",
-        "uz": "Кириш"
-      },
-      "LoginGoogle": {
-        "ru": "Войти через Google",
-        "en": "Login with Google",
-        "uz": "Google орқали кириш"
-      },
-      "noAccount": {
-        "ru": "Нет аккаунта? Зарегистрироваться",
-        "en": "Don’t have an account? Sign up",
-        "uz": "Ҳисобингиз йўқми? Рўйхатдан ўтиш"
-      }
+      "login": "Login",
+      "register": "Register",
+      "profile": "Profile",
+      "settings": "Settings",
+      "logout": "Logout",
+      "greeting": "Hello, {name}",
+      "createAccount": "Create an Account",
+      "startJourney": "Start your learning journey",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "email": "Email",
+      "password": "Password",
+      "confirmPassword": "Confirm Password",
+      "signUp": "Sign Up",
+      "registering": "Registering...",
+      "continueWithGoogle": "Continue with Google",
+      "alreadyHaveAccount": "Already have an account?",
+      "signIn": "Sign In",
+      "welcomeBack": "Welcome Back!",
+      "continuelearning": "Continue your learning",
+      "signingIn": "Signing in...",
+      "dontHaveAccount": "Don't have an account?"
     },
-    "acedSettings": {
-      "profileSettings": {
-        "ru": "Настройки профиля",
-        "en": "Profile Settings",
-        "uz": "Профил созламалари"
-      },
-      "firstName": {
-        "ru": "Имя",
-        "en": "First Name",
-        "uz": "Исм"
-      },
-      "enterFirstName": {
-        "ru": "Введите имя",
-        "en": "Enter first name",
-        "uz": "Исмни киритинг"
-      },
-      "lastName": {
-        "ru": "Фамилия",
-        "en": "Last Name",
-        "uz": "Фамилия"
-      },
-      "enterLastName": {
-        "ru": "Введите фамилию",
-        "en": "Enter last name",
-        "uz": "Фамилияни киритинг"
-      },
-      "email": {
-        "ru": "Email",
-        "en": "Email",
-        "uz": "Электрон почта"
-      },
-      "enterEmail": {
-        "ru": "Введите email",
-        "en": "Enter email",
-        "uz": "Электрон почтани киритинг"
-      },
-      "currentPassword": {
-        "ru": "Текущий пароль",
-        "en": "Current password",
-        "uz": "Ҳозирги парол"
-      },
-      "enterCurrentPassword": {
-        "ru": "Введите текущий пароль",
-        "en": "Enter current password",
-        "uz": "Ҳозирги паролни киритинг"
-      },
-      "newPassword": {
-        "ru": "Новый пароль",
-        "en": "New password",
-        "uz": "Янги парол"
-      },
-      "enterNewPassword": {
-        "ru": "Введите новый пароль",
-        "en": "Enter new password",
-        "uz": "Янги паролни киритинг"
-      },
-      "confirmNewPassword": {
-        "ru": "Подтвердите новый пароль",
-        "en": "Confirm new password",
-        "uz": "Янги паролни тасдиқланг"
-      },
-      "repeatNewPassword": {
-        "ru": "Повторите новый пароль",
-        "en": "Repeat new password",
-        "uz": "Янги паролни такрорланг"
-      },
-      "forgotPassword": {
-        "ru": "Забыли пароль?",
-        "en": "Forgot password?",
-        "uz": "Паролни унутдингизми?"
-      },
-      "createPassword": {
-        "ru": "Создать пароль",
-        "en": "Create password",
-        "uz": "Парол яратинг"
-      },
-      "save": {
-        "ru": "Сохранить",
-        "en": "Save",
-        "uz": "Сақлаш"
-      },
-      "back": {
-        "ru": "Назад",
-        "en": "Back",
-        "uz": "Ортга"
-      }
-    },
-    "mainPage": {
-      "welcomeBack": {
-        "ru": "👋 Добро пожаловать обратно!",
-        "en": "👋 Welcome back!",
-        "uz": "👋 Яна хуш келибсиз!"
-      },
-      "searchPlaceholder": {
-        "ru": "🔍 Поиск тем или курсов...",
-        "en": "🔍 Search for topics or courses...",
-        "uz": "🔍 Мавзулар ёки курслар бўйича қидириш..."
-      },
-      "allSubjects": {
-        "ru": "Все предметы",
-        "en": "All subjects",
-        "uz": "Барча фанлар"
-      },
-      "recommended": {
-        "ru": "🎯 Рекомендовано для вас",
-        "en": "🎯 Recommended for you",
-        "uz": "🎯 Сиз учун тавсия қилинган"
-      },
-      "refresh": {
-        "ru": "Обновить",
-        "en": "Refresh",
-        "uz": "Янгилаш"
-      },
-      "noRecommendations": {
-        "ru": "Нет подходящих рекомендаций.",
-        "en": "No suitable recommendations.",
-        "uz": "Мос келадиган тавсиялар мавжуд эмас."
-      },
-      "myCourses": {
-        "ru": "📘 Мои курсы",
-        "en": "📘 My courses",
-        "uz": "📘 Менинг курсларим"
-      },
-      "noCourses": {
-        "ru": "У вас пока нет активных курсов.",
-        "en": "You have no active courses yet.",
-        "uz": "Ҳозирча фаол курсларингиз йўқ."
-      }
-    },
-    "userAnalytics": {
-      "title": {
-        "ru": "Твоя аналитика обучения",
-        "en": "Your learning analytics",
-        "uz": "Ўқиш таҳлиллари"
-      },
-      "downloadPDF": {
-        "ru": "Скачать как PDF",
-        "en": "Download as PDF",
-        "uz": "PDF сифатида юклаб олиш"
-      },
-      "configureExport": {
-        "ru": "Настрой экспорт PDF",
-        "en": "Configure PDF export",
-        "uz": "PDF экспортини созлаш"
-      },
-      "choosePeriod": {
-        "ru": "Выбери период:",
-        "en": "Choose period:",
-        "uz": "Даврни танланг:"
-      },
-      "periodOptions": {
-        "lastWeek": {
-          "ru": "Последняя неделя",
-          "en": "Last week",
-          "uz": "Сўнгги ҳафта"
-        },
-        "twoWeeks": {
-          "ru": "2 недели",
-          "en": "2 weeks",
-          "uz": "2 ҳафта"
-        },
-        "threeWeeks": {
-          "ru": "3 недели",
-          "en": "3 weeks",
-          "uz": "3 ҳафта"
-        },
-        "oneMonth": {
-          "ru": "1 месяц",
-          "en": "1 month",
-          "uz": "1 ой"
-        },
-        "threeMonths": {
-          "ru": "3 месяца",
-          "en": "3 months",
-          "uz": "3 ой"
-        }
-      },
-      "stats": {
-        "studyDays": {
-          "ru": "Дней в обучении",
-          "en": "Days in learning",
-          "uz": "Ўқиш кунлари"
-        },
-        "completedSubjects": {
-          "ru": "Завершено предметов",
-          "en": "Subjects completed",
-          "uz": "Тугатилган фанлар"
-        },
-        "weeklyLessons": {
-          "ru": "Уроков за неделю",
-          "en": "Lessons per week",
-          "uz": "Ҳафталик дарслар"
-        },
-        "monthlyLessons": {
-          "ru": "Уроков за месяц",
-          "en": "Lessons per month",
-          "uz": "Ойлик дарслар"
-        },
-        "streakDays": {
-          "ru": "Учебный стрик",
-          "en": "Study streak",
-          "uz": "Ўқиш давомийлиги"
-        },
-        "activeDay": {
-          "ru": "Активный день",
-          "en": "Active day",
-          "uz": "Фаол кун"
-        },
-        "mostActiveDay": {
-          "ru": "Наиболее активный день",
-          "en": "Most active day",
-          "uz": "Энг фаол кун"
-        },
-        "totalLessons": {
-          "ru": "Всего уроков",
-          "en": "Total lessons",
-          "uz": "Жами дарслар"
-        }
-      },
-      "download": {
-        "ru": "📥 Скачать",
-        "en": "📥 Download",
-        "uz": "📥 Юклаб олиш"
-      },
-      "cancel": {
-        "ru": "Отмена",
-        "en": "Cancel",
-        "uz": "Бекор қилиш"
-      },
-      "cardSubtexts": {
-        "pace": {
-          "ru": "Это твой текущий темп 📈",
-          "en": "This is your current pace 📈",
-          "uz": "Бу сизинг ҳозирги суръатингиз 📈"
-        },
-        "consistency": {
-          "ru": "Стабильность — ключ к успеху",
-          "en": "Consistency is key to success",
-          "uz": "Барқарорлик — муваффақият калити"
-        },
-        "onARoll": {
-          "ru": "Ты на волне 💫",
-          "en": "You're on a roll 💫",
-          "uz": "Ҳозир жуда яхши ишлайяпсиз 💫"
-        },
-        "startAgain": {
-          "ru": "Пора начать снова 🚀",
-          "en": "Time to start again 🚀",
-          "uz": "Яна бошлаш вақти келди 🚀"
-        },
-        "keepItUp": {
-          "ru": "Продолжай в этот день 💪",
-          "en": "Keep it up on this day 💪",
-          "uz": "Ушбу кунда давом этинг 💪"
-        },
-        "overall": {
-          "ru": "Общий прогресс 📚",
-          "en": "Overall progress 📚",
-          "uz": "Умумий ютуқ 📚"
-        }
-      }
-    },
-    "chatBot": {
-      "title": {
-        "ru": "🤖 AI Chat",
-        "en": "🤖 AI Chat",
-        "uz": "🤖 ИИ суҳбат"
-      },
-      "prompt": {
-        "ru": "Чтобы начать разговор, войдите в систему.",
-        "en": "To start a conversation, log in.",
-        "uz": "Суҳбатни бошлаш учун тизимга киринг."
-      },
-      "Login": {
-        "ru": "Войти",
-        "en": "Log in",
-        "uz": "Кириш"
-      },
-      "placeholder": {
-        "ru": "Введите сообщение...",
-        "en": "Enter message...",
-        "uz": "Хабарни киритинг..."
-      },
-      "send": {
-        "ru": "Отправить",
-        "en": "Send",
-        "uz": "Жўнатиш"
-      },
-      "endConversation": {
-        "ru": "Суҳбатни якунлаш",
-        "en": "End Conversation",
-        "uz": "Суҳбатни якунлаш"
-      }
+    "heroSection": {
+      "studentsLearning": "{count}+ students already learning",
+      "headline": "The smarter way to",
+      "headlineHighlight": "learn anything",
+      "subtitle": "Interactive lessons with AI-powered help. Learn at your own pace.",
+      "startFree": "Start Free - No Registration",
+      "registerAndSave": "Register & Save Progress",
+      "courses": "Courses",
+      "aiSupport": "AI Support",
+      "completion": "Completion",
+      "learners": "learners",
+      "mathematics": "Mathematics",
+      "mathLessons": "12 lessons • Beginner",
+      "languages": "Languages",
+      "langLessons": "24 lessons • Intermediate",
+      "science": "Science",
+      "sciLessons": "18 lessons • Advanced"
     },
     "sidebar": {
-      "dashboard": {
-        "ru": "Главная",
-        "en": "Dashboard",
-        "uz": "Бош саҳифа"
-      },
-      "catalogue": {
-        "ru": "Каталог",
-        "en": "Catalogue",
-        "uz": "Каталог"
-      },
-      "analytics": {
-        "ru": "Аналитика",
-        "en": "Analytics",
-        "uz": "Таҳлил"
-      },
-      "progress": {
-        "ru": "Прогресс",
-        "en": "Progress",
-        "uz": "Тараққиёт"
-      },
-      "goals": {
-        "ru": "Цели",
-        "en": "Goals",
-        "uz": "Мақсадлар"
-      },
-      "diary": {
-        "ru": "Дневник",
-        "en": "Diary",
-        "uz": "Дневник"
-      },
-      "homework": {
-        "ru": "Помощь с ДЗ",
-        "en": "Homework Help",
-        "uz": "Уй ишига ёрдам"
-      },
-      "logout": {
-        "ru": "Выйти",
-        "en": "Log out",
-        "uz": "Чиқиш"
-      },
-      "confirmLogout": {
-        "ru": "Вы уверены, что хотите выйти?",
-        "en": "Are you sure you want to log out?",
-        "uz": "Чиқишни хоҳлаяпсизми?"
-      },
-      "yes": {
-        "ru": "Да",
-        "en": "Yes",
-        "uz": "Ҳа"
-      },
-      "no": {
-        "ru": "Нет",
-        "en": "No",
-        "uz": "Йўқ"
-      }
+      "learningPlatform": "Learning Platform",
+      "level": "Level",
+      "streak": "Streak",
+      "learningMode": "Learning Mode",
+      "school": "School",
+      "studyCentre": "Study Centre",
+      "chooseYourPath": "Choose Your Path",
+      "selectHowToLearn": "Select how you want to learn",
+      "schoolMode": "School Mode",
+      "structuredCurriculum": "Structured curriculum",
+      "freeExploration": "Free exploration",
+      "menu": "Menu",
+      "dashboard": "Dashboard",
+      "overviewStats": "Overview & stats",
+      "myCourses": "My Courses",
+      "browseLessons": "Browse lessons",
+      "assignments": "Assignments",
+      "practiceHomework": "Practice & homework",
+      "tests": "Tests",
+      "assessmentAnalytics": "Assessment & analytics",
+      "settings": "Settings",
+      "accountPreferences": "Account & preferences",
+      "upgradeToPro": "Upgrade to Pro",
+      "unlockAllFeatures": "Unlock all features",
+      "logOut": "Log Out",
+      "confirmLogout": "Are you sure you want to log out of your account?",
+      "premiumFeature": "Premium Feature",
+      "unlockWithPlan": "Unlock with Start or Pro plan",
+      "unlimitedTests": "Unlimited practice tests",
+      "detailedAnalytics": "Detailed analytics",
+      "aiHomeworkHelp": "AI-powered homework help",
+      "maybeLater": "Maybe Later",
+      "upgradeNow": "Upgrade Now"
+    },
+    "footer": {
+      "slogan": "Making education simple, interactive, and accessible for everyone.",
+      "navigation": "Navigation",
+      "aboutUs": "About Us",
+      "courses": "Courses",
+      "pricing": "Pricing",
+      "aiAssistant": "AI Assistant",
+      "contact": "Contact",
+      "contactUs": "Contact Us",
+      "allRights": "2025 ACED. All rights reserved.",
+      "privacyPolicy": "Privacy Policy",
+      "termsOfService": "Terms of Service",
+      "aiHelperTitle": "AI Assistant",
+      "aiHelperText": "Look for the chat bubble in the bottom right corner. Our AI is ready to help!",
+      "gotIt": "Got it"
+    },
+    "tariffs": {
+      "pricing": "Pricing",
+      "simpleTitle": "Simple",
+      "pricingTitle": "pricing",
+      "noHiddenFees": "No hidden fees. Cancel anytime.",
+      "monthly": "Monthly",
+      "quarterly": "Quarterly",
+      "biannual": "Biannual",
+      "tryingOut": "Great for trying out",
+      "bestValue": "Best value",
+      "maxSavings": "Maximum savings",
+      "month": "mo",
+      "months": "months",
+      "forMonths": "for {count} months",
+      "getStarted": "Get Started",
+      "startLearning": "Start Learning",
+      "subscribe": "Subscribe",
+      "popular": "POPULAR",
+      "save": "Save {percent}%",
+      "allSubjects": "All subjects included",
+      "unlimitedAI": "Unlimited AI help",
+      "progressTracking": "Progress tracking",
+      "homeworkAssistance": "Homework assistance",
+      "prioritySupport": "Priority support",
+      "securePayment": "Secure payment",
+      "cancelAnytime": "Cancel anytime",
+      "instantAccess": "Instant access"
+    },
+    "settings": {
+      "accountSettings": "Account Settings",
+      "manageProfile": "Manage your profile and subscription",
+      "plan": "Plan",
+      "messages": "Messages",
+      "images": "Images",
+      "daysLeft": "Days Left",
+      "subscriptionPlans": "Subscription Plans",
+      "chooseBestPlan": "Choose the best plan for you",
+      "oneMonth": "1 Month",
+      "threeMonths": "3 Months",
+      "sixMonths": "6 Months",
+      "uzs": "UZS",
+      "unlimitedMessages": "Unlimited messages",
+      "unlimitedImages": "Unlimited images",
+      "aiTutorAccess": "AI tutor access",
+      "aiTutorAnalytics": "AI tutor + Analytics",
+      "unlimitedEverything": "Unlimited everything",
+      "prioritySupportPlan": "Priority support",
+      "customCourses": "Custom courses",
+      "bestDeal": "Best Deal",
+      "getPro": "Get Pro",
+      "enterPromocode": "Enter promocode",
+      "applyCode": "Apply Code",
+      "applying": "Applying...",
+      "personalInfo": "Personal Information",
+      "updatePersonal": "Update your personal details",
+      "notSpecified": "Not specified",
+      "security": "Security",
+      "changePassword": "Change your password",
+      "currentPassword": "Current Password",
+      "newPassword": "New Password",
+      "confirmNewPassword": "Confirm Password",
+      "forgotPassword": "Forgot Password?",
+      "updating": "Updating...",
+      "dangerZone": "Danger Zone",
+      "irreversibleActions": "Irreversible actions",
+      "signOut": "Sign Out",
+      "signOutDesc": "Sign out from your account",
+      "deleteAccount": "Delete Account",
+      "deleteAccountDesc": "Permanently delete account",
+      "deleteConfirmTitle": "Delete Account",
+      "deleteConfirmText": "Are you sure you want to delete your account? This action cannot be undone.",
+      "deleteWarning": "All your data, progress, and subscription will be permanently deleted.",
+      "deleteForever": "Delete Forever"
+    },
+    "mainPage": {
+      "welcomeBack": "Welcome back!",
+      "searchPlaceholder": "Search for topics or courses...",
+      "allSubjects": "All subjects",
+      "recommended": "Recommended for you",
+      "refresh": "Refresh",
+      "noRecommendations": "No suitable recommendations.",
+      "myCourses": "My courses",
+      "noCourses": "You have no active courses yet."
+    },
+    "analytics": {
+      "title": "Your learning analytics",
+      "downloadPDF": "Download as PDF",
+      "configureExport": "Configure PDF export",
+      "choosePeriod": "Choose period:",
+      "lastWeek": "Last week",
+      "twoWeeks": "2 weeks",
+      "threeWeeks": "3 weeks",
+      "oneMonth": "1 month",
+      "threeMonths": "3 months",
+      "studyDays": "Days in learning",
+      "completedSubjects": "Subjects completed",
+      "weeklyLessons": "Lessons per week",
+      "monthlyLessons": "Lessons per month",
+      "streakDays": "Study streak",
+      "activeDay": "Active day",
+      "mostActiveDay": "Most active day",
+      "totalLessons": "Total lessons",
+      "download": "Download",
+      "currentPace": "This is your current pace",
+      "consistency": "Consistency is key to success",
+      "onARoll": "You're on a roll",
+      "startAgain": "Time to start again",
+      "keepItUp": "Keep it up on this day",
+      "overallProgress": "Overall progress"
+    },
+    "chatBot": {
+      "title": "AI Chat",
+      "loginPrompt": "To start a conversation, log in.",
+      "logIn": "Log in",
+      "placeholder": "Enter message...",
+      "send": "Send",
+      "endConversation": "End Conversation"
+    },
+    "topics": {
+      "title": "Topics to study",
+      "loading": "Loading topics...",
+      "loadError": "Error loading topics:",
+      "added": "Topic added to the list!",
+      "addError": "Error adding topic:"
+    },
+    "topicCard": {
+      "add": "Add",
+      "start": "Start",
+      "subjectMissing": "Subject not specified."
+    },
+    "aboutUs": {
+      "title": "About ACED",
+      "desc1": "We create next-generation educational technologies that make knowledge accessible to everyone in the world.",
+      "desc2": "Our goal is to break down barriers and make learning flexible, personalized, and inspiring.",
+      "desc3": "With ACED, you're not just learning. You become freer, stronger, and ready to change your reality.",
+      "chartTitle": "How ACED changed my life",
+      "happiness": "Happiness level",
+      "confidence": "Self-confidence",
+      "motivation": "Motivation to learn",
+      "freedom": "Sense of freedom",
+      "changeWorld": "Readiness to change the world"
+    },
+    "lesson": {
+      "backToTests": "Back to Tests",
+      "continueLearning": "Continue Learning",
+      "lessonComplete": "Lesson Complete!",
+      "greatJob": "Great job! You've completed this lesson.",
+      "nextLesson": "Next Lesson",
+      "tryAgain": "Try Again",
+      "correctAnswer": "Correct!",
+      "wrongAnswer": "Not quite right. Try again!",
+      "hint": "Hint",
+      "showAnswer": "Show Answer",
+      "submit": "Submit",
+      "skip": "Skip",
+      "progress": "Progress",
+      "aiHelp": "AI Help",
+      "askQuestion": "Ask a question...",
+      "vocabulary": "Vocabulary"
+    },
+    "games": {
+      "score": "Score",
+      "time": "Time",
+      "lives": "Lives",
+      "level": "Level",
+      "gameOver": "Game Over",
+      "youWin": "You Win!",
+      "playAgain": "Play Again",
+      "pause": "Pause",
+      "resume": "Resume",
+      "quit": "Quit",
+      "highScore": "High Score",
+      "newHighScore": "New High Score!",
+      "tapToStart": "Tap to Start",
+      "getReady": "Get Ready!",
+      "go": "Go!"
+    },
+    "errors": {
+      "loginError": "Login error",
+      "userNotFound": "User not found",
+      "invalidPassword": "Invalid password or email",
+      "invalidEmail": "Invalid email format",
+      "tooManyAttempts": "Too many attempts. Please try later",
+      "accountDisabled": "Account disabled",
+      "networkError": "Internet connection problem",
+      "registrationError": "Registration error",
+      "emailInUse": "Email already in use",
+      "weakPassword": "Password too weak",
+      "passwordsMismatch": "Passwords don't match",
+      "fillAllFields": "Please fill all required fields",
+      "googleSignInError": "Google sign-in error",
+      "popupClosed": "Sign-in window was closed",
+      "popupBlocked": "Popup window blocked",
+      "passwordMinLength": "Password must be at least 6 characters"
+    },
+    "success": {
+      "signedIn": "Successfully signed in!",
+      "signedInGoogle": "Successfully signed in with Google!",
+      "registrationSuccess": "Registration successful!",
+      "profileUpdated": "Profile updated successfully!",
+      "passwordChanged": "Password changed successfully!",
+      "promocodeApplied": "Promocode applied!"
+    },
+    "platformMode": {
+      "levelTest": "Level Test",
+      "testYourLevel": "Test your level to get personalized recommendations",
+      "startTest": "Start Test",
+      "skipTest": "Skip Test",
+      "yourLevel": "Your Level",
+      "beginner": "Beginner",
+      "intermediate": "Intermediate",
+      "advanced": "Advanced",
+      "expert": "Expert"
+    },
+    "diary": {
+      "saving": "Saving...",
+      "saved": "Saved!",
+      "finishDay": "Finish Day",
+      "todaysNotes": "Today's Notes",
+      "addNote": "Add a note...",
+      "noNotes": "No notes yet"
+    },
+    "homework": {
+      "title": "Homework Help",
+      "uploadPhoto": "Upload Photo",
+      "typeQuestion": "Type your question",
+      "getHelp": "Get Help",
+      "solution": "Solution",
+      "explanation": "Explanation",
+      "similarProblems": "Similar Problems"
+    }
+  },
+  "ru": {
+    "common": {
+      "login": "Вход",
+      "register": "Регистрация",
+      "logout": "Выйти",
+      "save": "Сохранить",
+      "cancel": "Отмена",
+      "back": "Назад",
+      "continue": "Продолжить",
+      "loading": "Загрузка...",
+      "or": "или",
+      "yes": "Да",
+      "no": "Нет",
+      "free": "Бесплатно",
+      "pro": "Про",
+      "start": "Старт",
+      "close": "Закрыть",
+      "search": "Поиск",
+      "apply": "Применить",
+      "update": "Обновить",
+      "delete": "Удалить",
+      "edit": "Редактировать",
+      "verified": "Подтверждено",
+      "active": "Активен",
+      "language": "Язык",
+      "selectLanguage": "Выберите язык",
+      "english": "English",
+      "russian": "Русский",
+      "uzbek": "O'zbekcha"
+    },
+    "userSection": {
+      "login": "Вход",
+      "register": "Регистрация",
+      "profile": "Профиль",
+      "settings": "Настройки",
+      "logout": "Выйти",
+      "greeting": "Привет, {name}",
+      "createAccount": "Создать аккаунт",
+      "startJourney": "Начните свой путь обучения",
+      "firstName": "Имя",
+      "lastName": "Фамилия",
+      "email": "Email",
+      "password": "Пароль",
+      "confirmPassword": "Подтвердите пароль",
+      "signUp": "Зарегистрироваться",
+      "registering": "Регистрация...",
+      "continueWithGoogle": "Продолжить с Google",
+      "alreadyHaveAccount": "Уже есть аккаунт?",
+      "signIn": "Войти",
+      "welcomeBack": "С возвращением!",
+      "continuelearning": "Продолжите обучение",
+      "signingIn": "Вход...",
+      "dontHaveAccount": "Нет аккаунта?"
+    },
+    "heroSection": {
+      "studentsLearning": "{count}+ студентов уже учатся",
+      "headline": "Умный способ",
+      "headlineHighlight": "учить всё",
+      "subtitle": "Интерактивные уроки с помощью ИИ. Учитесь в своем темпе.",
+      "startFree": "Начать бесплатно",
+      "registerAndSave": "Регистрация и сохранение",
+      "courses": "Курсы",
+      "aiSupport": "ИИ поддержка",
+      "completion": "Завершение",
+      "learners": "учеников",
+      "mathematics": "Математика",
+      "mathLessons": "12 уроков • Начальный",
+      "languages": "Языки",
+      "langLessons": "24 урока • Средний",
+      "science": "Наука",
+      "sciLessons": "18 уроков • Продвинутый"
+    },
+    "sidebar": {
+      "learningPlatform": "Платформа обучения",
+      "level": "Уровень",
+      "streak": "Серия",
+      "learningMode": "Режим обучения",
+      "school": "Школа",
+      "studyCentre": "Учебный центр",
+      "chooseYourPath": "Выберите свой путь",
+      "selectHowToLearn": "Выберите способ обучения",
+      "schoolMode": "Школьный режим",
+      "structuredCurriculum": "Структурированная программа",
+      "freeExploration": "Свободное изучение",
+      "menu": "Меню",
+      "dashboard": "Главная",
+      "overviewStats": "Обзор и статистика",
+      "myCourses": "Мои курсы",
+      "browseLessons": "Просмотр уроков",
+      "assignments": "Задания",
+      "practiceHomework": "Практика и домашка",
+      "tests": "Тесты",
+      "assessmentAnalytics": "Оценка и аналитика",
+      "settings": "Настройки",
+      "accountPreferences": "Аккаунт и настройки",
+      "upgradeToPro": "Перейти на Pro",
+      "unlockAllFeatures": "Разблокировать все функции",
+      "logOut": "Выйти",
+      "confirmLogout": "Вы уверены, что хотите выйти из аккаунта?",
+      "premiumFeature": "Премиум функция",
+      "unlockWithPlan": "Разблокируйте с планом Start или Pro",
+      "unlimitedTests": "Неограниченные тесты",
+      "detailedAnalytics": "Детальная аналитика",
+      "aiHomeworkHelp": "ИИ помощь с домашкой",
+      "maybeLater": "Может позже",
+      "upgradeNow": "Обновить сейчас"
+    },
+    "footer": {
+      "slogan": "Делаем образование простым, интерактивным и доступным для всех.",
+      "navigation": "Навигация",
+      "aboutUs": "О нас",
+      "courses": "Курсы",
+      "pricing": "Цены",
+      "aiAssistant": "ИИ Ассистент",
+      "contact": "Контакты",
+      "contactUs": "Связаться с нами",
+      "allRights": "2025 ACED. Все права защищены.",
+      "privacyPolicy": "Политика конфиденциальности",
+      "termsOfService": "Условия использования",
+      "aiHelperTitle": "ИИ Ассистент",
+      "aiHelperText": "Ищите кнопку чата в правом нижнем углу. Наш ИИ готов помочь!",
+      "gotIt": "Понятно"
+    },
+    "tariffs": {
+      "pricing": "Цены",
+      "simpleTitle": "Простые",
+      "pricingTitle": "цены",
+      "noHiddenFees": "Никаких скрытых платежей. Отмена в любое время.",
+      "monthly": "Месяц",
+      "quarterly": "Квартал",
+      "biannual": "Полугодие",
+      "tryingOut": "Отлично для пробы",
+      "bestValue": "Лучшая цена",
+      "maxSavings": "Максимальная экономия",
+      "month": "мес",
+      "months": "месяцев",
+      "forMonths": "за {count} месяцев",
+      "getStarted": "Начать",
+      "startLearning": "Начать обучение",
+      "subscribe": "Подписаться",
+      "popular": "ПОПУЛЯРНЫЙ",
+      "save": "Экономия {percent}%",
+      "allSubjects": "Все предметы включены",
+      "unlimitedAI": "Безлимитный ИИ помощник",
+      "progressTracking": "Отслеживание прогресса",
+      "homeworkAssistance": "Помощь с домашкой",
+      "prioritySupport": "Приоритетная поддержка",
+      "securePayment": "Безопасная оплата",
+      "cancelAnytime": "Отмена в любое время",
+      "instantAccess": "Мгновенный доступ"
+    },
+    "settings": {
+      "accountSettings": "Настройки аккаунта",
+      "manageProfile": "Управление профилем и подпиской",
+      "plan": "План",
+      "messages": "Сообщения",
+      "images": "Изображения",
+      "daysLeft": "Дней осталось",
+      "subscriptionPlans": "Планы подписки",
+      "chooseBestPlan": "Выберите лучший план для вас",
+      "oneMonth": "1 Месяц",
+      "threeMonths": "3 Месяца",
+      "sixMonths": "6 Месяцев",
+      "uzs": "сум",
+      "unlimitedMessages": "Безлимитные сообщения",
+      "unlimitedImages": "Безлимитные изображения",
+      "aiTutorAccess": "Доступ к ИИ репетитору",
+      "aiTutorAnalytics": "ИИ репетитор + Аналитика",
+      "unlimitedEverything": "Безлимитный доступ ко всему",
+      "prioritySupportPlan": "Приоритетная поддержка",
+      "customCourses": "Индивидуальные курсы",
+      "bestDeal": "Лучшее предложение",
+      "getPro": "Получить Pro",
+      "enterPromocode": "Введите промокод",
+      "applyCode": "Применить код",
+      "applying": "Применение...",
+      "personalInfo": "Личная информация",
+      "updatePersonal": "Обновите ваши личные данные",
+      "notSpecified": "Не указано",
+      "security": "Безопасность",
+      "changePassword": "Изменить пароль",
+      "currentPassword": "Текущий пароль",
+      "newPassword": "Новый пароль",
+      "confirmNewPassword": "Подтвердите пароль",
+      "forgotPassword": "Забыли пароль?",
+      "updating": "Обновление...",
+      "dangerZone": "Опасная зона",
+      "irreversibleActions": "Необратимые действия",
+      "signOut": "Выйти",
+      "signOutDesc": "Выйти из аккаунта",
+      "deleteAccount": "Удалить аккаунт",
+      "deleteAccountDesc": "Безвозвратно удалить аккаунт",
+      "deleteConfirmTitle": "Удаление аккаунта",
+      "deleteConfirmText": "Вы уверены, что хотите удалить аккаунт? Это действие нельзя отменить.",
+      "deleteWarning": "Все ваши данные, прогресс и подписка будут безвозвратно удалены.",
+      "deleteForever": "Удалить навсегда"
+    },
+    "mainPage": {
+      "welcomeBack": "С возвращением!",
+      "searchPlaceholder": "Поиск тем или курсов...",
+      "allSubjects": "Все предметы",
+      "recommended": "Рекомендовано для вас",
+      "refresh": "Обновить",
+      "noRecommendations": "Нет подходящих рекомендаций.",
+      "myCourses": "Мои курсы",
+      "noCourses": "У вас пока нет активных курсов."
+    },
+    "analytics": {
+      "title": "Ваша аналитика обучения",
+      "downloadPDF": "Скачать как PDF",
+      "configureExport": "Настроить экспорт PDF",
+      "choosePeriod": "Выберите период:",
+      "lastWeek": "Последняя неделя",
+      "twoWeeks": "2 недели",
+      "threeWeeks": "3 недели",
+      "oneMonth": "1 месяц",
+      "threeMonths": "3 месяца",
+      "studyDays": "Дней в обучении",
+      "completedSubjects": "Завершено предметов",
+      "weeklyLessons": "Уроков за неделю",
+      "monthlyLessons": "Уроков за месяц",
+      "streakDays": "Учебный стрик",
+      "activeDay": "Активный день",
+      "mostActiveDay": "Наиболее активный день",
+      "totalLessons": "Всего уроков",
+      "download": "Скачать",
+      "currentPace": "Это ваш текущий темп",
+      "consistency": "Стабильность — ключ к успеху",
+      "onARoll": "Вы на волне",
+      "startAgain": "Пора начать снова",
+      "keepItUp": "Продолжайте в этот день",
+      "overallProgress": "Общий прогресс"
+    },
+    "chatBot": {
+      "title": "ИИ Чат",
+      "loginPrompt": "Чтобы начать разговор, войдите в систему.",
+      "logIn": "Войти",
+      "placeholder": "Введите сообщение...",
+      "send": "Отправить",
+      "endConversation": "Завершить разговор"
+    },
+    "topics": {
+      "title": "Темы для изучения",
+      "loading": "Загрузка тем...",
+      "loadError": "Ошибка загрузки тем:",
+      "added": "Тема добавлена в список!",
+      "addError": "Ошибка при добавлении темы:"
+    },
+    "topicCard": {
+      "add": "Добавить",
+      "start": "Начать",
+      "subjectMissing": "Предмет не указан."
+    },
+    "aboutUs": {
+      "title": "О компании ACED",
+      "desc1": "Мы создаем образовательные технологии нового поколения, которые делают знания доступными каждому человеку в мире.",
+      "desc2": "Наша цель — разрушить барьеры, сделать обучение гибким, персонализированным и вдохновляющим.",
+      "desc3": "С ACED ты не просто учишься. Ты становишься свободнее, сильнее и готов менять свою реальность.",
+      "chartTitle": "Как ACED изменил мою жизнь",
+      "happiness": "Уровень счастья",
+      "confidence": "Уверенность в себе",
+      "motivation": "Мотивация учиться",
+      "freedom": "Чувство свободы",
+      "changeWorld": "Готовность менять мир"
+    },
+    "lesson": {
+      "backToTests": "Назад к тестам",
+      "continueLearning": "Продолжить обучение",
+      "lessonComplete": "Урок завершен!",
+      "greatJob": "Отлично! Вы завершили этот урок.",
+      "nextLesson": "Следующий урок",
+      "tryAgain": "Попробовать снова",
+      "correctAnswer": "Правильно!",
+      "wrongAnswer": "Не совсем верно. Попробуйте еще!",
+      "hint": "Подсказка",
+      "showAnswer": "Показать ответ",
+      "submit": "Отправить",
+      "skip": "Пропустить",
+      "progress": "Прогресс",
+      "aiHelp": "ИИ Помощь",
+      "askQuestion": "Задайте вопрос...",
+      "vocabulary": "Словарь"
+    },
+    "games": {
+      "score": "Счет",
+      "time": "Время",
+      "lives": "Жизни",
+      "level": "Уровень",
+      "gameOver": "Игра окончена",
+      "youWin": "Вы выиграли!",
+      "playAgain": "Играть снова",
+      "pause": "Пауза",
+      "resume": "Продолжить",
+      "quit": "Выход",
+      "highScore": "Рекорд",
+      "newHighScore": "Новый рекорд!",
+      "tapToStart": "Нажмите чтобы начать",
+      "getReady": "Приготовьтесь!",
+      "go": "Вперед!"
+    },
+    "errors": {
+      "loginError": "Ошибка входа",
+      "userNotFound": "Пользователь не найден",
+      "invalidPassword": "Неверный пароль или email",
+      "invalidEmail": "Неверный формат email",
+      "tooManyAttempts": "Слишком много попыток. Попробуйте позже",
+      "accountDisabled": "Аккаунт отключен",
+      "networkError": "Проблема с интернет соединением",
+      "registrationError": "Ошибка регистрации",
+      "emailInUse": "Email уже используется",
+      "weakPassword": "Слишком слабый пароль",
+      "passwordsMismatch": "Пароли не совпадают",
+      "fillAllFields": "Пожалуйста, заполните все обязательные поля",
+      "googleSignInError": "Ошибка входа через Google",
+      "popupClosed": "Окно входа было закрыто",
+      "popupBlocked": "Всплывающее окно заблокировано",
+      "passwordMinLength": "Пароль должен быть минимум 6 символов"
+    },
+    "success": {
+      "signedIn": "Успешный вход!",
+      "signedInGoogle": "Успешный вход через Google!",
+      "registrationSuccess": "Регистрация успешна!",
+      "profileUpdated": "Профиль успешно обновлен!",
+      "passwordChanged": "Пароль успешно изменен!",
+      "promocodeApplied": "Промокод применен!"
+    },
+    "platformMode": {
+      "levelTest": "Тест уровня",
+      "testYourLevel": "Проверьте свой уровень для персональных рекомендаций",
+      "startTest": "Начать тест",
+      "skipTest": "Пропустить тест",
+      "yourLevel": "Ваш уровень",
+      "beginner": "Начинающий",
+      "intermediate": "Средний",
+      "advanced": "Продвинутый",
+      "expert": "Эксперт"
+    },
+    "diary": {
+      "saving": "Сохранение...",
+      "saved": "Сохранено!",
+      "finishDay": "Завершить день",
+      "todaysNotes": "Заметки за сегодня",
+      "addNote": "Добавить заметку...",
+      "noNotes": "Пока нет заметок"
+    },
+    "homework": {
+      "title": "Помощь с домашкой",
+      "uploadPhoto": "Загрузить фото",
+      "typeQuestion": "Введите ваш вопрос",
+      "getHelp": "Получить помощь",
+      "solution": "Решение",
+      "explanation": "Объяснение",
+      "similarProblems": "Похожие задачи"
+    }
+  },
+  "uz": {
+    "common": {
+      "login": "Kirish",
+      "register": "Ro'yxatdan o'tish",
+      "logout": "Chiqish",
+      "save": "Saqlash",
+      "cancel": "Bekor qilish",
+      "back": "Orqaga",
+      "continue": "Davom etish",
+      "loading": "Yuklanmoqda...",
+      "or": "yoki",
+      "yes": "Ha",
+      "no": "Yo'q",
+      "free": "Bepul",
+      "pro": "Pro",
+      "start": "Boshlash",
+      "close": "Yopish",
+      "search": "Qidirish",
+      "apply": "Qo'llash",
+      "update": "Yangilash",
+      "delete": "O'chirish",
+      "edit": "Tahrirlash",
+      "verified": "Tasdiqlangan",
+      "active": "Faol",
+      "language": "Til",
+      "selectLanguage": "Tilni tanlang",
+      "english": "English",
+      "russian": "Русский",
+      "uzbek": "O'zbekcha"
+    },
+    "userSection": {
+      "login": "Kirish",
+      "register": "Ro'yxatdan o'tish",
+      "profile": "Profil",
+      "settings": "Sozlamalar",
+      "logout": "Chiqish",
+      "greeting": "Salom, {name}",
+      "createAccount": "Hisob yaratish",
+      "startJourney": "O'qish sayohatingizni boshlang",
+      "firstName": "Ism",
+      "lastName": "Familiya",
+      "email": "Email",
+      "password": "Parol",
+      "confirmPassword": "Parolni tasdiqlang",
+      "signUp": "Ro'yxatdan o'tish",
+      "registering": "Ro'yxatdan o'tilmoqda...",
+      "continueWithGoogle": "Google bilan davom etish",
+      "alreadyHaveAccount": "Hisobingiz bormi?",
+      "signIn": "Kirish",
+      "welcomeBack": "Qaytib kelganingiz bilan!",
+      "continuelearning": "O'qishni davom ettiring",
+      "signingIn": "Kirilmoqda...",
+      "dontHaveAccount": "Hisobingiz yo'qmi?"
+    },
+    "heroSection": {
+      "studentsLearning": "{count}+ talaba allaqachon o'qimoqda",
+      "headline": "Hamma narsani o'rganishning",
+      "headlineHighlight": "aqlli usuli",
+      "subtitle": "AI yordami bilan interaktiv darslar. O'z sur'atingizda o'rganing.",
+      "startFree": "Bepul boshlash",
+      "registerAndSave": "Ro'yxatdan o'tish va saqlash",
+      "courses": "Kurslar",
+      "aiSupport": "AI yordam",
+      "completion": "Yakunlash",
+      "learners": "o'quvchilar",
+      "mathematics": "Matematika",
+      "mathLessons": "12 dars • Boshlang'ich",
+      "languages": "Tillar",
+      "langLessons": "24 dars • O'rta",
+      "science": "Fan",
+      "sciLessons": "18 dars • Yuqori"
+    },
+    "sidebar": {
+      "learningPlatform": "O'quv platformasi",
+      "level": "Daraja",
+      "streak": "Ketma-ketlik",
+      "learningMode": "O'qish rejimi",
+      "school": "Maktab",
+      "studyCentre": "O'quv markazi",
+      "chooseYourPath": "Yo'lingizni tanlang",
+      "selectHowToLearn": "Qanday o'qishni tanlang",
+      "schoolMode": "Maktab rejimi",
+      "structuredCurriculum": "Tuzilgan dastur",
+      "freeExploration": "Erkin o'rganish",
+      "menu": "Menyu",
+      "dashboard": "Bosh sahifa",
+      "overviewStats": "Umumiy ko'rinish va statistika",
+      "myCourses": "Mening kurslarim",
+      "browseLessons": "Darslarni ko'rish",
+      "assignments": "Topshiriqlar",
+      "practiceHomework": "Amaliyot va uy vazifasi",
+      "tests": "Testlar",
+      "assessmentAnalytics": "Baholash va tahlil",
+      "settings": "Sozlamalar",
+      "accountPreferences": "Hisob va sozlamalar",
+      "upgradeToPro": "Pro ga yangilash",
+      "unlockAllFeatures": "Barcha funksiyalarni ochish",
+      "logOut": "Chiqish",
+      "confirmLogout": "Hisobingizdan chiqmoqchimisiz?",
+      "premiumFeature": "Premium funksiya",
+      "unlockWithPlan": "Start yoki Pro rejasi bilan oching",
+      "unlimitedTests": "Cheksiz testlar",
+      "detailedAnalytics": "Batafsil tahlil",
+      "aiHomeworkHelp": "AI uy vazifasi yordami",
+      "maybeLater": "Keyinroq",
+      "upgradeNow": "Hozir yangilash"
+    },
+    "footer": {
+      "slogan": "Ta'limni oddiy, interaktiv va hamma uchun qulay qilish.",
+      "navigation": "Navigatsiya",
+      "aboutUs": "Biz haqimizda",
+      "courses": "Kurslar",
+      "pricing": "Narxlar",
+      "aiAssistant": "AI Yordamchi",
+      "contact": "Aloqa",
+      "contactUs": "Biz bilan bog'laning",
+      "allRights": "2025 ACED. Barcha huquqlar himoyalangan.",
+      "privacyPolicy": "Maxfiylik siyosati",
+      "termsOfService": "Foydalanish shartlari",
+      "aiHelperTitle": "AI Yordamchi",
+      "aiHelperText": "Pastki o'ng burchakdagi chat tugmasini toping. Bizning AI yordam berishga tayyor!",
+      "gotIt": "Tushundim"
+    },
+    "tariffs": {
+      "pricing": "Narxlar",
+      "simpleTitle": "Oddiy",
+      "pricingTitle": "narxlar",
+      "noHiddenFees": "Yashirin to'lovlar yo'q. Istalgan vaqtda bekor qilish.",
+      "monthly": "Oylik",
+      "quarterly": "Choraklik",
+      "biannual": "Yarim yillik",
+      "tryingOut": "Sinash uchun ajoyib",
+      "bestValue": "Eng yaxshi narx",
+      "maxSavings": "Maksimal tejash",
+      "month": "oy",
+      "months": "oy",
+      "forMonths": "{count} oy uchun",
+      "getStarted": "Boshlash",
+      "startLearning": "O'qishni boshlash",
+      "subscribe": "Obuna bo'lish",
+      "popular": "MASHHUR",
+      "save": "{percent}% tejash",
+      "allSubjects": "Barcha fanlar kiritilgan",
+      "unlimitedAI": "Cheksiz AI yordam",
+      "progressTracking": "Progress kuzatuvi",
+      "homeworkAssistance": "Uy vazifasi yordami",
+      "prioritySupport": "Ustuvor qo'llab-quvvatlash",
+      "securePayment": "Xavfsiz to'lov",
+      "cancelAnytime": "Istalgan vaqtda bekor qilish",
+      "instantAccess": "Tezkor kirish"
+    },
+    "settings": {
+      "accountSettings": "Hisob sozlamalari",
+      "manageProfile": "Profil va obunani boshqarish",
+      "plan": "Reja",
+      "messages": "Xabarlar",
+      "images": "Rasmlar",
+      "daysLeft": "Kunlar qoldi",
+      "subscriptionPlans": "Obuna rejalari",
+      "chooseBestPlan": "Siz uchun eng yaxshi rejani tanlang",
+      "oneMonth": "1 Oy",
+      "threeMonths": "3 Oy",
+      "sixMonths": "6 Oy",
+      "uzs": "so'm",
+      "unlimitedMessages": "Cheksiz xabarlar",
+      "unlimitedImages": "Cheksiz rasmlar",
+      "aiTutorAccess": "AI o'qituvchi kirish",
+      "aiTutorAnalytics": "AI o'qituvchi + Tahlil",
+      "unlimitedEverything": "Hammaga cheksiz kirish",
+      "prioritySupportPlan": "Ustuvor qo'llab-quvvatlash",
+      "customCourses": "Shaxsiy kurslar",
+      "bestDeal": "Eng yaxshi taklif",
+      "getPro": "Pro olish",
+      "enterPromocode": "Promokodni kiriting",
+      "applyCode": "Kodni qo'llash",
+      "applying": "Qo'llanmoqda...",
+      "personalInfo": "Shaxsiy ma'lumotlar",
+      "updatePersonal": "Shaxsiy ma'lumotlaringizni yangilang",
+      "notSpecified": "Ko'rsatilmagan",
+      "security": "Xavfsizlik",
+      "changePassword": "Parolni o'zgartirish",
+      "currentPassword": "Joriy parol",
+      "newPassword": "Yangi parol",
+      "confirmNewPassword": "Parolni tasdiqlang",
+      "forgotPassword": "Parolni unutdingizmi?",
+      "updating": "Yangilanmoqda...",
+      "dangerZone": "Xavfli zona",
+      "irreversibleActions": "Qaytarib bo'lmaydigan harakatlar",
+      "signOut": "Chiqish",
+      "signOutDesc": "Hisobdan chiqish",
+      "deleteAccount": "Hisobni o'chirish",
+      "deleteAccountDesc": "Hisobni butunlay o'chirish",
+      "deleteConfirmTitle": "Hisobni o'chirish",
+      "deleteConfirmText": "Hisobingizni o'chirmoqchimisiz? Bu harakatni bekor qilib bo'lmaydi.",
+      "deleteWarning": "Barcha ma'lumotlaringiz, progressingiz va obunangiz butunlay o'chiriladi.",
+      "deleteForever": "Butunlay o'chirish"
+    },
+    "mainPage": {
+      "welcomeBack": "Qaytib kelganingiz bilan!",
+      "searchPlaceholder": "Mavzular yoki kurslarni qidirish...",
+      "allSubjects": "Barcha fanlar",
+      "recommended": "Siz uchun tavsiya etilgan",
+      "refresh": "Yangilash",
+      "noRecommendations": "Mos tavsiyalar yo'q.",
+      "myCourses": "Mening kurslarim",
+      "noCourses": "Sizda hali faol kurslar yo'q."
+    },
+    "analytics": {
+      "title": "O'qish tahlillari",
+      "downloadPDF": "PDF sifatida yuklab olish",
+      "configureExport": "PDF eksportini sozlash",
+      "choosePeriod": "Davrni tanlang:",
+      "lastWeek": "O'tgan hafta",
+      "twoWeeks": "2 hafta",
+      "threeWeeks": "3 hafta",
+      "oneMonth": "1 oy",
+      "threeMonths": "3 oy",
+      "studyDays": "O'qish kunlari",
+      "completedSubjects": "Tugatilgan fanlar",
+      "weeklyLessons": "Haftalik darslar",
+      "monthlyLessons": "Oylik darslar",
+      "streakDays": "O'qish ketma-ketligi",
+      "activeDay": "Faol kun",
+      "mostActiveDay": "Eng faol kun",
+      "totalLessons": "Jami darslar",
+      "download": "Yuklab olish",
+      "currentPace": "Bu sizning joriy sur'atingiz",
+      "consistency": "Barqarorlik muvaffaqiyat kaliti",
+      "onARoll": "Juda yaxshi ketayapsiz",
+      "startAgain": "Qayta boshlash vaqti keldi",
+      "keepItUp": "Bu kunda davom eting",
+      "overallProgress": "Umumiy progress"
+    },
+    "chatBot": {
+      "title": "AI Chat",
+      "loginPrompt": "Suhbatni boshlash uchun tizimga kiring.",
+      "logIn": "Kirish",
+      "placeholder": "Xabar kiriting...",
+      "send": "Yuborish",
+      "endConversation": "Suhbatni yakunlash"
+    },
+    "topics": {
+      "title": "O'rganish mavzulari",
+      "loading": "Mavzular yuklanmoqda...",
+      "loadError": "Mavzularni yuklashda xato:",
+      "added": "Mavzu ro'yxatga qo'shildi!",
+      "addError": "Mavzuni qo'shishda xato:"
+    },
+    "topicCard": {
+      "add": "Qo'shish",
+      "start": "Boshlash",
+      "subjectMissing": "Fan ko'rsatilmagan."
+    },
+    "aboutUs": {
+      "title": "ACED haqida",
+      "desc1": "Biz bilimni dunyodagi har bir inson uchun qulay qiladigan yangi avlod ta'lim texnologiyalarini yaratamiz.",
+      "desc2": "Maqsadimiz to'siqlarni yo'q qilish va ta'limni moslashuvchan, shaxsiylashtirilgan va ilhomlantiruvchi qilish.",
+      "desc3": "ACED bilan siz faqat o'rganib qolmaysiz. Siz erkinroq, kuchliroq bo'lib, o'z hayotingizni o'zgartirishga tayyor bo'lasiz.",
+      "chartTitle": "ACED hayotimni qanday o'zgartirdi",
+      "happiness": "Baxt darajasi",
+      "confidence": "O'ziga ishonch",
+      "motivation": "O'qishga motivatsiya",
+      "freedom": "Erkinlik hissi",
+      "changeWorld": "Dunyoni o'zgartirishga tayyorlik"
+    },
+    "lesson": {
+      "backToTests": "Testlarga qaytish",
+      "continueLearning": "O'qishni davom ettirish",
+      "lessonComplete": "Dars yakunlandi!",
+      "greatJob": "Ajoyib! Siz bu darsni tugatdingiz.",
+      "nextLesson": "Keyingi dars",
+      "tryAgain": "Qaytadan urinish",
+      "correctAnswer": "To'g'ri!",
+      "wrongAnswer": "Mutlaqo to'g'ri emas. Qaytadan urining!",
+      "hint": "Maslahat",
+      "showAnswer": "Javobni ko'rsatish",
+      "submit": "Yuborish",
+      "skip": "O'tkazib yuborish",
+      "progress": "Progress",
+      "aiHelp": "AI Yordam",
+      "askQuestion": "Savol bering...",
+      "vocabulary": "Lug'at"
+    },
+    "games": {
+      "score": "Ball",
+      "time": "Vaqt",
+      "lives": "Hayotlar",
+      "level": "Daraja",
+      "gameOver": "O'yin tugadi",
+      "youWin": "Siz yutdingiz!",
+      "playAgain": "Qayta o'ynash",
+      "pause": "Pauza",
+      "resume": "Davom etish",
+      "quit": "Chiqish",
+      "highScore": "Rekord",
+      "newHighScore": "Yangi rekord!",
+      "tapToStart": "Boshlash uchun bosing",
+      "getReady": "Tayyorlaning!",
+      "go": "Oldinga!"
+    },
+    "errors": {
+      "loginError": "Kirish xatosi",
+      "userNotFound": "Foydalanuvchi topilmadi",
+      "invalidPassword": "Noto'g'ri parol yoki email",
+      "invalidEmail": "Noto'g'ri email formati",
+      "tooManyAttempts": "Juda ko'p urinish. Keyinroq qaytadan urinib ko'ring",
+      "accountDisabled": "Hisob o'chirilgan",
+      "networkError": "Internet aloqasi muammosi",
+      "registrationError": "Ro'yxatdan o'tish xatosi",
+      "emailInUse": "Email allaqachon ishlatilmoqda",
+      "weakPassword": "Parol juda zaif",
+      "passwordsMismatch": "Parollar mos kelmaydi",
+      "fillAllFields": "Iltimos, barcha majburiy maydonlarni to'ldiring",
+      "googleSignInError": "Google orqali kirish xatosi",
+      "popupClosed": "Kirish oynasi yopildi",
+      "popupBlocked": "Ochiluvchi oyna bloklandi",
+      "passwordMinLength": "Parol kamida 6 ta belgidan iborat bo'lishi kerak"
+    },
+    "success": {
+      "signedIn": "Muvaffaqiyatli kirish!",
+      "signedInGoogle": "Google orqali muvaffaqiyatli kirish!",
+      "registrationSuccess": "Ro'yxatdan o'tish muvaffaqiyatli!",
+      "profileUpdated": "Profil muvaffaqiyatli yangilandi!",
+      "passwordChanged": "Parol muvaffaqiyatli o'zgartirildi!",
+      "promocodeApplied": "Promokod qo'llandi!"
+    },
+    "platformMode": {
+      "levelTest": "Daraja testi",
+      "testYourLevel": "Shaxsiy tavsiyalar uchun darajangizni tekshiring",
+      "startTest": "Testni boshlash",
+      "skipTest": "Testni o'tkazib yuborish",
+      "yourLevel": "Sizning darajangiz",
+      "beginner": "Boshlang'ich",
+      "intermediate": "O'rta",
+      "advanced": "Yuqori",
+      "expert": "Ekspert"
+    },
+    "diary": {
+      "saving": "Saqlanmoqda...",
+      "saved": "Saqlandi!",
+      "finishDay": "Kunni yakunlash",
+      "todaysNotes": "Bugungi yozuvlar",
+      "addNote": "Yozuv qo'shing...",
+      "noNotes": "Hali yozuvlar yo'q"
+    },
+    "homework": {
+      "title": "Uy vazifasi yordami",
+      "uploadPhoto": "Rasm yuklash",
+      "typeQuestion": "Savolingizni yozing",
+      "getHelp": "Yordam olish",
+      "solution": "Yechim",
+      "explanation": "Tushuntirish",
+      "similarProblems": "O'xshash masalalar"
     }
   }
-  
+}
