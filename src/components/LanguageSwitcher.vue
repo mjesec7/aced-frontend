@@ -57,8 +57,8 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { useI18n } from 'vue-i18n';
+import { ref, onMounted, onUnmounted } from 'vue';
+import { useLanguage } from '@/composables/useLanguage';
 
 export default {
   name: 'LanguageSwitcher',
@@ -71,21 +71,15 @@ export default {
   },
 
   setup() {
-    const { locale } = useI18n();
+    // Use the global language composable for reactive language management
+    const {
+      language: currentLanguage,
+      languages,
+      currentLanguageLabel,
+      setLanguage
+    } = useLanguage();
+
     const isDropdownOpen = ref(false);
-
-    const languages = [
-      { code: 'en', label: 'English', flag: '🇬🇧' },
-      { code: 'ru', label: 'Русский', flag: '🇷🇺' },
-      { code: 'uz', label: "O'zbekcha", flag: '🇺🇿' }
-    ];
-
-    const currentLanguage = computed(() => locale.value);
-
-    const currentLanguageLabel = computed(() => {
-      const lang = languages.find(l => l.code === locale.value);
-      return lang ? lang.label : 'English';
-    });
 
     const toggleDropdown = () => {
       isDropdownOpen.value = !isDropdownOpen.value;
@@ -96,12 +90,9 @@ export default {
     };
 
     const selectLanguage = (code) => {
-      locale.value = code;
-      localStorage.setItem('lang', code);
+      // Use the global setLanguage function - this updates i18n, localStorage, and emits events
+      setLanguage(code);
       isDropdownOpen.value = false;
-
-      // Emit event for other components to react
-      window.dispatchEvent(new CustomEvent('language-changed', { detail: { language: code } }));
     };
 
     // Close dropdown when clicking outside

@@ -14,6 +14,7 @@ import VueToast from 'vue-toast-notification';
 
 import { createI18n } from 'vue-i18n';
 import messages from './locales/messages.json';
+import { initializeLanguage } from './composables/useLanguage.js';
 
 import { auth } from './firebase';
 import { setPersistence, browserLocalPersistence } from 'firebase/auth';
@@ -49,7 +50,11 @@ const i18n = createI18n({
   locale: localStorage.getItem('lang') || 'ru',
   fallbackLocale: 'en',
   messages,
+  globalInjection: true, // Enable global $t access in all components
 });
+
+// Initialize global language system with i18n instance
+initializeLanguage(i18n);
 
 // ============================================================================
 // 🚀 FIREBASE AUTH PERSISTENCE SETUP

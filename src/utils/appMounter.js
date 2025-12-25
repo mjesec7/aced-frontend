@@ -4,6 +4,7 @@ import { createApp } from 'vue';
 import App from '../App.vue';
 import VueToast from 'vue-toast-notification';
 import { setupEnhancedGlobalSubscriptionManagement } from './subscriptionManagement.js';
+import { initializeLanguage, setLanguage, getLanguage } from '../composables/useLanguage.js';
 
 let app;
 let isApplicationMounted = false;
@@ -34,7 +35,11 @@ export async function mountVueApplication() {
       locale: localStorage.getItem('lang') || 'ru',
       fallbackLocale: 'en',
       messages,
+      globalInjection: true, // Enable global $t access in all components
     });
+
+    // Initialize global language system with i18n instance
+    initializeLanguage(i18n);
 
     // ============================================================================
     // 🔧 ADD ENHANCED GLOBAL PROPERTIES
@@ -49,6 +54,10 @@ export async function mountVueApplication() {
       const cleanup = window.eventBus.onStatusChange(callback);
       return cleanup;
     };
+
+    // 🌐 Global language methods for Options API components
+    app.config.globalProperties.$setLanguage = setLanguage;
+    app.config.globalProperties.$getLanguage = getLanguage;
 
     // ============================================================================
     // 📦 INSTALL PLUGINS
@@ -168,7 +177,11 @@ export async function mountVueApplicationBasic() {
       locale: localStorage.getItem('lang') || 'ru',
       fallbackLocale: 'en',
       messages,
+      globalInjection: true, // Enable global $t access in all components
     });
+
+    // Initialize global language system with i18n instance
+    initializeLanguage(i18n);
 
     // ============================================================================
     // 📦 INSTALL BASIC PLUGINS ONLY
