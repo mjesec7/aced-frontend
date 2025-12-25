@@ -1,0 +1,37 @@
+{
+  "_id": { "$oid": "679a1234567890abcdef6666" },
+  "subject": "Game Testing",
+  "level": 1,
+  "topic": "Basket Catch Test",
+  "topicId": { "$oid": "679a1234567890abcdef9998" },
+  "lessonName": "Basket Catch V1",
+  "description": "Testing the Basket Catch game with falling items",
+  "type": "free",
+  "isActive": true,
+  "steps": [
+    {
+      "type": "introduction",
+      "title": "Test Start",
+      "content": "## Basket Catch Test\n\nClick Next to start the Basket Catch game."
+    },
+    {
+      "type": "game",
+      "title": "Catch Math Answers",
+      "gameType": "basket-catch",
+      "instructions": "Move the basket to catch the correct answers!",
+      "gameConfig": {
+        "gameType": "basket-catch",
+        "targetScore": 100,
+        "lives": 3,
+        "timeLimit": 60,
+        "difficulty": "medium",
+        "questions": [
+          { "q": "3 + 2 = ?", "a": "5", "wrong": ["3", "4", "6", "7"] },
+          { "q": "8 - 3 = ?", "a": "5", "wrong": ["11", "4", "6", "3"] },
+          { "q": "2 x 4 = ?", "a": "8", "wrong": ["6", "10", "7", "9"] },
+          { "q": "9 + 1 = ?", "a": "10", "wrong": ["8", "11", "9", "12"] }
+        ]
+      }
+    }
+  ]
+}
