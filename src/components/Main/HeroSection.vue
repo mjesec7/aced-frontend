@@ -21,21 +21,21 @@
           <!-- Badge -->
           <div class="inline-flex items-center gap-2 px-4 py-2 bg-violet-50 rounded-full border border-violet-100 mb-8">
             <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-            <span class="text-sm font-medium text-violet-700">2,800+ students already learning</span>
+            <span class="text-sm font-medium text-violet-700">{{ $t('heroSection.studentsLearning', { count: '2,800' }) }}</span>
           </div>
 
           <!-- Main heading + Subtitle -->
           <div class="flex flex-col gap-6 mb-10">
             <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-[1.15] tracking-tight">
-              The smarter way to
+              {{ $t('heroSection.headline') }}
               <span class="relative inline-block">
-                <span class="relative z-10 text-violet-600">learn anything</span>
+                <span class="relative z-10 text-violet-600">{{ $t('heroSection.headlineHighlight') }}</span>
                 <span class="absolute bottom-2 left-0 w-full h-3 bg-violet-200/60 -z-0 rounded"></span>
               </span>
             </h1>
 
             <p class="text-lg lg:text-xl text-gray-500 leading-relaxed max-w-md">
-              Interactive lessons with AI-powered help. Learn at your own pace.
+              {{ $t('heroSection.subtitle') }}
             </p>
           </div>
 
@@ -45,13 +45,13 @@
               @click="handleStartFree"
               class="px-8 py-3 bg-violet-600 text-white text-base font-semibold rounded-xl hover:bg-violet-700 transition-colors shadow-lg shadow-violet-600/25"
             >
-              Start Free - No Registration
+              {{ $t('heroSection.startFree') }}
             </button>
             <button
               @click="handleRegister"
               class="px-8 py-3 bg-white text-gray-700 text-base font-semibold rounded-xl border-2 border-gray-200 hover:border-violet-400 hover:text-violet-600 transition-all"
             >
-              Register & Save Progress
+              {{ $t('heroSection.registerAndSave') }}
             </button>
           </div>
 
@@ -65,7 +65,7 @@
               </div>
               <div>
                 <div class="text-xl font-bold text-gray-900">100+</div>
-                <div class="text-sm text-gray-500">Courses</div>
+                <div class="text-sm text-gray-500">{{ $t('heroSection.courses') }}</div>
               </div>
             </div>
             <div class="flex items-center gap-3">
@@ -76,7 +76,7 @@
               </div>
               <div>
                 <div class="text-xl font-bold text-gray-900">24/7</div>
-                <div class="text-sm text-gray-500">AI Support</div>
+                <div class="text-sm text-gray-500">{{ $t('heroSection.aiSupport') }}</div>
               </div>
             </div>
             <div class="flex items-center gap-3">
@@ -87,7 +87,7 @@
               </div>
               <div>
                 <div class="text-xl font-bold text-gray-900">95%</div>
-                <div class="text-sm text-gray-500">Completion</div>
+                <div class="text-sm text-gray-500">{{ $t('heroSection.completion') }}</div>
               </div>
             </div>
           </div>

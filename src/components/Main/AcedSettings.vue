@@ -10,21 +10,24 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M19 12H5M12 19l-7-7 7-7"/>
             </svg>
-            <span>Back</span>
+            <span>{{ $t('common.back') }}</span>
           </button>
           <div>
-            <h1 class="text-2xl font-bold text-slate-900">Account Settings</h1>
-            <p class="text-sm text-slate-500 mt-1">Manage your profile and subscription</p>
+            <h1 class="text-2xl font-bold text-slate-900">{{ $t('settings.accountSettings') }}</h1>
+            <p class="text-sm text-slate-500 mt-1">{{ $t('settings.manageProfile') }}</p>
           </div>
         </div>
-        <button @click="saveChanges" :disabled="loading" class="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg shadow-indigo-500/25 transition-all disabled:opacity-60 disabled:cursor-not-allowed">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-            <polyline points="17 21 17 13 7 13 7 21"/>
-            <polyline points="7 3 7 8 15 8"/>
-          </svg>
-          <span>Save</span>
-        </button>
+        <div class="flex items-center gap-3">
+          <LanguageSwitcher :compact="true" />
+          <button @click="saveChanges" :disabled="loading" class="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg shadow-indigo-500/25 transition-all disabled:opacity-60 disabled:cursor-not-allowed">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+              <polyline points="17 21 17 13 7 13 7 21"/>
+              <polyline points="7 3 7 8 15 8"/>
+            </svg>
+            <span>{{ $t('common.save') }}</span>
+          </button>
+        </div>
       </header>
 
       <!-- STATS OVERVIEW -->
@@ -37,7 +40,7 @@
             </svg>
           </div>
           <div class="min-w-0">
-            <p class="text-[10px] text-slate-500 uppercase tracking-wide font-medium">Plan</p>
+            <p class="text-[10px] text-slate-500 uppercase tracking-wide font-medium">{{ $t('settings.plan') }}</p>
             <h3 class="text-base font-bold text-slate-900 truncate">{{ currentPlan !== 'free' ? 'Pro' : 'Free' }}</h3>
           </div>
         </div>
@@ -50,7 +53,7 @@
             </svg>
           </div>
           <div class="min-w-0 flex-1">
-            <p class="text-[10px] text-slate-500 uppercase tracking-wide font-medium">Messages</p>
+            <p class="text-[10px] text-slate-500 uppercase tracking-wide font-medium">{{ $t('settings.messages') }}</p>
             <h3 class="text-base font-bold text-slate-900">{{ currentUsageMessages }}<span class="text-xs font-normal text-slate-400">/{{ usageLimitsMessages === -1 ? '∞' : usageLimitsMessages }}</span></h3>
           </div>
         </div>
@@ -65,7 +68,7 @@
             </svg>
           </div>
           <div class="min-w-0 flex-1">
-            <p class="text-[10px] text-slate-500 uppercase tracking-wide font-medium">Images</p>
+            <p class="text-[10px] text-slate-500 uppercase tracking-wide font-medium">{{ $t('settings.images') }}</p>
             <h3 class="text-base font-bold text-slate-900">{{ currentUsageImages }}<span class="text-xs font-normal text-slate-400">/{{ usageLimitsImages === -1 ? '∞' : usageLimitsImages }}</span></h3>
           </div>
         </div>
@@ -81,7 +84,7 @@
             </svg>
           </div>
           <div class="min-w-0">
-            <p class="text-[10px] text-slate-500 uppercase tracking-wide font-medium">Days Left</p>
+            <p class="text-[10px] text-slate-500 uppercase tracking-wide font-medium">{{ $t('settings.daysLeft') }}</p>
             <h3 class="text-base font-bold text-slate-900">{{ currentPlan !== 'free' && subscriptionExpiryInfo ? subscriptionExpiryInfo.daysRemaining : '—' }}</h3>
           </div>
         </div>
@@ -96,8 +99,8 @@
             </svg>
           </div>
           <div>
-            <h2 class="text-base font-semibold text-slate-900">Subscription Plans</h2>
-            <p class="text-xs text-slate-500">Choose the best plan for you</p>
+            <h2 class="text-base font-semibold text-slate-900">{{ $t('settings.subscriptionPlans') }}</h2>
+            <p class="text-xs text-slate-500">{{ $t('settings.chooseBestPlan') }}</p>
           </div>
         </div>
         
@@ -107,7 +110,7 @@
             <!-- 1 Month -->
             <div class="relative p-5 border-2 border-slate-200 hover:border-indigo-400 rounded-2xl transition-all hover:shadow-lg flex flex-col">
               <div class="text-center flex-1 flex flex-col">
-                <h3 class="text-lg font-bold text-slate-900">1 Month</h3>
+                <h3 class="text-lg font-bold text-slate-900">{{ $t('settings.oneMonth') }}</h3>
                 <div class="text-2xl font-bold text-indigo-600 mt-2">250,000</div>
                 <div class="text-sm text-slate-500 mb-4">UZS</div>
                 <ul class="text-left text-xs text-slate-600 space-y-2 flex-1">
@@ -129,7 +132,7 @@
                   :disabled="currentPlan !== 'free'"
                   class="w-full py-2.5 mt-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {{ currentPlan === 'free' ? 'Get Started' : 'Active' }}
+                  {{ currentPlan === 'free' ? $t('tariffs.getStarted') : $t('common.active') }}
                 </button>
               </div>
             </div>
@@ -140,10 +143,10 @@
                 Popular
               </div>
               <div class="text-center flex-1 flex flex-col pt-1">
-                <h3 class="text-lg font-bold text-slate-900">3 Months</h3>
+                <h3 class="text-lg font-bold text-slate-900">{{ $t('settings.threeMonths') }}</h3>
                 <div class="text-2xl font-bold text-indigo-600 mt-2">675,000</div>
                 <div class="text-sm text-slate-500">UZS</div>
-                <div class="inline-block px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-full my-2 mx-auto">SAVE 10%</div>
+                <div class="inline-block px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-full my-2 mx-auto">{{ $t('tariffs.save', { percent: 10 }) }}</div>
                 <ul class="text-left text-xs text-slate-600 space-y-2 flex-1">
                   <li class="flex items-center gap-2">
                     <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
@@ -444,9 +447,14 @@ import {
   deleteUser
 } from 'firebase/auth';
 import { fetchSubscriptionFromServer } from '@/api/subscription';
+import LanguageSwitcher from '@/components/LanguageSwitcher.vue';
 
 export default {
   name: 'AcedSettings',
+
+  components: {
+    LanguageSwitcher
+  },
   
   setup() {
     const store = useStore();

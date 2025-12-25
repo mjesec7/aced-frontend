@@ -10,7 +10,7 @@
             <span class="text-xl font-bold text-gray-900">ACED</span>
           </div>
           <p class="text-gray-500 text-sm leading-relaxed mb-6 max-w-sm">
-            Making education simple, interactive, and accessible for everyone.
+            {{ $t('footer.slogan') }}
           </p>
           <div class="flex gap-3">
             <!-- Instagram -->
@@ -30,23 +30,23 @@
 
         <!-- Navigation Column -->
         <div>
-          <h4 class="font-semibold text-gray-900 mb-4">Navigation</h4>
+          <h4 class="font-semibold text-gray-900 mb-4">{{ $t('footer.navigation') }}</h4>
           <ul class="space-y-3">
-            <li><a href="#about-us" class="text-gray-500 hover:text-violet-600 text-sm transition-colors">About Us</a></li>
-            <li><a href="#aced" class="text-gray-500 hover:text-violet-600 text-sm transition-colors">Courses</a></li>
-            <li><a href="#tariffs" class="text-gray-500 hover:text-violet-600 text-sm transition-colors">Pricing</a></li>
-            <li><a href="#" @click.prevent="showAIHelperModal" class="text-gray-500 hover:text-violet-600 text-sm transition-colors">AI Assistant</a></li>
+            <li><a href="#about-us" class="text-gray-500 hover:text-violet-600 text-sm transition-colors">{{ $t('footer.aboutUs') }}</a></li>
+            <li><a href="#aced" class="text-gray-500 hover:text-violet-600 text-sm transition-colors">{{ $t('footer.courses') }}</a></li>
+            <li><a href="#tariffs" class="text-gray-500 hover:text-violet-600 text-sm transition-colors">{{ $t('footer.pricing') }}</a></li>
+            <li><a href="#" @click.prevent="showAIHelperModal" class="text-gray-500 hover:text-violet-600 text-sm transition-colors">{{ $t('footer.aiAssistant') }}</a></li>
           </ul>
         </div>
 
         <!-- Contact Column -->
         <div>
-          <h4 class="font-semibold text-gray-900 mb-4">Contact</h4>
+          <h4 class="font-semibold text-gray-900 mb-4">{{ $t('footer.contact') }}</h4>
           <ul class="space-y-3">
             <li class="text-gray-500 text-sm">@aced.live</li>
             <li>
               <a href="#" @click.prevent="showContactModal" class="text-violet-600 hover:text-violet-700 text-sm font-medium transition-colors">
-                Contact Us
+                {{ $t('footer.contactUs') }}
               </a>
             </li>
           </ul>
@@ -56,11 +56,11 @@
       <!-- Footer Bottom -->
       <div class="pt-8 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4">
         <p class="text-gray-400 text-sm">
-          2025 ACED. All rights reserved.
+          {{ $t('footer.allRights') }}
         </p>
         <div class="flex items-center gap-6">
-          <a href="/privacy-policy.html" target="_blank" class="text-gray-400 hover:text-violet-600 text-sm transition-colors">Privacy Policy</a>
-          <a href="/terms-of-service.html" target="_blank" class="text-gray-400 hover:text-violet-600 text-sm transition-colors">Terms of Service</a>
+          <a href="/privacy-policy.html" target="_blank" class="text-gray-400 hover:text-violet-600 text-sm transition-colors">{{ $t('footer.privacyPolicy') }}</a>
+          <a href="/terms-of-service.html" target="_blank" class="text-gray-400 hover:text-violet-600 text-sm transition-colors">{{ $t('footer.termsOfService') }}</a>
         </div>
       </div>
     </div>
@@ -80,12 +80,12 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
           </svg>
         </div>
-        <h3 class="text-xl font-bold text-gray-900 mb-2">AI Assistant</h3>
+        <h3 class="text-xl font-bold text-gray-900 mb-2">{{ $t('footer.aiHelperTitle') }}</h3>
         <p class="text-gray-500 text-sm mb-6">
-          Look for the chat bubble in the bottom right corner. Our AI is ready to help!
+          {{ $t('footer.aiHelperText') }}
         </p>
         <button class="w-full py-3 rounded-xl bg-violet-600 text-white font-semibold hover:bg-violet-700 transition-colors" @click="showAIModal = false">
-          Got it
+          {{ $t('footer.gotIt') }}
         </button>
       </div>
 
