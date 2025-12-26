@@ -109,7 +109,7 @@
 
           <div v-if="selectedCourse" class="bg-gray-50 rounded-xl p-4 mb-6">
             <h3 class="font-semibold text-gray-900">{{ getTopicName(selectedCourse) }}</h3>
-            <p class="text-sm text-gray-500">{{ selectedCourse.lessons?.length || 0 }} lessons</p>
+            <p class="text-sm text-gray-500">{{ selectedCourse.lessons?.length || 0 }} {{ $t('acedSection.lessons') }}</p>
           </div>
 
           <div class="space-y-3">
@@ -126,7 +126,7 @@
       <!-- Error Alert -->
       <div v-if="errorMessage" class="fixed bottom-6 right-6 z-[100] bg-white text-gray-900 px-5 py-3 rounded-xl border border-gray-200 shadow-lg flex items-center gap-3">
         <span class="text-sm">{{ errorMessage }}</span>
-        <button class="text-sm font-semibold text-violet-600" @click="refreshCourses">Retry</button>
+        <button class="text-sm font-semibold text-violet-600" @click="refreshCourses">{{ $t('acedSection.tryAgain') }}</button>
       </div>
     </div>
   </section>
@@ -307,7 +307,7 @@ export default {
     },
 
     getTopicName(course) {
-      return course?.name || course?.topicName || 'Untitled';
+      return course?.name || course?.topicName || this.$t('course.untitled');
     },
 
     getTopicDescription(course) {
@@ -322,8 +322,8 @@ export default {
     },
 
     getTopicTypeLabel(course) {
-      const labels = { free: 'Free', pro: 'Pro' };
-      return labels[this.getTopicType(course)] || 'Free';
+      const type = this.getTopicType(course);
+      return type === 'pro' ? this.$t('common.pro') : this.$t('common.free');
     }
   }
 };
