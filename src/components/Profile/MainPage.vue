@@ -999,25 +999,25 @@ this.recommendations = null;
 
     // 🧬 NEW: Format cognitive labels
     formatCognitiveLabel(key) {
-      const labels = {
-        processingSpeed: 'Processing',
-        workingMemory: 'Memory',
-        visualSpatial: 'Visual',
-        verbalLinguistic: 'Verbal',
-        logicalMathematical: 'Logic'
+      const labelKeys = {
+        processingSpeed: 'analytics.Processing',
+        workingMemory: 'analytics.Memory',
+        visualSpatial: 'analytics.Visual',
+        verbalLinguistic: 'analytics.Verbal',
+        logicalMathematical: 'analytics.Logic'
       };
-      return labels[key] || key;
+      return labelKeys[key] ? this.$t(labelKeys[key]) : key;
     },
     
     // 🧬 NEW: Format optimal time
     formatOptimalTime(timeData) {
-      if (!timeData) return 'Flexible';
-      if (timeData.isOptimal) return 'Now! 🌟';
+      if (!timeData) return this.$t('analytics.flexible');
+      if (timeData.isOptimal) return this.$t('analytics.studyAnytime') + ' 🌟';
       if (timeData.nextOptimal !== undefined) {
         const hours = timeData.hoursUntilOptimal;
-        return hours === 0 ? 'Now' : `${timeData.nextOptimal}:00 (${hours}h)`;
+        return hours === 0 ? this.$t('analytics.studyAnytime') : this.$t('analytics.betterAt', { hours: `${timeData.nextOptimal}:00` });
       }
-      return 'Anytime';
+      return this.$t('analytics.studyAnytime');
     },
     
     // 🧬 NEW: Get learning style icon
@@ -1033,13 +1033,14 @@ this.recommendations = null;
     
     // 🧬 NEW: Get learning style text
     getLearningStyleText() {
-      const styles = {
-        visual: 'Visual',
-        auditory: 'Auditory',
-        kinesthetic: 'Hands-on',
-        'reading-writing': 'Reading'
+      const styleKeys = {
+        visual: 'analytics.visual',
+        auditory: 'analytics.auditory',
+        kinesthetic: 'analytics.kinesthetic',
+        'reading-writing': 'analytics.readingWriting'
       };
-      return styles[this.learningProfile?.learningStyle?.primary] || 'Balanced';
+      const key = styleKeys[this.learningProfile?.learningStyle?.primary];
+      return key ? this.$t(key) : this.$t('analytics.balanced');
     },
     
     // 🧬 NEW: Get chronotype icon
@@ -1056,11 +1057,11 @@ this.recommendations = null;
     // 🧬 NEW: Get chronotype text
     getChronotypeText() {
       const peakHours = this.learningProfile?.chronotype?.peakHours;
-      if (!peakHours?.length) return 'Anytime';
+      if (!peakHours?.length) return this.$t('analytics.studyAnytime');
       const firstHour = peakHours[0];
-      if (firstHour < 12) return 'Morning';
-      if (firstHour < 17) return 'Afternoon';
-      return 'Evening';
+      if (firstHour < 12) return this.$t('timeOfDay.morning');
+      if (firstHour < 17) return this.$t('timeOfDay.afternoon');
+      return this.$t('timeOfDay.evening');
     },
     
     // 🎮 NEW: Format number with commas
@@ -1075,8 +1076,10 @@ this.recommendations = null;
     },
     
     updateCurrentDate() {
+      const lang = localStorage.getItem('lang') || 'en';
+      const localeMap = { en: 'en-US', ru: 'ru-RU', uz: 'uz-UZ' };
       const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-      this.currentDate = new Date().toLocaleDateString('en-US', options);
+      this.currentDate = new Date().toLocaleDateString(localeMap[lang] || 'en-US', options);
     },
     
     async loadData(forceRefresh = false) {
@@ -1197,7 +1200,7 @@ this.recommendations = null;
         if (p.testScore != null) {
           return {
             id: `test-${p._id}`,
-            title: `Test result: ${p.testScore}%`,
+            title: `${this.$t('activity.testResult')}: ${p.testScore}%`,
             time: this.getTimeAgo(p.completedAt),
             iconPath: '<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>',
             color: 'blue'
@@ -1206,7 +1209,7 @@ this.recommendations = null;
         if (p.completed) {
           return {
             id: `lesson-${p._id}`,
-            title: `Completed lesson: ${p.lessonId?.lessonName || 'Lesson'}`,
+            title: `${this.$t('activity.completedLesson')}: ${p.lessonId?.lessonName || this.$t('dashboard.lesson')}`,
             time: this.getTimeAgo(p.completedAt),
             iconPath: '<polyline points="20 6 9 17 4 12"/>',
             color: 'green'
@@ -1234,52 +1237,52 @@ this.recommendations = null;
     },
 
     getTimeAgo(date) {
-      if (!date) return 'recently';
+      if (!date) return this.$t('timeAgo.recently');
       const diff = new Date() - new Date(date);
       const minutes = Math.floor(diff / 60000);
       const hours = Math.floor(minutes / 60);
       const days = Math.floor(hours / 24);
-      
-      if (minutes < 1) return 'just now';
-      if (hours < 1) return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`;
-      if (days < 1) return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`;
-      if (days < 7) return `${days} ${days === 1 ? 'day' : 'days'} ago`;
-      return 'over a week ago';
+
+      if (minutes < 1) return this.$t('timeAgo.justNow');
+      if (hours < 1) return this.$t('timeAgo.minutesAgo', { count: minutes });
+      if (days < 1) return this.$t('timeAgo.hoursAgo', { count: hours });
+      if (days < 7) return this.$t('timeAgo.daysAgo', { count: days });
+      return this.$t('timeAgo.overWeekAgo');
     },
     
     getCourseName(course) {
-      return course.name || course.topicName || course.topic || course.title || 'Untitled Course';
+      return course.name || course.topicName || course.topic || course.title || this.$t('course.untitled');
     },
-    
+
     getTypeClass(course) {
       return course.type || 'free';
     },
-    
+
     getTypeLabel(course) {
-      const labels = { free: 'Free', premium: 'Start', pro: 'Pro' };
-      return labels[course.type] || 'Free';
+      const labelKeys = { free: 'common.free', premium: 'common.start', pro: 'common.pro' };
+      return this.$t(labelKeys[course.type] || 'common.free');
     },
-    
+
     formatTime(minutes) {
-      if (!minutes) return '0 h';
+      if (!minutes) return `0 ${this.$t('time.hours')}`;
       const hours = Math.floor(minutes / 60);
       const mins = minutes % 60;
       if (hours > 0) {
-        return `${hours} h ${mins > 0 ? `${mins} m` : ''}`.trim();
+        return `${hours} ${this.$t('time.hours')} ${mins > 0 ? `${mins} ${this.$t('time.minutes')}` : ''}`.trim();
       }
-      return `${mins} m`;
+      return `${mins} ${this.$t('time.minutes')}`;
     },
-    
+
     getLastAccessed(course) {
       return this.getTimeAgo(course.lastAccessed);
     },
-    
+
     getNextLesson(course) {
-      if (!course.lessons?.length) return 'No lessons';
+      if (!course.lessons?.length) return this.$t('course.noLessons');
       const completed = course.progress?.completedLessons || 0;
-      if (completed >= course.lessons.length) return 'All completed';
+      if (completed >= course.lessons.length) return this.$t('course.allCompleted');
       const nextLesson = course.lessons[completed];
-      return nextLesson?.lessonName || nextLesson?.title || `Lesson ${completed + 1}`;
+      return nextLesson?.lessonName || nextLesson?.title || `${this.$t('dashboard.lesson')} ${completed + 1}`;
     },
     
     getProgressColorClass(percent) {

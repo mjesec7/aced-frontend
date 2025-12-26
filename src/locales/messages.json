@@ -689,6 +689,32 @@
       "progressTracking": "Progress tracking",
       "homeworkAssistance": "Homework assistance",
       "prioritySupport": "Priority support"
+    },
+    "timeOfDay": {
+      "morning": "Morning",
+      "afternoon": "Afternoon",
+      "evening": "Evening"
+    },
+    "timeAgo": {
+      "recently": "recently",
+      "justNow": "just now",
+      "minutesAgo": "{count} minutes ago",
+      "hoursAgo": "{count} hours ago",
+      "daysAgo": "{count} days ago",
+      "overWeekAgo": "over a week ago"
+    },
+    "course": {
+      "untitled": "Untitled Course",
+      "noLessons": "No lessons",
+      "allCompleted": "All completed"
+    },
+    "time": {
+      "hours": "h",
+      "minutes": "m"
+    },
+    "activity": {
+      "testResult": "Test result",
+      "completedLesson": "Completed lesson"
     }
   },
   "ru": {
@@ -1381,6 +1407,32 @@
       "progressTracking": "Отслеживание прогресса",
       "homeworkAssistance": "Помощь с домашкой",
       "prioritySupport": "Приоритетная поддержка"
+    },
+    "timeOfDay": {
+      "morning": "Утро",
+      "afternoon": "День",
+      "evening": "Вечер"
+    },
+    "timeAgo": {
+      "recently": "недавно",
+      "justNow": "только что",
+      "minutesAgo": "{count} мин. назад",
+      "hoursAgo": "{count} ч. назад",
+      "daysAgo": "{count} дн. назад",
+      "overWeekAgo": "более недели назад"
+    },
+    "course": {
+      "untitled": "Курс без названия",
+      "noLessons": "Нет уроков",
+      "allCompleted": "Всё завершено"
+    },
+    "time": {
+      "hours": "ч",
+      "minutes": "м"
+    },
+    "activity": {
+      "testResult": "Результат теста",
+      "completedLesson": "Урок завершён"
     }
   },
   "uz": {
@@ -2073,6 +2125,32 @@
       "progressTracking": "Progress kuzatuvi",
       "homeworkAssistance": "Uy vazifasi yordami",
       "prioritySupport": "Ustuvor qo'llab-quvvatlash"
+    },
+    "timeOfDay": {
+      "morning": "Ertalab",
+      "afternoon": "Kunduzi",
+      "evening": "Kechqurun"
+    },
+    "timeAgo": {
+      "recently": "yaqinda",
+      "justNow": "hozirgina",
+      "minutesAgo": "{count} daqiqa oldin",
+      "hoursAgo": "{count} soat oldin",
+      "daysAgo": "{count} kun oldin",
+      "overWeekAgo": "bir haftadan ko'proq oldin"
+    },
+    "course": {
+      "untitled": "Nomsiz kurs",
+      "noLessons": "Darslar yo'q",
+      "allCompleted": "Hammasi tugallandi"
+    },
+    "time": {
+      "hours": "s",
+      "minutes": "d"
+    },
+    "activity": {
+      "testResult": "Test natijasi",
+      "completedLesson": "Dars tugallandi"
     }
   }
 }
