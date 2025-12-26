@@ -3,8 +3,8 @@
     <div class="page-header">
       <div class="header-content">
         <div class="header-info">
-          <h1 class="page-title">📈 Аналитика обучения</h1>
-          <p class="page-subtitle">Отслеживайте свой прогресс и достижения</p>
+          <h1 class="page-title">📈 {{ $t('analytics.title') }}</h1>
+          <p class="page-subtitle">{{ $t('analytics.subtitle') }}</p>
         </div>
         <button @click="openModal" class="download-button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -12,14 +12,14 @@
             <polyline points="7 10 12 15 17 10"/>
             <line x1="12" y1="15" x2="12" y2="3"/>
           </svg>
-          Скачать PDF
+          {{ $t('analytics.downloadPdf') }}
         </button>
       </div>
     </div>
 
     <div v-if="loading" class="loading-state">
       <div class="spinner"></div>
-      <p>Загружаем аналитику...</p>
+      <p>{{ $t('analytics.loading') }}</p>
     </div>
 
     <div v-else-if="error" class="error-state">
@@ -34,7 +34,7 @@
           <polyline points="23 4 23 10 17 10"/>
           <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
         </svg>
-        Попробовать снова
+        {{ $t('analytics.tryAgain') }}
       </button>
     </div>
 
@@ -49,8 +49,8 @@
             </svg>
           </div>
           <div>
-            <h2 class="section-title">🧬 Ваша ДНК обучения</h2>
-            <p class="section-subtitle">AI-персонализация от сервера</p>
+            <h2 class="section-title">🧬 {{ $t('analytics.learningDna') }}</h2>
+            <p class="section-subtitle">{{ $t('analytics.aiPersonalization') }}</p>
           </div>
         </div>
 
@@ -59,16 +59,16 @@
           <div class="dna-card">
             <div class="dna-card-header">
               <span class="dna-icon">{{ getLearningStyleIcon() }}</span>
-              <h4>Стиль обучения</h4>
+              <h4>{{ $t('analytics.learningStyle') }}</h4>
             </div>
             <div class="dna-value">{{ getLearningStyleText() }}</div>
-            <p class="dna-desc">Основной способ восприятия</p>
+            <p class="dna-desc">{{ $t('analytics.primaryPerception') }}</p>
           </div>
           
           <div class="dna-card">
             <div class="dna-card-header">
               <span class="dna-icon">{{ getChronotypeIcon() }}</span>
-              <h4>Хронотип</h4>
+              <h4>{{ $t('analytics.chronotype') }}</h4>
             </div>
             <div class="dna-value">{{ getChronotypeText() }}</div>
             <p class="dna-desc">{{ getOptimalTimesText() }}</p>
@@ -77,25 +77,25 @@
           <div class="dna-card">
             <div class="dna-card-header">
               <span class="dna-icon">🎯</span>
-              <h4>Путь обучения</h4>
+              <h4>{{ $t('analytics.learningPath') }}</h4>
             </div>
             <div class="dna-value">{{ getPreferredPathText() }}</div>
-            <p class="dna-desc">Рекомендованный подход</p>
+            <p class="dna-desc">{{ $t('analytics.recommendedApproach') }}</p>
           </div>
 
           <div class="dna-card">
             <div class="dna-card-header">
               <span class="dna-icon">⏱️</span>
-              <h4>Длина сессии</h4>
+              <h4>{{ $t('analytics.sessionLength') }}</h4>
             </div>
             <div class="dna-value">{{ getSessionLengthText() }}</div>
-            <p class="dna-desc">Оптимальное время занятий</p>
+            <p class="dna-desc">{{ $t('analytics.optimalSession') }}</p>
           </div>
         </div>
 
         <!-- Cognitive Profile -->
         <div v-if="learningProfile.cognitiveProfile" class="cognitive-profile-section">
-          <h3 class="subsection-title">🧠 Когнитивный профиль</h3>
+          <h3 class="subsection-title">🧠 {{ $t('analytics.cognitiveProfile') }}</h3>
           <div class="cognitive-bars">
             <div v-for="(value, key) in learningProfile.cognitiveProfile" :key="key" class="cognitive-bar">
               <span class="cognitive-label">{{ formatCognitiveLabel(key) }}</span>
@@ -109,7 +109,7 @@
 
         <!-- Insights -->
         <div v-if="learningProfile.insights?.length" class="insights-section">
-          <h3 class="subsection-title">💡 Персональные инсайты</h3>
+          <h3 class="subsection-title">💡 {{ $t('analytics.personalInsights') }}</h3>
           <div class="insights-grid">
             <div v-for="(insight, index) in learningProfile.insights" :key="index" class="insight-card">
               {{ insight }}
@@ -127,15 +127,15 @@
             </svg>
           </div>
           <div>
-            <h2 class="section-title">🎮 Игрофикация</h2>
-            <p class="section-subtitle">Уровень {{ rewards.level }} • {{ formatNumber(rewards.totalPoints) }} очков</p>
+            <h2 class="section-title">🎮 {{ $t('analytics.gamification') }}</h2>
+            <p class="section-subtitle">{{ $t('analytics.level', { level: rewards.level }) }} • {{ $t('analytics.pointsCount', { count: formatNumber(rewards.totalPoints) }) }}</p>
           </div>
         </div>
 
         <!-- Level Progress -->
         <div class="level-section">
           <div class="level-info">
-            <span class="level-label">Уровень {{ rewards.level }}</span>
+            <span class="level-label">{{ $t('analytics.level', { level: rewards.level }) }}</span>
             <span class="level-percent">{{ Math.round(rewards.currentLevelProgress) }}%</span>
           </div>
           <div class="level-progress-bar">
@@ -148,23 +148,23 @@
           <div class="reward-stat">
             <span class="reward-stat-icon">🔥</span>
             <span class="reward-stat-value">{{ rewards.streak || 0 }}</span>
-            <span class="reward-stat-label">Дней подряд</span>
+            <span class="reward-stat-label">{{ $t('analytics.daysStreak') }}</span>
           </div>
           <div class="reward-stat">
             <span class="reward-stat-icon">🏆</span>
             <span class="reward-stat-value">{{ rewards.achievements?.length || 0 }}</span>
-            <span class="reward-stat-label">Достижений</span>
+            <span class="reward-stat-label">{{ $t('analytics.achievementsCount') }}</span>
           </div>
           <div class="reward-stat">
             <span class="reward-stat-icon">🎯</span>
             <span class="reward-stat-value">{{ rewards.nextRewardIn || 0 }}</span>
-            <span class="reward-stat-label">До награды</span>
+            <span class="reward-stat-label">{{ $t('analytics.toNextReward') }}</span>
           </div>
         </div>
 
         <!-- Recent Achievements -->
         <div v-if="rewards.achievements?.length" class="achievements-showcase">
-          <h3 class="subsection-title">🏅 Последние достижения</h3>
+          <h3 class="subsection-title">🏅 {{ $t('analytics.recentAchievements') }}</h3>
           <div class="achievements-list">
             <div 
               v-for="achievement in rewards.achievements.slice(0, 6)" 
@@ -200,8 +200,8 @@
              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           </div>
           <div>
-            <h2 class="section-title">Последняя активность</h2>
-            <p class="section-subtitle">Ваши недавние достижения</p>
+            <h2 class="section-title">{{ $t('analytics.recentActivity') }}</h2>
+            <p class="section-subtitle">{{ $t('analytics.recentActivityDesc') }}</p>
           </div>
         </div>
         <div class="activity-list">
@@ -213,7 +213,7 @@
               <div class="activity-title">{{ formatLessonName(activity.lesson) }}</div>
               <div class="activity-meta">
                 <span>{{ formatDate(activity.date) }}</span>
-                <span class="activity-points">{{ formatNumber(activity.points) }} очков</span>
+                <span class="activity-points">{{ $t('analytics.pointsCount', { count: formatNumber(activity.points) }) }}</span>
                 <span v-if="activity.duration">{{ formatDuration(activity.duration) }}</span>
               </div>
             </div>
@@ -226,11 +226,11 @@
         <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
         </svg>
-        <h3>Пока нет данных для аналитики</h3>
-        <p>Начните изучать уроки, чтобы увидеть свой прогресс</p>
+        <h3>{{ $t('analytics.noData') }}</h3>
+        <p>{{ $t('analytics.startLearningDesc') }}</p>
         <button @click="$router.push('/catalogue')" class="action-button primary">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          Начать обучение
+          {{ $t('analytics.startButton') }}
         </button>
       </div>
     </div>
@@ -239,22 +239,22 @@
     <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
       <div class="modal-card">
         <div class="modal-header">
-          <h3>Настройки экспорта PDF</h3>
-          <button @click="showModal = false" class="close-button" aria-label="Закрыть модальное окно">
+          <h3>{{ $t('analytics.pdfSettings') }}</h3>
+          <button @click="showModal = false" class="close-button" :aria-label="$t('common.close')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
         <div class="modal-body">
           <div class="modal-section">
-            <label for="period-select" class="modal-label">Период</label>
+            <label for="period-select" class="modal-label">{{ $t('analytics.period') }}</label>
             <select id="period-select" v-model="period" class="modal-select">
-              <option value="30">1 месяц</option>
-              <option value="90">3 месяца</option>
-              <option value="365">1 год</option>
+              <option value="30">{{ $t('analytics.oneMonth') }}</option>
+              <option value="90">{{ $t('analytics.threeMonths') }}</option>
+              <option value="365">{{ $t('analytics.oneYear') }}</option>
             </select>
           </div>
           <div class="modal-section">
-            <label class="modal-label">Выберите метрики</label>
+            <label class="modal-label">{{ $t('analytics.selectMetrics') }}</label>
             <div class="options-grid">
               <label v-for="stat in pdfStatOptions" :key="stat.key" class="option-checkbox">
                 <input type="checkbox" v-model="selectedStats" :value="stat.key" />
@@ -264,10 +264,10 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button @click="showModal = false" class="action-button secondary">Отмена</button>
+          <button @click="showModal = false" class="action-button secondary">{{ $t('common.cancel') }}</button>
           <button @click="downloadPDF" class="action-button primary">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Скачать
+            {{ $t('common.download') }}
           </button>
         </div>
       </div>
@@ -315,18 +315,20 @@ export default {
         topics: [],
         recentActivity: [],
       },
-      pdfStatOptions: [
-          { key: 'studyDays', label: 'Дней в обучении' },
-          { key: 'completedLessons', label: 'Завершено уроков' },
-          { key: 'completedTopics', label: 'Завершено тем' },
-          { key: 'totalPoints', label: 'Общие очки' },
-          { key: 'streakDays', label: 'Учебный стрик' },
-          { key: 'avgPointsPerDay', label: 'Очков в день' },
-      ],
     };
   },
   
   computed: {
+    pdfStatOptions() {
+      return [
+          { key: 'studyDays', label: this.$t('analytics.studyDays') },
+          { key: 'completedLessons', label: this.$t('analytics.completedLessons') },
+          { key: 'completedTopics', label: this.$t('analytics.completedTopics') },
+          { key: 'totalPoints', label: this.$t('analytics.totalPoints') },
+          { key: 'streakDays', label: this.$t('analytics.streakDays') },
+          { key: 'avgPointsPerDay', label: this.$t('analytics.avgPointsPerDay') },
+      ];
+    },
     hasAnyData() {
       const { totalLessonsDone, studyDays, subjects } = this.analytics;
       return totalLessonsDone > 0 || studyDays > 0 || subjects?.length > 0;
@@ -337,23 +339,23 @@ export default {
         return [
             {
                 id: 'points',
-                label: 'Общие очки',
+                label: this.$t('analytics.totalPoints'),
                 value: this.formatNumber(an.totalPoints),
-                subtext: 'Баллы за активность',
+                subtext: this.$t('analytics.points'),
                 icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>',
                 color: 'purple'
             },
             {
                 id: 'avgPoints',
-                label: 'Очков в день',
+                label: this.$t('analytics.avgPointsPerDay'),
                 value: this.formatNumber(an.avgPointsPerDay),
-                subtext: 'Средний заработок',
+                subtext: this.$t('analytics.points'),
                 icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',
                 color: 'blue'
             },
             {
                 id: 'studyDays',
-                label: 'Дней в обучении',
+                label: this.$t('analytics.studyDays'),
                 value: this.formatNumber(an.studyDays),
                 subtext: this.formatDaysToHuman(an.studyDays),
                 icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
@@ -361,25 +363,25 @@ export default {
             },
             {
                 id: 'lessons',
-                label: 'Завершено уроков',
+                label: this.$t('analytics.completedLessons'),
                 value: this.formatNumber(an.completedLessons || an.totalLessonsDone),
-                subtext: 'Пройденные уроки',
+                subtext: this.$t('analytics.lesson'),
                 icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>',
                 color: 'orange'
             },
             {
                 id: 'topics',
-                label: 'Завершено тем',
+                label: this.$t('analytics.completedTopics'),
                 value: this.formatNumber(an.completedTopics),
-                subtext: 'Изученные разделы',
+                subtext: this.$t('analytics.topics'),
                 icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>',
                 color: 'teal'
             },
             {
                 id: 'streak',
-                label: 'Стрик',
+                label: this.$t('analytics.streak'),
                 value: `${an.streakDays || 0}`,
-                subtext: an.streakDays > 0 ? 'дней подряд' : 'Начни снова',
+                subtext: an.streakDays > 0 ? this.$t('analytics.daysStreak') : this.$t('analytics.startAgain'),
                 icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>',
                 color: 'pink'
             }
@@ -401,7 +403,7 @@ export default {
         const currentUser = auth.currentUser || (await new Promise(resolve => setTimeout(() => resolve(auth.currentUser), 1000)));
 
         if (!currentUser) {
-          this.error = 'Необходима авторизация';
+          this.error = this.$t('analytics.authRequired');
           return;
         }
 // Update streak first
@@ -444,10 +446,10 @@ export default {
 
       } catch (err) {
 const status = err.response?.status;
-        if (status === 401) this.error = 'Ошибка авторизации';
-        else if (status === 404) this.error = 'Данные не найдены. Начните изучать уроки!';
-        else if (status >= 500) this.error = 'Ошибка на сервере';
-        else this.error = 'Ошибка загрузки данных';
+        if (status === 401) this.error = this.$t('analytics.authError');
+        else if (status === 404) this.error = this.$t('analytics.notFound');
+        else if (status >= 500) this.error = this.$t('analytics.serverError');
+        else this.error = this.$t('analytics.loadError');
       } finally {
         this.loading = false;
       }
@@ -470,12 +472,12 @@ const status = err.response?.status;
 
     getLearningStyleText() {
       const styles = {
-        visual: 'Визуальный',
-        auditory: 'Аудиальный',
-        kinesthetic: 'Кинестетический',
-        'reading-writing': 'Чтение/письмо'
+        visual: this.$t('analytics.visual'),
+        auditory: this.$t('analytics.auditory'),
+        kinesthetic: this.$t('analytics.kinesthetic'),
+        'reading-writing': this.$t('analytics.readingWriting')
       };
-      return styles[this.learningProfile?.learningStyle?.primary] || 'Сбалансированный';
+      return styles[this.learningProfile?.learningStyle?.primary] || this.$t('analytics.balanced');
     },
 
     getChronotypeIcon() {
@@ -490,46 +492,46 @@ const status = err.response?.status;
 
     getChronotypeText() {
       const types = {
-        lark: 'Жаворонок',
-        owl: 'Сова',
-        'third-bird': 'Голубь',
-        variable: 'Гибкий'
+        lark: this.$t('analytics.lark'),
+        owl: this.$t('analytics.owl'),
+        'third-bird': this.$t('analytics.thirdBird'),
+        variable: this.$t('analytics.variable')
       };
-      return types[this.learningProfile?.chronotype?.type] || 'Гибкий';
+      return types[this.learningProfile?.chronotype?.type] || this.$t('analytics.flexible');
     },
 
     getOptimalTimesText() {
       const peakHours = this.learningProfile?.chronotype?.peakHours;
-      if (!peakHours?.length) return 'Учитесь в любое время';
+      if (!peakHours?.length) return this.$t('analytics.studyAnytime');
       const hours = peakHours.slice(0, 2).map(h => `${h}:00`).join(', ');
-      return `Лучше в ${hours}`;
+      return this.$t('analytics.betterAt', { hours });
     },
 
     getPreferredPathText() {
       const paths = {
-        storyteller: 'Рассказчик',
-        builder: 'Строитель',
-        scientist: 'Ученый',
-        artist: 'Художник',
-        gamer: 'Игрок',
-        social: 'Социальный',
-        debater: 'Дебатер'
+        storyteller: this.$t('analytics.storyteller'),
+        builder: this.$t('analytics.builder'),
+        scientist: this.$t('analytics.scientist'),
+        artist: this.$t('analytics.artist'),
+        gamer: this.$t('analytics.gamer'),
+        social: this.$t('analytics.social'),
+        debater: this.$t('analytics.debater')
       };
-      return paths[this.learningProfile?.preferredPath] || 'Универсальный';
+      return paths[this.learningProfile?.preferredPath] || this.$t('analytics.universal');
     },
 
     getSessionLengthText() {
       const length = this.recommendations?.sessionLength || this.learningProfile?.chronotype?.optimalSessionLength;
-      return length ? `${length} минут` : '30 минут';
+      return length ? this.$t('analytics.minutes', { count: length }) : this.$t('analytics.minutes', { count: 30 });
     },
 
     formatCognitiveLabel(key) {
       const labels = {
-        processingSpeed: 'Скорость обработки',
-        workingMemory: 'Рабочая память',
-        visualSpatial: 'Визуально-пространственное',
-        verbalLinguistic: 'Вербально-лингвистическое',
-        logicalMathematical: 'Логико-математическое'
+        processingSpeed: this.$t('analytics.processingSpeed'),
+        workingMemory: this.$t('analytics.workingMemory'),
+        visualSpatial: this.$t('analytics.visualSpatial'),
+        verbalLinguistic: this.$t('analytics.verbalLinguistic'),
+        logicalMathematical: this.$t('analytics.logicalMathematical')
       };
       return labels[key] || key;
     },
@@ -542,12 +544,12 @@ const status = err.response?.status;
       try {
         const response = await getLessonById(lessonId);
         const data = response?.data;
-        const lessonName = data?.lessonName || data?.title || data?.name || 'Урок без названия';
+        const lessonName = data?.lessonName || data?.title || data?.name || this.$t('analytics.lessonWithoutName');
         
         this.lessonCache.set(lessonId, lessonName);
         return lessonName;
       } catch (error) {
-const fallbackName = `Урок (${lessonId.slice(-6)})`;
+const fallbackName = `${this.$t('analytics.lesson')} (${lessonId.slice(-6)})`;
         this.lessonCache.set(lessonId, fallbackName);
         return fallbackName;
       }
@@ -596,11 +598,11 @@ const fallbackName = `Урок (${lessonId.slice(-6)})`;
         const wrapper = document.createElement('div');
         wrapper.style.cssText = 'padding: 20px; font-family: Arial, sans-serif;';
         wrapper.innerHTML = `
-            <h2 style="text-align:center; margin-bottom:20px;">📊 Аналитика обучения</h2>
+            <h2 style="text-align:center; margin-bottom:20px;">📊 ${this.$t('analytics.title')}</h2>
             ${statContent}
             <div style="margin-top:20px; padding-top:20px; border-top: 1px solid #ddd; font-size: 12px; color: #666;">
-                <div style="margin-bottom: 8px;"><strong>Период:</strong> ${this.period} дней</div>
-                <div>Сгенерировано: ${new Date().toLocaleString('ru-RU')}</div>
+                <div style="margin-bottom: 8px;"><strong>${this.$t('analytics.period')}:</strong> ${this.period} ${this.$t('analytics.days')}</div>
+                <div>${this.$t('analytics.generated')}: ${new Date().toLocaleString('ru-RU')}</div>
             </div>`;
 
         this.showModal = false;
@@ -614,7 +616,7 @@ const fallbackName = `Урок (${lessonId.slice(-6)})`;
                 jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
             }).from(wrapper).save();
         } catch (err) {
-            alert('Ошибка при генерации PDF');
+            alert(this.$t('analytics.loadError'));
         }
     },
 
@@ -629,19 +631,19 @@ const fallbackName = `Урок (${lessonId.slice(-6)})`;
     },
 
     formatLessonName: (lesson) => {
-      if (!lesson) return 'Урок без названия';
+      if (!lesson) return this.$t('analytics.lessonWithoutName');
       if (typeof lesson === 'string' && /^[a-f\d]{24}$/i.test(lesson)) {
-        return `Урок (${lesson.slice(-6)})`;
+        return `${this.$t('analytics.lesson')} (${lesson.slice(-6)})`;
       }
       return lesson;
     },
 
     formatDaysToHuman(days) {
-      if (!days) return '0 дней';
+      if (!days) return `0 ${this.$t('analytics.days')}`;
       const parts = [];
-      if (days >= 365) parts.push(`${Math.floor(days / 365)} г.`);
-      if (days % 365 >= 30) parts.push(`${Math.floor((days % 365) / 30)} мес.`);
-      if (days % 30 > 0 || parts.length === 0) parts.push(`${days % 30} дн.`);
+      if (days >= 365) parts.push(`${Math.floor(days / 365)} ${this.$t('analytics.yearShort')}`);
+      if (days % 365 >= 30) parts.push(`${Math.floor((days % 365) / 30)} ${this.$t('analytics.monthShort')}`);
+      if (days % 30 > 0 || parts.length === 0) parts.push(`${days % 30} ${this.$t('analytics.dayShort')}`);
       return `≈ ${parts.join(' ')}`;
     },
 
@@ -654,10 +656,10 @@ const fallbackName = `Урок (${lessonId.slice(-6)})`;
         yesterday.setDate(yesterday.getDate() - 1);
 
         if (date.toDateString() === today.toDateString()) {
-          return `Сегодня, ${date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`;
+          return `${this.$t('analytics.today')}, ${date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`;
         }
         if (date.toDateString() === yesterday.toDateString()) {
-          return `Вчера, ${date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`;
+          return `${this.$t('analytics.yesterday')}, ${date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`;
         }
         return date.toLocaleDateString('ru-RU', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
       } catch (err) {

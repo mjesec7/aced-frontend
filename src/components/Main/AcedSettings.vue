@@ -116,15 +116,15 @@
                 <ul class="text-left text-xs text-slate-600 space-y-2 flex-1">
                   <li class="flex items-center gap-2">
                     <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                    Unlimited messages
+                    {{ $t('settings.unlimitedMessages') }}
                   </li>
                   <li class="flex items-center gap-2">
                     <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                    Unlimited images
+                    {{ $t('settings.unlimitedImages') }}
                   </li>
                   <li class="flex items-center gap-2">
                     <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                    AI tutor access
+                    {{ $t('settings.aiTutorAccess') }}
                   </li>
                 </ul>
                 <button 
@@ -140,7 +140,7 @@
             <!-- 3 Months - Popular -->
             <div class="relative p-5 border-2 border-amber-400 rounded-2xl shadow-lg bg-gradient-to-b from-amber-50 to-white flex flex-col">
               <div class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] font-bold uppercase rounded-full tracking-wide whitespace-nowrap">
-                Popular
+                {{ $t('tariffs.popular') }}
               </div>
               <div class="text-center flex-1 flex flex-col pt-1">
                 <h3 class="text-lg font-bold text-slate-900">{{ $t('settings.threeMonths') }}</h3>
@@ -150,15 +150,15 @@
                 <ul class="text-left text-xs text-slate-600 space-y-2 flex-1">
                   <li class="flex items-center gap-2">
                     <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                    Unlimited messages
+                    {{ $t('settings.unlimitedMessages') }}
                   </li>
                   <li class="flex items-center gap-2">
                     <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                    Unlimited images
+                    {{ $t('settings.unlimitedImages') }}
                   </li>
                   <li class="flex items-center gap-2">
                     <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                    AI tutor + Analytics
+                    {{ $t('settings.aiTutorAnalytics') }}
                   </li>
                 </ul>
                 <button 
@@ -166,7 +166,7 @@
                   :disabled="currentPlan !== 'free'"
                   class="w-full py-2.5 mt-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {{ currentPlan === 'free' ? 'Best Value' : 'Active' }}
+                  {{ currentPlan === 'free' ? $t('tariffs.bestValue') : $t('common.active') }}
                 </button>
               </div>
             </div>
@@ -174,25 +174,25 @@
             <!-- 6 Months - Best Deal -->
             <div class="relative p-5 border-2 border-emerald-400 rounded-2xl shadow-md bg-gradient-to-b from-emerald-50 to-white flex flex-col">
               <div class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-[10px] font-bold uppercase rounded-full tracking-wide whitespace-nowrap">
-                Best Deal
+                {{ $t('settings.bestDeal') }}
               </div>
               <div class="text-center flex-1 flex flex-col pt-1">
-                <h3 class="text-lg font-bold text-slate-900">6 Months</h3>
+                <h3 class="text-lg font-bold text-slate-900">{{ $t('settings.sixMonths') }}</h3>
                 <div class="text-2xl font-bold text-indigo-600 mt-2">1,200,000</div>
                 <div class="text-sm text-slate-500">UZS</div>
-                <div class="inline-block px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-full my-2 mx-auto">SAVE 20%</div>
+                <div class="inline-block px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-full my-2 mx-auto">{{ $t('tariffs.save', { percent: 20 }) }}</div>
                 <ul class="text-left text-xs text-slate-600 space-y-2 flex-1">
                   <li class="flex items-center gap-2">
                     <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                    Unlimited everything
+                    {{ $t('settings.unlimitedEverything') }}
                   </li>
                   <li class="flex items-center gap-2">
                     <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                    Priority support
+                    {{ $t('settings.prioritySupportPlan') }}
                   </li>
                   <li class="flex items-center gap-2">
                     <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                    Custom courses
+                    {{ $t('settings.customCourses') }}
                   </li>
                 </ul>
                 <button 
@@ -200,7 +200,7 @@
                   :disabled="currentPlan !== 'free'"
                   class="w-full py-2.5 mt-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {{ currentPlan === 'free' ? 'Get Pro' : 'Active' }}
+                  {{ currentPlan === 'free' ? $t('settings.getPro') : $t('common.active') }}
                 </button>
               </div>
             </div>
@@ -213,7 +213,7 @@
                 type="text" 
                 v-model="promocode" 
                 class="flex-1 px-4 py-3 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-xl text-sm text-slate-900 outline-none transition-all disabled:opacity-70 disabled:cursor-not-allowed"
-                placeholder="Enter promocode"
+                :placeholder="$t('settings.enterPromocode')"
                 :disabled="applyingPromo || currentPlan !== 'free'"
               />
               <button 
@@ -221,7 +221,7 @@
                 class="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                 :disabled="!promocode || applyingPromo || currentPlan !== 'free'"
               >
-                {{ applyingPromo ? 'Applying...' : 'Apply Code' }}
+                {{ applyingPromo ? $t('settings.applying') : $t('settings.applyCode') }}
               </button>
             </div>
             <p v-if="promoError" class="text-red-500 text-xs mt-2">{{ promoError }}</p>
@@ -243,8 +243,8 @@
                 </svg>
               </div>
               <div>
-                <h2 class="text-base font-semibold text-slate-900">Personal Information</h2>
-                <p class="text-xs text-slate-500">Update your personal details</p>
+                <h2 class="text-base font-semibold text-slate-900">{{ $t('settings.personalInformation') }}</h2>
+                <p class="text-xs text-slate-500">{{ $t('settings.updatePersonal') }}</p>
               </div>
             </div>
             <button v-if="!isEditingName" @click="startEditingName" class="w-9 h-9 flex items-center justify-center bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-500 hover:text-slate-700 transition-all">
@@ -258,42 +258,42 @@
           <div class="p-5">
             <div class="grid grid-cols-2 gap-4 mb-4">
               <div>
-                <label class="block text-xs font-medium text-slate-600 mb-2">First Name</label>
+                <label class="block text-xs font-medium text-slate-600 mb-2">{{ $t('userSection.firstName') }}</label>
                 <input 
                   v-if="isEditingName"
                   type="text" 
                   v-model="tempUser.name" 
                   class="w-full px-4 py-3 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-xl text-sm text-slate-900 outline-none transition-all"
-                  placeholder="First name"
+                  :placeholder="$t('userSection.firstName')"
                 />
                 <div v-else class="px-4 py-3 bg-slate-50 rounded-xl text-sm text-slate-900">
-                  {{ user.name || 'Not specified' }}
+                  {{ user.name || $t('settings.notSpecified') }}
                 </div>
               </div>
               
               <div>
-                <label class="block text-xs font-medium text-slate-600 mb-2">Last Name</label>
+                <label class="block text-xs font-medium text-slate-600 mb-2">{{ $t('userSection.lastName') }}</label>
                 <input 
                   v-if="isEditingName"
                   type="text" 
                   v-model="tempUser.surname" 
                   class="w-full px-4 py-3 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-xl text-sm text-slate-900 outline-none transition-all"
-                  placeholder="Last name"
+                  :placeholder="$t('userSection.lastName')"
                 />
                 <div v-else class="px-4 py-3 bg-slate-50 rounded-xl text-sm text-slate-900">
-                  {{ user.surname || 'Not specified' }}
+                  {{ user.surname || $t('settings.notSpecified') }}
                 </div>
               </div>
             </div>
 
             <div>
               <label class="flex items-center gap-2 text-xs font-medium text-slate-600 mb-2">
-                Email
+                {{ $t('userSection.email') }}
                 <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-semibold">
                   <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="20 6 9 17 4 12"/>
                   </svg>
-                  Verified
+                  {{ $t('common.verified') }}
                 </span>
               </label>
               <input 
@@ -305,8 +305,8 @@
             </div>
 
             <div v-if="isEditingName" class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
-              <button @click="cancelEditingName" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-all text-sm">Cancel</button>
-              <button @click="saveNameChanges" class="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold rounded-xl transition-all text-sm">Save</button>
+              <button @click="cancelEditingName" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-all text-sm">{{ $t('common.cancel') }}</button>
+              <button @click="saveNameChanges" class="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold rounded-xl transition-all text-sm">{{ $t('common.save') }}</button>
             </div>
           </div>
         </div>
@@ -321,15 +321,16 @@
               </svg>
             </div>
             <div>
-              <h2 class="text-base font-semibold text-slate-900">Security</h2>
-              <p class="text-xs text-slate-500">Change your password</p>
+            <div>
+              <h2 class="text-base font-semibold text-slate-900">{{ $t('settings.security') }}</h2>
+              <p class="text-xs text-slate-500">{{ $t('settings.changePassword') }}</p>
             </div>
           </div>
           
           <div class="p-5">
             <div class="space-y-4">
               <div>
-                <label class="block text-xs font-medium text-slate-600 mb-2">Current Password</label>
+                <label class="block text-xs font-medium text-slate-600 mb-2">{{ $t('settings.currentPassword') }}</label>
                 <input 
                   type="password" 
                   v-model="oldPassword" 
@@ -340,7 +341,7 @@
               </div>
 
               <div>
-                <label class="block text-xs font-medium text-slate-600 mb-2">New Password</label>
+                <label class="block text-xs font-medium text-slate-600 mb-2">{{ $t('settings.newPassword') }}</label>
                 <input 
                   type="password" 
                   v-model="newPassword" 
@@ -351,7 +352,7 @@
               </div>
 
               <div>
-                <label class="block text-xs font-medium text-slate-600 mb-2">Confirm Password</label>
+                <label class="block text-xs font-medium text-slate-600 mb-2">{{ $t('settings.confirmPassword') }}</label>
                 <input 
                   type="password" 
                   v-model="confirmPassword" 
@@ -364,10 +365,10 @@
 
             <div class="flex justify-between items-center mt-4 pt-4 border-t border-slate-100">
               <button @click="sendPasswordReset" class="text-indigo-500 hover:text-indigo-600 font-medium text-sm hover:underline">
-                Forgot Password?
+                {{ $t('settings.forgotPassword') }}
               </button>
               <button @click="saveChanges" class="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold rounded-xl transition-all text-sm disabled:opacity-60" :disabled="loading">
-                {{ loading ? 'Updating...' : 'Update' }}
+                {{ loading ? $t('settings.updating') : $t('settings.update') }}
               </button>
             </div>
           </div>
@@ -385,29 +386,30 @@
             </svg>
           </div>
           <div>
-            <h2 class="text-base font-semibold text-slate-900">Danger Zone</h2>
-            <p class="text-xs text-slate-500">Irreversible actions</p>
+          <div>
+            <h2 class="text-base font-semibold text-slate-900">{{ $t('settings.dangerZone') }}</h2>
+            <p class="text-xs text-slate-500">{{ $t('settings.irreversibleActions') }}</p>
           </div>
         </div>
         
         <div class="p-5 flex flex-col sm:flex-row gap-4">
           <div class="flex-1 flex items-center justify-between gap-4 p-4 bg-slate-50 rounded-xl">
             <div>
-              <h4 class="text-sm font-semibold text-slate-900">Sign Out</h4>
-              <p class="text-xs text-slate-500">Sign out from your account</p>
+              <h4 class="text-sm font-semibold text-slate-900">{{ $t('settings.signOut') }}</h4>
+              <p class="text-xs text-slate-500">{{ $t('settings.signOutDesc') }}</p>
             </div>
             <button @click="handleLogout" class="px-4 py-2 border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-semibold rounded-xl transition-all text-sm whitespace-nowrap">
-              Sign Out
+              {{ $t('settings.signOut') }}
             </button>
           </div>
 
           <div class="flex-1 flex items-center justify-between gap-4 p-4 bg-slate-50 rounded-xl">
             <div>
-              <h4 class="text-sm font-semibold text-slate-900">Delete Account</h4>
-              <p class="text-xs text-slate-500">Permanently delete account</p>
+              <h4 class="text-sm font-semibold text-slate-900">{{ $t('settings.deleteAccount') }}</h4>
+              <p class="text-xs text-slate-500">{{ $t('settings.deleteAccountDesc') }}</p>
             </div>
             <button @click="confirmDeleteAccount" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl transition-all text-sm whitespace-nowrap">
-              Delete
+              {{ $t('common.delete') }}
             </button>
           </div>
         </div>
@@ -418,16 +420,16 @@
     <div v-if="showDeleteModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-5" @click.self="showDeleteModal = false">
       <div class="bg-white rounded-2xl max-w-md w-full overflow-hidden shadow-2xl">
         <div class="flex justify-between items-center p-5 border-b border-slate-100">
-          <h3 class="text-lg font-semibold text-slate-900">Delete Account</h3>
+          <h3 class="text-lg font-semibold text-slate-900">{{ $t('settings.deleteModalTitle') }}</h3>
           <button @click="showDeleteModal = false" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-600 text-2xl">×</button>
         </div>
         <div class="p-5">
-          <p class="text-slate-700 mb-3">Are you sure you want to delete your account? This action cannot be undone.</p>
-          <p class="text-red-500 font-medium">All your data, progress, and subscription will be permanently deleted.</p>
+          <p class="text-slate-700 mb-3">{{ $t('settings.deleteModalText') }}</p>
+          <p class="text-red-500 font-medium">{{ $t('settings.deleteModalWarning') }}</p>
         </div>
         <div class="flex justify-end gap-3 p-5 bg-slate-50">
-          <button @click="showDeleteModal = false" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-all">Cancel</button>
-          <button @click="deleteAccount" class="px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl transition-all">Delete Forever</button>
+          <button @click="showDeleteModal = false" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-all">{{ $t('common.cancel') }}</button>
+          <button @click="deleteAccount" class="px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl transition-all">{{ $t('settings.deleteForever') }}</button>
         </div>
       </div>
     </div>
@@ -576,9 +578,9 @@ export default {
       promoError.value = ''; promoSuccess.value = ''; applyingPromo.value = true;
       try {
         const result = await store.dispatch('user/applyPromocode', { promoCode: promocode.value.trim(), plan: 'pro' });
-        if (result.success) { promoSuccess.value = result.message || 'Promocode applied!'; promocode.value = ''; await refreshFromServer(); }
-        else { promoError.value = result.error || 'Invalid promocode'; }
-      } catch (error) { promoError.value = 'Failed to apply promocode'; }
+        if (result.success) { promoSuccess.value = result.message || this.$t('settings.promocodeApplied'); promocode.value = ''; await refreshFromServer(); }
+        else { promoError.value = result.error || this.$t('settings.invalidPromocode'); }
+      } catch (error) { promoError.value = this.$t('settings.invalidPromocode'); }
       finally { applyingPromo.value = false; }
     };
 

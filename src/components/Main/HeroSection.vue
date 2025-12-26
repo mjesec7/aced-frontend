@@ -1,7 +1,7 @@
 <template>
   <div class="bg-white relative overflow-hidden">
     <!-- Centered decorative element - contained within hero -->
-    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-amber-400/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-violet-200/20 rounded-full blur-3xl z-0"></div>
 
     <!-- Navigation -->
     <nav class="flex items-center justify-between px-6 lg:px-16 py-5 max-w-7xl mx-auto relative">
@@ -16,7 +16,7 @@
         <!-- Left side - Text content -->
         <div class="relative">
           <!-- Decorative accent -->
-          <div class="absolute -left-4 top-0 w-1 h-32 bg-gradient-to-b from-violet-500 to-amber-400 rounded-full hidden sm:block"></div>
+          <div class="absolute inset-0 bg-linear-to-b from-violet-50/50 to-white pointer-events-none"></div>
 
           <!-- Badge -->
           <div class="inline-flex items-center gap-2 px-4 py-2 bg-violet-50 rounded-full border border-violet-100 mb-8">
@@ -69,7 +69,7 @@
               </div>
             </div>
             <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
+              <div class="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center text-2xl shrink-0">
                 <svg class="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
@@ -80,7 +80,7 @@
               </div>
             </div>
             <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
+              <div class="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center text-2xl shrink-0">
                 <svg class="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -103,44 +103,44 @@
             <div class="space-y-5 relative">
               <!-- Course preview card 1 -->
               <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl">
-                <div class="w-14 h-14 bg-violet-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <div class="w-14 h-14 bg-violet-100 rounded-xl flex items-center justify-center shrink-0">
                   <svg class="w-7 h-7 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                   </svg>
                 </div>
                 <div class="flex-1">
-                  <div class="font-semibold text-gray-900">Mathematics</div>
-                  <div class="text-sm text-gray-500">12 lessons • Beginner</div>
+                  <div class="font-semibold text-gray-900">{{ $t('heroSection.mathematics') }}</div>
+                  <div class="text-sm text-gray-500">{{ $t('heroSection.mathLessons') }}</div>
                 </div>
-                <span class="px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">Free</span>
+                <span class="px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">{{ $t('common.free') }}</span>
               </div>
 
               <!-- Course preview card 2 -->
               <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl">
-                <div class="w-14 h-14 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <div class="w-14 h-14 bg-amber-100 rounded-xl flex items-center justify-center shrink-0">
                   <svg class="w-7 h-7 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
                   </svg>
                 </div>
                 <div class="flex-1">
-                  <div class="font-semibold text-gray-900">Languages</div>
-                  <div class="text-sm text-gray-500">24 lessons • Intermediate</div>
+                  <div class="font-semibold text-gray-900">{{ $t('heroSection.languages') }}</div>
+                  <div class="text-sm text-gray-500">{{ $t('heroSection.langLessons') }}</div>
                 </div>
-                <span class="px-3 py-1 bg-violet-100 text-violet-700 text-xs font-semibold rounded-full">Pro</span>
+                <span class="px-3 py-1 bg-violet-100 text-violet-700 text-xs font-semibold rounded-full">{{ $t('common.pro') }}</span>
               </div>
 
               <!-- Course preview card 3 -->
               <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl">
-                <div class="w-14 h-14 bg-violet-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <div class="w-14 h-14 bg-violet-100 rounded-xl flex items-center justify-center shrink-0">
                   <svg class="w-7 h-7 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
                   </svg>
                 </div>
                 <div class="flex-1">
-                  <div class="font-semibold text-gray-900">Science</div>
-                  <div class="text-sm text-gray-500">18 lessons • Advanced</div>
+                  <div class="font-semibold text-gray-900">{{ $t('heroSection.science') }}</div>
+                  <div class="text-sm text-gray-500">{{ $t('heroSection.sciLessons') }}</div>
                 </div>
-                <span class="px-3 py-1 bg-violet-100 text-violet-700 text-xs font-semibold rounded-full">Pro</span>
+                <span class="px-3 py-1 bg-violet-100 text-violet-700 text-xs font-semibold rounded-full">{{ $t('common.pro') }}</span>
               </div>
             </div>
 
@@ -152,7 +152,7 @@
                   <div class="w-8 h-8 bg-amber-200 rounded-full border-2 border-white"></div>
                   <div class="w-8 h-8 bg-green-200 rounded-full border-2 border-white"></div>
                 </div>
-                <span class="text-sm text-gray-500">2,800+ learners</span>
+                <span class="text-sm text-gray-500">2,800+ {{ $t('heroSection.learners') }}</span>
               </div>
               <div class="flex items-center gap-1 text-amber-500">
                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
