@@ -1,621 +1,313 @@
 <template>
-  <div class="level-pathway-container">
+  <div class="level-pathway">
+    <!-- Stats Header -->
     <div class="pathway-header">
-      <div class="current-level-display">
-        <div class="level-badge" :style="{ background: currentLevelColor }">
-          <span class="level-number">{{ currentLevel }}</span>
-        </div>
-        <div class="level-info">
-          <span class="level-label">Level</span>
-          <div class="xp-info">
-            <span class="xp-current">{{ currentXP }}</span>
-            <span class="xp-separator">/</span>
-            <span class="xp-target">{{ xpForNextLevel }} XP</span>
-          </div>
+      <div class="stat-item">
+        <div class="stat-icon level-icon">⭐</div>
+        <div class="stat-info">
+          <span class="stat-value">{{ level }}</span>
+          <span class="stat-label">{{ $t('levelPathway.level') }}</span>
         </div>
       </div>
-      
-      <div class="xp-progress-ring">
-        <svg width="56" height="56" viewBox="0 0 56 56">
-          <circle
-            cx="28" cy="28" r="24"
-            fill="none"
-            stroke="#e5e7eb"
-            stroke-width="5"
-          />
-          <circle
-            cx="28" cy="28" r="24"
-            fill="none"
-            :stroke="currentLevelColor"
-            stroke-width="5"
-            stroke-linecap="round"
-            :stroke-dasharray="circumference"
-            :stroke-dashoffset="progressOffset"
-            class="progress-ring-fill"
-          />
-        </svg>
-        <span class="progress-percent">{{ progressPercent }}%</span>
+
+      <div class="stat-item">
+        <div class="stat-icon xp-icon">💎</div>
+        <div class="stat-info">
+          <span class="stat-value">{{ xp }}</span>
+          <span class="stat-label">{{ $t('levelPathway.xp') }}</span>
+        </div>
       </div>
-    </div>
 
-    <div class="pathway-scroll-wrapper">
-      <div class="pathway-track" ref="pathwayTrack">
-        <!-- Path line connecting nodes -->
-        <svg class="path-line" :width="pathWidth" height="100" preserveAspectRatio="none">
-          <path 
-            :d="pathD" 
-            fill="none" 
-            stroke="#e5e7eb" 
-            stroke-width="4"
-            stroke-linecap="round"
-          />
-          <path 
-            :d="pathD" 
-            fill="none" 
-            :stroke="currentLevelColor" 
-            stroke-width="4"
-            stroke-linecap="round"
-            :stroke-dasharray="pathLength"
-            :stroke-dashoffset="pathProgressOffset"
-            class="path-progress"
-          />
-        </svg>
-
-        <!-- Lesson nodes -->
-        <div class="nodes-container">
-          <div
-            v-for="(lesson, index) in displayedLessons"
-            :key="lesson.id || index"
-            :class="['lesson-node', getNodeStatus(index)]"
-            :style="getNodeStyle(index)"
-            @click="handleNodeClick(lesson, index)"
-          >
-            <div class="node-circle" :style="getNodeCircleStyle(index)">
-              <svg v-if="isLessonCompleted(index)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                <polyline points="20 6 9 17 4 12"/>
-              </svg>
-              <svg v-else-if="isLessonLocked(index)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-              </svg>
-              <span v-else class="node-number">{{ index + 1 }}</span>
-            </div>
-            <span class="node-label">{{ lesson.title || `Lesson ${index + 1}` }}</span>
-            
-            <!-- Star badge for perfect score -->
-            <div v-if="lesson.perfectScore" class="star-badge">⭐</div>
-          </div>
+      <div class="stat-item">
+        <div class="stat-icon streak-icon">🔥</div>
+        <div class="stat-info">
+          <span class="stat-value">{{ streak }}</span>
+          <span class="stat-label">{{ $t('levelPathway.dayStreak') }}</span>
         </div>
       </div>
     </div>
 
-    <div class="pathway-footer">
-      <div class="streak-badge">
-        <span class="streak-icon">🔥</span>
-        <span class="streak-count">{{ streak }} day streak</span>
-      </div>
-      <button 
-        v-if="nextLesson" 
-        class="continue-btn"
-        @click="startNextLesson"
+    <!-- Pathway Visualization -->
+    <div class="pathway-track">
+      <div 
+        v-for="(node, index) in pathwayNodes" 
+        :key="index"
+        class="pathway-node"
+        :class="{ 
+          completed: node.completed, 
+          current: node.current,
+          locked: node.locked 
+        }"
       >
-        <span>Continue</span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polygon points="5 3 19 12 5 21 5 3"/>
-        </svg>
-      </button>
+        <div class="node-connector" v-if="index > 0"></div>
+        <div class="node-circle">
+          <span v-if="node.completed">✓</span>
+          <span v-else-if="node.current">{{ index + 1 }}</span>
+          <span v-else>🔒</span>
+        </div>
+        <div class="node-label">{{ node.title }}</div>
+      </div>
     </div>
+
+    <!-- Continue Button -->
+    <button 
+      class="continue-btn"
+      @click="continueLesson"
+      :disabled="!hasCurrentLesson"
+    >
+      <span>{{ $t('levelPathway.continue') }}</span>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M5 12h14M12 5l7 7-7 7"/>
+      </svg>
+    </button>
   </div>
 </template>
 
 <script>
-import { computed, ref, onMounted } from 'vue';
-import { useStore } from 'vuex';
-import { useRouter } from 'vue-router';
-
 export default {
   name: 'LevelPathway',
-
   props: {
-    lessons: {
-      type: Array,
-      default: () => []
-    },
-    userProgress: {
-      type: Array,
-      default: () => []
-    },
-    currentLevelProp: {
+    level: {
       type: Number,
       default: 1
     },
-    currentXPProp: {
+    xp: {
       type: Number,
       default: 0
     },
-    streakProp: {
+    streak: {
       type: Number,
       default: 0
+    },
+    lessons: {
+      type: Array,
+      default: () => []
     }
   },
-
-  emits: ['lesson-click', 'continue'],
-
-  setup(props, { emit }) {
-    const store = useStore();
-    const router = useRouter();
-    const pathwayTrack = ref(null);
-
-    // Level colors by tier
-    const levelColors = [
-      '#22c55e', // Green 1-5
-      '#3b82f6', // Blue 6-10
-      '#8b5cf6', // Purple 11-15
-      '#f59e0b', // Orange 16-20
-      '#ef4444', // Red 21-25
-      '#ec4899', // Pink 26+
-    ];
-
-    const currentLevel = computed(() => props.currentLevelProp);
-    const currentXP = computed(() => props.currentXPProp);
-    const streak = computed(() => props.streakProp);
-
-    const xpForNextLevel = computed(() => {
-      // XP needed increases with level
-      return currentLevel.value * 100 + 200;
-    });
-
-    const progressPercent = computed(() => {
-      return Math.round((currentXP.value / xpForNextLevel.value) * 100);
-    });
-
-    const currentLevelColor = computed(() => {
-      const tierIndex = Math.floor((currentLevel.value - 1) / 5);
-      return levelColors[tierIndex] || levelColors[levelColors.length - 1];
-    });
-
-    // Progress ring calculations
-    const circumference = 2 * Math.PI * 24;
-    const progressOffset = computed(() => {
-      return circumference - (progressPercent.value / 100) * circumference;
-    });
-
-    // Display 10 lessons max in the pathway
-    const displayedLessons = computed(() => {
-      return props.lessons.slice(0, 10);
-    });
-
-    // Path calculations
-    const pathWidth = computed(() => displayedLessons.value.length * 100);
-    
-    const pathD = computed(() => {
-      const nodes = displayedLessons.value.length;
-      if (nodes < 2) return '';
-      
-      let d = 'M 40 50';
-      for (let i = 1; i < nodes; i++) {
-        const x = i * 100 + 40;
-        const y = 50 + (i % 2 === 1 ? -10 : 10); // Slight wave
-        d += ` Q ${(i - 0.5) * 100 + 40} ${y} ${x} 50`;
+  computed: {
+    pathwayNodes() {
+      if (this.lessons.length === 0) {
+        return [
+          { title: 'Lesson 1', completed: true, current: false, locked: false },
+          { title: 'Lesson 2', completed: true, current: false, locked: false },
+          { title: 'Lesson 3', completed: false, current: true, locked: false },
+          { title: 'Lesson 4', completed: false, current: false, locked: true },
+          { title: 'Lesson 5', completed: false, current: false, locked: true }
+        ]
       }
-      return d;
-    });
-
-    const pathLength = computed(() => {
-      // Approximate path length
-      return displayedLessons.value.length * 100;
-    });
-
-    const completedCount = computed(() => {
-      return props.lessons.filter((l, i) => isLessonCompleted(i)).length;
-    });
-
-    const pathProgressOffset = computed(() => {
-      const progress = completedCount.value / displayedLessons.value.length;
-      return pathLength.value - (progress * pathLength.value);
-    });
-
-    // Next available lesson
-    const nextLesson = computed(() => {
-      const nextIndex = props.lessons.findIndex((l, i) => !isLessonCompleted(i));
-      return nextIndex >= 0 ? { ...props.lessons[nextIndex], index: nextIndex } : null;
-    });
-
-    function isLessonCompleted(index) {
-      const lesson = props.lessons[index];
-      if (!lesson) return false;
-      return props.userProgress.some(p => 
-        (p.lessonId?._id || p.lessonId) === lesson._id && p.completed
-      );
+      return this.lessons.map((lesson, index) => ({
+        title: lesson.title || `Lesson ${index + 1}`,
+        completed: lesson.completed || false,
+        current: lesson.current || false,
+        locked: !lesson.completed && !lesson.current
+      }))
+    },
+    hasCurrentLesson() {
+      return this.pathwayNodes.some(node => node.current)
     }
-
-    function isLessonLocked(index) {
-      if (index === 0) return false;
-      // Locked if previous lesson not completed
-      return !isLessonCompleted(index - 1);
-    }
-
-    function isCurrentLesson(index) {
-      return !isLessonCompleted(index) && (index === 0 || isLessonCompleted(index - 1));
-    }
-
-    function getNodeStatus(index) {
-      if (isLessonCompleted(index)) return 'completed';
-      if (isLessonLocked(index)) return 'locked';
-      if (isCurrentLesson(index)) return 'current';
-      return 'available';
-    }
-
-    function getNodeStyle(index) {
-      return {
-        left: `${index * 100 + 20}px`,
-        top: `${30 + (index % 2 === 1 ? -8 : 8)}px`
-      };
-    }
-
-    function getNodeCircleStyle(index) {
-      if (isLessonCompleted(index)) {
-        return { background: currentLevelColor.value, borderColor: currentLevelColor.value };
-      }
-      if (isCurrentLesson(index)) {
-        return { 
-          borderColor: currentLevelColor.value,
-          boxShadow: `0 0 0 4px ${currentLevelColor.value}33`
-        };
-      }
-      return {};
-    }
-
-    function handleNodeClick(lesson, index) {
-      if (isLessonLocked(index)) return;
-      emit('lesson-click', { lesson, index });
-    }
-
-    function startNextLesson() {
-      if (nextLesson.value) {
-        emit('continue', nextLesson.value);
+  },
+  methods: {
+    continueLesson() {
+      const currentLesson = this.pathwayNodes.find(node => node.current)
+      if (currentLesson) {
+        this.$emit('continue', currentLesson)
       }
     }
-
-    return {
-      pathwayTrack,
-      currentLevel,
-      currentXP,
-      streak,
-      xpForNextLevel,
-      progressPercent,
-      currentLevelColor,
-      circumference,
-      progressOffset,
-      displayedLessons,
-      pathWidth,
-      pathD,
-      pathLength,
-      pathProgressOffset,
-      nextLesson,
-      isLessonCompleted,
-      isLessonLocked,
-      getNodeStatus,
-      getNodeStyle,
-      getNodeCircleStyle,
-      handleNodeClick,
-      startNextLesson
-    };
   }
-};
+}
 </script>
 
 <style scoped>
-.level-pathway-container {
-  background: white;
-  border-radius: 16px;
-  padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  border: 1px solid #e5e7eb;
+.level-pathway {
+  background: linear-gradient(135deg, rgba(30, 30, 50, 0.9), rgba(20, 20, 40, 0.95));
+  border-radius: 20px;
+  padding: 1.5rem;
+  border: 1px solid rgba(139, 92, 246, 0.2);
 }
 
-/* Header */
 .pathway-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #f1f5f9;
+  justify-content: space-around;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.current-level-display {
+.stat-item {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 0.75rem;
 }
 
-.level-badge {
-  width: 48px;
-  height: 48px;
+.stat-icon {
+  width: 44px;
+  height: 44px;
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  font-size: 1.25rem;
 }
 
-.level-number {
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: white;
+.level-icon {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.3));
 }
 
-.level-info {
+.xp-icon {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 85, 247, 0.3));
+}
+
+.streak-icon {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(248, 113, 113, 0.3));
+}
+
+.stat-info {
   display: flex;
   flex-direction: column;
-  gap: 2px;
 }
 
-.level-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.xp-info {
-  display: flex;
-  align-items: baseline;
-  gap: 2px;
-}
-
-.xp-current {
-  font-size: 1.125rem;
+.stat-value {
+  font-size: 1.5rem;
   font-weight: 700;
-  color: #1e293b;
+  color: #fff;
+  line-height: 1;
 }
 
-.xp-separator {
-  font-size: 0.875rem;
-  color: #94a3b8;
-}
-
-.xp-target {
-  font-size: 0.875rem;
-  color: #64748b;
-}
-
-/* Progress Ring */
-.xp-progress-ring {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.progress-ring-fill {
-  transform: rotate(-90deg);
-  transform-origin: center;
-  transition: stroke-dashoffset 0.5s ease;
-}
-
-.progress-percent {
-  position: absolute;
+.stat-label {
   font-size: 0.75rem;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-/* Pathway Track */
-.pathway-scroll-wrapper {
-  overflow-x: auto;
-  overflow-y: hidden;
-  margin: 0 -20px;
-  padding: 0 20px;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-}
-
-.pathway-scroll-wrapper::-webkit-scrollbar {
-  height: 4px;
-}
-
-.pathway-scroll-wrapper::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 0.2rem;
 }
 
 .pathway-track {
-  position: relative;
-  height: 120px;
-  min-width: max-content;
-  padding: 10px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1rem 0;
+  overflow-x: auto;
+  gap: 0.5rem;
 }
 
-.path-line {
-  position: absolute;
-  top: 0;
-  left: 0;
-  pointer-events: none;
-}
-
-.path-progress {
-  transition: stroke-dashoffset 0.5s ease;
-}
-
-/* Nodes */
-.nodes-container {
-  position: relative;
-  height: 100%;
-}
-
-.lesson-node {
-  position: absolute;
+.pathway-node {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  transition: transform 0.2s ease;
+  position: relative;
+  flex: 1;
+  min-width: 60px;
 }
 
-.lesson-node:hover:not(.locked) {
-  transform: scale(1.05);
+.node-connector {
+  position: absolute;
+  top: 20px;
+  right: 50%;
+  width: 100%;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  z-index: 0;
 }
 
-.lesson-node.locked {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
-.lesson-node.current .node-circle {
-  animation: pulse 2s infinite;
+.pathway-node.completed .node-connector {
+  background: linear-gradient(90deg, #10b981, #34d399);
 }
 
 .node-circle {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  background: white;
-  border: 3px solid #e5e7eb;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
-}
-
-.lesson-node.completed .node-circle {
-  color: white;
-}
-
-.node-circle svg {
-  width: 20px;
-  height: 20px;
-}
-
-.node-number {
   font-size: 1rem;
-  font-weight: 700;
-  color: #64748b;
+  font-weight: 600;
+  z-index: 1;
+  transition: all 0.3s;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.5);
 }
 
-.node-label {
-  font-size: 0.6875rem;
-  font-weight: 500;
-  color: #64748b;
-  max-width: 70px;
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.pathway-node.completed .node-circle {
+  background: linear-gradient(135deg, #10b981, #34d399);
+  border-color: #10b981;
+  color: #fff;
 }
 
-.lesson-node.completed .node-label {
-  color: #1e293b;
+.pathway-node.current .node-circle {
+  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  border-color: #8b5cf6;
+  color: #fff;
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+  animation: pulse 2s infinite;
 }
 
-.star-badge {
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  font-size: 1rem;
+.pathway-node.locked .node-circle {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 @keyframes pulse {
   0%, 100% {
-    box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4);
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
   }
   50% {
-    box-shadow: 0 0 0 8px rgba(139, 92, 246, 0);
+    box-shadow: 0 0 30px rgba(139, 92, 246, 0.8);
   }
 }
 
-/* Footer */
-.pathway-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid #f1f5f9;
+.node-label {
+  margin-top: 0.5rem;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: center;
+  max-width: 70px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.streak-badge {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  background: #fff7ed;
-  border-radius: 10px;
-  border: 1px solid #fed7aa;
-}
-
-.streak-icon {
-  font-size: 1.25rem;
-}
-
-.streak-count {
-  font-size: 0.875rem;
+.pathway-node.current .node-label {
+  color: #a855f7;
   font-weight: 600;
-  color: #c2410c;
 }
 
 .continue-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-  color: white;
+  width: 100%;
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border-radius: 14px;
   border: none;
-  border-radius: 10px;
-  font-size: 0.9375rem;
+  background: linear-gradient(135deg, #8b5cf6, #ec4899);
+  color: #fff;
+  font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.3s;
 }
 
-.continue-btn:hover {
+.continue-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+  box-shadow: 0 10px 30px rgba(139, 92, 246, 0.4);
 }
 
-.continue-btn svg {
-  width: 16px;
-  height: 16px;
+.continue-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .level-pathway-container {
-    padding: 16px;
-  }
-
+@media (max-width: 480px) {
   .pathway-header {
-    flex-direction: column;
-    gap: 12px;
-    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 1rem;
   }
-
-  .xp-progress-ring {
-    position: absolute;
-    top: 20px;
-    right: 16px;
-  }
-
-  .level-badge {
-    width: 40px;
-    height: 40px;
-  }
-
-  .level-number {
-    font-size: 1.25rem;
-  }
-
-  .pathway-footer {
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .continue-btn {
-    width: 100%;
+  
+  .stat-item {
+    flex: 1;
+    min-width: 80px;
     justify-content: center;
   }
 }

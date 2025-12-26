@@ -1,436 +1,343 @@
 <template>
-  <div v-if="visible" class="modal-overlay" @click.self="closeModal">
-    <div class="modal-content">
-      <button
-        class="close-btn"
-        @click="closeModal"
-        aria-label="Закрыть"
-        :disabled="loading"
-      >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-      </button>
-
+  <div v-if="isOpen" class="payment-modal-overlay" @click.self="close">
+    <div class="payment-modal">
+      <!-- Header -->
       <div class="modal-header">
-        <h3>🔒 Доступ к премиум-контенту</h3>
-        <p class="modal-subtitle">Выберите способ получения доступа</p>
-      </div>
-
-      <div class="plan-selection">
-        <h4>Выберите тариф:</h4>
-        <div class="plans-grid">
-          <div 
-            class="plan-card" 
-            :class="{ active: selectedPlan === 'start' }"
-            @click="selectedPlan = 'start'"
-          >
-            <div class="plan-header">
-              <h5>Start</h5>
-              <div class="plan-price">260,000 сум</div>
-            </div>
-            <ul class="plan-features">
-              <li>✅ Базовые курсы</li>
-              <li>✅ Домашние задания</li>
-              <li>✅ Основные тесты</li>
-            </ul>
-          </div>
-          
-          <div 
-            class="plan-card recommended" 
-            :class="{ active: selectedPlan === 'pro' }"
-            @click="selectedPlan = 'pro'"
-          >
-            <div class="plan-badge">Рекомендуем</div>
-            <div class="plan-header">
-              <h5>Pro</h5>
-              <div class="plan-price">450,000 сум</div>
-            </div>
-            <ul class="plan-features">
-              <li>✅ Все курсы Start</li>
-              <li>✅ Продвинутые курсы</li>
-              <li>✅ Персональная аналитика</li>
-              <li>✅ Приоритетная поддержка</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      <div class="promo-section">
-        <h4>Или введите промокод:</h4>
-        <div class="promo-input-group">
-          <input
-            v-model="promoCodeInput"
-            placeholder="Введите промокод"
-            class="promo-input"
-            :disabled="loading"
-            @keyup.enter="applyPromoCode"
-          />
-          <button 
-            class="promo-btn" 
-            @click="applyPromoCode"
-            :disabled="loading || !selectedPlan || !promoCodeInput.trim()"
-          >
-            <span v-if="loading">⏳</span>
-            <span v-else>🎟️</span>
-            Применить
-          </button>
-        </div>
-      </div>
-
-      <div class="modal-actions">
-        <button 
-          class="payment-btn" 
-          @click="proceedToPayment"
-          :disabled="loading || !selectedPlan"
-        >
-          <span v-if="loading">⏳ Обработка...</span>
-          <span v-else>💳 Оплатить {{ getPlanLabel(selectedPlan) }}</span>
+        <h2>{{ $t('payment.premiumAccess') }}</h2>
+        <button class="close-btn" @click="close">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
         </button>
       </div>
 
-      <div v-if="error" class="message error-message">
-        <span class="message-icon">❌</span>
-        {{ error }}
-      </div>
-      
-      <div v-if="success" class="message success-message">
-        <span class="message-icon">✅</span>
-        {{ success }}
+      <!-- Content -->
+      <div class="modal-content">
+        <p class="subtitle">{{ $t('payment.chooseAccessMethod') }}</p>
+
+        <!-- Plan Selection -->
+        <div class="plans-section">
+          <h3>{{ $t('payment.selectPlan') }}</h3>
+          
+          <div class="plans-grid">
+            <!-- Start Plan -->
+            <div 
+              class="plan-card"
+              :class="{ selected: selectedPlan === 'start' }"
+              @click="selectPlan('start')"
+            >
+              <div class="plan-header">
+                <span class="plan-name">Start</span>
+                <span class="plan-price">260,000 {{ $t('payment.sum') }}</span>
+              </div>
+              <ul class="plan-features">
+                <li>{{ $t('payment.basicCourses') }}</li>
+                <li>{{ $t('payment.homework') }}</li>
+                <li>{{ $t('payment.basicTests') }}</li>
+              </ul>
+            </div>
+
+            <!-- Pro Plan -->
+            <div 
+              class="plan-card pro"
+              :class="{ selected: selectedPlan === 'pro' }"
+              @click="selectPlan('pro')"
+            >
+              <div class="recommended-badge">{{ $t('payment.recommended') }}</div>
+              <div class="plan-header">
+                <span class="plan-name">Pro</span>
+                <span class="plan-price">450,000 {{ $t('payment.sum') }}</span>
+              </div>
+              <ul class="plan-features">
+                <li>{{ $t('payment.allStartCourses') }}</li>
+                <li>{{ $t('payment.advancedCourses') }}</li>
+                <li>{{ $t('payment.personalAnalytics') }}</li>
+                <li>{{ $t('payment.prioritySupport') }}</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Promo Code Section -->
+        <div class="promo-section">
+          <h3>{{ $t('payment.orEnterPromo') }}</h3>
+          <div class="promo-input-wrapper">
+            <input 
+              v-model="promoCode"
+              type="text"
+              :placeholder="$t('payment.enterPromoCode')"
+              class="promo-input"
+              :class="{ error: promoError, success: promoSuccess }"
+            />
+            <button 
+              class="apply-btn"
+              @click="applyPromoCode"
+              :disabled="!promoCode || promoLoading"
+            >
+              {{ promoLoading ? '...' : $t('common.apply') }}
+            </button>
+          </div>
+          <p v-if="promoError" class="error-message">{{ promoError }}</p>
+          <p v-if="promoSuccess" class="success-message">{{ promoSuccess }}</p>
+        </div>
       </div>
 
-      <div v-if="loading" class="loading-overlay">
-        <div class="spinner"></div>
-        <p>Обработка...</p>
+      <!-- Footer -->
+      <div class="modal-footer">
+        <button class="cancel-btn" @click="close">
+          {{ $t('common.cancel') }}
+        </button>
+        <button 
+          class="pay-btn"
+          @click="proceedToPayment"
+          :disabled="!selectedPlan && !promoSuccess || isProcessing"
+        >
+          {{ isProcessing ? $t('payment.processing') : $t('payment.pay') }}
+        </button>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import { applyPromoCode } from '@/api/payments';
-
 export default {
   name: 'PaymentModal',
   props: {
-    userId: { 
-      type: String, 
-      required: true 
-    },
-    visible: { 
-      type: Boolean, 
-      default: false 
-    },
-    requestedTopicId: { 
-      type: String, 
-      default: '' 
-    },
-    defaultPlan: {
-      type: String,
-      default: 'start',
-      validator: value => ['start', 'pro'].includes(value)
+    isOpen: {
+      type: Boolean,
+      default: false
     }
   },
-  emits: ['close', 'unlocked', 'payment-initiated'],
   data() {
     return {
-      selectedPlan: this.defaultPlan,
-      promoCodeInput: '',
-      loading: false,
-      error: '',
-      success: ''
-    };
-  },
-  watch: {
-    visible(newVal) {
-      if (newVal) {
-        this.resetForm();
-        // Focus on modal when opened for accessibility
-        this.$nextTick(() => {
-          this.$el?.focus();
-        });
-      }
-    },
-    selectedPlan() {
-      this.clearMessages();
-    },
-    promoCodeInput() {
-      this.clearMessages();
+      selectedPlan: null,
+      promoCode: '',
+      promoLoading: false,
+      promoError: '',
+      promoSuccess: '',
+      isProcessing: false
     }
   },
   methods: {
-    closeModal() {
-      if (!this.loading) {
-        this.$emit('close');
-      }
+    close() {
+      this.$emit('close')
+      this.resetState()
     },
-
-    resetForm() {
-      this.selectedPlan = this.defaultPlan;
-      this.promoCodeInput = '';
-      this.clearMessages();
+    selectPlan(plan) {
+      this.selectedPlan = plan
+      this.promoError = ''
     },
-
-    clearMessages() {
-      this.error = '';
-      this.success = '';
-    },
-
-    getPlanLabel(plan) {
-      const labels = {
-        start: 'Start (260,000 сум)',
-        pro: 'Pro (450,000 сум)'
-      };
-      return labels[plan] || plan;
-    },
-
     async applyPromoCode() {
-      if (!this.selectedPlan) {
-        this.error = 'Пожалуйста, выберите тариф';
-        return;
-      }
-
-      if (!this.promoCodeInput.trim()) {
-        this.error = 'Введите промокод';
-        return;
-      }
-
-      this.loading = true;
-      this.clearMessages();
-
+      if (!this.promoCode) return
+      
+      this.promoLoading = true
+      this.promoError = ''
+      this.promoSuccess = ''
+      
       try {
-        const result = await applyPromoCode(
-          this.userId,
-          this.selectedPlan,
-          this.promoCodeInput.trim()
-        );
-
-        if (result.success) {
-          this.success = result.message;
-          
-          this.$emit('unlocked', {
-            plan: this.selectedPlan,
-            method: 'promo',
-            promoCode: this.promoCodeInput.trim()
-          });
-
-          setTimeout(() => {
-            if (this.requestedTopicId) {
-              this.$router.push({ 
-                name: 'TopicOverview', 
-                params: { id: this.requestedTopicId } 
-              });
-            }
-            this.closeModal();
-          }, 2000);
-
+        const response = await fetch('/api/promo/validate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: this.promoCode })
+        })
+        
+        const data = await response.json()
+        
+        if (data.valid) {
+          this.promoSuccess = this.$t('success.promocodeApplied')
+          this.selectedPlan = null
         } else {
-          this.error = result.error;
+          this.promoError = this.$t('settings.invalidPromocode')
         }
-
-      } catch (err) {
-this.error = 'Произошла ошибка при применении промокода';
+      } catch (error) {
+        this.promoError = this.$t('payment.promoError')
       } finally {
-        this.loading = false;
+        this.promoLoading = false
       }
     },
-
     async proceedToPayment() {
-      if (!this.selectedPlan) {
-        this.error = 'Пожалуйста, выберите тариф';
-        return;
+      if (!this.selectedPlan && !this.promoSuccess) {
+        this.promoError = this.selectedPlan ? '' : this.$t('payment.selectPlanFirst')
+        return
       }
-
-      this.loading = true;
-      this.clearMessages();
-
+      
+      this.isProcessing = true
+      
       try {
-        this.$emit('payment-initiated', {
-          plan: this.selectedPlan,
-          userId: this.userId,
-          requestedTopicId: this.requestedTopicId
-        });
-
-        await this.$router.push({ 
-          name: 'PaymePayment', 
-          params: { plan: this.selectedPlan },
-          query: {
-            userId: this.userId,
-            ...(this.requestedTopicId && { returnTo: this.requestedTopicId })
-          }
-        });
-
-        this.closeModal();
-
-      } catch (err) {
-this.error = 'Ошибка при переходе к оплате';
+        const payload = this.promoSuccess 
+          ? { promoCode: this.promoCode }
+          : { plan: this.selectedPlan }
+        
+        const response = await fetch('/api/payment/initiate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
+        
+        const data = await response.json()
+        
+        if (data.paymentUrl) {
+          window.location.href = data.paymentUrl
+        }
+      } catch (error) {
+        this.promoError = this.$t('payment.paymentError')
       } finally {
-        this.loading = false;
+        this.isProcessing = false
       }
     },
-
-    handleKeydown(event) {
-      if (event.key === 'Escape') {
-        this.closeModal();
-      }
+    resetState() {
+      this.selectedPlan = null
+      this.promoCode = ''
+      this.promoError = ''
+      this.promoSuccess = ''
+      this.isProcessing = false
     }
-  },
-
-  mounted() {
-    document.addEventListener('keydown', this.handleKeydown);
-  },
-
-  beforeUnmount() {
-    document.removeEventListener('keydown', this.handleKeydown);
   }
-};
+}
 </script>
 
 <style scoped>
-.modal-overlay {
+.payment-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.6);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 10000;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(4px);
-  animation: fadeIn 0.3s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
 }
 
-.modal-content {
-  background: white;
-  padding: 32px;
-  border-radius: 24px;
-  max-width: 600px;
-  width: 95%;
+.payment-modal {
+  background: linear-gradient(135deg, rgba(30, 30, 45, 0.95), rgba(20, 20, 35, 0.98));
+  border-radius: 20px;
+  width: 100%;
+  max-width: 520px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  animation: slideIn 0.3s ease-out;
-  position: relative;
-}
-
-.close-btn {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  background: transparent;
-  border: none;
-  color: #6b7280;
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.close-btn:hover:not(:disabled) {
-  background-color: #f3f4f6;
-  color: #374151;
-}
-
-.close-btn:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
 }
 
 .modal-header {
-  text-align: center;
-  margin-bottom: 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.modal-header h3 {
-  font-size: 1.75rem;
-  font-weight: 800;
-  color: #1f2937;
-  margin-bottom: 8px;
-}
-
-.modal-subtitle {
-  color: #6b7280;
-  font-size: 1rem;
+.modal-header h2 {
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 600;
   margin: 0;
 }
 
-.plan-selection h4,
-.promo-section h4 {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #374151;
-  margin-bottom: 16px;
+.close-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #fff;
+  transition: all 0.2s;
+}
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.modal-content {
+  padding: 1.5rem;
+}
+
+.subtitle {
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.plans-section h3,
+.promo-section h3 {
+  color: #fff;
+  font-size: 1rem;
+  margin-bottom: 1rem;
 }
 
 .plans-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-bottom: 32px;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .plan-card {
-  border: 2px solid #e5e7eb;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
-  padding: 24px;
+  padding: 1.25rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s;
   position: relative;
-  background: #fafafa;
 }
 
 .plan-card:hover {
-  border-color: #7c3aed;
+  border-color: rgba(139, 92, 246, 0.5);
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(124, 58, 237, 0.15);
 }
 
-.plan-card.active {
-  border-color: #7c3aed;
-  background: linear-gradient(135deg, #f3e8ff 0%, #faf5ff 100%);
-  box-shadow: 0 8px 25px rgba(124, 58, 237, 0.2);
+.plan-card.selected {
+  border-color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.15);
 }
 
-.plan-card.recommended {
-  border-color: #059669;
+.plan-card.pro {
+  border-color: rgba(236, 72, 153, 0.3);
 }
 
-.plan-card.recommended.active {
-  border-color: #059669;
-  background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
-  box-shadow: 0 8px 25px rgba(5, 150, 105, 0.2);
+.plan-card.pro.selected {
+  border-color: #ec4899;
+  background: rgba(236, 72, 153, 0.15);
 }
 
-.plan-badge {
+.recommended-badge {
   position: absolute;
   top: -10px;
-  right: 16px;
-  background: linear-gradient(135deg, #059669, #047857);
-  color: white;
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 0.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #ec4899, #8b5cf6);
+  color: #fff;
+  font-size: 0.7rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
   font-weight: 600;
+  text-transform: uppercase;
 }
 
-.plan-header h5 {
+.plan-header {
+  margin-bottom: 1rem;
+}
+
+.plan-name {
+  display: block;
+  color: #fff;
   font-size: 1.25rem;
   font-weight: 700;
-  color: #1f2937;
-  margin-bottom: 8px;
+  margin-bottom: 0.25rem;
 }
 
 .plan-price {
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: #7c3aed;
-  margin-bottom: 16px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
 }
 
 .plan-features {
@@ -440,177 +347,144 @@ this.error = 'Ошибка при переходе к оплате';
 }
 
 .plan-features li {
-  padding: 4px 0;
-  font-size: 0.9rem;
-  color: #4b5563;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.85rem;
+  padding: 0.35rem 0;
+  padding-left: 1.25rem;
+  position: relative;
+}
+
+.plan-features li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: #10b981;
 }
 
 .promo-section {
-  margin-top: 32px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 1.5rem;
 }
 
-.promo-input-group {
+.promo-input-wrapper {
   display: flex;
-  gap: 12px;
-  margin-bottom: 24px;
+  gap: 0.5rem;
 }
 
 .promo-input {
   flex: 1;
-  padding: 14px 16px;
-  border: 2px solid #e5e7eb;
-  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  color: #fff;
   font-size: 1rem;
-  transition: border-color 0.2s ease;
+  outline: none;
+  transition: all 0.2s;
 }
 
 .promo-input:focus {
-  border-color: #7c3aed;
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+  border-color: #8b5cf6;
 }
 
-.promo-btn {
-  padding: 14px 20px;
-  background: linear-gradient(135deg, #10b981, #059669);
-  color: white;
-  border: none;
-  border-radius: 12px;
-  font-weight: 600;
+.promo-input.error {
+  border-color: #ef4444;
+}
+
+.promo-input.success {
+  border-color: #10b981;
+}
+
+.promo-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.apply-btn {
+  background: rgba(139, 92, 246, 0.3);
+  border: 1px solid rgba(139, 92, 246, 0.5);
+  color: #fff;
+  padding: 0.75rem 1.25rem;
+  border-radius: 10px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  white-space: nowrap;
+  font-weight: 500;
+  transition: all 0.2s;
 }
 
-.promo-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #059669, #047857);
-  transform: translateY(-1px);
+.apply-btn:hover:not(:disabled) {
+  background: rgba(139, 92, 246, 0.5);
 }
 
-.promo-btn:disabled {
+.apply-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 20px;
-}
-
-.payment-btn {
-  padding: 16px 32px;
-  background: linear-gradient(135deg, #7c3aed, #6d28d9);
-  color: white;
-  border: none;
-  border-radius: 12px;
-  font-size: 1.1rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  min-width: 200px;
-}
-
-.payment-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #6d28d9, #5b21b6);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(124, 58, 237, 0.3);
-}
-
-.payment-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.message {
-  padding: 12px 16px;
-  border-radius: 8px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 .error-message {
-  background-color: #fef2f2;
-  color: #dc2626;
-  border: 1px solid #fecaca;
+  color: #ef4444;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
 }
 
 .success-message {
-  background-color: #f0fdf4;
-  color: #16a34a;
-  border: 1px solid #bbf7d0;
+  color: #10b981;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
 }
 
-.loading-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255, 255, 255, 0.95);
+.modal-footer {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  border-radius: 24px;
-  z-index: 100;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #e5e7eb;
-  border-left: 4px solid #7c3aed;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 16px;
+.cancel-btn {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  padding: 0.875rem;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.2s;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+.cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
 }
 
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: scale(0.9) translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
+.pay-btn {
+  flex: 1;
+  background: linear-gradient(135deg, #8b5cf6, #ec4899);
+  border: none;
+  color: #fff;
+  padding: 0.875rem;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.2s;
 }
 
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+.pay-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(139, 92, 246, 0.3);
 }
 
-/* Mobile Responsive */
-@media (max-width: 768px) {
-  .modal-content {
-    padding: 24px;
-    margin: 20px;
-    max-height: 95vh;
-  }
-  
+.pay-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 480px) {
   .plans-grid {
     grid-template-columns: 1fr;
   }
   
-  .promo-input-group {
+  .modal-footer {
     flex-direction: column;
-  }
-  
-  .plan-card {
-    padding: 20px;
   }
 }
 </style>

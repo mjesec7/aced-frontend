@@ -1,265 +1,198 @@
 <template>
-  <div class="level-indicator" :class="{ compact: isCompact }">
+  <div class="level-indicator" :class="mode">
     <!-- School Mode Badge -->
-    <div v-if="isSchoolMode" class="school-badge">
-      <div class="badge-content">
-        <span class="mode-icon">🎓</span>
-        <div class="badge-info">
-          <span class="badge-label">{{ $t('dashboard.level') }}</span>
-          <span class="badge-value">{{ currentLevelCap }}</span>
-        </div>
-        <div class="badge-info grade">
-          <span class="badge-label">{{ $t('dashboard.grade') }}</span>
-          <span class="badge-value" :style="{ color: getGradeBadgeColor(currentGrade) }">
-            {{ currentGrade || $t('dashboard.notAvailable') }}
-          </span>
-        </div>
+    <div v-if="mode === 'school'" class="school-badge">
+      <div class="grade-circle">
+        <span class="grade-number">{{ grade }}</span>
+        <span class="grade-label">{{ $t('dashboard.grade') }}</span>
       </div>
+    </div>
 
-      <!-- Progress Ring -->
-      <div v-if="showProgress" class="progress-ring">
-        <svg width="60" height="60">
+    <!-- Study Centre Mode Badge -->
+    <div v-else class="level-badge">
+      <div class="level-ring">
+        <svg viewBox="0 0 100 100" class="progress-ring">
           <circle
-            class="progress-ring-circle-bg"
-            stroke="#e5e7eb"
-            stroke-width="4"
-            fill="transparent"
-            r="26"
-            cx="30"
-            cy="30"
+            class="progress-ring-bg"
+            cx="50"
+            cy="50"
+            r="45"
+            fill="none"
+            stroke-width="6"
           />
           <circle
-            class="progress-ring-circle"
-            :stroke="getGradeBadgeColor(currentGrade)"
-            stroke-width="4"
-            fill="transparent"
-            r="26"
-            cx="30"
-            cy="30"
-            :style="{ strokeDashoffset: progressOffset }"
+            class="progress-ring-fill"
+            cx="50"
+            cy="50"
+            r="45"
+            fill="none"
+            stroke-width="6"
+            :stroke-dasharray="circumference"
+            :stroke-dashoffset="progressOffset"
           />
         </svg>
-        <span class="progress-text">{{ levelProgress }}%</span>
-      </div>
-    </div>
-
-    <!-- Study Centre Badge -->
-    <div v-else-if="isStudyCentreMode" class="study-centre-badge">
-      <div class="badge-content">
-        <span class="mode-icon">🌟</span>
-        <div class="badge-info">
-          <span class="badge-label">Study Centre</span>
-          <span class="badge-label">{{ $t('dashboard.unlimitedAccess') }}</span>
+        <div class="level-content">
+          <span class="level-number">{{ level }}</span>
+          <span class="level-label">{{ $t('dashboard.level') }}</span>
         </div>
       </div>
     </div>
 
-    <!-- No Mode Selected -->
-    <div v-else class="no-mode-badge" @click="$emit('selectMode')">
-      <span class="mode-icon">❓</span>
-      <span class="select-mode-text">{{ $t('dashboard.selectMode') }}</span>
+    <!-- Mode Label -->
+    <div class="mode-label">
+      <span class="mode-icon">{{ mode === 'school' ? '🏫' : '📚' }}</span>
+      <span class="mode-text">
+        {{ mode === 'school' ? $t('sidebar.school') : $t('sidebar.studyCentre') }}
+      </span>
     </div>
   </div>
 </template>
 
 <script>
-import { computed } from 'vue';
-import { useLevelSystem } from '@/composables/useLevelSystem';
-
 export default {
   name: 'LevelIndicator',
-
   props: {
-    isCompact: {
-      type: Boolean,
-      default: false
+    mode: {
+      type: String,
+      default: 'school',
+      validator: (value) => ['school', 'studyCentre'].includes(value)
     },
-    showProgress: {
-      type: Boolean,
-      default: true
+    grade: {
+      type: Number,
+      default: 5
+    },
+    level: {
+      type: Number,
+      default: 1
+    },
+    xp: {
+      type: Number,
+      default: 0
+    },
+    xpToNextLevel: {
+      type: Number,
+      default: 100
     }
   },
-
-  emits: ['selectMode'],
-
-  setup() {
-    const {
-      isSchoolMode,
-      isStudyCentreMode,
-      currentGrade,
-      currentLevelCap,
-      levelProgress,
-      getGradeBadgeColor
-    } = useLevelSystem();
-
-    // Calculate progress ring offset
-    const progressOffset = computed(() => {
-      const circumference = 2 * Math.PI * 26; // radius = 26
-      const progress = levelProgress.value || 0;
-      return circumference - (progress / 100) * circumference;
-    });
-
-    return {
-      isSchoolMode,
-      isStudyCentreMode,
-      currentGrade,
-      currentLevelCap,
-      levelProgress,
-      getGradeBadgeColor,
-      progressOffset
-    };
+  computed: {
+    circumference() {
+      return 2 * Math.PI * 45
+    },
+    progressOffset() {
+      const progress = this.xp / this.xpToNextLevel
+      return this.circumference * (1 - progress)
+    }
   }
-};
+}
 </script>
 
 <style scoped>
 .level-indicator {
-  display: inline-flex;
-  align-items: center;
-  font-family: 'Unbounded', sans-serif;
-}
-
-.school-badge,
-.study-centre-badge,
-.no-mode-badge {
   display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.75rem 1.25rem;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-}
-
-.school-badge:hover,
-.study-centre-badge:hover {
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
-  transform: translateY(-2px);
-}
-
-.no-mode-badge {
-  cursor: pointer;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-}
-
-.no-mode-badge:hover {
-  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
-}
-
-.badge-content {
-  display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 0.75rem;
 }
 
-.mode-icon {
-  font-size: 1.75rem;
+.school-badge .grade-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4);
+  border: 3px solid rgba(255, 255, 255, 0.2);
+}
+
+.grade-number {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #fff;
   line-height: 1;
 }
 
-.badge-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.badge-info.grade {
-  border-left: 2px solid #e5e7eb;
-  padding-left: 0.75rem;
-  margin-left: 0.5rem;
-}
-
-.badge-label {
-  font-size: 0.75rem;
-  color: #64748b;
-  font-weight: 500;
+.grade-label {
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.8);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
+  margin-top: 2px;
 }
 
-.badge-value {
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: #1e293b;
+.level-badge .level-ring {
+  position: relative;
+  width: 80px;
+  height: 80px;
 }
 
 .progress-ring {
-  position: relative;
-  width: 60px;
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  transform: rotate(-90deg);
+  width: 100%;
+  height: 100%;
 }
 
-.progress-ring-circle {
-  stroke-dasharray: 163.36; /* 2 * PI * 26 */
-  stroke-dashoffset: 163.36;
+.progress-ring-bg {
+  stroke: rgba(139, 92, 246, 0.2);
+}
+
+.progress-ring-fill {
+  stroke: url(#gradient);
   stroke-linecap: round;
-  transform: rotate(-90deg);
-  transform-origin: 50% 50%;
   transition: stroke-dashoffset 0.5s ease;
 }
 
-.progress-text {
+.level-content {
   position: absolute;
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: #1e293b;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-.select-mode-text {
-  font-weight: 600;
-  font-size: 1rem;
+.level-number {
+  font-size: 1.75rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #8b5cf6, #ec4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1;
 }
 
-/* Compact Version */
-.level-indicator.compact .school-badge,
-.level-indicator.compact .study-centre-badge {
-  padding: 0.5rem 1rem;
-  gap: 0.5rem;
+.level-label {
+  font-size: 0.6rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 2px;
 }
 
-.level-indicator.compact .mode-icon {
-  font-size: 1.25rem;
+.mode-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
 }
 
-.level-indicator.compact .badge-label {
-  font-size: 0.625rem;
+.mode-icon {
+  font-size: 0.9rem;
 }
 
-.level-indicator.compact .badge-value {
-  font-size: 0.95rem;
-}
-
-.level-indicator.compact .progress-ring {
-  width: 45px;
-  height: 45px;
-}
-
-.level-indicator.compact .progress-ring svg {
-  width: 45px;
-  height: 45px;
-}
-
-.level-indicator.compact .progress-text {
+.mode-text {
   font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .badge-content {
-    gap: 0.5rem;
-  }
-
-  .badge-info.grade {
-    display: none;
-  }
-
-  .progress-ring {
-    display: none;
-  }
+/* Gradient definition for SVG */
+.level-indicator :deep(svg) {
+  overflow: visible;
 }
 </style>

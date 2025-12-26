@@ -689,6 +689,70 @@
       "progressTracking": "Progress tracking",
       "homeworkAssistance": "Homework assistance",
       "prioritySupport": "Priority support"
+    },
+    "timeOfDay": {
+      "morning": "Morning",
+      "afternoon": "Afternoon",
+      "evening": "Evening"
+    },
+    "timeAgo": {
+      "recently": "recently",
+      "justNow": "just now",
+      "minutesAgo": "{count} minutes ago",
+      "hoursAgo": "{count} hours ago",
+      "daysAgo": "{count} days ago",
+      "overWeekAgo": "over a week ago"
+    },
+    "course": {
+      "untitled": "Untitled Course",
+      "noLessons": "No lessons",
+      "allCompleted": "All completed"
+    },
+    "time": {
+      "hours": "h",
+      "minutes": "m"
+    },
+    "activity": {
+      "testResult": "Test result",
+      "completedLesson": "Completed lesson"
+    },
+    "payment": {
+      "premiumAccess": "Premium Content Access",
+      "chooseAccessMethod": "Choose how to get access",
+      "selectPlan": "Select a plan:",
+      "recommended": "Recommended",
+      "basicCourses": "Basic courses",
+      "homework": "Homework",
+      "basicTests": "Basic tests",
+      "allStartCourses": "All Start courses",
+      "advancedCourses": "Advanced courses",
+      "personalAnalytics": "Personal analytics",
+      "prioritySupport": "Priority support",
+      "orEnterPromo": "Or enter a promo code:",
+      "enterPromoCode": "Enter promo code",
+      "pay": "Pay",
+      "processing": "Processing...",
+      "selectPlanFirst": "Please select a plan",
+      "enterPromoFirst": "Enter a promo code",
+      "promoError": "An error occurred while applying the promo code",
+      "paymentError": "Error proceeding to payment",
+      "sum": "sum"
+    },
+    "levelPathway": {
+      "level": "Level",
+      "xp": "XP",
+      "dayStreak": "day streak",
+      "continue": "Continue"
+    },
+    "modeChoice": {
+      "chooseYourPath": "Choose Your Learning Path",
+      "selectHowToLearn": "Select how you'd like to learn on ACED",
+      "acedSchool": "ACED School",
+      "structuredCurriculum": "Structured curriculum with level progression",
+      "acedStudyCentre": "ACED Study Centre",
+      "freeExploration": "Free exploration, learn anything anytime",
+      "settingUp": "Setting up...",
+      "continue": "Continue"
     }
   },
   "ru": {
@@ -1381,6 +1445,70 @@
       "progressTracking": "Отслеживание прогресса",
       "homeworkAssistance": "Помощь с домашкой",
       "prioritySupport": "Приоритетная поддержка"
+    },
+    "timeOfDay": {
+      "morning": "Утро",
+      "afternoon": "День",
+      "evening": "Вечер"
+    },
+    "timeAgo": {
+      "recently": "недавно",
+      "justNow": "только что",
+      "minutesAgo": "{count} мин. назад",
+      "hoursAgo": "{count} ч. назад",
+      "daysAgo": "{count} дн. назад",
+      "overWeekAgo": "более недели назад"
+    },
+    "course": {
+      "untitled": "Курс без названия",
+      "noLessons": "Нет уроков",
+      "allCompleted": "Всё завершено"
+    },
+    "time": {
+      "hours": "ч",
+      "minutes": "м"
+    },
+    "activity": {
+      "testResult": "Результат теста",
+      "completedLesson": "Урок завершён"
+    },
+    "payment": {
+      "premiumAccess": "Доступ к премиум-контенту",
+      "chooseAccessMethod": "Выберите способ получения доступа",
+      "selectPlan": "Выберите тариф:",
+      "recommended": "Рекомендуем",
+      "basicCourses": "Базовые курсы",
+      "homework": "Домашние задания",
+      "basicTests": "Основные тесты",
+      "allStartCourses": "Все курсы Start",
+      "advancedCourses": "Продвинутые курсы",
+      "personalAnalytics": "Персональная аналитика",
+      "prioritySupport": "Приоритетная поддержка",
+      "orEnterPromo": "Или введите промокод:",
+      "enterPromoCode": "Введите промокод",
+      "pay": "Оплатить",
+      "processing": "Обработка...",
+      "selectPlanFirst": "Пожалуйста, выберите тариф",
+      "enterPromoFirst": "Введите промокод",
+      "promoError": "Произошла ошибка при применении промокода",
+      "paymentError": "Ошибка при переходе к оплате",
+      "sum": "сум"
+    },
+    "levelPathway": {
+      "level": "Уровень",
+      "xp": "XP",
+      "dayStreak": "дней подряд",
+      "continue": "Продолжить"
+    },
+    "modeChoice": {
+      "chooseYourPath": "Выберите путь обучения",
+      "selectHowToLearn": "Выберите, как вы хотите учиться на ACED",
+      "acedSchool": "ACED Школа",
+      "structuredCurriculum": "Структурированная программа с уровнями",
+      "acedStudyCentre": "ACED Учебный центр",
+      "freeExploration": "Свободное изучение, учитесь чему угодно",
+      "settingUp": "Настройка...",
+      "continue": "Продолжить"
     }
   },
   "uz": {
@@ -2073,6 +2201,70 @@
       "progressTracking": "Progress kuzatuvi",
       "homeworkAssistance": "Uy vazifasi yordami",
       "prioritySupport": "Ustuvor qo'llab-quvvatlash"
+    },
+    "timeOfDay": {
+      "morning": "Ertalab",
+      "afternoon": "Kunduzi",
+      "evening": "Kechqurun"
+    },
+    "timeAgo": {
+      "recently": "yaqinda",
+      "justNow": "hozirgina",
+      "minutesAgo": "{count} daqiqa oldin",
+      "hoursAgo": "{count} soat oldin",
+      "daysAgo": "{count} kun oldin",
+      "overWeekAgo": "bir haftadan ko'proq oldin"
+    },
+    "course": {
+      "untitled": "Nomsiz kurs",
+      "noLessons": "Darslar yo'q",
+      "allCompleted": "Hammasi tugallandi"
+    },
+    "time": {
+      "hours": "s",
+      "minutes": "d"
+    },
+    "activity": {
+      "testResult": "Test natijasi",
+      "completedLesson": "Dars tugallandi"
+    },
+    "payment": {
+      "premiumAccess": "Premium kontentga kirish",
+      "chooseAccessMethod": "Kirish usulini tanlang",
+      "selectPlan": "Tarifni tanlang:",
+      "recommended": "Tavsiya etiladi",
+      "basicCourses": "Asosiy kurslar",
+      "homework": "Uy vazifalari",
+      "basicTests": "Asosiy testlar",
+      "allStartCourses": "Barcha Start kurslari",
+      "advancedCourses": "Ilg'or kurslar",
+      "personalAnalytics": "Shaxsiy tahlil",
+      "prioritySupport": "Ustuvor yordam",
+      "orEnterPromo": "Yoki promokod kiriting:",
+      "enterPromoCode": "Promokodni kiriting",
+      "pay": "To'lash",
+      "processing": "Qayta ishlanmoqda...",
+      "selectPlanFirst": "Iltimos, tarifni tanlang",
+      "enterPromoFirst": "Promokodni kiriting",
+      "promoError": "Promokodni qo'llashda xato yuz berdi",
+      "paymentError": "To'lovga o'tishda xato",
+      "sum": "so'm"
+    },
+    "levelPathway": {
+      "level": "Daraja",
+      "xp": "XP",
+      "dayStreak": "kun ketma-ketlik",
+      "continue": "Davom etish"
+    },
+    "modeChoice": {
+      "chooseYourPath": "O'qish yo'lingizni tanlang",
+      "selectHowToLearn": "ACED da qanday o'qishni xohlaysiz",
+      "acedSchool": "ACED Maktab",
+      "structuredCurriculum": "Darajali tuzilgan dastur",
+      "acedStudyCentre": "ACED O'quv markazi",
+      "freeExploration": "Erkin o'rganish, istalgan narsani o'rganing",
+      "settingUp": "Sozlanmoqda...",
+      "continue": "Davom etish"
     }
   }
 }
