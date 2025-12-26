@@ -114,7 +114,7 @@
     </div>
 
     <div class="tree-footer">
-      <p class="encouragement">{{ encouragementText }}</p>
+      <p class="encouragement">{{ $t(encouragementKey) }}</p>
       <router-link v-if="!isComplete" to="/profile/catalogue" class="start-lesson-btn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polygon points="5 3 19 12 5 21 5 3"/>
@@ -135,7 +135,6 @@
 <script>
 import { computed, ref, onMounted, watch } from 'vue';
 import { useStore } from 'vuex';
-import { useI18n } from 'vue-i18n';
 
 export default {
   name: 'AppleTreeGoal',
@@ -153,7 +152,6 @@ export default {
 
   setup(props) {
     const store = useStore();
-    const { t } = useI18n();
     
     // Tree variations for each week
     const treeVariations = [
@@ -243,15 +241,15 @@ export default {
       filter: `saturate(${0.2 + colorIntensity.value * 0.8})`
     }));
 
-    // Encouragement messages
-    const encouragementText = computed(() => {
+    // Encouragement message key (use $t in template for reactivity)
+    const encouragementKey = computed(() => {
       const percent = progressPercent.value;
-      if (percent === 0) return t('dashboard.encouragement.start');
-      if (percent < 25) return t('dashboard.encouragement.growing');
-      if (percent < 50) return t('dashboard.encouragement.halfway');
-      if (percent < 75) return t('dashboard.encouragement.apples');
-      if (percent < 100) return t('dashboard.encouragement.almost');
-      return t('dashboard.encouragement.done');
+      if (percent === 0) return 'dashboard.encouragement.start';
+      if (percent < 25) return 'dashboard.encouragement.growing';
+      if (percent < 50) return 'dashboard.encouragement.halfway';
+      if (percent < 75) return 'dashboard.encouragement.apples';
+      if (percent < 100) return 'dashboard.encouragement.almost';
+      return 'dashboard.encouragement.done';
     });
 
     // Color utility functions
@@ -294,7 +292,7 @@ export default {
       applesOpacity,
       visibleApples,
       treeColorStyle,
-      encouragementText
+      encouragementKey
     };
   }
 };
