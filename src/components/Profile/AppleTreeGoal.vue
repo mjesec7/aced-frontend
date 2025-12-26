@@ -135,6 +135,7 @@
 <script>
 import { computed, ref, onMounted, watch } from 'vue';
 import { useStore } from 'vuex';
+import { useI18n } from 'vue-i18n';
 
 export default {
   name: 'AppleTreeGoal',
@@ -152,6 +153,7 @@ export default {
 
   setup(props) {
     const store = useStore();
+    const { t } = useI18n();
     
     // Tree variations for each week
     const treeVariations = [
@@ -244,12 +246,12 @@ export default {
     // Encouragement messages
     const encouragementText = computed(() => {
       const percent = progressPercent.value;
-      if (percent === 0) return this.$t('dashboard.encouragement.start');
-      if (percent < 25) return this.$t('dashboard.encouragement.growing');
-      if (percent < 50) return this.$t('dashboard.encouragement.halfway');
-      if (percent < 75) return this.$t('dashboard.encouragement.apples');
-      if (percent < 100) return this.$t('dashboard.encouragement.almost');
-      return this.$t('dashboard.encouragement.done');
+      if (percent === 0) return t('dashboard.encouragement.start');
+      if (percent < 25) return t('dashboard.encouragement.growing');
+      if (percent < 50) return t('dashboard.encouragement.halfway');
+      if (percent < 75) return t('dashboard.encouragement.apples');
+      if (percent < 100) return t('dashboard.encouragement.almost');
+      return t('dashboard.encouragement.done');
     });
 
     // Color utility functions

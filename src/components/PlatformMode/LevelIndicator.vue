@@ -48,7 +48,7 @@
       <div class="badge-content">
         <span class="mode-icon">🌟</span>
         <div class="badge-info">
-          <span class="badge-label">Study Centre</span>
+          <span class="badge-label">{{ $t('sidebar.studyCentre') }}</span>
           <span class="badge-label">{{ $t('dashboard.unlimitedAccess') }}</span>
         </div>
       </div>

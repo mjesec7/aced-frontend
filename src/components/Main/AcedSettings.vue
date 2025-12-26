@@ -440,6 +440,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { auth } from '@/firebase';
 import { 
   updatePassword, 
@@ -461,6 +462,7 @@ export default {
   setup() {
     const store = useStore();
     const router = useRouter();
+    const { t } = useI18n();
 
     // State
     const loading = ref(false);
@@ -574,13 +576,13 @@ export default {
     const goToUpgrade = (months = 1) => router.push({ path: '/pay/pro', query: { duration: months } });
 
     const applyPromocode = async () => {
-      if (!promocode.value.trim()) { promoError.value = 'Please enter a promocode'; return; }
+      if (!promocode.value.trim()) { promoError.value = t('settings.enterPromocode'); return; }
       promoError.value = ''; promoSuccess.value = ''; applyingPromo.value = true;
       try {
         const result = await store.dispatch('user/applyPromocode', { promoCode: promocode.value.trim(), plan: 'pro' });
-        if (result.success) { promoSuccess.value = result.message || this.$t('settings.promocodeApplied'); promocode.value = ''; await refreshFromServer(); }
-        else { promoError.value = result.error || this.$t('settings.invalidPromocode'); }
-      } catch (error) { promoError.value = this.$t('settings.invalidPromocode'); }
+        if (result.success) { promoSuccess.value = result.message || t('settings.promocodeApplied'); promocode.value = ''; await refreshFromServer(); }
+        else { promoError.value = result.error || t('settings.invalidPromocode'); }
+      } catch (error) { promoError.value = t('settings.invalidPromocode'); }
       finally { applyingPromo.value = false; }
     };
 
