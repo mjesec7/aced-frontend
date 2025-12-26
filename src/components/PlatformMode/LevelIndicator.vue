@@ -5,13 +5,13 @@
       <div class="badge-content">
         <span class="mode-icon">🎓</span>
         <div class="badge-info">
-          <span class="badge-label">Level</span>
+          <span class="badge-label">{{ $t('dashboard.level') }}</span>
           <span class="badge-value">{{ currentLevelCap }}</span>
         </div>
         <div class="badge-info grade">
-          <span class="badge-label">Grade</span>
+          <span class="badge-label">{{ $t('dashboard.grade') }}</span>
           <span class="badge-value" :style="{ color: getGradeBadgeColor(currentGrade) }">
-            {{ currentGrade || 'N/A' }}
+            {{ currentGrade || $t('dashboard.notAvailable') }}
           </span>
         </div>
       </div>
@@ -49,7 +49,7 @@
         <span class="mode-icon">🌟</span>
         <div class="badge-info">
           <span class="badge-label">Study Centre</span>
-          <span class="badge-value">Unlimited Access</span>
+          <span class="badge-label">{{ $t('dashboard.unlimitedAccess') }}</span>
         </div>
       </div>
     </div>
@@ -57,7 +57,7 @@
     <!-- No Mode Selected -->
     <div v-else class="no-mode-badge" @click="$emit('selectMode')">
       <span class="mode-icon">❓</span>
-      <span class="select-mode-text">Select Your Mode</span>
+      <span class="select-mode-text">{{ $t('dashboard.selectMode') }}</span>
     </div>
   </div>
 </template>

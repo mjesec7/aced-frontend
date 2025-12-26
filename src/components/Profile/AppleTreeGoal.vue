@@ -3,7 +3,7 @@
     <div class="tree-header">
       <h3 class="tree-title">
         <span class="tree-emoji">{{ currentTree.emoji }}</span>
-        Weekly Goal
+        {{ $t('dashboard.weeklyGoal') }}
       </h3>
       <span class="week-badge">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -12,7 +12,7 @@
           <line x1="8" y1="2" x2="8" y2="6"/>
           <line x1="3" y1="10" x2="21" y2="10"/>
         </svg>
-        Week {{ currentWeekNumber }}
+        {{ $t('dashboard.week') }} {{ currentWeekNumber }}
       </span>
     </div>
 
@@ -100,7 +100,7 @@
       <!-- Progress meter -->
       <div class="progress-section">
         <div class="progress-info">
-          <span class="progress-label">{{ completedLessons }} / {{ goalTarget }} Lessons</span>
+          <span class="progress-label">{{ $t('dashboard.lessonsCount', { current: completedLessons, total: goalTarget }) }}</span>
           <span class="progress-percent">{{ progressPercent }}%</span>
         </div>
         <div class="progress-bar-track">
@@ -119,14 +119,14 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polygon points="5 3 19 12 5 21 5 3"/>
         </svg>
-        Start a Lesson
+        {{ $t('dashboard.startLesson') }}
       </router-link>
       <div v-else class="completed-badge">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
           <polyline points="22 4 12 14.01 9 11.01"/>
         </svg>
-        Goal Completed!
+        {{ $t('dashboard.goalCompleted') }}
       </div>
     </div>
   </div>
@@ -244,12 +244,12 @@ export default {
     // Encouragement messages
     const encouragementText = computed(() => {
       const percent = progressPercent.value;
-      if (percent === 0) return "🌱 Plant the seeds of knowledge!";
-      if (percent < 25) return "🌿 Your tree is starting to grow!";
-      if (percent < 50) return "🌳 Keep it up! Halfway there!";
-      if (percent < 75) return "🍃 Amazing progress! Apples appearing!";
-      if (percent < 100) return "🍎 Almost there! The tree is flourishing!";
-      return "🎉 Incredible! Your tree is full of fruit!";
+      if (percent === 0) return this.$t('dashboard.encouragement.start');
+      if (percent < 25) return this.$t('dashboard.encouragement.growing');
+      if (percent < 50) return this.$t('dashboard.encouragement.halfway');
+      if (percent < 75) return this.$t('dashboard.encouragement.apples');
+      if (percent < 100) return this.$t('dashboard.encouragement.almost');
+      return this.$t('dashboard.encouragement.done');
     });
 
     // Color utility functions

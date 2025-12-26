@@ -230,7 +230,24 @@
       "complete5Lessons": "Complete 5 lessons",
       "study2Hours": "Study 2 hours",
       "pass3Tests": "Pass 3 tests",
-      "min": "min"
+      "min": "min",
+      "weeklyGoal": "Weekly Goal",
+      "week": "Week",
+      "lessonsCount": "{current} / {total} Lessons",
+      "startLesson": "Start a Lesson",
+      "goalCompleted": "Goal Completed!",
+      "grade": "Grade",
+      "unlimitedAccess": "Unlimited Access",
+      "selectMode": "Select Your Mode",
+      "notAvailable": "N/A",
+      "encouragement": {
+        "start": "🌱 Plant the seeds of knowledge!",
+        "growing": "🌿 Your tree is starting to grow!",
+        "halfway": "🌳 Keep it up! Halfway there!",
+        "apples": "🍃 Amazing progress! Apples appearing!",
+        "almost": "🍎 Almost there! The tree is flourishing!",
+        "done": "🎉 Incredible! Your tree is full of fruit!"
+      }
     },
     "catalogue": {
       "title": "Catalogue",
@@ -906,7 +923,24 @@
       "complete5Lessons": "Завершить 5 уроков",
       "study2Hours": "Учиться 2 часа",
       "pass3Tests": "Пройти 3 теста",
-      "min": "мин"
+      "min": "мин",
+      "weeklyGoal": "Еженедельная цель",
+      "week": "Неделя",
+      "lessonsCount": "{current} / {total} Уроков",
+      "startLesson": "Начать урок",
+      "goalCompleted": "Цель достигнута!",
+      "grade": "Класс",
+      "unlimitedAccess": "Безлимитный доступ",
+      "selectMode": "Выберите режим",
+      "notAvailable": "Н/Д",
+      "encouragement": {
+        "start": "🌱 Посадите семена знаний!",
+        "growing": "🌿 Ваше дерево начинает расти!",
+        "halfway": "🌳 Так держать! Половина пути пройдена!",
+        "apples": "🍃 Потрясающий прогресс! Появляются яблоки!",
+        "almost": "🍎 Почти готово! Дерево процветает!",
+        "done": "🎉 Невероятно! Ваше дерево полно фруктов!"
+      }
     },
     "catalogue": {
       "title": "Каталог",
@@ -1581,7 +1615,24 @@
       "complete5Lessons": "5 ta darsni yakunlash",
       "study2Hours": "2 soat o'qish",
       "pass3Tests": "3 ta testni topshirish",
-      "min": "daqiqa"
+      "min": "daqiqa",
+      "weeklyGoal": "Haftalik maqsad",
+      "week": "Hafta",
+      "lessonsCount": "{current} / {total} Dars",
+      "startLesson": "Darsni boshlash",
+      "goalCompleted": "Maqsad bajarildi!",
+      "grade": "Sinf",
+      "unlimitedAccess": "Cheksiz kirish",
+      "selectMode": "Rejimni tanlang",
+      "notAvailable": "N/A",
+      "encouragement": {
+        "start": "🌱 Bilim urug'larini eking!",
+        "growing": "🌿 Daraxtingiz o'sishni boshladi!",
+        "halfway": "🌳 Shunday davom eting! Yarmi ortda qoldi!",
+        "apples": "🍃 Ajoyib natija! Olmalar paydo bo'lmoqda!",
+        "almost": "🍎 Oz qoldi! Daraxt gullab-yashnamoqda!",
+        "done": "🎉 Aql bovar qilmas! Daraxtingiz mevalarga to'la!"
+      }
     },
     "catalogue": {
       "title": "Katalog",
