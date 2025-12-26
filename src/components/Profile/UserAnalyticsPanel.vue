@@ -477,7 +477,8 @@ const status = err.response?.status;
         kinesthetic: this.$t('analytics.kinesthetic'),
         'reading-writing': this.$t('analytics.readingWriting')
       };
-      return styles[this.learningProfile?.learningStyle?.primary] || this.$t('analytics.balanced');
+      const key = this.learningProfile?.learningStyle?.primary?.toLowerCase();
+      return styles[key] || this.$t('analytics.balanced');
     },
 
     getChronotypeIcon() {
@@ -497,7 +498,8 @@ const status = err.response?.status;
         'third-bird': this.$t('analytics.thirdBird'),
         variable: this.$t('analytics.variable')
       };
-      return types[this.learningProfile?.chronotype?.type] || this.$t('analytics.flexible');
+      const key = this.learningProfile?.chronotype?.type?.toLowerCase();
+      return types[key] || this.$t('analytics.flexible');
     },
 
     getOptimalTimesText() {
@@ -517,7 +519,8 @@ const status = err.response?.status;
         social: this.$t('analytics.social'),
         debater: this.$t('analytics.debater')
       };
-      return paths[this.learningProfile?.preferredPath] || this.$t('analytics.universal');
+      const key = this.learningProfile?.preferredPath?.toLowerCase();
+      return paths[key] || this.$t('analytics.universal');
     },
 
     getSessionLengthText() {
@@ -526,14 +529,23 @@ const status = err.response?.status;
     },
 
     formatCognitiveLabel(key) {
+      // Handle both camelCase and capitalized keys from API
+      const normalizedKey = key.charAt(0).toLowerCase() + key.slice(1);
+      
       const labels = {
         processingSpeed: this.$t('analytics.processingSpeed'),
         workingMemory: this.$t('analytics.workingMemory'),
         visualSpatial: this.$t('analytics.visualSpatial'),
         verbalLinguistic: this.$t('analytics.verbalLinguistic'),
-        logicalMathematical: this.$t('analytics.logicalMathematical')
+        logicalMathematical: this.$t('analytics.logicalMathematical'),
+        // Direct mapping for capitalized keys if they exist in messages.json
+        Processing: this.$t('analytics.Processing'),
+        Memory: this.$t('analytics.Memory'),
+        Visual: this.$t('analytics.Visual'),
+        Verbal: this.$t('analytics.Verbal'),
+        Logic: this.$t('analytics.Logic')
       };
-      return labels[key] || key;
+      return labels[key] || labels[normalizedKey] || key;
     },
 
     async fetchLessonName(lessonId) {

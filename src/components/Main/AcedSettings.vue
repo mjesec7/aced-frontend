@@ -112,7 +112,7 @@
               <div class="text-center flex-1 flex flex-col">
                 <h3 class="text-lg font-bold text-slate-900">{{ $t('settings.oneMonth') }}</h3>
                 <div class="text-2xl font-bold text-indigo-600 mt-2">250,000</div>
-                <div class="text-sm text-slate-500 mb-4">UZS</div>
+                <div class="text-sm text-slate-500 mb-4">{{ $t('settings.uzs') }}</div>
                 <ul class="text-left text-xs text-slate-600 space-y-2 flex-1">
                   <li class="flex items-center gap-2">
                     <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
@@ -145,7 +145,7 @@
               <div class="text-center flex-1 flex flex-col pt-1">
                 <h3 class="text-lg font-bold text-slate-900">{{ $t('settings.threeMonths') }}</h3>
                 <div class="text-2xl font-bold text-indigo-600 mt-2">675,000</div>
-                <div class="text-sm text-slate-500">UZS</div>
+                <div class="text-sm text-slate-500">{{ $t('settings.uzs') }}</div>
                 <div class="inline-block px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-full my-2 mx-auto">{{ $t('tariffs.save', { percent: 10 }) }}</div>
                 <ul class="text-left text-xs text-slate-600 space-y-2 flex-1">
                   <li class="flex items-center gap-2">
@@ -179,7 +179,7 @@
               <div class="text-center flex-1 flex flex-col pt-1">
                 <h3 class="text-lg font-bold text-slate-900">{{ $t('settings.sixMonths') }}</h3>
                 <div class="text-2xl font-bold text-indigo-600 mt-2">1,200,000</div>
-                <div class="text-sm text-slate-500">UZS</div>
+                <div class="text-sm text-slate-500">{{ $t('settings.uzs') }}</div>
                 <div class="inline-block px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-full my-2 mx-auto">{{ $t('tariffs.save', { percent: 20 }) }}</div>
                 <ul class="text-left text-xs text-slate-600 space-y-2 flex-1">
                   <li class="flex items-center gap-2">
