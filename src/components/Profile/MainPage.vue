@@ -495,9 +495,9 @@
 
       <div class="sidebar-column">
         <!-- Apple Tree Goal Visualization -->
-        <AppleTreeGoal 
-          :lessons-completed="weeklyLessonsCompleted"
-          :goal-target="20"
+        <AppleTreeGoal
+          :completed-lessons="weeklyLessonsCompleted"
+          :goal-lessons="20"
           class="apple-tree-section"
         />
 
