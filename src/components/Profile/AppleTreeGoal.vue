@@ -129,10 +129,11 @@ export default {
 
 <style scoped>
 .apple-tree-goal {
-  background: linear-gradient(135deg, rgba(30, 40, 30, 0.9), rgba(20, 30, 25, 0.95));
+  background: #fff;
   border-radius: 20px;
   padding: 1.5rem;
-  border: 1px solid rgba(34, 197, 94, 0.2);
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .goal-header {
@@ -143,15 +144,15 @@ export default {
 }
 
 .goal-title {
-  color: #fff;
+  color: #111827;
   font-size: 1.1rem;
   font-weight: 600;
   margin: 0;
 }
 
 .week-label {
-  background: rgba(34, 197, 94, 0.2);
-  color: #4ade80;
+  background: #dcfce7;
+  color: #16a34a;
   padding: 0.35rem 0.75rem;
   border-radius: 20px;
   font-size: 0.8rem;
@@ -162,6 +163,9 @@ export default {
   display: flex;
   justify-content: center;
   padding: 1rem 0;
+  background: #f9fafb;
+  border-radius: 12px;
+  margin-bottom: 1rem;
 }
 
 .tree-visual {
@@ -252,7 +256,7 @@ export default {
 
 .progress-bar {
   height: 10px;
-  background: rgba(255, 255, 255, 0.1);
+  background: #e5e7eb;
   border-radius: 10px;
   overflow: hidden;
   margin-bottom: 0.5rem;
@@ -266,12 +270,12 @@ export default {
 }
 
 .progress-text {
-  color: rgba(255, 255, 255, 0.7);
+  color: #6b7280;
   font-size: 0.85rem;
 }
 
 .encouragement {
-  color: #4ade80;
+  color: #16a34a;
   font-size: 0.95rem;
   margin-bottom: 1rem;
   min-height: 1.5rem;
@@ -301,10 +305,10 @@ export default {
   justify-content: center;
   gap: 0.5rem;
   padding: 0.875rem;
-  background: rgba(34, 197, 94, 0.2);
-  border: 1px solid rgba(34, 197, 94, 0.3);
+  background: #dcfce7;
+  border: 1px solid #bbf7d0;
   border-radius: 12px;
-  color: #4ade80;
+  color: #16a34a;
   font-weight: 600;
 }
 

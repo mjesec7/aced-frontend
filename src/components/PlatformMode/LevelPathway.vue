@@ -29,14 +29,14 @@
 
     <!-- Pathway Visualization -->
     <div class="pathway-track">
-      <div 
-        v-for="(node, index) in pathwayNodes" 
+      <div
+        v-for="(node, index) in pathwayNodes"
         :key="index"
         class="pathway-node"
-        :class="{ 
-          completed: node.completed, 
+        :class="{
+          completed: node.completed,
           current: node.current,
-          locked: node.locked 
+          locked: node.locked
         }"
       >
         <div class="node-connector" v-if="index > 0"></div>
@@ -50,7 +50,7 @@
     </div>
 
     <!-- Continue Button -->
-    <button 
+    <button
       class="continue-btn"
       @click="continueLesson"
       :disabled="!hasCurrentLesson"
@@ -119,10 +119,11 @@ export default {
 
 <style scoped>
 .level-pathway {
-  background: linear-gradient(135deg, rgba(30, 30, 50, 0.9), rgba(20, 20, 40, 0.95));
+  background: #fff;
   border-radius: 20px;
   padding: 1.5rem;
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .pathway-header {
@@ -130,7 +131,7 @@ export default {
   justify-content: space-around;
   margin-bottom: 2rem;
   padding-bottom: 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .stat-item {
@@ -150,15 +151,15 @@ export default {
 }
 
 .level-icon {
-  background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.3));
+  background: #fef3c7;
 }
 
 .xp-icon {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 85, 247, 0.3));
+  background: #ede9fe;
 }
 
 .streak-icon {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(248, 113, 113, 0.3));
+  background: #fee2e2;
 }
 
 .stat-info {
@@ -169,13 +170,13 @@ export default {
 .stat-value {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #fff;
+  color: #111827;
   line-height: 1;
 }
 
 .stat-label {
   font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.6);
+  color: #6b7280;
   margin-top: 0.2rem;
 }
 
@@ -203,7 +204,7 @@ export default {
   right: 50%;
   width: 100%;
   height: 3px;
-  background: rgba(255, 255, 255, 0.1);
+  background: #e5e7eb;
   z-index: 0;
 }
 
@@ -222,9 +223,9 @@ export default {
   font-weight: 600;
   z-index: 1;
   transition: all 0.3s;
-  background: rgba(255, 255, 255, 0.1);
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  color: rgba(255, 255, 255, 0.5);
+  background: #f3f4f6;
+  border: 2px solid #e5e7eb;
+  color: #9ca3af;
 }
 
 .pathway-node.completed .node-circle {
@@ -237,28 +238,28 @@ export default {
   background: linear-gradient(135deg, #8b5cf6, #a855f7);
   border-color: #8b5cf6;
   color: #fff;
-  box-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
   animation: pulse 2s infinite;
 }
 
 .pathway-node.locked .node-circle {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.1);
+  background: #f9fafb;
+  border-color: #e5e7eb;
 }
 
 @keyframes pulse {
   0%, 100% {
-    box-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
   }
   50% {
-    box-shadow: 0 0 30px rgba(139, 92, 246, 0.8);
+    box-shadow: 0 0 30px rgba(139, 92, 246, 0.5);
   }
 }
 
 .node-label {
   margin-top: 0.5rem;
   font-size: 0.7rem;
-  color: rgba(255, 255, 255, 0.6);
+  color: #6b7280;
   text-align: center;
   max-width: 70px;
   overflow: hidden;
@@ -267,7 +268,7 @@ export default {
 }
 
 .pathway-node.current .node-label {
-  color: #a855f7;
+  color: #8b5cf6;
   font-weight: 600;
 }
 
@@ -277,7 +278,7 @@ export default {
   padding: 1rem;
   border-radius: 14px;
   border: none;
-  background: linear-gradient(135deg, #8b5cf6, #ec4899);
+  background: linear-gradient(135deg, #8b5cf6, #a855f7);
   color: #fff;
   font-size: 1rem;
   font-weight: 600;
@@ -291,7 +292,7 @@ export default {
 
 .continue-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 10px 30px rgba(139, 92, 246, 0.4);
+  box-shadow: 0 10px 30px rgba(139, 92, 246, 0.3);
 }
 
 .continue-btn:disabled {
@@ -304,7 +305,7 @@ export default {
     flex-wrap: wrap;
     gap: 1rem;
   }
-  
+
   .stat-item {
     flex: 1;
     min-width: 80px;
