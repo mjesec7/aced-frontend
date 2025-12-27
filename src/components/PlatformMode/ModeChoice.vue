@@ -113,7 +113,7 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(10, 10, 20, 0.95);
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
@@ -123,26 +123,26 @@ export default {
 }
 
 .mode-choice-modal {
-  background: linear-gradient(135deg, rgba(30, 30, 50, 0.95), rgba(20, 20, 40, 0.98));
+  background: #ffffff;
   border-radius: 24px;
   padding: 2.5rem;
   max-width: 700px;
   width: 100%;
-  border: 1px solid rgba(139, 92, 246, 0.3);
-  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5);
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.1);
 }
 
 .modal-title {
   text-align: center;
   font-size: 2rem;
   font-weight: 700;
-  color: #fff;
+  color: #1e293b;
   margin-bottom: 0.5rem;
 }
 
 .modal-subtitle {
   text-align: center;
-  color: rgba(255, 255, 255, 0.6);
+  color: #64748b;
   margin-bottom: 2rem;
 }
 
@@ -154,8 +154,8 @@ export default {
 }
 
 .mode-card {
-  background: rgba(255, 255, 255, 0.05);
-  border: 2px solid rgba(255, 255, 255, 0.1);
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
   border-radius: 20px;
   padding: 1.75rem;
   cursor: pointer;
@@ -166,19 +166,19 @@ export default {
 
 .mode-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: #cbd5e1;
 }
 
 .mode-card.school:hover,
 .mode-card.school.selected {
   border-color: #3b82f6;
-  background: rgba(59, 130, 246, 0.1);
+  background: #eff6ff;
 }
 
 .mode-card.study-centre:hover,
 .mode-card.study-centre.selected {
   border-color: #8b5cf6;
-  background: rgba(139, 92, 246, 0.1);
+  background: #f3e8ff;
 }
 
 .mode-card.selected {
@@ -193,12 +193,12 @@ export default {
 .mode-title {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #fff;
+  color: #1e293b;
   margin-bottom: 0.5rem;
 }
 
 .mode-description {
-  color: rgba(255, 255, 255, 0.7);
+  color: #64748b;
   font-size: 0.9rem;
   margin-bottom: 1rem;
   line-height: 1.5;
@@ -211,11 +211,11 @@ export default {
 }
 
 .feature-tag {
-  background: rgba(255, 255, 255, 0.1);
+  background: #e2e8f0;
   padding: 0.35rem 0.75rem;
   border-radius: 20px;
   font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.8);
+  color: #475569;
 }
 
 .selection-indicator {
@@ -255,15 +255,15 @@ export default {
   .mode-choice-modal {
     padding: 1.5rem;
   }
-  
+
   .modal-title {
     font-size: 1.5rem;
   }
-  
+
   .mode-cards {
     grid-template-columns: 1fr;
   }
-  
+
   .mode-icon {
     font-size: 2.5rem;
   }
