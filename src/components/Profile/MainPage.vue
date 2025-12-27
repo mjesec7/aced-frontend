@@ -1274,17 +1274,17 @@ this.recommendations = null;
     },
 
     getTimeAgo(date) {
-      if (!date) return this.$t('timeOfDay.justNow');
+      if (!date) return this.$t('timeAgo.justNow');
       const diff = new Date() - new Date(date);
       const minutes = Math.floor(diff / 60000);
       const hours = Math.floor(minutes / 60);
       const days = Math.floor(hours / 24);
 
-      if (minutes < 1) return this.$t('timeOfDay.justNow');
-      if (hours < 1) return this.$t('timeOfDay.minutesAgo', { count: minutes });
-      if (days < 1) return this.$t('timeOfDay.hoursAgo', { count: hours });
-      if (days < 7) return this.$t('timeOfDay.daysAgo', { count: days });
-      return this.$t('timeOfDay.overWeekAgo');
+      if (minutes < 1) return this.$t('timeAgo.justNow');
+      if (hours < 1) return this.$t('timeAgo.minutesAgo', { count: minutes });
+      if (days < 1) return this.$t('timeAgo.hoursAgo', { count: hours });
+      if (days < 7) return this.$t('timeAgo.daysAgo', { count: days });
+      return this.$t('timeAgo.overWeekAgo');
     },
     
     getCourseName(course) {
@@ -1854,12 +1854,12 @@ this.recommendations = null;
    ============================================= */
 .dashboard-grid {
   max-width: 1400px; margin: 0 auto; display: grid;
-  grid-template-columns: 1fr 360px; gap: 1.5rem;
+  grid-template-columns: 1fr 1fr; gap: 1.5rem;
 }
 
 @media (max-width: 1200px) {
   .dashboard-grid {
-    grid-template-columns: 1fr 320px;
+    grid-template-columns: 1fr 1fr;
   }
 }
 
@@ -2100,7 +2100,7 @@ this.recommendations = null;
   .achievements-grid-mini { grid-template-columns: repeat(4, 1fr); }
 }
 @media (min-width: 1024px) {
-  .dashboard-grid { grid-template-columns: 2fr 1fr; }
+  .dashboard-grid { grid-template-columns: 1fr 1fr; }
   .rec-grid { grid-template-columns: repeat(4, 1fr); }
 }
 @media (max-width: 640px) {
