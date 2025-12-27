@@ -7,8 +7,17 @@
           <p class="date-text">{{ currentDate }}</p>
         </div>
         <div class="header-stats">
-          <!-- Level Indicator -->
-          <LevelIndicator :isCompact="false" :showProgress="true" />
+          <!-- Completed Lessons Stat -->
+          <div class="stat-badge lessons">
+            <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 12l2 2 4-4"/>
+              <path d="M12 3c7.2 0 9 1.8 9 9s-1.8 9-9 9-9-1.8-9-9 1.8-9 9-9z"/>
+            </svg>
+            <div class="stat-info">
+              <div class="stat-label">{{ $t('dashboard.completed') }}</div>
+              <div class="stat-value">{{ completedLessonsCount }}</div>
+            </div>
+          </div>
 
           <div class="stat-badge streak">
             <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -616,7 +625,6 @@ import {
   updateStreak
 } from '@/api';
 import PaymentModal from '@/components/Modals/PaymentModal.vue';
-import LevelIndicator from '@/components/PlatformMode/LevelIndicator.vue';
 import ModeChoice from '@/components/PlatformMode/ModeChoice.vue';
 import LevelPathway from '@/components/PlatformMode/LevelPathway.vue';
 import AppleTreeGoal from '@/components/Profile/AppleTreeGoal.vue';
@@ -632,7 +640,6 @@ export default {
   name: 'ProfessionalMainPage',
   components: {
     PaymentModal,
-    LevelIndicator,
     ModeChoice,
     LevelPathway,
     AppleTreeGoal
@@ -832,6 +839,11 @@ export default {
       return this.rewards?.totalPoints || this.totalPoints || 0;
     },
 
+    // 📚 NEW: Count of completed lessons
+    completedLessonsCount() {
+      return this.userProgress.filter(p => p.completed).length;
+    },
+
     // 🎓 NEW: Mode-aware quick actions with translations
     quickActions() {
       return this.quickActionsBase.map(action => {
@@ -890,7 +902,14 @@ export default {
       return this.currentCourse?.lessons || [];
     }
   },
-  
+
+  watch: {
+    '$i18n.locale'() {
+      // Update date when language changes
+      this.updateCurrentDate();
+    }
+  },
+
   async mounted() {
     await this.initialize();
     if (window.eventBus) {
@@ -1091,7 +1110,10 @@ this.recommendations = null;
     
     updateCurrentDate() {
       const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-      this.currentDate = new Date().toLocaleDateString('en-US', options);
+      // Use current locale from i18n
+      const locale = this.$i18n?.locale || 'en';
+      const localeMap = { en: 'en-US', ru: 'ru-RU', uz: 'uz-UZ' };
+      this.currentDate = new Date().toLocaleDateString(localeMap[locale] || 'en-US', options);
     },
     
     async loadData(forceRefresh = false) {
@@ -1416,9 +1438,11 @@ this.recommendations = null;
   display: flex; align-items: center; gap: 0.625rem; border-radius: 10px;
   padding: 0.625rem 1rem; border: 1px solid #e5e7eb; background: white;
 }
+.stat-badge.lessons { border-color: #bbf7d0; background: #f0fdf4; }
 .stat-badge.streak { border-color: #fed7aa; background: #fffbeb; }
 .stat-badge.points { border-color: #e9d5ff; background: #faf5ff; }
 .stat-badge .stat-icon { width: 1.25rem; height: 1.25rem; color: #f59e0b; }
+.stat-badge.lessons .stat-icon { color: #22c55e; }
 .stat-badge.points .stat-icon { color: #a855f7; }
 .stat-info { display: flex; flex-direction: column; gap: 0.125rem; }
 .stat-label { font-size: 0.6875rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.025em; }
