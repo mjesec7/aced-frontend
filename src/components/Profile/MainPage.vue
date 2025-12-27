@@ -179,7 +179,7 @@
                 </div>
               </div>
               <div class="rec-item">
-                <span class="rec-icon">🎚️</span>
+                <span class="rec-icon">📈</span>
                 <div class="rec-content">
                   <span class="rec-label">{{ $t('dashboard.difficulty') }}</span>
                   <span class="rec-value">{{ (recommendations.difficultyLevel * 100).toFixed(0) }}%</span>
