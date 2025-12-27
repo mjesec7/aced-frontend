@@ -117,11 +117,8 @@
       <div v-else class="p-6 md:p-8">
         <!-- Header -->
         <div class="text-center mb-8 pb-6 border-b border-slate-100">
-          <div class="w-14 h-14 mx-auto mb-4 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white">
-            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-              <line x1="1" y1="10" x2="23" y2="10"/>
-            </svg>
+          <div class="w-14 h-14 mx-auto mb-4 flex items-center justify-center">
+            <img src="@/assets/logo.png" alt="ACED" class="w-full h-full object-contain" />
           </div>
           <h1 class="text-2xl font-bold text-slate-900 mb-1">Complete Your Payment</h1>
           <p class="text-slate-500">Subscribe to ACED and unlock premium features</p>

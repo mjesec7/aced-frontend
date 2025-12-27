@@ -79,6 +79,7 @@
               <path d="M19 12H5M12 19l-7-7 7-7"/>
             </svg>
           </button>
+          <img src="@/assets/logo.png" alt="ACED" class="h-8 w-8 object-contain" />
           <h1>Оплата подписки</h1>
         </div>
   
@@ -240,7 +241,8 @@
         </div>
       </div>
     </div>
-  </template>
+  </div>
+</template>
   
   <script>
   import { ref, computed, onMounted } from 'vue';

@@ -5,9 +5,8 @@
 
         <!-- Brand Column -->
         <div class="lg:col-span-2">
-          <div class="flex items-center gap-3 mb-4">
+          <div class="flex items-center gap-2 mb-6">
             <img src="@/assets/logo.png" alt="ACED" class="h-10 w-10 object-contain" />
-            <span class="text-xl font-bold text-gray-900">ACED</span>
           </div>
           <p class="text-gray-500 text-sm leading-relaxed mb-6 max-w-sm">
             {{ $t('footer.slogan') }}

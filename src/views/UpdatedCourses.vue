@@ -163,7 +163,7 @@
                 </div>
                 <div class="course-card-provider">
                   <p>from</p>
-                  <p>Aced</p>
+                  <img src="@/assets/logo.png" alt="ACED" class="h-6 w-6 object-contain" />
                 </div>
               </div>
             </div>
@@ -247,7 +247,7 @@
                   </div>
                   <div class="modal-provider">
                     <span>от</span>
-                    <span>Aced</span>
+                    <img src="@/assets/logo.png" alt="ACED" class="h-6 w-6 object-contain" />
                   </div>
                 </div>
             </div>
