@@ -1,5 +1,5 @@
 <template>
-  <div class="mode-choice-overlay" v-if="isVisible">
+  <div class="mode-choice-overlay light-theme-v2" v-if="isVisible">
     <div class="mode-choice-modal">
       <h2 class="modal-title">{{ $t('modeChoice.chooseYourPath') }}</h2>
       <p class="modal-subtitle">{{ $t('modeChoice.selectHowToLearn') }}</p>
@@ -107,6 +107,7 @@ export default {
 </script>
 
 <style scoped>
+/* Light theme v2 - Updated 2025-12-27 */
 .mode-choice-overlay {
   position: fixed;
   top: 0;
