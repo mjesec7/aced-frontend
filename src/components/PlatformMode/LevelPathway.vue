@@ -87,16 +87,17 @@ export default {
   computed: {
     pathwayNodes() {
       if (this.lessons.length === 0) {
+        // Use $t for default placeholder lessons with lessonNumber translation
         return [
-          { title: 'Lesson 1', completed: true, current: false, locked: false },
-          { title: 'Lesson 2', completed: true, current: false, locked: false },
-          { title: 'Lesson 3', completed: false, current: true, locked: false },
-          { title: 'Lesson 4', completed: false, current: false, locked: true },
-          { title: 'Lesson 5', completed: false, current: false, locked: true }
+          { title: this.$t('levelPathway.lessonNumber', { number: 1 }), completed: true, current: false, locked: false },
+          { title: this.$t('levelPathway.lessonNumber', { number: 2 }), completed: true, current: false, locked: false },
+          { title: this.$t('levelPathway.lessonNumber', { number: 3 }), completed: false, current: true, locked: false },
+          { title: this.$t('levelPathway.lessonNumber', { number: 4 }), completed: false, current: false, locked: true },
+          { title: this.$t('levelPathway.lessonNumber', { number: 5 }), completed: false, current: false, locked: true }
         ]
       }
       return this.lessons.map((lesson, index) => ({
-        title: lesson.title || `Lesson ${index + 1}`,
+        title: lesson.title || lesson.lessonName || this.$t('levelPathway.lessonNumber', { number: index + 1 }),
         completed: lesson.completed || false,
         current: lesson.current || false,
         locked: !lesson.completed && !lesson.current

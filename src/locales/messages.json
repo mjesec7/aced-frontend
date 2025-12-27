@@ -742,7 +742,8 @@
       "level": "Level",
       "xp": "XP",
       "dayStreak": "day streak",
-      "continue": "Continue"
+      "continue": "Continue",
+      "lessonNumber": "Lesson {number}"
     },
     "modeChoice": {
       "chooseYourPath": "Choose Your Learning Path",
@@ -1498,7 +1499,8 @@
       "level": "Уровень",
       "xp": "XP",
       "dayStreak": "дней подряд",
-      "continue": "Продолжить"
+      "continue": "Продолжить",
+      "lessonNumber": "Урок {number}"
     },
     "modeChoice": {
       "chooseYourPath": "Выберите путь обучения",
@@ -2254,7 +2256,8 @@
       "level": "Daraja",
       "xp": "XP",
       "dayStreak": "kun ketma-ketlik",
-      "continue": "Davom etish"
+      "continue": "Davom etish",
+      "lessonNumber": "Dars {number}"
     },
     "modeChoice": {
       "chooseYourPath": "O'qish yo'lingizni tanlang",

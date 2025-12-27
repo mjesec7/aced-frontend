@@ -4,20 +4,17 @@
     <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-violet-200/20 rounded-full blur-3xl z-0"></div>
 
     <!-- Navigation -->
-    <nav class="flex items-center justify-between px-6 lg:px-16 py-5 max-w-7xl mx-auto relative">
+    <nav class="flex items-center justify-between px-6 lg:px-16 py-5 max-w-7xl mx-auto relative z-10">
       <img src="@/assets/logo.png" alt="ACED" class="h-10 lg:h-12" />
       <UserSection />
     </nav>
 
     <!-- Hero Content -->
-    <div class="max-w-7xl mx-auto px-6 lg:px-16 pb-20 relative">
+    <div class="max-w-7xl mx-auto px-6 lg:px-16 pb-20 relative z-10">
       <div class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center py-8 lg:py-12">
 
         <!-- Left side - Text content -->
         <div class="relative">
-          <!-- Decorative accent -->
-          <div class="absolute inset-0 bg-linear-to-b from-violet-50/50 to-white pointer-events-none"></div>
-
           <!-- Badge -->
           <div class="inline-flex items-center gap-2 px-4 py-2 bg-violet-50 rounded-full border border-violet-100 mb-8">
             <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
