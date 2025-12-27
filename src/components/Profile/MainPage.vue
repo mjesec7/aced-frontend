@@ -152,7 +152,7 @@
                 <span class="rec-icon">🎯</span>
                 <div class="rec-content">
                   <span class="rec-label">{{ $t('dashboard.learningPath') }}</span>
-                  <span class="rec-value">{{ capitalize(recommendations.preferredPath) }}</span>
+                  <span class="rec-value">{{ translatePreferredPath(recommendations.preferredPath) }}</span>
                 </div>
               </div>
               <div class="rec-item">
@@ -999,25 +999,26 @@ this.recommendations = null;
 
     // 🧬 NEW: Format cognitive labels
     formatCognitiveLabel(key) {
-      const labels = {
+      const labelKeys = {
         processingSpeed: 'Processing',
         workingMemory: 'Memory',
         visualSpatial: 'Visual',
         verbalLinguistic: 'Verbal',
         logicalMathematical: 'Logic'
       };
-      return labels[key] || key;
+      const translationKey = labelKeys[key] || key;
+      return this.$t(`analytics.${translationKey}`);
     },
     
     // 🧬 NEW: Format optimal time
     formatOptimalTime(timeData) {
-      if (!timeData) return 'Flexible';
-      if (timeData.isOptimal) return 'Now! 🌟';
+      if (!timeData) return this.$t('analytics.flexible');
+      if (timeData.isOptimal) return this.$t('analytics.studyAnytime') + ' 🌟';
       if (timeData.nextOptimal !== undefined) {
         const hours = timeData.hoursUntilOptimal;
-        return hours === 0 ? 'Now' : `${timeData.nextOptimal}:00 (${hours}h)`;
+        return hours === 0 ? this.$t('analytics.studyAnytime') : `${timeData.nextOptimal}:00 (-${hours}h)`;
       }
-      return 'Anytime';
+      return this.$t('analytics.studyAnytime');
     },
     
     // 🧬 NEW: Get learning style icon
@@ -1033,13 +1034,14 @@ this.recommendations = null;
     
     // 🧬 NEW: Get learning style text
     getLearningStyleText() {
-      const styles = {
-        visual: 'Visual',
-        auditory: 'Auditory',
-        kinesthetic: 'Hands-on',
-        'reading-writing': 'Reading'
+      const styleKeys = {
+        visual: 'visual',
+        auditory: 'auditory',
+        kinesthetic: 'kinesthetic',
+        'reading-writing': 'readingWriting'
       };
-      return styles[this.learningProfile?.learningStyle?.primary] || 'Balanced';
+      const key = styleKeys[this.learningProfile?.learningStyle?.primary] || 'balanced';
+      return this.$t(`analytics.${key}`);
     },
     
     // 🧬 NEW: Get chronotype icon
@@ -1056,11 +1058,11 @@ this.recommendations = null;
     // 🧬 NEW: Get chronotype text
     getChronotypeText() {
       const peakHours = this.learningProfile?.chronotype?.peakHours;
-      if (!peakHours?.length) return 'Anytime';
+      if (!peakHours?.length) return this.$t('analytics.studyAnytime');
       const firstHour = peakHours[0];
-      if (firstHour < 12) return 'Morning';
-      if (firstHour < 17) return 'Afternoon';
-      return 'Evening';
+      if (firstHour < 12) return this.$t('timeOfDay.morning');
+      if (firstHour < 17) return this.$t('timeOfDay.afternoon');
+      return this.$t('timeOfDay.evening');
     },
     
     // 🎮 NEW: Format number with commas
@@ -1072,6 +1074,19 @@ this.recommendations = null;
     capitalize(str) {
       if (!str) return '';
       return str.charAt(0).toUpperCase() + str.slice(1);
+    },
+
+    // 🎯 NEW: Translate preferred learning path
+    translatePreferredPath(path) {
+      if (!path) return '';
+      // Try to get translation, fallback to capitalized original
+      const key = path.toLowerCase();
+      const translation = this.$t(`analytics.${key}`);
+      // If translation returns the key itself, capitalize the original
+      if (translation === `analytics.${key}`) {
+        return this.capitalize(path);
+      }
+      return translation;
     },
     
     updateCurrentDate() {
