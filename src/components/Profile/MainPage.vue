@@ -165,7 +165,7 @@
                 </div>
               </div>
               <div class="rec-item">
-                <span class="rec-icon">⏰</span>
+                <span class="rec-icon">🕐</span>
                 <div class="rec-content">
                   <span class="rec-label">{{ $t('dashboard.optimalTime') }}</span>
                   <span class="rec-value">{{ formatOptimalTime(recommendations.optimalTime) }}</span>
@@ -179,7 +179,7 @@
                 </div>
               </div>
               <div class="rec-item">
-                <span class="rec-icon">🎚️</span>
+                <span class="rec-icon">📈</span>
                 <div class="rec-content">
                   <span class="rec-label">{{ $t('dashboard.difficulty') }}</span>
                   <span class="rec-value">{{ (recommendations.difficultyLevel * 100).toFixed(0) }}%</span>
@@ -1034,8 +1034,10 @@ this.recommendations = null;
       if (!timeData) return this.$t('analytics.flexible');
       if (timeData.isOptimal) return this.$t('analytics.studyAnytime') + ' 🌟';
       if (timeData.nextOptimal !== undefined) {
-        const hours = timeData.hoursUntilOptimal;
-        return hours === 0 ? this.$t('analytics.studyAnytime') : `${timeData.nextOptimal}:00 (-${hours}h)`;
+        const hours = Math.abs(timeData.hoursUntilOptimal || 0);
+        if (hours === 0) return this.$t('analytics.studyAnytime');
+        // Format as "11:00 (8h)" without negative sign
+        return `${timeData.nextOptimal}:00 (${hours}h)`;
       }
       return this.$t('analytics.studyAnytime');
     },
@@ -1241,9 +1243,10 @@ this.recommendations = null;
           };
         }
         if (p.completed) {
+          const lessonName = p.lessonId?.lessonName || this.$t('analytics.lesson');
           return {
             id: `lesson-${p._id}`,
-            title: `Completed lesson: ${p.lessonId?.lessonName || 'Lesson'}`,
+            title: `${this.$t('dashboard.completed')}: ${lessonName}`,
             time: this.getTimeAgo(p.completedAt),
             iconPath: '<polyline points="20 6 9 17 4 12"/>',
             color: 'green'
@@ -1271,17 +1274,17 @@ this.recommendations = null;
     },
 
     getTimeAgo(date) {
-      if (!date) return 'recently';
+      if (!date) return this.$t('timeOfDay.justNow');
       const diff = new Date() - new Date(date);
       const minutes = Math.floor(diff / 60000);
       const hours = Math.floor(minutes / 60);
       const days = Math.floor(hours / 24);
-      
-      if (minutes < 1) return 'just now';
-      if (hours < 1) return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`;
-      if (days < 1) return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`;
-      if (days < 7) return `${days} ${days === 1 ? 'day' : 'days'} ago`;
-      return 'over a week ago';
+
+      if (minutes < 1) return this.$t('timeOfDay.justNow');
+      if (hours < 1) return this.$t('timeOfDay.minutesAgo', { count: minutes });
+      if (days < 1) return this.$t('timeOfDay.hoursAgo', { count: hours });
+      if (days < 7) return this.$t('timeOfDay.daysAgo', { count: days });
+      return this.$t('timeOfDay.overWeekAgo');
     },
     
     getCourseName(course) {
