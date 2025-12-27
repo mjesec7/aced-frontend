@@ -232,75 +232,6 @@
           </div>
         </div>
 
-        <div v-if="rewards" class="section-card rewards-card-new">
-          <div class="section-header">
-            <div class="header-left">
-              <div class="section-icon-badge rewards">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                </svg>
-              </div>
-              <div>
-                <h2 class="section-title">🎮 {{ $t('dashboard.yourProgress') }}</h2>
-                <p class="section-subtitle">{{ $t('dashboard.level') }} {{ rewards.level }} • {{ formatNumber(rewards.totalPoints) }} {{ $t('dashboard.points').toLowerCase() }}</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="level-progress-section">
-            <div class="level-header">
-              <span class="current-level">{{ $t('dashboard.level') }} {{ rewards.level }}</span>
-              <span class="next-level">{{ $t('dashboard.level') }} {{ rewards.level + 1 }}</span>
-            </div>
-            <div class="progress-bar-container large">
-              <div class="progress-bar-fill gold" :style="{ width: rewards.currentLevelProgress + '%' }"></div>
-            </div>
-            <span class="progress-text">{{ Math.round(rewards.currentLevelProgress) }}% {{ $t('dashboard.toNextLevel') }}</span>
-          </div>
-
-          <div class="rewards-stats-grid">
-            <div class="reward-stat-card">
-              <div class="reward-stat-icon fire">🔥</div>
-              <div class="reward-stat-content">
-                <span class="reward-stat-value">{{ rewards.streak || 0 }}</span>
-                <span class="reward-stat-label">{{ $t('dashboard.dayStreak') }}</span>
-              </div>
-            </div>
-            <div class="reward-stat-card">
-              <div class="reward-stat-icon trophy">🏆</div>
-              <div class="reward-stat-content">
-                <span class="reward-stat-value">{{ rewards.achievements?.length || 0 }}</span>
-                <span class="reward-stat-label">{{ $t('dashboard.achievements') }}</span>
-              </div>
-            </div>
-            <div class="reward-stat-card">
-              <div class="reward-stat-icon target">🎯</div>
-              <div class="reward-stat-content">
-                <span class="reward-stat-value">{{ rewards.nextRewardIn || 0 }}</span>
-                <span class="reward-stat-label">{{ $t('dashboard.stepsToReward') }}</span>
-              </div>
-            </div>
-          </div>
-
-          <div v-if="rewards.achievements?.length" class="achievements-section-mini">
-            <h4>🏅 {{ $t('dashboard.recentAchievements') }}</h4>
-            <div class="achievements-grid-mini">
-              <div 
-                v-for="achievement in rewards.achievements.slice(0, 4)" 
-                :key="achievement.id"
-                :class="['achievement-badge-mini', achievement.rarity]"
-                :title="achievement.name"
-              >
-                <span class="achievement-icon-mini">{{ achievement.icon }}</span>
-                <span class="achievement-name-mini">{{ achievement.name }}</span>
-              </div>
-            </div>
-            <router-link v-if="rewards.achievements.length > 4" to="/profile/achievements" class="view-all-achievements">
-              {{ $t('dashboard.viewAllAchievements', { count: rewards.achievements.length }) }} →
-            </router-link>
-          </div>
-        </div>
-
         <div class="quick-stats-grid">
           <div class="stat-card">
             <div class="stat-icon-wrapper purple">
@@ -509,6 +440,76 @@
           :goal-lessons="20"
           class="apple-tree-section"
         />
+
+        <!-- Your Progress / Rewards Card -->
+        <div v-if="rewards" class="section-card rewards-card-new">
+          <div class="section-header">
+            <div class="header-left">
+              <div class="section-icon-badge rewards">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+              </div>
+              <div>
+                <h2 class="section-title">🎮 {{ $t('dashboard.yourProgress') }}</h2>
+                <p class="section-subtitle">{{ $t('dashboard.level') }} {{ rewards.level }} • {{ formatNumber(rewards.totalPoints) }} {{ $t('dashboard.points').toLowerCase() }}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="level-progress-section">
+            <div class="level-header">
+              <span class="current-level">{{ $t('dashboard.level') }} {{ rewards.level }}</span>
+              <span class="next-level">{{ $t('dashboard.level') }} {{ rewards.level + 1 }}</span>
+            </div>
+            <div class="progress-bar-container large">
+              <div class="progress-bar-fill gold" :style="{ width: rewards.currentLevelProgress + '%' }"></div>
+            </div>
+            <span class="progress-text">{{ Math.round(rewards.currentLevelProgress) }}% {{ $t('dashboard.toNextLevel') }}</span>
+          </div>
+
+          <div class="rewards-stats-grid">
+            <div class="reward-stat-card">
+              <div class="reward-stat-icon fire">🔥</div>
+              <div class="reward-stat-content">
+                <span class="reward-stat-value">{{ rewards.streak || 0 }}</span>
+                <span class="reward-stat-label">{{ $t('dashboard.dayStreak') }}</span>
+              </div>
+            </div>
+            <div class="reward-stat-card">
+              <div class="reward-stat-icon trophy">🏆</div>
+              <div class="reward-stat-content">
+                <span class="reward-stat-value">{{ rewards.achievements?.length || 0 }}</span>
+                <span class="reward-stat-label">{{ $t('dashboard.achievements') }}</span>
+              </div>
+            </div>
+            <div class="reward-stat-card">
+              <div class="reward-stat-icon target">🎯</div>
+              <div class="reward-stat-content">
+                <span class="reward-stat-value">{{ rewards.nextRewardIn || 0 }}</span>
+                <span class="reward-stat-label">{{ $t('dashboard.stepsToReward') }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="rewards.achievements?.length" class="achievements-section-mini">
+            <h4>🏅 {{ $t('dashboard.recentAchievements') }}</h4>
+            <div class="achievements-grid-mini">
+              <div
+                v-for="achievement in rewards.achievements.slice(0, 4)"
+                :key="achievement.id"
+                :class="['achievement-badge-mini', achievement.rarity]"
+                :title="achievement.name"
+              >
+                <span class="achievement-icon-mini">{{ achievement.icon }}</span>
+                <span class="achievement-name-mini">{{ achievement.name }}</span>
+              </div>
+            </div>
+            <router-link v-if="rewards.achievements.length > 4" to="/profile/achievements" class="view-all-achievements">
+              {{ $t('dashboard.viewAllAchievements', { count: rewards.achievements.length }) }} →
+            </router-link>
+          </div>
+        </div>
 
         <div class="section-card">
           <div class="section-header small">
@@ -1854,12 +1855,12 @@ this.recommendations = null;
    ============================================= */
 .dashboard-grid {
   max-width: 1400px; margin: 0 auto; display: grid;
-  grid-template-columns: 1fr 1fr; gap: 1.5rem;
+  grid-template-columns: 1fr 360px; gap: 1.5rem;
 }
 
 @media (max-width: 1200px) {
   .dashboard-grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 320px;
   }
 }
 
@@ -2100,7 +2101,7 @@ this.recommendations = null;
   .achievements-grid-mini { grid-template-columns: repeat(4, 1fr); }
 }
 @media (min-width: 1024px) {
-  .dashboard-grid { grid-template-columns: 1fr 1fr; }
+  .dashboard-grid { grid-template-columns: 2fr 1fr; }
   .rec-grid { grid-template-columns: repeat(4, 1fr); }
 }
 @media (max-width: 640px) {
