@@ -43,11 +43,8 @@
 
     <div class="dashboard-grid">
       <div class="main-column">
-        <!-- Mode Selection (if not selected) -->
-        <ModeChoice v-if="!hasSelectedMode" />
-
         <!-- School Mode: Take Test Card -->
-        <div v-if="hasSelectedMode && isSchoolMode" class="section-card level-test-card">
+        <div v-if="isSchoolMode" class="section-card level-test-card">
           <div class="test-card-content">
             <div class="test-card-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -71,7 +68,7 @@
         </div>
 
         <!-- School Mode: Interactive Level Pathway -->
-        <div v-if="hasSelectedMode && isSchoolMode" class="level-pathway-section">
+        <div v-if="isSchoolMode" class="level-pathway-section">
           <LevelPathway 
             v-if="currentCourse && currentCourseLessons.length > 0"
             :key="currentCourse._id || 'pathway'"
@@ -626,7 +623,6 @@ import {
   updateStreak
 } from '@/api';
 import PaymentModal from '@/components/Modals/PaymentModal.vue';
-import ModeChoice from '@/components/PlatformMode/ModeChoice.vue';
 import LevelPathway from '@/components/PlatformMode/LevelPathway.vue';
 import AppleTreeGoal from '@/components/Profile/AppleTreeGoal.vue';
 import { useLevelSystem } from '@/composables/useLevelSystem';
@@ -641,7 +637,6 @@ export default {
   name: 'ProfessionalMainPage',
   components: {
     PaymentModal,
-    ModeChoice,
     LevelPathway,
     AppleTreeGoal
   },

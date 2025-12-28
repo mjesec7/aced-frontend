@@ -38,7 +38,7 @@
           </div>
         </div>
 
-        <div class="mode-selector" v-if="hasSelectedMode">
+        <div class="mode-selector">
           <div class="mode-label">{{ $t('sidebar.learningMode') }}</div>
           <div class="mode-toggle">
             <button
@@ -65,44 +65,6 @@
                 </svg>
               </span>
               <span class="mode-text">{{ $t('sidebar.studyCentre') }}</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="mode-selection" v-if="!hasSelectedMode">
-          <div class="selection-header">
-            <h4>{{ $t('sidebar.chooseYourPath') }}</h4>
-            <p>{{ $t('sidebar.selectHowToLearn') }}</p>
-          </div>
-          <div class="selection-options">
-            <button
-              class="selection-card"
-              :class="{ selected: tempSelectedMode === 'school' }"
-              @click="selectInitialMode('school')"
-              :disabled="isSelectingMode"
-            >
-              <div class="card-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
-                  <path d="M6 12v5c3 3 9 3 12 0v-5"/>
-                </svg>
-              </div>
-              <h5>{{ $t('sidebar.schoolMode') }}</h5>
-              <p>{{ $t('sidebar.structuredCurriculum') }}</p>
-            </button>
-            <button
-              class="selection-card"
-              :class="{ selected: tempSelectedMode === 'study_centre' }"
-              @click="selectInitialMode('study_centre')"
-              :disabled="isSelectingMode"
-            >
-              <div class="card-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                </svg>
-              </div>
-              <h5>{{ $t('sidebar.studyCentre') }}</h5>
-              <p>{{ $t('sidebar.freeExploration') }}</p>
             </button>
           </div>
         </div>
