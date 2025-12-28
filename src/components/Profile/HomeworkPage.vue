@@ -7,7 +7,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="15 18 9 12 15 6"/>
           </svg>
-          Back
+          {{ $t('homework.back') }}
         </router-link>
         <div class="header-info">
           <h1 class="page-title">{{ homeworkTitle }}</h1>
@@ -32,7 +32,7 @@
     <!-- Loading State -->
     <div v-if="loading" class="loading-state">
       <div class="spinner"></div>
-      <p>Loading assignment...</p>
+      <p>{{ $t('homework.loading') }}</p>
     </div>
 
     <!-- Error State -->
@@ -50,10 +50,10 @@
             <polyline points="23 4 23 10 17 10"/>
             <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
           </svg>
-          Try Again
+          {{ $t('homework.tryAgain') }}
         </button>
         <router-link to="/profile/homeworks" class="action-button primary">
-          Back to List
+          {{ $t('homework.backToList') }}
         </router-link>
       </div>
     </div>
@@ -67,10 +67,10 @@
         <line x1="16" y1="17" x2="8" y2="17"/>
         <polyline points="10 9 9 9 8 9"/>
       </svg>
-      <h3>No questions in this assignment</h3>
-      <p>Contact your teacher for more information</p>
+      <h3>{{ $t('homework.noQuestions') }}</h3>
+      <p>{{ $t('homework.contactTeacher') }}</p>
       <router-link to="/profile/homeworks" class="action-button primary">
-        Back to List
+        {{ $t('homework.backToList') }}
       </router-link>
     </div>
 
@@ -85,7 +85,7 @@
             <line x1="16" y1="13" x2="8" y2="13"/>
             <line x1="16" y1="17" x2="8" y2="17"/>
           </svg>
-          <h3>Instructions</h3>
+          <h3>{{ $t('homework.instructions') }}</h3>
         </div>
         <p class="instructions-text">{{ instructions }}</p>
       </div>
@@ -100,8 +100,8 @@
             </svg>
           </div>
           <div class="stat-content">
-            <div class="stat-label">Assignment Type</div>
-            <div class="stat-value">{{ isStandalone ? 'Standalone' : 'Lesson' }}</div>
+            <div class="stat-label">{{ $t('homework.assignmentType') }}</div>
+            <div class="stat-value">{{ isStandalone ? $t('homework.standalone') : $t('homework.lesson') }}</div>
           </div>
         </div>
         <div class="stat-card">
@@ -113,7 +113,7 @@
             </svg>
           </div>
           <div class="stat-content">
-            <div class="stat-label">Total Questions</div>
+            <div class="stat-label">{{ $t('homework.totalQuestions') }}</div>
             <div class="stat-value">{{ questions.length }}</div>
           </div>
         </div>
@@ -124,7 +124,7 @@
             </svg>
           </div>
           <div class="stat-content">
-            <div class="stat-label">Answered</div>
+            <div class="stat-label">{{ $t('homework.answered') }}</div>
             <div class="stat-value">{{ answeredQuestions }}/{{ questions.length }}</div>
           </div>
         </div>
@@ -133,7 +133,7 @@
       <!-- Progress Bar -->
       <div class="progress-card">
         <div class="progress-header">
-          <span class="progress-label">Completion Progress</span>
+          <span class="progress-label">{{ $t('homework.completionProgress') }}</span>
           <span class="progress-percentage">{{ progressPercentage }}%</span>
         </div>
         <div class="progress-bar-container">
@@ -193,7 +193,7 @@
             <textarea
               v-model="userAnswers[i]"
               @input="onAnswerChange(i, userAnswers[i])"
-              :placeholder="'Enter your answer to question ' + (i + 1)"
+              :placeholder="$t('homework.answerPlaceholder', { number: i + 1 })"
               rows="4"
               class="answer-textarea"
             ></textarea>
@@ -201,23 +201,23 @@
               <svg v-if="userAnswers[i]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="20 6 9 17 4 12"/>
               </svg>
-              <span v-if="userAnswers[i]">Answer added</span>
-              <span v-else>Awaiting answer</span>
+              <span v-if="userAnswers[i]">{{ $t('homework.answerAdded') }}</span>
+              <span v-else>{{ $t('homework.awaitingAnswer') }}</span>
             </div>
           </div>
         </div>
 
         <!-- Form Actions -->
         <div class="form-actions">
-          <button 
-            type="button" 
-            @click="saveHomework" 
+          <button
+            type="button"
+            @click="saveHomework"
             class="action-button secondary"
             :disabled="saving || answeredQuestions === 0"
           >
             <span v-if="saving" class="button-content">
               <div class="button-spinner"></div>
-              Saving...
+              {{ $t('homework.saving') }}
             </span>
             <span v-else class="button-content">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -225,23 +225,23 @@
                 <polyline points="17 21 17 13 7 13 7 21"/>
                 <polyline points="7 3 7 8 15 8"/>
               </svg>
-              Save Draft
+              {{ $t('homework.saveDraft') }}
             </span>
           </button>
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             class="action-button primary"
             :disabled="submitting || !canSubmit"
           >
             <span v-if="submitting" class="button-content">
               <div class="button-spinner"></div>
-              Submitting...
+              {{ $t('homework.submitting') }}
             </span>
             <span v-else class="button-content">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="20 6 9 17 4 12"/>
               </svg>
-              Complete Assignment
+              {{ $t('homework.completeAssignment') }}
             </span>
           </button>
         </div>
@@ -253,8 +253,8 @@
             <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
             <line x1="12" y1="17" x2="12.01" y2="17"/>
           </svg>
-          <span v-if="canSubmit">All questions answered! You can complete the assignment.</span>
-          <span v-else>Answer all questions to complete the assignment.</span>
+          <span v-if="canSubmit">{{ $t('homework.allAnswered') }}</span>
+          <span v-else>{{ $t('homework.answerAllQuestions') }}</span>
         </div>
       </form>
     </div>

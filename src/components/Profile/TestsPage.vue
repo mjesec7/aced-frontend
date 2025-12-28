@@ -8,18 +8,18 @@
             <span class="text-2xl">📝</span>
           </div>
           <div>
-            <h1 class="text-2xl font-bold text-slate-800">Tests</h1>
-            <p class="text-slate-500 text-sm">{{ filteredTests.length }} available</p>
+            <h1 class="text-2xl font-bold text-slate-800">{{ $t('tests.title') }}</h1>
+            <p class="text-slate-500 text-sm">{{ filteredTests.length }} {{ $t('tests.available') }}</p>
           </div>
         </div>
         
         <!-- Inline Stats -->
         <div class="hidden md:flex items-center gap-3">
           <div class="px-4 py-2 rounded-full bg-blue-50 text-blue-600 text-sm font-medium">
-            📚 {{ uniqueSubjects.length }} subjects
+            📚 {{ uniqueSubjects.length }} {{ $t('tests.subjects') }}
           </div>
           <div class="px-4 py-2 rounded-full bg-purple-50 text-purple-600 text-sm font-medium">
-            ⭐ {{ uniqueLevels.length }} levels
+            ⭐ {{ uniqueLevels.length }} {{ $t('tests.levels') }}
           </div>
         </div>
       </div>
@@ -34,7 +34,7 @@
             v-model="searchQuery"
             type="text"
             class="w-full px-4 py-2.5 pl-10 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all"
-            placeholder="Search tests..."
+            :placeholder="$t('tests.searchPlaceholder')"
           />
           <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="8"/>
@@ -43,28 +43,28 @@
         </div>
 
         <!-- Filter Pills -->
-        <select 
-          v-model="selectedSubject" 
+        <select
+          v-model="selectedSubject"
           class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-slate-600 bg-white focus:outline-none focus:border-indigo-400 cursor-pointer hover:border-gray-300 transition-all"
         >
-          <option value="">All Subjects</option>
+          <option value="">{{ $t('tests.allSubjects') }}</option>
           <option v-for="subject in uniqueSubjects" :key="subject" :value="subject">{{ subject }}</option>
         </select>
 
-        <select 
-          v-model="selectedLevel" 
+        <select
+          v-model="selectedLevel"
           class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-slate-600 bg-white focus:outline-none focus:border-indigo-400 cursor-pointer hover:border-gray-300 transition-all"
         >
-          <option value="">All Levels</option>
-          <option v-for="level in uniqueLevels" :key="level" :value="level">Level {{ level }}</option>
+          <option value="">{{ $t('tests.allLevels') }}</option>
+          <option v-for="level in uniqueLevels" :key="level" :value="level">{{ $t('tests.level') }} {{ level }}</option>
         </select>
 
-        <button 
-          v-if="hasActiveFilters" 
+        <button
+          v-if="hasActiveFilters"
           @click="clearFilters"
           class="px-4 py-2.5 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 transition-all"
         >
-          Clear
+          {{ $t('tests.clear') }}
         </button>
       </div>
     </div>
@@ -72,7 +72,7 @@
     <!-- Loading -->
     <div v-if="loading" class="flex flex-col items-center justify-center py-24">
       <div class="w-8 h-8 border-2 border-indigo-200 border-t-indigo-500 rounded-full animate-spin"></div>
-      <p class="mt-4 text-slate-500 text-sm">Loading...</p>
+      <p class="mt-4 text-slate-500 text-sm">{{ $t('tests.loading') }}</p>
     </div>
 
     <!-- Tests Grid -->
@@ -80,8 +80,8 @@
       <!-- Empty State -->
       <div v-if="filteredTests.length === 0" class="text-center py-24">
         <div class="text-6xl mb-4">🔍</div>
-        <h3 class="text-lg font-semibold text-slate-800 mb-2">No tests found</h3>
-        <p class="text-slate-500 text-sm">Try adjusting your filters</p>
+        <h3 class="text-lg font-semibold text-slate-800 mb-2">{{ $t('tests.noTestsFound') }}</h3>
+        <p class="text-slate-500 text-sm">{{ $t('tests.tryAdjusting') }}</p>
       </div>
 
       <!-- Grid -->
@@ -99,7 +99,7 @@
               <span class="text-xs font-medium text-slate-500 uppercase tracking-wide">{{ test.subject || 'General' }}</span>
             </div>
             <span class="px-2 py-1 rounded-lg bg-slate-100 text-slate-600 text-xs font-medium">
-              Lvl {{ test.level || 1 }}
+              {{ $t('tests.level') }} {{ test.level || 1 }}
             </span>
           </div>
 
@@ -116,7 +116,7 @@
                 <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
                 <line x1="12" y1="17" x2="12.01" y2="17"/>
               </svg>
-              {{ test.questions?.length || 0 }} questions
+              {{ test.questions?.length || 0 }} {{ $t('tests.questions') }}
             </span>
             <span v-if="test.duration" class="flex items-center gap-1">
               <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -130,7 +130,7 @@
           <!-- Action -->
           <div class="mt-4 pt-4 border-t border-gray-50 flex justify-end">
             <span class="text-sm font-medium text-indigo-500 group-hover:text-indigo-600 flex items-center gap-1">
-              Start
+              {{ $t('tests.start') }}
               <svg class="w-4 h-4 group-hover:translate-x-0.5 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M5 12h14M12 5l7 7-7 7"/>
               </svg>
@@ -145,7 +145,7 @@
       <!-- Progress -->
       <div class="mb-8">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-sm font-medium text-slate-600">Question {{ currentQuestionIndex + 1 }} of {{ activeTest.questions.length }}</span>
+          <span class="text-sm font-medium text-slate-600">{{ $t('tests.questionOf', { current: currentQuestionIndex + 1, total: activeTest.questions.length }) }}</span>
           <span class="text-sm font-medium text-indigo-500">{{ Math.round(progressPercentage) }}%</span>
         </div>
         <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden">
@@ -184,7 +184,7 @@
           <textarea
             v-model="userAnswers[currentQuestionIndex]"
             class="w-full p-4 rounded-xl border border-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 outline-none transition-all text-slate-700 resize-none"
-            placeholder="Type your answer..."
+            :placeholder="$t('tests.typeAnswer')"
             rows="4"
           ></textarea>
         </div>
@@ -192,12 +192,12 @@
 
       <!-- Navigation -->
       <div class="flex justify-end">
-        <button 
+        <button
           @click="handleNextQuestion"
           :disabled="!userAnswers[currentQuestionIndex] || userAnswers[currentQuestionIndex].trim() === ''"
           class="px-6 py-3 bg-indigo-500 text-white font-medium rounded-xl hover:bg-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2"
         >
-          {{ isLastQuestion ? 'Finish' : 'Next' }}
+          {{ isLastQuestion ? $t('tests.finish') : $t('tests.next') }}
           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M5 12h14M12 5l7 7-7 7"/>
           </svg>
@@ -208,11 +208,11 @@
     <!-- Results -->
     <div v-else class="max-w-md mx-auto px-6 py-16 text-center">
       <div class="text-6xl mb-6">{{ score >= 70 ? '🎉' : score >= 50 ? '👍' : '💪' }}</div>
-      
+
       <h2 class="text-2xl font-bold text-slate-800 mb-2">
-        {{ score >= 70 ? 'Great job!' : score >= 50 ? 'Good effort!' : 'Keep practicing!' }}
+        {{ score >= 70 ? $t('tests.greatJob') : score >= 50 ? $t('tests.goodEffort') : $t('tests.keepPracticing') }}
       </h2>
-      <p class="text-slate-500 mb-8">You scored {{ score }}% on this test</p>
+      <p class="text-slate-500 mb-8">{{ $t('tests.youScored', { score: score }) }}</p>
 
       <!-- Score Ring -->
       <div class="relative w-32 h-32 mx-auto mb-8">
@@ -234,19 +234,19 @@
       <div class="flex justify-center gap-6 mb-8">
         <div class="text-center">
           <div class="text-2xl font-bold text-green-500">{{ correctCount }}</div>
-          <div class="text-xs text-slate-500">Correct</div>
+          <div class="text-xs text-slate-500">{{ $t('tests.correct') }}</div>
         </div>
         <div class="text-center">
           <div class="text-2xl font-bold text-slate-800">{{ activeTest.questions.length }}</div>
-          <div class="text-xs text-slate-500">Total</div>
+          <div class="text-xs text-slate-500">{{ $t('tests.total') }}</div>
         </div>
       </div>
 
-      <button 
+      <button
         @click="handleGoBack"
         class="px-6 py-3 bg-slate-800 text-white font-medium rounded-xl hover:bg-slate-900 transition-all"
       >
-        Back to Tests
+        {{ $t('tests.backToTests') }}
       </button>
     </div>
   </div>

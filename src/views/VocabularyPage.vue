@@ -7,7 +7,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="15 18 9 12 15 6"/>
           </svg>
-          Back
+          {{ $t('vocabulary.back') }}
         </button>
         <div class="header-info">
           <h1 class="page-title">{{ currentTitle }}</h1>
@@ -51,7 +51,7 @@
               <div class="stat-divider"></div>
               <div class="stat-item">
                 <span class="stat-number">{{ lang.levels?.length || 0 }}</span>
-                <span class="stat-label">levels</span>
+                <span class="stat-label">{{ $t('vocabulary.levels') }}</span>
               </div>
             </div>
             <div class="progress-section">
@@ -77,7 +77,7 @@
           <div class="card-header-row">
             <div class="level-badge">
               <span class="level-icon">{{ getLevelIcon(level.level) }}</span>
-              <span class="level-number">Level {{ level.level }}</span>
+              <span class="level-number">{{ $t('vocabulary.level') }} {{ level.level }}</span>
             </div>
             <div :class="['difficulty-badge', getDifficulty(level.level)]">
               {{ getDifficultyLabel(getDifficulty(level.level)) }}
@@ -90,14 +90,14 @@
                 <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
                 <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
               </svg>
-              <span>{{ level.totalWords }} words</span>
+              <span>{{ level.totalWords }} {{ $t('vocabulary.words') }}</span>
             </div>
             <div class="stat-group">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
                 <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
               </svg>
-              <span>{{ level.topicCount }} topics</span>
+              <span>{{ level.topicCount }} {{ $t('vocabulary.topics') }}</span>
             </div>
           </div>
         </div>
@@ -124,7 +124,7 @@
                 <circle cx="12" cy="12" r="10"/>
                 <polyline points="12 6 12 12 16 14"/>
               </svg>
-              <span>{{ topic.totalWords }} words</span>
+              <span>{{ topic.totalWords }} {{ $t('vocabulary.words') }}</span>
             </div>
           </div>
         </div>
@@ -139,9 +139,9 @@
             <circle cx="11" cy="11" r="8"/>
             <path d="m21 21-4.35-4.35"/>
           </svg>
-          <input 
-            v-model="searchQuery" 
-            placeholder="Search words..." 
+          <input
+            v-model="searchQuery"
+            :placeholder="$t('vocabulary.searchPlaceholder')"
             class="search-input"
           >
         </div>
@@ -160,7 +160,7 @@
             <line x1="9" y1="8" x2="15" y2="8"/>
             <line x1="17" y1="16" x2="23" y2="16"/>
           </svg>
-          {{ showAll ? 'All words' : 'Active' }}
+          {{ showAll ? $t('vocabulary.allWords') : $t('vocabulary.active') }}
         </button>
       </div>
 

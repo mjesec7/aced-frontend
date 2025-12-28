@@ -6,7 +6,8 @@ export default {
 
   state: {
     // Platform mode: 'study_centre', 'school', or 'hybrid'
-    learningMode: localStorage.getItem('learningMode') || null,
+    // Default to 'study_centre' to skip mode selection screen
+    learningMode: localStorage.getItem('learningMode') || 'study_centre',
 
     // School Mode Profile
     schoolProfile: {
