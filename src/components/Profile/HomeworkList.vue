@@ -8,18 +8,18 @@
             <span class="text-2xl">📝</span>
           </div>
           <div>
-            <h1 class="text-2xl font-bold text-slate-800">Homework</h1>
-            <p class="text-slate-500 text-sm">{{ validHomeworks.length }} assignments</p>
+            <h1 class="text-2xl font-bold text-slate-800">{{ $t('homeworkList.title') }}</h1>
+            <p class="text-slate-500 text-sm">{{ validHomeworks.length }} {{ $t('homeworkList.assignments') }}</p>
           </div>
         </div>
         
         <!-- Inline Stats -->
         <div class="hidden md:flex items-center gap-3">
           <div class="px-4 py-2 rounded-full bg-green-50 text-green-600 text-sm font-medium">
-            ✅ {{ completedHomeworks }} done
+            ✅ {{ completedHomeworks }} {{ $t('homeworkList.done') }}
           </div>
           <div class="px-4 py-2 rounded-full bg-amber-50 text-amber-600 text-sm font-medium">
-            ⏳ {{ inProgressHomeworks }} in progress
+            ⏳ {{ inProgressHomeworks }} {{ $t('homeworkList.inProgress') }}
           </div>
         </div>
       </div>
@@ -34,7 +34,7 @@
             v-model="searchQuery"
             type="text"
             class="w-full px-4 py-2.5 pl-10 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all"
-            placeholder="Search homework..."
+            :placeholder="$t('homeworkList.searchPlaceholder')"
           />
           <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="8"/>
@@ -47,7 +47,7 @@
           v-model="selectedSubject" 
           class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-slate-600 bg-white focus:outline-none focus:border-indigo-400 cursor-pointer hover:border-gray-300 transition-all"
         >
-          <option value="">All Subjects</option>
+          <option value="">{{ $t('homeworkList.allSubjects') }}</option>
           <option v-for="subject in subjects" :key="subject" :value="subject">{{ subject }}</option>
         </select>
 
@@ -55,10 +55,10 @@
           v-model="selectedStatus" 
           class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-slate-600 bg-white focus:outline-none focus:border-indigo-400 cursor-pointer hover:border-gray-300 transition-all"
         >
-          <option value="">All Status</option>
-          <option value="pending">Not Started</option>
-          <option value="in-progress">In Progress</option>
-          <option value="completed">Completed</option>
+          <option value="">{{ $t('homeworkList.allStatus') }}</option>
+          <option value="pending">{{ $t('homeworkList.notStarted') }}</option>
+          <option value="in-progress">{{ $t('homeworkList.statusInProgress') }}</option>
+          <option value="completed">{{ $t('homeworkList.completed') }}</option>
         </select>
 
         <button 
@@ -66,7 +66,7 @@
           @click="clearFilters"
           class="px-4 py-2.5 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 transition-all"
         >
-          Clear
+          {{ $t('homeworkList.clear') }}
         </button>
 
         <button 
@@ -84,16 +84,16 @@
     <!-- Loading -->
     <div v-if="loading" class="flex flex-col items-center justify-center py-24">
       <div class="w-8 h-8 border-2 border-purple-200 border-t-purple-500 rounded-full animate-spin"></div>
-      <p class="mt-4 text-slate-500 text-sm">Loading...</p>
+      <p class="mt-4 text-slate-500 text-sm">{{ $t('homeworkList.loading') }}</p>
     </div>
 
     <!-- Error State -->
     <div v-else-if="error" class="text-center py-24">
       <div class="text-6xl mb-4">😕</div>
-      <h3 class="text-lg font-semibold text-slate-800 mb-2">Something went wrong</h3>
+      <h3 class="text-lg font-semibold text-slate-800 mb-2">{{ $t('homeworkList.somethingWentWrong') }}</h3>
       <p class="text-slate-500 text-sm mb-4">{{ error }}</p>
       <button @click="refreshHomeworks" class="px-4 py-2 bg-indigo-500 text-white rounded-xl text-sm font-medium hover:bg-indigo-600 transition-all">
-        Try Again
+        {{ $t('homeworkList.tryAgain') }}
       </button>
     </div>
 
@@ -103,10 +103,10 @@
       <div v-if="displayableHomeworks.length === 0" class="text-center py-24">
         <div class="text-6xl mb-4">{{ validHomeworks.length === 0 ? '📭' : '🔍' }}</div>
         <h3 class="text-lg font-semibold text-slate-800 mb-2">
-          {{ validHomeworks.length === 0 ? 'No homework yet' : 'No matches found' }}
+          {{ validHomeworks.length === 0 ? $t('homeworkList.noHomeworkYet') : $t('homeworkList.noMatchesFound') }}
         </h3>
         <p class="text-slate-500 text-sm">
-          {{ validHomeworks.length === 0 ? 'Start a course to get assignments' : 'Try different filters' }}
+          {{ validHomeworks.length === 0 ? $t('homeworkList.startCourseToGet') : $t('homeworkList.tryDifferentFilters') }}
         </p>
       </div>
 
@@ -120,7 +120,7 @@
         >
           <!-- Urgent Badge -->
           <div v-if="isUrgent(hw)" class="absolute -top-2 -right-2 px-2 py-0.5 rounded-full bg-red-500 text-white text-xs font-bold shadow-sm">
-            DUE SOON
+            {{ $t('homeworkList.dueSoon') }}
           </div>
 
           <!-- Top Row -->
@@ -153,7 +153,7 @@
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                 <polyline points="14 2 14 8 20 8"/>
               </svg>
-              {{ getExerciseCount(hw) }} exercises
+              {{ getExerciseCount(hw) }} {{ $t('homeworkList.exercises') }}
             </span>
             <span v-if="hw.dueDate" class="flex items-center gap-1" :class="isOverdue(hw) ? 'text-red-500 font-medium' : ''">
               <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -169,7 +169,7 @@
           <!-- Progress Bar -->
           <div class="mb-4">
             <div class="flex justify-between text-xs mb-1">
-              <span class="text-slate-400">Progress</span>
+              <span class="text-slate-400">{{ $t('homeworkList.progress') }}</span>
               <span class="font-medium text-slate-600">{{ getScore(hw) }}%</span>
             </div>
             <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden">
@@ -325,9 +325,9 @@ export default {
     },
     
     statusLabel(hw) {
-      if (!this.hasProgress(hw)) return 'Not Started';
-      if (!this.isCompleted(hw)) return 'In Progress';
-      return 'Completed';
+      if (!this.hasProgress(hw)) return this.$t('homeworkList.notStarted');
+      if (!this.isCompleted(hw)) return this.$t('homeworkList.statusInProgress');
+      return this.$t('homeworkList.completed');
     },
     
     getStatus(hw) {
@@ -337,9 +337,9 @@ export default {
     },
     
     getButtonText(hw) {
-      if (this.isCompleted(hw)) return 'View';
-      if (this.hasProgress(hw)) return 'Continue';
-      return 'Start';
+      if (this.isCompleted(hw)) return this.$t('homeworkList.view');
+      if (this.hasProgress(hw)) return this.$t('homeworkList.continue');
+      return this.$t('homeworkList.start');
     },
     
     clearFilters() {

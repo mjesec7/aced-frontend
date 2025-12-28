@@ -21,12 +21,12 @@
         </button>
 
         <div class="header-breadcrumb">
-          <span class="breadcrumb-icon">
+          <router-link to="/profile/main" class="breadcrumb-icon home-link">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
               <path d="M9 22V12h6v10"/>
             </svg>
-          </span>
+          </router-link>
           <span class="breadcrumb-text">{{ currentPageTitle }}</span>
         </div>
 
@@ -294,6 +294,17 @@ export default {
   width: 18px;
   height: 18px;
   color: #8b5cf6; /* Darker Purple for light mode */
+}
+
+.home-link {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.home-link:hover {
+  transform: scale(1.1);
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(139, 92, 246, 0.2) 100%);
 }
 
 .breadcrumb-text {
