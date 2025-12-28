@@ -297,6 +297,9 @@ export default {
 }
 
 .home-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
   text-decoration: none;
