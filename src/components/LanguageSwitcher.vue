@@ -24,19 +24,18 @@
     <!-- Teleport dropdown to body to escape ALL parent stacking contexts -->
     <Teleport to="body">
       <!-- Backdrop - catches clicks outside dropdown -->
-      <Transition name="lang-fade">
-        <div
-          v-if="isDropdownOpen"
-          class="lang-switcher-backdrop"
-          @click="closeDropdown"
-        ></div>
-      </Transition>
+      <div
+        v-if="isDropdownOpen"
+        data-lang-backdrop
+        :style="backdropStyle"
+        @click="closeDropdown"
+      ></div>
 
       <!-- Dropdown menu - highest z-index -->
       <Transition name="lang-dropdown">
         <div
           v-if="isDropdownOpen"
-          class="lang-switcher-dropdown"
+          data-lang-dropdown
           :style="dropdownStyle"
           @click.stop
         >
@@ -75,7 +74,7 @@
 </template>
 
 <script>
-import { ref, reactive, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { useLanguage } from '@/composables/useLanguage';
 
 export default {
@@ -98,40 +97,62 @@ export default {
 
     const isDropdownOpen = ref(false);
     const switcherRef = ref(null);
-    
-    // Use maximum safe z-index to ensure dropdown is always on top
-    const dropdownStyle = reactive({
+    const dropdownPosition = reactive({ top: 0, left: 0 });
+
+    // Backdrop style - covers entire viewport
+    const backdropStyle = computed(() => ({
       position: 'fixed',
-      top: '0px',
-      left: '0px',
-      zIndex: 2147483647 // Maximum 32-bit signed integer
-    });
+      top: '0',
+      left: '0',
+      right: '0',
+      bottom: '0',
+      width: '100vw',
+      height: '100vh',
+      zIndex: 2147483646,
+      background: 'transparent',
+      cursor: 'default'
+    }));
+
+    // Dropdown style - positioned relative to button, highest z-index
+    const dropdownStyle = computed(() => ({
+      position: 'fixed',
+      top: `${dropdownPosition.top}px`,
+      left: `${dropdownPosition.left}px`,
+      zIndex: 2147483647,
+      minWidth: '200px',
+      maxWidth: '260px',
+      background: 'white',
+      border: '1px solid #e5e7eb',
+      borderRadius: '14px',
+      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 12px 24px rgba(139, 92, 246, 0.15)',
+      overflow: 'hidden',
+      pointerEvents: 'auto'
+    }));
 
     const updateDropdownPosition = () => {
       if (!switcherRef.value || !isDropdownOpen.value) return;
 
       const rect = switcherRef.value.getBoundingClientRect();
       const dropdownWidth = window.innerWidth < 480 ? 180 : 220;
-      const dropdownHeight = 200; // Approximate height
+      const dropdownHeight = 200;
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
       const padding = 16;
 
-      // Position below the button
       let top = rect.bottom + 8;
       let left = rect.left;
 
-      // If dropdown would go off right edge, align to right edge of button
+      // Align to right edge of button if dropdown would go off right edge
       if (left + dropdownWidth > viewportWidth - padding) {
         left = rect.right - dropdownWidth;
       }
 
-      // If still off left edge, align to left with padding
+      // Align to left with padding if still off left edge
       if (left < padding) {
         left = padding;
       }
 
-      // If dropdown would go below viewport, position above button
+      // Position above button if dropdown would go below viewport
       if (top + dropdownHeight > viewportHeight - padding) {
         top = rect.top - dropdownHeight - 8;
       }
@@ -141,8 +162,8 @@ export default {
         top = padding;
       }
 
-      dropdownStyle.top = `${top}px`;
-      dropdownStyle.left = `${left}px`;
+      dropdownPosition.top = top;
+      dropdownPosition.left = left;
     };
 
     const toggleDropdown = (event) => {
@@ -200,6 +221,7 @@ export default {
       currentLanguageLabel,
       isDropdownOpen,
       switcherRef,
+      backdropStyle,
       dropdownStyle,
       toggleDropdown,
       closeDropdown,
@@ -289,44 +311,11 @@ export default {
 <style>
 /* ============================================
    LANGUAGE SWITCHER - GLOBAL STYLES
-   Teleported elements must NOT be scoped!
-   Using unique prefixed class names to avoid conflicts
+   Using data attributes for highest specificity
    ============================================ */
 
-/* Backdrop - catches clicks and covers entire screen */
-.lang-switcher-backdrop {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  z-index: 2147483646 !important; /* Just below dropdown */
-  background: transparent !important;
-  cursor: default;
-}
-
-/* Dropdown container */
-.lang-switcher-dropdown {
-  position: fixed !important;
-  min-width: 200px;
-  max-width: 260px;
-  background: white !important;
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
-  box-shadow:
-    0 25px 50px -12px rgba(0, 0, 0, 0.25),
-    0 12px 24px rgba(139, 92, 246, 0.15),
-    0 0 0 1px rgba(139, 92, 246, 0.05);
-  overflow: hidden;
-  z-index: 2147483647 !important; /* Maximum z-index */
-  isolation: isolate;
-  pointer-events: auto !important;
-}
-
 /* Dropdown header */
-.lang-switcher-dropdown .lang-dropdown-header {
+[data-lang-dropdown] .lang-dropdown-header {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -338,19 +327,20 @@ export default {
   color: #64748b;
 }
 
-.lang-switcher-dropdown .lang-header-icon svg {
+[data-lang-dropdown] .lang-header-icon svg {
   width: 16px;
   height: 16px;
   color: #8b5cf6;
 }
 
 /* Dropdown options container */
-.lang-switcher-dropdown .lang-dropdown-options {
+[data-lang-dropdown] .lang-dropdown-options {
   padding: 8px;
+  background: white;
 }
 
 /* Individual option buttons */
-.lang-switcher-dropdown .lang-dropdown-option {
+[data-lang-dropdown] .lang-dropdown-option {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -367,32 +357,32 @@ export default {
   text-align: left;
 }
 
-.lang-switcher-dropdown .lang-dropdown-option:hover {
+[data-lang-dropdown] .lang-dropdown-option:hover {
   background: #f3e8ff;
   color: #7c3aed;
 }
 
-.lang-switcher-dropdown .lang-dropdown-option.active {
+[data-lang-dropdown] .lang-dropdown-option.active {
   background: #f3e8ff;
   color: #7c3aed;
 }
 
-.lang-switcher-dropdown .lang-option-flag {
+[data-lang-dropdown] .lang-option-flag {
   font-size: 0.875rem;
   font-weight: 600;
   color: #6b7280;
   min-width: 28px;
 }
 
-.lang-switcher-dropdown .lang-dropdown-option.active .lang-option-flag {
+[data-lang-dropdown] .lang-dropdown-option.active .lang-option-flag {
   color: #7c3aed;
 }
 
-.lang-switcher-dropdown .lang-option-label {
+[data-lang-dropdown] .lang-option-label {
   flex: 1;
 }
 
-.lang-switcher-dropdown .lang-option-check svg {
+[data-lang-dropdown] .lang-option-check svg {
   width: 16px;
   height: 16px;
   color: #7c3aed;
@@ -416,30 +406,19 @@ export default {
   transform: translateY(0) scale(1);
 }
 
-/* Backdrop fade animation */
-.lang-fade-enter-active,
-.lang-fade-leave-active {
-  transition: opacity 0.15s ease;
-}
-
-.lang-fade-enter-from,
-.lang-fade-leave-to {
-  opacity: 0;
-}
-
 /* Mobile adjustments */
 @media (max-width: 640px) {
-  .lang-switcher-dropdown {
-    min-width: 180px;
-    max-width: calc(100vw - 32px);
+  [data-lang-dropdown] {
+    min-width: 180px !important;
+    max-width: calc(100vw - 32px) !important;
   }
 
-  .lang-switcher-dropdown .lang-dropdown-option {
+  [data-lang-dropdown] .lang-dropdown-option {
     padding: 10px 12px;
     font-size: 0.875rem;
   }
 
-  .lang-switcher-dropdown .lang-dropdown-header {
+  [data-lang-dropdown] .lang-dropdown-header {
     padding: 12px 14px;
     font-size: 0.75rem;
   }
@@ -447,11 +426,11 @@ export default {
 
 /* Extra small mobile */
 @media (max-width: 380px) {
-  .lang-switcher-dropdown {
-    min-width: 160px;
+  [data-lang-dropdown] {
+    min-width: 160px !important;
   }
 
-  .lang-switcher-dropdown .lang-dropdown-option {
+  [data-lang-dropdown] .lang-dropdown-option {
     padding: 8px 10px;
     font-size: 0.8125rem;
     gap: 8px;
