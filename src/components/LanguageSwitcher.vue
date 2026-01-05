@@ -126,7 +126,7 @@ export default {
 <style scoped>
 .language-switcher {
   position: relative;
-  z-index: 100;
+  z-index: 1000;
 }
 
 .lang-button {
@@ -198,7 +198,7 @@ export default {
   border-radius: 14px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
   overflow: hidden;
-  z-index: 1000;
+  z-index: 10000;
 }
 
 .dropdown-header {
@@ -268,7 +268,7 @@ export default {
 .dropdown-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 99;
+  z-index: 9999;
 }
 
 /* Dropdown animation */
