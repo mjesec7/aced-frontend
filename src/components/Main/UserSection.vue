@@ -813,7 +813,7 @@ export default {
   font-size: 1.125rem;
 }
 
-/* Global Auth Modal */
+/* Global Auth Modal - below language switcher dropdown */
 .global-auth-modal {
   position: fixed;
   inset: 0;
@@ -822,7 +822,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10000;
+  z-index: 2147483640; /* Below language dropdown (2147483647) but above everything else */
   animation: fadeIn 0.3s ease;
 }
 

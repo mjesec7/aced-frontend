@@ -48,6 +48,7 @@ import ChatBot from '@/components/Main/ChatBot.vue';
   flex-direction: column;
   background-color: white;
   /* CRITICAL: Do NOT use overflow: hidden - it clips dropdowns */
+  /* Do NOT add transform, filter, or will-change - creates stacking context */
 }
 
 section {
@@ -56,19 +57,20 @@ section {
   position: relative;
 }
 
-/* Hero section must allow dropdowns to overflow */
+/* Hero section - lower z-index so teleported dropdown (z-index: max) appears above */
 .hero-section {
   position: relative;
-  z-index: 10;
-  /* NO overflow: hidden here! */
+  z-index: 1;
+  /* NO overflow: hidden - allows dropdowns to show */
+  /* NO transform or filter - avoids creating stacking context that traps dropdown */
 }
 
-/* Other sections below hero */
+/* Other sections below hero - even lower z-index */
 #about-us,
 #aced,
 #tariffs,
 #cards {
   position: relative;
-  z-index: 1;
+  z-index: 0;
 }
 </style>
