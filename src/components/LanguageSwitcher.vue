@@ -20,12 +20,20 @@
       </span>
     </button>
 
-    <!-- Teleport dropdown to body to avoid z-index/overflow issues -->
+    <!-- Teleport dropdown to body to escape ALL parent stacking contexts -->
     <Teleport to="body">
-      <Transition name="dropdown">
+      <!-- Backdrop first (lower z-index) -->
+      <div 
+        v-if="isDropdownOpen" 
+        class="lang-backdrop"
+        @click="closeDropdown"
+      ></div>
+      
+      <!-- Dropdown menu -->
+      <Transition name="lang-dropdown">
         <div 
           v-if="isDropdownOpen" 
-          class="lang-dropdown" 
+          class="lang-dropdown-menu" 
           :style="dropdownStyle"
           @click.stop
         >
@@ -58,13 +66,6 @@
           </div>
         </div>
       </Transition>
-
-      <!-- Backdrop also teleported to body -->
-      <div 
-        v-if="isDropdownOpen" 
-        class="dropdown-backdrop" 
-        @click="closeDropdown"
-      ></div>
     </Teleport>
   </div>
 </template>
@@ -94,34 +95,40 @@ export default {
     const isDropdownOpen = ref(false);
     const switcherRef = ref(null);
     
-    // Reactive dropdown positioning
     const dropdownStyle = reactive({
       position: 'fixed',
       top: '0px',
-      right: '0px',
-      zIndex: 99999
+      left: '0px',
+      zIndex: 999999
     });
 
     const updateDropdownPosition = () => {
       if (!switcherRef.value || !isDropdownOpen.value) return;
       
       const rect = switcherRef.value.getBoundingClientRect();
-      const viewportWidth = window.innerWidth;
       const dropdownWidth = 220;
+      const viewportWidth = window.innerWidth;
       
-      // Calculate right position
-      let rightPos = viewportWidth - rect.right;
+      // Position below the button
+      let top = rect.bottom + 8;
+      let left = rect.left;
       
-      // Ensure dropdown doesn't go off-screen
-      if (rect.right - dropdownWidth < 16) {
-        rightPos = viewportWidth - dropdownWidth - 16;
+      // If dropdown would go off right edge, align to right edge of button
+      if (left + dropdownWidth > viewportWidth - 16) {
+        left = rect.right - dropdownWidth;
       }
       
-      dropdownStyle.top = `${rect.bottom + 8}px`;
-      dropdownStyle.right = `${Math.max(rightPos, 16)}px`;
+      // If still off screen, align to right edge of viewport
+      if (left < 16) {
+        left = 16;
+      }
+      
+      dropdownStyle.top = `${top}px`;
+      dropdownStyle.left = `${left}px`;
     };
 
-    const toggleDropdown = () => {
+    const toggleDropdown = (event) => {
+      event.stopPropagation();
       isDropdownOpen.value = !isDropdownOpen.value;
       if (isDropdownOpen.value) {
         nextTick(() => {
@@ -139,21 +146,10 @@ export default {
       isDropdownOpen.value = false;
     };
 
-    const handleClickOutside = (event) => {
-      if (!isDropdownOpen.value) return;
-      
-      // Check if click is on the switcher button
-      if (switcherRef.value && switcherRef.value.contains(event.target)) {
-        return;
+    const handleKeydown = (event) => {
+      if (event.key === 'Escape' && isDropdownOpen.value) {
+        closeDropdown();
       }
-      
-      // Check if click is on the dropdown
-      const dropdown = document.querySelector('.lang-dropdown');
-      if (dropdown && dropdown.contains(event.target)) {
-        return;
-      }
-      
-      isDropdownOpen.value = false;
     };
 
     const handleScroll = () => {
@@ -169,13 +165,13 @@ export default {
     };
 
     onMounted(() => {
-      document.addEventListener('click', handleClickOutside);
+      document.addEventListener('keydown', handleKeydown);
       window.addEventListener('scroll', handleScroll, true);
       window.addEventListener('resize', handleResize);
     });
 
     onUnmounted(() => {
-      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener('keydown', handleKeydown);
       window.removeEventListener('scroll', handleScroll, true);
       window.removeEventListener('resize', handleResize);
     });
@@ -198,7 +194,6 @@ export default {
 <style scoped>
 .language-switcher {
   position: relative;
-  z-index: 1000;
 }
 
 .lang-button {
@@ -273,19 +268,38 @@ export default {
 </style>
 
 <style>
-/* Global styles for teleported dropdown - not scoped */
-.lang-dropdown {
+/* ============================================
+   GLOBAL STYLES - Teleported elements
+   These must NOT be scoped!
+   ============================================ */
+
+/* Backdrop - covers entire screen */
+.lang-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999998;
+  /* Transparent - just for catching clicks */
+}
+
+/* Dropdown menu */
+.lang-dropdown-menu {
   position: fixed;
   min-width: 200px;
+  max-width: 260px;
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 14px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(139, 92, 246, 0.1);
+  box-shadow: 
+    0 20px 50px rgba(0, 0, 0, 0.15),
+    0 10px 20px rgba(139, 92, 246, 0.1);
   overflow: hidden;
-  z-index: 99999;
+  z-index: 999999 !important;
 }
 
-.lang-dropdown .dropdown-header {
+.lang-dropdown-menu .dropdown-header {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -297,17 +311,17 @@ export default {
   color: #64748b;
 }
 
-.lang-dropdown .header-icon svg {
+.lang-dropdown-menu .header-icon svg {
   width: 16px;
   height: 16px;
   color: #8b5cf6;
 }
 
-.lang-dropdown .dropdown-options {
+.lang-dropdown-menu .dropdown-options {
   padding: 8px;
 }
 
-.lang-dropdown .lang-option {
+.lang-dropdown-menu .lang-option {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -324,62 +338,67 @@ export default {
   text-align: left;
 }
 
-.lang-dropdown .lang-option:hover {
+.lang-dropdown-menu .lang-option:hover {
   background: #f3e8ff;
   color: #7c3aed;
 }
 
-.lang-dropdown .lang-option.active {
+.lang-dropdown-menu .lang-option.active {
   background: #f3e8ff;
   color: #7c3aed;
 }
 
-.lang-dropdown .option-flag {
-  font-size: 1.25rem;
+.lang-dropdown-menu .option-flag {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #6b7280;
+  min-width: 28px;
 }
 
-.lang-dropdown .option-label {
+.lang-dropdown-menu .lang-option.active .option-flag {
+  color: #7c3aed;
+}
+
+.lang-dropdown-menu .option-label {
   flex: 1;
 }
 
-.lang-dropdown .option-check svg {
+.lang-dropdown-menu .option-check svg {
   width: 16px;
   height: 16px;
   color: #7c3aed;
 }
 
-/* Backdrop - teleported to body */
-.dropdown-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 99998;
-  background: transparent;
-}
-
 /* Dropdown animation */
-.dropdown-enter-active,
-.dropdown-leave-active {
+.lang-dropdown-enter-active,
+.lang-dropdown-leave-active {
   transition: all 0.2s ease;
 }
 
-.dropdown-enter-from,
-.dropdown-leave-to {
+.lang-dropdown-enter-from,
+.lang-dropdown-leave-to {
   opacity: 0;
-  transform: translateY(-8px);
+  transform: translateY(-8px) scale(0.95);
+}
+
+.lang-dropdown-enter-to,
+.lang-dropdown-leave-from {
+  opacity: 1;
+  transform: translateY(0) scale(1);
 }
 
 /* Mobile adjustments */
 @media (max-width: 640px) {
-  .lang-dropdown {
+  .lang-dropdown-menu {
     min-width: 180px;
   }
   
-  .lang-dropdown .lang-option {
+  .lang-dropdown-menu .lang-option {
     padding: 10px 12px;
     font-size: 0.875rem;
   }
   
-  .lang-dropdown .dropdown-header {
+  .lang-dropdown-menu .dropdown-header {
     padding: 12px 14px;
   }
 }
