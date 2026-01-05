@@ -4,7 +4,7 @@
     <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-violet-200/20 rounded-full blur-3xl z-0 pointer-events-none"></div>
 
     <!-- Navigation -->
-    <nav class="flex items-center justify-between px-6 lg:px-16 py-5 max-w-7xl mx-auto relative z-50">
+    <nav class="flex items-center justify-between px-6 lg:px-16 py-5 max-w-7xl mx-auto relative z-[100]">
       <img src="@/assets/logo.png" alt="ACED" class="h-10 lg:h-12" />
       <UserSection />
     </nav>
