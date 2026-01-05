@@ -10,6 +10,8 @@ import './assets/css/tw-utilities.css';
 import './assets/css/responsive.css';
 import './assets/interactives.css';
 import 'vue-toast-notification/dist/theme-sugar.css';
+// CRITICAL: Import last to ensure z-index overrides work
+import './assets/css/language-switcher-override.css';
 import VueToast from 'vue-toast-notification';
 
 import { createI18n } from 'vue-i18n';
