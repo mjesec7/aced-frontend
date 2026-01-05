@@ -33,7 +33,7 @@
 
     <!-- Premium Content Modal -->
     <Teleport to="body">
-      <div v-if="showPaywallModal" class="fixed inset-0 z-1000 bg-black/40 flex items-center justify-center p-4">
+      <div v-if="showPaywallModal" class="fixed inset-0 z-[1000] bg-black/40 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl w-full max-w-xs p-6 text-center">
           <div class="w-16 h-16 mx-auto mb-4 bg-slate-100 rounded-full flex items-center justify-center">
             <svg class="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -56,7 +56,7 @@
 
     <!-- Exit Confirmation Modal -->
     <Teleport to="body">
-      <div v-if="showExitModal" class="fixed inset-0 z-1000 bg-black/40 flex items-center justify-center p-4">
+      <div v-if="showExitModal" class="fixed inset-0 z-[1000] bg-black/40 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl w-full max-w-xs p-6 text-center">
           <h3 class="text-lg font-bold text-slate-900 mb-2">Leave Lesson?</h3>
           <p class="text-slate-500 text-sm mb-6">Your progress will be saved</p>
@@ -74,7 +74,7 @@
 
     <!-- Problem Report Modal -->
     <Teleport to="body">
-      <div v-if="showProblemReportModal" class="fixed inset-0 z-1000 bg-black/40 flex items-center justify-center p-4" @click.self="closeProblemReportModal">
+      <div v-if="showProblemReportModal" class="fixed inset-0 z-[1000] bg-black/40 flex items-center justify-center p-4" @click.self="closeProblemReportModal">
         <div class="bg-white rounded-2xl w-full max-w-md max-h-[85vh] overflow-hidden flex flex-col">
           <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
             <h3 class="font-semibold text-slate-900">Report Issue</h3>
@@ -142,7 +142,7 @@
         leave-from-class="opacity-100 translate-x-0"
         leave-to-class="opacity-0 translate-x-full"
       >
-        <div v-if="showSuccessMessage" class="fixed top-4 right-4 z-2000 max-w-sm w-full">
+        <div v-if="showSuccessMessage" class="fixed top-4 right-4 z-[2000] max-w-sm w-full">
           <div class="bg-white rounded-2xl shadow-xl border border-emerald-100 p-4 flex items-start gap-4">
             <div class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center shrink-0">
               <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -163,6 +163,7 @@
       </Transition>
     </Teleport>
 
+    <!-- Vocabulary Modal -->
     <VocabularyModal
       v-if="vocabularyModal.isVisible"
       :vocabulary-data="vocabularyModal"
@@ -182,6 +183,7 @@
       @jump-to-word="jumpToVocabWord"
     />
 
+    <!-- Lesson Intro -->
     <LessonIntro
       v-if="!started && !showPaywallModal && !loading && !error"
       :lesson="lesson"
@@ -194,6 +196,7 @@
       @report-problem="openProblemReportModal"
     />
 
+    <!-- Main Lesson Content -->
     <div v-else-if="started && !showPaywallModal && !loading && !error" class="lesson-container-new">
       <!-- Header -->
       <div class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 px-3 sm:px-4 py-2.5 sm:py-3">
@@ -215,7 +218,7 @@
             <div class="flex items-center gap-2 shrink-0">
               <div class="w-20 sm:w-28 h-2 bg-slate-100 rounded-full overflow-hidden">
                 <div
-                  class="h-full bg-linear-to-r from-indigo-500 to-blue-500 rounded-full transition-all duration-500"
+                  class="h-full bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full transition-all duration-500"
                   :style="{ width: progressPercentage + '%' }"
                 ></div>
               </div>
@@ -328,6 +331,7 @@
       </div>
     </div>
 
+    <!-- Completion Screen -->
     <CompletionScreen
       v-if="lessonCompleted"
       :lesson="lesson"
@@ -368,9 +372,9 @@
         leave-from-class="opacity-100 translate-y-0"
         leave-to-class="opacity-0 translate-y-full"
       >
-        <div v-if="showMigrationPanel" class="fixed bottom-4 right-4 z-100 max-w-sm w-full">
+        <div v-if="showMigrationPanel" class="fixed bottom-4 right-4 z-[100] max-w-sm w-full">
           <div class="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
-            <div class="px-5 py-4 border-b border-slate-100 bg-linear-to-r from-blue-50 to-indigo-50">
+            <div class="px-5 py-4 border-b border-slate-100 bg-gradient-to-r from-blue-50 to-indigo-50">
               <div class="flex items-center gap-3">
                 <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
                   <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -415,227 +419,812 @@
       :class="showFloatingAI ? 'bg-cyan-500 shadow-cyan-500/40' : 'bg-indigo-600 shadow-indigo-500/40'"
       aria-label="AI Assistant"
     >
-      <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-      </svg>
+      <span v-if="showFloatingAI">✕</span>
+      <span v-else>🤖</span>
     </button>
 
-    <!-- Lexi Voice AI Button -->
-    <button
-      v-if="started && !lessonCompleted"
-      @click="handleLexiSpeak"
-      @contextmenu.prevent="handleLexiListen"
-      class="fixed bottom-24 right-6 w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110 z-50"
-      :class="{
-        'bg-emerald-500 shadow-emerald-500/40': lexiIsPlaying,
-    // ==========================================
-    return {
-      // Guest Mode
-      isGuestMode,
-      guestBannerDismissed,
-      handleGuestRegister,
-      dismissGuestBanner,
-      saveGuestProgress,
-      loadGuestProgress,
+    <!-- Floating AI Chat Panel -->
+    <Teleport to="body">
+      <Transition
+        enter-active-class="transition-all duration-300 ease-out"
+        enter-from-class="opacity-0 translate-y-4 scale-95"
+        enter-to-class="opacity-100 translate-y-0 scale-100"
+        leave-active-class="transition-all duration-200 ease-in"
+        leave-from-class="opacity-100 translate-y-0 scale-100"
+        leave-to-class="opacity-0 translate-y-4 scale-95"
+      >
+        <div v-if="showFloatingAI" class="fixed bottom-24 right-6 z-[60] w-80 max-h-96 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col">
+          <div class="px-4 py-3 bg-gradient-to-r from-indigo-500 to-blue-500 text-white">
+            <h4 class="font-semibold">AI Assistant</h4>
+            <p class="text-xs text-white/80">Ask me anything about this lesson</p>
+          </div>
+          <div class="flex-1 overflow-y-auto p-4 space-y-3 min-h-[200px]">
+            <div v-if="aiChatMessages.length === 0" class="text-center text-slate-400 text-sm py-8">
+              <p>👋 How can I help you?</p>
+            </div>
+            <div
+              v-for="(msg, idx) in aiChatMessages"
+              :key="idx"
+              class="flex"
+              :class="msg.role === 'user' ? 'justify-end' : 'justify-start'"
+            >
+              <div
+                class="max-w-[80%] px-3 py-2 rounded-xl text-sm"
+                :class="msg.role === 'user' ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-800'"
+              >
+                {{ msg.content }}
+              </div>
+            </div>
+            <div v-if="isAITyping" class="flex justify-start">
+              <div class="bg-slate-100 px-3 py-2 rounded-xl">
+                <div class="flex gap-1">
+                  <span class="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></span>
+                  <span class="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style="animation-delay: 0.1s"></span>
+                  <span class="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="p-3 border-t border-slate-100">
+            <div class="flex gap-2">
+              <input
+                v-model="aiChatInput"
+                @keyup.enter="sendAIMessage"
+                type="text"
+                placeholder="Type a message..."
+                class="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              >
+              <button
+                @click="sendAIMessage"
+                :disabled="!aiChatInput.trim() || isAITyping"
+                class="px-4 py-2 bg-indigo-500 text-white rounded-xl hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+  </div>
+</template>
 
-      // Resize State
-      isResizing,
-      currentLeftWidth,
-      currentRightWidth,
-      resizeDirection,
-      leftPanelStyle,
-      rightPanelStyle,
-      resizeDisabled,
-      isTablet,
+<script setup>
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
-      // Resize Methods
-      startResize,
-      handleResize,
-      stopResize,
-      resetSplitSizes,
-      loadSavedSizes,
-      handleWindowResize,
+// Import child components
+import VocabularyModal from '@/components/lesson/VocabularyModal.vue'
+import LessonIntro from '@/components/lesson/LessonIntro.vue'
+import ContentPanel from '@/components/lesson/ContentPanel.vue'
+import InteractivePanel from '@/components/lesson/InteractivePanel.vue'
+import CompletionScreen from '@/components/lesson/CompletionScreen.vue'
 
-      // Orchestrator Data
-      loading: lessonOrchestrator.loading,
-      error: lessonOrchestrator.error,
-      lesson: lessonOrchestrator.lesson,
-      started: lessonOrchestrator.started,
-      currentIndex: lessonOrchestrator.currentIndex,
-      steps: lessonOrchestrator.steps,
-      progressPercentage: lessonOrchestrator.progressPercentage,
-      currentStep: lessonOrchestrator.currentStep,
-      isInteractiveStep: lessonOrchestrator.isInteractiveStep,
-      isGameStep,
-      showPaywallModal: paymentValidation.showPaywallModal,
-      showExitModal: lessonOrchestrator.showExitModal,
-      lessonCompleted: lessonOrchestrator.lessonCompleted,
-      readableTime: lessonOrchestrator.readableTime,
-      stars: lessonOrchestrator.stars,
-      mistakeCount: lessonOrchestrator.mistakeCount,
-      earnedPoints: lessonOrchestrator.earnedPoints,
-      medalLabel: lessonOrchestrator.medalLabel,
-      getMedalIcon: lessonOrchestrator.getMedalIcon,
-      progressInsight: lessonOrchestrator.progressInsight,
-      estimatedTime: lessonOrchestrator.estimatedTime,
-      previousProgress: lessonOrchestrator.previousProgress,
-      formattedTime: lessonOrchestrator.formattedTime,
+const route = useRoute()
+const router = useRouter()
+const { t } = useI18n()
 
-      // Exercise State
-      userAnswer: exercises.userAnswer,
-      confirmation: exercises.confirmation,
-      answerWasCorrect: exercises.answerWasCorrect,
-      currentHint: exercises.currentHint,
-      smartHint: explanation.smartHint,
-      fillBlankAnswers: exercises.fillBlankAnswers,
-      matchingPairs: exercises.matchingPairs,
-      selectedMatchingItem: exercises.selectedMatchingItem,
-      orderingItems: exercises.orderingItems,
-      dragDropPlacements: exercises.dragDropPlacements,
-      availableDragItems: exercises.availableDragItems,
-      dropZones: exercises.dropZones,
-      currentExerciseIndex: exercises.currentExerciseIndex,
-      currentQuizIndex: exercises.currentQuizIndex,
+// ==================== STATE ====================
 
-      // Local State
-      attemptCount,
-      maxAttempts,
-      showCorrectAnswer,
-      correctAnswerText,
-      isOnSecondChance,
-      showMigrationPanel,
-      migrationLoading,
-      extractionResults,
-      currentTab,
-      consecutiveCorrect: lessonOrchestrator.consecutiveCorrect,
+// Loading & Error
+const loading = ref(true)
+const error = ref(null)
 
-      // AI State
-      showExplanationHelp: explanation.showExplanationHelp,
-      explanationQuestion: explanation.explanationQuestion,
-      explanationAIResponse: explanation.explanationAIResponse,
-      isLoadingExplanation: explanation.isLoadingExplanation,
-      aiSuggestions: explanation.aiSuggestions,
-      aiChatInput: explanation.aiChatInput,
-      aiChatHistory: explanation.aiChatHistory,
-      aiIsLoading: explanation.aiIsLoading,
-      aiUsage: explanation.aiUsage,
-      showFloatingAI: explanation.showFloatingAI,
-      floatingAIInput: explanation.floatingAIInput,
-      quickSuggestions: explanation.quickSuggestions,
+// Lesson Data
+const lesson = ref(null)
+const steps = ref([])
+const currentIndex = ref(0)
+const started = ref(false)
+const lessonCompleted = ref(false)
+const previousProgress = ref(null)
 
-      // Vocabulary
-      vocabularyModal: vocabulary.vocabularyModal,
-      cardAnimation: vocabulary.cardAnimation,
-      currentVocabWord: vocabulary.currentWord,
-      vocabProgress: vocabulary.progress,
-      isLastVocabWord: vocabulary.isLastWord,
+// Modals
+const showPaywallModal = ref(false)
+const showExitModal = ref(false)
+const showProblemReportModal = ref(false)
+const showSuccessMessage = ref(false)
+const showMigrationPanel = ref(false)
 
-      // Problem Reporting
-      showProblemReportModal,
-      problemDescription,
-      problemType,
-      screenshotUrl,
-      contactInfo,
-      isSubmitting,
-      showValidationError,
-      showSuccessMessage,
+// Problem Report
+const problemType = ref('')
+const problemDescription = ref('')
+const contactInfo = ref('')
+const showValidationError = ref(false)
+const isSubmitting = ref(false)
 
-      // Confetti
-      confettiCanvas,
-      showConfetti,
+// Progress & Scoring
+const consecutiveCorrect = ref(0)
+const earnedPoints = ref(0)
+const mistakeCount = ref(0)
+const stars = ref(0)
+const readableTime = ref('0:00')
+const medalLabel = ref('')
+const progressInsight = ref('')
+const extractionResults = ref(null)
 
-      // Computed
-      isLastStep,
+// Exercise State
+const currentExerciseIndex = ref(0)
+const currentQuizIndex = ref(0)
+const userAnswer = ref('')
+const confirmation = ref(null)
+const answerWasCorrect = ref(false)
+const currentHint = ref('')
+const smartHint = ref('')
+const fillBlankAnswers = ref({})
+const matchingPairs = ref([])
+const selectedMatchingItem = ref(null)
+const orderingItems = ref([])
+const dragDropPlacements = ref({})
+const availableDragItems = ref([])
+const dropZones = ref([])
+const attemptCount = ref(0)
+const maxAttempts = ref(3)
+const isOnSecondChance = ref(false)
+const showCorrectAnswer = ref(false)
+const correctAnswerText = ref('')
 
-      // Methods
-      retryLoad: lessonOrchestrator.retryLoad,
-      startLesson,
-      continuePreviousProgress: lessonOrchestrator.continuePreviousProgress,
-      confirmExit: lessonOrchestrator.confirmExit,
-      cancelExit: lessonOrchestrator.cancelExit,
-      shareResult: lessonOrchestrator.shareResult,
-      goToVocabulary: lessonOrchestrator.goToVocabulary,
-      getLessonProgress: lessonOrchestrator.getLessonProgress,
+// Explanation Help
+const showExplanationHelp = ref(false)
+const explanationQuestion = ref('')
+const explanationAIResponse = ref('')
+const isLoadingExplanation = ref(false)
 
-      // Navigation
-      exitLesson,
-      handleReturnToCatalogue,
-      handleGoToHomework,
+// Vocabulary Modal
+const vocabularyModal = ref({ isVisible: false })
+const cardAnimation = ref('')
+const currentVocabWord = ref(null)
+const vocabProgress = ref({ current: 0, total: 0 })
+const isLastVocabWord = ref(false)
 
-      // Exercise Methods
-      getCurrentExercise,
-      getCurrentQuiz,
-      getTotalExercises,
-      getTotalQuizzes,
-      handleAnswerChanged,
-      updateFillBlankAnswer,
-      handleSubmitOrNext,
-      goToNextExercise,
-      goToNextQuiz,
-      goNext,
-      goPrevious,
-      showHint,
-      clearSmartHint,
-      handleMatchingItemSelected,
-      handleRemoveMatchingPair,
+// Resize
+const splitContainer = ref(null)
+const isResizing = ref(false)
+const leftPanelWidth = ref(50)
+const resizeDisabled = ref(false)
 
-      // Drag and Drop
-      handleDragItemStart,
-      handleDragOverZone,
-      handleDragLeaveZone,
-      handleDropInZone,
-      handleRemoveDroppedItem,
-      ensureDragDropInitialization,
+// Floating AI
+const showFloatingAI = ref(false)
+const aiChatMessages = ref([])
+const aiChatInput = ref('')
+const isAITyping = ref(false)
 
-      // AI Methods
-      toggleExplanationHelp,
-      askAboutExplanation,
-      sendAIMessage,
-      askAI,
-      clearAIChat,
-      toggleFloatingAI,
-      closeFloatingAI,
-      sendFloatingAIMessage,
+// Migration
+const migrationLoading = ref(false)
 
-      // Vocabulary Methods
-      initializeVocabularyModal,
-      jumpToVocabWord,
-      showVocabDefinition,
-      hideVocabDefinition,
-      markWordAsLearned,
-      nextVocabWord,
-      previousVocabWord,
-      skipVocabularyModal,
-      closeVocabularyModal,
-      restartVocabulary,
-      pronounceWord,
+// ==================== COMPUTED ====================
 
-      // Migration
-      migrateLessonContent,
-      showMigrationPanelModal,
-      closeMigrationPanel,
+const currentStep = computed(() => steps.value[currentIndex.value] || null)
 
-      // Problem Reporting
-      openProblemReportModal,
-      closeProblemReportModal,
-      submitProblemReport,
-      closeSuccessMessage,
+const progressPercentage = computed(() => {
+  if (steps.value.length === 0) return 0
+  return Math.round(((currentIndex.value + 1) / steps.value.length) * 100)
+})
 
-      // Lexi Voice AI
-      lexiIsPlaying: lexi.isPlaying,
-      lexiIsLoading: lexi.isLoading,
-      lexiIsListening: lexi.isListening,
-      lexiError: lexi.error,
-      handleLexiSpeak,
-      handleLexiListen,
-      stopLexi: lexi.stop,
-    }
+const estimatedTime = computed(() => {
+  const totalSteps = steps.value.length
+  const minutes = Math.ceil(totalSteps * 1.5)
+  return `${minutes} min`
+})
+
+const isInteractiveStep = computed(() => {
+  const step = currentStep.value
+  if (!step) return false
+  return step.type === 'exercise' || step.type === 'quiz'
+})
+
+const isGameStep = computed(() => {
+  const step = currentStep.value
+  if (!step) return false
+  return step.type === 'game'
+})
+
+const isLastStep = computed(() => currentIndex.value === steps.value.length - 1)
+
+const leftPanelStyle = computed(() => ({
+  width: resizeDisabled.value ? '100%' : `${leftPanelWidth.value}%`
+}))
+
+const rightPanelStyle = computed(() => ({
+  width: resizeDisabled.value ? '0%' : `${100 - leftPanelWidth.value}%`
+}))
+
+// ==================== METHODS ====================
+
+// Loading & Navigation
+async function loadLesson() {
+  loading.value = true
+  error.value = null
+  
+  try {
+    const lessonId = route.params.id
+    // API call to load lesson
+    // lesson.value = await api.getLesson(lessonId)
+    // steps.value = lesson.value.steps || []
+    
+    // Placeholder for demo
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    lesson.value = { title: 'Sample Lesson', subtitle: 'Learning basics' }
+    steps.value = []
+  } catch (err) {
+    error.value = err.message || 'Failed to load lesson'
+  } finally {
+    loading.value = false
   }
 }
+
+function retryLoad() {
+  loadLesson()
+}
+
+function handleReturnToCatalogue() {
+  router.push('/courses')
+}
+
+function startLesson() {
+  started.value = true
+  currentIndex.value = 0
+}
+
+function continuePreviousProgress() {
+  if (previousProgress.value) {
+    currentIndex.value = previousProgress.value.stepIndex || 0
+  }
+  started.value = true
+}
+
+function confirmExit() {
+  showExitModal.value = true
+}
+
+function cancelExit() {
+  showExitModal.value = false
+}
+
+function exitLesson() {
+  showExitModal.value = false
+  handleReturnToCatalogue()
+}
+
+// Navigation
+function goNext() {
+  if (currentIndex.value < steps.value.length - 1) {
+    currentIndex.value++
+    resetExerciseState()
+  } else {
+    completeLesson()
+  }
+}
+
+function goPrevious() {
+  if (currentIndex.value > 0) {
+    currentIndex.value--
+    resetExerciseState()
+  }
+}
+
+function resetExerciseState() {
+  userAnswer.value = ''
+  confirmation.value = null
+  answerWasCorrect.value = false
+  currentHint.value = ''
+  smartHint.value = ''
+  fillBlankAnswers.value = {}
+  matchingPairs.value = []
+  selectedMatchingItem.value = null
+  attemptCount.value = 0
+  isOnSecondChance.value = false
+  showCorrectAnswer.value = false
+  correctAnswerText.value = ''
+  currentExerciseIndex.value = 0
+  currentQuizIndex.value = 0
+}
+
+function completeLesson() {
+  lessonCompleted.value = true
+  calculateResults()
+}
+
+function calculateResults() {
+  const totalSteps = steps.value.length
+  const accuracy = totalSteps > 0 ? (totalSteps - mistakeCount.value) / totalSteps : 1
+  
+  if (accuracy >= 0.9) {
+    stars.value = 3
+    medalLabel.value = 'Gold'
+  } else if (accuracy >= 0.7) {
+    stars.value = 2
+    medalLabel.value = 'Silver'
+  } else {
+    stars.value = 1
+    medalLabel.value = 'Bronze'
+  }
+  
+  progressInsight.value = `You completed ${totalSteps} steps with ${mistakeCount.value} mistakes.`
+}
+
+function getMedalIcon() {
+  const icons = {
+    Gold: '🥇',
+    Silver: '🥈',
+    Bronze: '🥉'
+  }
+  return icons[medalLabel.value] || '🏅'
+}
+
+function shareResult() {
+  // Share functionality
+  console.log('Sharing result...')
+}
+
+function handleGoToHomework() {
+  router.push('/homework')
+}
+
+function goToVocabulary() {
+  router.push('/vocabulary')
+}
+
+// Exercise Helpers
+function getCurrentExercise(step) {
+  if (!step || step.type !== 'exercise') return null
+  const exercises = step.exercises || []
+  return exercises[currentExerciseIndex.value] || null
+}
+
+function getCurrentQuiz(step) {
+  if (!step || step.type !== 'quiz') return null
+  const quizzes = step.quizzes || []
+  return quizzes[currentQuizIndex.value] || null
+}
+
+function getTotalExercises(step) {
+  if (!step || step.type !== 'exercise') return 0
+  return (step.exercises || []).length
+}
+
+function getTotalQuizzes(step) {
+  if (!step || step.type !== 'quiz') return 0
+  return (step.quizzes || []).length
+}
+
+function handleAnswerChanged(answer) {
+  userAnswer.value = answer
+}
+
+function updateFillBlankAnswer({ index, value }) {
+  fillBlankAnswers.value[index] = value
+}
+
+function handleSubmitOrNext() {
+  if (confirmation.value) {
+    if (answerWasCorrect.value) {
+      goToNextExercise()
+    } else {
+      attemptCount.value++
+      if (attemptCount.value >= maxAttempts.value) {
+        showCorrectAnswer.value = true
+      }
+    }
+  } else {
+    checkAnswer()
+  }
+}
+
+function checkAnswer() {
+  // Placeholder answer checking logic
+  const isCorrect = userAnswer.value.toLowerCase() === 'correct'
+  
+  if (isCorrect) {
+    confirmation.value = 'correct'
+    answerWasCorrect.value = true
+    consecutiveCorrect.value++
+    earnedPoints.value += 10
+  } else {
+    confirmation.value = 'incorrect'
+    answerWasCorrect.value = false
+    mistakeCount.value++
+    consecutiveCorrect.value = 0
+  }
+}
+
+function goToNextExercise() {
+  const step = currentStep.value
+  if (!step) return
+  
+  const total = getTotalExercises(step)
+  if (currentExerciseIndex.value < total - 1) {
+    currentExerciseIndex.value++
+    resetExerciseState()
+  } else {
+    goNext()
+  }
+}
+
+function goToNextQuiz() {
+  const step = currentStep.value
+  if (!step) return
+  
+  const total = getTotalQuizzes(step)
+  if (currentQuizIndex.value < total - 1) {
+    currentQuizIndex.value++
+    resetExerciseState()
+  } else {
+    goNext()
+  }
+}
+
+function showHint() {
+  currentHint.value = 'Try thinking about it differently...'
+}
+
+function clearSmartHint() {
+  smartHint.value = ''
+}
+
+// Matching
+function handleMatchingItemSelected(item) {
+  if (selectedMatchingItem.value) {
+    matchingPairs.value.push({
+      left: selectedMatchingItem.value,
+      right: item
+    })
+    selectedMatchingItem.value = null
+  } else {
+    selectedMatchingItem.value = item
+  }
+}
+
+function handleRemoveMatchingPair(index) {
+  matchingPairs.value.splice(index, 1)
+}
+
+// Drag & Drop
+function handleDragItemStart(item) {
+  // Handle drag start
+}
+
+function handleDragOverZone(zoneId) {
+  // Handle drag over
+}
+
+function handleDragLeaveZone(zoneId) {
+  // Handle drag leave
+}
+
+function handleDropInZone({ item, zoneId }) {
+  dragDropPlacements.value[zoneId] = item
+}
+
+function handleRemoveDroppedItem(zoneId) {
+  delete dragDropPlacements.value[zoneId]
+}
+
+// Explanation Help
+function toggleExplanationHelp() {
+  showExplanationHelp.value = !showExplanationHelp.value
+}
+
+async function askAboutExplanation() {
+  if (!explanationQuestion.value.trim()) return
+  
+  isLoadingExplanation.value = true
+  try {
+    // API call for AI explanation
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    explanationAIResponse.value = 'Here is the explanation for your question...'
+  } catch (err) {
+    explanationAIResponse.value = 'Sorry, I could not get an explanation at this time.'
+  } finally {
+    isLoadingExplanation.value = false
+  }
+}
+
+// Vocabulary Modal
+function initializeVocabularyModal(vocabData) {
+  vocabularyModal.value = {
+    isVisible: true,
+    words: vocabData.words || [],
+    currentIndex: 0
+  }
+  updateCurrentVocabWord()
+}
+
+function updateCurrentVocabWord() {
+  const modal = vocabularyModal.value
+  if (modal.words && modal.words.length > 0) {
+    currentVocabWord.value = modal.words[modal.currentIndex]
+    vocabProgress.value = {
+      current: modal.currentIndex + 1,
+      total: modal.words.length
+    }
+    isLastVocabWord.value = modal.currentIndex === modal.words.length - 1
+  }
+}
+
+function showVocabDefinition() {
+  if (currentVocabWord.value) {
+    currentVocabWord.value.showDefinition = true
+  }
+}
+
+function hideVocabDefinition() {
+  if (currentVocabWord.value) {
+    currentVocabWord.value.showDefinition = false
+  }
+}
+
+function markWordAsLearned() {
+  if (currentVocabWord.value) {
+    currentVocabWord.value.learned = true
+  }
+  nextVocabWord()
+}
+
+function nextVocabWord() {
+  cardAnimation.value = 'slide-left'
+  const modal = vocabularyModal.value
+  if (modal.currentIndex < modal.words.length - 1) {
+    modal.currentIndex++
+    updateCurrentVocabWord()
+  }
+}
+
+function previousVocabWord() {
+  cardAnimation.value = 'slide-right'
+  const modal = vocabularyModal.value
+  if (modal.currentIndex > 0) {
+    modal.currentIndex--
+    updateCurrentVocabWord()
+  }
+}
+
+function jumpToVocabWord(index) {
+  vocabularyModal.value.currentIndex = index
+  updateCurrentVocabWord()
+}
+
+function skipVocabularyModal() {
+  closeVocabularyModal()
+}
+
+function restartVocabulary() {
+  vocabularyModal.value.currentIndex = 0
+  updateCurrentVocabWord()
+}
+
+function closeVocabularyModal() {
+  vocabularyModal.value.isVisible = false
+}
+
+function pronounceWord(word) {
+  if ('speechSynthesis' in window) {
+    const utterance = new SpeechSynthesisUtterance(word)
+    utterance.lang = 'en-US'
+    speechSynthesis.speak(utterance)
+  }
+}
+
+// Problem Report
+function openProblemReportModal() {
+  showProblemReportModal.value = true
+  problemType.value = ''
+  problemDescription.value = ''
+  contactInfo.value = ''
+  showValidationError.value = false
+}
+
+function closeProblemReportModal() {
+  showProblemReportModal.value = false
+}
+
+async function submitProblemReport() {
+  if (!problemDescription.value.trim()) {
+    showValidationError.value = true
+    return
+  }
+  
+  isSubmitting.value = true
+  try {
+    // API call to submit report
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    closeProblemReportModal()
+    showSuccessMessage.value = true
+    setTimeout(() => {
+      showSuccessMessage.value = false
+    }, 3000)
+  } catch (err) {
+    console.error('Failed to submit report:', err)
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+function closeSuccessMessage() {
+  showSuccessMessage.value = false
+}
+
+// Resize Functionality
+function startResize(e) {
+  if (resizeDisabled.value) return
+  isResizing.value = true
+  
+  const startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX
+  const startWidth = leftPanelWidth.value
+  const container = splitContainer.value
+  
+  if (!container) return
+  
+  const containerWidth = container.offsetWidth
+  
+  function onMove(moveEvent) {
+    const currentX = moveEvent.type === 'touchmove' ? moveEvent.touches[0].clientX : moveEvent.clientX
+    const diff = currentX - startX
+    const diffPercent = (diff / containerWidth) * 100
+    const newWidth = Math.min(Math.max(startWidth + diffPercent, 30), 70)
+    leftPanelWidth.value = newWidth
+  }
+  
+  function onEnd() {
+    isResizing.value = false
+    document.removeEventListener('mousemove', onMove)
+    document.removeEventListener('mouseup', onEnd)
+    document.removeEventListener('touchmove', onMove)
+    document.removeEventListener('touchend', onEnd)
+  }
+  
+  document.addEventListener('mousemove', onMove)
+  document.addEventListener('mouseup', onEnd)
+  document.addEventListener('touchmove', onMove)
+  document.addEventListener('touchend', onEnd)
+}
+
+// Floating AI
+function toggleFloatingAI() {
+  showFloatingAI.value = !showFloatingAI.value
+}
+
+async function sendAIMessage() {
+  const message = aiChatInput.value.trim()
+  if (!message) return
+  
+  aiChatMessages.value.push({ role: 'user', content: message })
+  aiChatInput.value = ''
+  isAITyping.value = true
+  
+  try {
+    // API call for AI response
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    aiChatMessages.value.push({
+      role: 'assistant',
+      content: 'I understand your question. Let me help you with that...'
+    })
+  } catch (err) {
+    aiChatMessages.value.push({
+      role: 'assistant',
+      content: 'Sorry, I encountered an error. Please try again.'
+    })
+  } finally {
+    isAITyping.value = false
+  }
+}
+
+// Migration
+function closeMigrationPanel() {
+  showMigrationPanel.value = false
+}
+
+async function migrateLessonContent() {
+  migrationLoading.value = true
+  try {
+    // API call for migration
+    await new Promise(resolve => setTimeout(resolve, 2000))
+    closeMigrationPanel()
+  } catch (err) {
+    console.error('Migration failed:', err)
+  } finally {
+    migrationLoading.value = false
+  }
+}
+
+// ==================== LIFECYCLE ====================
+
+onMounted(() => {
+  loadLesson()
+})
+
+onUnmounted(() => {
+  // Cleanup
+})
 </script>
 
 <style scoped>
-@import "@/assets/css/LessonPage.css";
+.lesson-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: #f8fafc;
+}
+
+.lesson-container-new {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.split-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.split-content.is-game-active {
+  flex-direction: column;
+}
+
+.split-panel {
+  overflow-y: auto;
+  transition: width 0.1s ease;
+}
+
+.content-side {
+  background-color: #ffffff;
+  border-right: 1px solid #e2e8f0;
+}
+
+.interactive-side {
+  background-color: #f8fafc;
+}
+
+.interactive-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.resize-handle {
+  width: 8px;
+  background-color: #e2e8f0;
+  cursor: col-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+  flex-shrink: 0;
+}
+
+.resize-handle:hover,
+.resize-handle.is-resizing {
+  background-color: #cbd5e1;
+}
+
+.handle-bar {
+  width: 4px;
+  height: 40px;
+  background-color: #94a3b8;
+  border-radius: 2px;
+}
+
+@media (max-width: 768px) {
+  .split-content {
+    flex-direction: column;
+  }
+  
+  .split-panel {
+    width: 100% !important;
+  }
+  
+  .content-side {
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  
+  .resize-handle {
+    display: none;
+  }
+}
 
 @keyframes modal-in {
   from {
@@ -666,4 +1255,4 @@ button:focus-visible {
     animation: none;
   }
 }
-</style>
+</style> 
