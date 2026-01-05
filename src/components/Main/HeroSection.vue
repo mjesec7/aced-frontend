@@ -1,16 +1,16 @@
 <template>
-  <div class="bg-white relative">
-    <!-- Centered decorative element - contained within hero -->
-    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-violet-200/20 rounded-full blur-3xl pointer-events-none" style="z-index: 0;"></div>
+  <div class="hero-wrapper">
+    <!-- Centered decorative element - contained within hero, no interaction -->
+    <div class="hero-decoration"></div>
 
-    <!-- Navigation -->
-    <nav class="flex items-center justify-between px-4 sm:px-6 lg:px-16 py-4 sm:py-5 max-w-7xl mx-auto relative" style="z-index: 100;">
+    <!-- Navigation - highest z-index within hero for dropdown visibility -->
+    <nav class="hero-nav">
       <img src="@/assets/logo.png" alt="ACED" class="h-8 sm:h-10 lg:h-12" />
       <UserSection />
     </nav>
 
-    <!-- Hero Content -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-16 pb-12 sm:pb-16 lg:pb-20 relative" style="z-index: 1;">
+    <!-- Hero Content - below navigation -->
+    <div class="hero-content">
       <div class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center py-6 sm:py-8 lg:py-12">
 
         <!-- Left side - Text content -->
@@ -185,5 +185,71 @@ export default {
 </script>
 
 <style scoped>
-/* No overflow hidden anywhere - let dropdowns show */
+/* Hero wrapper - main container */
+.hero-wrapper {
+  position: relative;
+  background: white;
+  /* No overflow:hidden - allows dropdowns to show */
+  /* No transform or filter - doesn't create stacking context that traps dropdowns */
+}
+
+/* Decorative background element */
+.hero-decoration {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 800px;
+  height: 800px;
+  background: rgba(196, 181, 253, 0.2); /* violet-200/20 */
+  border-radius: 9999px;
+  filter: blur(48px); /* blur-3xl equivalent */
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Navigation bar - high z-index for dropdowns */
+.hero-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1rem;
+  max-width: 80rem;
+  margin: 0 auto;
+  position: relative;
+  z-index: 50; /* High but below teleported dropdown (z-index: max) */
+}
+
+@media (min-width: 640px) {
+  .hero-nav {
+    padding: 1.25rem 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .hero-nav {
+    padding: 1.25rem 4rem;
+  }
+}
+
+/* Hero content section */
+.hero-content {
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 0 1rem 3rem;
+  position: relative;
+  z-index: 1; /* Below navigation */
+}
+
+@media (min-width: 640px) {
+  .hero-content {
+    padding: 0 1.5rem 4rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .hero-content {
+    padding: 0 4rem 5rem;
+  }
+}
 </style>

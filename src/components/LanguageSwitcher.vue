@@ -4,6 +4,7 @@
       class="lang-button"
       :class="{ 'active': isDropdownOpen }"
       @click="toggleDropdown"
+      type="button"
     >
       <span class="lang-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -22,23 +23,25 @@
 
     <!-- Teleport dropdown to body to escape ALL parent stacking contexts -->
     <Teleport to="body">
-      <!-- Backdrop first (lower z-index) -->
-      <div 
-        v-if="isDropdownOpen" 
-        class="lang-backdrop"
-        @click="closeDropdown"
-      ></div>
-      
-      <!-- Dropdown menu -->
+      <!-- Backdrop - catches clicks outside dropdown -->
+      <Transition name="lang-fade">
+        <div
+          v-if="isDropdownOpen"
+          class="lang-switcher-backdrop"
+          @click="closeDropdown"
+        ></div>
+      </Transition>
+
+      <!-- Dropdown menu - highest z-index -->
       <Transition name="lang-dropdown">
-        <div 
-          v-if="isDropdownOpen" 
-          class="lang-dropdown-menu" 
+        <div
+          v-if="isDropdownOpen"
+          class="lang-switcher-dropdown"
           :style="dropdownStyle"
           @click.stop
         >
-          <div class="dropdown-header">
-            <span class="header-icon">
+          <div class="lang-dropdown-header">
+            <span class="lang-header-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="10"/>
                 <path d="M2 12h20"/>
@@ -47,17 +50,18 @@
             </span>
             <span>{{ $t('common.selectLanguage') }}</span>
           </div>
-          <div class="dropdown-options">
+          <div class="lang-dropdown-options">
             <button
               v-for="lang in languages"
               :key="lang.code"
-              class="lang-option"
+              class="lang-dropdown-option"
               :class="{ 'active': currentLanguage === lang.code }"
               @click="selectLanguage(lang.code)"
+              type="button"
             >
-              <span class="option-flag">{{ lang.flag }}</span>
-              <span class="option-label">{{ lang.label }}</span>
-              <span v-if="currentLanguage === lang.code" class="option-check">
+              <span class="lang-option-flag">{{ lang.flag }}</span>
+              <span class="lang-option-label">{{ lang.label }}</span>
+              <span v-if="currentLanguage === lang.code" class="lang-option-check">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                   <polyline points="20 6 9 17 4 12"/>
                 </svg>
@@ -95,34 +99,48 @@ export default {
     const isDropdownOpen = ref(false);
     const switcherRef = ref(null);
     
+    // Use maximum safe z-index to ensure dropdown is always on top
     const dropdownStyle = reactive({
       position: 'fixed',
       top: '0px',
       left: '0px',
-      zIndex: 999999
+      zIndex: 2147483647 // Maximum 32-bit signed integer
     });
 
     const updateDropdownPosition = () => {
       if (!switcherRef.value || !isDropdownOpen.value) return;
-      
+
       const rect = switcherRef.value.getBoundingClientRect();
-      const dropdownWidth = 220;
+      const dropdownWidth = window.innerWidth < 480 ? 180 : 220;
+      const dropdownHeight = 200; // Approximate height
       const viewportWidth = window.innerWidth;
-      
+      const viewportHeight = window.innerHeight;
+      const padding = 16;
+
       // Position below the button
       let top = rect.bottom + 8;
       let left = rect.left;
-      
+
       // If dropdown would go off right edge, align to right edge of button
-      if (left + dropdownWidth > viewportWidth - 16) {
+      if (left + dropdownWidth > viewportWidth - padding) {
         left = rect.right - dropdownWidth;
       }
-      
-      // If still off screen, align to right edge of viewport
-      if (left < 16) {
-        left = 16;
+
+      // If still off left edge, align to left with padding
+      if (left < padding) {
+        left = padding;
       }
-      
+
+      // If dropdown would go below viewport, position above button
+      if (top + dropdownHeight > viewportHeight - padding) {
+        top = rect.top - dropdownHeight - 8;
+      }
+
+      // Ensure top is never negative
+      if (top < padding) {
+        top = padding;
+      }
+
       dropdownStyle.top = `${top}px`;
       dropdownStyle.left = `${left}px`;
     };
@@ -194,6 +212,7 @@ export default {
 <style scoped>
 .language-switcher {
   position: relative;
+  z-index: 100;
 }
 
 .lang-button {
@@ -269,37 +288,45 @@ export default {
 
 <style>
 /* ============================================
-   GLOBAL STYLES - Teleported elements
-   These must NOT be scoped!
+   LANGUAGE SWITCHER - GLOBAL STYLES
+   Teleported elements must NOT be scoped!
+   Using unique prefixed class names to avoid conflicts
    ============================================ */
 
-/* Backdrop - covers entire screen */
-.lang-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 999998;
-  /* Transparent - just for catching clicks */
+/* Backdrop - catches clicks and covers entire screen */
+.lang-switcher-backdrop {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 2147483646 !important; /* Just below dropdown */
+  background: transparent !important;
+  cursor: default;
 }
 
-/* Dropdown menu */
-.lang-dropdown-menu {
-  position: fixed;
+/* Dropdown container */
+.lang-switcher-dropdown {
+  position: fixed !important;
   min-width: 200px;
   max-width: 260px;
-  background: white;
+  background: white !important;
   border: 1px solid #e5e7eb;
   border-radius: 14px;
-  box-shadow: 
-    0 20px 50px rgba(0, 0, 0, 0.15),
-    0 10px 20px rgba(139, 92, 246, 0.1);
+  box-shadow:
+    0 25px 50px -12px rgba(0, 0, 0, 0.25),
+    0 12px 24px rgba(139, 92, 246, 0.15),
+    0 0 0 1px rgba(139, 92, 246, 0.05);
   overflow: hidden;
-  z-index: 999999 !important;
+  z-index: 2147483647 !important; /* Maximum z-index */
+  isolation: isolate;
+  pointer-events: auto !important;
 }
 
-.lang-dropdown-menu .dropdown-header {
+/* Dropdown header */
+.lang-switcher-dropdown .lang-dropdown-header {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -311,17 +338,19 @@ export default {
   color: #64748b;
 }
 
-.lang-dropdown-menu .header-icon svg {
+.lang-switcher-dropdown .lang-header-icon svg {
   width: 16px;
   height: 16px;
   color: #8b5cf6;
 }
 
-.lang-dropdown-menu .dropdown-options {
+/* Dropdown options container */
+.lang-switcher-dropdown .lang-dropdown-options {
   padding: 8px;
 }
 
-.lang-dropdown-menu .lang-option {
+/* Individual option buttons */
+.lang-switcher-dropdown .lang-dropdown-option {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -338,32 +367,32 @@ export default {
   text-align: left;
 }
 
-.lang-dropdown-menu .lang-option:hover {
+.lang-switcher-dropdown .lang-dropdown-option:hover {
   background: #f3e8ff;
   color: #7c3aed;
 }
 
-.lang-dropdown-menu .lang-option.active {
+.lang-switcher-dropdown .lang-dropdown-option.active {
   background: #f3e8ff;
   color: #7c3aed;
 }
 
-.lang-dropdown-menu .option-flag {
+.lang-switcher-dropdown .lang-option-flag {
   font-size: 0.875rem;
   font-weight: 600;
   color: #6b7280;
   min-width: 28px;
 }
 
-.lang-dropdown-menu .lang-option.active .option-flag {
+.lang-switcher-dropdown .lang-dropdown-option.active .lang-option-flag {
   color: #7c3aed;
 }
 
-.lang-dropdown-menu .option-label {
+.lang-switcher-dropdown .lang-option-label {
   flex: 1;
 }
 
-.lang-dropdown-menu .option-check svg {
+.lang-switcher-dropdown .lang-option-check svg {
   width: 16px;
   height: 16px;
   color: #7c3aed;
@@ -372,7 +401,7 @@ export default {
 /* Dropdown animation */
 .lang-dropdown-enter-active,
 .lang-dropdown-leave-active {
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .lang-dropdown-enter-from,
@@ -387,19 +416,45 @@ export default {
   transform: translateY(0) scale(1);
 }
 
+/* Backdrop fade animation */
+.lang-fade-enter-active,
+.lang-fade-leave-active {
+  transition: opacity 0.15s ease;
+}
+
+.lang-fade-enter-from,
+.lang-fade-leave-to {
+  opacity: 0;
+}
+
 /* Mobile adjustments */
 @media (max-width: 640px) {
-  .lang-dropdown-menu {
+  .lang-switcher-dropdown {
     min-width: 180px;
+    max-width: calc(100vw - 32px);
   }
-  
-  .lang-dropdown-menu .lang-option {
+
+  .lang-switcher-dropdown .lang-dropdown-option {
     padding: 10px 12px;
     font-size: 0.875rem;
   }
-  
-  .lang-dropdown-menu .dropdown-header {
+
+  .lang-switcher-dropdown .lang-dropdown-header {
     padding: 12px 14px;
+    font-size: 0.75rem;
+  }
+}
+
+/* Extra small mobile */
+@media (max-width: 380px) {
+  .lang-switcher-dropdown {
+    min-width: 160px;
+  }
+
+  .lang-switcher-dropdown .lang-dropdown-option {
+    padding: 8px 10px;
+    font-size: 0.8125rem;
+    gap: 8px;
   }
 }
 </style>
