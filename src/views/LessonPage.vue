@@ -755,16 +755,16 @@ const progressPercentage = computed(() => {
 
 const estimatedTime = computed(() => {
   // Use lesson's timing if available, otherwise calculate from steps
+  // Returns a NUMBER (LessonIntro adds formatting)
   if (lesson.value?.estimatedDuration) {
-    return `~${lesson.value.estimatedDuration} min`
+    return Number(lesson.value.estimatedDuration) || 0
   }
   if (lesson.value?.timing?.estimatedDuration) {
-    return `~${lesson.value.timing.estimatedDuration} min`
+    return Number(lesson.value.timing.estimatedDuration) || 0
   }
   const totalSteps = steps.value.length
-  if (totalSteps === 0) return '~0 min'
-  const minutes = Math.ceil(totalSteps * 1.5)
-  return `~${minutes} min`
+  if (totalSteps === 0) return 0
+  return Math.ceil(totalSteps * 1.5)
 })
 
 const isInteractiveStep = computed(() => {
