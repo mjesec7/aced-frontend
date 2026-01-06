@@ -17,3 +17,7 @@ export * from './multicard';
 export * from './content-processors';
 export * from './subscription';
 export * from './utils';
+
+// Voice and Chat API modules for speech analysis
+export * from './voice';
+export * from './chat';

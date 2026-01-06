@@ -423,7 +423,7 @@
       <span v-else>🤖</span>
     </button>
 
-    <!-- Floating AI Chat Panel -->
+    <!-- Floating AI Chat Panel with Speech Analysis -->
     <Teleport to="body">
       <Transition
         enter-active-class="transition-all duration-300 ease-out"
@@ -433,59 +433,21 @@
         leave-from-class="opacity-100 translate-y-0 scale-100"
         leave-to-class="opacity-0 translate-y-4 scale-95"
       >
-        <div v-if="showFloatingAI" class="fixed bottom-24 right-6 z-[60] w-80 max-h-96 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col">
-          <div class="px-4 py-3 bg-gradient-to-r from-indigo-500 to-blue-500 text-white">
-            <h4 class="font-semibold">AI Assistant</h4>
-            <p class="text-xs text-white/80">Ask me anything about this lesson</p>
-          </div>
-          <div class="flex-1 overflow-y-auto p-4 space-y-3 min-h-[200px]">
-            <div v-if="aiChatMessages.length === 0" class="text-center text-slate-400 text-sm py-8">
-              <p>👋 How can I help you?</p>
-            </div>
-            <div
-              v-for="(msg, idx) in aiChatMessages"
-              :key="idx"
-              class="flex"
-              :class="msg.role === 'user' ? 'justify-end' : 'justify-start'"
-            >
-              <div
-                class="max-w-[80%] px-3 py-2 rounded-xl text-sm"
-                :class="msg.role === 'user' ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-800'"
-              >
-                {{ msg.content }}
-              </div>
-            </div>
-            <div v-if="isAITyping" class="flex justify-start">
-              <div class="bg-slate-100 px-3 py-2 rounded-xl">
-                <div class="flex gap-1">
-                  <span class="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></span>
-                  <span class="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style="animation-delay: 0.1s"></span>
-                  <span class="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="p-3 border-t border-slate-100">
-            <div class="flex gap-2">
-              <input
-                v-model="aiChatInput"
-                @keyup.enter="sendAIMessage"
-                type="text"
-                placeholder="Type a message..."
-                class="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              >
-              <button
-                @click="sendAIMessage"
-                :disabled="!aiChatInput.trim() || isAITyping"
-                class="px-4 py-2 bg-indigo-500 text-white rounded-xl hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
+        <FloatingAIAssistant
+          v-if="showFloatingAI"
+          :current-step="currentStep"
+          :ai-chat-history="formattedAIChatHistory"
+          :ai-is-loading="isAITyping"
+          :auto-analyze="true"
+          :voice-enabled="voiceEnabled"
+          @close="toggleFloatingAI"
+          @send-message="handleAISendMessage"
+          @ask-ai="handleAIQuickQuestion"
+          @clear-chat="clearAIChat"
+          @analysis-complete="handleAnalysisComplete"
+          @speaking-start="handleSpeakingStart"
+          @speaking-end="handleSpeakingEnd"
+        />
       </Transition>
     </Teleport>
   </div>
@@ -502,6 +464,7 @@ import LessonIntro from '@/components/lesson/LessonIntro.vue'
 import ContentPanel from '@/components/lesson/ContentPanel.vue'
 import InteractivePanel from '@/components/lesson/InteractivePanel.vue'
 import CompletionScreen from '@/components/lesson/CompletionScreen.vue'
+import FloatingAIAssistant from '@/components/lesson/FloatingAIAssistant.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -590,6 +553,8 @@ const showFloatingAI = ref(false)
 const aiChatMessages = ref([])
 const aiChatInput = ref('')
 const isAITyping = ref(false)
+const voiceEnabled = ref(true)
+const isAISpeaking = ref(false)
 
 // Migration
 const migrationLoading = ref(false)
@@ -622,6 +587,16 @@ const isGameStep = computed(() => {
 })
 
 const isLastStep = computed(() => currentIndex.value === steps.value.length - 1)
+
+// Format AI chat messages for FloatingAIAssistant component
+const formattedAIChatHistory = computed(() => {
+  return aiChatMessages.value.map((msg, index) => ({
+    id: `msg-${index}-${Date.now()}`,
+    type: msg.role === 'user' ? 'user' : 'ai',
+    content: msg.content,
+    timestamp: msg.timestamp || new Date().toISOString()
+  }))
+})
 
 const leftPanelStyle = computed(() => ({
   width: resizeDisabled.value ? '100%' : `${leftPanelWidth.value}%`
@@ -1089,26 +1064,67 @@ function toggleFloatingAI() {
 async function sendAIMessage() {
   const message = aiChatInput.value.trim()
   if (!message) return
-  
-  aiChatMessages.value.push({ role: 'user', content: message })
+
+  aiChatMessages.value.push({ role: 'user', content: message, timestamp: new Date().toISOString() })
   aiChatInput.value = ''
   isAITyping.value = true
-  
+
   try {
     // API call for AI response
     await new Promise(resolve => setTimeout(resolve, 1500))
     aiChatMessages.value.push({
       role: 'assistant',
-      content: 'I understand your question. Let me help you with that...'
+      content: 'I understand your question. Let me help you with that...',
+      timestamp: new Date().toISOString()
     })
   } catch (err) {
     aiChatMessages.value.push({
       role: 'assistant',
-      content: 'Sorry, I encountered an error. Please try again.'
+      content: 'Sorry, I encountered an error. Please try again.',
+      timestamp: new Date().toISOString()
     })
   } finally {
     isAITyping.value = false
   }
+}
+
+// Handler for AI send message from FloatingAIAssistant
+function handleAISendMessage(message) {
+  if (!message) return
+
+  aiChatMessages.value.push({
+    role: 'user',
+    content: message,
+    timestamp: new Date().toISOString()
+  })
+
+  // The FloatingAIAssistant handles the AI response internally
+  // but we can also trigger our own logic here if needed
+}
+
+// Handler for quick AI questions
+function handleAIQuickQuestion(question) {
+  handleAISendMessage(question)
+}
+
+// Clear AI chat history
+function clearAIChat() {
+  aiChatMessages.value = []
+}
+
+// Handler for analysis complete
+function handleAnalysisComplete({ explanation, highlights }) {
+  console.log('[LessonPage] Analysis complete:', { explanation, highlightCount: highlights?.length })
+}
+
+// Handler for speaking start
+function handleSpeakingStart() {
+  isAISpeaking.value = true
+}
+
+// Handler for speaking end
+function handleSpeakingEnd() {
+  isAISpeaking.value = false
 }
 
 // Migration
