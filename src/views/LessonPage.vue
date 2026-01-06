@@ -469,9 +469,191 @@ import FloatingAIAssistant from '@/components/lesson/FloatingAIAssistant.vue'
 // Import API
 import { getLessonById } from '@/api/lessons'
 
+// Import language composable for multi-language support
+import { useLanguage } from '@/composables/useLanguage'
+
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
+const { language } = useLanguage()
+
+// ==================== LOCALIZATION HELPERS ====================
+
+/**
+ * Extract localized text from a field that may be:
+ * - A simple string
+ * - An object with language keys { en: "...", ru: "...", uz: "..." }
+ * - Part of a translations object
+ */
+function getLocalizedText(data, field, fallback = '') {
+  if (!data) return fallback
+
+  const lang = language.value || localStorage.getItem('lang') || 'ru'
+  const value = data[field]
+
+  // If the field is a simple string, return it
+  if (typeof value === 'string' && value.trim()) {
+    return value.trim()
+  }
+
+  // If the field is an object with language keys
+  if (typeof value === 'object' && value !== null) {
+    const localized = value[lang] || value.en || value.ru || value.uz
+    if (localized && typeof localized === 'string' && localized.trim()) {
+      return localized.trim()
+    }
+    // Try to get any available value
+    const values = Object.values(value)
+    for (const v of values) {
+      if (v && typeof v === 'string' && v.trim()) {
+        return v.trim()
+      }
+    }
+  }
+
+  // Check translations object
+  if (data.translations && typeof data.translations === 'object') {
+    const langTranslations = data.translations[lang] || data.translations.en || data.translations.ru || data.translations.uz
+    if (langTranslations && langTranslations[field]) {
+      const translatedValue = langTranslations[field]
+      if (typeof translatedValue === 'string' && translatedValue.trim()) {
+        return translatedValue.trim()
+      }
+    }
+  }
+
+  return fallback
+}
+
+/**
+ * Extract lesson title from multiple possible fields with localization
+ */
+function extractLessonTitle(lesson) {
+  if (!lesson) return 'Untitled Lesson'
+
+  const lang = language.value || localStorage.getItem('lang') || 'ru'
+
+  // Priority order for title fields
+  const titleFields = ['lessonName', 'title', 'name']
+
+  for (const field of titleFields) {
+    const value = lesson[field]
+
+    // Simple string
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim()
+    }
+
+    // Object with language keys
+    if (typeof value === 'object' && value !== null) {
+      const localized = value[lang] || value.en || value.ru || value.uz
+      if (localized && typeof localized === 'string' && localized.trim()) {
+        return localized.trim()
+      }
+    }
+  }
+
+  // Check translations object
+  if (lesson.translations && typeof lesson.translations === 'object') {
+    const langData = lesson.translations[lang] || lesson.translations.en || lesson.translations.ru || lesson.translations.uz
+    if (langData) {
+      for (const field of titleFields) {
+        if (langData[field] && typeof langData[field] === 'string' && langData[field].trim()) {
+          return langData[field].trim()
+        }
+      }
+    }
+  }
+
+  return 'Untitled Lesson'
+}
+
+/**
+ * Extract lesson description/subtitle with localization
+ */
+function extractLessonDescription(lesson) {
+  if (!lesson) return ''
+
+  const lang = language.value || localStorage.getItem('lang') || 'ru'
+
+  const descFields = ['subtitle', 'description', 'summary', 'desc']
+
+  for (const field of descFields) {
+    const value = lesson[field]
+
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim()
+    }
+
+    if (typeof value === 'object' && value !== null) {
+      const localized = value[lang] || value.en || value.ru || value.uz
+      if (localized && typeof localized === 'string' && localized.trim()) {
+        return localized.trim()
+      }
+    }
+  }
+
+  // Check translations object
+  if (lesson.translations && typeof lesson.translations === 'object') {
+    const langData = lesson.translations[lang] || lesson.translations.en || lesson.translations.ru || lesson.translations.uz
+    if (langData) {
+      for (const field of descFields) {
+        if (langData[field] && typeof langData[field] === 'string' && langData[field].trim()) {
+          return langData[field].trim()
+        }
+      }
+    }
+  }
+
+  return ''
+}
+
+/**
+ * Process step content with localization
+ */
+function processStepWithLocalization(step, index) {
+  if (!step) return null
+
+  const lang = language.value || localStorage.getItem('lang') || 'ru'
+
+  // Extract localized content
+  const getStepField = (fieldName) => {
+    const value = step[fieldName]
+
+    if (typeof value === 'string') return value
+
+    if (typeof value === 'object' && value !== null) {
+      return value[lang] || value.en || value.ru || value.uz || ''
+    }
+
+    // Check step.data for the field
+    if (step.data && step.data[fieldName]) {
+      const dataValue = step.data[fieldName]
+      if (typeof dataValue === 'string') return dataValue
+      if (typeof dataValue === 'object' && dataValue !== null) {
+        return dataValue[lang] || dataValue.en || dataValue.ru || dataValue.uz || ''
+      }
+    }
+
+    return ''
+  }
+
+  return {
+    ...step,
+    id: step.id || step._id || `step_${index}`,
+    type: step.type || 'explanation',
+    title: getStepField('title'),
+    content: getStepField('content'),
+    description: getStepField('description'),
+    explanation: getStepField('explanation'),
+    // Preserve other step properties
+    data: step.data,
+    images: step.images || [],
+    exercises: step.exercises,
+    quizzes: step.quizzes,
+    options: step.options
+  }
+}
 
 // ==================== STATE ====================
 
@@ -630,21 +812,30 @@ async function loadLesson() {
       throw new Error('No lesson ID provided')
     }
 
+    console.log('[LessonPage] Loading lesson:', lessonId, 'lang:', language.value)
+
     const result = await getLessonById(lessonId)
 
     if (result.success && result.data) {
       const lessonData = result.data
 
-      // Map backend fields to frontend display
+      console.log('[LessonPage] Raw lesson data:', JSON.stringify(lessonData, null, 2).substring(0, 500))
+
+      // Extract localized title and description using helper functions
+      const localizedTitle = extractLessonTitle(lessonData)
+      const localizedDescription = extractLessonDescription(lessonData)
+
+      // Map backend fields to frontend display with localization
       lesson.value = {
         ...lessonData,
-        title: lessonData.lessonName || lessonData.title || 'Untitled Lesson',
-        subtitle: lessonData.subtitle || lessonData.description || '',
+        title: localizedTitle,
+        subtitle: localizedDescription,
         estimatedDuration: lessonData.timing?.estimatedDuration || 0
       }
 
-      // Extract steps from lesson data
-      steps.value = lessonData.steps || []
+      // Extract and process steps with localization
+      const rawSteps = lessonData.steps || []
+      steps.value = rawSteps.map((step, index) => processStepWithLocalization(step, index)).filter(Boolean)
 
       console.log('[LessonPage] Loaded lesson:', lesson.value.title, 'with', steps.value.length, 'steps')
     } else {
