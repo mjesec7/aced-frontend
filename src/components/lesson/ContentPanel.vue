@@ -28,9 +28,9 @@
         <!-- EXERCISE STEPS -->
         <div v-else-if="isExerciseStep" class="interactive-instruction-card">
           <div class="instruction-icon">✏️</div>
-          <h3 class="instruction-heading">Complete the exercise on the right</h3>
+          <h3 class="instruction-heading">{{ getLocalizedText(currentStep?.title) || 'Complete the exercise on the right' }}</h3>
           <p class="instruction-text">
-            Use the interactive panel to answer the question and continue with the lesson.
+            {{ getLocalizedText(currentStep?.instructions) || 'Use the interactive panel to answer the question and continue with the lesson.' }}
           </p>
         </div>
 
@@ -39,12 +39,15 @@
           <div class="game-intro-card">
             <div class="intro-header">
               <span class="game-icon">🎮</span>
-              <h3>Game Time: {{ currentStep.title || 'Interactive Challenge' }}</h3>
+              <h3>{{ getLocalizedText(currentStep?.title) || 'Interactive Challenge' }}</h3>
             </div>
 
             <div class="game-instructions-box">
               <h4>How to Play:</h4>
-              <ul class="instruction-list">
+              <p v-if="currentStep?.instructions" class="game-instructions-text">
+                {{ getLocalizedText(currentStep.instructions) }}
+              </p>
+              <ul v-else class="instruction-list">
                 <li>Follow the instructions in the game panel</li>
                 <li>Complete all objectives to proceed</li>
                 <li>Have fun learning!</li>
@@ -56,23 +59,58 @@
         <!-- SPECIAL INTERACTIVE STEPS -->
         <div v-else-if="isSpecialInteractive" class="interactive-instruction-card">
           <div class="instruction-icon">🎮</div>
-          <h3 class="instruction-heading">Interactive Exercise</h3>
-          <p class="instruction-text">Complete the interactive exercise on the right to continue.</p>
+          <h3 class="instruction-heading">{{ getLocalizedText(currentStep?.title) || 'Interactive Exercise' }}</h3>
+          <p class="instruction-text">{{ getLocalizedText(currentStep?.instructions) || 'Complete the interactive exercise on the right to continue.' }}</p>
+        </div>
+
+        <!-- QUIZ STEPS -->
+        <div v-else-if="currentStep?.type === 'quiz'" class="interactive-instruction-card">
+          <div class="instruction-icon">🧩</div>
+          <h3 class="instruction-heading">{{ getLocalizedText(currentStep?.title) || 'Quiz Time!' }}</h3>
+          <p class="instruction-text">{{ getLocalizedText(currentStep?.instructions) || 'Answer the questions on the right to test your knowledge.' }}</p>
+        </div>
+
+        <!-- DATA ANALYSIS STEPS -->
+        <div v-else-if="currentStep?.type === 'data_analysis'" class="interactive-instruction-card">
+          <div class="instruction-icon">📊</div>
+          <h3 class="instruction-heading">{{ getLocalizedText(currentStep?.title) || 'Data Analysis' }}</h3>
+          <p class="instruction-text">{{ getLocalizedText(currentStep?.instructions) || 'Analyze the data and answer the question.' }}</p>
+        </div>
+
+        <!-- MATCHING STEPS -->
+        <div v-else-if="currentStep?.type === 'chem_matching'" class="interactive-instruction-card">
+          <div class="instruction-icon">🔗</div>
+          <h3 class="instruction-heading">{{ getLocalizedText(currentStep?.title) || 'Matching Exercise' }}</h3>
+          <p class="instruction-text">{{ getLocalizedText(currentStep?.instructions) || 'Match the items on the left with their correct pairs on the right.' }}</p>
+        </div>
+
+        <!-- SENTENCE ORDER STEPS -->
+        <div v-else-if="currentStep?.type === 'english_sentence_order'" class="interactive-instruction-card">
+          <div class="instruction-icon">📝</div>
+          <h3 class="instruction-heading">{{ getLocalizedText(currentStep?.title) || 'Put in Order' }}</h3>
+          <p class="instruction-text">{{ getLocalizedText(currentStep?.instructions) || 'Arrange the items in the correct order.' }}</p>
+        </div>
+
+        <!-- WORD CONSTELLATION STEPS -->
+        <div v-else-if="currentStep?.type === 'language_word_constellation'" class="interactive-instruction-card">
+          <div class="instruction-icon">🌟</div>
+          <h3 class="instruction-heading">{{ getLocalizedText(currentStep?.title) || 'Word Constellation' }}</h3>
+          <p class="instruction-text">{{ getLocalizedText(currentStep?.instructions) || 'Connect the related words to build a semantic map.' }}</p>
         </div>
 
         <!-- OTHER INTERACTIVE STEPS -->
         <div v-else-if="isInteractiveStep && !isExerciseStep && !isGameStep" class="interactive-instruction-card">
           <div class="instruction-icon">{{ currentStep?.type === 'practice' ? '🧪' : '🧩' }}</div>
-          <h3 class="instruction-heading">Complete the {{ getStepTypeText(currentStep?.type).toLowerCase() }} on the right</h3>
-          <p class="instruction-text">Use the interactive panel to complete this activity.</p>
+          <h3 class="instruction-heading">{{ getLocalizedText(currentStep?.title) || `Complete the ${getStepTypeText(currentStep?.type).toLowerCase()} on the right` }}</h3>
+          <p class="instruction-text">{{ getLocalizedText(currentStep?.instructions) || 'Use the interactive panel to complete this activity.' }}</p>
         </div>
 
         <!-- VOCABULARY -->
         <div v-else-if="currentStep?.type === 'vocabulary'" class="vocabulary-content">
-          <div v-if="!currentStep?.data?.modalCompleted" class="vocabulary-trigger">
+          <div v-if="!vocabularyModalCompleted" class="vocabulary-trigger">
             <div class="trigger-icon">📚</div>
-            <h3 class="trigger-heading">Vocabulary Learning</h3>
-            <p class="trigger-subheading">{{ Array.isArray(currentStep?.data) ? currentStep.data.length : 1 }} new words await you!</p>
+            <h3 class="trigger-heading">{{ getLocalizedText(currentStep?.title) || 'Vocabulary Learning' }}</h3>
+            <p class="trigger-subheading">{{ getVocabularyCount }} new words await you!</p>
             <button @click="$emit('init-vocabulary')" class="trigger-button">
               🚀 Start Learning
             </button>
@@ -88,17 +126,17 @@
 
             <div class="vocabulary-list">
               <div
-                v-for="(vocab, vocabIndex) in (currentStep?.data?.allWords || currentStep?.data || [])"
+                v-for="(vocab, vocabIndex) in vocabularyTerms"
                 :key="vocab?.id || `vocab-list-${vocabIndex}`"
                 class="vocabulary-item"
                 :class="{ 'is-learned': vocab?.learned }"
               >
                 <div class="vocab-item-header">
                   <div class="vocab-term">
-                    {{ vocab?.term || 'Term' }}
+                    {{ getLocalizedText(vocab?.term) }}
                     <button
                       v-if="vocab?.term"
-                      @click="$emit('pronounce', vocab.term)"
+                      @click="$emit('pronounce', getLocalizedText(vocab.term))"
                       class="pronunciation-button"
                       title="Pronunciation"
                     >
@@ -107,9 +145,9 @@
                   </div>
                   <div v-if="vocab?.learned" class="learned-badge">✅</div>
                 </div>
-                <div class="vocab-definition">{{ vocab?.definition || 'Definition' }}</div>
+                <div class="vocab-definition">{{ getLocalizedText(vocab?.definition) }}</div>
                 <div v-if="vocab?.example" class="vocab-example">
-                  <strong>Example:</strong> {{ vocab.example }}
+                  <strong>Example:</strong> {{ getLocalizedText(vocab.example) }}
                 </div>
               </div>
             </div>
@@ -120,7 +158,7 @@
         <div v-else-if="['video', 'audio'].includes(currentStep?.type)" class="media-placeholder">
           <div class="media-icon">{{ currentStep?.type === 'video' ? '🎬' : '🎵' }}</div>
           <h4 class="media-title">{{ currentStep?.type === 'video' ? 'Video Lesson' : 'Audio Lesson' }}</h4>
-          <p class="media-description">{{ currentStep?.data?.description || 'Multimedia content' }}</p>
+          <p class="media-description">{{ getLocalizedText(currentStep?.data?.description) || getLocalizedText(currentStep?.description) || 'Multimedia content' }}</p>
         </div>
 
         <!-- DEFAULT CONTENT -->
@@ -168,16 +206,25 @@ export default {
   },
 
   computed: {
+    /**
+     * Get current language from localStorage or default to 'en'
+     */
+    currentLang() {
+      return localStorage.getItem('lang') || 'en';
+    },
+
     isExerciseStep() {
       return (this.currentStep?.type === 'exercise' || this.currentStep?.type === 'practice') &&
              !this.currentStep?.gameType;
     },
+
     hasEmptyContent() {
       const content = this.getStepContent(this.currentStep);
       if (!content || typeof content !== 'string') return true;
       const trimmed = content.trim();
       return !trimmed || trimmed.includes('is not available') || trimmed.includes('not found') || trimmed.length < 3;
     },
+
     specialInteractiveTypes() {
       return [
         'histogram', 'map', 'block-coding',
@@ -190,62 +237,278 @@ export default {
         'language_false_friends'
       ];
     },
+
     isSpecialInteractive() {
       return this.specialInteractiveTypes.includes(this.currentStep?.type);
     },
+
     totalExercisesInStep() {
       if (!this.currentStep) return 0;
       if (Array.isArray(this.currentStep.data)) return this.currentStep.data.length;
       if (this.currentStep.data?.exercises) return this.currentStep.data.exercises.length;
       if (this.currentStep.exercises) return this.currentStep.exercises.length;
       return 1;
+    },
+
+    /**
+     * Check if vocabulary modal has been completed
+     */
+    vocabularyModalCompleted() {
+      return this.currentStep?.data?.modalCompleted || false;
+    },
+
+    /**
+     * Get vocabulary terms from various possible locations
+     */
+    vocabularyTerms() {
+      if (!this.currentStep) return [];
+      
+      // Check content.terms first (Water Cycle format)
+      if (this.currentStep.content?.terms && Array.isArray(this.currentStep.content.terms)) {
+        return this.currentStep.content.terms;
+      }
+      
+      // Check data.terms
+      if (this.currentStep.data?.terms && Array.isArray(this.currentStep.data.terms)) {
+        return this.currentStep.data.terms;
+      }
+      
+      // Check data.allWords
+      if (this.currentStep.data?.allWords && Array.isArray(this.currentStep.data.allWords)) {
+        return this.currentStep.data.allWords;
+      }
+      
+      // Check data directly if it's an array
+      if (Array.isArray(this.currentStep.data)) {
+        return this.currentStep.data;
+      }
+      
+      return [];
+    },
+
+    /**
+     * Get vocabulary count for display
+     */
+    getVocabularyCount() {
+      return this.vocabularyTerms.length || 1;
     }
   },
 
   methods: {
+    /**
+     * Extract localized text from a value that can be:
+     * - A simple string
+     * - An object with language keys { en, ru, uz }
+     * - null/undefined
+     */
+    getLocalizedText(value) {
+      if (!value) return '';
+      
+      // If it's already a string, return it
+      if (typeof value === 'string') {
+        return value.trim();
+      }
+      
+      // If it's an object with language keys
+      if (typeof value === 'object' && value !== null) {
+        const lang = this.currentLang;
+        
+        // Try current language first
+        if (value[lang] && typeof value[lang] === 'string') {
+          return value[lang].trim();
+        }
+        
+        // Fallback order: en -> ru -> uz -> first available string
+        const fallbacks = ['en', 'ru', 'uz'];
+        for (const fb of fallbacks) {
+          if (value[fb] && typeof value[fb] === 'string') {
+            return value[fb].trim();
+          }
+        }
+        
+        // Try to find any string value in the object
+        const values = Object.values(value);
+        for (const v of values) {
+          if (typeof v === 'string' && v.trim()) {
+            return v.trim();
+          }
+        }
+      }
+      
+      // Last resort: convert to string
+      return String(value || '');
+    },
+
     getStepIcon(stepType) {
       const icons = {
-        explanation: '📚', example: '💡', reading: '📖', exercise: '✏️',
-        practice: '🧪', quiz: '🧩', vocabulary: '📝', video: '🎬', audio: '🎵', game: '🎮'
+        explanation: '📚',
+        example: '💡',
+        reading: '📖',
+        exercise: '✏️',
+        practice: '🧪',
+        quiz: '🧩',
+        vocabulary: '📝',
+        video: '🎬',
+        audio: '🎵',
+        game: '🎮',
+        data_analysis: '📊',
+        chem_matching: '🔗',
+        chem_mixing: '⚗️',
+        english_sentence_order: '📝',
+        english_sentence_fix: '✍️',
+        language_word_constellation: '🌟',
+        language_noun_bag: '🎒',
+        fraction_visual: '🔢',
+        geometry_poly: '📐',
+        histogram: '📈',
+        map: '🗺️',
+        'block-coding': '🧱'
       };
       return icons[stepType] || '📄';
     },
+
     getStepTypeText(stepType) {
       const texts = {
-        explanation: 'Explanation', example: 'Example', reading: 'Reading',
-        exercise: 'Exercise', practice: 'Practice', quiz: 'Quiz',
-        vocabulary: 'Vocabulary', video: 'Video', audio: 'Audio', game: 'Game'
+        explanation: 'Explanation',
+        example: 'Example',
+        reading: 'Reading',
+        exercise: 'Exercise',
+        practice: 'Practice',
+        quiz: 'Quiz',
+        vocabulary: 'Vocabulary',
+        video: 'Video',
+        audio: 'Audio',
+        game: 'Game',
+        data_analysis: 'Data Analysis',
+        chem_matching: 'Matching',
+        chem_mixing: 'Mixing',
+        english_sentence_order: 'Sentence Order',
+        english_sentence_fix: 'Sentence Fix',
+        language_word_constellation: 'Word Constellation',
+        language_noun_bag: 'Word Sort',
+        fraction_visual: 'Fractions',
+        geometry_poly: 'Geometry',
+        histogram: 'Histogram',
+        map: 'Map',
+        'block-coding': 'Block Coding'
       };
       return texts[stepType] || 'Content';
     },
+
+    /**
+     * FIXED: Extract step content with full localization support
+     * Handles multiple content structures including:
+     * - step.content.text (Water Cycle multilingual format)
+     * - step.data.content
+     * - step.data.text
+     * - step.content (string)
+     * - step.data (string)
+     * - step.description
+     * - step.text
+     */
     getStepContent(step) {
       if (!step) return 'Step not found';
-      if (step.gameType) return step.instructions || step.description || 'Complete the game to proceed';
+      
+      // Debug logging (remove in production)
+      console.log('🔍 getStepContent:', {
+        type: step.type,
+        hasContent: !!step.content,
+        hasContentText: !!step.content?.text,
+        contentTextType: typeof step.content?.text,
+        hasData: !!step.data,
+        lang: this.currentLang
+      });
+
+      // Game steps - special handling
+      if (step.gameType) {
+        const instructions = this.getLocalizedText(step.instructions);
+        const description = this.getLocalizedText(step.description);
+        return instructions || description || 'Complete the game to proceed';
+      }
 
       let content = null;
-      if (step.data?.content) content = step.data.content;
-      else if (step.data?.text) content = step.data.text;
-      else if (step.content?.text) content = step.content.text;
-      else if (step.content?.content) content = step.content.content;
-      else if (typeof step.content === 'string') content = step.content;
-      else if (typeof step.data === 'string') content = step.data;
-      else if (step.description) content = step.description;
-      else if (step.text) content = step.text;
 
-      if (!content) return `Content for "${step.type}" step is not available`;
-      return content;
+      // Priority 1: step.content.text (Water Cycle multilingual format)
+      if (step.content?.text !== undefined) {
+        content = step.content.text;
+        console.log('📝 Found content.text:', typeof content);
+      }
+      // Priority 2: step.data.content
+      else if (step.data?.content !== undefined) {
+        content = step.data.content;
+      }
+      // Priority 3: step.data.text
+      else if (step.data?.text !== undefined) {
+        content = step.data.text;
+      }
+      // Priority 4: step.content.content
+      else if (step.content?.content !== undefined) {
+        content = step.content.content;
+      }
+      // Priority 5: step.content as string
+      else if (typeof step.content === 'string') {
+        content = step.content;
+      }
+      // Priority 6: step.data as string
+      else if (typeof step.data === 'string') {
+        content = step.data;
+      }
+      // Priority 7: step.description
+      else if (step.description !== undefined) {
+        content = step.description;
+      }
+      // Priority 8: step.text
+      else if (step.text !== undefined) {
+        content = step.text;
+      }
+
+      // Apply localization if content exists
+      if (content !== null && content !== undefined) {
+        const localizedContent = this.getLocalizedText(content);
+        console.log('✅ Localized content length:', localizedContent?.length);
+        
+        if (localizedContent && localizedContent.trim()) {
+          return localizedContent;
+        }
+      }
+
+      return `Content for "${step.type}" step is not available`;
     },
+
+    /**
+     * Format content with markdown-like syntax and HTML
+     */
     formatContent(content) {
       if (!content) return '';
-      let formatted = String(content);
+      
+      // Ensure content is a string (apply localization if needed)
+      let formatted = this.getLocalizedText(content);
+      
+      if (typeof formatted !== 'string') {
+        console.warn('formatContent received non-string:', typeof formatted);
+        formatted = String(formatted || '');
+      }
 
-      formatted = formatted.replace(/\[card title="(.*?)"\]([\s\S]*?)\[\/card\]/g, (match, title, innerContent) => {
-        return `<div class="content-card"><h3 class="card-heading">${title}</h3><div class="card-content">${innerContent}</div></div>`;
-      });
-      formatted = formatted.replace(/\[card\]([\s\S]*?)\[\/card\]/g, (match, innerContent) => {
-        return `<div class="content-card">${innerContent}</div>`;
-      });
+      if (!formatted.trim()) {
+        return '';
+      }
 
+      // Process card shortcodes
+      formatted = formatted.replace(
+        /\[card title="(.*?)"\]([\s\S]*?)\[\/card\]/g,
+        (match, title, innerContent) => {
+          return `<div class="content-card"><h3 class="card-heading">${title}</h3><div class="card-content">${innerContent}</div></div>`;
+        }
+      );
+      
+      formatted = formatted.replace(
+        /\[card\]([\s\S]*?)\[\/card\]/g,
+        (match, innerContent) => {
+          return `<div class="content-card">${innerContent}</div>`;
+        }
+      );
+
+      // Markdown-like formatting
       formatted = formatted
         .replace(/^## (.*$)/gim, '<h2 class="content-h2">$1</h2>')
         .replace(/^### (.*$)/gim, '<h3 class="content-h3">$1</h3>')
@@ -269,7 +532,7 @@ export default {
         const contentContainer = this.$el?.querySelector('.content-text');
         if (!contentContainer || !phrases || phrases.length === 0) return;
 
-        // 1. Remove old highlights (restore original text)
+        // Remove old highlights
         const oldMarks = contentContainer.querySelectorAll('mark.ai-highlight');
         oldMarks.forEach(mark => {
           const parent = mark.parentNode;
@@ -279,9 +542,9 @@ export default {
           }
         });
 
-        // 2. Apply new highlights using TreeWalker for safe text node traversal
+        // Apply new highlights
         phrases.forEach(phrase => {
-          if (!phrase || phrase.length < 3) return; // Skip too short phrases
+          if (!phrase || phrase.length < 3) return;
 
           const walker = document.createTreeWalker(
             contentContainer,
@@ -492,12 +755,12 @@ export default {
   -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
-  min-height: 0; /* Critical for flex scroll */
+  min-height: 0;
 }
 
 .content-padding {
   padding: 1.5rem 1.25rem;
-  flex: 1 0 auto; /* Allow growth but not shrink below content */
+  flex: 1 0 auto;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
@@ -540,9 +803,22 @@ export default {
   margin-top: 1.25rem;
 }
 
+.content-text :deep(strong) {
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+.content-text :deep(code) {
+  background-color: var(--secondary);
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+  font-family: ui-monospace, monospace;
+}
+
 /* AI Highlight Styles */
 .content-text :deep(.ai-highlight) {
-  background-color: #fef08a; /* Yellow-200 */
+  background-color: #fef08a;
   color: #1a1a1a;
   border-radius: 4px;
   padding: 1px 4px;
@@ -553,7 +829,7 @@ export default {
 }
 
 .content-text :deep(.ai-highlight:hover) {
-  background-color: #fde047; /* Yellow-300 */
+  background-color: #fde047;
   box-shadow: 0 0 16px rgba(253, 224, 71, 0.8);
 }
 
@@ -673,6 +949,13 @@ export default {
   margin: 0 0 6px 0;
 }
 
+.game-instructions-text {
+  color: #334155;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
 .instruction-list {
   margin: 0;
   padding-left: 18px;
@@ -729,6 +1012,112 @@ export default {
 .trigger-button:hover {
   background: rgba(255, 255, 255, 0.3);
   transform: translateY(-2px);
+}
+
+/* Vocabulary List View */
+.vocabulary-list-view {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.vocabulary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.vocabulary-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--foreground);
+}
+
+.review-button {
+  background: var(--lesson-purple);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.review-button:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.vocabulary-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.vocabulary-item {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  transition: all 0.2s ease;
+}
+
+.vocabulary-item:hover {
+  border-color: var(--lesson-purple);
+  box-shadow: 0 2px 8px rgba(139, 124, 246, 0.1);
+}
+
+.vocabulary-item.is-learned {
+  border-color: #10b981;
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+}
+
+.vocab-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.vocab-term {
+  font-weight: 600;
+  color: var(--foreground);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pronunciation-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.pronunciation-button:hover {
+  opacity: 1;
+}
+
+.learned-badge {
+  font-size: 1rem;
+}
+
+.vocab-definition {
+  color: var(--muted-foreground);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.vocab-example {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--border);
+  font-size: 0.85rem;
+  color: var(--muted-foreground);
+  font-style: italic;
 }
 
 /* Media Placeholder */
