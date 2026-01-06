@@ -145,6 +145,8 @@
 </template>
 
 <script>
+import { eventBus } from '@/utils/eventBus';
+
 export default {
   name: 'ContentPanel',
   props: {
@@ -158,6 +160,12 @@ export default {
     isLastStep: Boolean,
   },
   emits: ['init-vocabulary', 'pronounce', 'next', 'previous'],
+
+  data() {
+    return {
+      highlightPhrases: []
+    };
+  },
 
   computed: {
     isExerciseStep() {
@@ -248,7 +256,110 @@ export default {
         .replace(/\n/g, '<br>');
 
       return `<p>${formatted}</p>`;
+    },
+
+    /**
+     * Apply AI highlights to content text
+     * @param {string[]} phrases - Array of phrases to highlight
+     */
+    applyHighlights(phrases) {
+      this.highlightPhrases = phrases || [];
+
+      this.$nextTick(() => {
+        const contentContainer = this.$el?.querySelector('.content-text');
+        if (!contentContainer || !phrases || phrases.length === 0) return;
+
+        // 1. Remove old highlights (restore original text)
+        const oldMarks = contentContainer.querySelectorAll('mark.ai-highlight');
+        oldMarks.forEach(mark => {
+          const parent = mark.parentNode;
+          if (parent) {
+            parent.replaceChild(document.createTextNode(mark.textContent), mark);
+            parent.normalize();
+          }
+        });
+
+        // 2. Apply new highlights using TreeWalker for safe text node traversal
+        phrases.forEach(phrase => {
+          if (!phrase || phrase.length < 3) return; // Skip too short phrases
+
+          const walker = document.createTreeWalker(
+            contentContainer,
+            NodeFilter.SHOW_TEXT,
+            null,
+            false
+          );
+
+          const nodesToReplace = [];
+          let node;
+
+          while (node = walker.nextNode()) {
+            if (node.nodeValue && node.nodeValue.includes(phrase)) {
+              nodesToReplace.push(node);
+            }
+          }
+
+          nodesToReplace.forEach(textNode => {
+            const parts = textNode.nodeValue.split(phrase);
+            const fragment = document.createDocumentFragment();
+
+            parts.forEach((part, index) => {
+              fragment.appendChild(document.createTextNode(part));
+              if (index < parts.length - 1) {
+                const mark = document.createElement('mark');
+                mark.className = 'ai-highlight';
+                mark.textContent = phrase;
+                fragment.appendChild(mark);
+              }
+            });
+
+            if (textNode.parentNode) {
+              textNode.parentNode.replaceChild(fragment, textNode);
+            }
+          });
+        });
+      });
+    },
+
+    /**
+     * Clear all AI highlights from content
+     */
+    clearHighlights() {
+      this.highlightPhrases = [];
+
+      this.$nextTick(() => {
+        const contentContainer = this.$el?.querySelector('.content-text');
+        if (!contentContainer) return;
+
+        const marks = contentContainer.querySelectorAll('mark.ai-highlight');
+        marks.forEach(mark => {
+          const parent = mark.parentNode;
+          if (parent) {
+            parent.replaceChild(document.createTextNode(mark.textContent), mark);
+            parent.normalize();
+          }
+        });
+      });
+    },
+
+    /**
+     * Handler for EventBus highlight-text event
+     */
+    handleHighlightText(phrases) {
+      this.applyHighlights(phrases);
     }
+  },
+
+  mounted() {
+    // Listen for highlight commands from FloatingAIAssistant
+    eventBus.on('highlight-text', this.handleHighlightText);
+    eventBus.on('clear-highlights', this.clearHighlights);
+  },
+
+  beforeUnmount() {
+    // Clean up event listeners
+    eventBus.off('highlight-text', this.handleHighlightText);
+    eventBus.off('clear-highlights', this.clearHighlights);
   }
 }
 </script>
@@ -427,6 +538,32 @@ export default {
   color: var(--card-foreground);
   margin-bottom: 0.75rem;
   margin-top: 1.25rem;
+}
+
+/* AI Highlight Styles */
+.content-text :deep(.ai-highlight) {
+  background-color: #fef08a; /* Yellow-200 */
+  color: #1a1a1a;
+  border-radius: 4px;
+  padding: 1px 4px;
+  margin: 0 -2px;
+  box-shadow: 0 0 12px rgba(254, 240, 138, 0.6);
+  transition: all 0.3s ease;
+  animation: highlightPulse 2s ease-in-out infinite;
+}
+
+.content-text :deep(.ai-highlight:hover) {
+  background-color: #fde047; /* Yellow-300 */
+  box-shadow: 0 0 16px rgba(253, 224, 71, 0.8);
+}
+
+@keyframes highlightPulse {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(254, 240, 138, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(254, 240, 138, 0.8);
+  }
 }
 
 /* Interactive Instruction Card */

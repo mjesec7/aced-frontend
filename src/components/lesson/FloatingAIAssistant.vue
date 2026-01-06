@@ -1,10 +1,38 @@
 <template>
   <div class="floating-ai-assistant">
     <div class="ai-header">
-      <h4>🤖 AI Assistant</h4>
-      <button @click="$emit('close')" class="close-ai-btn">✕</button>
+      <div class="ai-header-left">
+        <h4>🤖 AI Assistant</h4>
+        <!-- Voice Status Indicators -->
+        <div v-if="isAnalyzing" class="voice-status analyzing">
+          <span class="status-icon">🧠</span>
+          <span class="status-text">Analyzing...</span>
+        </div>
+        <div v-else-if="isSpeaking" class="voice-status speaking">
+          <span class="status-icon">🔊</span>
+          <span class="status-text">Speaking...</span>
+        </div>
+        <div v-else-if="isListening" class="voice-status listening">
+          <span class="status-icon">👂</span>
+          <span class="status-text">Listening...</span>
+        </div>
+      </div>
+      <div class="ai-header-right">
+        <!-- Microphone Button for Interruption -->
+        <button
+          @click="toggleMicrophone"
+          class="mic-btn"
+          :class="{ 'listening': isListening, 'speaking': isSpeaking }"
+          :disabled="isAnalyzing"
+          :title="isListening ? 'Stop listening' : (isSpeaking ? 'Interrupt & Ask' : 'Ask Question')"
+        >
+          <span v-if="isListening">⏹️</span>
+          <span v-else>🎤</span>
+        </button>
+        <button @click="$emit('close')" class="close-ai-btn">✕</button>
+      </div>
     </div>
-    
+
     <div class="ai-body">
       <!-- Usage Display -->
       <div v-if="formattedUsage" class="usage-display">
@@ -114,6 +142,10 @@
 </template>
 
 <script>
+import { eventBus } from '@/utils/eventBus';
+import voiceApi from '@/api/voice';
+import chatApi from '@/api/chat';
+
 export default {
   name: 'FloatingAIAssistant',
   props: {
@@ -144,13 +176,36 @@ export default {
     aiIsLoading: {
       type: Boolean,
       default: false
+    },
+    // New props for speech analysis
+    currentStep: {
+      type: Object,
+      default: null
+    },
+    autoAnalyze: {
+      type: Boolean,
+      default: true
+    },
+    voiceEnabled: {
+      type: Boolean,
+      default: true
     }
   },
-  emits: ['close', 'send-message', 'ask-ai', 'clear-chat'],
+  emits: ['close', 'send-message', 'ask-ai', 'clear-chat', 'analysis-complete', 'speaking-start', 'speaking-end'],
   data() {
     return {
       localFloatingInput: '',
-      showAllMessages: false
+      showAllMessages: false,
+      // Speech analysis state
+      isSpeaking: false,
+      isListening: false,
+      isAnalyzing: false,
+      currentAudio: null,
+      currentAudioUrl: null,
+      speechRecognition: null,
+      analysisError: null,
+      currentExplanation: '',
+      currentHighlights: []
     }
   },
   computed: {
@@ -255,7 +310,7 @@ export default {
       },
       immediate: true
     },
-    
+
     aiChatHistory: {
       handler() {
         this.$nextTick(() => {
@@ -263,12 +318,316 @@ export default {
         });
       },
       deep: true
+    },
+
+    // Watch for step changes to trigger auto-analysis
+    currentStep: {
+      async handler(newStep, oldStep) {
+        if (!newStep || !this.autoAnalyze) return;
+
+        // Only analyze if step actually changed
+        const newStepId = newStep?.id || newStep?._id;
+        const oldStepId = oldStep?.id || oldStep?._id;
+        if (newStepId && oldStepId && newStepId === oldStepId) return;
+
+        // Only analyze content steps (not exercises/games)
+        const contentTypes = ['explanation', 'example', 'reading'];
+        if (!contentTypes.includes(newStep?.type)) {
+          this.clearHighlights();
+          return;
+        }
+
+        await this.analyzeAndSpeak(newStep);
+      },
+      immediate: true,
+      deep: false
     }
   },
+
   mounted() {
     this.scrollToBottom();
+    this.initializeSpeechRecognition();
   },
+
+  beforeUnmount() {
+    this.stopAudio();
+    this.stopListening();
+    this.clearHighlights();
+  },
+
   methods: {
+    // ==========================================
+    // SPEECH ANALYSIS METHODS
+    // ==========================================
+
+    /**
+     * Get content text from step data
+     */
+    getStepContent(step) {
+      if (!step) return '';
+      if (step.data?.content) return step.data.content;
+      if (step.data?.text) return step.data.text;
+      if (step.content?.text) return step.content.text;
+      if (step.content?.content) return step.content.content;
+      if (typeof step.content === 'string') return step.content;
+      if (typeof step.data === 'string') return step.data;
+      if (step.description) return step.description;
+      if (step.text) return step.text;
+      return '';
+    },
+
+    /**
+     * Main orchestration: Analyze step -> Highlight -> Speak
+     */
+    async analyzeAndSpeak(step) {
+      if (!step) return;
+
+      // Stop any current playback
+      this.stopAudio();
+      this.clearHighlights();
+      this.analysisError = null;
+
+      const content = this.getStepContent(step);
+      if (!content || content.length < 20) return;
+
+      this.isAnalyzing = true;
+
+      try {
+        // 1. Backend Analysis - get explanation and highlights
+        const result = await voiceApi.analyzeLesson(
+          content,
+          step.type || 'explanation',
+          step.type
+        );
+
+        const { explanation, highlights } = result?.data || result || {};
+
+        if (!explanation) {
+          console.warn('[FloatingAI] No explanation received from analysis');
+          this.isAnalyzing = false;
+          return;
+        }
+
+        this.currentExplanation = explanation;
+        this.currentHighlights = highlights || [];
+
+        // 2. Trigger Highlights in ContentPanel via EventBus
+        if (highlights && highlights.length > 0) {
+          eventBus.emit('highlight-text', highlights);
+        }
+
+        this.$emit('analysis-complete', { explanation, highlights });
+
+        // 3. Stream and play audio (if voice enabled)
+        if (this.voiceEnabled && explanation) {
+          await this.speakText(explanation);
+        }
+
+      } catch (error) {
+        console.error('[FloatingAI] Analysis error:', error);
+        this.analysisError = error.message || 'Failed to analyze lesson';
+      } finally {
+        this.isAnalyzing = false;
+      }
+    },
+
+    /**
+     * Stream audio from text and play it
+     */
+    async speakText(text) {
+      if (!text) return;
+
+      try {
+        // Get audio blob from backend
+        const audioBlob = await voiceApi.streamAudio(text);
+
+        // Create object URL for audio playback
+        if (this.currentAudioUrl) {
+          URL.revokeObjectURL(this.currentAudioUrl);
+        }
+        this.currentAudioUrl = URL.createObjectURL(audioBlob);
+
+        // Stop any current playback
+        if (this.currentAudio) {
+          this.currentAudio.pause();
+        }
+
+        // Create and play new audio
+        this.currentAudio = new Audio(this.currentAudioUrl);
+        this.isSpeaking = true;
+        this.$emit('speaking-start');
+
+        this.currentAudio.onended = () => {
+          this.isSpeaking = false;
+          this.$emit('speaking-end');
+          // Cleanup
+          if (this.currentAudioUrl) {
+            URL.revokeObjectURL(this.currentAudioUrl);
+            this.currentAudioUrl = null;
+          }
+        };
+
+        this.currentAudio.onerror = (error) => {
+          console.error('[FloatingAI] Audio playback error:', error);
+          this.isSpeaking = false;
+          this.$emit('speaking-end');
+        };
+
+        await this.currentAudio.play();
+
+      } catch (error) {
+        console.error('[FloatingAI] speakText error:', error);
+        this.isSpeaking = false;
+        this.$emit('speaking-end');
+      }
+    },
+
+    /**
+     * Stop current audio playback
+     */
+    stopAudio() {
+      if (this.currentAudio) {
+        this.currentAudio.pause();
+        this.currentAudio.currentTime = 0;
+        this.currentAudio = null;
+      }
+      if (this.currentAudioUrl) {
+        URL.revokeObjectURL(this.currentAudioUrl);
+        this.currentAudioUrl = null;
+      }
+      this.isSpeaking = false;
+    },
+
+    /**
+     * Clear highlights in ContentPanel
+     */
+    clearHighlights() {
+      eventBus.emit('clear-highlights');
+      this.currentHighlights = [];
+    },
+
+    // ==========================================
+    // SPEECH RECOGNITION (INTERRUPTION)
+    // ==========================================
+
+    /**
+     * Initialize Web Speech API for voice input
+     */
+    initializeSpeechRecognition() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        console.warn('[FloatingAI] Speech recognition not supported in this browser');
+        return;
+      }
+
+      this.speechRecognition = new SpeechRecognition();
+      this.speechRecognition.lang = 'ru-RU'; // Russian language
+      this.speechRecognition.interimResults = false;
+      this.speechRecognition.continuous = false;
+
+      this.speechRecognition.onresult = async (event) => {
+        const transcript = event.results[0][0].transcript;
+        this.isListening = false;
+
+        if (transcript) {
+          await this.handleVoiceQuestion(transcript);
+        }
+      };
+
+      this.speechRecognition.onerror = (event) => {
+        console.error('[FloatingAI] Speech recognition error:', event.error);
+        this.isListening = false;
+      };
+
+      this.speechRecognition.onend = () => {
+        this.isListening = false;
+      };
+    },
+
+    /**
+     * Start listening for voice input (interruption)
+     */
+    startListening() {
+      // 1. Stop current audio playback (interrupt the teacher)
+      this.stopAudio();
+
+      // 2. Check browser support
+      if (!this.speechRecognition) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+          alert('Your browser does not support voice input');
+          return;
+        }
+        this.initializeSpeechRecognition();
+      }
+
+      // 3. Start listening
+      try {
+        this.isListening = true;
+        this.speechRecognition.start();
+      } catch (error) {
+        console.error('[FloatingAI] Failed to start speech recognition:', error);
+        this.isListening = false;
+      }
+    },
+
+    /**
+     * Stop listening for voice input
+     */
+    stopListening() {
+      if (this.speechRecognition) {
+        try {
+          this.speechRecognition.stop();
+        } catch (e) {
+          // Ignore errors when stopping
+        }
+      }
+      this.isListening = false;
+    },
+
+    /**
+     * Handle voice question - get AI response and speak it
+     */
+    async handleVoiceQuestion(question) {
+      if (!question) return;
+
+      // Add user message to chat
+      this.$emit('send-message', question);
+
+      try {
+        // Get AI response with lesson context
+        const response = await chatApi.getLessonContextAIResponse({
+          userInput: question,
+          lessonContext: this.currentStep
+        });
+
+        const reply = response?.data?.reply || response?.reply;
+
+        if (reply) {
+          // Speak the answer
+          await this.speakText(reply);
+        }
+
+      } catch (error) {
+        console.error('[FloatingAI] handleVoiceQuestion error:', error);
+      }
+    },
+
+    /**
+     * Toggle microphone - interrupt and ask question
+     */
+    toggleMicrophone() {
+      if (this.isListening) {
+        this.stopListening();
+      } else {
+        this.startListening();
+      }
+    },
+
+    // ==========================================
+    // ORIGINAL CHAT METHODS
+    // ==========================================
+
     sendMessage() {
       if (!this.localFloatingInput?.trim() || this.aiIsLoading || this.isMessageLimitReached) {
         if (this.isMessageLimitReached) {
@@ -340,12 +699,13 @@ export default {
 
 .ai-header {
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-  padding: 16px 20px;
+  padding: 12px 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid #e2e8f0;
   position: relative;
+  gap: 12px;
 }
 
 .ai-header::after {
@@ -359,11 +719,119 @@ export default {
   opacity: 0.3;
 }
 
+.ai-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.ai-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 .ai-header h4 {
   margin: 0;
   font-size: 1rem;
   color: #1e293b;
   font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Voice Status Indicators */
+.voice-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  animation: statusPulse 1.5s ease-in-out infinite;
+}
+
+.voice-status.analyzing {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+}
+
+.voice-status.speaking {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #065f46;
+}
+
+.voice-status.listening {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #991b1b;
+}
+
+.status-icon {
+  font-size: 0.85rem;
+}
+
+.status-text {
+  font-size: 0.7rem;
+}
+
+@keyframes statusPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Microphone Button */
+.mic-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.mic-btn:hover:not(:disabled) {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.mic-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.mic-btn.listening {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  animation: micPulse 1s ease-in-out infinite;
+  box-shadow: 0 2px 12px rgba(239, 68, 68, 0.5);
+}
+
+.mic-btn.speaking {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+@keyframes micPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+  }
 }
 
 .close-ai-btn {
