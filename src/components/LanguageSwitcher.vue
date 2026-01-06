@@ -96,8 +96,9 @@ export default {
     } = useLanguage();
 
     const isDropdownOpen = ref(false);
+    const isPositioned = ref(false);
     const switcherRef = ref(null);
-    const dropdownPosition = reactive({ top: 0, left: 0 });
+    const dropdownPosition = reactive({ top: -9999, left: -9999 });
 
     // Backdrop style - covers entire viewport
     const backdropStyle = computed(() => ({
@@ -126,11 +127,14 @@ export default {
       borderRadius: '14px',
       boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 12px 24px rgba(139, 92, 246, 0.15)',
       overflow: 'hidden',
-      pointerEvents: 'auto'
+      pointerEvents: 'auto',
+      // Hide until positioned to prevent fly-in animation from (0,0)
+      opacity: isPositioned.value ? 1 : 0,
+      visibility: isPositioned.value ? 'visible' : 'hidden'
     }));
 
-    const updateDropdownPosition = () => {
-      if (!switcherRef.value || !isDropdownOpen.value) return;
+    const calculatePosition = () => {
+      if (!switcherRef.value) return;
 
       const rect = switcherRef.value.getBoundingClientRect();
       const dropdownWidth = window.innerWidth < 480 ? 180 : 220;
@@ -168,21 +172,28 @@ export default {
 
     const toggleDropdown = (event) => {
       event.stopPropagation();
-      isDropdownOpen.value = !isDropdownOpen.value;
-      if (isDropdownOpen.value) {
+
+      if (!isDropdownOpen.value) {
+        // Calculate position BEFORE opening to prevent fly-in from (0,0)
+        calculatePosition();
+        isDropdownOpen.value = true;
+        // Show dropdown after a micro-task to ensure position is applied
         nextTick(() => {
-          updateDropdownPosition();
+          isPositioned.value = true;
         });
+      } else {
+        closeDropdown();
       }
     };
 
     const closeDropdown = () => {
+      isPositioned.value = false;
       isDropdownOpen.value = false;
     };
 
     const selectLanguage = (code) => {
       setLanguage(code);
-      isDropdownOpen.value = false;
+      closeDropdown();
     };
 
     const handleKeydown = (event) => {
@@ -193,13 +204,13 @@ export default {
 
     const handleScroll = () => {
       if (isDropdownOpen.value) {
-        updateDropdownPosition();
+        calculatePosition();
       }
     };
 
     const handleResize = () => {
       if (isDropdownOpen.value) {
-        updateDropdownPosition();
+        calculatePosition();
       }
     };
 
