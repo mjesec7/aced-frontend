@@ -466,6 +466,9 @@ import InteractivePanel from '@/components/lesson/InteractivePanel.vue'
 import CompletionScreen from '@/components/lesson/CompletionScreen.vue'
 import FloatingAIAssistant from '@/components/lesson/FloatingAIAssistant.vue'
 
+// Import API
+import { getLessonById } from '@/api/lessons'
+
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
@@ -569,9 +572,17 @@ const progressPercentage = computed(() => {
 })
 
 const estimatedTime = computed(() => {
+  // Use lesson's timing if available, otherwise calculate from steps
+  if (lesson.value?.estimatedDuration) {
+    return `~${lesson.value.estimatedDuration} min`
+  }
+  if (lesson.value?.timing?.estimatedDuration) {
+    return `~${lesson.value.timing.estimatedDuration} min`
+  }
   const totalSteps = steps.value.length
+  if (totalSteps === 0) return '~0 min'
   const minutes = Math.ceil(totalSteps * 1.5)
-  return `${minutes} min`
+  return `~${minutes} min`
 })
 
 const isInteractiveStep = computed(() => {
@@ -612,18 +623,35 @@ const rightPanelStyle = computed(() => ({
 async function loadLesson() {
   loading.value = true
   error.value = null
-  
+
   try {
     const lessonId = route.params.id
-    // API call to load lesson
-    // lesson.value = await api.getLesson(lessonId)
-    // steps.value = lesson.value.steps || []
-    
-    // Placeholder for demo
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    lesson.value = { title: 'Sample Lesson', subtitle: 'Learning basics' }
-    steps.value = []
+    if (!lessonId) {
+      throw new Error('No lesson ID provided')
+    }
+
+    const result = await getLessonById(lessonId)
+
+    if (result.success && result.data) {
+      const lessonData = result.data
+
+      // Map backend fields to frontend display
+      lesson.value = {
+        ...lessonData,
+        title: lessonData.lessonName || lessonData.title || 'Untitled Lesson',
+        subtitle: lessonData.subtitle || lessonData.description || '',
+        estimatedDuration: lessonData.timing?.estimatedDuration || 0
+      }
+
+      // Extract steps from lesson data
+      steps.value = lessonData.steps || []
+
+      console.log('[LessonPage] Loaded lesson:', lesson.value.title, 'with', steps.value.length, 'steps')
+    } else {
+      throw new Error(result.error || 'Failed to load lesson data')
+    }
   } catch (err) {
+    console.error('[LessonPage] loadLesson error:', err)
     error.value = err.message || 'Failed to load lesson'
   } finally {
     loading.value = false
