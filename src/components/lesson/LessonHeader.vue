@@ -51,6 +51,8 @@
 </template>
 
 <script>
+import { useLanguage } from '@/composables/useLanguage';
+
 export default {
   name: 'LessonHeader',
   props: {
@@ -81,13 +83,17 @@ export default {
     }
   },
   emits: ['exit', 'report-problem'],
+  setup() {
+    const { language } = useLanguage();
+    return { language };
+  },
   computed: {
     progressMarkers() {
       if (this.totalSteps <= 1) return [];
-      
+
       const markers = [];
       const stepWidth = 100 / (this.totalSteps - 1);
-      
+
       for (let i = 0; i < this.totalSteps; i++) {
         markers.push({
           id: i,
@@ -97,14 +103,35 @@ export default {
           title: `Step ${i + 1}`
         });
       }
-      
+
       return markers;
     }
   },
   methods: {
     getLocalized(field) {
+      // Handle null/undefined
+      if (field === null || field === undefined) return '';
+
+      // If it's already a string, return it (legacy format)
       if (typeof field === 'string') return field;
-      return (field?.en || field?.ru || field?.uz || '').replace(/^(en|ru|uz):/i, '').trim();
+
+      // If it's an object with language keys (multilingual format)
+      if (typeof field === 'object') {
+        const lang = this.language || localStorage.getItem('lang') || 'ru';
+        // Priority: Current language -> English fallback -> Russian fallback -> Uzbek -> First available
+        const value = field[lang] || field['en'] || field['ru'] || field['uz'];
+        if (value && typeof value === 'string') {
+          return value.replace(/^(en|ru|uz):/i, '').trim();
+        }
+        // Try to get any available string value
+        const values = Object.values(field);
+        for (const v of values) {
+          if (v && typeof v === 'string' && v.trim()) {
+            return v.replace(/^(en|ru|uz):/i, '').trim();
+          }
+        }
+      }
+      return '';
     }
   }
 }

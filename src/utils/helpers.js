@@ -1,6 +1,49 @@
 // src/utils/helpers.js - Global Helper Functions
 
 import { getApp } from './appMounter.js';
+import { getLanguage } from '@/composables/useLanguage.js';
+
+// ============================================================================
+// 🌐 LOCALIZATION HELPERS
+// ============================================================================
+
+/**
+ * Safely extracts text content based on the current language
+ * Handles both String (legacy) and Object (multilingual) formats
+ * @param {String|Object} content - The text content to localize
+ * @param {String} languageCode - Optional language code override (e.g., 'en', 'ru', 'uz')
+ * @returns {String} The localized content string
+ */
+export const getLocalizedContent = (content, languageCode = null) => {
+  // 1. Handle empty/null values
+  if (content === null || content === undefined) return '';
+
+  // 2. If it's already a string, just return it (Fixes old English lessons)
+  if (typeof content === 'string') return content;
+
+  // 3. Get current language from composable or localStorage
+  const lang = languageCode || getLanguage() || localStorage.getItem('lang') || 'ru';
+
+  // 4. If it's an object, try to get the specific language (Fixes multilingual lessons)
+  if (typeof content === 'object') {
+    // Priority: Requested Language -> Fallback chain -> First Available Key -> Empty
+    const value = content[lang] || content['en'] || content['ru'] || content['uz'];
+    if (value && typeof value === 'string') {
+      return value.trim();
+    }
+    // Try to get any available string value
+    const values = Object.values(content);
+    for (const v of values) {
+      if (v && typeof v === 'string' && v.trim()) {
+        return v.trim();
+      }
+    }
+    return '';
+  }
+
+  // 5. Fallback for numbers or other types
+  return String(content);
+};
 
 export function setupGlobalHelpers(store, eventBus) {
 // ============================================================================
