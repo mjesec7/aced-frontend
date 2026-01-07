@@ -499,10 +499,10 @@ export default {
     processModeContent(data, mode) {
       if (mode === 'school') {
         const all = [];
-        for (const s in data) for (const l in data[s]) data[s][l].forEach(t => all.push({ topicId: t._id || t.id, name: t.name || t.topicName || t.title || 'Course', level: String(l), subject: s, lessonCount: t.lessonCount || 0, totalTime: t.totalTime || 10, type: t.type || 'free', progress: this.userProgress[t._id || t.id] || 0, inStudyPlan: this.studyPlanTopics.includes(t._id || t.id) }));
+        for (const s in data) for (const l in data[s]) data[s][l].forEach(t => all.push({ topicId: t._id || t.id, name: this.getLocalizedName(t.name) || this.getLocalizedName(t.topicName) || this.getLocalizedName(t.title) || 'Course', level: String(l), subject: s, lessonCount: t.lessonCount || 0, totalTime: t.totalTime || 10, type: t.type || 'free', progress: this.userProgress[t._id || t.id] || 0, inStudyPlan: this.studyPlanTopics.includes(t._id || t.id) }));
         this.courses = all;
       } else {
-        this.courses = data.map(c => ({ topicId: c._id || c.id || c.topicId, name: c.name || c.topicName || c.title || 'Course', level: String(c.level || 1), subject: c.subject || 'Uncategorized', lessonCount: c.lessonCount || 0, totalTime: c.totalTime || 10, type: c.type || 'free', progress: this.userProgress[c._id || c.id || c.topicId] || 0, inStudyPlan: this.studyPlanTopics.includes(c._id || c.id || c.topicId) }));
+        this.courses = data.map(c => ({ topicId: c._id || c.id || c.topicId, name: this.getLocalizedName(c.name) || this.getLocalizedName(c.topicName) || this.getLocalizedName(c.title) || 'Course', level: String(c.level || 1), subject: c.subject || 'Uncategorized', lessonCount: c.lessonCount || 0, totalTime: c.totalTime || 10, type: c.type || 'free', progress: this.userProgress[c._id || c.id || c.topicId] || 0, inStudyPlan: this.studyPlanTopics.includes(c._id || c.id || c.topicId) }));
       }
     },
     
@@ -532,19 +532,32 @@ export default {
     handlePaymentSuccess() { this.showPaywall = false; this.$forceUpdate(); },
     hashString(str) { let h = 0; for (let i = 0; i < str.length; i++) { h = ((h << 5) - h) + str.charCodeAt(i); h = h & h; } return Math.abs(h); },
     extractTopicId(tid) { if (!tid) return null; if (typeof tid === 'string') return tid; if (typeof tid === 'object' && tid._id) return tid._id; return String(tid); },
+    getLocalizedName(field) {
+      if (!field) return '';
+      if (typeof field === 'string') return field.trim();
+      if (typeof field === 'object') {
+        const lang = localStorage.getItem('lang') || 'ru';
+        const value = field[lang] || field.en || field.ru || field.uz;
+        if (value && typeof value === 'string') return value.trim();
+        // Fallback to first available string
+        const values = Object.values(field);
+        for (const v of values) {
+          if (v && typeof v === 'string') return v.trim();
+        }
+      }
+      return '';
+    },
     getTopicName(l) {
-      console.log('🟢 [CataloguePage v2] getTopicName:', { topic: l?.topic, topicName: l?.topicName, lessonName: l?.lessonName, type: typeof l?.lessonName });
       if (l?.topic && typeof l.topic === 'string' && l.topic.trim()) return l.topic.trim();
       if (l?.topicName && typeof l.topicName === 'string') return l.topicName.trim();
       const lang = localStorage.getItem('lang') || 'ru';
       if (l?.translations?.[lang]?.topic) return l.translations[lang].topic.trim();
       // Handle multilingual lessonName object
       if (l?.lessonName) {
-        if (typeof l.lessonName === 'string') return `Topic: ${l.lessonName.trim()}`;
+        if (typeof l.lessonName === 'string') return l.lessonName.trim();
         if (typeof l.lessonName === 'object') {
           const localized = l.lessonName[lang] || l.lessonName.en || l.lessonName.ru || l.lessonName.uz;
-          console.log('🟢 [CataloguePage v2] Extracted localized:', localized);
-          if (localized && typeof localized === 'string') return `Topic: ${localized.trim()}`;
+          if (localized && typeof localized === 'string') return localized.trim();
         }
       }
       return 'Untitled';
