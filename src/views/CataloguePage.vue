@@ -535,9 +535,16 @@ export default {
     getTopicName(l) {
       if (l?.topic && typeof l.topic === 'string' && l.topic.trim()) return l.topic.trim();
       if (l?.topicName && typeof l.topicName === 'string') return l.topicName.trim();
-      const lang = localStorage.getItem('lang') || 'en';
+      const lang = localStorage.getItem('lang') || 'ru';
       if (l?.translations?.[lang]?.topic) return l.translations[lang].topic.trim();
-      if (l?.lessonName) return `Topic: ${l.lessonName.trim()}`;
+      // Handle multilingual lessonName object
+      if (l?.lessonName) {
+        if (typeof l.lessonName === 'string') return `Topic: ${l.lessonName.trim()}`;
+        if (typeof l.lessonName === 'object') {
+          const localized = l.lessonName[lang] || l.lessonName.en || l.lessonName.ru || l.lessonName.uz;
+          if (localized && typeof localized === 'string') return `Topic: ${localized.trim()}`;
+        }
+      }
       return 'Untitled';
     },
     getLevelDescription(l) {

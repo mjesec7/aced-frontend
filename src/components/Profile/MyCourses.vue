@@ -654,12 +654,27 @@ export default {
     
     getNextLesson(course) {
       if (!course.lessons || course.lessons.length === 0) return 'No lessons';
-      
+
       const completed = course.progress?.completedLessons || 0;
       if (completed >= course.lessons.length) return 'Course completed';
-      
+
       const next = course.lessons[completed];
-      return next?.lessonName || next?.title || `Lesson ${completed + 1}`;
+      return this.getLocalizedLessonName(next) || `Lesson ${completed + 1}`;
+    },
+
+    getLocalizedLessonName(lesson) {
+      if (!lesson) return '';
+      const lang = localStorage.getItem('lang') || 'ru';
+      // Check title first
+      if (lesson.title && typeof lesson.title === 'string') return lesson.title;
+      // Handle multilingual lessonName
+      if (lesson.lessonName) {
+        if (typeof lesson.lessonName === 'string') return lesson.lessonName;
+        if (typeof lesson.lessonName === 'object') {
+          return lesson.lessonName[lang] || lesson.lessonName.en || lesson.lessonName.ru || lesson.lessonName.uz || '';
+        }
+      }
+      return '';
     },
     
     getCourseWord(count) {

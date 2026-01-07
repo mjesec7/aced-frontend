@@ -517,7 +517,7 @@ const extractVocabularyFromStep = (vocab, lesson, progress, uniqueId) => {
       definition: (definition || '').trim(),
       language: language,
       topic: lesson.topic || lesson.subject || 'General',
-      lessonName: lesson.lessonName || lesson.title || 'Unknown Lesson',
+      lessonName: getLocalizedLessonName(lesson),
       level: lesson.level || 1,
       partOfSpeech: vocab.partOfSpeech || vocab.type || 'noun',
       difficulty: getDifficultyFromLevel(lesson.level || 1),
@@ -537,8 +537,21 @@ return null
   }
 }
 
+const getLocalizedLessonName = (lesson) => {
+  if (!lesson) return 'Unknown Lesson';
+  const lang = localStorage.getItem('lang') || 'ru';
+  if (lesson.title && typeof lesson.title === 'string') return lesson.title;
+  if (lesson.lessonName) {
+    if (typeof lesson.lessonName === 'string') return lesson.lessonName;
+    if (typeof lesson.lessonName === 'object') {
+      return lesson.lessonName[lang] || lesson.lessonName.en || lesson.lessonName.ru || lesson.lessonName.uz || 'Unknown Lesson';
+    }
+  }
+  return 'Unknown Lesson';
+}
+
 const getLanguageFromLesson = (lesson) => {
-  const title = (lesson.lessonName || lesson.title || '').toLowerCase()
+  const title = getLocalizedLessonName(lesson).toLowerCase()
   const subject = (lesson.subject || '').toLowerCase()
   const description = (lesson.description || '').toLowerCase()
   

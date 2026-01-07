@@ -166,6 +166,19 @@ export default {
       return 'bg-violet-100 text-violet-700'; // Pro
     },
 
+    getLocalizedLessonName(lesson) {
+      if (!lesson) return '';
+      const lang = localStorage.getItem('lang') || 'ru';
+      if (lesson.title && typeof lesson.title === 'string') return lesson.title;
+      if (lesson.lessonName) {
+        if (typeof lesson.lessonName === 'string') return lesson.lessonName;
+        if (typeof lesson.lessonName === 'object') {
+          return lesson.lessonName[lang] || lesson.lessonName.en || lesson.lessonName.ru || lesson.lessonName.uz || '';
+        }
+      }
+      return '';
+    },
+
     async initializeCourses() {
       this.loadingCourses = true;
       this.errorMessage = null;
@@ -216,7 +229,7 @@ export default {
       lessons.forEach((lesson) => {
         if (!lesson?.topicId) return;
         const topicId = typeof lesson.topicId === 'string' ? lesson.topicId : lesson.topicId._id || String(lesson.topicId);
-        const topicName = lesson?.topic || lesson?.lessonName || 'No Topic';
+        const topicName = lesson?.topic || this.getLocalizedLessonName(lesson) || 'No Topic';
 
         if (!coursesMap.has(topicId)) {
           coursesMap.set(topicId, {

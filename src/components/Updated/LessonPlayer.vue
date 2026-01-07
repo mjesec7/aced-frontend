@@ -373,10 +373,24 @@ export default {
       if (this.isStructuredFormat && this.currentStructuredLesson) {
         return this.currentStructuredLesson.title || `Урок ${this.currentLessonIndex + 1}`;
       }
-      
+
       const lesson = this.currentLesson;
       if (!lesson) return 'Загрузка урока...';
-      return lesson.title || lesson.lessonName || `Урок ${this.currentLessonIndex + 1}`;
+
+      // Handle title
+      if (lesson.title && typeof lesson.title === 'string') return lesson.title;
+
+      // Handle multilingual lessonName
+      if (lesson.lessonName) {
+        if (typeof lesson.lessonName === 'string') return lesson.lessonName;
+        if (typeof lesson.lessonName === 'object') {
+          const lang = localStorage.getItem('lang') || 'ru';
+          const localized = lesson.lessonName[lang] || lesson.lessonName.en || lesson.lessonName.ru || lesson.lessonName.uz;
+          if (localized && typeof localized === 'string') return localized;
+        }
+      }
+
+      return `Урок ${this.currentLessonIndex + 1}`;
     },
 
     hasSteps() {

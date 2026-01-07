@@ -285,7 +285,15 @@ export default {
     },
     
     getHomeworkTitle(hw) {
-      return hw.title || hw.lessonName || 'Homework';
+      if (hw.title && typeof hw.title === 'string') return hw.title;
+      if (hw.lessonName) {
+        if (typeof hw.lessonName === 'string') return hw.lessonName;
+        if (typeof hw.lessonName === 'object') {
+          const lang = localStorage.getItem('lang') || 'ru';
+          return hw.lessonName[lang] || hw.lessonName.en || hw.lessonName.ru || hw.lessonName.uz || 'Homework';
+        }
+      }
+      return 'Homework';
     },
     
     getExerciseCount(hw) {

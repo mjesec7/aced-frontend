@@ -394,6 +394,20 @@ export default {
   },
 
   methods: {
+    getLocalizedLessonName(lesson) {
+      if (!lesson) return '';
+      const lang = localStorage.getItem('lang') || 'ru';
+      if (lesson.title && typeof lesson.title === 'string') return lesson.title;
+      if (lesson.name && typeof lesson.name === 'string') return lesson.name;
+      if (lesson.lessonName) {
+        if (typeof lesson.lessonName === 'string') return lesson.lessonName;
+        if (typeof lesson.lessonName === 'object') {
+          return lesson.lessonName[lang] || lesson.lessonName.en || lesson.lessonName.ru || lesson.lessonName.uz || '';
+        }
+      }
+      return '';
+    },
+
     // 🧬 NEW: Load all data including Learning DNA
     async loadAllData() {
       this.loading = true;
@@ -556,8 +570,8 @@ const status = err.response?.status;
       try {
         const response = await getLessonById(lessonId);
         const data = response?.data;
-        const lessonName = data?.lessonName || data?.title || data?.name || this.$t('analytics.lessonWithoutName');
-        
+        const lessonName = this.getLocalizedLessonName(data) || this.$t('analytics.lessonWithoutName');
+
         this.lessonCache.set(lessonId, lessonName);
         return lessonName;
       } catch (error) {

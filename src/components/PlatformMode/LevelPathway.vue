@@ -97,7 +97,7 @@ export default {
         ]
       }
       return this.lessons.map((lesson, index) => ({
-        title: lesson.title || lesson.lessonName || this.$t('levelPathway.lessonNumber', { number: index + 1 }),
+        title: this.getLocalizedTitle(lesson) || this.$t('levelPathway.lessonNumber', { number: index + 1 }),
         completed: lesson.completed || false,
         current: lesson.current || false,
         locked: !lesson.completed && !lesson.current
@@ -108,6 +108,18 @@ export default {
     }
   },
   methods: {
+    getLocalizedTitle(lesson) {
+      if (!lesson) return '';
+      const lang = localStorage.getItem('lang') || 'ru';
+      if (lesson.title && typeof lesson.title === 'string') return lesson.title;
+      if (lesson.lessonName) {
+        if (typeof lesson.lessonName === 'string') return lesson.lessonName;
+        if (typeof lesson.lessonName === 'object') {
+          return lesson.lessonName[lang] || lesson.lessonName.en || lesson.lessonName.ru || lesson.lessonName.uz || '';
+        }
+      }
+      return '';
+    },
     continueLesson() {
       const currentLesson = this.pathwayNodes.find(node => node.current)
       if (currentLesson) {

@@ -1215,19 +1215,27 @@ this.showToast('Ошибка при запуске курса', 'error');
 
     getModulesList(course) {
       if (!course) return this.getDefaultModules();
-      
+
       // Try curriculum first
       if (course.curriculum && Array.isArray(course.curriculum) && course.curriculum.length > 0) {
-        return course.curriculum.map(lesson => 
-          lesson.title || lesson.lessonName || 'Урок без названия'
-        );
+        return course.curriculum.map(lesson => {
+          if (lesson.title && typeof lesson.title === 'string') return lesson.title;
+          if (lesson.lessonName) {
+            if (typeof lesson.lessonName === 'string') return lesson.lessonName;
+            if (typeof lesson.lessonName === 'object') {
+              const lang = localStorage.getItem('lang') || 'ru';
+              return lesson.lessonName[lang] || lesson.lessonName.en || lesson.lessonName.ru || lesson.lessonName.uz || 'Урок без названия';
+            }
+          }
+          return 'Урок без названия';
+        });
       }
-      
+
       // Try modules field
       if (course.modules && Array.isArray(course.modules) && course.modules.length > 0) {
         return course.modules;
       }
-      
+
       // Generate based on course type
       return this.generateModulesFromCourse(course);
     },

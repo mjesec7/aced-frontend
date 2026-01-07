@@ -1239,7 +1239,7 @@ this.recommendations = null;
           };
         }
         if (p.completed) {
-          const lessonName = p.lessonId?.lessonName || this.$t('analytics.lesson');
+          const lessonName = this.getLocalizedLessonName(p.lessonId) || this.$t('analytics.lesson');
           return {
             id: `lesson-${p._id}`,
             title: `${this.$t('dashboard.completed')}: ${lessonName}`,
@@ -1315,7 +1315,20 @@ this.recommendations = null;
       const completed = course.progress?.completedLessons || 0;
       if (completed >= course.lessons.length) return 'All completed';
       const nextLesson = course.lessons[completed];
-      return nextLesson?.lessonName || nextLesson?.title || `Lesson ${completed + 1}`;
+      return this.getLocalizedLessonName(nextLesson) || `Lesson ${completed + 1}`;
+    },
+
+    getLocalizedLessonName(lesson) {
+      if (!lesson) return '';
+      const lang = localStorage.getItem('lang') || 'ru';
+      if (lesson.title && typeof lesson.title === 'string') return lesson.title;
+      if (lesson.lessonName) {
+        if (typeof lesson.lessonName === 'string') return lesson.lessonName;
+        if (typeof lesson.lessonName === 'object') {
+          return lesson.lessonName[lang] || lesson.lessonName.en || lesson.lessonName.ru || lesson.lessonName.uz || '';
+        }
+      }
+      return '';
     },
     
     getProgressColorClass(percent) {

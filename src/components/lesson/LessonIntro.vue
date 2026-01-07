@@ -126,61 +126,29 @@ export default {
     const { language } = useLanguage();
     return { language };
   },
-  mounted() {
-    // DEBUG: Log what data we're receiving
-    console.log('🔍 [LessonIntro] === DEBUG START ===');
-    console.log('🔍 [LessonIntro] Full lesson object:', JSON.stringify(this.lesson, null, 2));
-    console.log('🔍 [LessonIntro] lesson.lessonName:', this.lesson?.lessonName);
-    console.log('🔍 [LessonIntro] lesson.description:', this.lesson?.description);
-    console.log('🔍 [LessonIntro] typeof lessonName:', typeof this.lesson?.lessonName);
-    console.log('🔍 [LessonIntro] Current language:', this.language);
-    console.log('🔍 [LessonIntro] localStorage lang:', localStorage.getItem('lang'));
-    console.log('🔍 [LessonIntro] getLocalized result:', this.getLocalized(this.lesson?.lessonName));
-    console.log('🔍 [LessonIntro] === DEBUG END ===');
-  },
   methods: {
     getLocalized(field) {
-      console.log('🔍 [getLocalized] Input field:', field, 'Type:', typeof field);
-
       // Handle null/undefined
-      if (field === null || field === undefined) {
-        console.log('🔍 [getLocalized] Field is null/undefined, returning empty');
-        return '';
-      }
+      if (field === null || field === undefined) return '';
 
       // If it's already a string, return it (legacy format)
-      if (typeof field === 'string') {
-        console.log('🔍 [getLocalized] Field is string, returning:', field);
-        return field;
-      }
+      if (typeof field === 'string') return field;
 
       // If it's an object with language keys (multilingual format)
       if (typeof field === 'object') {
         const lang = this.language || localStorage.getItem('lang') || 'ru';
-        console.log('🔍 [getLocalized] Field is object, lang:', lang);
-        console.log('🔍 [getLocalized] Object keys:', Object.keys(field));
-        console.log('🔍 [getLocalized] field[lang]:', field[lang]);
-
-        // Priority: Current language -> English fallback -> Russian fallback -> Uzbek -> First available
         const value = field[lang] || field['en'] || field['ru'] || field['uz'];
-        console.log('🔍 [getLocalized] Selected value:', value);
-
         if (value && typeof value === 'string') {
-          const result = value.replace(/^(en|ru|uz):/i, '').trim();
-          console.log('🔍 [getLocalized] Returning:', result);
-          return result;
+          return value.replace(/^(en|ru|uz):/i, '').trim();
         }
         // Try to get any available string value
         const values = Object.values(field);
         for (const v of values) {
           if (v && typeof v === 'string' && v.trim()) {
-            const result = v.replace(/^(en|ru|uz):/i, '').trim();
-            console.log('🔍 [getLocalized] Fallback returning:', result);
-            return result;
+            return v.replace(/^(en|ru|uz):/i, '').trim();
           }
         }
       }
-      console.log('🔍 [getLocalized] No match, returning empty');
       return '';
     }
   }

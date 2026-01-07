@@ -812,30 +812,14 @@ async function loadLesson() {
       throw new Error('No lesson ID provided')
     }
 
-    console.log('[LessonPage] Loading lesson:', lessonId, 'lang:', language.value)
-
     const result = await getLessonById(lessonId)
 
     if (result.success && result.data) {
       const lessonData = result.data
 
-      // DEBUG: Log the raw data structure
-      console.log('🔍 [LessonPage] === RAW DATA DEBUG ===')
-      console.log('🔍 [LessonPage] Raw lesson data:', JSON.stringify(lessonData, null, 2).substring(0, 1500))
-      console.log('🔍 [LessonPage] lessonData.lessonName:', lessonData.lessonName)
-      console.log('🔍 [LessonPage] typeof lessonName:', typeof lessonData.lessonName)
-      console.log('🔍 [LessonPage] lessonData.description:', lessonData.description)
-      console.log('🔍 [LessonPage] typeof description:', typeof lessonData.description)
-      console.log('🔍 [LessonPage] lessonData.title:', lessonData.title)
-      console.log('🔍 [LessonPage] lessonData.name:', lessonData.name)
-      console.log('🔍 [LessonPage] All keys:', Object.keys(lessonData))
-
       // Extract localized title and description using helper functions
       const localizedTitle = extractLessonTitle(lessonData)
       const localizedDescription = extractLessonDescription(lessonData)
-
-      console.log('🔍 [LessonPage] Extracted title:', localizedTitle)
-      console.log('🔍 [LessonPage] Extracted description:', localizedDescription)
 
       // Map backend fields to frontend display with localization
       lesson.value = {
@@ -845,15 +829,9 @@ async function loadLesson() {
         estimatedDuration: lessonData.timing?.estimatedDuration || 0
       }
 
-      console.log('🔍 [LessonPage] Final lesson.value:', JSON.stringify(lesson.value, null, 2).substring(0, 1500))
-      console.log('🔍 [LessonPage] lesson.value.lessonName:', lesson.value.lessonName)
-      console.log('🔍 [LessonPage] === END DEBUG ===')
-
       // Extract and process steps with localization
       const rawSteps = lessonData.steps || []
       steps.value = rawSteps.map((step, index) => processStepWithLocalization(step, index)).filter(Boolean)
-
-      console.log('[LessonPage] Loaded lesson:', lesson.value.title, 'with', steps.value.length, 'steps')
     } else {
       throw new Error(result.error || 'Failed to load lesson data')
     }
