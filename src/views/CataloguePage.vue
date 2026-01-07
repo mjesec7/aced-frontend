@@ -533,6 +533,7 @@ export default {
     hashString(str) { let h = 0; for (let i = 0; i < str.length; i++) { h = ((h << 5) - h) + str.charCodeAt(i); h = h & h; } return Math.abs(h); },
     extractTopicId(tid) { if (!tid) return null; if (typeof tid === 'string') return tid; if (typeof tid === 'object' && tid._id) return tid._id; return String(tid); },
     getTopicName(l) {
+      console.log('🟢 [CataloguePage v2] getTopicName:', { topic: l?.topic, topicName: l?.topicName, lessonName: l?.lessonName, type: typeof l?.lessonName });
       if (l?.topic && typeof l.topic === 'string' && l.topic.trim()) return l.topic.trim();
       if (l?.topicName && typeof l.topicName === 'string') return l.topicName.trim();
       const lang = localStorage.getItem('lang') || 'ru';
@@ -542,6 +543,7 @@ export default {
         if (typeof l.lessonName === 'string') return `Topic: ${l.lessonName.trim()}`;
         if (typeof l.lessonName === 'object') {
           const localized = l.lessonName[lang] || l.lessonName.en || l.lessonName.ru || l.lessonName.uz;
+          console.log('🟢 [CataloguePage v2] Extracted localized:', localized);
           if (localized && typeof localized === 'string') return `Topic: ${localized.trim()}`;
         }
       }
