@@ -6,7 +6,7 @@
     <!-- Navigation - highest z-index within hero for dropdown visibility -->
     <nav class="hero-nav">
       <img src="@/assets/logo.png" alt="ACED" class="h-8 sm:h-10 lg:h-12" />
-      <UserSection />
+      <!-- <UserSection /> -->
     </nav>
 
     <!-- Hero Content - below navigation -->
@@ -37,7 +37,7 @@
           </div>
 
           <!-- CTA Buttons -->
-          <div class="flex flex-col sm:flex-row gap-3 mb-8 sm:mb-10">
+          <!-- <div class="flex flex-col sm:flex-row gap-3 mb-8 sm:mb-10">
             <button
               @click="handleStartFree"
               class="w-full sm:w-auto px-6 sm:px-8 py-3 bg-violet-600 text-white text-sm sm:text-base font-semibold rounded-xl hover:bg-violet-700 transition-colors shadow-lg shadow-violet-600/25"
@@ -50,7 +50,7 @@
             >
               {{ $t('heroSection.registerAndSave') }}
             </button>
-          </div>
+          </div> -->
 
           <!-- Stats -->
           <div class="flex flex-wrap gap-4 sm:gap-6 lg:gap-8 pt-6 border-t border-gray-100">
