@@ -169,19 +169,19 @@
 // import UserSection from "@/components/Main/UserSection.vue";
 
 export default {
-  components: { UserSection },
-  methods: {
-    handleStartFree() {
-      const acedSection = document.getElementById('aced');
-      if (acedSection) {
-        acedSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    },
-    handleRegister() {
-      window.dispatchEvent(new Event("open-Login-modal"));
-    }
-  }
-};
+//   components: { UserSection },
+//   methods: {
+//     handleStartFree() {
+//       const acedSection = document.getElementById('aced');
+//       if (acedSection) {
+//         acedSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+//       }
+//     },
+//     handleRegister() {
+//       window.dispatchEvent(new Event("open-Login-modal"));
+//     }
+//   }
+// };
 </script>
 
 <style scoped>
