@@ -1,0 +1,362 @@
+/* tw-utilities.css - Tailwind-like utility classes for UniversalCheckout */
+
+/* Display */
+.tw-hidden {
+    display: none !important;
+}
+
+.tw-block {
+    display: block;
+}
+
+.tw-flex {
+    display: flex;
+}
+
+.tw-grid {
+    display: grid;
+}
+
+/* Grid */
+.tw-grid-cols-3 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.tw-gap-2 {
+    gap: 0.5rem;
+}
+
+.tw-gap-3 {
+    gap: 0.75rem;
+}
+
+.tw-gap-4 {
+    gap: 1rem;
+}
+
+/* Flexbox */
+.tw-flex-1 {
+    flex: 1;
+}
+
+.tw-items-center {
+    align-items: center;
+}
+
+.tw-justify-center {
+    justify-content: center;
+}
+
+/* Positioning */
+.tw-relative {
+    position: relative;
+}
+
+.tw-absolute {
+    position: absolute;
+}
+
+.tw-top-1\/2 {
+    top: 50%;
+}
+
+.tw-right-3 {
+    right: 0.75rem;
+}
+
+.tw--top-2 {
+    top: -0.5rem;
+}
+
+.tw-left-1\/2 {
+    left: 50%;
+}
+
+.tw--translate-x-1\/2 {
+    transform: translateX(-50%);
+}
+
+.tw--translate-y-1\/2 {
+    transform: translateY(-50%);
+}
+
+/* Spacing */
+.tw-mb-3 {
+    margin-bottom: 0.75rem;
+}
+
+.tw-mb-4 {
+    margin-bottom: 1rem;
+}
+
+.tw-mb-6 {
+    margin-bottom: 1.5rem;
+}
+
+.tw-mt-2 {
+    margin-top: 0.5rem;
+}
+
+.tw-px-2 {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+}
+
+.tw-px-4 {
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+.tw-px-5 {
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+}
+
+.tw-py-3 {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+}
+
+.tw-py-0\.5 {
+    padding-top: 0.125rem;
+    padding-bottom: 0.125rem;
+}
+
+/* Sizing */
+.tw-w-4 {
+    width: 1rem;
+}
+
+.tw-h-4 {
+    height: 1rem;
+}
+
+.tw-w-5 {
+    width: 1.25rem;
+}
+
+.tw-h-5 {
+    height: 1.25rem;
+}
+
+.tw-w-full {
+    width: 100%;
+}
+
+/* Typography */
+.tw-text-center {
+    text-align: center;
+}
+
+.tw-text-xs {
+    font-size: 0.75rem;
+    line-height: 1rem;
+}
+
+.tw-text-sm {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+}
+
+.tw-text-lg {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+}
+
+.tw-text-\[10px\] {
+    font-size: 10px;
+}
+
+.tw-font-medium {
+    font-weight: 500;
+}
+
+.tw-font-semibold {
+    font-weight: 600;
+}
+
+.tw-font-bold {
+    font-weight: 700;
+}
+
+.tw-uppercase {
+    text-transform: uppercase;
+}
+
+.tw-tracking-wider {
+    letter-spacing: 0.05em;
+}
+
+/* Colors */
+.tw-text-white {
+    color: white;
+}
+
+.tw-text-gray-400 {
+    color: #9ca3af;
+}
+
+.tw-text-gray-500 {
+    color: #6b7280;
+}
+
+.tw-text-gray-800 {
+    color: #1f2937;
+}
+
+.tw-text-blue-500 {
+    color: #3b82f6;
+}
+
+.tw-text-blue-600 {
+    color: #2563eb;
+}
+
+.tw-text-purple-500 {
+    color: #8b5cf6;
+}
+
+.tw-text-purple-600 {
+    color: #7c3aed;
+}
+
+.tw-text-green-500 {
+    color: #22c55e;
+}
+
+.tw-text-green-600 {
+    color: #16a34a;
+}
+
+.tw-text-red-500 {
+    color: #ef4444;
+}
+
+/* Backgrounds */
+.tw-bg-green-50 {
+    background-color: #f0fdf4;
+}
+
+.tw-bg-red-50 {
+    background-color: #fef2f2;
+}
+
+.tw-bg-gradient-to-r {
+    background-image: linear-gradient(to right, var(--tw-gradient-stops));
+}
+
+.tw-from-purple-500 {
+    --tw-gradient-from: #8b5cf6;
+    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(139, 92, 246, 0));
+}
+
+.tw-to-pink-500 {
+    --tw-gradient-to: #ec4899;
+}
+
+/* Borders */
+.tw-border {
+    border-width: 1px;
+    border-style: solid;
+}
+
+.tw-border-gray-200 {
+    border-color: #e5e7eb;
+}
+
+.tw-border-green-500 {
+    border-color: #22c55e;
+}
+
+.tw-border-red-500 {
+    border-color: #ef4444;
+}
+
+.tw-rounded-xl {
+    border-radius: 0.75rem;
+}
+
+.tw-rounded-full {
+    border-radius: 9999px;
+}
+
+/* Effects */
+.tw-shadow-lg {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.tw-transition-all {
+    transition-property: all;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+}
+
+.tw-scale-\[1\.02\]:hover {
+    transform: scale(1.02);
+}
+
+/* States */
+.tw-opacity-25 {
+    opacity: 0.25;
+}
+
+.tw-opacity-50 {
+    opacity: 0.5;
+}
+
+.tw-opacity-75 {
+    opacity: 0.75;
+}
+
+.disabled\:tw-opacity-50:disabled {
+    opacity: 0.5;
+}
+
+.disabled\:tw-cursor-not-allowed:disabled {
+    cursor: not-allowed;
+}
+
+.disabled\:tw-scale-100:disabled {
+    transform: scale(1);
+}
+
+/* Focus states */
+.focus\:tw-outline-none:focus {
+    outline: none;
+}
+
+.focus\:tw-ring-2:focus {
+    box-shadow: 0 0 0 2px var(--tw-ring-color, rgba(139, 92, 246, 0.5));
+}
+
+.focus\:tw-ring-purple-500:focus {
+    --tw-ring-color: rgba(139, 92, 246, 0.5);
+}
+
+.focus\:tw-border-transparent:focus {
+    border-color: transparent;
+}
+
+/* Animation */
+.tw-animate-spin {
+    animation: tw-spin 1s linear infinite;
+}
+
+@keyframes tw-spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Hover states */
+.hover\:tw-shadow-lg:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.hover\:tw-scale-\[1\.02\]:hover {
+    transform: scale(1.02);
+}
