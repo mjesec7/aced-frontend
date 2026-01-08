@@ -181,7 +181,7 @@ export default {
 //       window.dispatchEvent(new Event("open-Login-modal"));
 //     }
 //   }
-// };
+};
 </script>
 
 <style scoped>
