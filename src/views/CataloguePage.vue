@@ -156,7 +156,7 @@
 
               <!-- Title -->
               <h3 class="font-semibold text-slate-800 mb-3 line-clamp-2 group-hover:text-indigo-600 transition-colors">
-                {{ course.name }}
+                {{ getTopicName(course) }}
               </h3>
 
               <!-- Meta -->
@@ -242,7 +242,7 @@
 
             <!-- Title -->
             <h3 class="font-semibold text-slate-800 mb-2 line-clamp-2 group-hover:text-indigo-600 transition-colors">
-              {{ course.name }}
+              {{ getTopicName(course) }}
             </h3>
 
             <!-- Level -->
@@ -328,7 +328,7 @@
             <h3 class="text-lg font-bold text-slate-800">{{ $t('catalogue.addToStudyPlan') }}</h3>
           </div>
           <p class="text-slate-500 text-sm text-center mb-6" v-if="selectedCourse">
-            <strong class="text-slate-800">{{ selectedCourse.name }}</strong>
+            <strong class="text-slate-800">{{ getTopicName(selectedCourse) }}</strong>
           </p>
           <div class="flex gap-3">
             <button @click="showAddModal = false" class="flex-1 py-2.5 border border-gray-200 rounded-xl font-medium text-slate-600 hover:bg-gray-50 transition-all">{{ $t('catalogue.cancel') }}</button>
@@ -344,7 +344,7 @@
         <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 text-center" @click.stop>
           <div class="text-5xl mb-3">✅</div>
           <h3 class="text-lg font-bold text-slate-800 mb-2">{{ $t('catalogue.added') }}</h3>
-          <p class="text-slate-500 text-sm mb-6" v-if="selectedCourse">{{ selectedCourse.name }}</p>
+          <p class="text-slate-500 text-sm mb-6" v-if="selectedCourse">{{ getTopicName(selectedCourse) }}</p>
           <button @click="showSuccessModal = false" class="w-full py-2.5 bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 transition-all">{{ $t('catalogue.great') }}</button>
         </div>
       </div>
@@ -436,7 +436,11 @@ export default {
       let list = this.courses;
       if (this.isSchoolMode) list = list.filter(c => this.canAccessLevel(Number(c.level || 1)));
       return list.filter(c => {
-        if (this.searchQuery && !c.name.toLowerCase().includes(this.searchQuery.toLowerCase())) return false;
+        if (this.searchQuery) {
+          // Search in the currently displayed localized name
+          const displayName = this.getTopicName(c).toLowerCase();
+          if (!displayName.includes(this.searchQuery.toLowerCase())) return false;
+        }
         if (this.selectedSubjectFilter && c.subject !== this.selectedSubjectFilter) return false;
         if (this.selectedLevelFilter && c.level !== this.selectedLevelFilter) return false;
         if (this.typeFilter === 'free' && c.type !== 'free') return false;
@@ -524,27 +528,30 @@ export default {
         if (existingTopics.has(tid)) return;
 
         if (!orphanMap.has(tid)) {
-          orphanMap.set(tid, { 
-            topicId: tid, 
-            name: this.getTopicName(l), 
-            level: String(l.level || '1'), 
-            subject: this.getSubjectName(l), 
-            lessonCount: 0, 
-            totalTime: 0, 
-            type: 'free' 
+          orphanMap.set(tid, {
+            topicId: tid,
+            // Store raw localized objects for reactive language switching
+            _rawData: l,
+            lessonName: l.lessonName || null,
+            topicName: l.topicName || l.name || null,
+            level: String(l.level || '1'),
+            subject: this.getSubjectName(l),
+            lessonCount: 0,
+            totalTime: 0,
+            type: 'free'
           });
         }
-        
+
         const c = orphanMap.get(tid);
         c.lessonCount++;
         c.totalTime += l.estimatedTime || l.duration || 10;
         if (['premium', 'start', 'pro'].includes(l.type)) c.type = 'premium';
       });
 
-      const orphans = Array.from(orphanMap.values()).map(c => ({ 
-        ...c, 
-        progress: this.userProgress[c.topicId] || 0, 
-        inStudyPlan: this.studyPlanTopics.includes(c.topicId) 
+      const orphans = Array.from(orphanMap.values()).map(c => ({
+        ...c,
+        progress: this.userProgress[c.topicId] || 0,
+        inStudyPlan: this.studyPlanTopics.includes(c.topicId)
       }));
 
       // If we are refreshing, we want to keep the main courses and just re-append orphans?
@@ -560,32 +567,38 @@ export default {
         for (const s in data) {
           for (const l in data[s]) {
             data[s][l].forEach(t => {
-              all.push({ 
-                topicId: t._id || t.id, 
-                name: this.getTopicName(t), // Use getTopicName which uses getLocalizedText
-                level: String(l), 
-                subject: s, 
-                lessonCount: t.lessonCount || 0, 
-                totalTime: t.totalTime || 10, 
-                type: t.type || 'free', 
-                progress: this.userProgress[t._id || t.id] || 0, 
-                inStudyPlan: this.studyPlanTopics.includes(t._id || t.id) 
+              all.push({
+                topicId: t._id || t.id,
+                // Store raw localized objects for reactive language switching
+                _rawData: t,
+                lessonName: t.lessonName || null,
+                topicName: t.topicName || t.name || null,
+                level: String(l),
+                subject: s,
+                lessonCount: t.lessonCount || 0,
+                totalTime: t.totalTime || 10,
+                type: t.type || 'free',
+                progress: this.userProgress[t._id || t.id] || 0,
+                inStudyPlan: this.studyPlanTopics.includes(t._id || t.id)
               });
             });
           }
         }
         this.courses = all;
       } else {
-        this.courses = data.map(c => ({ 
-          topicId: c._id || c.id || c.topicId, 
-          name: this.getTopicName(c), // Use getTopicName which uses getLocalizedText
-          level: String(c.level || 1), 
-          subject: c.subject || 'Uncategorized', 
-          lessonCount: c.lessonCount || 0, 
-          totalTime: c.totalTime || 10, 
-          type: c.type || 'free', 
-          progress: this.userProgress[c._id || c.id || c.topicId] || 0, 
-          inStudyPlan: this.studyPlanTopics.includes(c._id || c.id || c.topicId) 
+        this.courses = data.map(c => ({
+          topicId: c._id || c.id || c.topicId,
+          // Store raw localized objects for reactive language switching
+          _rawData: c,
+          lessonName: c.lessonName || null,
+          topicName: c.topicName || c.name || null,
+          level: String(c.level || 1),
+          subject: c.subject || 'Uncategorized',
+          lessonCount: c.lessonCount || 0,
+          totalTime: c.totalTime || 10,
+          type: c.type || 'free',
+          progress: this.userProgress[c._id || c.id || c.topicId] || 0,
+          inStudyPlan: this.studyPlanTopics.includes(c._id || c.id || c.topicId)
         }));
       }
     },
@@ -601,7 +614,7 @@ export default {
       try {
         let rawId = this.selectedCourse.topicId || this.selectedCourse._id || this.selectedCourse.id;
         if (rawId && typeof rawId === 'object') rawId = rawId._id || rawId.id;
-        const r = await addToStudyList(this.userId, { topicId: rawId, topic: this.selectedCourse.name, subject: this.selectedCourse.subject || 'General', level: parseInt(this.selectedCourse.level) || 1, lessonCount: this.selectedCourse.lessonCount || 0, totalTime: this.selectedCourse.totalTime || 10, type: this.selectedCourse.type || 'free' });
+        const r = await addToStudyList(this.userId, { topicId: rawId, topic: this.getTopicName(this.selectedCourse), subject: this.selectedCourse.subject || 'General', level: parseInt(this.selectedCourse.level) || 1, lessonCount: this.selectedCourse.lessonCount || 0, totalTime: this.selectedCourse.totalTime || 10, type: this.selectedCourse.type || 'free' });
         if (r?.success) {
           this.selectedCourse.inStudyPlan = true;
           this.studyPlanTopics.push(this.selectedCourse.topicId);
