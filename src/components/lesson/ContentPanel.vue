@@ -184,6 +184,7 @@
 
 <script>
 import { eventBus } from '@/utils/eventBus';
+import { useLanguage } from '@/composables/useLanguage';
 
 export default {
   name: 'ContentPanel',
@@ -294,51 +295,12 @@ export default {
     }
   },
 
-  methods: {
-    /**
-     * Extract localized text from a value that can be:
-     * - A simple string
-     * - An object with language keys { en, ru, uz }
-     * - null/undefined
-     */
-    getLocalizedText(value) {
-      if (!value) return '';
-      
-      // If it's already a string, return it
-      if (typeof value === 'string') {
-        return value.trim();
-      }
-      
-      // If it's an object with language keys
-      if (typeof value === 'object' && value !== null) {
-        const lang = this.currentLang;
-        
-        // Try current language first
-        if (value[lang] && typeof value[lang] === 'string') {
-          return value[lang].trim();
-        }
-        
-        // Fallback order: en -> ru -> uz -> first available string
-        const fallbacks = ['en', 'ru', 'uz'];
-        for (const fb of fallbacks) {
-          if (value[fb] && typeof value[fb] === 'string') {
-            return value[fb].trim();
-          }
-        }
-        
-        // Try to find any string value in the object
-        const values = Object.values(value);
-        for (const v of values) {
-          if (typeof v === 'string' && v.trim()) {
-            return v.trim();
-          }
-        }
-      }
-      
-      // Last resort: convert to string
-      return String(value || '');
-    },
+  setup() {
+    const { getLocalizedText, currentLanguage } = useLanguage();
+    return { getLocalizedText, currentLanguage };
+  },
 
+  methods: {
     getStepIcon(stepType) {
       const icons = {
         explanation: '📚',
@@ -416,7 +378,8 @@ export default {
         hasContentText: !!step.content?.text,
         contentTextType: typeof step.content?.text,
         hasData: !!step.data,
-        lang: this.currentLang
+        hasData: !!step.data,
+        lang: this.currentLanguage
       });
 
       // Game steps - special handling

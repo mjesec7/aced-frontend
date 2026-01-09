@@ -128,8 +128,81 @@ export function useLanguage() {
     setLanguage,
     getLanguage,
     isLanguage,
-    cycleLanguage
+    cycleLanguage,
+    getLocalizedText
   };
+}
+
+/**
+ * Extract localized text from a field that may be:
+ * - A simple string
+ * - An object with language keys { en: "...", ru: "...", uz: "..." }
+ * - Part of a translations object
+ * @param {any} data - The data object or string
+ * @param {string} [field] - Optional field name if data is an object
+ * @param {string} [fallback] - Fallback text if nothing found
+ * @returns {string} Localized text
+ */
+export function getLocalizedText(data, field = null, fallback = '') {
+  if (!data) return fallback;
+
+  const lang = currentLanguage.value || 'ru';
+
+  // Case 1: data is the value itself (string or object with lang keys)
+  if (!field) {
+    if (typeof data === 'string') return data.trim();
+
+    if (typeof data === 'object') {
+      // Try current language
+      if (data[lang] && typeof data[lang] === 'string') return data[lang].trim();
+
+      // Try fallbacks
+      const fallbacks = ['en', 'ru', 'uz'];
+      for (const fb of fallbacks) {
+        if (data[fb] && typeof data[fb] === 'string') return data[fb].trim();
+      }
+
+      // Try any string value
+      const values = Object.values(data);
+      for (const v of values) {
+        if (typeof v === 'string' && v.trim()) return v.trim();
+      }
+    }
+    return fallback;
+  }
+
+  // Case 2: data is a container object, we need to look up 'field'
+  const value = data[field];
+
+  // If the field value is a simple string
+  if (typeof value === 'string' && value.trim()) {
+    return value.trim();
+  }
+
+  // If the field value is an object with language keys
+  if (typeof value === 'object' && value !== null) {
+    if (value[lang] && typeof value[lang] === 'string') return value[lang].trim();
+
+    const fallbacks = ['en', 'ru', 'uz'];
+    for (const fb of fallbacks) {
+      if (value[fb] && typeof value[fb] === 'string') return value[fb].trim();
+    }
+
+    const values = Object.values(value);
+    for (const v of values) {
+      if (typeof v === 'string' && v.trim()) return v.trim();
+    }
+  }
+
+  // Check translations object in the data container
+  if (data.translations && typeof data.translations === 'object') {
+    const langTrans = data.translations[lang] || data.translations.en || data.translations.ru || data.translations.uz;
+    if (langTrans && langTrans[field] && typeof langTrans[field] === 'string') {
+      return langTrans[field].trim();
+    }
+  }
+
+  return fallback;
 }
 
 // Export for direct access

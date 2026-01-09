@@ -44,10 +44,10 @@
         <div class="mb-6 sm:mb-8">
           <div class="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 shadow-lg rounded-2xl p-4 sm:p-6 text-center">
             <h2 class="text-lg sm:text-2xl font-bold text-slate-900 mb-2">
-              {{ selectionCurrentQuestion.prompt }}
+              {{ getLocalizedText(selectionCurrentQuestion.prompt) }}
             </h2>
             <p class="text-sm sm:text-base text-purple-600">
-              {{ selectionCurrentQuestion.hint || 'Click on the shape below' }}
+              {{ getLocalizedText(selectionCurrentQuestion.hint) || 'Click on the shape below' }}
             </p>
           </div>
         </div>
@@ -77,7 +77,7 @@
                 class="w-16 h-16 sm:w-24 sm:h-24 object-contain mb-2"
               />
               <p class="text-xs sm:text-sm font-medium text-slate-700">
-                {{ item.name }}
+                {{ getLocalizedText(item.name) }}
               </p>
             </div>
           </button>
@@ -300,6 +300,7 @@
 import { ref, computed, watch } from 'vue';
 import { useExercises } from '@/composables/useExercises';
 import { useSelectionGame } from '@/composables/useSelectionGame';
+import { useLanguage } from '@/composables/useLanguage';
 
 // Game Components
 import GameContainer from '@/components/games/base/GameContainer.vue';
@@ -333,6 +334,8 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['submit', 'next-exercise']);
+
+const { getLocalizedText } = useLanguage();
 
 const { 
   userAnswer, 
@@ -390,8 +393,8 @@ const exerciseContentData = computed(() => {
   return ex;
 });
 
-const exerciseTitle = computed(() => props.currentExercise?.title || props.currentExercise?.content?.title || exerciseContentData.value?.title || 'Exercise');
-const exerciseDescription = computed(() => props.currentExercise?.instructions || props.currentExercise?.description || props.currentExercise?.content?.description || '');
+const exerciseTitle = computed(() => getLocalizedText(props.currentExercise?.title) || getLocalizedText(props.currentExercise?.content?.title) || getLocalizedText(exerciseContentData.value?.title) || 'Exercise');
+const exerciseDescription = computed(() => getLocalizedText(props.currentExercise?.instructions) || getLocalizedText(props.currentExercise?.description) || getLocalizedText(props.currentExercise?.content?.description) || '');
 const exerciseTypeLabel = computed(() => {
   const type = exerciseType.value;
   if (type === 'quiz') return 'Quiz Question';
@@ -399,7 +402,7 @@ const exerciseTypeLabel = computed(() => {
   return 'Question';
 });
 
-const questionText = computed(() => props.currentExercise?.question || props.currentExercise?.content?.question || props.currentExercise?.data?.question || props.currentExercise?.prompt || 'Select the correct answer');
+const questionText = computed(() => getLocalizedText(props.currentExercise?.question) || getLocalizedText(props.currentExercise?.content?.question) || getLocalizedText(props.currentExercise?.data?.question) || getLocalizedText(props.currentExercise?.prompt) || 'Select the correct answer');
 
 const normalizedOptions = computed(() => {
   const ex = props.currentExercise;
@@ -412,9 +415,14 @@ const normalizedOptions = computed(() => {
 const getOptionText = (option) => {
   if (typeof option === 'string') return option;
   if (typeof option === 'number') return String(option);
-  if (option?.text) return option.text;
-  if (option?.label) return option.label;
-  if (option?.value) return option.value;
+  
+  // Handle localized object directly
+  const localized = getLocalizedText(option);
+  if (localized && typeof localized === 'string') return localized;
+
+  if (option?.text) return getLocalizedText(option.text);
+  if (option?.label) return getLocalizedText(option.label);
+  if (option?.value) return getLocalizedText(option.value);
   return String(option);
 };
 

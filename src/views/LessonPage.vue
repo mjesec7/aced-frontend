@@ -470,163 +470,36 @@ import FloatingAIAssistant from '@/components/lesson/FloatingAIAssistant.vue'
 import { getLessonById } from '@/api/lessons'
 
 // Import language composable for multi-language support
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage, getLocalizedText } from '@/composables/useLanguage';
 
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
-const { language } = useLanguage()
+const { language, setLanguage, currentLanguageInfo } = useLanguage();
 
 // ==================== LOCALIZATION HELPERS ====================
 
-/**
- * Extract localized text from a field that may be:
- * - A simple string
- * - An object with language keys { en: "...", ru: "...", uz: "..." }
- * - Part of a translations object
- */
-/**
- * Extract localized text from a field that may be:
- * - A simple string
- * - An object with language keys { en: "...", ru: "...", uz: "..." }
- * - Part of a translations object
- */
-function getLocalizedText(data, field, fallback = '') {
-  if (!data) return fallback
-
-  const lang = language.value || localStorage.getItem('lang') || 'ru'
-  const value = data[field]
-
-  // If the field is a simple string, return it
-  if (typeof value === 'string' && value.trim()) {
-    return value.trim()
-  }
-
-  // If the field is an object with language keys (your JSON format)
-  if (typeof value === 'object' && value !== null) {
-    // Try to get the value for current language
-    let localized = value[lang]
+    // Helper to get localized text
+    // Now using the shared helper from useLanguage.js
     
-    // If not found, try other languages in priority order
-    if (!localized || typeof localized !== 'string') {
-      localized = value.en || value.ru || value.uz
-    }
-    
-    if (localized && typeof localized === 'string' && localized.trim()) {
-      return localized.trim()
-    }
-    
-    // Try to get any available string value from the object
-    const values = Object.values(value)
-    for (const v of values) {
-      if (v && typeof v === 'string' && v.trim()) {
-        return v.trim()
-      }
-    }
-  }
+    // Helper to extract lesson title
+    const extractLessonTitle = (lesson) => {
+      if (!lesson) return 'Lesson';
+      return getLocalizedText(lesson, 'lessonName') || 
+             getLocalizedText(lesson, 'title') || 
+             getLocalizedText(lesson, 'name') || 
+             'Lesson';
+    };
 
-  // Check translations object (if your data has a translations property)
-  if (data.translations && typeof data.translations === 'object') {
-    const langTranslations = data.translations[lang] || data.translations.en || data.translations.ru || data.translations.uz
-    if (langTranslations && langTranslations[field]) {
-      const translatedValue = langTranslations[field]
-      if (typeof translatedValue === 'string' && translatedValue.trim()) {
-        return translatedValue.trim()
-      }
-    }
-  }
-
-  return fallback
-}
-
-/**
- * Extract lesson title from multiple possible fields with localization
- */
-function extractLessonTitle(lesson) {
-  if (!lesson) return 'Untitled Lesson'
-
-  const lang = language.value || localStorage.getItem('lang') || 'ru'
-
-  // Priority order for title fields
-  const titleFields = ['lessonName', 'title', 'name']
-
-  for (const field of titleFields) {
-    const value = lesson[field]
-
-    // Simple string
-    if (typeof value === 'string' && value.trim()) {
-      return value.trim()
-    }
-
-    // Object with language keys (your JSON format)
-    if (typeof value === 'object' && value !== null) {
-      let localized = value[lang]
-      if (!localized || typeof localized !== 'string') {
-        localized = value.en || value.ru || value.uz
-      }
-      if (localized && typeof localized === 'string' && localized.trim()) {
-        return localized.trim()
-      }
-    }
-  }
-
-  // Check translations object
-  if (lesson.translations && typeof lesson.translations === 'object') {
-    const langData = lesson.translations[lang] || lesson.translations.en || lesson.translations.ru || lesson.translations.uz
-    if (langData) {
-      for (const field of titleFields) {
-        if (langData[field] && typeof langData[field] === 'string' && langData[field].trim()) {
-          return langData[field].trim()
-        }
-      }
-    }
-  }
-
-  return 'Untitled Lesson'
-}
-
-/**
- * Extract lesson description/subtitle with localization
- */
-function extractLessonDescription(lesson) {
-  if (!lesson) return ''
-
-  const lang = language.value || localStorage.getItem('lang') || 'ru'
-
-  const descFields = ['subtitle', 'description', 'summary', 'desc']
-
-  for (const field of descFields) {
-    const value = lesson[field]
-
-    if (typeof value === 'string' && value.trim()) {
-      return value.trim()
-    }
-
-    if (typeof value === 'object' && value !== null) {
-      let localized = value[lang]
-      if (!localized || typeof localized !== 'string') {
-        localized = value.en || value.ru || value.uz
-      }
-      if (localized && typeof localized === 'string' && localized.trim()) {
-        return localized.trim()
-      }
-    }
-  }
-
-  // Check translations object
-  if (lesson.translations && typeof lesson.translations === 'object') {
-    const langData = lesson.translations[lang] || lesson.translations.en || lesson.translations.ru || lesson.translations.uz
-    if (langData) {
-      for (const field of descFields) {
-        if (langData[field] && typeof langData[field] === 'string' && langData[field].trim()) {
-          return langData[field].trim()
-        }
-      }
-    }
-  }
-
-  return ''
-}
+    // Helper to extract lesson description
+    const extractLessonDescription = (lesson) => {
+      if (!lesson) return '';
+      return getLocalizedText(lesson, 'subtitle') || 
+             getLocalizedText(lesson, 'description') || 
+             getLocalizedText(lesson, 'summary') || 
+             getLocalizedText(lesson, 'desc') || 
+             '';
+    };
 
 /**
  * Process step content with localization
@@ -662,10 +535,10 @@ function processStepWithLocalization(step, index) {
     ...step,
     id: step.id || step._id || `step_${index}`,
     type: step.type || 'explanation',
-    title: getStepField('title'),
-    content: step.content, // Pass the entire content object without localization
-    description: getStepField('description'),
-    explanation: getStepField('explanation'),
+    title: getLocalizedText(step, 'title') || `Step ${index + 1}`,
+    content: step.content, // Pass the entire content
+    description: getLocalizedText(step, 'description'),
+    explanation: getLocalizedText(step, 'explanation'),
     // Preserve other step properties
     data: step.data,
     images: step.images || [],
