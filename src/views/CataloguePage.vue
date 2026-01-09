@@ -367,6 +367,7 @@ import { userStatusMixin } from '@/composables/useUserStatus';
 import { useLevelSystem } from '@/composables/useLevelSystem';
 import { useModeContent } from '@/composables/useModeContent';
 import { getAllLessons, getUserProgress, getUserStudyList, addToStudyList, getTopicsGrouped, getTopicsAsCourses } from '@/api';
+import { useLanguage, getLocalizedText } from '@/composables/useLanguage';
 import PaymentModal from '@/components/Modals/PaymentModal.vue';
 
 export default {
@@ -377,7 +378,8 @@ export default {
   setup() {
     const { isSchoolMode, isStudyCentreMode, canAccessLevel, currentLevelCap, placementTestTaken } = useLevelSystem();
     const { groupedContent, courseCards, loading: modeLoading, error: modeError, subjects, fetchContent, getLevelsForSubject, getTopicsForLevel, totalTopicsCount } = useModeContent();
-    return { isSchoolMode, isStudyCentreMode, canAccessLevel, currentLevelCap, placementTestTaken, groupedContent, courseCards, modeLoading, modeError, subjects, fetchContent, getLevelsForSubject, getTopicsForLevel, totalTopicsCount };
+    const { language } = useLanguage();
+    return { isSchoolMode, isStudyCentreMode, canAccessLevel, currentLevelCap, placementTestTaken, groupedContent, courseCards, modeLoading, modeError, subjects, fetchContent, getLevelsForSubject, getTopicsForLevel, totalTopicsCount, language };
   },
 
   data() {
@@ -400,9 +402,18 @@ export default {
       showSuccessModal: false,
       showPaywall: false,
       selectedCourse: null,
+      selectedCourse: null,
       requestedTopicId: null,
+      rawData: null, // Store raw API response
+      rawMode: null, // Store which mode the data is for
     };
   },
+
+  watch: {
+    // Re-process courses when language changes
+    language() {
+      this.refreshCourses();
+    }
 
   computed: {
     ...mapGetters('user', { vuexUserStatus: 'userStatus' }),
@@ -457,10 +468,18 @@ export default {
         try {
           if (this.isSchoolMode) {
             const r = await getTopicsGrouped();
-            if (r.success && r.data) { this.processModeContent(r.data, 'school'); }
+            if (r.success && r.data) { 
+              this.rawData = r.data;
+              this.rawMode = 'school';
+              this.processModeContent(r.data, 'school'); 
+            }
           } else {
             const r = await getTopicsAsCourses();
-            if (r.success && r.courses) { this.processModeContent(r.courses, 'study-centre'); }
+            if (r.success && r.courses) { 
+              this.rawData = r.courses;
+              this.rawMode = 'study-centre';
+              this.processModeContent(r.courses, 'study-centre'); 
+            }
           }
         } catch {}
         
@@ -468,6 +487,15 @@ export default {
         this.lessons = lessonsRes?.data || [];
         this.mergeOrphanLessons();
       } catch {} finally { this.isLoading = false; }
+    },
+
+    refreshCourses() {
+      if (this.rawData && this.rawMode) {
+        this.processModeContent(this.rawData, this.rawMode);
+      }
+      if (this.lessons.length) {
+        this.mergeOrphanLessons();
+      }
     },
     
     processProgressData(data) {
@@ -518,16 +546,46 @@ export default {
         inStudyPlan: this.studyPlanTopics.includes(c.topicId) 
       }));
 
+      // If we are refreshing, we want to keep the main courses and just re-append orphans?
+      // Actually, processModeContent resets this.courses, so we just append here.
+      // But if we call mergeOrphanLessons multiple times, we need to be careful not to duplicate.
+      // Since refreshCourses calls processModeContent first (which resets), this is safe.
       this.courses = [...this.courses, ...orphans];
     },
     
     processModeContent(data, mode) {
       if (mode === 'school') {
         const all = [];
-        for (const s in data) for (const l in data[s]) data[s][l].forEach(t => all.push({ topicId: t._id || t.id, name: this.getLocalizedName(t.name) || this.getLocalizedName(t.topicName) || this.getLocalizedName(t.title) || 'Course', level: String(l), subject: s, lessonCount: t.lessonCount || 0, totalTime: t.totalTime || 10, type: t.type || 'free', progress: this.userProgress[t._id || t.id] || 0, inStudyPlan: this.studyPlanTopics.includes(t._id || t.id) }));
+        for (const s in data) {
+          for (const l in data[s]) {
+            data[s][l].forEach(t => {
+              all.push({ 
+                topicId: t._id || t.id, 
+                name: this.getTopicName(t), // Use getTopicName which uses getLocalizedText
+                level: String(l), 
+                subject: s, 
+                lessonCount: t.lessonCount || 0, 
+                totalTime: t.totalTime || 10, 
+                type: t.type || 'free', 
+                progress: this.userProgress[t._id || t.id] || 0, 
+                inStudyPlan: this.studyPlanTopics.includes(t._id || t.id) 
+              });
+            });
+          }
+        }
         this.courses = all;
       } else {
-        this.courses = data.map(c => ({ topicId: c._id || c.id || c.topicId, name: this.getLocalizedName(c.name) || this.getLocalizedName(c.topicName) || this.getLocalizedName(c.title) || 'Course', level: String(c.level || 1), subject: c.subject || 'Uncategorized', lessonCount: c.lessonCount || 0, totalTime: c.totalTime || 10, type: c.type || 'free', progress: this.userProgress[c._id || c.id || c.topicId] || 0, inStudyPlan: this.studyPlanTopics.includes(c._id || c.id || c.topicId) }));
+        this.courses = data.map(c => ({ 
+          topicId: c._id || c.id || c.topicId, 
+          name: this.getTopicName(c), // Use getTopicName which uses getLocalizedText
+          level: String(c.level || 1), 
+          subject: c.subject || 'Uncategorized', 
+          lessonCount: c.lessonCount || 0, 
+          totalTime: c.totalTime || 10, 
+          type: c.type || 'free', 
+          progress: this.userProgress[c._id || c.id || c.topicId] || 0, 
+          inStudyPlan: this.studyPlanTopics.includes(c._id || c.id || c.topicId) 
+        }));
       }
     },
     
@@ -557,42 +615,18 @@ export default {
     handlePaymentSuccess() { this.showPaywall = false; this.$forceUpdate(); },
     hashString(str) { let h = 0; for (let i = 0; i < str.length; i++) { h = ((h << 5) - h) + str.charCodeAt(i); h = h & h; } return Math.abs(h); },
     extractTopicId(tid) { if (!tid) return null; if (typeof tid === 'string') return tid; if (typeof tid === 'object' && tid._id) return tid._id; return String(tid); },
-    getLocalizedName(field) {
-      if (!field) return '';
-      if (typeof field === 'string') return field.trim();
-      if (typeof field === 'object') {
-        const lang = localStorage.getItem('lang') || 'ru';
-        const value = field[lang] || field.en || field.ru || field.uz;
-        if (value && typeof value === 'string') return value.trim();
-        // Fallback to first available string
-        const values = Object.values(field);
-        for (const v of values) {
-          if (v && typeof v === 'string') return v.trim();
-        }
-      }
-      return '';
-    },
     getSubjectName(l) {
-      if (l?.subjectName) return this.getLocalizedName(l.subjectName);
+      if (l?.subjectName) return getLocalizedText(l.subjectName);
       if (l?.subject) return String(l.subject);
       return 'Uncategorized';
     },
     getTopicName(l) {
-      if (l?.topic && typeof l.topic === 'string' && l.topic.trim()) return l.topic.trim();
-      if (l?.topicName && typeof l.topicName === 'string') return l.topicName.trim();
-      if (l?.title) return this.getLocalizedName(l.title); // Handle title object
-      
-      const lang = localStorage.getItem('lang') || 'ru';
-      if (l?.translations?.[lang]?.topic) return l.translations[lang].topic.trim();
-      // Handle multilingual lessonName object
-      if (l?.lessonName) {
-        if (typeof l.lessonName === 'string') return l.lessonName.trim();
-        if (typeof l.lessonName === 'object') {
-          const localized = l.lessonName[lang] || l.lessonName.en || l.lessonName.ru || l.lessonName.uz;
-          if (localized && typeof localized === 'string') return localized.trim();
-        }
-      }
-      return 'Untitled';
+      // Priority: topicName (localized), title (localized), topic (string), name (localized)
+      return getLocalizedText(l, 'topicName') || 
+             getLocalizedText(l, 'title') || 
+             getLocalizedText(l, 'name') ||
+             (l?.topic && typeof l.topic === 'string' ? l.topic : '') ||
+             'Untitled';
     },
     getLevelDescription(l) {
       const keys = { 1: 'catalogue.beginner', 2: 'catalogue.elementary', 3: 'catalogue.intermediate', 4: 'catalogue.intermediate', 5: 'catalogue.upperIntermediate', 6: 'catalogue.advanced' };
