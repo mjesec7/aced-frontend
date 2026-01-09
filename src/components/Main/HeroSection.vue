@@ -6,7 +6,7 @@
     <!-- Navigation - highest z-index within hero for dropdown visibility -->
     <nav class="hero-nav">
       <img src="@/assets/logo.png" alt="ACED" class="h-8 sm:h-10 lg:h-12" />
-      <!-- <UserSection /> -->
+      <UserSection />
     </nav>
 
     <!-- Hero Content - below navigation -->
@@ -166,10 +166,10 @@
 </template>
 
 <script>
-// import UserSection from "@/components/Main/UserSection.vue";
+import UserSection from "@/components/Main/UserSection.vue";
 
 export default {
-//   components: { UserSection },
+  components: { UserSection },
 //   methods: {
 //     handleStartFree() {
 //       const acedSection = document.getElementById('aced');

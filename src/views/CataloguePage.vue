@@ -457,16 +457,16 @@ export default {
         try {
           if (this.isSchoolMode) {
             const r = await getTopicsGrouped();
-            if (r.success && r.data) { this.processModeContent(r.data, 'school'); return; }
+            if (r.success && r.data) { this.processModeContent(r.data, 'school'); }
           } else {
             const r = await getTopicsAsCourses();
-            if (r.success && r.courses) { this.processModeContent(r.courses, 'study-centre'); return; }
+            if (r.success && r.courses) { this.processModeContent(r.courses, 'study-centre'); }
           }
         } catch {}
         
         const lessonsRes = await getAllLessons();
         this.lessons = lessonsRes?.data || [];
-        this.processAllCourses();
+        this.mergeOrphanLessons();
       } catch {} finally { this.isLoading = false; }
     },
     
@@ -482,18 +482,43 @@ export default {
       return final;
     },
     
-    processAllCourses() {
-      const map = new Map();
+    mergeOrphanLessons() {
+      // Create a map of existing courses for quick lookup
+      const existingTopics = new Set(this.courses.map(c => c.topicId));
+      const orphanMap = new Map();
+
       this.lessons.forEach(l => {
         const tid = this.extractTopicId(l.topicId);
         if (!tid) return;
-        if (!map.has(tid)) map.set(tid, { topicId: tid, name: this.getTopicName(l), level: String(l.level || '1'), subject: String(l.subject || 'Uncategorized'), lessonCount: 0, totalTime: 0, type: 'free' });
-        const c = map.get(tid);
+
+        // If topic already exists in courses, we might want to update stats, but for now we skip
+        if (existingTopics.has(tid)) return;
+
+        if (!orphanMap.has(tid)) {
+          orphanMap.set(tid, { 
+            topicId: tid, 
+            name: this.getTopicName(l), 
+            level: String(l.level || '1'), 
+            subject: this.getSubjectName(l), 
+            lessonCount: 0, 
+            totalTime: 0, 
+            type: 'free' 
+          });
+        }
+        
+        const c = orphanMap.get(tid);
         c.lessonCount++;
         c.totalTime += l.estimatedTime || l.duration || 10;
         if (['premium', 'start', 'pro'].includes(l.type)) c.type = 'premium';
       });
-      this.courses = Array.from(map.values()).map(c => ({ ...c, progress: this.userProgress[c.topicId] || 0, inStudyPlan: this.studyPlanTopics.includes(c.topicId) }));
+
+      const orphans = Array.from(orphanMap.values()).map(c => ({ 
+        ...c, 
+        progress: this.userProgress[c.topicId] || 0, 
+        inStudyPlan: this.studyPlanTopics.includes(c.topicId) 
+      }));
+
+      this.courses = [...this.courses, ...orphans];
     },
     
     processModeContent(data, mode) {
@@ -547,9 +572,16 @@ export default {
       }
       return '';
     },
+    getSubjectName(l) {
+      if (l?.subjectName) return this.getLocalizedName(l.subjectName);
+      if (l?.subject) return String(l.subject);
+      return 'Uncategorized';
+    },
     getTopicName(l) {
       if (l?.topic && typeof l.topic === 'string' && l.topic.trim()) return l.topic.trim();
       if (l?.topicName && typeof l.topicName === 'string') return l.topicName.trim();
+      if (l?.title) return this.getLocalizedName(l.title); // Handle title object
+      
       const lang = localStorage.getItem('lang') || 'ru';
       if (l?.translations?.[lang]?.topic) return l.translations[lang].topic.trim();
       // Handle multilingual lessonName object
