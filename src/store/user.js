@@ -230,8 +230,7 @@ const state = () => ({
     },
     lastError: null,
     errorCount: 0
-  }
-},
+  },
 
   rewards: {
     level: 1,
