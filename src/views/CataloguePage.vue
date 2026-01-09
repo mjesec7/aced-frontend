@@ -622,10 +622,11 @@ export default {
       return 'Uncategorized';
     },
     getTopicName(l) {
-      // Priority: topicName (localized), title (localized), topic (string), name (localized)
-      return getLocalizedText(l, 'topicName') || 
-             getLocalizedText(l, 'title') || 
+      // Priority: lessonName (localized), topicName (localized), name (localized), title (localized), topic (string)
+      return getLocalizedText(l, 'lessonName') ||
+             getLocalizedText(l, 'topicName') ||
              getLocalizedText(l, 'name') ||
+             getLocalizedText(l, 'title') ||
              (l?.topic && typeof l.topic === 'string' ? l.topic : '') ||
              'Untitled';
     },

@@ -135,9 +135,16 @@
 <script>
 import { getAuth } from "firebase/auth";
 import { getTopics, getAllLessons } from '@/api';
+import { useLanguage, getLocalizedText } from '@/composables/useLanguage';
 
 export default {
   name: "AcedSection",
+
+  setup() {
+    const { language } = useLanguage();
+    return { language };
+  },
+
   data() {
     return {
       allCourses: [],
@@ -153,6 +160,13 @@ export default {
       maxRetries: 3,
       navigationInProgress: false
     };
+  },
+
+  watch: {
+    // Re-filter courses when language changes to update displayed names
+    language() {
+      this.filterCourses();
+    }
   },
 
   async mounted() {
@@ -229,13 +243,14 @@ export default {
       lessons.forEach((lesson) => {
         if (!lesson?.topicId) return;
         const topicId = typeof lesson.topicId === 'string' ? lesson.topicId : lesson.topicId._id || String(lesson.topicId);
-        const topicName = lesson?.topic || this.getLocalizedLessonName(lesson) || 'No Topic';
 
         if (!coursesMap.has(topicId)) {
           coursesMap.set(topicId, {
             _id: topicId,
-            name: topicName,
-            description: `Course on "${topicName}"`,
+            // Store the localized objects directly for language support
+            lessonName: lesson.lessonName || null,
+            name: lesson.lessonName || lesson.topic || null,
+            description: lesson.description || null,
             level: lesson.level || 1,
             type: lesson.type || 'free',
             lessons: [lesson],
@@ -245,6 +260,14 @@ export default {
           const course = coursesMap.get(topicId);
           course.lessons.push(lesson);
           course.totalTime += parseInt(lesson.estimatedTime || 10);
+          // Update localized fields from first lesson if not set
+          if (!course.lessonName && lesson.lessonName) {
+            course.lessonName = lesson.lessonName;
+            course.name = lesson.lessonName;
+          }
+          if (!course.description && lesson.description) {
+            course.description = lesson.description;
+          }
         }
       });
 
@@ -320,12 +343,57 @@ export default {
     },
 
     getTopicName(course) {
-      return course?.name || course?.topicName || this.$t('course.untitled');
+      if (!course) return this.$t('course.untitled');
+
+      // Try lessonName first (the JSON format uses lessonName for course titles)
+      if (course.lessonName) {
+        const name = getLocalizedText(course.lessonName);
+        if (name) return name;
+      }
+
+      // Try name field (could be string or localized object)
+      if (course.name) {
+        if (typeof course.name === 'object') {
+          const name = getLocalizedText(course.name);
+          if (name) return name;
+        } else if (typeof course.name === 'string') {
+          return course.name;
+        }
+      }
+
+      // Try topicName field
+      if (course.topicName) {
+        const name = getLocalizedText(course.topicName);
+        if (name) return name;
+      }
+
+      // Try title field
+      if (course.title) {
+        const name = getLocalizedText(course.title);
+        if (name) return name;
+      }
+
+      return this.$t('course.untitled');
     },
 
     getTopicDescription(course) {
-      const desc = course?.description || '';
-      return desc.length > 80 ? desc.substring(0, 80) + '...' : desc || `Learn ${this.getTopicName(course)}`;
+      if (!course) return '';
+
+      // Handle localized description object
+      let desc = '';
+      if (course.description) {
+        if (typeof course.description === 'object') {
+          desc = getLocalizedText(course.description);
+        } else if (typeof course.description === 'string') {
+          desc = course.description;
+        }
+      }
+
+      if (!desc) {
+        return `${this.$t('acedSection.learn') || 'Learn'} ${this.getTopicName(course)}`;
+      }
+
+      return desc.length > 80 ? desc.substring(0, 80) + '...' : desc;
     },
 
     getTopicType(course) {
