@@ -1,5 +1,6 @@
 <template>
   <div class="user-section-wrapper">
+    <!-- Force update -->
     <!-- Language Switcher -->
     <LanguageSwitcher :compact="true" />
 
