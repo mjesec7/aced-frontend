@@ -860,33 +860,31 @@ const actions = {
       return { success: false, error: error.message };
     }
   }
-};
-
-
+},
   /**
    * Save user data to server
    */
   async saveUser({ commit, state }, { userData, token }) {
 
-  try {
-    const { saveUser } = await import('@/api/user');
-    const result = await saveUser(userData);
+    try {
+      const { saveUser } = await import('@/api/user');
+      const result = await saveUser(userData);
 
-    if (result.success && result.user) {
-      commit('SET_USER', result.user);
-      return { success: true, user: result.user };
+      if (result.success && result.user) {
+        commit('SET_USER', result.user);
+        return { success: true, user: result.user };
+      }
+      return { success: false, error: 'Failed to save user' };
+    } catch (error) {
+      console.error('❌ [store/user] saveUser error:', error);
+      return { success: false, error: error.message };
     }
-    return { success: false, error: 'Failed to save user' };
-  } catch (error) {
-    console.error('❌ [store/user] saveUser error:', error);
-    return { success: false, error: error.message };
-  }
-},
+  },
 
-  /**
-   * Logout user
-   */
-  async logout({ commit }) {
+    /**
+     * Logout user
+     */
+    async logout({ commit }) {
 
   commit('CLEAR_USER');
   return { success: true };
