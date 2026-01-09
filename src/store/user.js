@@ -32,8 +32,6 @@ const triggerGlobalEvent = (eventName, data = {}) => {
       window.eventBus.emit(eventName, enhancedData);
     }
 
-
-
   } catch (eventError) {
     console.error(`❌ [store/user] Event trigger error:`, eventError);
   }
@@ -229,7 +227,11 @@ const state = () => ({
       sync: false
     },
     lastError: null,
-    errorCount: 0
+    errorCount: 0,
+    errors: {
+      lastError: null,
+      errorCount: 0
+    }
   },
 
   rewards: {
@@ -260,7 +262,7 @@ const mutations = {
         localStorage.setItem('userId', user.firebaseId || user.uid || user._id);
         localStorage.setItem('firebaseUserId', user.firebaseId || user.uid);
       } catch (e) {
-
+        console.warn('[store/user] Failed to save user to localStorage:', e);
       }
     }
 
@@ -308,13 +310,10 @@ const mutations = {
     const validStatuses = ['free', 'start', 'pro', 'premium'];
     const newStatus = validStatuses.includes(status) ? status : 'free';
 
-
-
     state.userStatus = newStatus;
 
     // Defensive check: Ensure subscription is an object
     if (!state.subscription || typeof state.subscription !== 'object') {
-
       state.subscription = {
         plan: 'free',
         status: 'inactive',
@@ -344,7 +343,7 @@ const mutations = {
       localStorage.setItem('subscriptionPlan', newStatus);
       localStorage.setItem('plan', newStatus);
     } catch (e) {
-
+      console.warn('[store/user] Failed to save status to localStorage:', e);
     }
 
     // Trigger events
@@ -359,7 +358,6 @@ const mutations = {
 
     // Defensive check for system object
     if (!state.system) {
-
       state.system = {
         loading: {},
         errors: { errorCount: 0, lastError: null },
@@ -383,6 +381,7 @@ const mutations = {
 
     state.system.lastUpdate = timestamp;
     triggerGlobalEvent('subscriptionUpdated', { ...subscriptionData, timestamp });
+
     // Persist to localStorage
     try {
       localStorage.setItem('subscriptionData', JSON.stringify(state.subscription));
@@ -390,16 +389,13 @@ const mutations = {
         localStorage.setItem('subscriptionExpiry', subscriptionData.expiryDate);
       }
     } catch (e) {
-
+      console.warn('[store/user] Failed to save subscription to localStorage:', e);
     }
-
-
   },
 
   SET_LOADING(state, { type, loading }) {
     // Defensive check for system object
     if (!state.system) {
-
       state.system = {
         loading: {},
         errors: { errorCount: 0, lastError: null },
@@ -422,7 +418,6 @@ const mutations = {
     state.system.initialized = Boolean(initialized);
     state.system.initializationTime = initialized ? Date.now() : null;
     state.system.lastUpdate = Date.now();
-
   },
 
   SET_LAST_SERVER_SYNC(state, timestamp) {
@@ -436,6 +431,9 @@ const mutations = {
   },
 
   SET_ERROR(state, error) {
+    if (!state.system.errors) {
+      state.system.errors = { lastError: null, errorCount: 0 };
+    }
     state.system.errors.lastError = {
       message: error.message || error,
       timestamp: Date.now(),
@@ -535,10 +533,7 @@ const actions = {
    * CRITICAL: Initialize store and fetch from server
    */
   async initialize({ commit, dispatch, state }) {
-
-
     if (state.system.initialized) {
-
       return { success: true, cached: true };
     }
 
@@ -561,7 +556,6 @@ const actions = {
         commit('SET_USER_STATUS', storedStatus);
       }
 
-
       return { success: true };
 
     } catch (error) {
@@ -576,8 +570,6 @@ const actions = {
    * This is the PRIMARY method for getting subscription status
    */
   async fetchStatusFromServer({ commit, state }) {
-
-
     try {
       commit('SET_LOADING', { type: 'status', loading: true });
 
@@ -613,8 +605,6 @@ const actions = {
       // Direct API call to get user data
       const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live';
 
-
-
       const response = await fetch(`${baseUrl}/api/users/${userId}`, {
         method: 'GET',
         headers: {
@@ -629,14 +619,11 @@ const actions = {
 
       const data = await response.json();
 
-
       // Extract user data from various response formats
       const userData = data.user || data.data || data;
       const serverStatus = userData.subscriptionPlan || userData.userStatus || 'free';
       const expiryDate = userData.subscriptionExpiryDate || userData.subscriptionExpiry;
       const subscriptionDuration = userData.subscriptionDuration;
-
-
 
       // Update store with server data
       commit('SET_USER_STATUS', serverStatus);
@@ -648,7 +635,7 @@ const actions = {
         expiryDate: expiryDate || null,
         duration: subscriptionDuration || null,
         lastSync: new Date().toISOString(),
-        serverFetch: true  // ✅ CRITICAL: Mark as fetched from server
+        serverFetch: true
       });
 
       // Update localStorage for persistence
@@ -681,8 +668,6 @@ const actions = {
    * Load user status - calls fetchStatusFromServer
    */
   async loadUserStatus({ dispatch, commit, state }) {
-
-
     // Always try to fetch from server first
     const result = await dispatch('fetchStatusFromServer');
 
@@ -708,8 +693,6 @@ const actions = {
    * Update user status with server sync
    */
   async updateUserStatus({ commit, state, dispatch }, newStatus) {
-
-
     const validStatuses = ['free', 'start', 'pro', 'premium'];
     if (!newStatus || !validStatuses.includes(newStatus)) {
       return { success: false, error: 'Invalid status' };
@@ -751,8 +734,6 @@ const actions = {
    * Update subscription with server sync
    */
   async updateSubscription({ commit, dispatch, state }, { plan, source = 'payment', details = {} }) {
-
-
     try {
       const validPlans = ['free', 'start', 'pro', 'premium'];
       const validatedPlan = validPlans.includes(plan) ? plan : 'free';
@@ -806,8 +787,6 @@ const actions = {
    * Apply promocode
    */
   async applyPromocode({ commit, state, dispatch }, { promoCode, plan }) {
-
-
     try {
       if (!promoCode || promoCode.trim().length < 3) {
         return { success: false, error: 'Invalid promocode' };
@@ -859,133 +838,95 @@ const actions = {
       console.error('❌ [store/user] fetchUserRewards error:', error);
       return { success: false, error: error.message };
     }
-  }
-},
+  },
+
   /**
    * Save user data to server
    */
   async saveUser({ commit, state }, { userData, token }) {
-
     try {
-      const { saveUser } = await import('@/api/user');
-      const result = await saveUser(userData);
+      commit('SET_LOADING', { type: 'saving', loading: true });
+
+      const payload = {
+        firebaseUserId: userData.uid || userData.firebaseId,
+        email: userData.email,
+        name: userData.displayName || userData.name || userData.email?.split('@')[0] || 'User',
+        displayName: userData.displayName || userData.name || '',
+        emailVerified: Boolean(userData.emailVerified),
+        photoURL: userData.photoURL || null,
+        subscriptionPlan: userData.subscriptionPlan || 'free'
+      };
+
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live'}/api/users/save`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          token: token,
+          name: payload.name,
+          subscriptionPlan: payload.subscriptionPlan
+        })
+      });
+
+      const result = await response.json();
 
       if (result.success && result.user) {
         commit('SET_USER', result.user);
+        commit('SET_USER_STATUS', result.user.subscriptionPlan || 'free');
+
+        localStorage.setItem('userId', result.user.firebaseId);
+        localStorage.setItem('firebaseUserId', result.user.firebaseId);
+
         return { success: true, user: result.user };
+      } else {
+        throw new Error(result.error || 'Failed to save user');
       }
-      return { success: false, error: 'Failed to save user' };
+
     } catch (error) {
       console.error('❌ [store/user] saveUser error:', error);
+      commit('SET_ERROR', { message: error.message, context: 'saveUser' });
       return { success: false, error: error.message };
+    } finally {
+      commit('SET_LOADING', { type: 'saving', loading: false });
     }
   },
-
-    /**
-     * Logout user
-     */
-    async logout({ commit }) {
-
-  commit('CLEAR_USER');
-  return { success: true };
-},
 
   /**
    * Validate promocode
    */
   async validatePromocode({ state }, promoCode) {
+    try {
+      if (!promoCode || promoCode.trim().length < 3) {
+        return { valid: false, error: 'Promocode too short' };
+      }
 
+      const { validatePromocode: validatePromocodeAPI } = await import('@/api/promocodes');
+      const result = await validatePromocodeAPI(promoCode.trim().toUpperCase());
 
-  try {
-    if (!promoCode || promoCode.trim().length < 3) {
-      return { valid: false, error: 'Promocode too short' };
+      return result;
+
+    } catch (error) {
+      console.error('❌ [store/user] validatePromocode error:', error);
+      return { valid: false, error: error.message };
     }
-
-    const { validatePromocode: validatePromocodeAPI } = await import('@/api/promocodes');
-    const result = await validatePromocodeAPI(promoCode.trim().toUpperCase());
-
-    return result;
-
-  } catch (error) {
-    console.error('❌ [store/user] validatePromocode error:', error);
-    return { valid: false, error: error.message };
-  }
-},
-
-  /**
-   * Save user to backend
-   */
-  async saveUser({ commit, dispatch }, { userData, token }) {
-
-
-  try {
-    commit('SET_LOADING', { type: 'saving', loading: true });
-
-    const { saveUser: saveUserAPI } = await import('@/api/user');
-
-    const payload = {
-      firebaseUserId: userData.uid || userData.firebaseId,
-      email: userData.email,
-      name: userData.displayName || userData.name || userData.email?.split('@')[0] || 'User',
-      displayName: userData.displayName || userData.name || '',
-      emailVerified: Boolean(userData.emailVerified),
-      photoURL: userData.photoURL || null,
-      subscriptionPlan: userData.subscriptionPlan || 'free'
-    };
-
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live'}/api/users/save`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        token: token,
-        name: payload.name,
-        subscriptionPlan: payload.subscriptionPlan
-      })
-    });
-
-    const result = await response.json();
-
-    if (result.success && result.user) {
-      commit('SET_USER', result.user);
-      commit('SET_USER_STATUS', result.user.subscriptionPlan || 'free');
-
-      localStorage.setItem('userId', result.user.firebaseId);
-      localStorage.setItem('firebaseUserId', result.user.firebaseId);
-
-
-
-      return { success: true, user: result.user };
-    } else {
-      throw new Error(result.error || 'Failed to save user');
-    }
-
-  } catch (error) {
-
-    commit('SET_ERROR', { message: error.message, context: 'saveUser' });
-    return { success: false, error: error.message };
-  } finally {
-    commit('SET_LOADING', { type: 'saving', loading: false });
-  }
-},
+  },
 
   /**
    * Force update
    */
   async forceUpdate({ commit }) {
-  commit('FORCE_UPDATE');
-  return { success: true };
-},
+    commit('FORCE_UPDATE');
+    return { success: true };
+  },
 
   /**
    * Logout
    */
   async logout({ commit }) {
-
-  commit('CLEAR_USER');
-  return { success: true };
-}
+    commit('CLEAR_USER');
+    return { success: true };
+  }
 };
 
 // =============================================
