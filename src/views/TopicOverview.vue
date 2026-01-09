@@ -308,9 +308,16 @@
 <script>
 import { getTopicById, getLessonsByTopic, getUserStatus, getUserProgress, getLessonProgress } from '@/api';
 import { auth } from '@/firebase';
+import { useLanguage, getLocalizedText } from '@/composables/useLanguage';
 
 export default {
   name: 'TopicOverview',
+
+  setup() {
+    const { language } = useLanguage();
+    return { language };
+  },
+
   data() {
     return {
       topic: null,
@@ -429,6 +436,11 @@ export default {
   },
   
   watch: {
+    // Watch for language changes to update displayed text reactively
+    language() {
+      this.triggerReactivityUpdate();
+    },
+
     enhancedUserPlan: {
       handler(newPlan, oldPlan) {
         if (newPlan !== oldPlan) {
@@ -967,7 +979,7 @@ return null;
       }
       
       if (typeof data.name === 'object' && data.name !== null) {
-        const localized = data.name[this.lang] || data.name.en || data.name.ru || data.name.uz;
+        const localized = data.name[this.language] || data.name.en || data.name.ru || data.name.uz;
         if (localized && typeof localized === 'string' && localized.trim()) {
           return localized.trim();
         }
@@ -986,7 +998,7 @@ return null;
           return data[field].trim();
         }
         if (typeof data[field] === 'object' && data[field] !== null) {
-          const localized = data[field][this.lang] || data[field].en || data[field].ru || data[field].uz;
+          const localized = data[field][this.language] || data[field].en || data[field].ru || data[field].uz;
           if (localized && typeof localized === 'string' && localized.trim()) {
             return localized.trim();
           }
@@ -1005,7 +1017,7 @@ return null;
       }
       
       if (typeof data.description === 'object' && data.description !== null) {
-        const localized = data.description[this.lang] || data.description.en || data.description.ru || data.description.uz;
+        const localized = data.description[this.language] || data.description.en || data.description.ru || data.description.uz;
         if (localized && typeof localized === 'string' && localized.trim()) {
           return localized.trim();
         }
@@ -1024,7 +1036,7 @@ return null;
           return data[field].trim();
         }
         if (typeof data[field] === 'object' && data[field] !== null) {
-          const localized = data[field][this.lang] || data[field].en || data[field].ru || data[field].uz;
+          const localized = data[field][this.language] || data[field].en || data[field].ru || data[field].uz;
           if (localized && typeof localized === 'string' && localized.trim()) {
             return localized.trim();
           }
@@ -1045,7 +1057,7 @@ return null;
           return lesson[field].trim();
         }
         if (typeof lesson[field] === 'object' && lesson[field] !== null) {
-          const localized = lesson[field][this.lang] || lesson[field].en || lesson[field].ru || lesson[field].uz;
+          const localized = lesson[field][this.language] || lesson[field].en || lesson[field].ru || lesson[field].uz;
           if (localized && typeof localized === 'string' && localized.trim()) {
             return localized.trim();
           }
@@ -1056,7 +1068,7 @@ return null;
           return lesson.topic.trim();
       }
       if (typeof lesson.topic === 'object' && lesson.topic !== null) {
-          const localizedTopic = lesson.topic[this.lang] || lesson.topic.en || lesson.topic.ru || lesson.topic.uz;
+          const localizedTopic = lesson.topic[this.language] || lesson.topic.en || lesson.topic.ru || lesson.topic.uz;
           if (localizedTopic && typeof localizedTopic === 'string' && localizedTopic.trim()) {
               return localizedTopic.trim();
           }
@@ -1076,7 +1088,7 @@ return null;
           return lesson[field].trim();
         }
         if (typeof lesson[field] === 'object' && lesson[field] !== null) {
-          const localized = lesson[field][this.lang] || lesson[field].en || lesson[field].ru || lesson[field].uz;
+          const localized = lesson[field][this.language] || lesson[field].en || lesson[field].ru || lesson[field].uz;
           if (localized && typeof localized === 'string' && localized.trim()) {
             return localized.trim();
           }

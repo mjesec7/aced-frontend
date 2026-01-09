@@ -1253,6 +1253,21 @@ async function migrateLessonContent() {
 
 // ==================== LIFECYCLE ====================
 
+// Watch for language changes and re-process lesson content
+watch(language, () => {
+  if (lesson.value) {
+    // Re-extract localized title and description
+    const localizedTitle = extractLessonTitle(lesson.value)
+    const localizedDescription = extractLessonDescription(lesson.value)
+    lesson.value.title = localizedTitle
+    lesson.value.subtitle = localizedDescription
+
+    // Re-process steps with new language
+    const rawSteps = lesson.value.steps || []
+    steps.value = rawSteps.map((step, index) => processStepWithLocalization(step, index)).filter(Boolean)
+  }
+})
+
 onMounted(() => {
   loadLesson()
 })
