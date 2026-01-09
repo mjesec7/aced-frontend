@@ -414,6 +414,7 @@ export default {
     language() {
       this.refreshCourses();
     }
+  },
 
   computed: {
     ...mapGetters('user', { vuexUserStatus: 'userStatus' }),
