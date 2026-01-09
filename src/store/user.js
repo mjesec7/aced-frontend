@@ -1,6 +1,7 @@
 // src/store/user.js - FIXED USER STORE WITH SERVER-FIRST SUBSCRIPTION
 
 import { auth } from '@/firebase';
+import { getUserRewards } from '@/api';
 
 // =============================================
 // 🔧 HELPER FUNCTIONS
@@ -227,10 +228,19 @@ const state = () => ({
       saving: false,
       sync: false
     },
-    errors: {
-      lastError: null,
-      errorCount: 0
-    }
+    lastError: null,
+    errorCount: 0
+  }
+},
+
+  rewards: {
+    level: 1,
+    currentLevelProgress: 0,
+    totalPoints: 0,
+    streak: 0,
+    achievements: [],
+    nextRewardIn: 0,
+    lastUpdated: null
   }
 });
 
@@ -504,6 +514,16 @@ const mutations = {
     state.usage.current.messages = Math.max(0, (state.usage.current.messages || 0) + messages);
     state.usage.current.images = Math.max(0, (state.usage.current.images || 0) + images);
     state.usage.current.lastUpdated = new Date().toISOString();
+  },
+
+  SET_REWARDS(state, rewards) {
+    if (!rewards) return;
+    state.rewards = {
+      ...state.rewards,
+      ...rewards,
+      lastUpdated: Date.now()
+    };
+    triggerGlobalEvent('rewardsUpdated', { rewards: state.rewards });
   }
 };
 
@@ -798,68 +818,24 @@ const actions = {
       const oldStatus = state.userStatus;
 
       // Import and use API
-      const { applyPromocode: applyPromocodeAPI } = await import('@/api/promocodes');
-      const result = await applyPromocodeAPI(normalizedCode);
-
-
+      const { applyPromocode } = await import('@/api/subscription');
+      const result = await applyPromocode(getUserId(state), normalizedCode, plan);
 
       if (result.success) {
-        const newPlan = result.plan || plan || 'pro';
-        const expiryDate = result.expiryDate;
-
-        // Update store
-        commit('SET_USER_STATUS', newPlan);
-        commit('UPDATE_SUBSCRIPTION', {
-          plan: newPlan,
-          status: 'active',
-          expiryDate: expiryDate,
-          source: 'promocode',
-          lastSync: new Date().toISOString()
-        });
         commit('ADD_PROMOCODE', {
           code: normalizedCode,
-          plan: newPlan,
-          source: 'api'
+          plan: result.plan || plan,
+          source: 'manual'
         });
-        commit('FORCE_UPDATE');
 
-        // Update localStorage
-        localStorage.setItem('userStatus', newPlan);
-        localStorage.setItem('subscriptionPlan', newPlan);
-        localStorage.setItem('userPlan', newPlan);
-        if (expiryDate) {
-          localStorage.setItem('subscriptionExpiry', expiryDate);
-        }
+        // Refresh status
+        await dispatch('fetchStatusFromServer');
 
-        // Trigger events
-        triggerGlobalEvent('userStatusChanged', { oldStatus, newStatus: newPlan, source: 'promocode' });
-
-        // Fetch fresh data from server
-        dispatch('fetchStatusFromServer');
-
-        // Import and use API
-        const { applyPromocode } = await import('@/api/subscription');
-        const result = await applyPromocode(getUserId(state), normalizedCode);
-
-        if (result.success) {
-          // Update store
-          commit('ADD_PROMOCODE', {
-            code: normalizedCode,
-            plan: result.plan,
-            source: 'api'
-          });
-
-          // Update status if plan changed
-          if (result.plan && result.plan !== oldStatus) {
-            commit('SET_USER_STATUS', result.plan);
-            commit('FORCE_UPDATE');
-          }
-
-          return result;
-        }
-
-        return result;
+        return { success: true, message: 'Promocode applied successfully' };
       }
+
+      return result;
+
     } catch (error) {
       console.error('❌ [store/user] applyPromocode error:', error);
       return { success: false, error: error.message };
@@ -867,33 +843,55 @@ const actions = {
   },
 
   /**
+   * Fetch user rewards (streak, points, level)
+   */
+  async fetchUserRewards({ commit, state }) {
+    const userId = getUserId(state);
+    if (!userId) return { success: false, error: 'No user ID' };
+
+    try {
+      const result = await getUserRewards(userId);
+      if (result.success && result.rewards) {
+        commit('SET_REWARDS', result.rewards);
+        return { success: true, rewards: result.rewards };
+      }
+      return { success: false };
+    } catch (error) {
+      console.error('❌ [store/user] fetchUserRewards error:', error);
+      return { success: false, error: error.message };
+    }
+  }
+};
+
+
+  /**
    * Save user data to server
    */
   async saveUser({ commit, state }, { userData, token }) {
 
-    try {
-      const { saveUser } = await import('@/api/user');
-      const result = await saveUser(userData);
+  try {
+    const { saveUser } = await import('@/api/user');
+    const result = await saveUser(userData);
 
-      if (result.success && result.user) {
-        commit('SET_USER', result.user);
-        return { success: true, user: result.user };
-      }
-      return { success: false, error: 'Failed to save user' };
-    } catch (error) {
-      console.error('❌ [store/user] saveUser error:', error);
-      return { success: false, error: error.message };
+    if (result.success && result.user) {
+      commit('SET_USER', result.user);
+      return { success: true, user: result.user };
     }
-  },
+    return { success: false, error: 'Failed to save user' };
+  } catch (error) {
+    console.error('❌ [store/user] saveUser error:', error);
+    return { success: false, error: error.message };
+  }
+},
 
   /**
    * Logout user
    */
   async logout({ commit }) {
 
-    commit('CLEAR_USER');
-    return { success: true };
-  },
+  commit('CLEAR_USER');
+  return { success: true };
+},
 
   /**
    * Validate promocode
@@ -901,21 +899,21 @@ const actions = {
   async validatePromocode({ state }, promoCode) {
 
 
-    try {
-      if (!promoCode || promoCode.trim().length < 3) {
-        return { valid: false, error: 'Promocode too short' };
-      }
-
-      const { validatePromocode: validatePromocodeAPI } = await import('@/api/promocodes');
-      const result = await validatePromocodeAPI(promoCode.trim().toUpperCase());
-
-      return result;
-
-    } catch (error) {
-      console.error('❌ [store/user] validatePromocode error:', error);
-      return { valid: false, error: error.message };
+  try {
+    if (!promoCode || promoCode.trim().length < 3) {
+      return { valid: false, error: 'Promocode too short' };
     }
-  },
+
+    const { validatePromocode: validatePromocodeAPI } = await import('@/api/promocodes');
+    const result = await validatePromocodeAPI(promoCode.trim().toUpperCase());
+
+    return result;
+
+  } catch (error) {
+    console.error('❌ [store/user] validatePromocode error:', error);
+    return { valid: false, error: error.message };
+  }
+},
 
   /**
    * Save user to backend
@@ -923,74 +921,74 @@ const actions = {
   async saveUser({ commit, dispatch }, { userData, token }) {
 
 
-    try {
-      commit('SET_LOADING', { type: 'saving', loading: true });
+  try {
+    commit('SET_LOADING', { type: 'saving', loading: true });
 
-      const { saveUser: saveUserAPI } = await import('@/api/user');
+    const { saveUser: saveUserAPI } = await import('@/api/user');
 
-      const payload = {
-        firebaseUserId: userData.uid || userData.firebaseId,
-        email: userData.email,
-        name: userData.displayName || userData.name || userData.email?.split('@')[0] || 'User',
-        displayName: userData.displayName || userData.name || '',
-        emailVerified: Boolean(userData.emailVerified),
-        photoURL: userData.photoURL || null,
-        subscriptionPlan: userData.subscriptionPlan || 'free'
-      };
+    const payload = {
+      firebaseUserId: userData.uid || userData.firebaseId,
+      email: userData.email,
+      name: userData.displayName || userData.name || userData.email?.split('@')[0] || 'User',
+      displayName: userData.displayName || userData.name || '',
+      emailVerified: Boolean(userData.emailVerified),
+      photoURL: userData.photoURL || null,
+      subscriptionPlan: userData.subscriptionPlan || 'free'
+    };
 
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live'}/api/users/save`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          token: token,
-          name: payload.name,
-          subscriptionPlan: payload.subscriptionPlan
-        })
-      });
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live'}/api/users/save`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        token: token,
+        name: payload.name,
+        subscriptionPlan: payload.subscriptionPlan
+      })
+    });
 
-      const result = await response.json();
+    const result = await response.json();
 
-      if (result.success && result.user) {
-        commit('SET_USER', result.user);
-        commit('SET_USER_STATUS', result.user.subscriptionPlan || 'free');
+    if (result.success && result.user) {
+      commit('SET_USER', result.user);
+      commit('SET_USER_STATUS', result.user.subscriptionPlan || 'free');
 
-        localStorage.setItem('userId', result.user.firebaseId);
-        localStorage.setItem('firebaseUserId', result.user.firebaseId);
+      localStorage.setItem('userId', result.user.firebaseId);
+      localStorage.setItem('firebaseUserId', result.user.firebaseId);
 
 
 
-        return { success: true, user: result.user };
-      } else {
-        throw new Error(result.error || 'Failed to save user');
-      }
-
-    } catch (error) {
-
-      commit('SET_ERROR', { message: error.message, context: 'saveUser' });
-      return { success: false, error: error.message };
-    } finally {
-      commit('SET_LOADING', { type: 'saving', loading: false });
+      return { success: true, user: result.user };
+    } else {
+      throw new Error(result.error || 'Failed to save user');
     }
-  },
+
+  } catch (error) {
+
+    commit('SET_ERROR', { message: error.message, context: 'saveUser' });
+    return { success: false, error: error.message };
+  } finally {
+    commit('SET_LOADING', { type: 'saving', loading: false });
+  }
+},
 
   /**
    * Force update
    */
   async forceUpdate({ commit }) {
-    commit('FORCE_UPDATE');
-    return { success: true };
-  },
+  commit('FORCE_UPDATE');
+  return { success: true };
+},
 
   /**
    * Logout
    */
   async logout({ commit }) {
 
-    commit('CLEAR_USER');
-    return { success: true };
-  }
+  commit('CLEAR_USER');
+  return { success: true };
+}
 };
 
 // =============================================

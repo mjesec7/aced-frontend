@@ -27,12 +27,12 @@
           </div>
           <div class="user-stats">
             <div class="stat-item">
-              <span class="stat-value">{{ userLevel }}</span>
+              <span class="stat-value">{{ userRewards?.level || 1 }}</span>
               <span class="stat-label">{{ $t('sidebar.level') }}</span>
             </div>
             <div class="stat-divider"></div>
             <div class="stat-item">
-              <span class="stat-value">{{ userStreak }}</span>
+              <span class="stat-value">{{ userRewards?.streak || 0 }}</span>
               <span class="stat-label">{{ $t('sidebar.streak') }}</span>
             </div>
           </div>
@@ -272,8 +272,10 @@ export default {
       isMobile: false,
       tempSelectedMode: null,
       isSelectingMode: false,
-      userLevel: 12,
-      userStreak: 7,
+      selectedFeature: null,
+      isMobile: false,
+      tempSelectedMode: null,
+      isSelectingMode: false,
 
       navigationLinks: [
         {
@@ -324,7 +326,9 @@ export default {
   computed: {
     ...mapState(['user']),
     ...mapGetters(['getUser']),
-    ...mapGetters('user', ['userStatus']),
+    ...mapState(['user']),
+    ...mapGetters(['getUser']),
+    ...mapGetters('user', ['userStatus', 'userRewards']),
 
     currentUser() {
       return this.getUser || this.user || {};
@@ -397,6 +401,9 @@ export default {
     window.addEventListener('userStatusChanged', this.handleStatusUpdate);
     window.addEventListener('subscriptionUpdated', this.handleStatusUpdate);
     window.addEventListener('forceUpdate', this.handleStatusUpdate);
+
+    // Fetch rewards
+    this.$store.dispatch('user/fetchUserRewards');
   },
 
   beforeUnmount() {

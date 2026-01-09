@@ -449,41 +449,41 @@
               </div>
               <div>
                 <h2 class="section-title">🎮 {{ $t('dashboard.yourProgress') }}</h2>
-                <p class="section-subtitle">{{ $t('dashboard.level') }} {{ rewards.level }} • {{ formatNumber(rewards.totalPoints) }} {{ $t('dashboard.points').toLowerCase() }}</p>
+                <p class="section-subtitle">{{ $t('dashboard.level') }} {{ userRewards?.level || rewards?.level || 1 }} • {{ formatNumber(userRewards?.totalPoints || rewards?.totalPoints || 0) }} {{ $t('dashboard.points').toLowerCase() }}</p>
               </div>
             </div>
           </div>
 
           <div class="level-progress-section">
             <div class="level-header">
-              <span class="current-level">{{ $t('dashboard.level') }} {{ rewards.level }}</span>
-              <span class="next-level">{{ $t('dashboard.level') }} {{ rewards.level + 1 }}</span>
+              <span class="current-level">{{ $t('dashboard.level') }} {{ userRewards?.level || rewards?.level || 1 }}</span>
+              <span class="next-level">{{ $t('dashboard.level') }} {{ (userRewards?.level || rewards?.level || 1) + 1 }}</span>
             </div>
             <div class="progress-bar-container large">
-              <div class="progress-bar-fill gold" :style="{ width: rewards.currentLevelProgress + '%' }"></div>
+              <div class="progress-bar-fill gold" :style="{ width: (userRewards?.currentLevelProgress || rewards?.currentLevelProgress || 0) + '%' }"></div>
             </div>
-            <span class="progress-text">{{ Math.round(rewards.currentLevelProgress) }}% {{ $t('dashboard.toNextLevel') }}</span>
+            <span class="progress-text">{{ Math.round(userRewards?.currentLevelProgress || rewards?.currentLevelProgress || 0) }}% {{ $t('dashboard.toNextLevel') }}</span>
           </div>
 
           <div class="rewards-stats-grid">
             <div class="reward-stat-card">
               <div class="reward-stat-icon fire">🔥</div>
               <div class="reward-stat-content">
-                <span class="reward-stat-value">{{ rewards.streak || 0 }}</span>
+                <span class="reward-stat-value">{{ userRewards?.streak || rewards?.streak || 0 }}</span>
                 <span class="reward-stat-label">{{ $t('dashboard.dayStreak') }}</span>
               </div>
             </div>
             <div class="reward-stat-card">
               <div class="reward-stat-icon trophy">🏆</div>
               <div class="reward-stat-content">
-                <span class="reward-stat-value">{{ rewards.achievements?.length || 0 }}</span>
+                <span class="reward-stat-value">{{ userRewards?.achievements?.length || rewards?.achievements?.length || 0 }}</span>
                 <span class="reward-stat-label">{{ $t('dashboard.achievements') }}</span>
               </div>
             </div>
             <div class="reward-stat-card">
               <div class="reward-stat-icon target">🎯</div>
               <div class="reward-stat-content">
-                <span class="reward-stat-value">{{ rewards.nextRewardIn || 0 }}</span>
+                <span class="reward-stat-value">{{ userRewards?.nextRewardIn || rewards?.nextRewardIn || 0 }}</span>
                 <span class="reward-stat-label">{{ $t('dashboard.stepsToReward') }}</span>
               </div>
             </div>
@@ -745,6 +745,7 @@ export default {
   computed: {
     ...mapGetters('user', {
       vuexUserStatus: 'userStatus',
+      userRewards: 'userRewards'
     }),
 
     hasSelectedMode() {
@@ -827,12 +828,12 @@ export default {
     
     // 🧬 NEW: Display streak from rewards or fallback
     displayStreak() {
-      return this.rewards?.streak || this.userStreak || 0;
+      return this.userRewards?.streak || this.rewards?.streak || this.userStreak || 0;
     },
     
     // 🎮 NEW: Display points from rewards or fallback
     displayPoints() {
-      return this.rewards?.totalPoints || this.totalPoints || 0;
+      return this.userRewards?.totalPoints || this.rewards?.totalPoints || this.totalPoints || 0;
     },
 
     // 📚 NEW: Count of completed lessons
@@ -964,7 +965,7 @@ export default {
         // Load all data in parallel
         const [profileRes, rewardsRes, recommendationsRes] = await Promise.allSettled([
           getLearningProfile(this.userId),
-          getUserRewards(this.userId),
+          this.$store.dispatch('user/fetchUserRewards'),
           getPersonalizedRecommendations(this.userId)
         ]);
         
