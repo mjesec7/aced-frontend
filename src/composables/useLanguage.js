@@ -141,12 +141,14 @@ export function useLanguage() {
  * @param {any} data - The data object or string
  * @param {string} [field] - Optional field name if data is an object
  * @param {string} [fallback] - Fallback text if nothing found
+ * @param {string} [langOverride] - Optional language override (pass this.language for reactivity)
  * @returns {string} Localized text
  */
-export function getLocalizedText(data, field = null, fallback = '') {
+export function getLocalizedText(data, field = null, fallback = '', langOverride = null) {
   if (!data) return fallback;
 
-  const lang = currentLanguage.value || 'ru';
+  // Use langOverride if provided (for reactivity in Vue components), otherwise use currentLanguage
+  const lang = langOverride || currentLanguage.value || 'ru';
 
   // Case 1: data is the value itself (string or object with lang keys)
   if (!field) {

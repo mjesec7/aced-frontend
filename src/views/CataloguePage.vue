@@ -123,9 +123,9 @@
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <article 
-              v-for="course in courses" 
-              :key="course.topicId"
+            <article
+              v-for="course in courses"
+              :key="`${course.topicId}-${language}`"
               @click="handleCourseAccess(course.topicId, course.type)"
               class="group p-5 rounded-2xl border border-gray-100 hover:border-indigo-200 hover:scale-[1.02] transition-all duration-200 cursor-pointer bg-white"
             >
@@ -208,9 +208,9 @@
       <!-- Study Centre Mode: Grid with Pagination -->
       <div v-else>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-          <article 
-            v-for="course in paginatedCourses" 
-            :key="course.topicId"
+          <article
+            v-for="course in paginatedCourses"
+            :key="`${course.topicId}-${language}`"
             @click="handleCourseAccess(course.topicId, course.type)"
             class="group p-5 rounded-2xl border border-gray-100 hover:border-indigo-200 hover:scale-[1.02] transition-all duration-200 cursor-pointer bg-white"
           >
@@ -636,10 +636,11 @@ export default {
     },
     getTopicName(l) {
       // Priority: lessonName (localized), topicName (localized), name (localized), title (localized), topic (string)
-      return getLocalizedText(l, 'lessonName') ||
-             getLocalizedText(l, 'topicName') ||
-             getLocalizedText(l, 'name') ||
-             getLocalizedText(l, 'title') ||
+      // Pass this.language as 4th param to make Vue track the dependency for reactivity
+      return getLocalizedText(l, 'lessonName', '', this.language) ||
+             getLocalizedText(l, 'topicName', '', this.language) ||
+             getLocalizedText(l, 'name', '', this.language) ||
+             getLocalizedText(l, 'title', '', this.language) ||
              (l?.topic && typeof l.topic === 'string' ? l.topic : '') ||
              'Untitled';
     },

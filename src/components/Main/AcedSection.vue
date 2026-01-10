@@ -28,7 +28,7 @@
         <div v-else-if="displayedCourses.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div
             v-for="course in displayedCourses"
-            :key="course._id"
+            :key="`${course._id}-${language}`"
             class="group bg-white rounded-2xl border border-gray-100 hover:border-violet-200 overflow-hidden transition-all duration-200 hover:shadow-lg cursor-pointer"
             @click="handleCourseClick(course)"
           >
@@ -345,16 +345,17 @@ export default {
     getTopicName(course) {
       if (!course) return this.$t('course.untitled');
 
+      // Pass this.language as the 4th param to make Vue track the dependency for reactivity
       // Try lessonName first (the JSON format uses lessonName for course titles)
       if (course.lessonName) {
-        const name = getLocalizedText(course.lessonName);
+        const name = getLocalizedText(course.lessonName, null, '', this.language);
         if (name) return name;
       }
 
       // Try name field (could be string or localized object)
       if (course.name) {
         if (typeof course.name === 'object') {
-          const name = getLocalizedText(course.name);
+          const name = getLocalizedText(course.name, null, '', this.language);
           if (name) return name;
         } else if (typeof course.name === 'string') {
           return course.name;
@@ -363,13 +364,13 @@ export default {
 
       // Try topicName field
       if (course.topicName) {
-        const name = getLocalizedText(course.topicName);
+        const name = getLocalizedText(course.topicName, null, '', this.language);
         if (name) return name;
       }
 
       // Try title field
       if (course.title) {
-        const name = getLocalizedText(course.title);
+        const name = getLocalizedText(course.title, null, '', this.language);
         if (name) return name;
       }
 
@@ -379,11 +380,11 @@ export default {
     getTopicDescription(course) {
       if (!course) return '';
 
-      // Handle localized description object
+      // Handle localized description object - pass this.language for reactivity
       let desc = '';
       if (course.description) {
         if (typeof course.description === 'object') {
-          desc = getLocalizedText(course.description);
+          desc = getLocalizedText(course.description, null, '', this.language);
         } else if (typeof course.description === 'string') {
           desc = course.description;
         }

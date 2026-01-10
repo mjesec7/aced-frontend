@@ -35,7 +35,7 @@
       <div class="topic-header">
         <div class="topic-hero">
           <div class="topic-icon">📘</div>
-          <div class="topic-info">
+          <div class="topic-info" :key="`topic-info-${language}`">
             <h1 class="topic-title">{{ getTopicName(topic) }}</h1>
             <p class="topic-description">{{ getTopicDescription(topic) }}</p>
           </div>
@@ -106,7 +106,7 @@
         <div v-else class="lessons-grid">
           <div
             v-for="(lesson, index) in filteredLessons"
-            :key="lesson._id"
+            :key="`${lesson._id}-${language}`"
             class="lesson-card"
             :class="{ 
               locked: lesson.type === 'premium' && !isPremiumUser,
