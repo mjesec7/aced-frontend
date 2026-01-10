@@ -14,7 +14,7 @@
         {{ topic ? error : 'The topic may have been deleted or you do not have access to it' }}
       </p>
       <button @click="navigateToProfile" class="btn btn-back">
-        ⬅️ Back to catalog
+        ⬅️ {{ $t('topicOverview.backToCatalog') }}
       </button>
       <div v-if="isDevelopment && debugInfo" class="debug-info">
         <h4>Debug Info (Dev Mode Only):</h4>
@@ -28,7 +28,7 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M19 12H5M12 19l-7-7 7-7"/>
           </svg>
-          Back to catalog
+          {{ $t('topicOverview.backToCatalog') }}
         </button>
       </div>
 
@@ -44,19 +44,19 @@
         <div class="topic-stats">
           <div class="stat-card">
             <div class="stat-number">{{ lessons.length }}</div>
-            <div class="stat-label">Total lessons</div>
+            <div class="stat-label">{{ $t('topicOverview.totalLessons') }}</div>
           </div>
           <div class="stat-card">
             <div class="stat-number">{{ freeCount }}</div>
-            <div class="stat-label">Free</div>
+            <div class="stat-label">{{ $t('topicOverview.free') }}</div>
           </div>
           <div class="stat-card">
             <div class="stat-number">{{ premiumCount }}</div>
-            <div class="stat-label">Premium</div>
+            <div class="stat-label">{{ $t('topicOverview.premium') }}</div>
           </div>
           <div class="stat-card">
             <div class="stat-number">{{ Math.round(overallProgress) }}%</div>
-            <div class="stat-label">Progress</div>
+            <div class="stat-label">{{ $t('topicOverview.progress') }}</div>
           </div>
         </div>
       </div>
@@ -65,41 +65,41 @@
         <div class="section-header">
           <h2 class="section-title">
             <span class="section-icon">📚</span>
-            Course lessons
+            {{ $t('topicOverview.courseLessons') }}
           </h2>
           <div class="lesson-filters">
-            <button 
+            <button
               :class="['filter-btn', { active: filter === 'all' }]"
               @click="filter = 'all'"
             >
-              All ({{ lessons.length }})
+              {{ $t('topicOverview.all') }} ({{ lessons.length }})
             </button>
-            <button 
+            <button
               :class="['filter-btn', { active: filter === 'free' }]"
               @click="filter = 'free'"
             >
-              Free ({{ freeCount }})
+              {{ $t('topicOverview.free') }} ({{ freeCount }})
             </button>
-            <button 
+            <button
               :class="['filter-btn', { active: filter === 'premium' }]"
               @click="filter = 'premium'"
             >
-              Premium ({{ premiumCount }})
+              {{ $t('topicOverview.premium') }} ({{ premiumCount }})
             </button>
-            <button 
+            <button
               :class="['filter-btn', { active: filter === 'completed' }]"
               @click="filter = 'completed'"
             >
-              Completed ({{ completedCount }})
+              {{ $t('topicOverview.completed') }} ({{ completedCount }})
             </button>
           </div>
         </div>
 
         <div v-if="filteredLessons.length === 0" class="no-lessons">
           <div class="no-lessons-icon">📭</div>
-          <h3 class="no-lessons-title">No lessons found</h3>
+          <h3 class="no-lessons-title">{{ $t('topicOverview.noLessonsFound') }}</h3>
           <p class="no-lessons-text">
-            {{ filter !== 'all' ? 'Try changing the filter' : 'There are no lessons in this topic yet' }}
+            {{ filter !== 'all' ? $t('topicOverview.tryChangingFilter') : $t('topicOverview.noLessonsInTopic') }}
           </p>
         </div>
 
@@ -154,13 +154,13 @@
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M6 10V8C6 5.79086 7.79086 4 10 4H14C16.2091 4 18 5.79086 18 8V10H20V20H4V10H6ZM8 10H16V8C16 6.89543 15.1046 6 14 6H10C8.89543 6 8 6.89543 8 8V10Z"/>
                 </svg>
-                Premium
+                {{ $t('topicOverview.premium') }}
               </span>
               <span v-else>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"/>
                 </svg>
-                Free
+                {{ $t('topicOverview.free') }}
               </span>
             </div>
 
@@ -172,8 +172,8 @@
               <div v-if="lesson.progress || currentUser" class="lesson-progress">
                 <div class="progress-info">
                   <span class="progress-label">
-                    {{ lesson.progress?.completed ? 'Completed' : 
-                       lesson.progress?.progressPercent > 0 ? 'In progress' : 'Not started' }}
+                    {{ lesson.progress?.completed ? $t('topicOverview.completed') :
+                       lesson.progress?.progressPercent > 0 ? $t('topicOverview.inProgress') : $t('topicOverview.notStarted') }}
                   </span>
                   <span class="progress-percentage">
                     {{ Math.round(lesson.progress?.progressPercent || 0) }}%
@@ -201,7 +201,7 @@
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M9 11H15M9 15H15M17 21H7C5.89543 21 5 20.1046 5 19V5C5 3.89543 5.89543 3 7 3H12.5858C12.851 3 13.1054 3.10536 13.2929 3.29289L19.7071 9.70711C19.8946 9.89464 20 10.149 20 10.4142V19C20 20.1046 19.1046 21 18 21H17Z"/>
                   </svg>
-                  {{ lesson.steps.length }} steps
+                  {{ lesson.steps.length }} {{ $t('topicOverview.steps') }}
                 </span>
                 <span v-if="lesson.metadata?.estimatedDuration" class="meta-item">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
