@@ -542,9 +542,12 @@ function processStepWithLocalization(step, index) {
     // Preserve other step properties
     data: step.data,
     images: step.images || [],
-    exercises: step.exercises,
-    quizzes: step.quizzes,
-    options: step.options
+    // Look for exercises in multiple locations
+    exercises: step.exercises || step.data?.exercises || [],
+    quizzes: step.quizzes || step.data?.quizzes || [],
+    options: step.options || step.data?.options || [],
+    // Preserve vocabulary for vocabulary steps
+    vocabulary: step.vocabulary || step.data?.vocabulary || step.words || step.data?.words || []
   }
 }
 
@@ -1005,9 +1008,24 @@ async function askAboutExplanation() {
 
 // Vocabulary Modal
 function initializeVocabularyModal(vocabData) {
+  // If no vocabData passed, get vocabulary from currentStep
+  let words = []
+  if (vocabData && vocabData.words) {
+    words = vocabData.words
+  } else if (currentStep.value) {
+    // Try to get vocabulary from various possible locations in currentStep
+    words = currentStep.value.vocabulary ||
+            currentStep.value.words ||
+            currentStep.value.data?.vocabulary ||
+            currentStep.value.data?.words ||
+            currentStep.value.content?.vocabulary ||
+            currentStep.value.content?.words ||
+            []
+  }
+
   vocabularyModal.value = {
     isVisible: true,
-    words: vocabData.words || [],
+    words: words,
     currentIndex: 0
   }
   updateCurrentVocabWord()

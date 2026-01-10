@@ -801,6 +801,33 @@
       "lvl": "Lvl",
       "errorLoading": "Error loading courses"
     },
+    "topicOverview": {
+      "backToCatalog": "Back to catalog",
+      "totalLessons": "Total lessons",
+      "free": "Free",
+      "premium": "Premium",
+      "progress": "Progress",
+      "courseLessons": "Course lessons",
+      "all": "All",
+      "completed": "Completed",
+      "noLessonsFound": "No lessons found",
+      "noLessonsInTopic": "There are no lessons in this topic yet",
+      "tryChangingFilter": "Try changing the filter",
+      "notStarted": "Not started",
+      "inProgress": "In progress",
+      "steps": "steps"
+    },
+    "lessonIntro": {
+      "premium": "Premium",
+      "free": "Free",
+      "min": "min",
+      "steps": "steps",
+      "previousProgress": "Previous Progress",
+      "continue": "Continue",
+      "startOver": "Start Over",
+      "startLesson": "Start Lesson",
+      "reportIssue": "Report an issue"
+    },
     "homepage": {
       "whyChooseUs": "Why Choose Us",
       "learningMadeSimple": "Learning made simple",
@@ -1716,6 +1743,33 @@
       "lvl": "Ур.",
       "errorLoading": "Ошибка загрузки курсов"
     },
+    "topicOverview": {
+      "backToCatalog": "Назад к каталогу",
+      "totalLessons": "Всего уроков",
+      "free": "Бесплатно",
+      "premium": "Премиум",
+      "progress": "Прогресс",
+      "courseLessons": "Уроки курса",
+      "all": "Все",
+      "completed": "Пройдено",
+      "noLessonsFound": "Уроки не найдены",
+      "noLessonsInTopic": "В этой теме пока нет уроков",
+      "tryChangingFilter": "Попробуйте изменить фильтр",
+      "notStarted": "Не начато",
+      "inProgress": "В процессе",
+      "steps": "шагов"
+    },
+    "lessonIntro": {
+      "premium": "Премиум",
+      "free": "Бесплатно",
+      "min": "мин",
+      "steps": "шагов",
+      "previousProgress": "Предыдущий прогресс",
+      "continue": "Продолжить",
+      "startOver": "Начать заново",
+      "startLesson": "Начать урок",
+      "reportIssue": "Сообщить о проблеме"
+    },
     "homepage": {
       "whyChooseUs": "Почему мы",
       "learningMadeSimple": "Обучение просто",
@@ -2630,6 +2684,33 @@
       "maybeLater": "Keyinroq",
       "lvl": "Dar.",
       "errorLoading": "Kurslarni yuklashda xatolik"
+    },
+    "topicOverview": {
+      "backToCatalog": "Katalogga qaytish",
+      "totalLessons": "Jami darslar",
+      "free": "Bepul",
+      "premium": "Premium",
+      "progress": "Progress",
+      "courseLessons": "Kurs darslari",
+      "all": "Hammasi",
+      "completed": "Tugatilgan",
+      "noLessonsFound": "Darslar topilmadi",
+      "noLessonsInTopic": "Bu mavzuda hali darslar yo'q",
+      "tryChangingFilter": "Filtrni o'zgartirib ko'ring",
+      "notStarted": "Boshlanmagan",
+      "inProgress": "Jarayonda",
+      "steps": "qadamlar"
+    },
+    "lessonIntro": {
+      "premium": "Premium",
+      "free": "Bepul",
+      "min": "daq",
+      "steps": "qadamlar",
+      "previousProgress": "Oldingi progress",
+      "continue": "Davom etish",
+      "startOver": "Qayta boshlash",
+      "startLesson": "Darsni boshlash",
+      "reportIssue": "Muammo haqida xabar berish"
     },
     "homepage": {
       "whyChooseUs": "Nega biz",

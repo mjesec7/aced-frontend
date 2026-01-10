@@ -10,7 +10,7 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
         </svg>
       </button>
-      <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">{{ lesson?.type === 'premium' ? 'Premium' : 'Free' }}</span>
+      <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">{{ lesson?.type === 'premium' ? t('lessonIntro.premium') : t('lessonIntro.free') }}</span>
       <div class="w-10"></div>
     </div>
 
@@ -41,12 +41,12 @@
         <div class="flex justify-center gap-12 py-2">
           <div class="text-center">
             <div class="text-3xl font-bold text-slate-900">~{{ estimatedTime }}</div>
-            <div class="text-xs text-slate-400 uppercase tracking-wide mt-1">min</div>
+            <div class="text-xs text-slate-400 uppercase tracking-wide mt-1">{{ t('lessonIntro.min') }}</div>
           </div>
           <div class="w-px bg-slate-200"></div>
           <div class="text-center">
             <div class="text-3xl font-bold text-slate-900">{{ (steps || []).length }}</div>
-            <div class="text-xs text-slate-400 uppercase tracking-wide mt-1">steps</div>
+            <div class="text-xs text-slate-400 uppercase tracking-wide mt-1">{{ t('lessonIntro.steps') }}</div>
           </div>
         </div>
 
@@ -56,7 +56,7 @@
           class="bg-slate-50 rounded-2xl p-5 text-left"
         >
           <div class="flex items-center justify-between mb-4">
-            <span class="text-sm font-medium text-slate-600">Previous Progress</span>
+            <span class="text-sm font-medium text-slate-600">{{ t('lessonIntro.previousProgress') }}</span>
             <span class="text-sm font-bold text-slate-900">{{ (previousProgress?.completedSteps || []).length }}/{{ (steps || []).length }}</span>
           </div>
 
@@ -71,7 +71,7 @@
             @click="$emit('continue')"
             class="w-full py-3.5 bg-slate-900 text-white font-medium rounded-xl hover:bg-slate-800 transition-colors"
           >
-            Continue
+            {{ t('lessonIntro.continue') }}
           </button>
         </div>
       </div>
@@ -84,14 +84,14 @@
           @click="$emit('start')"
           class="w-full py-4 bg-slate-900 text-white font-semibold rounded-xl hover:bg-slate-800 transition-colors text-lg"
         >
-          {{ previousProgress ? 'Start Over' : 'Start Lesson' }}
+          {{ previousProgress ? t('lessonIntro.startOver') : t('lessonIntro.startLesson') }}
         </button>
 
         <button
           @click="$emit('report-problem')"
           class="w-full py-3 text-slate-400 hover:text-slate-600 text-sm transition-colors"
         >
-          Report an issue
+          {{ t('lessonIntro.reportIssue') }}
         </button>
       </div>
     </div>
@@ -100,6 +100,7 @@
 
 <script>
 import { useLanguage } from '@/composables/useLanguage';
+import { useI18n } from 'vue-i18n';
 
 export default {
   name: 'LessonIntro',
@@ -124,7 +125,8 @@ export default {
   emits: ['start', 'continue', 'exit', 'report-problem'],
   setup() {
     const { language } = useLanguage();
-    return { language };
+    const { t } = useI18n();
+    return { language, t };
   },
   mounted() {
     console.log('🟢 [LessonIntro v2] MOUNTED - lesson:', this.lesson?.lessonName, 'type:', typeof this.lesson?.lessonName);
