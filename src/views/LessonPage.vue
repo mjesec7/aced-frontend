@@ -852,31 +852,72 @@ function goToVocabulary() {
   router.push('/vocabulary')
 }
 
+// Helper to extract exercises from various possible locations in step data
+function extractExercisesFromStep(step) {
+  if (!step) return []
+
+  // Try all possible locations where exercises might be stored
+  if (step.exercises && Array.isArray(step.exercises) && step.exercises.length > 0) {
+    return step.exercises
+  }
+  if (step.content?.exercises && Array.isArray(step.content.exercises) && step.content.exercises.length > 0) {
+    return step.content.exercises
+  }
+  if (step.data?.exercises && Array.isArray(step.data.exercises) && step.data.exercises.length > 0) {
+    return step.data.exercises
+  }
+  // Also check for questions (some exercise types use this)
+  if (step.questions && Array.isArray(step.questions) && step.questions.length > 0) {
+    return step.questions
+  }
+  if (step.content?.questions && Array.isArray(step.content.questions) && step.content.questions.length > 0) {
+    return step.content.questions
+  }
+
+  return []
+}
+
+// Helper to extract quiz questions from various possible locations
+function extractQuizzesFromStep(step) {
+  if (!step) return []
+
+  if (step.quizzes && Array.isArray(step.quizzes) && step.quizzes.length > 0) {
+    return step.quizzes
+  }
+  if (step.content?.questions && Array.isArray(step.content.questions) && step.content.questions.length > 0) {
+    return step.content.questions
+  }
+  if (step.data?.quizzes && Array.isArray(step.data.quizzes) && step.data.quizzes.length > 0) {
+    return step.data.quizzes
+  }
+  if (step.data?.questions && Array.isArray(step.data.questions) && step.data.questions.length > 0) {
+    return step.data.questions
+  }
+
+  return []
+}
+
 // Exercise Helpers
 function getCurrentExercise(step) {
   if (!step || step.type !== 'exercise') return null
-  // Look for exercises in multiple locations as fallback
-  const exercises = step.exercises || step.content?.exercises || step.data?.exercises || []
+  const exercises = extractExercisesFromStep(step)
   return exercises[currentExerciseIndex.value] || null
 }
 
 function getCurrentQuiz(step) {
   if (!step || step.type !== 'quiz') return null
-  // Look for quiz questions in multiple locations as fallback
-  const quizzes = step.quizzes || step.content?.questions || step.data?.quizzes || []
+  const quizzes = extractQuizzesFromStep(step)
   return quizzes[currentQuizIndex.value] || null
 }
 
 function getTotalExercises(step) {
   if (!step || step.type !== 'exercise') return 0
-  const exercises = step.exercises || step.content?.exercises || step.data?.exercises || []
-  return exercises.length
+  return extractExercisesFromStep(step).length
 }
 
 function getTotalQuizzes(step) {
   if (!step || step.type !== 'quiz') return 0
-  const quizzes = step.quizzes || step.content?.questions || step.data?.quizzes || []
-  return quizzes.length
+  return extractQuizzesFromStep(step).length
 }
 
 function handleAnswerChanged(answer) {
