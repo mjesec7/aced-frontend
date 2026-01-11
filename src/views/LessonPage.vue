@@ -855,24 +855,28 @@ function goToVocabulary() {
 // Exercise Helpers
 function getCurrentExercise(step) {
   if (!step || step.type !== 'exercise') return null
-  const exercises = step.exercises || []
+  // Look for exercises in multiple locations as fallback
+  const exercises = step.exercises || step.content?.exercises || step.data?.exercises || []
   return exercises[currentExerciseIndex.value] || null
 }
 
 function getCurrentQuiz(step) {
   if (!step || step.type !== 'quiz') return null
-  const quizzes = step.quizzes || []
+  // Look for quiz questions in multiple locations as fallback
+  const quizzes = step.quizzes || step.content?.questions || step.data?.quizzes || []
   return quizzes[currentQuizIndex.value] || null
 }
 
 function getTotalExercises(step) {
   if (!step || step.type !== 'exercise') return 0
-  return (step.exercises || []).length
+  const exercises = step.exercises || step.content?.exercises || step.data?.exercises || []
+  return exercises.length
 }
 
 function getTotalQuizzes(step) {
   if (!step || step.type !== 'quiz') return 0
-  return (step.quizzes || []).length
+  const quizzes = step.quizzes || step.content?.questions || step.data?.quizzes || []
+  return quizzes.length
 }
 
 function handleAnswerChanged(answer) {
