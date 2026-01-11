@@ -542,12 +542,13 @@ function processStepWithLocalization(step, index) {
     // Preserve other step properties
     data: step.data,
     images: step.images || [],
-    // Look for exercises in multiple locations
-    exercises: step.exercises || step.data?.exercises || [],
-    quizzes: step.quizzes || step.data?.quizzes || [],
+    // Look for exercises in multiple locations - exercises are in content.exercises
+    exercises: step.exercises || step.content?.exercises || step.data?.exercises || [],
+    // Look for quizzes - quiz questions are in content.questions
+    quizzes: step.quizzes || step.content?.questions || step.data?.quizzes || [],
     options: step.options || step.data?.options || [],
-    // Preserve vocabulary for vocabulary steps
-    vocabulary: step.vocabulary || step.data?.vocabulary || step.words || step.data?.words || []
+    // Preserve vocabulary for vocabulary steps - terms are in content.terms
+    vocabulary: step.vocabulary || step.content?.terms || step.data?.vocabulary || step.words || step.data?.words || []
   }
 }
 
@@ -1014,7 +1015,9 @@ function initializeVocabularyModal(vocabData) {
     words = vocabData.words
   } else if (currentStep.value) {
     // Try to get vocabulary from various possible locations in currentStep
+    // In the lesson JSON, vocabulary terms are in content.terms
     words = currentStep.value.vocabulary ||
+            currentStep.value.content?.terms ||
             currentStep.value.words ||
             currentStep.value.data?.vocabulary ||
             currentStep.value.data?.words ||
