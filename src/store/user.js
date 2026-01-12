@@ -1027,7 +1027,7 @@ const getters = {
   lastServerSync: (state) => state.system?.lastServerSync || null,
 
   forceUpdateCounter: (state) => state.system?.forceUpdateCounter || 0,
-
+//im bired
   lastError: (state) => state.system?.errors?.lastError || null
 };
 
