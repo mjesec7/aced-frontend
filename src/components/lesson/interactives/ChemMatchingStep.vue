@@ -1,7 +1,7 @@
 <template>
   <div class="interactive-step step-animate-in">
     <p class="text-lg text-gray-600 mb-6 leading-relaxed">
-      {{ step.prompt }}
+      {{ getLocalizedText(step.prompt) }}
     </p>
 
     <div class="grid grid-cols-2 gap-4 sm:gap-8">
@@ -10,13 +10,13 @@
         <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">Names</h3>
         <div class="flex flex-col gap-2">
           <button
-            v-for="pair in step.pairs"
+            v-for="pair in normalizedPairs"
             :key="`name-${pair.id}`"
             @click="handleSelection('name', pair.id)"
             class="w-full text-left p-3 sm:p-4 rounded-xl border-2 transition-all duration-200 font-medium text-sm sm:text-base"
             :class="getItemClass(pair.id, 'name')"
           >
-            {{ pair.name }}
+            {{ getLocalizedText(pair.name) }}
           </button>
         </div>
       </div>
@@ -32,7 +32,7 @@
             class="w-full text-left p-3 sm:p-4 rounded-xl border-2 transition-all duration-200 font-medium font-mono text-sm sm:text-base"
             :class="getItemClass(pair.id, 'formula')"
           >
-            {{ pair.formula }}
+            {{ getLocalizedText(pair.formula) }}
           </button>
         </div>
       </div>
@@ -53,6 +53,9 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue';
+import { useLanguage } from '@/composables/useLanguage';
+
+const { getLocalizedText } = useLanguage();
 
 const props = defineProps({
   step: { type: Object, required: true }
@@ -65,12 +68,28 @@ const selectedFormulaId = ref(null);
 const matchedIds = ref([]);
 const feedback = ref({ text: '', type: null });
 
-// Shuffle formulas once when step changes
-const shuffledPairs = computed(() => {
-  return [...props.step.pairs].sort(() => Math.random() - 0.5);
+// Normalize pairs - handle different data structures
+const normalizedPairs = computed(() => {
+  // Try different locations for pairs data
+  const pairs = props.step?.pairs || props.step?.items || props.step?.content?.pairs || [];
+  if (!Array.isArray(pairs) || pairs.length === 0) {
+    console.warn('ChemMatchingStep: No pairs found in step data', props.step);
+    return [];
+  }
+  // Ensure each pair has an id
+  return pairs.map((pair, index) => ({
+    ...pair,
+    id: pair.id ?? index
+  }));
 });
 
-const isComplete = computed(() => matchedIds.value.length === props.step.pairs.length);
+// Shuffle formulas once when step changes
+const shuffledPairs = computed(() => {
+  if (normalizedPairs.value.length === 0) return [];
+  return [...normalizedPairs.value].sort(() => Math.random() - 0.5);
+});
+
+const isComplete = computed(() => normalizedPairs.value.length > 0 && matchedIds.value.length === normalizedPairs.value.length);
 
 watch(isComplete, (complete) => {
   if (complete) {

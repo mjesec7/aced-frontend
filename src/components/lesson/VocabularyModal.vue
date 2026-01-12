@@ -235,6 +235,8 @@
 </template>
 
 <script>
+import { getLocalizedText } from '@/composables/useLanguage';
+
 export default {
   name: 'VocabularyModal',
   props: {
@@ -370,42 +372,49 @@ export default {
       return total > 0 ? Math.round((learned / total) * 100) : 0
     },
 
-    // FIXED: Flexible word property extraction with multiple fallbacks
+    // FIXED: Flexible word property extraction with multiple fallbacks and localization support
     getWordTerm(word) {
       if (!word) return ''
-      
-      // Try multiple possible property names
-      const term = word.term || word.word || word.title || word.name || ''
-      return String(term).trim()
+
+      // Try multiple possible property names, using getLocalizedText to handle localized objects
+      const termValue = word.term || word.word || word.title || word.name || ''
+      // Use getLocalizedText to handle { en: "...", ru: "..." } objects
+      const localizedTerm = getLocalizedText(termValue)
+      return localizedTerm || String(termValue).trim()
     },
 
     getWordDefinition(word) {
       if (!word) return 'Definition not found'
-      
+
       // Try multiple possible property names
-      const definition = word.definition || word.translation || word.meaning || word.desc || word.description || ''
-      return String(definition).trim() || 'Definition not found'
+      const defValue = word.definition || word.translation || word.meaning || word.desc || word.description || ''
+      // Use getLocalizedText to handle { en: "...", ru: "..." } objects
+      const localizedDef = getLocalizedText(defValue)
+      return localizedDef || String(defValue).trim() || 'Definition not found'
     },
 
     getWordExample(word) {
       if (!word) return ''
-      
-      const example = word.example || word.examples || word.usage || ''
-      return String(example).trim()
+
+      const exampleValue = word.example || word.examples || word.usage || ''
+      const localizedExample = getLocalizedText(exampleValue)
+      return localizedExample || String(exampleValue).trim()
     },
 
     getWordPronunciation(word) {
       if (!word) return ''
-      
-      const pronunciation = word.pronunciation || word.phonetic || ''
-      return String(pronunciation).trim()
+
+      const pronValue = word.pronunciation || word.phonetic || ''
+      const localizedPron = getLocalizedText(pronValue)
+      return localizedPron || String(pronValue).trim()
     },
 
     getWordPartOfSpeech(word) {
       if (!word) return ''
-      
-      const partOfSpeech = word.partOfSpeech || word.pos || word.type || ''
-      return String(partOfSpeech).trim()
+
+      const posValue = word.partOfSpeech || word.pos || word.type || ''
+      const localizedPos = getLocalizedText(posValue)
+      return localizedPos || String(posValue).trim()
     },
 
     getWordId(word, index) {

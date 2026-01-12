@@ -16,7 +16,7 @@
           <span class="da-badge-text">Data Analysis</span>
         </div>
         <h2 class="da-title">
-          {{ step.prompt || 'Analyze the Data' }}
+          {{ getLocalizedText(step.prompt) || 'Analyze the Data' }}
         </h2>
       </div>
 
@@ -137,6 +137,9 @@
 
 <script setup>
 import { ref, computed } from 'vue';
+import { useLanguage } from '@/composables/useLanguage';
+
+const { getLocalizedText } = useLanguage();
 
 const props = defineProps({
   step: {
@@ -167,14 +170,22 @@ const feedback = ref({
   message: ''
 });
 
-// Computed
-const numericLabel = computed(() => props.step.numericLabel || 'Value');
-const numericKey = computed(() => props.step.numericKey || 'value');
+// Computed - with fallbacks for different data structures
+const numericLabel = computed(() => {
+  const label = props.step?.numericLabel || props.step?.numeric_label || props.step?.content?.numericLabel || 'Value';
+  return getLocalizedText(label) || label;
+});
+
+const numericKey = computed(() => props.step?.numericKey || props.step?.numeric_key || props.step?.content?.numericKey || 'value');
 
 const chartData = computed(() => {
-  const data = props.step.data || [];
+  const data = props.step?.data || props.step?.content?.data || [];
+  if (!Array.isArray(data)) {
+    console.warn('DataAnalysisStep: No data array found', props.step);
+    return [];
+  }
   return data.map(item => ({
-    label: item.label || 'Item',
+    label: getLocalizedText(item.label) || item.label || 'Item',
     value: item[numericKey.value] || item.value || 0
   }));
 });
@@ -204,20 +215,26 @@ const getBarColor = (index) => {
 
 const checkAnswer = () => {
   if (userAnswer.value === null) return;
-  
-  const tolerance = props.step.tolerance || 0.5;
-  const correctAnswer = props.step.correctAnswer;
+
+  const tolerance = props.step?.tolerance || props.step?.content?.tolerance || 0.5;
+  const correctAnswer = props.step?.correctAnswer || props.step?.correct_answer || props.step?.content?.correctAnswer;
+
+  if (correctAnswer === undefined || correctAnswer === null) {
+    console.warn('DataAnalysisStep: No correct answer found', props.step);
+    return;
+  }
+
   const isCorrect = Math.abs(userAnswer.value - correctAnswer) <= tolerance;
-  
+
   isCompleted.value = true;
   feedback.value = {
     show: true,
     isCorrect,
-    message: isCorrect 
-      ? `Excellent! The correct answer is ${correctAnswer.toFixed(2)}. Your calculation is spot on!`
-      : `The correct answer is ${correctAnswer.toFixed(2)}. You answered ${userAnswer.value.toFixed(2)}. Remember: Average = Sum of all values ÷ Number of values`
+    message: isCorrect
+      ? `Excellent! The correct answer is ${Number(correctAnswer).toFixed(2)}. Your calculation is spot on!`
+      : `The correct answer is ${Number(correctAnswer).toFixed(2)}. You answered ${userAnswer.value.toFixed(2)}. Remember: Average = Sum of all values ÷ Number of values`
   };
-  
+
   emit('complete', isCorrect);
 };
 </script>

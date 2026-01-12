@@ -1,7 +1,7 @@
 <template>
   <div class="interactive-step step-animate-in">
     <p class="text-lg text-gray-600 mb-6 leading-relaxed">
-      {{ step.prompt }}
+      {{ getLocalizedText(step.prompt) || 'Arrange the words in the correct order' }}
     </p>
 
     <!-- Drag Container -->
@@ -69,7 +69,10 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
+import { useLanguage } from '@/composables/useLanguage';
+
+const { getLocalizedText } = useLanguage();
 
 const props = defineProps({
   step: { type: Object, required: true }
@@ -83,12 +86,26 @@ const feedback = ref('');
 const isCorrect = ref(false);
 const dragging = ref(false);
 
+// Normalize correct order - handle different data structures and localization
+const normalizedCorrectOrder = computed(() => {
+  const order = props.step?.correctOrder || props.step?.correct_order || props.step?.content?.correctOrder || [];
+  if (!Array.isArray(order)) return [];
+  // Handle localized words
+  return order.map(word => getLocalizedText(word) || String(word));
+});
+
 // Initialize
 watch(() => props.step, () => {
-  if (props.step.scrambledOptions?.length) {
-    words.value = [...props.step.scrambledOptions];
+  // Try different locations for scrambled options
+  const scrambled = props.step?.scrambledOptions || props.step?.scrambled_options || props.step?.content?.scrambledOptions;
+
+  if (scrambled?.length) {
+    words.value = scrambled.map(word => getLocalizedText(word) || String(word));
+  } else if (normalizedCorrectOrder.value.length > 0) {
+    words.value = [...normalizedCorrectOrder.value].sort(() => Math.random() - 0.5);
   } else {
-    words.value = [...props.step.correctOrder].sort(() => Math.random() - 0.5);
+    console.warn('EnglishSentenceOrderStep: No word data found in step', props.step);
+    words.value = [];
   }
   feedback.value = '';
   isCorrect.value = false;
@@ -112,7 +129,7 @@ const onDrop = (dropIndex) => {
 };
 
 const checkSentence = () => {
-  const correct = words.value.join(' ') === props.step.correctOrder.join(' ');
+  const correct = words.value.join(' ') === normalizedCorrectOrder.value.join(' ');
 
   if (correct) {
     feedback.value = '✅ Perfect! The sentence is in the correct order.';
