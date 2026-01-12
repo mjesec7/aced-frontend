@@ -213,13 +213,13 @@
           <ModernMap v-else-if="exerciseType === 'map'" :title="exerciseContentData.title || exerciseTitle" :description="exerciseContentData.description || exerciseDescription" :image="exerciseContentData.image" :markers="exerciseContentData.markers" @complete="handleInteractiveComplete" @next="emit('next-exercise')" />
           <ModernBlockCoding v-else-if="exerciseType === 'block-coding'" :type="exerciseContentData.subtype || exerciseContentData.type || 'maze'" :title="exerciseContentData.title || exerciseTitle" :description="exerciseContentData.description || exerciseDescription" :availableBlocks="exerciseContentData.availableBlocks" :config="exerciseContentData.config" @complete="handleInteractiveComplete" @next="emit('next-exercise')" />
           <GeometryExercise v-else-if="exerciseType === 'geometry'" :geometryData="exerciseContentData" :userAnswer="geometryUserAnswer" @update:userAnswer="geometryUserAnswer = $event" @submit="handleGeometrySubmit" @next-exercise="emit('next-exercise')" />
-          <DataAnalysisStep v-else-if="exerciseType === 'data_analysis'" :step="exerciseContentData" @complete="handleInteractiveComplete" />
+          <DataAnalysisStep v-else-if="exerciseType === 'data_analysis' || exerciseType === 'data-analysis' || exerciseType === 'dataanalysis'" :step="exerciseContentData" @complete="handleInteractiveComplete" />
           <FractionVisualStep v-else-if="exerciseType === 'fraction_visual'" :step="exerciseContentData" @complete="handleInteractiveComplete" />
           <GeometryPolyStep v-else-if="exerciseType === 'geometry_poly'" :step="exerciseContentData" @complete="handleInteractiveComplete" />
           <ChemMixingStep v-else-if="exerciseType === 'chem_mixing'" :step="exerciseContentData" @complete="handleInteractiveComplete" />
-          <ChemMatchingStep v-else-if="exerciseType === 'chem_matching'" :step="exerciseContentData" @complete="handleInteractiveComplete" />
+          <ChemMatchingStep v-else-if="exerciseType === 'chem_matching' || exerciseType === 'matching' || exerciseType === 'match' || exerciseType === 'pair_matching'" :step="exerciseContentData" @complete="handleInteractiveComplete" />
           <EnglishSentenceFixStep v-else-if="exerciseType === 'english_sentence_fix'" :step="exerciseContentData" @complete="handleInteractiveComplete" />
-          <EnglishSentenceOrderStep v-else-if="exerciseType === 'english_sentence_order'" :step="exerciseContentData" @complete="handleInteractiveComplete" />
+          <EnglishSentenceOrderStep v-else-if="exerciseType === 'english_sentence_order' || exerciseType === 'sentence_order' || exerciseType === 'sentence_ordering' || exerciseType === 'word_order' || exerciseType === 'ordering' || exerciseType === 'reorder'" :step="exerciseContentData" @complete="handleInteractiveComplete" />
           <LanguageNounBagStep v-else-if="exerciseType === 'language_noun_bag'" :step="exerciseContentData" @complete="handleInteractiveComplete" />
           <LanguageToneTransformer v-else-if="exerciseType === 'language_tone_transformer'" :step="exerciseContentData" @complete="handleInteractiveComplete" />
           <LanguageIdiomBridge v-else-if="exerciseType === 'language_idiom_bridge'" :step="exerciseContentData" @complete="handleInteractiveComplete" />
@@ -347,12 +347,37 @@ const {
 } = useExercises();
 
 const specialInteractiveTypes = [
-  'histogram', 'map', 'block-coding', 'data_analysis', 'fraction_visual', 
-  'geometry_poly', 'chem_mixing', 'chem_matching', 'english_sentence_fix', 
+  'histogram', 'map', 'block-coding', 'data_analysis', 'fraction_visual',
+  'geometry_poly', 'chem_mixing', 'chem_matching', 'english_sentence_fix',
   'english_sentence_order', 'language_noun_bag', 'geometry',
   'language_tone_transformer', 'language_idiom_bridge',
-  'language_word_constellation', 'language_rhythm_match', 'language_false_friends'
+  'language_word_constellation', 'language_rhythm_match', 'language_false_friends',
+  // Add common aliases
+  'matching', 'sentence_order', 'sentence_ordering', 'word_order', 'ordering',
+  'data-analysis', 'dataanalysis'
 ];
+
+// Map exercise type aliases to canonical types
+const typeAliases = {
+  'matching': 'chem_matching',
+  'match': 'chem_matching',
+  'pair_matching': 'chem_matching',
+  'sentence_order': 'english_sentence_order',
+  'sentence_ordering': 'english_sentence_order',
+  'word_order': 'english_sentence_order',
+  'ordering': 'english_sentence_order',
+  'reorder': 'english_sentence_order',
+  'data-analysis': 'data_analysis',
+  'dataanalysis': 'data_analysis',
+  'data analysis': 'data_analysis'
+};
+
+// Normalize exercise type - handle aliases
+const normalizeExerciseType = (type) => {
+  if (!type) return null;
+  const normalized = type.toLowerCase().trim();
+  return typeAliases[normalized] || normalized;
+};
 
 const multipleChoiceTypes = ['multiple-choice', 'multiple_choice', 'abc', 'quiz', 'dialogue-completion', 'mcq', 'choice'];
 const trueFalseTypes = ['true-false', 'true_false', 'boolean', 'tf'];
@@ -360,16 +385,27 @@ const trueFalseTypes = ['true-false', 'true_false', 'boolean', 'tf'];
 const exerciseType = computed(() => {
   if (!props.currentExercise) return 'short-answer';
   const ex = props.currentExercise;
+
+  // Collect all possible type values
   const possibleTypes = [ex.exerciseType, ex.content?.type, ex.data?.type, ex.type].filter(Boolean);
+
+  // If top-level type is 'exercise', look inside content/data
   if (ex.type === 'exercise') {
-    if (ex.content?.type) return ex.content.type;
-    if (ex.data?.type) return ex.data.type;
+    if (ex.content?.type) return normalizeExerciseType(ex.content.type);
+    if (ex.data?.type) return normalizeExerciseType(ex.data.type);
   }
-  const foundSpecialType = possibleTypes.find(t => specialInteractiveTypes.includes(t));
-  if (foundSpecialType) return foundSpecialType;
+
+  // Normalize all types and find a special interactive type
+  const normalizedTypes = possibleTypes.map(t => normalizeExerciseType(t));
+  const foundSpecialType = normalizedTypes.find(t => specialInteractiveTypes.includes(t));
+  if (foundSpecialType) return normalizeExerciseType(foundSpecialType);
+
+  // Check for multiple choice by presence of options
   if (ex.options && Array.isArray(ex.options) && ex.options.length > 0) return 'multiple-choice';
   if (ex.content?.options && Array.isArray(ex.content.options)) return 'multiple-choice';
-  return possibleTypes[0] || ex.type || 'short-answer';
+
+  // Return first available type, normalized
+  return normalizeExerciseType(possibleTypes[0]) || ex.type || 'short-answer';
 });
 
 const isMultipleChoiceType = computed(() => {
@@ -383,7 +419,14 @@ const isMultipleChoiceType = computed(() => {
 });
 
 const isTrueFalseType = computed(() => trueFalseTypes.some(t => exerciseType.value?.toLowerCase()?.includes(t)));
-const isSpecialInteractiveType = computed(() => specialInteractiveTypes.includes(exerciseType.value));
+
+// Check if it's a special interactive type (including aliases)
+const isSpecialInteractiveType = computed(() => {
+  const type = exerciseType.value;
+  if (!type) return false;
+  // Check if type is in special types list or has an alias mapping
+  return specialInteractiveTypes.includes(type) || Object.keys(typeAliases).includes(type.toLowerCase());
+});
 
 const exerciseContentData = computed(() => {
   if (!props.currentExercise) return {};
