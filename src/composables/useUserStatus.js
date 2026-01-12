@@ -314,41 +314,44 @@ export const userStatusMixin = {
     }
   },
   
-  // ✅ ENHANCED: Comprehensive watchers
+  // ✅ ENHANCED: Comprehensive watchers (with null safety)
   watch: {
     // Watch reactive user status
     reactiveUserStatus: {
       handler(newStatus, oldStatus) {
-        if (newStatus !== oldStatus) {
+        if (newStatus !== oldStatus && newStatus != null) {
           this.recordStatusChange(newStatus, oldStatus);
           this.onUserStatusChanged(newStatus, oldStatus);
         }
       },
       immediate: true
     },
-    
-    // Watch store user status directly
+
+    // Watch store user status directly (with null safety)
     '$store.state.user.userStatus': {
       handler(newStatus, oldStatus) {
-        if (newStatus !== oldStatus) {
+        if (newStatus != null && newStatus !== oldStatus) {
           this.triggerReactivityUpdate();
         }
       },
-      immediate: true
+      immediate: false // Changed to false to avoid null issues on mount
     },
-    
-    // Watch user object changes
+
+    // Watch user object changes (with null safety)
     '$store.state.user': {
       handler(newUser, oldUser) {
+        // Skip if user is null/undefined
+        if (!newUser) return;
+
         const newPlan = newUser?.subscriptionPlan;
         const oldPlan = oldUser?.subscriptionPlan;
-        
+
         if (newPlan !== oldPlan) {
           this.handleUserObjectChange(newUser, oldUser);
         }
       },
-      deep: true,
-      immediate: true
+      deep: false, // Changed to false - deep watching null objects causes issues
+      immediate: false // Changed to false to avoid null issues on mount
     }
   },
   
@@ -1085,25 +1088,37 @@ export function useUserStatus() {
     
   };
   
-  // ✅ Watch for store changes
+  // ✅ Watch for store changes (with null safety)
   watch(
-    () => store.getters['user/userStatus'],
+    () => {
+      try {
+        return store.getters['user/userStatus'];
+      } catch (e) {
+        return null;
+      }
+    },
     (newStatus, oldStatus) => {
-      if (newStatus !== oldStatus) {
+      if (newStatus != null && newStatus !== oldStatus) {
         handleUserStatusChange(newStatus, oldStatus);
       }
     },
-    { immediate: true }
+    { immediate: false } // Changed to false to avoid null issues on mount
   );
-  
+
   watch(
-    () => store.getters['user/forceUpdateCounter'],
+    () => {
+      try {
+        return store.getters['user/forceUpdateCounter'];
+      } catch (e) {
+        return 0;
+      }
+    },
     (newCounter, oldCounter) => {
-      if (newCounter !== oldCounter) {
+      if (newCounter != null && newCounter !== oldCounter) {
         triggerReactivityUpdate();
       }
     },
-    { immediate: true }
+    { immediate: false } // Changed to false to avoid null issues on mount
   );
   
   // ✅ Lifecycle hooks
