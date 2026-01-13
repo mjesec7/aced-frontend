@@ -10,16 +10,25 @@
       <!-- Microphone Button -->
       <button 
         class="mic-btn-header" 
+        :class="{ 'is-listening': isListening }"
         @click="toggleVoiceInput"
         title="Toggle Voice Input"
       >
-        <svg class="mic-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <svg v-if="isListening" class="mic-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="9" y="9" width="6" height="6" fill="currentColor"/>
+        </svg>
+        <svg v-else class="mic-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" fill="currentColor"/>
           <path d="M19 10v2a7 7 0 0 1-14 0v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           <line x1="12" y1="19" x2="12" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           <line x1="8" y1="23" x2="16" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </button>
+
+      <!-- Analyzing Indicator -->
+      <div v-if="isAnalyzing" class="analyzing-indicator-header" title="AI is analyzing...">
+        🧠
+      </div>
 
       <!-- Speaker Button (AI Status/Control) -->
       <button 
@@ -150,6 +159,14 @@ export default {
       default: undefined
     },
     isSpeaking: {
+      type: Boolean,
+      default: false
+    },
+    isListening: {
+      type: Boolean,
+      default: false
+    },
+    isAnalyzing: {
       type: Boolean,
       default: false
     }
@@ -498,12 +515,35 @@ export default {
   background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
 }
 
+.mic-btn-header.is-listening {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  animation: mic-pulse-header 1.5s infinite;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+@keyframes mic-pulse-header {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
 .mic-btn-header:hover::before {
   left: 100%;
 }
 
 .mic-btn-header:active {
   transform: translateY(0);
+}
+
+.analyzing-indicator-header {
+  font-size: 1.2rem;
+  animation: brain-pulse 2s infinite ease-in-out;
+  margin: 0 4px;
+}
+
+@keyframes brain-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.2); opacity: 1; }
 }
 
 .speaker-btn-header {

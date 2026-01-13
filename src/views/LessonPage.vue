@@ -209,9 +209,12 @@
         :streak="consecutiveCorrect"
         :points="earnedPoints"
         :is-speaking="isAISpeaking"
+        :is-listening="isListening"
+        :is-analyzing="isAnalyzing"
         @exit="confirmExit"
         @report-problem="openProblemReportModal"
         @toggle-speech="handleToggleSpeech"
+        @toggle-voice-input="toggleMicrophone"
       />
 
       <!-- Split Screen Layout -->
@@ -410,15 +413,10 @@
           :current-step="currentStep"
           :ai-chat-history="formattedAIChatHistory"
           :ai-is-loading="isAITyping"
-          :auto-analyze="true"
-          :voice-enabled="voiceEnabled"
           @close="toggleFloatingAI"
           @send-message="handleAISendMessage"
           @ask-ai="handleAIQuickQuestion"
           @clear-chat="clearAIChat"
-          @analysis-complete="handleAnalysisComplete"
-          @speaking-start="handleSpeakingStart"
-          @speaking-end="handleSpeakingEnd"
         />
       </Transition>
     </Teleport>
@@ -439,6 +437,10 @@ import CompletionScreen from '@/components/lesson/CompletionScreen.vue'
 import FloatingAIAssistant from '@/components/lesson/FloatingAIAssistant.vue'
 import LessonHeader from '@/components/lesson/LessonHeader.vue'
 
+// Import Composables
+import { useVoiceAssistant } from '@/composables/useVoiceAssistant'
+import { eventBus } from '@/utils/eventBus'
+
 // Import API
 import { getLessonById } from '@/api/lessons'
 
@@ -447,8 +449,20 @@ import { useLanguage, getLocalizedText } from '@/composables/useLanguage';
 
 const route = useRoute()
 const router = useRouter()
-const { t } = useI18n()
+const i18n = useI18n()
+const { t } = i18n
 const { language, setLanguage, currentLanguageInfo } = useLanguage();
+
+// Voice Assistant Composable
+const {
+  isSpeaking,
+  isListening,
+  isAnalyzing,
+  toggleMicrophone,
+  stopAudio,
+  analyzeAndSpeak,
+  handleVoiceQuestion
+} = useVoiceAssistant(i18n);
 
 // ==================== LOCALIZATION HELPERS ====================
 
@@ -571,7 +585,6 @@ const confirmation = ref(null)
 const answerWasCorrect = ref(false)
 const currentHint = ref('')
 const smartHint = ref('')
-const isAISpeaking = ref(false)
 const fillBlankAnswers = ref({})
 const matchingPairs = ref([])
 const selectedMatchingItem = ref(null)
@@ -622,6 +635,8 @@ const progressPercentage = computed(() => {
   if (steps.value.length === 0) return 0
   return Math.round(((currentIndex.value + 1) / steps.value.length) * 100)
 })
+
+const isAISpeaking = computed(() => isSpeaking.value)
 
 const estimatedTime = computed(() => {
   // Use lesson's timing if available, otherwise calculate from steps
@@ -722,22 +737,31 @@ function handleReturnToCatalogue() {
 }
 
 function handleToggleSpeech() {
-  if (isAISpeaking.value) {
-    eventBus.emit('stop-ai-speech')
+  if (isSpeaking.value) {
+    stopAudio()
+  } else {
+    analyzeAndSpeak(currentStep.value)
   }
 }
 
 function handleSpeakingStart() {
-  isAISpeaking.value = true
+  // Handled by composable
 }
 
 function handleSpeakingEnd() {
-  isAISpeaking.value = false
+  // Handled by composable
 }
 
 function startLesson() {
   started.value = true
   currentIndex.value = 0
+  
+  // Start AI speech on lesson start
+  nextTick(() => {
+    if (currentStep.value) {
+      analyzeAndSpeak(currentStep.value)
+    }
+  })
 }
 
 function continuePreviousProgress() {
@@ -1311,12 +1335,47 @@ watch(language, () => {
   }
 })
 
+// Watch for step changes to trigger AI speech
+watch(currentIndex, (newIndex) => {
+  if (started.value && steps.value[newIndex]) {
+    analyzeAndSpeak(steps.value[newIndex])
+  }
+})
+
+// Handle Voice Events
 onMounted(() => {
+  eventBus.on('voice-transcript', (transcript) => {
+    handleVoiceQuestion(transcript, currentStep.value)
+  })
+
+  eventBus.on('ai-voice-input', (text) => {
+    aiChatMessages.value.push({
+      role: 'user',
+      content: text,
+      timestamp: new Date().toISOString()
+    })
+  })
+
+  eventBus.on('ai-voice-response', (text) => {
+    aiChatMessages.value.push({
+      role: 'assistant',
+      content: text,
+      timestamp: new Date().toISOString()
+    })
+  })
+
   loadLesson()
+  
+  // Check if we should auto-start (e.g. from a direct link or refresh)
+  if (route.query.start === 'true') {
+    startLesson()
+  }
 })
 
 onUnmounted(() => {
-  // Cleanup
+  eventBus.off('voice-transcript')
+  eventBus.off('ai-voice-input')
+  eventBus.off('ai-voice-response')
 })
 </script>
 
