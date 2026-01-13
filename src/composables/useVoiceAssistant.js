@@ -75,7 +75,8 @@ export function useVoiceAssistant(i18n) {
         stopAudio();
 
         try {
-            const currentLang = i18n.locale.value;
+            // Fix: i18n.locale might be a ref or a plain value depending on how it's passed
+            const currentLang = i18n.locale.value || i18n.locale;
             const audioBlob = await voiceApi.streamAudio(text, { language: currentLang });
 
             if (currentAudioUrl.value) {
@@ -132,7 +133,7 @@ export function useVoiceAssistant(i18n) {
         }
 
         speechRecognition.value = new SpeechRecognition();
-        const currentLang = i18n.locale.value;
+        const currentLang = i18n.locale.value || i18n.locale;
 
         if (currentLang === 'ru') speechRecognition.value.lang = 'ru-RU';
         else if (currentLang === 'uz') speechRecognition.value.lang = 'uz-UZ';
@@ -188,7 +189,7 @@ export function useVoiceAssistant(i18n) {
         const content = getStepContent(step);
         if (!content || content.length < 20) return;
 
-        const currentLang = i18n.locale.value;
+        const currentLang = i18n.locale.value || i18n.locale;
         if (currentLang === 'uz') return;
 
         const analysisId = Date.now();

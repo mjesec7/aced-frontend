@@ -171,7 +171,7 @@ export default {
       default: false
     }
   },
-  emits: ['exit', 'report-problem', 'toggle-speech'],
+  emits: ['exit', 'report-problem', 'toggle-speech', 'toggle-voice-input'],
   setup() {
     const { language } = useLanguage();
     return { language };
@@ -198,7 +198,7 @@ export default {
   },
   methods: {
     toggleVoiceInput() {
-      eventBus.emit('toggle-voice-input');
+      this.$emit('toggle-voice-input');
     },
     getLocalized(field) {
       // Handle null/undefined
