@@ -355,6 +355,7 @@ export default {
 
     // Listen for header mic button
     eventBus.on('toggle-voice-input', this.toggleMicrophone);
+    eventBus.on('stop-ai-speech', this.stopAudio);
   },
 
   beforeUnmount() {
@@ -362,6 +363,7 @@ export default {
     this.stopListening();
     this.clearHighlights();
     eventBus.off('toggle-voice-input', this.toggleMicrophone);
+    eventBus.off('stop-ai-speech', this.stopAudio);
   },
 
   methods: {

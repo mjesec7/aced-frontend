@@ -208,8 +208,11 @@
         :progress-percentage="progressPercentage"
         :streak="consecutiveCorrect"
         :points="earnedPoints"
+        :points="earnedPoints"
+        :is-speaking="isAISpeaking"
         @exit="confirmExit"
         @report-problem="openProblemReportModal"
+        @toggle-speech="handleToggleSpeech"
       />
 
       <!-- Split Screen Layout -->
@@ -569,6 +572,7 @@ const confirmation = ref(null)
 const answerWasCorrect = ref(false)
 const currentHint = ref('')
 const smartHint = ref('')
+const isAISpeaking = ref(false)
 const fillBlankAnswers = ref({})
 const matchingPairs = ref([])
 const selectedMatchingItem = ref(null)
@@ -717,6 +721,20 @@ function retryLoad() {
 
 function handleReturnToCatalogue() {
   router.push('/profile/catalogue')
+}
+
+function handleToggleSpeech() {
+  if (isAISpeaking.value) {
+    eventBus.emit('stop-ai-speech')
+  }
+}
+
+function handleSpeakingStart() {
+  isAISpeaking.value = true
+}
+
+function handleSpeakingEnd() {
+  isAISpeaking.value = false
 }
 
 function startLesson() {

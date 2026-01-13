@@ -21,6 +21,26 @@
         </svg>
       </button>
 
+      <!-- Speaker Button (AI Status/Control) -->
+      <button 
+        v-if="language !== 'uz'"
+        class="speaker-btn-header" 
+        :class="{ 'is-speaking': isSpeaking }"
+        @click="$emit('toggle-speech')"
+        title="Toggle AI Speech"
+      >
+        <svg v-if="isSpeaking" class="speaker-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M11 5L6 9H2V15H6L11 19V5Z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path class="wave wave-1" d="M15.54 8.46a5 5 0 0 1 0 7.07" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path class="wave wave-2" d="M19.07 4.93a10 10 0 0 1 0 14.14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <svg v-else class="speaker-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M11 5L6 9H2V15H6L11 19V5Z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="23" y1="9" x2="17" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="17" y1="9" x2="23" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+
       <!-- Warning for Uzbek (Voice Disabled) -->
       <div 
         v-if="language === 'uz'"
@@ -128,9 +148,13 @@ export default {
     points: {
       type: Number,
       default: undefined
+    },
+    isSpeaking: {
+      type: Boolean,
+      default: false
     }
   },
-  emits: ['exit', 'report-problem'],
+  emits: ['exit', 'report-problem', 'toggle-speech'],
   setup() {
     const { language } = useLanguage();
     return { language };
@@ -480,6 +504,54 @@ export default {
 
 .mic-btn-header:active {
   transform: translateY(0);
+}
+
+.speaker-btn-header {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  color: #64748b;
+  border: 2px solid #e2e8f0;
+  cursor: pointer;
+  border-radius: 10px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.speaker-btn-header.is-speaking {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.speaker-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.wave {
+  transform-origin: center;
+}
+
+.is-speaking .wave-1 {
+  animation: wave-pulse 1.5s infinite ease-in-out;
+}
+
+.is-speaking .wave-2 {
+  animation: wave-pulse 1.5s infinite ease-in-out 0.2s;
+}
+
+@keyframes wave-pulse {
+  0%, 100% { opacity: 0.3; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.1); }
 }
 
 /* Warning Icon */
