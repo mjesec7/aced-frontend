@@ -1345,7 +1345,7 @@ watch(currentIndex, (newIndex) => {
 // Handle Voice Events
 onMounted(() => {
   eventBus.on('voice-transcript', (transcript) => {
-    handleVoiceQuestion(transcript, currentStep.value)
+    handleVoiceQuestion(transcript, currentStep.value, aiChatMessages.value)
   })
 
   eventBus.on('ai-voice-input', (text) => {

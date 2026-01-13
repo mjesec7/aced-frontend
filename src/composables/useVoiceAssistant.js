@@ -124,7 +124,7 @@ export function useVoiceAssistant(i18n) {
         }
     };
 
-    const handleVoiceQuestion = async (question, currentStep) => {
+    const handleVoiceQuestion = async (question, currentStep, chatHistory = []) => {
         if (!question) return;
 
         // Emit event for chat history update
@@ -133,7 +133,8 @@ export function useVoiceAssistant(i18n) {
         try {
             const response = await chatApi.getLessonContextAIResponse({
                 userInput: question,
-                lessonContext: currentStep
+                lessonContext: currentStep,
+                chatHistory: chatHistory // Pass history for context
             });
 
             const reply = response?.data?.reply || response?.reply;
@@ -200,7 +201,7 @@ export function useVoiceAssistant(i18n) {
                 console.log('[VoiceAssistant] Interim:', interimTranscript);
             }
 
-            // Start silence timer (2 seconds)
+            // Start silence timer (1.5 seconds for faster response)
             silenceTimer.value = setTimeout(() => {
                 const finalTranscript = accumulatedTranscript.value.trim();
                 if (finalTranscript) {
@@ -209,7 +210,7 @@ export function useVoiceAssistant(i18n) {
                     eventBus.emit('voice-transcript', finalTranscript);
                     accumulatedTranscript.value = ''; // Clear for next time
                 }
-            }, 2000);
+            }, 1500);
         };
 
         speechRecognition.value.onerror = (event) => {
