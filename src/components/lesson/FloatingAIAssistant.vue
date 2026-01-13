@@ -409,11 +409,8 @@ export default {
 
       // Language Check
       const currentLang = this.$i18n.locale;
-      if (currentLang === 'uz') {
-        console.log('[FloatingAI] Voice disabled for Uzbek language');
-        return;
-      }
-
+      // Uzbek is now supported!
+      
       this.isAnalyzing = true;
 
       try {
@@ -485,7 +482,8 @@ export default {
 
       try {
         // Get audio blob from backend
-        const audioBlob = await voiceApi.streamAudio(text);
+        const currentLang = this.$i18n.locale;
+        const audioBlob = await voiceApi.streamAudio(text, { language: currentLang });
 
         // Create object URL for audio playback
         if (this.currentAudioUrl) {
@@ -538,7 +536,8 @@ export default {
       if (!questionText) return;
 
       try {
-        const audioBlob = await voiceApi.streamAudio(questionText);
+        const currentLang = this.$i18n.locale;
+        const audioBlob = await voiceApi.streamAudio(questionText, { language: currentLang });
         
         if (this.currentAudioUrl) {
           URL.revokeObjectURL(this.currentAudioUrl);
@@ -600,7 +599,16 @@ export default {
       }
 
       this.speechRecognition = new SpeechRecognition();
-      this.speechRecognition.lang = 'ru-RU'; // Russian language
+      
+      // Set language based on current locale
+      const currentLang = this.$i18n.locale;
+      if (currentLang === 'ru') {
+        this.speechRecognition.lang = 'ru-RU';
+      } else if (currentLang === 'uz') {
+        this.speechRecognition.lang = 'uz-UZ';
+      } else {
+        this.speechRecognition.lang = 'en-US';
+      }
       this.speechRecognition.interimResults = true; // Enable interim results for faster interruption
       this.speechRecognition.continuous = true; // Keep listening
 
@@ -729,10 +737,7 @@ export default {
 
         // Language Check
         const currentLang = this.$i18n.locale;
-        if (currentLang === 'uz') {
-          this.processQueue();
-          return;
-        }
+        // Uzbek is now supported!
 
         // Analyze (Background)
         const result = await voiceApi.analyzeLesson(
