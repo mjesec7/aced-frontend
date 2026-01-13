@@ -28,8 +28,15 @@ export function useVoiceAssistant(i18n) {
         isSpeaking.value = false;
     };
 
+    const accumulatedTranscript = ref('');
+    const silenceTimer = ref(null);
+
     const stopListening = () => {
         isListening.value = false;
+        if (silenceTimer.value) {
+            clearTimeout(silenceTimer.value);
+            silenceTimer.value = null;
+        }
         if (speechRecognition.value) {
             try {
                 speechRecognition.value.stop();
@@ -54,6 +61,7 @@ export function useVoiceAssistant(i18n) {
         if (isListening.value) return;
 
         try {
+            accumulatedTranscript.value = ''; // Reset on new start
             isListening.value = true;
             speechRecognition.value.start();
         } catch (error) {
@@ -173,12 +181,16 @@ export function useVoiceAssistant(i18n) {
         };
 
         speechRecognition.value.onresult = async (event) => {
-            let finalTranscript = '';
+            // Reset silence timer on any activity
+            if (silenceTimer.value) {
+                clearTimeout(silenceTimer.value);
+            }
+
             let interimTranscript = '';
 
             for (let i = event.resultIndex; i < event.results.length; ++i) {
                 if (event.results[i].isFinal) {
-                    finalTranscript += event.results[i][0].transcript;
+                    accumulatedTranscript.value += event.results[i][0].transcript + ' ';
                 } else {
                     interimTranscript += event.results[i][0].transcript;
                 }
@@ -188,13 +200,16 @@ export function useVoiceAssistant(i18n) {
                 console.log('[VoiceAssistant] Interim:', interimTranscript);
             }
 
-            if (finalTranscript) {
-                const transcript = finalTranscript.trim();
-                console.log('[VoiceAssistant] Final transcript:', transcript);
-                if (transcript) {
-                    eventBus.emit('voice-transcript', transcript);
+            // Start silence timer (2 seconds)
+            silenceTimer.value = setTimeout(() => {
+                const finalTranscript = accumulatedTranscript.value.trim();
+                if (finalTranscript) {
+                    console.log('[VoiceAssistant] Silence detected. Final transcript:', finalTranscript);
+                    stopListening();
+                    eventBus.emit('voice-transcript', finalTranscript);
+                    accumulatedTranscript.value = ''; // Clear for next time
                 }
-            }
+            }, 2000);
         };
 
         speechRecognition.value.onerror = (event) => {
