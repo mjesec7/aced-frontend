@@ -208,7 +208,6 @@
         :progress-percentage="progressPercentage"
         :streak="consecutiveCorrect"
         :points="earnedPoints"
-        :points="earnedPoints"
         :is-speaking="isAISpeaking"
         @exit="confirmExit"
         @report-problem="openProblemReportModal"
@@ -611,7 +610,6 @@ const aiChatMessages = ref([])
 const aiChatInput = ref('')
 const isAITyping = ref(false)
 const voiceEnabled = ref(true)
-const isAISpeaking = ref(false)
 
 // Migration
 const migrationLoading = ref(false)
@@ -1276,16 +1274,6 @@ function clearAIChat() {
 // Handler for analysis complete
 function handleAnalysisComplete({ explanation, highlights }) {
   console.log('[LessonPage] Analysis complete:', { explanation, highlightCount: highlights?.length })
-}
-
-// Handler for speaking start
-function handleSpeakingStart() {
-  isAISpeaking.value = true
-}
-
-// Handler for speaking end
-function handleSpeakingEnd() {
-  isAISpeaking.value = false
 }
 
 // Migration
