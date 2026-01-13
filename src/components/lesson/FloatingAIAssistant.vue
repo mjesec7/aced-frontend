@@ -295,88 +295,33 @@ export default {
     // ORIGINAL CHAT METHODS
     // ==========================================
 
-    /**
-     * Get content text from step data
-     */
-    getStepContent(step) {
-      if (!step) return '';
-      
-      let content = '';
-      if (step.data?.content) content = step.data.content;
-      else if (step.data?.text) content = step.data.text;
-      else if (step.content?.text) content = step.content.text;
-      else if (step.content?.content) content = step.content.content;
-      else if (typeof step.content === 'string') content = step.content;
-      else if (typeof step.data === 'string') content = step.data;
-      else if (step.description) content = step.description;
-      else if (step.text) content = step.text;
-
-      // Handle localized object {en: "...", ru: "..."}
-      if (content && typeof content === 'object') {
-        return content.en || content.ru || content.uz || Object.values(content)[0] || '';
-      }
-
-      return content || '';
-    },
-
-    /**
-     * Main orchestration: Analyze step -> Highlight -> Speak
-     */
-    async analyzeAndSpeak(step) {
-      if (!step) return;
-
-      // Stop any current playback
-      this.stopAudio();
-      this.clearHighlights();
-      this.analysisError = null;
-
-      const content = this.getStepContent(step);
-      if (!content || content.length < 20) return;
-
-      // Language Check
-      const currentLang = this.$i18n.locale;
-      
-      // Disable voice for Uzbek as per user request
-      if (currentLang === 'uz') {
-        console.log('[FloatingAI] Voice disabled for Uzbek language');
+    sendMessage() {
+      if (!this.localFloatingInput?.trim() || this.aiIsLoading || this.isMessageLimitReached) {
         return;
       }
       
-      const analysisId = Date.now();
-      this.currentAnalysisId = analysisId;
-      this.isAnalyzing = true;
+      this.$emit('send-message', this.localFloatingInput.trim());
+      this.localFloatingInput = '';
+    },
 
+    clearChat() {
+      this.$emit('clear-chat');
+    },
+
+    formatTime(message) {
+      if (!message?.timestamp) return '';
+      
       try {
-        let explanation, highlights, question;
-        const stepId = step.id || step._id;
+        const date = new Date(message.timestamp);
+        return date.toLocaleTimeString('ru-RU', { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        });
+      } catch (error) {
+        return '';
+      }
+    },
 
-        // 1. Check Cache First
-        if (this.analysisCache.has(stepId)) {
-          const cachedData = this.analysisCache.get(stepId);
-          explanation = cachedData.explanation;
-          highlights = cachedData.highlights;
-          question = cachedData.question;
-        } else {
-          // 2. Backend Analysis (if not cached)
-          const result = await voiceApi.analyzeLesson(
-            content,
-            step.type || 'explanation',
-            step.type,
-            currentLang
-          );
-          
-          // Check if this is still the current analysis
-          if (this.currentAnalysisId !== analysisId) {
-            console.log('[FloatingAI] Analysis discarded (newer analysis started)');
-            return;
-          }
-
-          const data = result?.data || result || {};
-          explanation = data.explanation;
-          highlights = data.highlights;
-          question = data.question;
-          
-          // Cache it
     scrollToBottom() {
       const chatMessages = this.$refs.chatMessages;
       if (chatMessages) {
