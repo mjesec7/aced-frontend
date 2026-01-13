@@ -2,32 +2,30 @@
   <div class="floating-ai-assistant">
     <div class="ai-header">
       <div class="ai-header-left">
-        <h4>🤖 AI Assistant</h4>
+        <h4>🤖 {{ $t('lesson.floatingAssistant.title') }}</h4>
         <!-- Voice Status Indicators -->
         <div v-if="isAnalyzing" class="voice-status analyzing">
           <span class="status-icon">🧠</span>
-          <span class="status-text">Analyzing...</span>
+          <span class="status-text">{{ $t('lesson.floatingAssistant.analyzing') }}</span>
         </div>
         <div v-else-if="isSpeaking" class="voice-status speaking">
           <span class="status-icon">🔊</span>
-          <span class="status-text">Speaking...</span>
+          <span class="status-text">{{ $t('lesson.floatingAssistant.speaking') }}</span>
         </div>
         <div v-else-if="isListening" class="voice-status listening">
           <span class="status-icon">👂</span>
-          <span class="status-text">Listening...</span>
+          <span class="status-text">{{ $t('lesson.floatingAssistant.listening') }}</span>
         </div>
       </div>
       <div class="ai-header-right">
-        <!-- Microphone Button for Interruption -->
-        <button
-          @click="toggleMicrophone"
-          class="mic-btn"
-          :class="{ 'listening': isListening, 'speaking': isSpeaking }"
-          :disabled="isAnalyzing"
-          :title="isListening ? 'Stop listening' : (isSpeaking ? 'Interrupt & Ask' : 'Ask Question')"
+        <!-- Send Button -->
+        <button 
+          @click="sendMessage" 
+          class="send-btn"
+          :disabled="!localFloatingInput.trim() && !isListening"
         >
-          <span v-if="isListening">⏹️</span>
-          <span v-else>🎤</span>
+          <span v-if="isListening" class="listening-indicator"></span>
+          <span v-else>➤</span>
         </button>
         <button @click="$emit('close')" class="close-ai-btn">✕</button>
       </div>
@@ -36,7 +34,7 @@
     <div class="ai-body">
       <!-- Usage Display -->
       <div v-if="formattedUsage" class="usage-display">
-        <p>📊 Used: {{ formattedUsage }}</p>
+        <p>📊 {{ $t('lesson.floatingAssistant.used') }}: {{ formattedUsage }}</p>
         <div v-if="usagePercentage > 0 && !isUnlimited" class="usage-bar">
           <div class="usage-fill" :style="{ width: usagePercentage + '%' }"></div>
         </div>
@@ -44,7 +42,7 @@
       
       <!-- Quick Suggestions -->
       <div v-if="(quickSuggestions || []).length" class="quick-suggestions">
-        <p class="suggestions-label">💡 Quick questions:</p>
+        <p class="suggestions-label">💡 {{ $t('lesson.floatingAssistant.quickQuestions') }}</p>
         <div class="suggestions-list">
           <button 
             v-for="(suggestion, quickIndex) in (quickSuggestions || [])" 
@@ -63,7 +61,7 @@
         <div class="chat-messages" ref="chatMessages">
           <div v-if="!(aiChatHistory || []).length" class="empty-chat-state">
             <div class="empty-icon">💭</div>
-            <p>Ask a question about the current step!</p>
+            <p>{{ $t('lesson.floatingAssistant.askQuestion') }}</p>
           </div>
           
           <div 
@@ -100,7 +98,7 @@
           <input 
             v-model="localFloatingInput" 
             @keyup.enter="sendMessage"
-            placeholder="Ask about the current step..."
+            :placeholder="$t('lesson.floatingAssistant.placeholder')"
             :disabled="aiIsLoading || isMessageLimitReached"
             class="chat-input-field"
             ref="chatInput"
@@ -109,7 +107,7 @@
             @click="sendMessage" 
             :disabled="!localFloatingInput?.trim() || aiIsLoading || isMessageLimitReached"
             class="send-btn"
-            :title="isMessageLimitReached ? 'Message limit reached' : 'Send message'"
+            :title="isMessageLimitReached ? $t('lesson.floatingAssistant.limitReachedTitle') : $t('lesson.floatingAssistant.sendTitle')"
           >
             <span v-if="aiIsLoading" class="loading-spinner">⏳</span>
             <span v-else>📤</span>
@@ -119,11 +117,11 @@
         <!-- Message Limit Warning -->
         <div v-if="isNearLimit || isMessageLimitReached" class="limit-warning">
           <div v-if="isMessageLimitReached" class="limit-reached">
-            🚫 Message limit reached. 
-            <a href="/pay/start" class="upgrade-link">Upgrade subscription</a>
+            🚫 {{ $t('lesson.floatingAssistant.limitReached') }}
+            <a href="/pay/start" class="upgrade-link">{{ $t('lesson.floatingAssistant.upgrade') }}</a>
           </div>
           <div v-else-if="isNearLimit" class="limit-near">
-            ⚠️ Remaining {{ remainingMessages }} messages
+            ⚠️ {{ $t('lesson.floatingAssistant.remaining', { count: remainingMessages }) }}
           </div>
         </div>
       </div>
@@ -131,10 +129,10 @@
       <!-- Chat Controls -->
       <div v-if="(aiChatHistory || []).length > 3" class="chat-controls">
         <button @click="showAllMessages = !showAllMessages" class="toggle-messages-btn">
-          {{ showAllMessages ? 'Show less' : 'Show all' }}
+          {{ showAllMessages ? $t('lesson.floatingAssistant.showLess') : $t('lesson.floatingAssistant.showAll') }}
         </button>
         <button @click="clearChat" class="clear-chat-btn">
-          🗑️ Clear
+          🗑️ {{ $t('lesson.floatingAssistant.clear') }}
         </button>
       </div>
     </div>
@@ -342,6 +340,8 @@ export default {
           return;
         }
 
+        // Small delay to ensure UI is ready and prevent race conditions
+        await new Promise(resolve => setTimeout(resolve, 500));
         await this.analyzeAndSpeak(newStep);
       },
       immediate: true,
@@ -409,7 +409,12 @@ export default {
 
       // Language Check
       const currentLang = this.$i18n.locale;
-      // Uzbek is now supported!
+      
+      // Disable voice for Uzbek as per user request
+      if (currentLang === 'uz') {
+        console.log('[FloatingAI] Voice disabled for Uzbek language');
+        return;
+      }
       
       this.isAnalyzing = true;
 
@@ -501,10 +506,7 @@ export default {
         this.isSpeaking = true;
         this.$emit('speaking-start');
 
-        // Start listening immediately (Continuous Listening)
-        if (!this.isListening) {
-          this.startListening();
-        }
+        // Note: We do NOT start listening automatically anymore (Push-to-Talk)
 
         this.currentAudio.onended = async () => {
           // If there's a follow-up question, speak it
@@ -609,22 +611,17 @@ export default {
       } else {
         this.speechRecognition.lang = 'en-US';
       }
-      this.speechRecognition.interimResults = true; // Enable interim results for faster interruption
-      this.speechRecognition.continuous = true; // Keep listening
+      this.speechRecognition.interimResults = true;
+      this.speechRecognition.continuous = false; // Push-to-talk: Stop after one sentence/phrase
 
       this.speechRecognition.onresult = async (event) => {
-        // Interruption Logic: If AI is speaking and we detect ANY speech, stop the audio
-        if (this.isSpeaking) {
-          this.stopAudio();
-          console.log('[FloatingAI] Interrupted by user speech');
-        }
-
         // Process final results
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           if (event.results[i].isFinal) {
             const transcript = event.results[i][0].transcript.trim();
             if (transcript) {
               console.log('[FloatingAI] Final transcript:', transcript);
+              this.stopListening(); // Stop listening after getting input
               await this.handleVoiceQuestion(transcript);
             }
           }
@@ -793,12 +790,28 @@ export default {
     /**
      * Toggle microphone - interrupt and ask question
      */
+    /**
+     * Toggle microphone state (Push-to-Talk)
+     * - If AI is speaking: Stop AI, Start Listening
+     * - If Listening: Stop Listening
+     * - If Idle: Start Listening
+     */
     toggleMicrophone() {
+      // 1. If AI is speaking, stop it and start listening (Interruption)
+      if (this.isSpeaking) {
+        this.stopAudio();
+        this.startListening();
+        return;
+      }
+
+      // 2. If already listening, stop
       if (this.isListening) {
         this.stopListening();
-      } else {
-        this.startListening();
+        return;
       }
+
+      // 3. Otherwise, start listening
+      this.startListening();
     },
 
     // ==========================================
@@ -849,7 +862,8 @@ export default {
   position: fixed;
   bottom: 90px;
   right: 24px;
-  width: 350px;
+  width: 100%;
+  max-width: 400px; /* Flexible width */
   background: white;
   border-radius: 20px;
   box-shadow: 
@@ -857,10 +871,20 @@ export default {
     0 0 0 1px rgba(255, 255, 255, 0.1);
   z-index: 1001;
   overflow: hidden;
-  max-height: 500px;
+  max-height: 60vh; /* Responsive height */
   display: flex;
   flex-direction: column;
   animation: assistantSlideIn 0.3s ease-out;
+}
+
+@media (max-width: 640px) {
+  .floating-ai-assistant {
+    right: 16px;
+    left: 16px;
+    width: auto;
+    max-width: none;
+    bottom: 80px;
+  }
 }
 
 @keyframes assistantSlideIn {

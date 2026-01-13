@@ -330,7 +330,25 @@
       "progress": "Progress",
       "aiHelp": "AI Help",
       "askQuestion": "Ask a question...",
-      "vocabulary": "Vocabulary"
+      "vocabulary": "Vocabulary",
+      "floatingAssistant": {
+        "title": "AI Assistant",
+        "analyzing": "Analyzing...",
+        "speaking": "Speaking...",
+        "listening": "Listening...",
+        "quickQuestions": "Quick questions:",
+        "askQuestion": "Ask a question about the current step!",
+        "used": "Used",
+        "placeholder": "Ask about the current step...",
+        "sendTitle": "Send message",
+        "limitReachedTitle": "Message limit reached",
+        "limitReached": "Message limit reached.",
+        "upgrade": "Upgrade subscription",
+        "remaining": "Remaining {count} messages",
+        "showLess": "Show less",
+        "showAll": "Show all",
+        "clear": "Clear"
+      }
     },
     "games": {
       "score": "Score",
@@ -2215,7 +2233,25 @@
       "progress": "Progress",
       "aiHelp": "AI Yordam",
       "askQuestion": "Savol bering...",
-      "vocabulary": "Lug'at"
+      "vocabulary": "Lug'at",
+      "floatingAssistant": {
+        "title": "AI Yordamchi",
+        "analyzing": "Tahlil qilinmoqda...",
+        "speaking": "Gapirmoqda...",
+        "listening": "Eshitilmoqda...",
+        "quickQuestions": "Tezkor savollar:",
+        "askQuestion": "Joriy qadam haqida savol bering!",
+        "used": "Ishlatildi",
+        "placeholder": "Joriy qadam haqida so'rang...",
+        "sendTitle": "Xabar yuborish",
+        "limitReachedTitle": "Xabar limiti tugadi",
+        "limitReached": "Xabar limiti tugadi.",
+        "upgrade": "Obunani yangilash",
+        "remaining": "{count} ta xabar qoldi",
+        "showLess": "Kamroq ko'rsatish",
+        "showAll": "Hammasini ko'rsatish",
+        "clear": "Tozalash"
+      }
     },
     "games": {
       "score": "Ball",

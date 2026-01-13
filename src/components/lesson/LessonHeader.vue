@@ -40,12 +40,22 @@
       
       <!-- Microphone Button -->
       <button 
+        v-if="language !== 'uz'"
         class="mic-btn-header" 
         @click="toggleVoiceInput"
         title="Toggle Voice Input"
       >
         🎤
       </button>
+
+      <!-- Warning for Uzbek (Voice Disabled) -->
+      <div 
+        v-else 
+        class="warning-icon-header"
+        title="Voice explanation not available in Uzbek"
+      >
+        🔇
+      </div>
 
       <!-- Problem Report Button -->
       <button 
@@ -431,6 +441,22 @@ export default {
 
 .mic-btn-header:active {
   transform: translateY(0);
+}
+
+/* Warning Icon */
+.warning-icon-header {
+  background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+  color: white;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 1rem;
+  cursor: help;
+  box-shadow: 0 2px 6px rgba(100, 116, 139, 0.3);
 }
 
 /* Problem Report Button */
