@@ -6,6 +6,25 @@
       
       <!-- Lesson Title -->
       <h2 class="lesson-title">{{ getLocalized(lesson?.lessonName) || 'Lesson' }}</h2>
+
+      <!-- Microphone Button -->
+      <button 
+        v-if="language !== 'uz'"
+        class="mic-btn-header" 
+        @click="toggleVoiceInput"
+        title="Toggle Voice Input"
+      >
+        🎤
+      </button>
+
+      <!-- Warning for Uzbek (Voice Disabled) -->
+      <div 
+        v-else 
+        class="warning-icon-header"
+        title="Voice explanation not available in Uzbek"
+      >
+        🔇
+      </div>
       
       <!-- Progress Bar with Markers -->
       <div class="progress-container">
@@ -37,25 +56,6 @@
       
       <!-- Stars -->
       <div class="stars-display">⭐ {{ stars }}</div>
-      
-      <!-- Microphone Button -->
-      <button 
-        v-if="language !== 'uz'"
-        class="mic-btn-header" 
-        @click="toggleVoiceInput"
-        title="Toggle Voice Input"
-      >
-        🎤
-      </button>
-
-      <!-- Warning for Uzbek (Voice Disabled) -->
-      <div 
-        v-else 
-        class="warning-icon-header"
-        title="Voice explanation not available in Uzbek"
-      >
-        🔇
-      </div>
 
       <!-- Problem Report Button -->
       <button 
