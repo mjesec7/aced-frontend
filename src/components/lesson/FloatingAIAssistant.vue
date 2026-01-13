@@ -3,21 +3,31 @@
     <div class="ai-header">
       <div class="ai-header-left">
         <h4>🤖 {{ $t('lesson.floatingAssistant.title') }}</h4>
-        <!-- Voice Status Indicators -->
-        <div v-if="isAnalyzing" class="voice-status analyzing">
-          <span class="status-icon">🧠</span>
-          <span class="status-text">{{ $t('lesson.floatingAssistant.analyzing') }}</span>
-        </div>
-        <div v-else-if="isSpeaking" class="voice-status speaking">
-          <span class="status-icon">🔊</span>
-          <span class="status-text">{{ $t('lesson.floatingAssistant.speaking') }}</span>
-        </div>
-        <div v-else-if="isListening" class="voice-status listening">
-          <span class="status-icon">👂</span>
-          <span class="status-text">{{ $t('lesson.floatingAssistant.listening') }}</span>
-        </div>
       </div>
       <div class="ai-header-right">
+        <!-- Voice Controls -->
+        <div class="voice-controls-header">
+          <!-- Speaker Button (Stop AI) -->
+          <button 
+            v-if="isSpeaking" 
+            @click="stopAudio" 
+            class="header-voice-btn speaker-btn active"
+            title="Stop AI Speech"
+          >
+            <span class="btn-icon">🔊</span>
+          </button>
+          
+          <!-- Microphone Button -->
+          <button 
+            @click="toggleMicrophone" 
+            class="header-voice-btn mic-btn"
+            :class="{ 'active': isListening }"
+            :title="isListening ? 'Stop Listening' : 'Start Voice Input'"
+          >
+            <span class="btn-icon">{{ isListening ? '🛑' : '🎤' }}</span>
+          </button>
+        </div>
+        
         <!-- Send Button -->
         <button 
           @click="sendMessage" 
@@ -94,7 +104,7 @@
         </div>
         
         <!-- Chat Input -->
-        <div class="chat-input">
+        <div v-if="!isListening" class="chat-input">
           <input 
             v-model="localFloatingInput" 
             @keyup.enter="sendMessage"
@@ -208,7 +218,8 @@ export default {
       // Cache and Queue
       analysisCache: new Map(),
       processingQueue: [],
-      isProcessingQueue: false
+      isProcessingQueue: false,
+      currentAnalysisId: null
     }
   },
   computed: {
@@ -342,6 +353,11 @@ export default {
 
         // Small delay to ensure UI is ready and prevent race conditions
         await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Check if this is still the current step after the delay
+        const currentStepId = this.currentStep?.id || this.currentStep?._id;
+        if (currentStepId !== newStepId) return;
+
         await this.analyzeAndSpeak(newStep);
       },
       immediate: true,
@@ -418,6 +434,8 @@ export default {
         return;
       }
       
+      const analysisId = Date.now();
+      this.currentAnalysisId = analysisId;
       this.isAnalyzing = true;
 
       try {
@@ -438,6 +456,13 @@ export default {
             step.type,
             currentLang
           );
+          
+          // Check if this is still the current analysis
+          if (this.currentAnalysisId !== analysisId) {
+            console.log('[FloatingAI] Analysis discarded (newer analysis started)');
+            return;
+          }
+
           const data = result?.data || result || {};
           explanation = data.explanation;
           highlights = data.highlights;
@@ -467,7 +492,10 @@ export default {
 
         // 4. Stream and play audio (if voice enabled)
         if (this.voiceEnabled && explanation) {
-          await this.speakText(explanation, question);
+          // Final check before speaking
+          if (this.currentAnalysisId === analysisId) {
+            await this.speakText(explanation, question);
+          }
         }
 
       } catch (error) {
@@ -486,6 +514,9 @@ export default {
      */
     async speakText(text, question = null) {
       if (!text) return;
+      
+      // Stop any current playback immediately
+      this.stopAudio();
 
       try {
         // Get audio blob from backend
@@ -935,10 +966,63 @@ export default {
 
 .ai-header h4 {
   margin: 0;
-  font-size: 1rem;
+  font-size: 0.95rem;
   color: #1e293b;
   font-weight: 600;
   white-space: nowrap;
+}
+
+.voice-controls-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 4px;
+}
+
+.header-voice-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid #e2e8f0;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  padding: 0;
+}
+
+.header-voice-btn:hover {
+  background: #f1f5f9;
+  transform: scale(1.05);
+}
+
+.header-voice-btn.active {
+  background: #eff6ff;
+  border-color: #3b82f6;
+  color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.header-voice-btn.mic-btn.active {
+  background: #fee2e2;
+  border-color: #ef4444;
+  color: #ef4444;
+  animation: micPulse 1.5s infinite;
+}
+
+.header-voice-btn.speaker-btn.active {
+  background: #d1fae5;
+  border-color: #10b981;
+  color: #10b981;
+}
+
+.btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Voice Status Indicators */
