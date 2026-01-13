@@ -39,7 +39,14 @@ export function useVoiceAssistant(i18n) {
         }
     };
 
+    const isSupported = ref(!!(window.SpeechRecognition || window.webkitSpeechRecognition));
+
     const startListening = () => {
+        if (!isSupported.value) {
+            alert('Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari.');
+            return;
+        }
+
         if (!speechRecognition.value) {
             initializeSpeechRecognition();
         }
@@ -51,10 +58,16 @@ export function useVoiceAssistant(i18n) {
             speechRecognition.value.start();
         } catch (error) {
             console.log('[VoiceAssistant] Speech recognition start error:', error);
+            isListening.value = false;
         }
     };
 
     const toggleMicrophone = () => {
+        if (!isSupported.value) {
+            alert('Speech recognition is not supported in this browser.');
+            return;
+        }
+
         if (isSpeaking.value) {
             stopAudio();
             startListening();
@@ -128,38 +141,79 @@ export function useVoiceAssistant(i18n) {
     const initializeSpeechRecognition = () => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
-            console.warn('[VoiceAssistant] Speech recognition not supported');
+            console.warn('[VoiceAssistant] Speech recognition not supported in this browser');
             return;
+        }
+
+        if (speechRecognition.value) {
+            // Clean up existing instance if any
+            speechRecognition.value.onresult = null;
+            speechRecognition.value.onerror = null;
+            speechRecognition.value.onend = null;
+            speechRecognition.value.onstart = null;
         }
 
         speechRecognition.value = new SpeechRecognition();
         const currentLang = i18n.locale.value || i18n.locale;
+        console.log('[VoiceAssistant] Initializing with language:', currentLang);
 
+        // Map languages to BCP 47 tags
         if (currentLang === 'ru') speechRecognition.value.lang = 'ru-RU';
         else if (currentLang === 'uz') speechRecognition.value.lang = 'uz-UZ';
         else speechRecognition.value.lang = 'en-US';
 
+        console.log('[VoiceAssistant] Using BCP 47 tag:', speechRecognition.value.lang);
+
         speechRecognition.value.interimResults = true;
-        speechRecognition.value.continuous = false;
+        speechRecognition.value.continuous = true;
+
+        speechRecognition.value.onstart = () => {
+            console.log('[VoiceAssistant] Speech recognition session started');
+            isListening.value = true;
+        };
 
         speechRecognition.value.onresult = async (event) => {
+            let finalTranscript = '';
+            let interimTranscript = '';
+
             for (let i = event.resultIndex; i < event.results.length; ++i) {
                 if (event.results[i].isFinal) {
-                    const transcript = event.results[i][0].transcript.trim();
-                    if (transcript) {
-                        stopListening();
-                        // This will be handled by the component using the composable
-                        eventBus.emit('voice-transcript', transcript);
-                    }
+                    finalTranscript += event.results[i][0].transcript;
+                } else {
+                    interimTranscript += event.results[i][0].transcript;
+                }
+            }
+
+            if (interimTranscript) {
+                console.log('[VoiceAssistant] Interim:', interimTranscript);
+            }
+
+            if (finalTranscript) {
+                const transcript = finalTranscript.trim();
+                console.log('[VoiceAssistant] Final transcript:', transcript);
+                if (transcript) {
+                    eventBus.emit('voice-transcript', transcript);
                 }
             }
         };
 
+        speechRecognition.value.onerror = (event) => {
+            console.error('[VoiceAssistant] Speech recognition error:', event.error);
+            if (event.error === 'not-allowed') {
+                alert('Microphone access denied. Please enable it in your browser settings.');
+            }
+            isListening.value = false;
+        };
+
         speechRecognition.value.onend = () => {
+            console.log('[VoiceAssistant] Speech recognition ended');
+            // If we are still supposed to be listening (e.g. continuous mode), restart
             if (isListening.value) {
                 try {
                     speechRecognition.value.start();
-                } catch (e) { }
+                } catch (e) {
+                    console.error('[VoiceAssistant] Restart error:', e);
+                }
             }
         };
     };
@@ -237,6 +291,7 @@ export function useVoiceAssistant(i18n) {
         isSpeaking,
         isListening,
         isAnalyzing,
+        isSupported,
         stopAudio,
         startListening,
         stopListening,
