@@ -508,15 +508,11 @@ export default {
 
         // Note: We do NOT start listening automatically anymore (Push-to-Talk)
 
-        this.currentAudio.onended = async () => {
-          // If there's a follow-up question, speak it
-          if (question) {
-            await this.speakQuestion(question);
-          } else {
-            this.isSpeaking = false;
-            this.$emit('speaking-end');
-            // Keep listening for user response
-          }
+        this.currentAudio.onended = () => {
+          this.isSpeaking = false;
+          this.$emit('speaking-end');
+          // Note: We do NOT start listening automatically (Push-to-Talk)
+          // The question is now integrated into the explanation text
         };
 
         this.currentAudio.onerror = (error) => {

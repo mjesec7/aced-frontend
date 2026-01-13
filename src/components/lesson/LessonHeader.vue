@@ -9,17 +9,21 @@
 
       <!-- Microphone Button -->
       <button 
-        v-if="language !== 'uz'"
         class="mic-btn-header" 
         @click="toggleVoiceInput"
         title="Toggle Voice Input"
       >
-        🎤
+        <svg class="mic-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" fill="currentColor"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="12" y1="19" x2="12" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="8" y1="23" x2="16" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
       </button>
 
       <!-- Warning for Uzbek (Voice Disabled) -->
       <div 
-        v-else 
+        v-if="language === 'uz'"
         class="warning-icon-header"
         title="Voice explanation not available in Uzbek"
       >
@@ -401,21 +405,31 @@ export default {
 .mic-btn-header {
   background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
   color: white;
-  border: none;
+  border: 2px solid rgba(255, 255, 255, 0.2);
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: 10px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  font-weight: 600;
-  font-size: 0.9rem;
-  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.3);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
   position: relative;
   overflow: hidden;
+  margin: 0 8px;
+}
+
+.mic-icon {
+  width: 20px;
+  height: 20px;
+  transition: transform 0.2s ease;
+}
+
+.mic-btn-header:hover .mic-icon {
+  transform: scale(1.1);
 }
 
 .mic-btn-header::before {
