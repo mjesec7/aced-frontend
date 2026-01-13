@@ -745,7 +745,7 @@ function retryLoad() {
 }
 
 function handleReturnToCatalogue() {
-  router.push('/courses')
+  router.push('/profile/catalogue')
 }
 
 function startLesson() {
