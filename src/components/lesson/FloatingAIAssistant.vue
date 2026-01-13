@@ -205,7 +205,12 @@ export default {
       speechRecognition: null,
       analysisError: null,
       currentExplanation: '',
-      currentHighlights: []
+      currentExplanation: '',
+      currentHighlights: [],
+      // Cache and Queue
+      analysisCache: new Map(),
+      processingQueue: [],
+      isProcessingQueue: false
     }
   },
   computed: {
@@ -412,15 +417,33 @@ export default {
       this.isAnalyzing = true;
 
       try {
-        // 1. Backend Analysis - get explanation and highlights
-        const result = await voiceApi.analyzeLesson(
-          content,
-          step.type || 'explanation',
-          step.type,
-          currentLang // Pass current language
-        );
+        let explanation, highlights, question;
+        const stepId = step.id || step._id;
 
-        const { explanation, highlights } = result?.data || result || {};
+        // 1. Check Cache First
+        if (this.analysisCache.has(stepId)) {
+          const cachedData = this.analysisCache.get(stepId);
+          explanation = cachedData.explanation;
+          highlights = cachedData.highlights;
+          question = cachedData.question;
+        } else {
+          // 2. Backend Analysis (if not cached)
+          const result = await voiceApi.analyzeLesson(
+            content,
+            step.type || 'explanation',
+            step.type,
+            currentLang
+          );
+          const data = result?.data || result || {};
+          explanation = data.explanation;
+          highlights = data.highlights;
+          question = data.question;
+          
+          // Cache it
+          if (explanation) {
+            this.analysisCache.set(stepId, data);
+          }
+        }
 
         if (!explanation) {
           console.warn('[FloatingAI] No explanation received from analysis');
@@ -431,16 +454,16 @@ export default {
         this.currentExplanation = explanation;
         this.currentHighlights = highlights || [];
 
-        // 2. Trigger Highlights in ContentPanel via EventBus
+        // 3. Trigger Highlights in ContentPanel via EventBus
         if (highlights && highlights.length > 0) {
           eventBus.emit('highlight-text', highlights);
         }
 
-        this.$emit('analysis-complete', { explanation, highlights });
+        this.$emit('analysis-complete', { explanation, highlights, question });
 
-        // 3. Stream and play audio (if voice enabled)
+        // 4. Stream and play audio (if voice enabled)
         if (this.voiceEnabled && explanation) {
-          await this.speakText(explanation);
+          await this.speakText(explanation, question);
         }
 
       } catch (error) {
@@ -454,7 +477,10 @@ export default {
     /**
      * Stream audio from text and play it
      */
-    async speakText(text) {
+    /**
+     * Stream audio from text and play it
+     */
+    async speakText(text, question = null) {
       if (!text) return;
 
       try {
@@ -477,13 +503,19 @@ export default {
         this.isSpeaking = true;
         this.$emit('speaking-start');
 
-        this.currentAudio.onended = () => {
-          this.isSpeaking = false;
-          this.$emit('speaking-end');
-          // Cleanup
-          if (this.currentAudioUrl) {
-            URL.revokeObjectURL(this.currentAudioUrl);
-            this.currentAudioUrl = null;
+        // Start listening immediately (Continuous Listening)
+        if (!this.isListening) {
+          this.startListening();
+        }
+
+        this.currentAudio.onended = async () => {
+          // If there's a follow-up question, speak it
+          if (question) {
+            await this.speakQuestion(question);
+          } else {
+            this.isSpeaking = false;
+            this.$emit('speaking-end');
+            // Keep listening for user response
           }
         };
 
@@ -499,6 +531,33 @@ export default {
         console.error('[FloatingAI] speakText error:', error);
         this.isSpeaking = false;
         this.$emit('speaking-end');
+      }
+    },
+
+    async speakQuestion(questionText) {
+      if (!questionText) return;
+
+      try {
+        const audioBlob = await voiceApi.streamAudio(questionText);
+        
+        if (this.currentAudioUrl) {
+          URL.revokeObjectURL(this.currentAudioUrl);
+        }
+        this.currentAudioUrl = URL.createObjectURL(audioBlob);
+
+        this.currentAudio = new Audio(this.currentAudioUrl);
+        this.isSpeaking = true;
+
+        this.currentAudio.onended = () => {
+          this.isSpeaking = false;
+          this.$emit('speaking-end');
+          // Now waiting for user answer...
+        };
+
+        await this.currentAudio.play();
+      } catch (error) {
+        console.error('[FloatingAI] speakQuestion error:', error);
+        this.isSpeaking = false;
       }
     },
 
@@ -542,25 +601,45 @@ export default {
 
       this.speechRecognition = new SpeechRecognition();
       this.speechRecognition.lang = 'ru-RU'; // Russian language
-      this.speechRecognition.interimResults = false;
-      this.speechRecognition.continuous = false;
+      this.speechRecognition.interimResults = true; // Enable interim results for faster interruption
+      this.speechRecognition.continuous = true; // Keep listening
 
       this.speechRecognition.onresult = async (event) => {
-        const transcript = event.results[0][0].transcript;
-        this.isListening = false;
+        // Interruption Logic: If AI is speaking and we detect ANY speech, stop the audio
+        if (this.isSpeaking) {
+          this.stopAudio();
+          console.log('[FloatingAI] Interrupted by user speech');
+        }
 
-        if (transcript) {
-          await this.handleVoiceQuestion(transcript);
+        // Process final results
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            const transcript = event.results[i][0].transcript.trim();
+            if (transcript) {
+              console.log('[FloatingAI] Final transcript:', transcript);
+              await this.handleVoiceQuestion(transcript);
+            }
+          }
         }
       };
 
       this.speechRecognition.onerror = (event) => {
-        console.error('[FloatingAI] Speech recognition error:', event.error);
-        this.isListening = false;
+        // Ignore 'no-speech' errors as we are continuously listening
+        if (event.error !== 'no-speech') {
+          console.error('[FloatingAI] Speech recognition error:', event.error);
+        }
+        // Don't stop listening on error, try to restart if needed
       };
 
       this.speechRecognition.onend = () => {
-        this.isListening = false;
+        // Auto-restart if we should be listening
+        if (this.isListening) {
+          try {
+            this.speechRecognition.start();
+          } catch (e) {
+            // Ignore start errors
+          }
+        }
       };
     },
 
@@ -568,26 +647,18 @@ export default {
      * Start listening for voice input (interruption)
      */
     startListening() {
-      // 1. Stop current audio playback (interrupt the teacher)
-      this.stopAudio();
-
-      // 2. Check browser support
       if (!this.speechRecognition) {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-          alert('Your browser does not support voice input');
-          return;
-        }
         this.initializeSpeechRecognition();
       }
 
-      // 3. Start listening
+      if (this.isListening) return;
+
       try {
         this.isListening = true;
         this.speechRecognition.start();
       } catch (error) {
-        console.error('[FloatingAI] Failed to start speech recognition:', error);
-        this.isListening = false;
+        // Ignore if already started
+        console.log('[FloatingAI] Speech recognition start error (likely already running):', error);
       }
     },
 
@@ -595,6 +666,7 @@ export default {
      * Stop listening for voice input
      */
     stopListening() {
+      this.isListening = false;
       if (this.speechRecognition) {
         try {
           this.speechRecognition.stop();
@@ -602,7 +674,87 @@ export default {
           // Ignore errors when stopping
         }
       }
-      this.isListening = false;
+    },
+
+    /**
+     * Queue entire lesson for background analysis
+     */
+    queueLessonAnalysis(lesson) {
+      if (!lesson || !lesson.steps) return;
+      
+      // Filter for content steps only
+      const contentSteps = lesson.steps.filter(step => 
+        ['explanation', 'example', 'reading'].includes(step.type)
+      );
+
+      // Add to queue (avoid duplicates)
+      contentSteps.forEach(step => {
+        const stepId = step.id || step._id;
+        if (!this.analysisCache.has(stepId) && !this.processingQueue.find(s => (s.id || s._id) === stepId)) {
+          this.processingQueue.push(step);
+        }
+      });
+
+      // Start processing if not already running
+      if (!this.isProcessingQueue) {
+        this.processQueue();
+      }
+    },
+
+    /**
+     * Process the analysis queue one by one
+     */
+    async processQueue() {
+      if (this.processingQueue.length === 0) {
+        this.isProcessingQueue = false;
+        return;
+      }
+
+      this.isProcessingQueue = true;
+      const step = this.processingQueue.shift();
+      const stepId = step.id || step._id;
+
+      try {
+        // Skip if already cached
+        if (this.analysisCache.has(stepId)) {
+          this.processQueue();
+          return;
+        }
+
+        const content = this.getStepContent(step);
+        if (!content || content.length < 20) {
+          this.processQueue();
+          return;
+        }
+
+        // Language Check
+        const currentLang = this.$i18n.locale;
+        if (currentLang === 'uz') {
+          this.processQueue();
+          return;
+        }
+
+        // Analyze (Background)
+        const result = await voiceApi.analyzeLesson(
+          content,
+          step.type || 'explanation',
+          step.type,
+          currentLang
+        );
+
+        const data = result?.data || result || {};
+        if (data.explanation) {
+          this.analysisCache.set(stepId, data);
+        }
+
+      } catch (error) {
+        console.warn(`[FloatingAI] Background analysis failed for step ${stepId}:`, error);
+      }
+
+      // Small delay between requests to be nice to the API
+      setTimeout(() => {
+        this.processQueue();
+      }, 1000);
     },
 
     /**
