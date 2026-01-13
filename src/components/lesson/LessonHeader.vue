@@ -5,7 +5,7 @@
       <button class="exit-btn-small" @click="$emit('exit')">✕</button>
       
       <!-- Lesson Title -->
-      <h2 class="lesson-title">{{ getLocalized(lesson?.lessonName) || 'Lesson' }}</h2>
+      <h2 class="lesson-title">{{ getLocalized(lesson?.lessonName) || getLocalized(lesson?.title) || 'Lesson' }}</h2>
 
       <!-- Microphone Button -->
       <button 
@@ -61,6 +61,22 @@
       <!-- Stars -->
       <div class="stars-display">⭐ {{ stars }}</div>
 
+      <!-- Streak (Optional) -->
+      <div v-if="streak !== undefined" class="streak-display">
+        <svg class="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"/>
+        </svg>
+        <span class="text-xs font-bold text-amber-700">{{ streak }}</span>
+      </div>
+
+      <!-- Points (Optional) -->
+      <div v-if="points !== undefined" class="points-display">
+        <svg class="w-4 h-4 text-indigo-500" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/>
+        </svg>
+        <span class="text-xs font-bold text-indigo-700">{{ points }}</span>
+      </div>
+
       <!-- Problem Report Button -->
       <button 
         class="problem-report-btn-header" 
@@ -104,6 +120,14 @@ export default {
       type: Number,
       required: true,
       default: 0
+    },
+    streak: {
+      type: Number,
+      default: undefined
+    },
+    points: {
+      type: Number,
+      default: undefined
     }
   },
   emits: ['exit', 'report-problem'],
@@ -169,7 +193,8 @@ export default {
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
   border-bottom: 1px solid #e2e8f0;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  position: relative;
+  position: sticky;
+  top: 0;
   z-index: 100;
   backdrop-filter: blur(10px);
 }
@@ -471,6 +496,23 @@ export default {
   font-size: 1rem;
   cursor: help;
   box-shadow: 0 2px 6px rgba(100, 116, 139, 0.3);
+}
+
+.streak-display, .points-display {
+  display: flex;
+  items-center: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.streak-display {
+  background-color: #fffbeb; /* amber-50 */
+}
+
+.points-display {
+  background-color: #eef2ff; /* indigo-50 */
 }
 
 /* Problem Report Button */

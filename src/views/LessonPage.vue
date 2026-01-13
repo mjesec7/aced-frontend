@@ -199,48 +199,18 @@
     <!-- Main Lesson Content -->
     <div v-else-if="started && !showPaywallModal && !loading && !error" class="lesson-container-new">
       <!-- Header -->
-      <div class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 px-3 sm:px-4 py-2.5 sm:py-3">
-        <div class="flex items-center justify-between gap-2 sm:gap-4">
-          <div class="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-            <button
-              @click="confirmExit"
-              class="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-red-50 hover:text-red-500 transition-colors shrink-0"
-              aria-label="Exit lesson"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-              </svg>
-            </button>
-            <div class="min-w-0 flex-1 hidden sm:block">
-              <h2 class="text-sm font-semibold text-slate-800 truncate">{{ lesson?.title || 'Lesson' }}</h2>
-              <p class="text-xs text-slate-400 truncate">{{ lesson?.subtitle || '' }}</p>
-            </div>
-            <div class="flex items-center gap-2 shrink-0">
-              <div class="w-20 sm:w-28 h-2 bg-slate-100 rounded-full overflow-hidden">
-                <div
-                  class="h-full bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full transition-all duration-500"
-                  :style="{ width: progressPercentage + '%' }"
-                ></div>
-              </div>
-              <span class="text-xs font-semibold text-slate-500 tabular-nums">{{ currentIndex + 1 }}/{{ steps.length }}</span>
-            </div>
-          </div>
-          <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            <div class="flex items-center gap-1 px-2.5 py-1.5 bg-amber-50 rounded-lg">
-              <svg class="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"/>
-              </svg>
-              <span class="text-xs font-bold text-amber-700">{{ consecutiveCorrect }}</span>
-            </div>
-            <div class="flex items-center gap-1 px-2.5 py-1.5 bg-indigo-50 rounded-lg">
-              <svg class="w-4 h-4 text-indigo-500" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/>
-              </svg>
-              <span class="text-xs font-bold text-indigo-700">{{ earnedPoints }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <LessonHeader
+        :lesson="lesson"
+        :current-step="currentIndex + 1"
+        :total-steps="steps.length"
+        :formatted-time="readableTime"
+        :stars="stars"
+        :progress-percentage="progressPercentage"
+        :streak="consecutiveCorrect"
+        :points="earnedPoints"
+        @exit="confirmExit"
+        @report-problem="openProblemReportModal"
+      />
 
       <!-- Split Screen Layout -->
       <div class="split-content" :class="{ 'is-game-active': isGameStep }" ref="splitContainer">
@@ -465,6 +435,7 @@ import ContentPanel from '@/components/lesson/ContentPanel.vue'
 import InteractivePanel from '@/components/lesson/InteractivePanel.vue'
 import CompletionScreen from '@/components/lesson/CompletionScreen.vue'
 import FloatingAIAssistant from '@/components/lesson/FloatingAIAssistant.vue'
+import LessonHeader from '@/components/lesson/LessonHeader.vue'
 
 // Import API
 import { getLessonById } from '@/api/lessons'
