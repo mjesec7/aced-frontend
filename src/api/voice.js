@@ -15,16 +15,20 @@ const voiceApi = {
    * @param {string} stepType - The type of step (explanation, example, reading, etc.)
    * @returns {Promise<{explanation: string, highlights: string[]}>}
    */
-  async analyzeLesson(lessonContent, stepContext, stepType = 'explanation') {
+  async analyzeLesson(lessonContent, stepContext, stepType = 'explanation', language = 'en') {
     try {
       const response = await api.post('/chat/analyze-speech', {
         lessonContent,
         stepContext,
-        stepType
+        stepType,
+        language
       });
       return response.data;
     } catch (error) {
       console.error('[VoiceAPI] analyzeLesson error:', error);
+      if (error.response) {
+        console.error('[VoiceAPI] Error details:', error.response.data);
+      }
       throw error;
     }
   },
@@ -53,6 +57,9 @@ const voiceApi = {
       return response.data;
     } catch (error) {
       console.error('[VoiceAPI] streamAudio error:', error);
+      if (error.response) {
+        console.error('[VoiceAPI] Stream Error details:', error.response.data);
+      }
       throw error;
     }
   },

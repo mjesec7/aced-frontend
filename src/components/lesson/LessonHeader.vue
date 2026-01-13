@@ -38,6 +38,15 @@
       <!-- Stars -->
       <div class="stars-display">⭐ {{ stars }}</div>
       
+      <!-- Microphone Button -->
+      <button 
+        class="mic-btn-header" 
+        @click="toggleVoiceInput"
+        title="Toggle Voice Input"
+      >
+        🎤
+      </button>
+
       <!-- Problem Report Button -->
       <button 
         class="problem-report-btn-header" 
@@ -52,6 +61,7 @@
 
 <script>
 import { useLanguage } from '@/composables/useLanguage';
+import { eventBus } from '@/utils/eventBus';
 
 export default {
   name: 'LessonHeader',
@@ -108,6 +118,9 @@ export default {
     }
   },
   methods: {
+    toggleVoiceInput() {
+      eventBus.emit('toggle-voice-input');
+    },
     getLocalized(field) {
       // Handle null/undefined
       if (field === null || field === undefined) return '';
@@ -372,6 +385,52 @@ export default {
   background: linear-gradient(135deg, #fde68a 0%, #fbbf24 100%);
   border-color: rgba(245, 158, 11, 0.6);
   box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
+}
+
+/* Microphone Button */
+.mic-btn-header {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  color: white;
+  border: none;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-weight: 600;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.mic-btn-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.6s;
+}
+
+.mic-btn-header:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+}
+
+.mic-btn-header:hover::before {
+  left: 100%;
+}
+
+.mic-btn-header:active {
+  transform: translateY(0);
 }
 
 /* Problem Report Button */

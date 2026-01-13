@@ -347,12 +347,16 @@ export default {
   mounted() {
     this.scrollToBottom();
     this.initializeSpeechRecognition();
+
+    // Listen for header mic button
+    eventBus.on('toggle-voice-input', this.toggleMicrophone);
   },
 
   beforeUnmount() {
     this.stopAudio();
     this.stopListening();
     this.clearHighlights();
+    eventBus.off('toggle-voice-input', this.toggleMicrophone);
   },
 
   methods: {
@@ -365,15 +369,23 @@ export default {
      */
     getStepContent(step) {
       if (!step) return '';
-      if (step.data?.content) return step.data.content;
-      if (step.data?.text) return step.data.text;
-      if (step.content?.text) return step.content.text;
-      if (step.content?.content) return step.content.content;
-      if (typeof step.content === 'string') return step.content;
-      if (typeof step.data === 'string') return step.data;
-      if (step.description) return step.description;
-      if (step.text) return step.text;
-      return '';
+      
+      let content = '';
+      if (step.data?.content) content = step.data.content;
+      else if (step.data?.text) content = step.data.text;
+      else if (step.content?.text) content = step.content.text;
+      else if (step.content?.content) content = step.content.content;
+      else if (typeof step.content === 'string') content = step.content;
+      else if (typeof step.data === 'string') content = step.data;
+      else if (step.description) content = step.description;
+      else if (step.text) content = step.text;
+
+      // Handle localized object {en: "...", ru: "..."}
+      if (content && typeof content === 'object') {
+        return content.en || content.ru || content.uz || Object.values(content)[0] || '';
+      }
+
+      return content || '';
     },
 
     /**
@@ -390,6 +402,13 @@ export default {
       const content = this.getStepContent(step);
       if (!content || content.length < 20) return;
 
+      // Language Check
+      const currentLang = this.$i18n.locale;
+      if (currentLang === 'uz') {
+        console.log('[FloatingAI] Voice disabled for Uzbek language');
+        return;
+      }
+
       this.isAnalyzing = true;
 
       try {
@@ -397,7 +416,8 @@ export default {
         const result = await voiceApi.analyzeLesson(
           content,
           step.type || 'explanation',
-          step.type
+          step.type,
+          currentLang // Pass current language
         );
 
         const { explanation, highlights } = result?.data || result || {};
