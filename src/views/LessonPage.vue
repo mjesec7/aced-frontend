@@ -461,6 +461,7 @@ const {
   toggleMicrophone,
   stopAudio,
   analyzeAndSpeak,
+  preAnalyzeSteps,
   handleVoiceQuestion
 } = useVoiceAssistant(i18n);
 
@@ -717,6 +718,11 @@ async function loadLesson() {
       // Extract and process steps with localization
       const rawSteps = lessonData.steps || []
       steps.value = rawSteps.map((step, index) => processStepWithLocalization(step, index)).filter(Boolean)
+
+      // Trigger pre-analysis in the background
+      if (steps.value.length > 0) {
+        preAnalyzeSteps(steps.value, language.value)
+      }
     } else {
       throw new Error(result.error || 'Failed to load lesson data')
     }
@@ -754,14 +760,9 @@ function handleSpeakingEnd() {
 
 function startLesson() {
   started.value = true
-  currentIndex.value = 0
-  
-  // Start AI speech on lesson start
-  nextTick(() => {
-    if (currentStep.value) {
-      analyzeAndSpeak(currentStep.value)
-    }
-  })
+  if (steps.value[currentIndex.value]) {
+    analyzeAndSpeak(steps.value[currentIndex.value], true) // isFirstStep = true
+  }
 }
 
 function continuePreviousProgress() {
@@ -1338,7 +1339,7 @@ watch(language, () => {
 // Watch for step changes to trigger AI speech
 watch(currentIndex, (newIndex) => {
   if (started.value && steps.value[newIndex]) {
-    analyzeAndSpeak(steps.value[newIndex])
+    analyzeAndSpeak(steps.value[newIndex], newIndex === 0)
   }
 })
 

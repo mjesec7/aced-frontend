@@ -15,13 +15,14 @@ const voiceApi = {
    * @param {string} stepType - The type of step (explanation, example, reading, etc.)
    * @returns {Promise<{explanation: string, highlights: string[]}>}
    */
-  async analyzeLesson(lessonContent, stepContext, stepType = 'explanation', language = 'en') {
+  async analyzeLesson(lessonContent, stepContext, stepType = 'explanation', language = 'en', isFirstStep = false) {
     try {
       const response = await api.post('/chat/analyze-speech', {
         lessonContent,
         stepContext,
         stepType,
-        language
+        language,
+        isFirstStep
       });
       return response.data;
     } catch (error) {

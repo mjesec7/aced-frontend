@@ -252,7 +252,7 @@ export function useVoiceAssistant(i18n) {
         return content || '';
     };
 
-    const analyzeAndSpeak = async (step) => {
+    const analyzeAndSpeak = async (step, isFirstStep = false) => {
         if (!step) return;
         stopAudio();
 
@@ -277,7 +277,8 @@ export function useVoiceAssistant(i18n) {
                     content,
                     step.type || 'explanation',
                     step.type,
-                    currentLang
+                    currentLang,
+                    isFirstStep // Pass flag for greeting logic
                 );
 
                 if (currentAnalysisId.value !== analysisId) return;
@@ -298,6 +299,40 @@ export function useVoiceAssistant(i18n) {
         }
     };
 
+    const preAnalyzeSteps = async (steps, language) => {
+        if (!steps || !Array.isArray(steps)) return;
+
+        console.log(`[VoiceAssistant] Starting pre-analysis for ${steps.length} steps...`);
+
+        // Analyze in background, don't await the whole thing
+        for (let i = 0; i < steps.length; i++) {
+            const step = steps[i];
+            const stepId = step.id || step._id;
+
+            if (analysisCache.has(stepId)) continue;
+
+            const content = getStepContent(step);
+            if (!content || content.length < 20) continue;
+
+            // Don't await here to allow parallel/background processing
+            voiceApi.analyzeLesson(
+                content,
+                step.type || 'explanation',
+                step.type,
+                language,
+                i === 0 // isFirstStep
+            ).then(result => {
+                const data = result?.data || result || {};
+                if (data.explanation) {
+                    analysisCache.set(stepId, data);
+                    console.log(`[VoiceAssistant] Pre-analyzed step ${i + 1}/${steps.length}`);
+                }
+            }).catch(err => {
+                console.warn(`[VoiceAssistant] Pre-analysis failed for step ${i + 1}:`, err);
+            });
+        }
+    };
+
     onUnmounted(() => {
         stopAudio();
         stopListening();
@@ -314,6 +349,7 @@ export function useVoiceAssistant(i18n) {
         toggleMicrophone,
         speakText,
         analyzeAndSpeak,
+        preAnalyzeSteps,
         handleVoiceQuestion
     };
 }
