@@ -443,6 +443,8 @@ import { eventBus } from '@/utils/eventBus'
 
 // Import API
 import { getLessonById } from '@/api/lessons'
+import { getLessonAIResponse } from '@/services/GPTService'
+import { clearChatHistory } from '@/api/chat'
 
 // Import language composable for multi-language support
 import { useLanguage, getLocalizedText } from '@/composables/useLanguage';
@@ -1347,6 +1349,96 @@ function toggleFloatingAI() {
   showFloatingAI.value = !showFloatingAI.value
 }
 
+// Build exercise data for AI context
+function buildExerciseData() {
+  const step = currentStep.value
+  if (!step) return null
+
+  const stepType = step.type?.toLowerCase()
+
+  // Get current exercise data based on step type
+  let exercise = null
+  if (stepType === 'exercise') {
+    const exercises = extractExercisesFromStep(step)
+    exercise = exercises[currentExerciseIndex.value]
+  } else if (stepType === 'quiz') {
+    const quizzes = extractQuizzesFromStep(step)
+    exercise = quizzes[currentQuizIndex.value]
+  } else if (specialInteractiveTypes.includes(stepType)) {
+    // Special interactive types - the step data IS the exercise
+    exercise = step.data || step.content || step
+  }
+
+  if (!exercise) return null
+
+  // Build exercise data object (don't include correctAnswer to prevent cheating)
+  const exerciseData = {
+    type: exercise.type || exercise.exerciseType || stepType,
+    question: getLocalizedText(exercise.question) || getLocalizedText(exercise.prompt) || getLocalizedText(exercise.text),
+    prompt: getLocalizedText(exercise.prompt) || getLocalizedText(exercise.instructions)
+  }
+
+  // Add options for multiple choice
+  if (exercise.options && Array.isArray(exercise.options)) {
+    exerciseData.options = exercise.options.map(opt =>
+      typeof opt === 'string' ? opt : getLocalizedText(opt.text) || getLocalizedText(opt.label) || opt
+    )
+  }
+
+  // Add pairs for matching
+  if (exercise.pairs && Array.isArray(exercise.pairs)) {
+    exerciseData.pairs = exercise.pairs.map(pair => ({
+      name: getLocalizedText(pair.name) || getLocalizedText(pair.left),
+      formula: getLocalizedText(pair.formula) || getLocalizedText(pair.right)
+    }))
+  }
+
+  // Add items for ordering/sentence order
+  if (exercise.items && Array.isArray(exercise.items)) {
+    exerciseData.items = exercise.items.map(item =>
+      typeof item === 'string' ? item : getLocalizedText(item.text) || item
+    )
+  }
+
+  // Add correct order items for sentence order (scrambled, not the answer)
+  if (exercise.correctOrder && Array.isArray(exercise.correctOrder)) {
+    exerciseData.items = exercise.correctOrder // These are the words to arrange
+  }
+
+  return exerciseData
+}
+
+// Build full AI request context
+function buildAIRequestContext() {
+  const step = currentStep.value
+  const stepType = step?.type?.toLowerCase()
+  const isExerciseType = stepType === 'exercise' || stepType === 'quiz' || specialInteractiveTypes.includes(stepType)
+
+  return {
+    lessonContext: {
+      lessonId: lesson.value._id || lesson.value.id,
+      lessonName: getLocalizedText(lesson.value.lessonName) || getLocalizedText(lesson.value.name) || lesson.value.title,
+      topic: lesson.value.topic || lesson.value.topicId?.name,
+      subject: lesson.value.subject,
+      totalSteps: steps.value.length
+    },
+    userProgress: {
+      currentStep: currentIndex.value,
+      completedSteps: currentIndex.value,
+      mistakes: mistakeCount.value,
+      stars: stars.value,
+      progressPercent: progressPercentage.value
+    },
+    stepContext: {
+      type: stepType || 'explanation',
+      stepIndex: currentIndex.value,
+      exerciseIndex: isExerciseType ? currentExerciseIndex.value : undefined,
+      totalExercises: isExerciseType ? getTotalExercises(step) : undefined,
+      exerciseData: isExerciseType ? buildExerciseData() : undefined
+    }
+  }
+}
+
 async function sendAIMessage() {
   const message = aiChatInput.value.trim()
   if (!message) return
@@ -1356,14 +1448,25 @@ async function sendAIMessage() {
   isAITyping.value = true
 
   try {
-    // API call for AI response
-    await new Promise(resolve => setTimeout(resolve, 1500))
+    const context = buildAIRequestContext()
+
+    const response = await getLessonAIResponse(
+      message,
+      context.lessonContext,
+      context.userProgress,
+      context.stepContext
+    )
+
+    // Handle both object response and string response
+    const replyText = typeof response === 'object' ? response.reply : response
+
     aiChatMessages.value.push({
       role: 'assistant',
-      content: 'I understand your question. Let me help you with that...',
+      content: replyText,
       timestamp: new Date().toISOString()
     })
   } catch (err) {
+    console.error('[LessonPage] AI message error:', err)
     aiChatMessages.value.push({
       role: 'assistant',
       content: 'Sorry, I encountered an error. Please try again.',
@@ -1375,7 +1478,7 @@ async function sendAIMessage() {
 }
 
 // Handler for AI send message from FloatingAIAssistant
-function handleAISendMessage(message) {
+async function handleAISendMessage(message) {
   if (!message) return
 
   aiChatMessages.value.push({
@@ -1384,8 +1487,35 @@ function handleAISendMessage(message) {
     timestamp: new Date().toISOString()
   })
 
-  // The FloatingAIAssistant handles the AI response internally
-  // but we can also trigger our own logic here if needed
+  isAITyping.value = true
+
+  try {
+    const context = buildAIRequestContext()
+
+    const response = await getLessonAIResponse(
+      message,
+      context.lessonContext,
+      context.userProgress,
+      context.stepContext
+    )
+
+    const replyText = typeof response === 'object' ? response.reply : response
+
+    aiChatMessages.value.push({
+      role: 'assistant',
+      content: replyText,
+      timestamp: new Date().toISOString()
+    })
+  } catch (err) {
+    console.error('[LessonPage] AI message error:', err)
+    aiChatMessages.value.push({
+      role: 'assistant',
+      content: 'Sorry, I encountered an error. Please try again.',
+      timestamp: new Date().toISOString()
+    })
+  } finally {
+    isAITyping.value = false
+  }
 }
 
 // Handler for quick AI questions
@@ -1393,9 +1523,18 @@ function handleAIQuickQuestion(question) {
   handleAISendMessage(question)
 }
 
-// Clear AI chat history
-function clearAIChat() {
+// Clear AI chat history (both local and backend)
+async function clearAIChat() {
   aiChatMessages.value = []
+
+  // Also clear backend chat history
+  if (lesson.value._id) {
+    try {
+      await clearChatHistory(lesson.value._id)
+    } catch (err) {
+      console.warn('[LessonPage] Failed to clear backend chat history:', err)
+    }
+  }
 }
 
 // Handler for analysis complete
