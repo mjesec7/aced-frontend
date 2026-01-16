@@ -169,6 +169,7 @@ export async function getAIResponse(userInput, imageUrl = null, lessonId = null)
 }
 
 // ✅ NEW: Enhanced lesson-context AI response
+// Returns: { reply: string, hasMemory?: boolean, messageCount?: number } or string on error
 export async function getLessonAIResponse(userInput, lessonContext, userProgress, stepContext) {
 
 
@@ -195,10 +196,15 @@ export async function getLessonAIResponse(userInput, lessonContext, userProgress
 
     const token = await user.getIdToken();
 
+    // Ensure lessonId is included in lessonContext for memory to work
+    const enrichedLessonContext = {
+      ...lessonContext,
+      lessonId: lessonContext?.lessonId || lessonContext?._id || ''
+    };
 
     const response = await gptApi.post('/chat/lesson-context', {
       userInput,
-      lessonContext,
+      lessonContext: enrichedLessonContext,
       userProgress,
       stepContext,
       trackUsage: true,
@@ -212,7 +218,14 @@ export async function getLessonAIResponse(userInput, lessonContext, userProgress
 
     const reply = response.data?.reply || 'AI не смог предоставить ответ.';
 
-    return reply;
+    // Return full response with memory info if available
+    // Callers can use: const result = await getLessonAIResponse(...)
+    // result.reply, result.hasMemory, result.messageCount
+    return {
+      reply,
+      hasMemory: response.data?.hasMemory || false,
+      messageCount: response.data?.messageCount || 0
+    };
 
   } catch (error) {
     if (error.response?.status === 429) {

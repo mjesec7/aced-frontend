@@ -13,16 +13,18 @@ const chatApi = {
    * @param {object} params - Request parameters
    * @param {string} params.userInput - The user's question
    * @param {object} params.lessonContext - Current lesson/step context
+   * @param {string} params.lessonContext.lessonId - Lesson ID (required for memory)
    * @param {string} params.lessonContext.content - Step content
    * @param {string} params.lessonContext.type - Step type
    * @param {string} params.lessonContext.title - Lesson title
-   * @returns {Promise<{reply: string, suggestions?: string[]}>}
+   * @returns {Promise<{reply: string, suggestions?: string[], hasMemory?: boolean, messageCount?: number}>}
    */
   async getLessonContextAIResponse({ userInput, lessonContext }) {
     try {
       const response = await api.post('/chat/lesson-context', {
         userInput,
         lessonContext: {
+          lessonId: lessonContext?.lessonId || lessonContext?._id || '', // Required for memory
           content: lessonContext?.content || lessonContext?.data?.content || '',
           type: lessonContext?.type || 'explanation',
           title: lessonContext?.title || '',
@@ -89,6 +91,37 @@ const chatApi = {
       console.error('[ChatAPI] getSuggestions error:', error);
       return { suggestions: [] };
     }
+  },
+
+  /**
+   * Clear chat history for a specific lesson
+   * Use this when user restarts a lesson to give them a fresh start
+   * @param {string} lessonId - The lesson ID to clear history for
+   * @returns {Promise<{success: boolean, message?: string}>}
+   */
+  async clearChatHistory(lessonId) {
+    try {
+      const response = await api.delete(`/chat/history/${lessonId}`);
+      return response.data;
+    } catch (error) {
+      console.error('[ChatAPI] clearChatHistory error:', error);
+      // Don't throw - clearing history is non-critical
+      return { success: false, error: error.message };
+    }
+  },
+
+  /**
+   * Get learning stats for the current user
+   * @returns {Promise<{success: boolean, stats?: object}>}
+   */
+  async getLearningStats() {
+    try {
+      const response = await api.get('/chat/learning-stats');
+      return response.data;
+    } catch (error) {
+      console.error('[ChatAPI] getLearningStats error:', error);
+      return { success: false, error: error.message };
+    }
   }
 };
 
@@ -97,6 +130,8 @@ export const getLessonContextAIResponse = chatApi.getLessonContextAIResponse;
 export const sendMessage = chatApi.sendMessage;
 export const getExplanation = chatApi.getExplanation;
 export const getSuggestions = chatApi.getSuggestions;
+export const clearChatHistory = chatApi.clearChatHistory;
+export const getLearningStats = chatApi.getLearningStats;
 
 // Default export for the entire API object
 export default chatApi;
