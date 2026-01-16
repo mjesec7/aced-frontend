@@ -821,7 +821,7 @@ function goPrevious() {
   }
 }
 
-function resetExerciseState() {
+function resetExerciseState(fullReset = true) {
   userAnswer.value = ''
   confirmation.value = null
   answerWasCorrect.value = false
@@ -834,8 +834,11 @@ function resetExerciseState() {
   isOnSecondChance.value = false
   showCorrectAnswer.value = false
   correctAnswerText.value = ''
-  currentExerciseIndex.value = 0
-  currentQuizIndex.value = 0
+  // Only reset indices when doing a full reset (e.g., moving to a new step)
+  if (fullReset) {
+    currentExerciseIndex.value = 0
+    currentQuizIndex.value = 0
+  }
 }
 
 function completeLesson() {
@@ -947,14 +950,38 @@ function getCurrentExercise(step) {
   // Check if step itself is a special interactive type
   const stepType = step.type?.toLowerCase()
   if (stepType && specialInteractiveTypes.includes(stepType)) {
-    // Return the step data directly for special interactive types
-    return step.data || step.content || step
+    // Return the step data with type included for special interactive types
+    const exerciseData = step.data || step.content || {}
+    return {
+      ...exerciseData,
+      type: stepType, // Ensure type is always present
+      exerciseType: stepType // Also set exerciseType for InteractivePanel
+    }
   }
 
   // Also check if the step contains a special type in content/data
   const contentType = step.content?.type?.toLowerCase() || step.data?.type?.toLowerCase()
   if (contentType && specialInteractiveTypes.includes(contentType)) {
-    return step.content || step.data || step
+    const exerciseData = step.content || step.data || {}
+    return {
+      ...exerciseData,
+      type: contentType, // Ensure type is always present
+      exerciseType: contentType // Also set exerciseType for InteractivePanel
+    }
+  }
+
+  // Handle quiz steps - return quiz data as exercise
+  if (step.type === 'quiz') {
+    const quizzes = extractQuizzesFromStep(step)
+    const quiz = quizzes[currentQuizIndex.value]
+    if (quiz) {
+      return {
+        ...quiz,
+        type: quiz.type || 'multiple-choice', // Default quiz type
+        exerciseType: quiz.type || 'multiple-choice'
+      }
+    }
+    return null
   }
 
   // Standard exercise handling
@@ -978,6 +1005,11 @@ function getTotalExercises(step) {
   if ((stepType && specialInteractiveTypes.includes(stepType)) ||
       (contentType && specialInteractiveTypes.includes(contentType))) {
     return 1
+  }
+
+  // Handle quiz steps - return quiz count
+  if (step.type === 'quiz') {
+    return extractQuizzesFromStep(step).length
   }
 
   if (step.type !== 'exercise') return 0
@@ -1032,26 +1064,39 @@ function checkAnswer() {
 function goToNextExercise() {
   const step = currentStep.value
   if (!step) return
-  
+
   const total = getTotalExercises(step)
+
+  // For quiz steps, use currentQuizIndex
+  if (step.type === 'quiz') {
+    if (currentQuizIndex.value < total - 1) {
+      currentQuizIndex.value++
+      resetExerciseState(false) // Partial reset - don't reset indices
+    } else {
+      goNext() // This calls resetExerciseState(true) via goNext
+    }
+    return
+  }
+
+  // For regular exercises
   if (currentExerciseIndex.value < total - 1) {
     currentExerciseIndex.value++
-    resetExerciseState()
+    resetExerciseState(false) // Partial reset - don't reset indices
   } else {
-    goNext()
+    goNext() // This calls resetExerciseState(true) via goNext
   }
 }
 
 function goToNextQuiz() {
   const step = currentStep.value
   if (!step) return
-  
+
   const total = getTotalQuizzes(step)
   if (currentQuizIndex.value < total - 1) {
     currentQuizIndex.value++
-    resetExerciseState()
+    resetExerciseState(false) // Partial reset - don't reset indices
   } else {
-    goNext()
+    goNext() // This calls resetExerciseState(true) via goNext
   }
 }
 
