@@ -265,19 +265,29 @@
           </transition>
         </div>
 
-        <!-- Submit/Next Button -->
+        <!-- Submit/Next Button for regular exercises -->
         <footer v-if="!isSpecialInteractiveType" class="mt-6 flex justify-end">
-          <button 
-            v-if="!showCorrectAnswer" 
-            @click="submit" 
+          <button
+            v-if="!showCorrectAnswer"
+            @click="submit"
             :disabled="!canSubmit"
             class="btn-primary"
           >
             Check Answer
           </button>
-          <button 
-            v-else 
-            @click="handleNext" 
+          <button
+            v-else
+            @click="handleNext"
+            class="btn-success"
+          >
+            Continue →
+          </button>
+        </footer>
+
+        <!-- Continue Button for special interactive types (shows after completion) -->
+        <footer v-else-if="showCorrectAnswer" class="mt-6 flex justify-end">
+          <button
+            @click="handleNext"
             class="btn-success"
           >
             Continue →
