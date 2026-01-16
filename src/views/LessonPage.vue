@@ -656,7 +656,26 @@ const estimatedTime = computed(() => {
 const isInteractiveStep = computed(() => {
   const step = currentStep.value
   if (!step) return false
-  return step.type === 'exercise' || step.type === 'quiz'
+
+  // Check standard interactive types
+  if (step.type === 'exercise' || step.type === 'quiz') return true
+
+  // Check for special interactive types
+  const stepType = step.type?.toLowerCase()
+  const contentType = step.content?.type?.toLowerCase() || step.data?.type?.toLowerCase()
+
+  const specialTypes = [
+    'histogram', 'map', 'block-coding', 'data_analysis', 'fraction_visual',
+    'geometry_poly', 'chem_mixing', 'chem_matching', 'english_sentence_fix',
+    'english_sentence_order', 'language_noun_bag', 'geometry',
+    'language_tone_transformer', 'language_idiom_bridge',
+    'language_word_constellation', 'language_rhythm_match', 'language_false_friends',
+    'matching', 'sentence_order', 'sentence_ordering', 'word_order', 'ordering',
+    'data-analysis', 'dataanalysis', 'match', 'pair_matching', 'reorder'
+  ]
+
+  return (stepType && specialTypes.includes(stepType)) ||
+         (contentType && specialTypes.includes(contentType))
 })
 
 const isGameStep = computed(() => {
@@ -910,8 +929,36 @@ function extractQuizzesFromStep(step) {
 }
 
 // Exercise Helpers
+// Special interactive types that are handled as single exercises (not arrays)
+const specialInteractiveTypes = [
+  'histogram', 'map', 'block-coding', 'data_analysis', 'fraction_visual',
+  'geometry_poly', 'chem_mixing', 'chem_matching', 'english_sentence_fix',
+  'english_sentence_order', 'language_noun_bag', 'geometry',
+  'language_tone_transformer', 'language_idiom_bridge',
+  'language_word_constellation', 'language_rhythm_match', 'language_false_friends',
+  // Common aliases
+  'matching', 'sentence_order', 'sentence_ordering', 'word_order', 'ordering',
+  'data-analysis', 'dataanalysis', 'match', 'pair_matching', 'reorder'
+]
+
 function getCurrentExercise(step) {
-  if (!step || step.type !== 'exercise') return null
+  if (!step) return null
+
+  // Check if step itself is a special interactive type
+  const stepType = step.type?.toLowerCase()
+  if (stepType && specialInteractiveTypes.includes(stepType)) {
+    // Return the step data directly for special interactive types
+    return step.data || step.content || step
+  }
+
+  // Also check if the step contains a special type in content/data
+  const contentType = step.content?.type?.toLowerCase() || step.data?.type?.toLowerCase()
+  if (contentType && specialInteractiveTypes.includes(contentType)) {
+    return step.content || step.data || step
+  }
+
+  // Standard exercise handling
+  if (step.type !== 'exercise') return null
   const exercises = extractExercisesFromStep(step)
   return exercises[currentExerciseIndex.value] || null
 }
@@ -923,7 +970,17 @@ function getCurrentQuiz(step) {
 }
 
 function getTotalExercises(step) {
-  if (!step || step.type !== 'exercise') return 0
+  if (!step) return 0
+
+  // Special interactive types count as 1 exercise
+  const stepType = step.type?.toLowerCase()
+  const contentType = step.content?.type?.toLowerCase() || step.data?.type?.toLowerCase()
+  if ((stepType && specialInteractiveTypes.includes(stepType)) ||
+      (contentType && specialInteractiveTypes.includes(contentType))) {
+    return 1
+  }
+
+  if (step.type !== 'exercise') return 0
   return extractExercisesFromStep(step).length
 }
 
