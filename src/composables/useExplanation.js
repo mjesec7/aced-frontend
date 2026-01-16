@@ -103,38 +103,45 @@ export function useExplanation() {
   // ✅ AI Chat methods
   const sendAIMessage = async (lessonContext, userProgress, stepContext) => {
     if (!aiChatInput.value.trim() || aiIsLoading.value) return
-    
+
     const userMessage = aiChatInput.value.trim()
     aiChatInput.value = ''
     aiIsLoading.value = true
-    
+
     // Add user message to history
     addToAIChatHistory('user', userMessage)
-    
+
     try {
       if (typeof getLessonAIResponse === 'function') {
         const aiResponse = await getLessonAIResponse(
-          userMessage, 
-          lessonContext || {}, 
-          userProgress || {}, 
+          userMessage,
+          lessonContext || {},
+          userProgress || {},
           stepContext || {}
         )
-        
+
+        // Handle both object response (new format) and string response (error/fallback)
+        const replyText = typeof aiResponse === 'object' ? aiResponse.reply : aiResponse
+        const hasMemory = typeof aiResponse === 'object' ? aiResponse.hasMemory : false
+        const messageCount = typeof aiResponse === 'object' ? aiResponse.messageCount : 0
+
         // Add AI response to history
-        addToAIChatHistory('ai', aiResponse)
-        
+        addToAIChatHistory('ai', replyText)
+
         // Refresh suggestions and usage
         await Promise.all([
           generateAISuggestions(stepContext, userProgress),
           loadAIUsage()
         ])
-        
+
         trackAIEvent('chat_message_sent', {
           messageLength: userMessage.length,
-          responseLength: aiResponse?.length || 0,
-          chatHistorySize: aiChatHistory.value.length
+          responseLength: replyText?.length || 0,
+          chatHistorySize: aiChatHistory.value.length,
+          hasMemory,
+          messageCount
         })
-        
+
       } else {
         throw new Error('AI chat service not available')
       }

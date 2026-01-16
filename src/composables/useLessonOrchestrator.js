@@ -8,6 +8,7 @@ import {
   submitProgress,
   withErrorHandling
 } from '@/api'
+import { clearChatHistory } from '@/api/chat'
 
 export function useLessonOrchestrator() {
   // ✅ Core lesson state
@@ -730,6 +731,45 @@ export function useLessonOrchestrator() {
     startLesson()
   }
 
+  // ✅ NEW: Restart lesson from the beginning with fresh AI memory
+  const restartLesson = async () => {
+    // Clear AI chat history for this lesson (backend memory)
+    if (lesson.value._id && !isGuestMode.value) {
+      try {
+        await clearChatHistory(lesson.value._id)
+      } catch (error) {
+        // Non-critical - continue with restart even if clearing history fails
+        console.warn('[LessonOrchestrator] Failed to clear chat history:', error)
+      }
+    }
+
+    // Reset all progress state
+    currentIndex.value = 0
+    mistakeCount.value = 0
+    stars.value = 0
+    earnedPoints.value = 0
+    hintsUsed.value = false
+    mistakeLog.value = []
+    elapsedSeconds.value = 0
+    lessonCompleted.value = false
+    showConfetti.value = false
+    previousProgress.value = null
+
+    // Clear guest progress from localStorage
+    if (isGuestMode.value && lesson.value._id) {
+      try {
+        const guestProgress = JSON.parse(localStorage.getItem('guestProgress') || '{}')
+        delete guestProgress[lesson.value._id]
+        localStorage.setItem('guestProgress', JSON.stringify(guestProgress))
+      } catch (error) {
+        // Non-critical
+      }
+    }
+
+    // Start fresh
+    startLesson()
+  }
+
   const goNext = () => {
     if (isLastStep.value) {
       completeLesson()
@@ -991,6 +1031,7 @@ export function useLessonOrchestrator() {
     saveProgress,
     startLesson,
     continuePreviousProgress,
+    restartLesson,
     goNext,
     goPrevious,
     completeLesson,
