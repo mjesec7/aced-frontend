@@ -26,12 +26,18 @@
         </div>
       </div>
       
-      <!-- Quick Suggestions -->
-      <div v-if="(quickSuggestions || []).length" class="quick-suggestions">
+      <!-- Step Context Indicator (RAG - shows what AI can "see") -->
+      <div v-if="stepContextDisplay" class="step-context-indicator">
+        <span class="context-icon">👁️</span>
+        <span class="context-text">{{ $t('lesson.floatingAssistant.aiCanSee', 'AI can see:') }} <strong>{{ stepContextDisplay }}</strong></span>
+      </div>
+
+      <!-- Contextual Quick Suggestions (RAG-powered) -->
+      <div v-if="contextualSuggestions.length" class="quick-suggestions">
         <p class="suggestions-label">💡 {{ $t('lesson.floatingAssistant.quickQuestions') }}</p>
         <div class="suggestions-list">
-          <button 
-            v-for="(suggestion, quickIndex) in (quickSuggestions || [])" 
+          <button
+            v-for="(suggestion, quickIndex) in contextualSuggestions"
             :key="`quick-${quickIndex}`"
             @click="$emit('ask-ai', suggestion)"
             class="quick-suggestion-btn"
@@ -145,6 +151,7 @@ export default {
         plan: 'free'
       })
     },
+    // Quick suggestions can be passed from parent or auto-generated
     quickSuggestions: {
       type: Array,
       default: () => []
@@ -160,6 +167,20 @@ export default {
     aiIsLoading: {
       type: Boolean,
       default: false
+    },
+    // Current step context for RAG - allows component to show context-aware suggestions
+    currentStep: {
+      type: Object,
+      default: null
+    },
+    // User progress for personalization
+    userProgress: {
+      type: Object,
+      default: () => ({
+        mistakes: 0,
+        currentStep: 0,
+        completedSteps: 0
+      })
     }
   },
   emits: ['close', 'send-message', 'ask-ai', 'clear-chat'],
@@ -174,17 +195,94 @@ export default {
       if (!this.aiChatHistory || !Array.isArray(this.aiChatHistory)) {
         return [];
       }
-      
+
       if (this.showAllMessages) {
         return this.aiChatHistory;
       }
-      
+
       return this.aiChatHistory.slice(-5);
     },
 
     // Get user subscription status from store
     userStatus() {
       return this.$store?.getters?.['user/userStatus'] || 'free';
+    },
+
+    // Generate contextual suggestions based on current step type (RAG Architecture)
+    // This allows the AI to provide relevant help based on what the user is working on
+    contextualSuggestions() {
+      // If parent provides suggestions, use those first
+      if (this.quickSuggestions && this.quickSuggestions.length > 0) {
+        return this.quickSuggestions;
+      }
+
+      // Otherwise, generate based on step type
+      if (!this.currentStep) {
+        return [
+          this.$t('lesson.floatingAssistant.defaultSuggestion1', 'Can you help me understand this?'),
+          this.$t('lesson.floatingAssistant.defaultSuggestion2', 'What should I focus on?'),
+          this.$t('lesson.floatingAssistant.defaultSuggestion3', 'Give me a hint')
+        ];
+      }
+
+      const stepType = this.currentStep.type?.toLowerCase();
+      const hasMistakes = this.userProgress?.mistakes > 0;
+
+      // Exercise-specific suggestions
+      if (stepType === 'exercise' || stepType === 'quiz') {
+        if (hasMistakes) {
+          return [
+            this.$t('lesson.floatingAssistant.exerciseHelpHint', "I'm stuck, can you give me a hint?"),
+            this.$t('lesson.floatingAssistant.exerciseExplainApproach', 'Explain how to approach this problem'),
+            this.$t('lesson.floatingAssistant.exerciseWhatWrong', "What am I doing wrong?")
+          ];
+        }
+        return [
+          this.$t('lesson.floatingAssistant.exerciseCheckApproach', 'Is my approach correct?'),
+          this.$t('lesson.floatingAssistant.exerciseExplainQuestion', 'Explain the question in detail'),
+          this.$t('lesson.floatingAssistant.exerciseHowToSolve', 'How should I solve this?')
+        ];
+      }
+
+      // Explanation-specific suggestions
+      if (stepType === 'explanation') {
+        return [
+          this.$t('lesson.floatingAssistant.explainSimpler', 'Can you explain this simpler?'),
+          this.$t('lesson.floatingAssistant.explainKeyPoints', 'What are the key points?'),
+          this.$t('lesson.floatingAssistant.explainRealExample', 'Give me a real-life example')
+        ];
+      }
+
+      // Vocabulary-specific suggestions
+      if (stepType === 'vocabulary') {
+        return [
+          this.$t('lesson.floatingAssistant.vocabRemember', 'Help me remember this word'),
+          this.$t('lesson.floatingAssistant.vocabUsage', 'How is this word used?'),
+          this.$t('lesson.floatingAssistant.vocabMoreExamples', 'Give me more examples')
+        ];
+      }
+
+      // Default suggestions
+      return [
+        this.$t('lesson.floatingAssistant.defaultHelp', 'Help me understand this better'),
+        this.$t('lesson.floatingAssistant.defaultFocus', 'What should I focus on here?'),
+        this.$t('lesson.floatingAssistant.defaultImportant', 'What is important to remember?')
+      ];
+    },
+
+    // Display current step context to show user what AI can "see"
+    stepContextDisplay() {
+      if (!this.currentStep) return null;
+
+      const stepType = this.currentStep.type?.toLowerCase();
+      const typeName = {
+        'exercise': this.$t('lesson.stepTypes.exercise', 'Exercise'),
+        'quiz': this.$t('lesson.stepTypes.quiz', 'Quiz'),
+        'explanation': this.$t('lesson.stepTypes.explanation', 'Explanation'),
+        'vocabulary': this.$t('lesson.stepTypes.vocabulary', 'Vocabulary')
+      }[stepType] || stepType;
+
+      return typeName;
     },
 
     // Parse usage data properly
@@ -462,6 +560,32 @@ export default {
 .usage-display p {
   margin: 0 0 4px 0;
   font-weight: 500;
+}
+
+/* Step Context Indicator - Shows what AI can "see" (RAG Architecture) */
+.step-context-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border: 1px solid #86efac;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  color: #166534;
+}
+
+.step-context-indicator .context-icon {
+  font-size: 0.85rem;
+}
+
+.step-context-indicator .context-text {
+  flex: 1;
+}
+
+.step-context-indicator strong {
+  font-weight: 600;
+  color: #15803d;
 }
 
 .usage-bar {

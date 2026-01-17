@@ -413,6 +413,7 @@
           :current-step="currentStep"
           :ai-chat-history="formattedAIChatHistory"
           :ai-is-loading="isAITyping"
+          :user-progress="aiUserProgress"
           @close="toggleFloatingAI"
           @send-message="handleAISendMessage"
           @ask-ai="handleAIQuickQuestion"
@@ -697,6 +698,20 @@ const formattedAIChatHistory = computed(() => {
     timestamp: msg.timestamp || new Date().toISOString()
   }))
 })
+
+// User progress for AI personalization (RAG Architecture)
+// This is passed to FloatingAIAssistant for contextual suggestions
+const aiUserProgress = computed(() => ({
+  currentStep: currentIndex.value,
+  completedSteps: currentIndex.value,
+  mistakes: mistakeCount.value,
+  stars: stars.value,
+  progressPercent: progressPercentage.value,
+  consecutiveCorrect: consecutiveCorrect.value,
+  // Track weak areas based on mistakes (for personalization)
+  weakAreas: [],
+  recentMistakes: []
+}))
 
 const leftPanelStyle = computed(() => ({
   width: resizeDisabled.value ? '100%' : `${leftPanelWidth.value}%`
@@ -1408,11 +1423,15 @@ function buildExerciseData() {
   return exerciseData
 }
 
-// Build full AI request context
+// Build full AI request context (RAG Architecture - Context Injection)
+// This function collects all relevant data for the backend to construct the AI system prompt
 function buildAIRequestContext() {
   const step = currentStep.value
   const stepType = step?.type?.toLowerCase()
   const isExerciseType = stepType === 'exercise' || stepType === 'quiz' || specialInteractiveTypes.includes(stepType)
+
+  // Build step content for non-exercise types (explanation, vocabulary)
+  const stepContent = !isExerciseType ? buildStepContent(step) : null
 
   return {
     lessonContext: {
@@ -1427,15 +1446,62 @@ function buildAIRequestContext() {
       completedSteps: currentIndex.value,
       mistakes: mistakeCount.value,
       stars: stars.value,
-      progressPercent: progressPercentage.value
+      progressPercent: progressPercentage.value,
+      consecutiveCorrect: consecutiveCorrect.value,
+      // Weak areas for personalization (backend can use this to adapt explanations)
+      weakAreas: [],
+      recentMistakes: []
     },
     stepContext: {
       type: stepType || 'explanation',
       stepIndex: currentIndex.value,
       exerciseIndex: isExerciseType ? currentExerciseIndex.value : undefined,
       totalExercises: isExerciseType ? getTotalExercises(step) : undefined,
-      exerciseData: isExerciseType ? buildExerciseData() : undefined
+      // For exercises: include exercise data (question, options - no answers)
+      exerciseData: isExerciseType ? buildExerciseData() : undefined,
+      // For explanations/vocabulary: include step content
+      content: stepContent
     }
+  }
+}
+
+// Build step content for explanation and vocabulary steps
+// This allows AI to "read" and explain the content in detail
+function buildStepContent(step) {
+  if (!step) return null
+
+  const stepType = step.type?.toLowerCase()
+
+  // For explanation steps, extract the main content
+  if (stepType === 'explanation') {
+    return {
+      title: getLocalizedText(step.title) || getLocalizedText(step.content?.title),
+      text: getLocalizedText(step.content?.text) ||
+            getLocalizedText(step.content?.explanation) ||
+            getLocalizedText(step.description) ||
+            getLocalizedText(step.explanation),
+      // Include any key points or highlights
+      keyPoints: step.content?.keyPoints || step.keyPoints || []
+    }
+  }
+
+  // For vocabulary steps, extract words and definitions
+  if (stepType === 'vocabulary') {
+    const terms = step.vocabulary || step.content?.terms || step.words || []
+    return {
+      title: getLocalizedText(step.title) || 'Vocabulary',
+      terms: terms.map(term => ({
+        word: getLocalizedText(term.word) || getLocalizedText(term.term),
+        definition: getLocalizedText(term.definition) || getLocalizedText(term.meaning),
+        example: getLocalizedText(term.example) || getLocalizedText(term.sentence)
+      }))
+    }
+  }
+
+  // For other types, return generic content
+  return {
+    title: getLocalizedText(step.title),
+    text: getLocalizedText(step.content?.text) || getLocalizedText(step.description)
   }
 }
 

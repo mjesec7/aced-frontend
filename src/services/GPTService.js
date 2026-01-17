@@ -168,10 +168,15 @@ export async function getAIResponse(userInput, imageUrl = null, lessonId = null)
   }
 }
 
-// ✅ NEW: Enhanced lesson-context AI response
+// ✅ ENHANCED: RAG-enabled lesson-context AI response with full context injection
 // Returns: { reply: string, hasMemory?: boolean, messageCount?: number } or string on error
+//
+// RAG Architecture Flow:
+// 1. Frontend sends: userInput, lessonContext, userProgress, stepContext
+// 2. Backend fetches: Full lesson data, User progress history, Chat memory
+// 3. Backend constructs: System prompt with all context for AI
+// 4. AI generates: Context-aware response
 export async function getLessonAIResponse(userInput, lessonContext, userProgress, stepContext) {
-
 
   try {
     const user = auth.currentUser;
@@ -196,19 +201,53 @@ export async function getLessonAIResponse(userInput, lessonContext, userProgress
 
     const token = await user.getIdToken();
 
-    // Ensure lessonId is included in lessonContext for memory to work
+    // Build enriched lesson context for RAG (Context Injection)
+    // This data is used by backend to construct the system prompt
     const enrichedLessonContext = {
-      ...lessonContext,
-      lessonId: lessonContext?.lessonId || lessonContext?._id || ''
+      lessonId: lessonContext?.lessonId || lessonContext?._id || '',
+      lessonName: lessonContext?.lessonName || lessonContext?.title || '',
+      topic: lessonContext?.topic || '',
+      subject: lessonContext?.subject || '',
+      totalSteps: lessonContext?.totalSteps || 0
+    };
+
+    // Build enriched user progress for personalization
+    // Backend uses this to identify user's weak areas
+    const enrichedUserProgress = {
+      currentStep: userProgress?.currentStep || 0,
+      completedSteps: userProgress?.completedSteps || 0,
+      mistakes: userProgress?.mistakes || 0,
+      stars: userProgress?.stars || 0,
+      progressPercent: userProgress?.progressPercent || 0,
+      // Add difficulty tracking for personalization
+      weakAreas: userProgress?.weakAreas || [],
+      recentMistakes: userProgress?.recentMistakes || []
+    };
+
+    // Build enriched step context with exercise data
+    // This allows AI to "see" the current exercise without revealing answers
+    const enrichedStepContext = {
+      type: stepContext?.type || 'explanation',
+      stepIndex: stepContext?.stepIndex || 0,
+      exerciseIndex: stepContext?.exerciseIndex,
+      totalExercises: stepContext?.totalExercises,
+      // Exercise data (question, options, etc. - NO correct answers)
+      exerciseData: stepContext?.exerciseData || null,
+      // Additional context for explanation steps
+      content: stepContext?.content || null
     };
 
     const response = await gptApi.post('/chat/lesson-context', {
       userInput,
       lessonContext: enrichedLessonContext,
-      userProgress,
-      stepContext,
+      userProgress: enrichedUserProgress,
+      stepContext: enrichedStepContext,
+      // Additional flags for backend processing
       trackUsage: true,
-      monthKey: getCurrentMonthKey()
+      monthKey: getCurrentMonthKey(),
+      // Enable memory features
+      enableMemory: true,
+      enablePersonalization: true
     }, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -218,13 +257,16 @@ export async function getLessonAIResponse(userInput, lessonContext, userProgress
 
     const reply = response.data?.reply || 'AI не смог предоставить ответ.';
 
-    // Return full response with memory info if available
+    // Return full response with memory and context info
     // Callers can use: const result = await getLessonAIResponse(...)
     // result.reply, result.hasMemory, result.messageCount
     return {
       reply,
       hasMemory: response.data?.hasMemory || false,
-      messageCount: response.data?.messageCount || 0
+      messageCount: response.data?.messageCount || 0,
+      // Additional response data for UI enhancements
+      suggestions: response.data?.suggestions || [],
+      contextUsed: response.data?.contextUsed || false
     };
 
   } catch (error) {
