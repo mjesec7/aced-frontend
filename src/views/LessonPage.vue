@@ -1461,9 +1461,28 @@ function buildAIRequestContext() {
   // Build step content for non-exercise types (explanation, vocabulary)
   const stepContent = !isExerciseType ? buildStepContent(step) : null
 
+  // Helper to safely get lesson ID
+  const getSafeLessonId = (l) => {
+    if (!l) return '';
+    if (typeof l._id === 'string') return l._id;
+    if (l._id && l._id.$oid) return l._id.$oid; // Handle MongoDB extended JSON
+    if (l.id) return l.id;
+    return String(l._id || '');
+  };
+
+  const safeLessonId = getSafeLessonId(lesson.value);
+
+  // DEBUG: Log AI Context building
+  console.log('🤖 [AI Request] Building context:', {
+    lessonId: safeLessonId,
+    rawId: lesson.value?._id,
+    lessonName: lesson.value?.lessonName,
+    stepIndex: currentIndex.value
+  });
+
   return {
     lessonContext: {
-      lessonId: lesson.value._id || lesson.value.id,
+      lessonId: safeLessonId,
       lessonName: getLocalizedText(lesson.value.lessonName) || getLocalizedText(lesson.value.name) || lesson.value.title,
       topic: lesson.value.topic || lesson.value.topicId?.name,
       subject: lesson.value.subject,
