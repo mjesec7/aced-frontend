@@ -428,7 +428,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick, isRef } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
@@ -758,6 +758,13 @@ async function loadLesson() {
       // Extract localized title and description using helper functions
       const localizedTitle = extractLessonTitle(lessonData)
       const localizedDescription = extractLessonDescription(lessonData)
+
+      // DEBUG: Log lesson data loading
+      console.log('📥 [LessonPage] loadLesson setting lesson.value:', {
+        id: lessonData._id || lessonData.id,
+        title: localizedTitle,
+        isRef: isRef(lesson) // Check if it's a ref
+      });
 
       // Map backend fields to frontend display with localization
       lesson.value = {
