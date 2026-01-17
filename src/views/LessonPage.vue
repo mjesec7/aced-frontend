@@ -726,7 +726,17 @@ const aiUserProgress = computed(() => ({
 
 // CRITICAL: Lesson ID for FloatingAIAssistant (RAG - enables backend to fetch lesson data)
 const lessonIdForAI = computed(() => {
-  return lesson.value?._id || lesson.value?.id || route.params.lessonId || ''
+  const l = lesson.value;
+  // Fallback to route params (support both 'id' and 'lessonId')
+  const routeId = route.params.id || route.params.lessonId;
+
+  if (!l) return routeId || '';
+  
+  if (typeof l._id === 'string') return l._id;
+  if (l._id && l._id.$oid) return l._id.$oid; // Handle MongoDB extended JSON
+  if (l.id) return l.id;
+  
+  return String(l._id || routeId || '');
 })
 
 const leftPanelStyle = computed(() => ({
@@ -1470,11 +1480,14 @@ function buildAIRequestContext() {
 
   // Helper to safely get lesson ID
   const getSafeLessonId = (l) => {
-    if (!l) return '';
+    // Try route params as fallback (critical if lesson ref is empty)
+    const routeId = route.params.id || route.params.lessonId;
+
+    if (!l) return routeId || '';
     if (typeof l._id === 'string') return l._id;
     if (l._id && l._id.$oid) return l._id.$oid; // Handle MongoDB extended JSON
     if (l.id) return l.id;
-    return String(l._id || '');
+    return String(l._id || routeId || '');
   };
 
   const safeLessonId = getSafeLessonId(lesson.value);
