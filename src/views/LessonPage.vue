@@ -6,6 +6,13 @@
       <p class="text-slate-600 font-medium">{{ $t('loadingStates.lesson') }}</p>
     </div>
 
+    <!-- DEBUG OVERLAY -->
+    <div style="position:fixed; top:60px; left:10px; z-index:9999; background:red; color:white; padding:10px; font-weight:bold; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+      DEBUG: ID={{ lessonIdForAI }} <br>
+      RouteID={{ $route.params.id }} <br>
+      LessonRef={{ !!lesson }}
+    </div>
+
     <!-- Error Screen -->
     <div v-else-if="error" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-50 p-6 text-center">
       <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
@@ -1493,8 +1500,11 @@ function buildAIRequestContext() {
   const safeLessonId = getSafeLessonId(lesson.value);
 
   // DEBUG: Log AI Context building
-  console.log('🤖 [AI Request] Building context:', {
+  console.log('🚀 [FRONTEND DEBUG] Building context:', {
     lessonId: safeLessonId,
+    routeParams: route.params,
+    routeId: route.params.id,
+    routeLessonId: route.params.lessonId,
     rawId: lesson.value?._id,
     lessonName: lesson.value?.lessonName,
     stepIndex: currentIndex.value
