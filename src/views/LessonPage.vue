@@ -1427,11 +1427,18 @@ function buildExerciseData() {
   if (!exercise) return null
 
   // Build exercise data object (don't include correctAnswer to prevent cheating)
+  // Build exercise data object (don't include correctAnswer to prevent cheating)
   const exerciseData = {
     type: exercise.type || exercise.exerciseType || stepType,
-    question: getLocalizedText(exercise.question) || getLocalizedText(exercise.prompt) || getLocalizedText(exercise.text),
+    question: getLocalizedText(exercise.question) || getLocalizedText(exercise.prompt) || getLocalizedText(exercise.text) || getLocalizedText(exercise.title),
     prompt: getLocalizedText(exercise.prompt) || getLocalizedText(exercise.instructions)
   }
+
+  // DEBUG: Log raw exercise data to help debug missing questions
+  console.log('🚀 [FRONTEND DEBUG] Exercise Data Extraction:', {
+    raw: exercise,
+    extracted: exerciseData
+  });
 
   // Add options for multiple choice
   if (exercise.options && Array.isArray(exercise.options)) {
