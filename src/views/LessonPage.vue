@@ -414,6 +414,8 @@
           :ai-chat-history="formattedAIChatHistory"
           :ai-is-loading="isAITyping"
           :user-progress="aiUserProgress"
+          :lesson-id="lessonIdForAI"
+          :current-slide-index="currentIndex"
           @close="toggleFloatingAI"
           @send-message="handleAISendMessage"
           @ask-ai="handleAIQuickQuestion"
@@ -712,6 +714,11 @@ const aiUserProgress = computed(() => ({
   weakAreas: [],
   recentMistakes: []
 }))
+
+// CRITICAL: Lesson ID for FloatingAIAssistant (RAG - enables backend to fetch lesson data)
+const lessonIdForAI = computed(() => {
+  return lesson.value?._id || lesson.value?.id || route.params.lessonId || ''
+})
 
 const leftPanelStyle = computed(() => ({
   width: resizeDisabled.value ? '100%' : `${leftPanelWidth.value}%`
@@ -1544,22 +1551,40 @@ async function sendAIMessage() {
 }
 
 // Handler for AI send message from FloatingAIAssistant
-async function handleAISendMessage(message) {
-  if (!message) return
+// Accepts both string (backward compatibility) and object { message, lessonId, currentStepIndex }
+async function handleAISendMessage(payload) {
+  // Handle both old format (string) and new format (object with position data)
+  const messageText = typeof payload === 'object' ? payload.message : payload
+  const positionLessonId = typeof payload === 'object' ? payload.lessonId : null
+  const positionStepIndex = typeof payload === 'object' ? payload.currentStepIndex : null
+
+  if (!messageText) return
 
   aiChatMessages.value.push({
     role: 'user',
-    content: message,
+    content: messageText,
     timestamp: new Date().toISOString()
   })
 
   isAITyping.value = true
 
   try {
+    // Build context - use position data from payload if available (more accurate)
     const context = buildAIRequestContext()
 
+    // Override stepContext.stepIndex if explicitly provided from FloatingAIAssistant
+    // This ensures the backend receives the exact position the user is viewing
+    if (positionStepIndex !== null && positionStepIndex !== undefined) {
+      context.stepContext.stepIndex = positionStepIndex
+    }
+
+    // Ensure lessonId is set correctly
+    if (positionLessonId) {
+      context.lessonContext.lessonId = positionLessonId
+    }
+
     const response = await getLessonAIResponse(
-      message,
+      messageText,
       context.lessonContext,
       context.userProgress,
       context.stepContext

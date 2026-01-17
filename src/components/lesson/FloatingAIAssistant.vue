@@ -181,6 +181,16 @@ export default {
         currentStep: 0,
         completedSteps: 0
       })
+    },
+    // CRITICAL: Lesson ID for backend to fetch lesson data and chat memory
+    lessonId: {
+      type: String,
+      default: ''
+    },
+    // CRITICAL: Current slide/step index - tells backend exactly where user is
+    currentSlideIndex: {
+      type: Number,
+      default: 0
     }
   },
   emits: ['close', 'send-message', 'ask-ai', 'clear-chat'],
@@ -397,8 +407,17 @@ export default {
       if (!this.localFloatingInput?.trim() || this.aiIsLoading || this.isMessageLimitReached) {
         return;
       }
-      
-      this.$emit('send-message', this.localFloatingInput.trim());
+
+      // CRITICAL: Emit message with position data for RAG context
+      // Backend needs lessonId and currentStepIndex to:
+      // 1. Fetch the correct exercise/slide data
+      // 2. Load chat history for this lesson
+      // 3. Retrieve user progress for personalization
+      this.$emit('send-message', {
+        message: this.localFloatingInput.trim(),
+        lessonId: this.lessonId,
+        currentStepIndex: this.currentSlideIndex
+      });
       this.localFloatingInput = '';
     },
 
