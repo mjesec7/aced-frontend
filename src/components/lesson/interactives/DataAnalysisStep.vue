@@ -243,14 +243,18 @@ const checkAnswer = () => {
 /* ============================================
    BASE STYLES
    ============================================ */
+/* ============================================
+   BASE STYLES
+   ============================================ */
 .data-analysis-container {
   width: 100%;
   min-height: 300px;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%);
   border-radius: 1.5rem;
   padding: 1.5rem;
   position: relative;
   overflow: hidden;
+  border: 1px solid #cbd5e1;
 }
 
 .bg-decoration {
@@ -264,7 +268,7 @@ const checkAnswer = () => {
   right: -80px;
   width: 200px;
   height: 200px;
-  background: rgba(59, 130, 246, 0.1);
+  background: rgba(59, 130, 246, 0.15);
 }
 
 .bg-decoration-2 {
@@ -272,7 +276,7 @@ const checkAnswer = () => {
   left: -80px;
   width: 160px;
   height: 160px;
-  background: rgba(16, 185, 129, 0.1);
+  background: rgba(16, 185, 129, 0.15);
 }
 
 /* Header */
@@ -286,11 +290,11 @@ const checkAnswer = () => {
   align-items: center;
   gap: 0.5rem;
   padding: 0.375rem 0.75rem;
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(8px);
+  background: white;
   border-radius: 9999px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid #e2e8f0;
   margin-bottom: 0.5rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
 .da-badge-icon {
@@ -299,8 +303,8 @@ const checkAnswer = () => {
 
 .da-badge-text {
   font-size: 0.65rem;
-  font-weight: 500;
-  color: #cbd5e1;
+  font-weight: 600;
+  color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -308,18 +312,18 @@ const checkAnswer = () => {
 .da-title {
   font-size: 1.25rem;
   font-weight: 700;
-  color: white;
+  color: #1e293b;
   margin: 0;
 }
 
 /* Chart Section */
 .da-chart-section {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(8px);
+  background: white;
   border-radius: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid #e2e8f0;
   padding: 1rem;
   margin-bottom: 1rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
 .da-chart {
@@ -342,7 +346,7 @@ const checkAnswer = () => {
 .da-bar-value {
   font-size: 0.7rem;
   font-weight: 700;
-  color: white;
+  color: #475569;
 }
 
 .da-bar {
@@ -363,7 +367,7 @@ const checkAnswer = () => {
   left: 50%;
   transform: translateX(-50%);
   padding: 0.375rem 0.625rem;
-  background: #0f172a;
+  background: #1e293b;
   color: white;
   font-size: 0.625rem;
   font-weight: 500;
@@ -371,18 +375,19 @@ const checkAnswer = () => {
   opacity: 0;
   transition: opacity 0.2s;
   white-space: nowrap;
-  border: 1px solid rgba(255, 255, 255, 0.1);
   z-index: 10;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
 .da-bar-label {
   font-size: 0.6rem;
-  color: #94a3b8;
+  color: #64748b;
   text-align: center;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   width: 100%;
+  font-weight: 500;
 }
 
 .da-axis-label {
@@ -391,26 +396,27 @@ const checkAnswer = () => {
 
 .da-axis-label span {
   font-size: 0.6rem;
-  color: #64748b;
+  color: #94a3b8;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  font-weight: 600;
 }
 
 /* Input Section */
 .da-input-section {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(8px);
+  background: white;
   border-radius: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid #e2e8f0;
   padding: 1rem;
   margin-bottom: 0.75rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
 }
 
 .da-input-label {
   display: block;
   font-size: 0.75rem;
-  font-weight: 500;
-  color: #94a3b8;
+  font-weight: 600;
+  color: #64748b;
   margin-bottom: 0.5rem;
 }
 
@@ -423,27 +429,31 @@ const checkAnswer = () => {
 .da-input {
   flex: 1;
   padding: 0.625rem 0.875rem;
-  background: rgba(30, 41, 59, 0.5);
-  border: 1px solid #334155;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
   border-radius: 0.75rem;
-  color: white;
+  color: #1e293b;
   font-size: 1rem;
   font-family: ui-monospace, monospace;
+  font-weight: 600;
 }
 
 .da-input:focus {
   outline: none;
   border-color: #3b82f6;
+  background: white;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .da-input:disabled {
-  opacity: 0.5;
+  opacity: 0.6;
+  background: #f1f5f9;
 }
 
 .da-input-unit {
   font-size: 0.75rem;
   color: #64748b;
+  font-weight: 500;
 }
 
 .da-hint {
@@ -475,6 +485,8 @@ const checkAnswer = () => {
 .da-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  background: #cbd5e1;
+  box-shadow: none;
 }
 
 .da-btn-icon {
@@ -483,23 +495,23 @@ const checkAnswer = () => {
 }
 
 .da-btn-primary {
-  background: linear-gradient(135deg, #2563eb, #06b6d4);
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+  background: linear-gradient(135deg, #3b82f6, #06b6d4);
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
 }
 
 .da-btn-primary:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
 }
 
 .da-btn-success {
-  background: linear-gradient(135deg, #059669, #14b8a6);
-  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.25);
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
 }
 
 .da-btn-success:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(5, 150, 105, 0.4);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
 }
 
 /* Feedback */
@@ -508,20 +520,19 @@ const checkAnswer = () => {
   padding: 0.875rem;
   border-radius: 1rem;
   border: 1px solid;
-  backdrop-filter: blur(8px);
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
 }
 
 .da-feedback-success {
-  background: rgba(16, 185, 129, 0.1);
-  border-color: rgba(16, 185, 129, 0.3);
+  background: #ecfdf5;
+  border-color: #6ee7b7;
 }
 
 .da-feedback-error {
-  background: rgba(244, 63, 94, 0.1);
-  border-color: rgba(244, 63, 94, 0.3);
+  background: #fef2f2;
+  border-color: #fca5a5;
 }
 
 .da-feedback-icon {
@@ -536,11 +547,13 @@ const checkAnswer = () => {
 }
 
 .da-feedback-success .da-feedback-icon {
-  background: rgba(16, 185, 129, 0.2);
+  background: #10b981;
+  color: white;
 }
 
 .da-feedback-error .da-feedback-icon {
-  background: rgba(244, 63, 94, 0.2);
+  background: #ef4444;
+  color: white;
 }
 
 .da-feedback-content {
@@ -554,16 +567,16 @@ const checkAnswer = () => {
 }
 
 .da-feedback-success .da-feedback-title {
-  color: #34d399;
+  color: #047857;
 }
 
 .da-feedback-error .da-feedback-title {
-  color: #fb7185;
+  color: #b91c1c;
 }
 
 .da-feedback-message {
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: #475569;
   margin: 0;
 }
 

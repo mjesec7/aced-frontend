@@ -1,12 +1,5 @@
 <template>
   <div class="lesson-page">
-    <!-- DEBUG OVERLAY -->
-    <div style="position:fixed; top:60px; left:10px; z-index:9999; background:red; color:white; padding:10px; font-weight:bold; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
-      DEBUG: ID={{ lessonIdForAI }} <br>
-      RouteID={{ $route.params.id }} <br>
-      LessonRef={{ !!lesson }}
-    </div>
-
     <!-- Loading Screen -->
     <div v-if="loading" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-50 p-4">
       <div class="w-12 h-12 border-4 border-slate-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
