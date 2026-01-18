@@ -860,12 +860,14 @@ const actions = {
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live'}/api/users/save`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          token: token,
+          // token: token, // REMOVED: Token now in header
           name: payload.name,
-          subscriptionPlan: payload.subscriptionPlan
+          subscriptionPlan: payload.subscriptionPlan,
+          ...payload // Send other fields if needed, but backend whitelists them
         })
       });
 
@@ -1027,7 +1029,7 @@ const getters = {
   lastServerSync: (state) => state.system?.lastServerSync || null,
 
   forceUpdateCounter: (state) => state.system?.forceUpdateCounter || 0,
-//im bired
+  //im bired
   lastError: (state) => state.system?.errors?.lastError || null
 };
 

@@ -246,7 +246,11 @@ export const saveUser = async (userData) => {
   console.log('📡 [user.js] saveUser called');
 
   try {
-    const { data } = await api.post('users/save', userData);
+    const token = await getAuthToken();
+    if (!token) throw new Error('No authentication token');
+
+    const headers = { Authorization: `Bearer ${token}` };
+    const { data } = await api.post('users/save', userData, { headers });
 
     return {
       success: true,
