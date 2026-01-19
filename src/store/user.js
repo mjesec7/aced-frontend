@@ -864,10 +864,13 @@ const actions = {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          // token: token, // REMOVED: Token now in header
+          // Only send allowed fields
           name: payload.name,
-          subscriptionPlan: payload.subscriptionPlan,
-          ...payload // Send other fields if needed, but backend whitelists them
+          displayName: payload.displayName,
+          photoURL: payload.photoURL,
+          email: payload.email,
+          preferences: userData.preferences,
+          language: userData.language
         })
       });
 
