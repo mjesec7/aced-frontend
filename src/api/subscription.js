@@ -103,7 +103,10 @@ export const fetchSubscriptionFromServer = async (userId) => {
       activatedAt: userData.subscriptionActivatedAt || null,
       duration: userData.subscriptionDuration || null,
       serverFetch: true,
-      fetchTime: new Date().toISOString()
+      serverFetch: true,
+      fetchTime: new Date().toISOString(),
+      currentUsage: userData.currentUsage || null,
+      usageLimits: userData.usageLimits || null
     };
 
 

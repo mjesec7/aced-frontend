@@ -379,6 +379,15 @@ const mutations = {
       updateFeatureMatrix(state);
     }
 
+    // Update usage if present in subscription data
+    if (subscriptionData.currentUsage) {
+      state.usage.current = {
+        ...state.usage.current,
+        ...subscriptionData.currentUsage,
+        lastUpdated: new Date().toISOString()
+      };
+    }
+
     state.system.lastUpdate = timestamp;
     triggerGlobalEvent('subscriptionUpdated', { ...subscriptionData, timestamp });
 
@@ -637,6 +646,11 @@ const actions = {
         lastSync: new Date().toISOString(),
         serverFetch: true
       });
+
+      // Update usage if available
+      if (userData.currentUsage) {
+        commit('SET_USAGE', userData.currentUsage);
+      }
 
       // Update localStorage for persistence
       localStorage.setItem('userStatus', serverStatus);
