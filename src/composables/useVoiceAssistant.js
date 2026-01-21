@@ -1,4 +1,4 @@
-import { ref, onUnmounted } from 'vue';
+import { ref, onUnmounted, watch } from 'vue';
 import voiceApi from '@/api/voice';
 import chatApi from '@/api/chat';
 import { eventBus } from '@/utils/eventBus';
@@ -8,11 +8,47 @@ export function useVoiceAssistant(i18n) {
     const isSpeaking = ref(false);
     const isListening = ref(false);
     const isAnalyzing = ref(false);
+    const isVoiceMuted = ref(false); // Mute voice without stopping analysis
+    const lessonLanguage = ref(null); // Language from lesson, overrides system language
     const currentAudio = ref(null);
     const currentAudioUrl = ref(null);
     const currentAnalysisId = ref(null);
     const analysisCache = new Map();
     const speechRecognition = ref(null);
+    const pendingAnalysisText = ref(null); // Store text when muted during analysis
+
+    // Set lesson language (called from LessonPage when lesson loads)
+    const setLessonLanguage = (lang) => {
+        lessonLanguage.value = lang;
+        console.log('[VoiceAssistant] Lesson language set to:', lang);
+    };
+
+    // Get the effective language (lesson language > system language)
+    const getEffectiveLanguage = () => {
+        if (lessonLanguage.value) {
+            return lessonLanguage.value;
+        }
+        return i18n.locale.value || i18n.locale;
+    };
+
+    // Toggle voice mute (doesn't stop analysis, just prevents speaking)
+    const toggleVoiceMute = () => {
+        isVoiceMuted.value = !isVoiceMuted.value;
+        console.log('[VoiceAssistant] Voice muted:', isVoiceMuted.value);
+
+        // If unmuting and there's pending text from analysis, speak it
+        if (!isVoiceMuted.value && pendingAnalysisText.value) {
+            speakText(pendingAnalysisText.value);
+            pendingAnalysisText.value = null;
+        }
+
+        // If muting while speaking, stop the audio
+        if (isVoiceMuted.value && isSpeaking.value) {
+            stopAudio();
+        }
+
+        return isVoiceMuted.value;
+    };
 
     // Methods
     const stopAudio = () => {
@@ -90,14 +126,21 @@ export function useVoiceAssistant(i18n) {
         startListening();
     };
 
-    const speakText = async (text) => {
+    const speakText = async (text, options = {}) => {
         if (!text) return;
+
+        // If muted, don't speak (but store text if from analysis)
+        if (isVoiceMuted.value && !options.force) {
+            console.log('[VoiceAssistant] Voice is muted, skipping speech');
+            return;
+        }
 
         stopAudio();
 
         try {
-            // Fix: i18n.locale might be a ref or a plain value depending on how it's passed
-            const currentLang = i18n.locale.value || i18n.locale;
+            // Use effective language (lesson language > system language)
+            const currentLang = options.language || getEffectiveLanguage();
+            console.log('[VoiceAssistant] Speaking in language:', currentLang);
             const audioBlob = await voiceApi.streamAudio(text, { language: currentLang });
 
             if (currentAudioUrl.value) {
@@ -163,8 +206,8 @@ export function useVoiceAssistant(i18n) {
         }
 
         speechRecognition.value = new SpeechRecognition();
-        const currentLang = i18n.locale.value || i18n.locale;
-        console.log('[VoiceAssistant] Initializing with language:', currentLang);
+        const currentLang = getEffectiveLanguage();
+        console.log('[VoiceAssistant] Initializing speech recognition with language:', currentLang);
 
         // Map languages to BCP 47 tags
         if (currentLang === 'ru') speechRecognition.value.lang = 'ru-RU';
@@ -252,15 +295,23 @@ export function useVoiceAssistant(i18n) {
         return content || '';
     };
 
-    const analyzeAndSpeak = async (step, isFirstStep = false) => {
+    const analyzeAndSpeak = async (step, isFirstStep = false, exerciseContext = null) => {
         if (!step) return;
         stopAudio();
 
-        const content = getStepContent(step);
+        // Get step content and include exercise context if available
+        let content = getStepContent(step);
+
+        // Append exercise context for richer AI analysis
+        if (exerciseContext) {
+            content += '\n\n[Exercise Context]:\n' + exerciseContext;
+        }
+
         if (!content || content.length < 20) return;
 
-        const currentLang = i18n.locale.value || i18n.locale;
-        if (currentLang === 'uz') return;
+        // Use effective language (lesson language > system language)
+        const currentLang = getEffectiveLanguage();
+        if (currentLang === 'uz') return; // Uzbek not supported
 
         const analysisId = Date.now();
         currentAnalysisId.value = analysisId;
@@ -270,8 +321,11 @@ export function useVoiceAssistant(i18n) {
             const stepId = step.id || step._id;
             let data;
 
-            if (analysisCache.has(stepId)) {
-                data = analysisCache.get(stepId);
+            // Include exercise context in cache key for unique caching
+            const cacheKey = exerciseContext ? `${stepId}_ex_${exerciseContext.length}` : stepId;
+
+            if (analysisCache.has(cacheKey)) {
+                data = analysisCache.get(cacheKey);
             } else {
                 const result = await voiceApi.analyzeLesson(
                     content,
@@ -283,14 +337,21 @@ export function useVoiceAssistant(i18n) {
 
                 if (currentAnalysisId.value !== analysisId) return;
                 data = result?.data || result || {};
-                if (data.explanation) analysisCache.set(stepId, data);
+                if (data.explanation) analysisCache.set(cacheKey, data);
             }
 
             if (data.explanation && currentAnalysisId.value === analysisId) {
                 if (data.highlights && data.highlights.length > 0) {
                     eventBus.emit('highlight-text', data.highlights);
                 }
-                await speakText(data.explanation);
+
+                // If muted during analysis, store the text for later
+                if (isVoiceMuted.value) {
+                    pendingAnalysisText.value = data.explanation;
+                    console.log('[VoiceAssistant] Voice muted, storing analysis for later');
+                } else {
+                    await speakText(data.explanation);
+                }
             }
         } catch (error) {
             console.error('[VoiceAssistant] Analysis error:', error);
@@ -339,17 +400,24 @@ export function useVoiceAssistant(i18n) {
     });
 
     return {
+        // State
         isSpeaking,
         isListening,
         isAnalyzing,
+        isVoiceMuted,
         isSupported,
+        lessonLanguage,
+        // Methods
         stopAudio,
         startListening,
         stopListening,
         toggleMicrophone,
+        toggleVoiceMute,
         speakText,
         analyzeAndSpeak,
         preAnalyzeSteps,
-        handleVoiceQuestion
+        handleVoiceQuestion,
+        setLessonLanguage,
+        getEffectiveLanguage
     };
 }

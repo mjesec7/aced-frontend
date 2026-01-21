@@ -30,13 +30,35 @@
         🧠
       </div>
 
-      <!-- Speaker Button (AI Status/Control) -->
-      <button 
+      <!-- Voice Mute Toggle Button (mutes speaker without stopping analysis) -->
+      <button
         v-if="language !== 'uz'"
-        class="speaker-btn-header" 
-        :class="{ 'is-speaking': isSpeaking }"
+        class="mute-btn-header"
+        :class="{ 'is-muted': isVoiceMuted }"
+        @click="$emit('toggle-voice-mute')"
+        :title="isVoiceMuted ? 'Unmute AI Voice' : 'Mute AI Voice'"
+      >
+        <svg v-if="isVoiceMuted" class="mute-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Muted speaker icon -->
+          <path d="M11 5L6 9H2V15H6L11 19V5Z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+          <line x1="23" y1="9" x2="17" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="17" y1="9" x2="23" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <svg v-else class="mute-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Unmuted speaker icon -->
+          <path d="M11 5L6 9H2V15H6L11 19V5Z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M15.54 8.46a5 5 0 0 1 0 7.07" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+
+      <!-- Speaker Button (AI Status/Control - plays/stops speech) -->
+      <button
+        v-if="language !== 'uz'"
+        class="speaker-btn-header"
+        :class="{ 'is-speaking': isSpeaking, 'is-muted': isVoiceMuted }"
         @click="$emit('toggle-speech')"
-        title="Toggle AI Speech"
+        :title="isSpeaking ? 'Stop AI Speech' : 'Play AI Speech'"
+        :disabled="isVoiceMuted"
       >
         <svg v-if="isSpeaking" class="speaker-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M11 5L6 9H2V15H6L11 19V5Z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -169,9 +191,13 @@ export default {
     isAnalyzing: {
       type: Boolean,
       default: false
+    },
+    isVoiceMuted: {
+      type: Boolean,
+      default: false
     }
   },
-  emits: ['exit', 'report-problem', 'toggle-speech', 'toggle-voice-input'],
+  emits: ['exit', 'report-problem', 'toggle-speech', 'toggle-voice-input', 'toggle-voice-mute'],
   setup() {
     const { language } = useLanguage();
     return { language };
@@ -546,6 +572,43 @@ export default {
   50% { transform: scale(1.2); opacity: 1; }
 }
 
+/* Mute Button */
+.mute-btn-header {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  color: #64748b;
+  border: 2px solid #e2e8f0;
+  cursor: pointer;
+  border-radius: 10px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.mute-btn-header:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.mute-btn-header.is-muted {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  color: white;
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+}
+
+.mute-icon {
+  width: 18px;
+  height: 18px;
+}
+
 .speaker-btn-header {
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   color: #64748b;
@@ -563,6 +626,15 @@ export default {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   position: relative;
   overflow: hidden;
+}
+
+.speaker-btn-header:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.speaker-btn-header.is-muted {
+  opacity: 0.5;
 }
 
 .speaker-btn-header.is-speaking {
