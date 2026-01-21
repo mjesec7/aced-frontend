@@ -167,11 +167,16 @@ export function useVoiceAssistant() {
         // Emit event for chat history update
         eventBus.emit('ai-voice-input', question);
 
+        // Get the current system language for AI response
+        const currentLang = getSystemLanguage();
+        console.log('[VoiceAssistant] Asking AI in language:', currentLang);
+
         try {
             const response = await chatApi.getLessonContextAIResponse({
                 userInput: question,
+                language: currentLang, // CRITICAL: Pass language to backend
                 lessonContext: currentStep,
-                chatHistory: chatHistory // Pass history for context
+                chatHistory: chatHistory
             });
 
             const reply = response?.data?.reply || response?.reply;
@@ -339,12 +344,11 @@ export function useVoiceAssistant() {
                     eventBus.emit('highlight-text', data.highlights);
                 }
 
-                // If muted during analysis, store the text for later
-                if (isVoiceMuted.value) {
-                    pendingAnalysisText.value = data.explanation;
-                    console.log('[VoiceAssistant] Voice muted, storing analysis for later');
-                } else {
+                // Only speak if not muted (don't store - user can trigger manually)
+                if (!isVoiceMuted.value) {
                     await speakText(data.explanation);
+                } else {
+                    console.log('[VoiceAssistant] Voice muted, skipping speech');
                 }
             }
         } catch (error) {

@@ -172,31 +172,31 @@ export async function getAIResponse(userInput, imageUrl = null, lessonId = null)
 // Returns: { reply: string, hasMemory?: boolean, messageCount?: number } or string on error
 //
 // RAG Architecture Flow:
-// 1. Frontend sends: userInput, lessonContext, userProgress, stepContext
+// 1. Frontend sends: userInput, language, lessonContext, userProgress, stepContext
 // 2. Backend fetches: Full lesson data, User progress history, Chat memory
 // 3. Backend constructs: System prompt with all context for AI
-// 4. AI generates: Context-aware response
-export async function getLessonAIResponse(userInput, lessonContext, userProgress, stepContext) {
+// 4. AI generates: Context-aware response in the specified language
+export async function getLessonAIResponse(userInput, lessonContext, userProgress, stepContext, language = 'en') {
 
   try {
     const user = auth.currentUser;
     if (!user) {
-      throw new Error('❌ Пользователь не авторизован для урока AI.');
+      throw new Error('User not authorized.');
     }
 
     if (!userInput) {
-      return '⚠️ Пожалуйста, задайте вопрос о текущем уроке.';
+      return 'Please ask a question about the lesson.';
     }
 
     // Check usage limits first
     const usageInfo = await getUserUsage();
     if (!usageInfo.success) {
-      throw new Error('Не удалось проверить лимиты использования');
+      throw new Error('Failed to check usage limits');
     }
 
     const limitCheck = checkUsageLimits(usageInfo.plan, usageInfo.usage, false);
     if (!limitCheck.allowed) {
-      return `🚫 ${limitCheck.message}`;
+      return limitCheck.message;
     }
 
     const token = await user.getIdToken();
@@ -234,11 +234,16 @@ export async function getLessonAIResponse(userInput, lessonContext, userProgress
       // Exercise data (question, options, etc. - NO correct answers)
       exerciseData: stepContext?.exerciseData || null,
       // Additional context for explanation steps
-      content: stepContext?.content || null
+      content: stepContext?.content || null,
+      // Include exercise content for AI analysis
+      exerciseContent: stepContext?.exerciseContent || null
     };
+
+    console.log('[GPTService] Sending request with language:', language);
 
     const response = await gptApi.post('/chat/lesson-context', {
       userInput,
+      language: language || 'en', // CRITICAL: Pass language to backend
       lessonContext: enrichedLessonContext,
       userProgress: enrichedUserProgress,
       stepContext: enrichedStepContext,
@@ -255,7 +260,7 @@ export async function getLessonAIResponse(userInput, lessonContext, userProgress
       timeout: 30000
     });
 
-    const reply = response.data?.reply || 'AI не смог предоставить ответ.';
+    const reply = response.data?.reply || 'AI could not provide an answer.';
 
     // Return full response with memory and context info
     // Callers can use: const result = await getLessonAIResponse(...)
@@ -266,19 +271,21 @@ export async function getLessonAIResponse(userInput, lessonContext, userProgress
       messageCount: response.data?.messageCount || 0,
       // Additional response data for UI enhancements
       suggestions: response.data?.suggestions || [],
-      contextUsed: response.data?.contextUsed || false
+      contextUsed: response.data?.contextUsed || false,
+      // Pass through usage info
+      usage: response.data?.usage || null
     };
 
   } catch (error) {
     if (error.response?.status === 429) {
-      return '⏳ Слишком много запросов. Подождите немного и попробуйте снова.';
+      return 'Too many requests. Please wait and try again.';
     }
 
     if (error.response?.status === 403) {
-      return '🚫 Доступ ограничен. Проверьте свой план подписки.';
+      return 'Access restricted. Check your subscription plan.';
     }
 
-    return '❌ Извините, возникла ошибка. Попробуйте задать вопрос ещё раз.';
+    return 'Sorry, an error occurred. Please try again.';
   }
 }
 

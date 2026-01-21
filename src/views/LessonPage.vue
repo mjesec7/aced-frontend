@@ -1641,7 +1641,8 @@ async function sendAIMessage() {
       message,
       context.lessonContext,
       context.userProgress,
-      context.stepContext
+      context.stepContext,
+      language.value // CRITICAL: Pass current system language
     )
 
     // Handle both object response and string response
@@ -1701,7 +1702,8 @@ async function handleAISendMessage(payload) {
       messageText,
       context.lessonContext,
       context.userProgress,
-      context.stepContext
+      context.stepContext,
+      language.value // CRITICAL: Pass current system language
     )
 
     const replyText = typeof response === 'object' ? response.reply : response

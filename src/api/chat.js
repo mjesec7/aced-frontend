@@ -23,6 +23,7 @@ const chatApi = {
    *
    * @param {object} params - Request parameters
    * @param {string} params.userInput - The user's question
+   * @param {string} params.language - Language for the response (en, ru, uz)
    * @param {object} params.lessonContext - Lesson-level context
    * @param {string} params.lessonContext.lessonId - Lesson ID (required for memory)
    * @param {string} params.lessonContext.lessonName - Lesson title
@@ -39,10 +40,11 @@ const chatApi = {
    * @param {object} params.stepContext.exerciseData - Exercise data (no answers)
    * @returns {Promise<{reply: string, suggestions?: string[], hasMemory?: boolean, messageCount?: number, contextUsed?: boolean}>}
    */
-  async getLessonContextAIResponse({ userInput, lessonContext, userProgress, stepContext }) {
+  async getLessonContextAIResponse({ userInput, language, lessonContext, userProgress, stepContext }) {
     try {
       const response = await api.post('/chat/lesson-context', {
         userInput,
+        language: language || 'en', // CRITICAL: Pass language to backend
         lessonContext: {
           lessonId: lessonContext?.lessonId || lessonContext?._id || '',
           lessonName: lessonContext?.lessonName || lessonContext?.title || '',
