@@ -98,23 +98,27 @@
         </div>
       </div>
 
-      <!-- Stats row -->
+      <!-- Features row -->
       <div class="mt-20 grid grid-cols-2 lg:grid-cols-4 gap-8">
         <div class="text-center">
-          <div class="text-5xl font-bold text-violet-600 mb-2">2,800+</div>
-          <div class="text-gray-500 text-lg">{{ $t('homepage.activeStudents') }}</div>
-        </div>
-        <div class="text-center">
-          <div class="text-5xl font-bold text-amber-500 mb-2">100+</div>
-          <div class="text-gray-500 text-lg">{{ $t('homepage.courses') }}</div>
-        </div>
-        <div class="text-center">
-          <div class="text-5xl font-bold text-violet-600 mb-2">95%</div>
-          <div class="text-gray-500 text-lg">{{ $t('homepage.completionRate') }}</div>
+          <div class="text-5xl font-bold text-violet-600 mb-2">3</div>
+          <div class="text-gray-500 text-lg">{{ $t('homepage.languagesSupported') }}</div>
         </div>
         <div class="text-center">
           <div class="text-5xl font-bold text-amber-500 mb-2">24/7</div>
           <div class="text-gray-500 text-lg">{{ $t('homepage.aiSupport') }}</div>
+        </div>
+        <div class="text-center">
+          <div class="text-5xl font-bold text-violet-600 mb-2">100%</div>
+          <div class="text-gray-500 text-lg">{{ $t('homepage.freeAccess') }}</div>
+        </div>
+        <div class="text-center">
+          <div class="text-5xl font-bold text-amber-500 mb-2">
+            <svg class="w-12 h-12 mx-auto text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <div class="text-gray-500 text-lg">{{ $t('homepage.mobileReady') }}</div>
         </div>
       </div>
     </div>
