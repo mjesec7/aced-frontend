@@ -211,10 +211,12 @@
         :is-speaking="isAISpeaking"
         :is-listening="isListening"
         :is-analyzing="isAnalyzing"
+        :is-voice-muted="isVoiceMuted"
         @exit="confirmExit"
         @report-problem="openProblemReportModal"
         @toggle-speech="handleToggleSpeech"
         @toggle-voice-input="toggleMicrophone"
+        @toggle-voice-mute="handleToggleVoiceMute"
       />
 
       <!-- Split Screen Layout -->
@@ -464,12 +466,18 @@ const {
   isSpeaking,
   isListening,
   isAnalyzing,
+  isVoiceMuted,
   toggleMicrophone,
+  toggleVoiceMute,
   stopAudio,
   analyzeAndSpeak,
   preAnalyzeSteps,
-  handleVoiceQuestion
+  handleVoiceQuestion,
+  setLessonLanguage
 } = useVoiceAssistant(i18n);
+
+// Exercise content extractor for AI analysis
+import { extractExerciseContent, extractAllExercisesFromStep } from '@/utils/exerciseContentExtractor';
 
 // ==================== LOCALIZATION HELPERS ====================
 
@@ -784,13 +792,23 @@ async function loadLesson() {
         estimatedDuration: lessonData.timing?.estimatedDuration || 0
       }
 
+      // Extract and set lesson language for AI speaker
+      // Lesson may have a specific language that should be used for TTS
+      const lessonLang = lessonData.language ||
+                         lessonData.locale ||
+                         lessonData.lang ||
+                         lessonData.metadata?.language ||
+                         language.value; // Fall back to system language
+      setLessonLanguage(lessonLang);
+      console.log('[LessonPage] Lesson language set to:', lessonLang);
+
       // Extract and process steps with localization
       const rawSteps = lessonData.steps || []
       steps.value = rawSteps.map((step, index) => processStepWithLocalization(step, index)).filter(Boolean)
 
       // Trigger pre-analysis in the background
       if (steps.value.length > 0) {
-        preAnalyzeSteps(steps.value, language.value)
+        preAnalyzeSteps(steps.value, lessonLang)
       }
     } else {
       throw new Error(result.error || 'Failed to load lesson data')
@@ -815,8 +833,33 @@ function handleToggleSpeech() {
   if (isSpeaking.value) {
     stopAudio()
   } else {
-    analyzeAndSpeak(currentStep.value)
+    // Get exercise context for richer AI analysis
+    const exerciseContext = getExerciseContextForAI()
+    analyzeAndSpeak(currentStep.value, false, exerciseContext)
   }
+}
+
+function handleToggleVoiceMute() {
+  toggleVoiceMute()
+}
+
+// Get exercise content for AI analysis context
+function getExerciseContextForAI() {
+  const step = currentStep.value
+  if (!step) return null
+
+  // Check if this is an interactive step
+  if (isInteractiveStep.value || isGameStep.value) {
+    // Get current exercise
+    const exercise = getCurrentExercise(step)
+    if (exercise) {
+      return extractExerciseContent(exercise, language.value)
+    }
+    // Fall back to extracting all exercises from step
+    return extractAllExercisesFromStep(step, language.value)
+  }
+
+  return null
 }
 
 function handleSpeakingStart() {
@@ -830,7 +873,9 @@ function handleSpeakingEnd() {
 function startLesson() {
   started.value = true
   if (steps.value[currentIndex.value]) {
-    analyzeAndSpeak(steps.value[currentIndex.value], true) // isFirstStep = true
+    // Get exercise context for richer AI analysis
+    const exerciseContext = getExerciseContextForAI()
+    analyzeAndSpeak(steps.value[currentIndex.value], true, exerciseContext) // isFirstStep = true
   }
 }
 
@@ -1537,7 +1582,9 @@ function buildAIRequestContext() {
       // For exercises: include exercise data (question, options - no answers)
       exerciseData: isExerciseType ? buildExerciseData() : undefined,
       // For explanations/vocabulary: include step content
-      content: stepContent
+      content: stepContent,
+      // Include detailed exercise content for AI analysis (readable format)
+      exerciseContent: isExerciseType ? getExerciseContextForAI() : undefined
     },
     // Language for localized AI responses
     language: language.value || 'ru'
@@ -1752,10 +1799,14 @@ watch(language, () => {
   }
 })
 
-// Watch for step changes to trigger AI speech
+// Watch for step changes to trigger AI speech with exercise context
 watch(currentIndex, (newIndex) => {
   if (started.value && steps.value[newIndex]) {
-    analyzeAndSpeak(steps.value[newIndex], newIndex === 0)
+    // Use nextTick to ensure currentStep is updated before getting exercise context
+    nextTick(() => {
+      const exerciseContext = getExerciseContextForAI()
+      analyzeAndSpeak(steps.value[newIndex], newIndex === 0, exerciseContext)
+    })
   }
 })
 
