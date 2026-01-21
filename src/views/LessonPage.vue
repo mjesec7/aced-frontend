@@ -1459,57 +1459,159 @@ function buildExerciseData() {
 
   if (!exercise) return null
 
+  // Helper to extract text from multiple possible locations
+  const extractText = (...sources) => {
+    for (const source of sources) {
+      const text = getLocalizedText(source)
+      if (text && typeof text === 'string' && text.trim()) {
+        return text.trim()
+      }
+    }
+    return ''
+  }
+
   // Build exercise data object (don't include correctAnswer to prevent cheating)
-  // Build exercise data object (don't include correctAnswer to prevent cheating)
+  // Check multiple possible locations for each field
   const exerciseData = {
-    type: exercise.type || exercise.exerciseType || stepType,
-    question: getLocalizedText(exercise.question) || getLocalizedText(exercise.prompt) || getLocalizedText(exercise.text) || getLocalizedText(exercise.title),
-    prompt: getLocalizedText(exercise.prompt) || getLocalizedText(exercise.instructions)
+    type: exercise.type || exercise.exerciseType || exercise.content?.type || exercise.data?.type || stepType,
+    question: extractText(
+      exercise.question,
+      exercise.prompt,
+      exercise.text,
+      exercise.title,
+      exercise.content?.question,
+      exercise.content?.prompt,
+      exercise.content?.text,
+      exercise.data?.question,
+      exercise.data?.prompt,
+      exercise.data?.text,
+      // Geometry-specific
+      exercise.problem,
+      exercise.content?.problem,
+      exercise.data?.problem
+    ),
+    prompt: extractText(
+      exercise.prompt,
+      exercise.instructions,
+      exercise.description,
+      exercise.content?.prompt,
+      exercise.content?.instructions,
+      exercise.content?.description,
+      exercise.data?.prompt,
+      exercise.data?.instructions
+    )
   }
 
   // DEBUG: Log raw exercise data to help debug missing questions
-  console.log('🚀 [FRONTEND DEBUG] Exercise Data Extraction:', {
+  console.log('[LessonPage] Exercise Data Extraction:', {
+    stepType,
     raw: exercise,
     extracted: exerciseData
   });
 
-  // Add options for multiple choice
-  if (exercise.options && Array.isArray(exercise.options)) {
-    exerciseData.options = exercise.options.map(opt =>
-      typeof opt === 'string' ? opt : getLocalizedText(opt.text) || getLocalizedText(opt.label) || opt
+  // Helper to get array from multiple possible locations
+  const getArray = (...sources) => {
+    for (const source of sources) {
+      if (Array.isArray(source) && source.length > 0) {
+        return source
+      }
+    }
+    return null
+  }
+
+  // Add options for multiple choice - check nested locations
+  const options = getArray(
+    exercise.options,
+    exercise.content?.options,
+    exercise.data?.options,
+    exercise.choices,
+    exercise.content?.choices
+  )
+  if (options) {
+    exerciseData.options = options.map(opt =>
+      typeof opt === 'string' ? opt : getLocalizedText(opt.text) || getLocalizedText(opt.label) || getLocalizedText(opt.value) || opt
     )
   }
 
-  // Add pairs for matching
-  if (exercise.pairs && Array.isArray(exercise.pairs)) {
-    exerciseData.pairs = exercise.pairs.map(pair => ({
-      name: getLocalizedText(pair.name) || getLocalizedText(pair.left),
-      formula: getLocalizedText(pair.formula) || getLocalizedText(pair.right)
+  // Add pairs for matching - check nested locations
+  const pairs = getArray(
+    exercise.pairs,
+    exercise.content?.pairs,
+    exercise.data?.pairs,
+    exercise.matches,
+    exercise.content?.matches
+  )
+  if (pairs) {
+    exerciseData.pairs = pairs.map(pair => ({
+      left: getLocalizedText(pair.name) || getLocalizedText(pair.left) || getLocalizedText(pair.term) || pair.name || pair.left,
+      right: getLocalizedText(pair.formula) || getLocalizedText(pair.right) || getLocalizedText(pair.definition) || pair.formula || pair.right
     }))
   }
 
-  // Add items for ordering/sentence order
-  if (exercise.items && Array.isArray(exercise.items)) {
-    exerciseData.items = exercise.items.map(item =>
-      typeof item === 'string' ? item : getLocalizedText(item.text) || item
+  // Add items for ordering/sentence order - check nested locations
+  const items = getArray(
+    exercise.items,
+    exercise.content?.items,
+    exercise.data?.items,
+    exercise.words,
+    exercise.content?.words,
+    exercise.data?.words,
+    exercise.correctOrder,
+    exercise.content?.correctOrder,
+    exercise.data?.correctOrder
+  )
+  if (items) {
+    exerciseData.items = items.map(item =>
+      typeof item === 'string' ? item : getLocalizedText(item.text) || getLocalizedText(item.word) || item.text || item.word || item
     )
   }
 
-  // Add correct order items for sentence order (scrambled, not the answer)
-  if (exercise.correctOrder && Array.isArray(exercise.correctOrder)) {
-    exerciseData.items = exercise.correctOrder // These are the words to arrange
+  // Add bins/categories for sorting/basket exercises - check nested locations
+  const bins = getArray(
+    exercise.bins,
+    exercise.content?.bins,
+    exercise.data?.bins,
+    exercise.baskets,
+    exercise.content?.baskets
+  )
+  if (bins) {
+    exerciseData.bins = bins.map(bin =>
+      typeof bin === 'string' ? bin : getLocalizedText(bin.label) || getLocalizedText(bin.name) || bin.label || bin.name || bin
+    )
   }
 
-  // Add bins/categories for sorting/basket exercises
-  if (exercise.bins && Array.isArray(exercise.bins)) {
-    exerciseData.bins = exercise.bins.map(bin =>
-      typeof bin === 'string' ? bin : getLocalizedText(bin.label) || getLocalizedText(bin.name) || bin
+  const categories = getArray(
+    exercise.categories,
+    exercise.content?.categories,
+    exercise.data?.categories
+  )
+  if (categories) {
+    exerciseData.categories = categories.map(cat =>
+      typeof cat === 'string' ? cat : getLocalizedText(cat.label) || getLocalizedText(cat.name) || cat.label || cat.name || cat
     )
   }
-  if (exercise.categories && Array.isArray(exercise.categories)) {
-    exerciseData.categories = exercise.categories.map(cat =>
-      typeof cat === 'string' ? cat : getLocalizedText(cat.label) || getLocalizedText(cat.name) || cat
-    )
+
+  // Add geometry-specific data
+  if (stepType === 'geometry' || stepType === 'geometry_poly' || exercise.shape || exercise.content?.shape) {
+    exerciseData.shape = exercise.shape || exercise.content?.shape || exercise.data?.shape
+    exerciseData.measurements = exercise.measurements || exercise.content?.measurements || exercise.data?.measurements || {}
+    exerciseData.values = exercise.values || exercise.content?.values || exercise.data?.values || {}
+  }
+
+  // Add histogram/data analysis specific data
+  if (stepType === 'histogram' || stepType === 'data_analysis') {
+    const chartData = exercise.chartData || exercise.content?.chartData || exercise.data?.chartData || exercise.data || []
+    if (Array.isArray(chartData)) {
+      exerciseData.chartData = chartData.map(item => ({
+        label: getLocalizedText(item.label) || item.label,
+        value: item.value
+      }))
+    }
+  }
+
+  // Add fraction-specific data
+  if (stepType === 'fraction_visual') {
+    exerciseData.fraction = exercise.fraction || exercise.content?.fraction || exercise.data?.fraction
   }
 
   return exerciseData
