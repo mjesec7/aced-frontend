@@ -460,7 +460,7 @@ const i18n = useI18n()
 const { t } = i18n
 const { language, setLanguage, currentLanguageInfo } = useLanguage();
 
-// Voice Assistant Composable
+// Voice Assistant Composable (uses useLanguage internally for language detection)
 const {
   isSpeaking,
   isListening,
@@ -472,7 +472,7 @@ const {
   analyzeAndSpeak,
   preAnalyzeSteps,
   handleVoiceQuestion
-} = useVoiceAssistant(i18n);
+} = useVoiceAssistant();
 
 // Exercise content extractor for AI analysis
 import { extractExerciseContent, extractAllExercisesFromStep } from '@/utils/exerciseContentExtractor';
@@ -860,10 +860,17 @@ function handleSpeakingEnd() {
 
 function startLesson() {
   started.value = true
-  if (steps.value[currentIndex.value]) {
-    // Get exercise context for richer AI analysis
-    const exerciseContext = getExerciseContextForAI()
-    analyzeAndSpeak(steps.value[currentIndex.value], true, exerciseContext) // isFirstStep = true
+  if (steps.value[currentIndex.value] && !isVoiceMuted.value) {
+    const step = steps.value[currentIndex.value]
+    const stepType = step?.type?.toLowerCase()
+
+    // Only auto-analyze on content steps
+    const contentStepTypes = ['explanation', 'reading', 'vocabulary', 'example']
+    const isContentStep = contentStepTypes.includes(stepType)
+
+    if (isContentStep) {
+      analyzeAndSpeak(step, true, null) // isFirstStep = true
+    }
   }
 }
 
@@ -1787,14 +1794,22 @@ watch(language, () => {
   }
 })
 
-// Watch for step changes to trigger AI speech with exercise context
+// Watch for step changes to trigger AI speech - ONLY on content steps (explanation, reading, vocabulary)
+// DO NOT auto-speak on exercise/quiz/game steps - user needs to interact first
 watch(currentIndex, (newIndex) => {
   if (started.value && steps.value[newIndex]) {
-    // Use nextTick to ensure currentStep is updated before getting exercise context
-    nextTick(() => {
-      const exerciseContext = getExerciseContextForAI()
-      analyzeAndSpeak(steps.value[newIndex], newIndex === 0, exerciseContext)
-    })
+    const step = steps.value[newIndex]
+    const stepType = step?.type?.toLowerCase()
+
+    // Only auto-analyze and speak on content steps, not interactive steps
+    const contentStepTypes = ['explanation', 'reading', 'vocabulary', 'example']
+    const isContentStep = contentStepTypes.includes(stepType)
+
+    if (isContentStep && !isVoiceMuted.value) {
+      nextTick(() => {
+        analyzeAndSpeak(step, newIndex === 0, null)
+      })
+    }
   }
 })
 
