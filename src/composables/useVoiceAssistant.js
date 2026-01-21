@@ -2,8 +2,9 @@ import { ref, onUnmounted, watch } from 'vue';
 import voiceApi from '@/api/voice';
 import chatApi from '@/api/chat';
 import { eventBus } from '@/utils/eventBus';
+import { getLanguage } from '@/composables/useLanguage';
 
-export function useVoiceAssistant(i18n) {
+export function useVoiceAssistant() {
     // State
     const isSpeaking = ref(false);
     const isListening = ref(false);
@@ -14,25 +15,18 @@ export function useVoiceAssistant(i18n) {
     const currentAnalysisId = ref(null);
     const analysisCache = new Map();
     const speechRecognition = ref(null);
-    const pendingAnalysisText = ref(null); // Store text when muted during analysis
 
-    // Get the current system language (from i18n)
+    // Get the current system language (from useLanguage composable)
     const getSystemLanguage = () => {
-        const lang = i18n.locale.value || i18n.locale || 'en';
-        console.log('[VoiceAssistant] Using system language:', lang);
+        const lang = getLanguage() || 'en';
+        console.log('[VoiceAssistant] System language:', lang);
         return lang;
     };
 
-    // Toggle voice mute (doesn't stop analysis, just prevents speaking)
+    // Toggle voice mute - just toggles state, does NOT auto-speak
     const toggleVoiceMute = () => {
         isVoiceMuted.value = !isVoiceMuted.value;
         console.log('[VoiceAssistant] Voice muted:', isVoiceMuted.value);
-
-        // If unmuting and there's pending text from analysis, speak it
-        if (!isVoiceMuted.value && pendingAnalysisText.value) {
-            speakText(pendingAnalysisText.value);
-            pendingAnalysisText.value = null;
-        }
 
         // If muting while speaking, stop the audio
         if (isVoiceMuted.value && isSpeaking.value) {
@@ -82,9 +76,8 @@ export function useVoiceAssistant(i18n) {
             return;
         }
 
-        if (!speechRecognition.value) {
-            initializeSpeechRecognition();
-        }
+        // Re-initialize speech recognition to get fresh language setting
+        initializeSpeechRecognition();
 
         if (isListening.value) return;
 
@@ -98,23 +91,32 @@ export function useVoiceAssistant(i18n) {
         }
     };
 
+    // Toggle microphone - prioritizes user speech over AI
     const toggleMicrophone = () => {
         if (!isSupported.value) {
             alert('Speech recognition is not supported in this browser.');
             return;
         }
 
-        if (isSpeaking.value) {
-            stopAudio();
-            startListening();
-            return;
-        }
-
+        // If currently listening, stop
         if (isListening.value) {
             stopListening();
             return;
         }
 
+        // PRIORITY: User speech takes precedence
+        // 1. Stop AI if speaking
+        if (isSpeaking.value) {
+            stopAudio();
+        }
+
+        // 2. Auto-unmute if muted (user wants to interact)
+        if (isVoiceMuted.value) {
+            isVoiceMuted.value = false;
+            console.log('[VoiceAssistant] Auto-unmuted for microphone');
+        }
+
+        // 3. Start listening
         startListening();
     };
 
