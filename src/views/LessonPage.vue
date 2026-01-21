@@ -214,7 +214,6 @@
         :is-voice-muted="isVoiceMuted"
         @exit="confirmExit"
         @report-problem="openProblemReportModal"
-        @toggle-speech="handleToggleSpeech"
         @toggle-voice-input="toggleMicrophone"
         @toggle-voice-mute="handleToggleVoiceMute"
       />
@@ -472,8 +471,7 @@ const {
   stopAudio,
   analyzeAndSpeak,
   preAnalyzeSteps,
-  handleVoiceQuestion,
-  setLessonLanguage
+  handleVoiceQuestion
 } = useVoiceAssistant(i18n);
 
 // Exercise content extractor for AI analysis
@@ -792,23 +790,13 @@ async function loadLesson() {
         estimatedDuration: lessonData.timing?.estimatedDuration || 0
       }
 
-      // Extract and set lesson language for AI speaker
-      // Lesson may have a specific language that should be used for TTS
-      const lessonLang = lessonData.language ||
-                         lessonData.locale ||
-                         lessonData.lang ||
-                         lessonData.metadata?.language ||
-                         language.value; // Fall back to system language
-      setLessonLanguage(lessonLang);
-      console.log('[LessonPage] Lesson language set to:', lessonLang);
-
       // Extract and process steps with localization
       const rawSteps = lessonData.steps || []
       steps.value = rawSteps.map((step, index) => processStepWithLocalization(step, index)).filter(Boolean)
 
-      // Trigger pre-analysis in the background
+      // Trigger pre-analysis in the background (uses system language from i18n)
       if (steps.value.length > 0) {
-        preAnalyzeSteps(steps.value, lessonLang)
+        preAnalyzeSteps(steps.value, language.value)
       }
     } else {
       throw new Error(result.error || 'Failed to load lesson data')

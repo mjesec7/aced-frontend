@@ -26,59 +26,54 @@
       </button>
 
       <!-- Analyzing Indicator -->
-      <div v-if="isAnalyzing" class="analyzing-indicator-header" title="AI is analyzing...">
-        🧠
+      <div v-if="isAnalyzing && !isVoiceMuted" class="analyzing-indicator-header" title="AI is analyzing...">
+        <svg class="analyzing-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" opacity="0.3"/>
+          <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="spinner"/>
+        </svg>
       </div>
 
-      <!-- Voice Mute Toggle Button (mutes speaker without stopping analysis) -->
+      <!-- Single Speaker Button - controls mute/unmute -->
       <button
         v-if="language !== 'uz'"
-        class="mute-btn-header"
-        :class="{ 'is-muted': isVoiceMuted }"
+        class="speaker-btn-header"
+        :class="{
+          'is-speaking': isSpeaking && !isVoiceMuted,
+          'is-muted': isVoiceMuted
+        }"
         @click="$emit('toggle-voice-mute')"
-        :title="isVoiceMuted ? 'Unmute AI Voice' : 'Mute AI Voice'"
+        :title="isVoiceMuted ? 'Turn on AI voice' : (isSpeaking ? 'AI is speaking (click to mute)' : 'AI voice is on (click to mute)')"
       >
-        <svg v-if="isVoiceMuted" class="mute-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <!-- Muted speaker icon -->
+        <!-- Muted state -->
+        <svg v-if="isVoiceMuted" class="speaker-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M11 5L6 9H2V15H6L11 19V5Z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
           <line x1="23" y1="9" x2="17" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           <line x1="17" y1="9" x2="23" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
-        <svg v-else class="mute-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <!-- Unmuted speaker icon -->
+        <!-- Speaking state (animated waves) -->
+        <svg v-else-if="isSpeaking" class="speaker-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M11 5L6 9H2V15H6L11 19V5Z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path class="wave wave-1" d="M15.54 8.46a5 5 0 0 1 0 7.07" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path class="wave wave-2" d="M19.07 4.93a10 10 0 0 1 0 14.14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <!-- Ready state (speaker with single wave) -->
+        <svg v-else class="speaker-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M11 5L6 9H2V15H6L11 19V5Z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           <path d="M15.54 8.46a5 5 0 0 1 0 7.07" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </button>
 
-      <!-- Speaker Button (AI Status/Control - plays/stops speech) -->
-      <button
-        v-if="language !== 'uz'"
-        class="speaker-btn-header"
-        :class="{ 'is-speaking': isSpeaking, 'is-muted': isVoiceMuted }"
-        @click="$emit('toggle-speech')"
-        :title="isSpeaking ? 'Stop AI Speech' : 'Play AI Speech'"
-        :disabled="isVoiceMuted"
-      >
-        <svg v-if="isSpeaking" class="speaker-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M11 5L6 9H2V15H6L11 19V5Z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path class="wave wave-1" d="M15.54 8.46a5 5 0 0 1 0 7.07" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path class="wave wave-2" d="M19.07 4.93a10 10 0 0 1 0 14.14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <svg v-else class="speaker-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M11 5L6 9H2V15H6L11 19V5Z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <line x1="23" y1="9" x2="17" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <line x1="17" y1="9" x2="23" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-
-      <!-- Warning for Uzbek (Voice Disabled) -->
-      <div 
+      <!-- Uzbek language indicator -->
+      <div
         v-if="language === 'uz'"
-        class="warning-icon-header"
-        title="Voice explanation not available in Uzbek"
+        class="uzbek-indicator-header"
+        title="Voice not available in Uzbek"
       >
-        🔇
+        <svg class="speaker-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M11 5L6 9H2V15H6L11 19V5Z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.3"/>
+          <line x1="23" y1="9" x2="17" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+          <line x1="17" y1="9" x2="23" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+        </svg>
       </div>
       
       <!-- Progress Bar with Markers -->
@@ -197,7 +192,7 @@ export default {
       default: false
     }
   },
-  emits: ['exit', 'report-problem', 'toggle-speech', 'toggle-voice-input', 'toggle-voice-mute'],
+  emits: ['exit', 'report-problem', 'toggle-voice-input', 'toggle-voice-mute'],
   setup() {
     const { language } = useLanguage();
     return { language };
@@ -567,52 +562,37 @@ export default {
   margin: 0 4px;
 }
 
-@keyframes brain-pulse {
-  0%, 100% { transform: scale(1); opacity: 0.8; }
-  50% { transform: scale(1.2); opacity: 1; }
-}
-
-/* Mute Button */
-.mute-btn-header {
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  color: #64748b;
-  border: 2px solid #e2e8f0;
-  cursor: pointer;
-  border-radius: 10px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
+/* Analyzing Indicator */
+.analyzing-indicator-header {
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: #8b5cf6;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  position: relative;
-  overflow: hidden;
 }
 
-.mute-btn-header:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+.analyzing-icon {
+  width: 20px;
+  height: 20px;
 }
 
-.mute-btn-header.is-muted {
-  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
-  color: white;
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+.analyzing-icon .spinner {
+  transform-origin: center;
+  animation: spin 1s linear infinite;
 }
 
-.mute-icon {
-  width: 18px;
-  height: 18px;
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
+/* Speaker Button - Single unified control */
 .speaker-btn-header {
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  color: #64748b;
-  border: 2px solid #e2e8f0;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
   cursor: pointer;
   border-radius: 10px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -623,25 +603,30 @@ export default {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
   position: relative;
   overflow: hidden;
 }
 
-.speaker-btn-header:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.speaker-btn-header:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
 }
 
-.speaker-btn-header.is-muted {
-  opacity: 0.5;
-}
-
+/* Speaking state - green with animation */
 .speaker-btn-header.is-speaking {
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+/* Muted state - gray/red */
+.speaker-btn-header.is-muted {
+  background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+  box-shadow: 0 2px 8px rgba(100, 116, 139, 0.3);
+}
+
+.speaker-btn-header.is-muted:hover {
+  background: linear-gradient(135deg, #a1a1aa 0%, #71717a 100%);
 }
 
 .speaker-icon {
@@ -654,32 +639,30 @@ export default {
 }
 
 .is-speaking .wave-1 {
-  animation: wave-pulse 1.5s infinite ease-in-out;
+  animation: wave-pulse 1s infinite ease-in-out;
 }
 
 .is-speaking .wave-2 {
-  animation: wave-pulse 1.5s infinite ease-in-out 0.2s;
+  animation: wave-pulse 1s infinite ease-in-out 0.15s;
 }
 
 @keyframes wave-pulse {
-  0%, 100% { opacity: 0.3; transform: scale(0.9); }
-  50% { opacity: 1; transform: scale(1.1); }
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
 }
 
-/* Warning Icon */
-.warning-icon-header {
-  background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
-  color: white;
-  border-radius: 8px;
-  width: 32px;
-  height: 32px;
+/* Uzbek Indicator (voice not available) */
+.uzbek-indicator-header {
+  background: linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%);
+  color: #6b7280;
+  border-radius: 10px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  font-size: 1rem;
   cursor: help;
-  box-shadow: 0 2px 6px rgba(100, 116, 139, 0.3);
 }
 
 .streak-display, .points-display {
