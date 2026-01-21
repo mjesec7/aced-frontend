@@ -9,7 +9,6 @@ export function useVoiceAssistant(i18n) {
     const isListening = ref(false);
     const isAnalyzing = ref(false);
     const isVoiceMuted = ref(false); // Mute voice without stopping analysis
-    const lessonLanguage = ref(null); // Language from lesson, overrides system language
     const currentAudio = ref(null);
     const currentAudioUrl = ref(null);
     const currentAnalysisId = ref(null);
@@ -17,18 +16,11 @@ export function useVoiceAssistant(i18n) {
     const speechRecognition = ref(null);
     const pendingAnalysisText = ref(null); // Store text when muted during analysis
 
-    // Set lesson language (called from LessonPage when lesson loads)
-    const setLessonLanguage = (lang) => {
-        lessonLanguage.value = lang;
-        console.log('[VoiceAssistant] Lesson language set to:', lang);
-    };
-
-    // Get the effective language (lesson language > system language)
-    const getEffectiveLanguage = () => {
-        if (lessonLanguage.value) {
-            return lessonLanguage.value;
-        }
-        return i18n.locale.value || i18n.locale;
+    // Get the current system language (from i18n)
+    const getSystemLanguage = () => {
+        const lang = i18n.locale.value || i18n.locale || 'en';
+        console.log('[VoiceAssistant] Using system language:', lang);
+        return lang;
     };
 
     // Toggle voice mute (doesn't stop analysis, just prevents speaking)
@@ -139,7 +131,7 @@ export function useVoiceAssistant(i18n) {
 
         try {
             // Use effective language (lesson language > system language)
-            const currentLang = options.language || getEffectiveLanguage();
+            const currentLang = options.language || getSystemLanguage();
             console.log('[VoiceAssistant] Speaking in language:', currentLang);
             const audioBlob = await voiceApi.streamAudio(text, { language: currentLang });
 
@@ -206,7 +198,7 @@ export function useVoiceAssistant(i18n) {
         }
 
         speechRecognition.value = new SpeechRecognition();
-        const currentLang = getEffectiveLanguage();
+        const currentLang = getSystemLanguage();
         console.log('[VoiceAssistant] Initializing speech recognition with language:', currentLang);
 
         // Map languages to BCP 47 tags
@@ -310,7 +302,7 @@ export function useVoiceAssistant(i18n) {
         if (!content || content.length < 20) return;
 
         // Use effective language (lesson language > system language)
-        const currentLang = getEffectiveLanguage();
+        const currentLang = getSystemLanguage();
         if (currentLang === 'uz') return; // Uzbek not supported
 
         const analysisId = Date.now();
@@ -406,7 +398,6 @@ export function useVoiceAssistant(i18n) {
         isAnalyzing,
         isVoiceMuted,
         isSupported,
-        lessonLanguage,
         // Methods
         stopAudio,
         startListening,
@@ -416,8 +407,6 @@ export function useVoiceAssistant(i18n) {
         speakText,
         analyzeAndSpeak,
         preAnalyzeSteps,
-        handleVoiceQuestion,
-        setLessonLanguage,
-        getEffectiveLanguage
+        handleVoiceQuestion
     };
 }
