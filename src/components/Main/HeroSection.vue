@@ -18,7 +18,7 @@
           <!-- Badge -->
           <div class="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-violet-50 rounded-full border border-violet-100 mb-6 sm:mb-8">
             <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-            <span class="text-xs sm:text-sm font-medium text-violet-700">{{ $t('heroSection.studentsLearning', { count: '2,800' }) }}</span>
+            <span class="text-xs sm:text-sm font-medium text-violet-700">{{ $t('heroSection.platformLive') }}</span>
           </div>
 
           <!-- Main heading + Subtitle -->
@@ -52,39 +52,39 @@
             </button>
           </div>
 
-          <!-- Stats -->
+          <!-- Features -->
           <div class="flex flex-wrap gap-4 sm:gap-6 lg:gap-8 pt-6 border-t border-gray-100">
             <div class="flex items-center gap-2 sm:gap-3">
               <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-violet-100 flex items-center justify-center shrink-0">
                 <svg class="w-5 h-5 sm:w-6 sm:h-6 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                 </svg>
               </div>
               <div>
-                <div class="text-lg sm:text-xl font-bold text-gray-900">100+</div>
-                <div class="text-xs sm:text-sm text-gray-500">{{ $t('heroSection.courses') }}</div>
+                <div class="text-lg sm:text-xl font-bold text-gray-900">{{ $t('heroSection.aiPowered') }}</div>
+                <div class="text-xs sm:text-sm text-gray-500">{{ $t('heroSection.aiPoweredDesc') }}</div>
               </div>
             </div>
             <div class="flex items-center gap-2 sm:gap-3">
               <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-orange-100 flex items-center justify-center shrink-0">
                 <svg class="w-5 h-5 sm:w-6 sm:h-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
                 </svg>
               </div>
               <div>
-                <div class="text-lg sm:text-xl font-bold text-gray-900">24/7</div>
-                <div class="text-xs sm:text-sm text-gray-500">{{ $t('heroSection.aiSupport') }}</div>
+                <div class="text-lg sm:text-xl font-bold text-gray-900">{{ $t('heroSection.interactive') }}</div>
+                <div class="text-xs sm:text-sm text-gray-500">{{ $t('heroSection.interactiveDesc') }}</div>
               </div>
             </div>
             <div class="flex items-center gap-2 sm:gap-3">
               <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-green-100 flex items-center justify-center shrink-0">
                 <svg class="w-5 h-5 sm:w-6 sm:h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
                 </svg>
               </div>
               <div>
-                <div class="text-lg sm:text-xl font-bold text-gray-900">95%</div>
-                <div class="text-xs sm:text-sm text-gray-500">{{ $t('heroSection.completion') }}</div>
+                <div class="text-lg sm:text-xl font-bold text-gray-900">{{ $t('heroSection.multiLang') }}</div>
+                <div class="text-xs sm:text-sm text-gray-500">{{ $t('heroSection.multiLangDesc') }}</div>
               </div>
             </div>
           </div>
@@ -141,21 +141,19 @@
               </div>
             </div>
 
-            <!-- Bottom stats -->
+            <!-- Bottom features -->
             <div class="mt-5 xl:mt-6 pt-5 xl:pt-6 border-t border-gray-100 flex items-center justify-between">
               <div class="flex items-center gap-2">
-                <div class="flex -space-x-2">
-                  <div class="w-7 xl:w-8 h-7 xl:h-8 bg-violet-200 rounded-full border-2 border-white"></div>
-                  <div class="w-7 xl:w-8 h-7 xl:h-8 bg-amber-200 rounded-full border-2 border-white"></div>
-                  <div class="w-7 xl:w-8 h-7 xl:h-8 bg-green-200 rounded-full border-2 border-white"></div>
-                </div>
-                <span class="text-xs xl:text-sm text-gray-500">2,800+ {{ $t('heroSection.learners') }}</span>
-              </div>
-              <div class="flex items-center gap-1 text-amber-500">
-                <svg class="w-4 xl:w-5 h-4 xl:h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                <svg class="w-4 xl:w-5 h-4 xl:h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span class="font-semibold text-sm xl:text-base">4.9</span>
+                <span class="text-xs xl:text-sm text-gray-500">{{ $t('heroSection.freeToStart') }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <svg class="w-4 xl:w-5 h-4 xl:h-5 text-violet-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                <span class="text-xs xl:text-sm text-gray-500">{{ $t('heroSection.mobileReady') }}</span>
               </div>
             </div>
           </div>
