@@ -181,6 +181,47 @@
         </div>
       </div>
 
+      <!-- Learning Journey / Level Pathway Section -->
+      <div class="section-card level-pathway-section">
+        <div class="section-header">
+          <div class="section-icon-badge pathway">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 20V10M12 20V4M6 20v-6"/>
+            </svg>
+          </div>
+          <div>
+            <h2 class="section-title">🛤️ {{ $t('analytics.learningJourney') }}</h2>
+            <p class="section-subtitle">{{ $t('analytics.trackYourPath') }}</p>
+          </div>
+        </div>
+
+        <LevelPathway
+          v-if="currentCourse && currentCourseLessons.length > 0"
+          :key="currentCourse._id || 'pathway'"
+          :lessons="currentCourseLessons"
+          :user-progress="userProgressData"
+          :current-level-prop="rewards?.level || 1"
+          :current-x-p-prop="rewards?.totalPoints || 0"
+          :streak-prop="analytics.streakDays || 0"
+          @lesson-click="handleLessonClick"
+          @continue="handleContinueLesson"
+        />
+
+        <!-- No courses state -->
+        <div v-else class="empty-pathway-card">
+          <div class="empty-pathway-icon">🎯</div>
+          <h3 class="empty-pathway-title">{{ $t('analytics.startYourJourney') }}</h3>
+          <p class="empty-pathway-text">{{ $t('analytics.addCourseToTrack') }}</p>
+          <router-link to="/profile/catalogue" class="add-course-pathway-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            {{ $t('analytics.browseCourses') }}
+          </router-link>
+        </div>
+      </div>
+
       <!-- Original Stats Grid -->
       <div class="stats-grid">
         <div v-for="stat in statCards" :key="stat.id" class="stat-card">
@@ -277,18 +318,26 @@
 
 <script>
 import { auth } from '@/firebase';
-import { 
-  getUserAnalytics, 
+import {
+  getUserAnalytics,
   getLessonById,
+  getUserStudyList,
+  getUserProgress,
+  getLessonsByTopic,
   // 🧬 NEW: Learning DNA & Gamification
   getLearningProfile,
   getPersonalizedRecommendations,
   getUserRewards,
   updateStreak
 } from '@/api';
+import LevelPathway from '@/components/PlatformMode/LevelPathway.vue';
 
 export default {
   name: 'UserAnalyticsPanel',
+
+  components: {
+    LevelPathway
+  },
   data() {
     return {
       loading: true,
@@ -302,7 +351,11 @@ export default {
       learningProfile: null,
       recommendations: null,
       rewards: null,
-      
+
+      // Level Pathway data
+      studyList: [],
+      userProgressData: [],
+
       analytics: {
         studyDays: 0,
         completedLessons: 0,
@@ -332,6 +385,15 @@ export default {
     hasAnyData() {
       const { totalLessonsDone, studyDays, subjects } = this.analytics;
       return totalLessonsDone > 0 || studyDays > 0 || subjects?.length > 0;
+    },
+
+    currentCourse() {
+      // Get the first course from study list that has lessons
+      return this.studyList.find(course => course.lessons && course.lessons.length > 0) || this.studyList[0];
+    },
+
+    currentCourseLessons() {
+      return this.currentCourse?.lessons || [];
     },
 
     statCards() {
@@ -427,11 +489,13 @@ export default {
 }
 
         // Load all data in parallel
-        const [analyticsRes, profileRes, rewardsRes, recommendationsRes] = await Promise.allSettled([
+        const [analyticsRes, profileRes, rewardsRes, recommendationsRes, studyListRes, progressRes] = await Promise.allSettled([
           getUserAnalytics(currentUser.uid),
           getLearningProfile(currentUser.uid),
           getUserRewards(currentUser.uid),
-          getPersonalizedRecommendations(currentUser.uid)
+          getPersonalizedRecommendations(currentUser.uid),
+          getUserStudyList(currentUser.uid),
+          getUserProgress(currentUser.uid)
         ]);
 
         // Handle analytics
@@ -456,7 +520,21 @@ export default {
         // Handle recommendations
         if (recommendationsRes.status === 'fulfilled' && recommendationsRes.value?.success) {
           this.recommendations = recommendationsRes.value.recommendation;
-}
+        }
+
+        // Handle study list for Level Pathway
+        if (studyListRes.status === 'fulfilled' && studyListRes.value?.success) {
+          this.studyList = studyListRes.value.data || [];
+          // Load lessons for the first course if available
+          if (this.studyList.length > 0) {
+            await this.loadCourseLessons();
+          }
+        }
+
+        // Handle user progress data
+        if (progressRes.status === 'fulfilled' && progressRes.value?.success) {
+          this.userProgressData = progressRes.value.data || [];
+        }
 
       } catch (err) {
 const status = err.response?.status;
@@ -471,6 +549,35 @@ const status = err.response?.status;
 
     async loadAnalytics() {
       await this.loadAllData();
+    },
+
+    async loadCourseLessons() {
+      if (this.studyList.length === 0) return;
+
+      try {
+        const course = this.studyList[0];
+        const topicId = course.topicId || course._id;
+        if (!topicId) return;
+
+        const lessonsRes = await getLessonsByTopic(topicId);
+        if (lessonsRes?.data) {
+          this.studyList[0].lessons = lessonsRes.data;
+        }
+      } catch (error) {
+        // Silently handle error
+      }
+    },
+
+    handleLessonClick(lesson) {
+      if (lesson && lesson._id) {
+        this.$router.push(`/lesson/${lesson._id}`);
+      }
+    },
+
+    handleContinueLesson(lesson) {
+      if (lesson && lesson._id) {
+        this.$router.push(`/lesson/${lesson._id}`);
+      }
     },
 
     // 🧬 NEW: Learning DNA helper methods
@@ -981,6 +1088,63 @@ const fallbackName = `${this.$t('analytics.lesson')} (${lessonId.slice(-6)})`;
 
 .section-icon-badge.rewards {
   background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.section-icon-badge.pathway {
+  background: linear-gradient(135deg, #06b6d4, #0891b2);
+}
+
+/* Level Pathway Section */
+.level-pathway-section {
+  background: linear-gradient(135deg, #ecfeff 0%, #cffafe 100%);
+  border: 1px solid #a5f3fc;
+}
+
+.empty-pathway-card {
+  text-align: center;
+  padding: 3rem 2rem;
+}
+
+.empty-pathway-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.empty-pathway-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 0.5rem 0;
+}
+
+.empty-pathway-text {
+  font-size: 0.9375rem;
+  color: #6b7280;
+  margin: 0 0 1.5rem 0;
+}
+
+.add-course-pathway-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #06b6d4, #0891b2);
+  color: white;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.add-course-pathway-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+}
+
+.add-course-pathway-btn svg {
+  width: 1rem;
+  height: 1rem;
 }
 
 .level-section {

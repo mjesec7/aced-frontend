@@ -1,93 +1,130 @@
 <template>
-  <div class="min-h-screen bg-white">
+  <div class="catalogue-page">
     <!-- Clean Header -->
-    <div class="max-w-6xl mx-auto px-6 pt-8 pb-6">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-4">
-          <div class="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center">
-            <span class="text-2xl">📚</span>
-          </div>
-          <div>
-            <h1 class="text-2xl font-bold text-slate-800">{{ $t('catalogue.title') }}</h1>
-            <p class="text-slate-500 text-sm">{{ filteredCourses.length }} {{ $t('catalogue.courses') }}</p>
-          </div>
+    <div class="catalogue-header">
+      <div class="header-content">
+        <div class="header-left">
+          <h1 class="page-title">{{ $t('catalogue.title') }}</h1>
+          <p class="page-subtitle">{{ $t('catalogue.subtitle') || 'From quick bites to deep dives.' }}</p>
         </div>
 
-        <!-- Status + Stats -->
-        <div class="hidden md:flex items-center gap-3">
-          <div class="px-4 py-2 rounded-full bg-purple-50 text-purple-600 text-sm font-medium">
-            📋 {{ studyPlanTopics.length }} {{ $t('catalogue.inPlan') }}
-          </div>
-          <div 
-            class="px-4 py-2 rounded-full text-sm font-bold"
-            :class="{
-              'bg-gray-100 text-gray-600': userStatus === 'free',
-              'bg-amber-100 text-amber-700': userStatus === 'start' || userStatus === 'pro'
-            }"
+        <!-- Study Mode Tabs -->
+        <div class="study-mode-tabs">
+          <button
+            class="mode-tab"
+            :class="{ active: studyModeFilter === 'all' }"
+            @click="studyModeFilter = 'all'"
           >
-            {{ userStatus === 'pro' ? '⭐ Pro' : userStatus === 'start' ? '🌟 Start' : '🆓 Free' }}
+            {{ $t('catalogue.all') || 'All' }}
+          </button>
+          <button
+            class="mode-tab"
+            :class="{ active: studyModeFilter === 'quick-skill' }"
+            @click="studyModeFilter = 'quick-skill'"
+          >
+            {{ $t('catalogue.quickSkills') || 'Quick Skills' }}
+          </button>
+          <button
+            class="mode-tab"
+            :class="{ active: studyModeFilter === 'mastery-path' }"
+            @click="studyModeFilter = 'mastery-path'"
+          >
+            {{ $t('catalogue.deepDives') || 'Deep Dives' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Continue Learning Section (if user has courses in progress) -->
+    <div v-if="inProgressCourses.length > 0" class="continue-section">
+      <div class="section-header-row">
+        <div class="section-title-row">
+          <span class="section-icon">🕐</span>
+          <h2 class="section-title">{{ $t('catalogue.continueLearning') || 'Continue Learning' }}</h2>
+        </div>
+      </div>
+      <div class="continue-cards">
+        <div
+          v-for="course in inProgressCourses.slice(0, 2)"
+          :key="course.topicId + '-continue'"
+          class="continue-card"
+          @click="handleCourseAccess(course.topicId, course.type)"
+        >
+          <div class="continue-card-thumbnail">
+            <img v-if="course.thumbnail" :src="course.thumbnail" :alt="getTopicName(course)" />
+            <div v-else class="thumbnail-placeholder">
+              <span>{{ getSubjectEmoji(course.subject) }}</span>
+            </div>
+          </div>
+          <div class="continue-card-content">
+            <span class="study-mode-badge-small" :class="getStudyMode(course)">
+              {{ getStudyModeLabel(course) }}
+            </span>
+            <h3 class="continue-card-title">{{ getTopicName(course) }}</h3>
+            <div class="continue-card-progress">
+              <div class="progress-bar">
+                <div class="progress-fill" :style="{ width: course.progress + '%' }"></div>
+              </div>
+              <span class="progress-text">{{ course.completedLessons || Math.round(course.progress * course.lessonCount / 100) }}/{{ course.lessonCount }} {{ $t('catalogue.lessons') }}</span>
+            </div>
+          </div>
+          <div class="continue-card-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
           </div>
         </div>
       </div>
     </div>
 
+    <!-- Recommended Section -->
+    <div class="recommended-section">
+      <div class="section-header-row">
+        <div class="section-title-row">
+          <span class="section-icon">💡</span>
+          <h2 class="section-title">{{ $t('catalogue.recommendedForYou') || 'Recommended for You' }}</h2>
+        </div>
+      </div>
+    </div>
+
     <!-- Filter Bar -->
-    <div class="max-w-6xl mx-auto px-6 pb-6">
-      <div class="flex flex-wrap items-center gap-3">
+    <div class="filter-bar">
+      <div class="filter-content">
         <!-- Search -->
-        <div class="relative flex-1 min-w-64">
-          <input
-            v-model="searchQuery"
-            type="text"
-            class="w-full px-4 py-2.5 pl-10 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all"
-            :placeholder="$t('catalogue.findCourse')"
-          />
-          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <div class="search-wrapper">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="8"/>
             <path d="m21 21-4.35-4.35"/>
           </svg>
+          <input
+            v-model="searchQuery"
+            type="text"
+            class="search-input"
+            :placeholder="$t('catalogue.findCourse')"
+          />
         </div>
 
         <!-- Filter Pills -->
-        <select
-          v-model="selectedSubjectFilter"
-          class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-slate-600 bg-white focus:outline-none focus:border-indigo-400 cursor-pointer hover:border-gray-300 transition-all"
-        >
+        <select v-model="selectedSubjectFilter" class="filter-select">
           <option :value="null">{{ $t('catalogue.allSubjects') }}</option>
           <option v-for="subject in availableSubjects" :key="subject" :value="subject">{{ subject }}</option>
         </select>
 
-        <select
-          v-model="selectedLevelFilter"
-          class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-slate-600 bg-white focus:outline-none focus:border-indigo-400 cursor-pointer hover:border-gray-300 transition-all"
-        >
+        <select v-model="selectedLevelFilter" class="filter-select">
           <option :value="null">{{ $t('catalogue.allLevels') }}</option>
           <option v-for="level in availableLevels" :key="level" :value="level">{{ $t('dashboard.level') }} {{ level }}</option>
-        </select>
-
-        <select
-          v-model="typeFilter"
-          class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-slate-600 bg-white focus:outline-none focus:border-indigo-400 cursor-pointer hover:border-gray-300 transition-all"
-        >
-          <option value="all">{{ $t('catalogue.allTypes') }}</option>
-          <option value="free">{{ $t('catalogue.free') }}</option>
-          <option value="premium">{{ $t('catalogue.premium') }}</option>
         </select>
 
         <button
           v-if="hasActiveFilters"
           @click="clearFilters"
-          class="px-4 py-2.5 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 transition-all"
+          class="clear-filters-btn"
         >
           {{ $t('catalogue.clear') }}
         </button>
 
-        <button 
-          @click="shuffleCourses"
-          class="p-2.5 rounded-xl border border-gray-200 text-slate-500 hover:border-gray-300 hover:text-slate-700 transition-all"
-          title="Shuffle"
-        >
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <button @click="shuffleCourses" class="shuffle-btn" title="Shuffle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="16 3 21 3 21 8"/>
             <line x1="4" y1="20" x2="21" y2="3"/>
             <polyline points="21 16 21 21 16 21"/>
@@ -99,22 +136,22 @@
     </div>
 
     <!-- Loading -->
-    <div v-if="isLoading" class="flex flex-col items-center justify-center py-24">
-      <div class="w-8 h-8 border-2 border-indigo-200 border-t-indigo-500 rounded-full animate-spin"></div>
-      <p class="mt-4 text-slate-500 text-sm">{{ $t('catalogue.loadingCourses') }}</p>
+    <div v-if="isLoading" class="loading-state">
+      <div class="spinner"></div>
+      <p>{{ $t('catalogue.loadingCourses') }}</p>
     </div>
 
     <!-- Content -->
-    <main v-else class="max-w-6xl mx-auto px-6 pb-12">
+    <main v-else>
       <!-- Empty State -->
-      <div v-if="!filteredCourses.length" class="text-center py-24">
-        <div class="text-6xl mb-4">🔍</div>
-        <h3 class="text-lg font-semibold text-slate-800 mb-2">{{ $t('catalogue.noCoursesFound') }}</h3>
-        <p class="text-slate-500 text-sm">{{ $t('catalogue.tryAdjustingFilters') }}</p>
+      <div v-if="!filteredCourses.length" class="empty-state">
+        <div class="empty-icon">🔍</div>
+        <h3 class="empty-title">{{ $t('catalogue.noCoursesFound') }}</h3>
+        <p class="empty-text">{{ $t('catalogue.tryAdjustingFilters') }}</p>
       </div>
 
       <!-- School Mode: Grouped by Subject -->
-      <div v-else-if="isSchoolMode" class="space-y-10">
+      <div v-else-if="isSchoolMode" class="subject-groups">
         <section v-for="(courses, subject) in coursesBySubject" :key="subject">
           <div class="flex items-center gap-3 mb-4">
             <span class="text-2xl">{{ getSubjectEmoji(subject) }}</span>
@@ -205,89 +242,65 @@
         </section>
       </div>
 
-      <!-- Study Centre Mode: Grid with Pagination -->
+      <!-- Course Grid -->
       <div v-else>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        <div class="course-grid">
           <article
             v-for="course in paginatedCourses"
             :key="`${course.topicId}-${language}`"
             @click="handleCourseAccess(course.topicId, course.type)"
-            class="group p-5 rounded-2xl border border-gray-100 hover:border-indigo-200 hover:scale-[1.02] transition-all duration-200 cursor-pointer bg-white"
+            class="course-card"
+            :class="getStudyMode(course)"
           >
-            <!-- Top Row -->
-            <div class="flex items-center justify-between mb-3">
-              <div class="flex items-center gap-2">
-                <span class="text-lg">{{ getSubjectEmoji(course.subject) }}</span>
-                <span class="text-xs font-medium text-slate-500 uppercase tracking-wide">{{ course.subject }}</span>
+            <!-- Card Thumbnail -->
+            <div class="card-thumbnail">
+              <img v-if="course.thumbnail" :src="course.thumbnail" :alt="getTopicName(course)" />
+              <div v-else class="thumbnail-placeholder-large">
+                <span>{{ getSubjectEmoji(course.subject) }}</span>
               </div>
-              <div class="flex items-center gap-2">
-                <span 
-                  class="px-2 py-1 rounded-lg text-xs font-bold"
-                  :class="course.type === 'free' ? 'bg-gray-100 text-gray-500' : 'bg-amber-100 text-amber-700'"
-                >
-                  {{ course.type === 'free' ? 'FREE' : 'PRO' }}
-                </span>
-                <button 
-                  @click.stop="addToStudyPlan(course)"
-                  :disabled="course.inStudyPlan"
-                  class="p-1.5 rounded-lg transition-all"
-                  :class="course.inStudyPlan ? 'bg-indigo-100 text-indigo-500' : 'hover:bg-gray-100 text-gray-400 hover:text-gray-600'"
-                >
-                  <svg class="w-4 h-4" viewBox="0 0 24 24" :fill="course.inStudyPlan ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2">
-                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                  </svg>
-                </button>
+              <!-- Study Mode Badge -->
+              <div class="study-mode-badge-card" :class="getStudyMode(course)">
+                {{ getStudyModeLabel(course) }}
               </div>
             </div>
 
-            <!-- Title -->
-            <h3 class="font-semibold text-slate-800 mb-2 line-clamp-2 group-hover:text-indigo-600 transition-colors">
-              {{ getTopicName(course) }}
-            </h3>
+            <!-- Card Content -->
+            <div class="card-content">
+              <!-- Title -->
+              <h3 class="card-title">{{ getTopicName(course) }}</h3>
 
-            <!-- Level -->
-            <div class="text-xs text-slate-500 mb-3">{{ $t('dashboard.level') }} {{ course.level }} · {{ getLevelDescription(course.level) }}</div>
-
-            <!-- Meta -->
-            <div class="flex items-center gap-4 text-xs text-slate-500 mb-4">
-              <span class="flex items-center gap-1">
-                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                </svg>
-                {{ course.lessonCount }} {{ $t('catalogue.lessons') }}
-              </span>
-              <span class="flex items-center gap-1">
-                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="10"/>
-                  <polyline points="12 6 12 12 16 14"/>
-                </svg>
-                {{ course.totalTime }}m
-              </span>
-            </div>
-
-            <!-- Progress Bar -->
-            <div class="mb-3">
-              <div class="flex justify-between text-xs mb-1">
-                <span class="text-slate-400">{{ $t('catalogue.progress') }}</span>
-                <span class="font-medium text-slate-600">{{ course.progress }}%</span>
+              <!-- Author -->
+              <div class="card-author">
+                <span class="author-by">by</span>
+                <span class="author-name">{{ course.instructor?.name || course.author || 'ACED' }}</span>
               </div>
-              <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                <div 
-                  class="h-full rounded-full transition-all duration-500"
-                  :class="getProgressColor(course.progress)"
-                  :style="{ width: course.progress + '%' }"
-                ></div>
-              </div>
-            </div>
 
-            <!-- Action -->
-            <div class="pt-3 border-t border-gray-50 flex justify-end">
-              <span class="text-sm font-medium text-indigo-500 group-hover:text-indigo-600 flex items-center gap-1">
-                {{ getButtonText(course.progress) }}
-                <svg class="w-4 h-4 group-hover:translate-x-0.5 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M5 12h14M12 5l7 7-7 7"/>
+              <!-- Progress -->
+              <div class="card-progress">
+                <span class="progress-label">{{ $t('catalogue.progress') }}</span>
+                <div class="progress-bar-wrapper">
+                  <div class="progress-bar-bg">
+                    <div
+                      class="progress-bar-fill"
+                      :class="getProgressColorClass(course.progress)"
+                      :style="{ width: course.progress + '%' }"
+                    ></div>
+                  </div>
+                  <span class="progress-percent">{{ course.progress }}%</span>
+                </div>
+              </div>
+
+              <!-- Add to plan button -->
+              <button
+                @click.stop="addToStudyPlan(course)"
+                :disabled="course.inStudyPlan"
+                class="add-plan-btn"
+                :class="{ added: course.inStudyPlan }"
+              >
+                <svg viewBox="0 0 24 24" :fill="course.inStudyPlan ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2">
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
                 </svg>
-              </span>
+              </button>
             </div>
           </article>
         </div>
@@ -394,6 +407,7 @@ export default {
       selectedSubjectFilter: null,
       selectedLevelFilter: null,
       typeFilter: 'all',
+      studyModeFilter: 'all',
       progressFilter: 'all',
       currentPage: 1,
       coursesPerPage: 12,
@@ -445,15 +459,24 @@ export default {
         if (this.selectedLevelFilter && c.level !== this.selectedLevelFilter) return false;
         if (this.typeFilter === 'free' && c.type !== 'free') return false;
         if (this.typeFilter === 'premium' && c.type === 'free') return false;
+        // Study mode filter
+        if (this.studyModeFilter !== 'all') {
+          const courseMode = this.getStudyMode(c);
+          if (courseMode !== this.studyModeFilter) return false;
+        }
         return true;
       });
+    },
+
+    inProgressCourses() {
+      return this.courses.filter(c => c.progress > 0 && c.progress < 100);
     },
     totalPages() { return Math.max(1, Math.ceil(this.filteredCourses.length / this.coursesPerPage)); },
     paginatedCourses() {
       const shuffled = [...this.filteredCourses].sort((a, b) => this.hashString(a.topicId + this.randomSeed) - this.hashString(b.topicId + this.randomSeed));
       return shuffled.slice((this.currentPage - 1) * this.coursesPerPage, this.currentPage * this.coursesPerPage);
     },
-    hasActiveFilters() { return !!(this.searchQuery || this.selectedSubjectFilter || this.selectedLevelFilter || this.typeFilter !== 'all'); },
+    hasActiveFilters() { return !!(this.searchQuery || this.selectedSubjectFilter || this.selectedLevelFilter || this.typeFilter !== 'all' || this.studyModeFilter !== 'all'); },
   },
 
   async mounted() {
@@ -603,7 +626,7 @@ export default {
       }
     },
     
-    clearFilters() { this.searchQuery = ''; this.selectedSubjectFilter = null; this.selectedLevelFilter = null; this.typeFilter = 'all'; this.currentPage = 1; },
+    clearFilters() { this.searchQuery = ''; this.selectedSubjectFilter = null; this.selectedLevelFilter = null; this.typeFilter = 'all'; this.studyModeFilter = 'all'; this.currentPage = 1; },
     shuffleCourses() { this.randomSeed = Math.random(); this.currentPage = 1; },
     nextPage() { if (this.currentPage < this.totalPages) { this.currentPage++; window.scrollTo({ top: 0, behavior: 'smooth' }); } },
     prevPage() { if (this.currentPage > 1) { this.currentPage--; window.scrollTo({ top: 0, behavior: 'smooth' }); } },
@@ -649,6 +672,26 @@ export default {
       return keys[parseInt(l)] ? this.$t(keys[parseInt(l)]) : `${this.$t('dashboard.level')} ${l}`;
     },
     getProgressColor(p) { if (p >= 80) return 'bg-green-500'; if (p >= 40) return 'bg-indigo-500'; if (p > 0) return 'bg-amber-500'; return 'bg-gray-200'; },
+    getProgressColorClass(p) { if (p >= 80) return 'complete'; if (p >= 40) return 'good'; if (p > 0) return 'started'; return 'none'; },
+    getStudyMode(course) {
+      if (!course) return 'quick-skill';
+      // studyMode field takes priority if provided by backend
+      if (course.studyMode) {
+        return course.studyMode === 'mastery' || course.studyMode === 'mastery-path' ? 'mastery-path' : 'quick-skill';
+      }
+      // Fallback: determine by lesson count or duration
+      const lessonCount = course.lessonCount || 0;
+      const totalTime = course.totalTime || 0;
+      // Mastery Path if 5+ lessons or 60+ minutes
+      if (lessonCount >= 5 || totalTime >= 60) {
+        return 'mastery-path';
+      }
+      return 'quick-skill';
+    },
+    getStudyModeLabel(course) {
+      const mode = this.getStudyMode(course);
+      return mode === 'mastery-path' ? 'MASTERY PATH' : 'QUICK SKILL';
+    },
     getButtonText(p) { if (p === 100) return this.$t('catalogue.review'); if (p > 0) return this.$t('catalogue.continueBtn'); return this.$t('catalogue.start'); },
     hasTopicAccess(type) { return type === 'free' || this.userStatus === 'pro' || this.userStatus === 'start'; },
     getSubjectEmoji(s) { const e = { 'Mathematics': '📐', 'Math': '📐', 'English': '📚', 'Science': '🔬', 'Physics': '⚛️', 'Chemistry': '⚗️', 'Biology': '🧬', 'History': '📜', 'Geography': '🌍', 'Computer Science': '💻', 'Programming': '👨‍💻', 'Art': '🎨', 'Music': '🎵', 'Languages': '🗣️' }; return e[s] || '📖'; },
@@ -657,31 +700,705 @@ export default {
 </script>
 
 <style scoped>
+/* Catalogue Page Styles */
+.catalogue-page {
+  min-height: 100vh;
+  background: #fafafa;
+  padding-bottom: 3rem;
+}
+
+/* Header */
+.catalogue-header {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 1.5rem;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.header-left {
+  flex: 1;
+}
+
+.page-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 0.25rem;
+}
+
+.page-subtitle {
+  font-size: 0.9375rem;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Study Mode Tabs */
+.study-mode-tabs {
+  display: flex;
+  background: #f1f5f9;
+  border-radius: 12px;
+  padding: 4px;
+  gap: 4px;
+}
+
+.mode-tab {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #64748b;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.mode-tab:hover {
+  color: #1e293b;
+}
+
+.mode-tab.active {
+  background: white;
+  color: #1e293b;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Continue Learning Section */
+.continue-section {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem 1.5rem;
+}
+
+.section-header-row {
+  margin-bottom: 1rem;
+}
+
+.section-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.section-icon {
+  font-size: 1.25rem;
+}
+
+.section-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+/* Continue Cards */
+.continue-cards {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+}
+
+.continue-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  min-width: 360px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.continue-card:hover {
+  border-color: #a78bfa;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.1);
+}
+
+.continue-card-thumbnail {
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.continue-card-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thumbnail-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #f3e8ff, #e0e7ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+
+.continue-card-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.study-mode-badge-small {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.study-mode-badge-small.quick-skill {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.study-mode-badge-small.mastery-path {
+  background: #f3e8ff;
+  color: #7c3aed;
+}
+
+.continue-card-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.continue-card-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #8b5cf6, #7c3aed);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 0.75rem;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.continue-card-arrow {
+  width: 24px;
+  height: 24px;
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.continue-card-arrow svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Recommended Section */
+.recommended-section {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem 0.5rem;
+}
+
+/* Filter Bar */
+.filter-bar {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem 1.5rem;
+}
+
+.filter-content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.search-wrapper {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: #94a3b8;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.625rem 1rem 0.625rem 2.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #a78bfa;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.filter-select {
+  padding: 0.625rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #475569;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-select:hover {
+  border-color: #cbd5e1;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #a78bfa;
+}
+
+.clear-filters-btn {
+  padding: 0.625rem 1rem;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #ef4444;
+  background: #fef2f2;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clear-filters-btn:hover {
+  background: #fee2e2;
+}
+
+.shuffle-btn {
+  padding: 0.625rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: white;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.shuffle-btn:hover {
+  border-color: #cbd5e1;
+  color: #1e293b;
+}
+
+.shuffle-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Course Grid */
+.course-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.25rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem 2rem;
+}
+
+/* Course Card */
+.course-card {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  position: relative;
+}
+
+.course-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+  border-color: transparent;
+}
+
+.course-card.quick-skill:hover {
+  box-shadow: 0 12px 24px rgba(16, 185, 129, 0.15);
+}
+
+.course-card.mastery-path:hover {
+  box-shadow: 0 12px 24px rgba(139, 92, 246, 0.15);
+}
+
+.card-thumbnail {
+  position: relative;
+  width: 100%;
+  height: 160px;
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+}
+
+.card-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thumbnail-placeholder-large {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  background: linear-gradient(135deg, #fef3c7, #fbcfe8, #e0e7ff);
+}
+
+.study-mode-badge-card {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.study-mode-badge-card.quick-skill {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+
+.study-mode-badge-card.mastery-path {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  color: white;
+}
+
+.card-content {
+  padding: 1rem;
+  position: relative;
+}
+
+.card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 4px;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-author {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.author-by {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.author-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.card-progress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.progress-label {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.progress-bar-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.progress-bar-bg {
+  flex: 1;
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.progress-bar-fill.complete {
+  background: linear-gradient(90deg, #10b981, #059669);
+}
+
+.progress-bar-fill.good {
+  background: linear-gradient(90deg, #3b82f6, #2563eb);
+}
+
+.progress-bar-fill.started {
+  background: linear-gradient(90deg, #f59e0b, #d97706);
+}
+
+.progress-bar-fill.none {
+  background: #e2e8f0;
+}
+
+.progress-percent {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  min-width: 32px;
+  text-align: right;
+}
+
+.add-plan-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  color: #94a3b8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.add-plan-btn:hover {
+  border-color: #a78bfa;
+  color: #7c3aed;
+}
+
+.add-plan-btn.added {
+  background: #f3e8ff;
+  border-color: #a78bfa;
+  color: #7c3aed;
+}
+
+.add-plan-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Loading State */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #8b5cf6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-state p {
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.empty-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 0.5rem;
+}
+
+.empty-text {
+  font-size: 0.9375rem;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Subject Groups (School Mode) */
+.subject-groups {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 2rem 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.pagination-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  border-color: #a78bfa;
+  color: #7c3aed;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pagination-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.pagination-text {
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.pagination-text .current {
+  font-weight: 700;
+  color: #7c3aed;
+}
+
+/* Modal Transitions */
 .fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 
-/* Mobile first responsive adjustments */
-@media (max-width: 640px) {
-  .min-h-screen { padding: 1rem !important; }
-  .max-w-6xl { padding-left: 1rem !important; padding-right: 1rem !important; }
-  .text-2xl { font-size: 1.25rem !important; }
-  .gap-4 { gap: 0.75rem !important; }
-  .gap-6 { gap: 1rem !important; }
-  .grid-cols-1 { grid-template-columns: 1fr !important; }
-  .p-5 { padding: 1rem !important; }
-  .hidden.md\\:flex { display: none !important; }
-  .relative.flex-1.min-w-64 { min-width: 100% !important; }
-  .flex-wrap { flex-wrap: wrap !important; }
-  .flex-wrap > select { flex: 1 1 45%; min-width: 120px; }
-  .space-y-10 > section { margin-bottom: 2rem; }
-}
+/* Responsive */
+@media (max-width: 768px) {
+  .catalogue-header {
+    padding: 1.5rem 1rem 1rem;
+  }
 
-@media (min-width: 641px) and (max-width: 1023px) {
-  .grid { grid-template-columns: repeat(2, 1fr) !important; }
-  .lg\\:grid-cols-3 { grid-template-columns: repeat(2, 1fr) !important; }
-}
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 
-@media (min-width: 1024px) {
-  .lg\\:grid-cols-3 { grid-template-columns: repeat(3, 1fr) !important; }
+  .study-mode-tabs {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .continue-section,
+  .recommended-section,
+  .filter-bar {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .continue-card {
+    min-width: 300px;
+  }
+
+  .course-grid {
+    grid-template-columns: 1fr;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .filter-content {
+    flex-direction: column;
+  }
+
+  .search-wrapper {
+    width: 100%;
+  }
+
+  .filter-select {
+    width: 100%;
+  }
 }
 </style>
