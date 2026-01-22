@@ -38,37 +38,6 @@
           </div>
         </div>
 
-        <div class="mode-selector">
-          <div class="mode-label">{{ $t('sidebar.learningMode') }}</div>
-          <div class="mode-toggle">
-            <button
-              class="mode-option"
-              :class="{ active: isSchoolMode }"
-              @click="switchToSchool"
-            >
-              <span class="mode-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
-                  <path d="M6 12v5c3 3 9 3 12 0v-5"/>
-                </svg>
-              </span>
-              <span class="mode-text">{{ $t('sidebar.school') }}</span>
-            </button>
-            <button
-              class="mode-option"
-              :class="{ active: isStudyCentreMode }"
-              @click="switchToStudyCentre"
-            >
-              <span class="mode-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                </svg>
-              </span>
-              <span class="mode-text">{{ $t('sidebar.studyCentre') }}</span>
-            </button>
-          </div>
-        </div>
-
         <nav class="nav-menu">
           <div class="nav-section">
             <span class="nav-section-title">{{ $t('sidebar.menu') }}</span>
@@ -219,7 +188,6 @@ import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/firebase';
 import { mapState, mapMutations, mapGetters } from 'vuex';
 import { userStatusMixin } from '@/composables/useUserStatus';
-import { switchLearningMode } from '@/api/user';
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue';
 
 // Icon components (Unchanged)
@@ -270,12 +238,6 @@ export default {
       showPremiumModal: false,
       selectedFeature: null,
       isMobile: false,
-      tempSelectedMode: null,
-      isSelectingMode: false,
-      selectedFeature: null,
-      isMobile: false,
-      tempSelectedMode: null,
-      isSelectingMode: false,
 
       navigationLinks: [
         {
@@ -366,17 +328,6 @@ export default {
       return name.substring(0, 2).toUpperCase();
     },
 
-    hasSelectedMode() {
-      return this.$store.getters['platformMode/hasSelectedMode'];
-    },
-
-    isSchoolMode() {
-      return this.$store.getters['platformMode/isSchoolMode'];
-    },
-
-    isStudyCentreMode() {
-      return this.$store.getters['platformMode/isStudyCentreMode'];
-    }
   },
 
   mounted() {
@@ -441,63 +392,6 @@ export default {
       this.showPremiumModal = false;
       this.$router.push('/settings');
       this.closeSidebarOnMobile();
-    },
-
-    async selectInitialMode(mode) {
-      if (this.isSelectingMode) return;
-
-      this.tempSelectedMode = mode;
-      this.isSelectingMode = true;
-
-      try {
-        const userId = this.$store.getters.getFirebaseUserId;
-        if (!userId) return;
-
-        try {
-          await switchLearningMode(userId, mode, 'Initial mode selection');
-        } catch (apiError) {
-          // Handle silently
-        }
-
-        await this.$store.dispatch('platformMode/switchMode', {
-          newMode: mode,
-          reason: 'Initial mode selection'
-        });
-
-        this.closeSidebarOnMobile();
-      } catch (error) {
-        this.tempSelectedMode = null;
-      } finally {
-        this.isSelectingMode = false;
-      }
-    },
-
-    async switchToSchool() {
-      if (this.isSchoolMode) return;
-
-      try {
-        await this.$store.dispatch('platformMode/switchMode', {
-          newMode: 'school',
-          reason: 'User switched via sidebar'
-        });
-        this.closeSidebarOnMobile();
-      } catch (error) {
-        // Handle silently
-      }
-    },
-
-    async switchToStudyCentre() {
-      if (this.isStudyCentreMode) return;
-
-      try {
-        await this.$store.dispatch('platformMode/switchMode', {
-          newMode: 'study_centre',
-          reason: 'User switched via sidebar'
-        });
-        this.closeSidebarOnMobile();
-      } catch (error) {
-        // Handle silently
-      }
     },
 
     checkMobile() {
@@ -779,152 +673,6 @@ export default {
   width: 1px;
   height: 24px;
   background: #e2e8f0;
-}
-
-/* === MODE SELECTOR === */
-.mode-selector {
-  margin-bottom: 20px;
-}
-
-.mode-label {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 10px;
-  padding-left: 4px;
-}
-
-.mode-toggle {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
-.mode-option {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 14px 12px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  color: #64748b;
-}
-
-.mode-option:hover {
-  background: white;
-  border-color: #cbd5e1;
-  color: #475569;
-}
-
-.mode-option.active {
-  background: #f3e8ff;
-  border-color: #d8b4fe;
-  color: #7c3aed;
-}
-
-.mode-icon svg {
-  width: 20px;
-  height: 20px;
-}
-
-.mode-text {
-  font-size: 0.8125rem;
-  font-weight: 600;
-}
-
-/* === MODE SELECTION === */
-.mode-selection {
-  margin-bottom: 20px;
-}
-
-.selection-header {
-  text-align: center;
-  margin-bottom: 14px;
-}
-
-.selection-header h4 {
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: #1e293b;
-  margin: 0 0 4px;
-}
-
-.selection-header p {
-  font-size: 0.8125rem;
-  color: #64748b;
-  margin: 0;
-}
-
-.selection-options {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.selection-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 18px 12px;
-  background: white;
-  border: 2px solid #e2e8f0;
-  border-radius: 14px;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  text-align: center;
-  color: inherit;
-}
-
-.selection-card:hover:not(:disabled) {
-  background: #f8fafc;
-  border-color: #a78bfa;
-  transform: translateY(-2px);
-}
-
-.selection-card.selected {
-  background: #f3e8ff;
-  border-color: #8b5cf6;
-}
-
-.selection-card:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.card-icon {
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f3e8ff;
-  border-radius: 12px;
-}
-
-.card-icon svg {
-  width: 22px;
-  height: 22px;
-  color: #7c3aed;
-}
-
-.selection-card h5 {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #1e293b;
-  margin: 0;
-}
-
-.selection-card p {
-  font-size: 0.75rem;
-  color: #64748b;
-  margin: 0;
 }
 
 /* === NAVIGATION === */

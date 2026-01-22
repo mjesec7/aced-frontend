@@ -1,8 +1,9 @@
 <template>
-  <div class="study-card" :class="getTopicTypeClass(topic)">
-    <!-- Topic Type Badge -->
-    <div class="topic-badge" :class="getTopicType(topic)">
-      <span class="badge-text">{{ getTopicTypeLabel(topic) }}</span>
+  <div class="study-card" :class="getStudyModeClass(topic)">
+    <!-- Study Mode Badge (Quick Skill / Mastery Path) -->
+    <div class="study-mode-badge" :class="getStudyMode(topic)">
+      <span class="badge-icon">{{ getStudyModeIcon(topic) }}</span>
+      <span class="badge-text">{{ getStudyModeLabel(topic) }}</span>
     </div>
 
     <!-- Progress Ring -->
@@ -35,8 +36,15 @@
     <!-- Topic Content -->
     <div class="topic-content">
       <h3 class="topic-title">{{ displayName }}</h3>
+
+      <!-- Author Info -->
+      <div class="author-info">
+        <span class="author-label">by</span>
+        <span class="author-name">{{ authorName }}</span>
+      </div>
+
       <p class="topic-desc">{{ displayDescription }}</p>
-      
+
       <!-- Topic Stats -->
       <div class="topic-stats">
         <div class="stat-item">
@@ -253,10 +261,27 @@ return 'Описание отсутствует';
     circumference() {
       return 2 * Math.PI * 16;
     },
-    
+
     progressOffset() {
       const progress = this.lessonProgress / 100;
       return this.circumference - (progress * this.circumference);
+    },
+
+    authorName() {
+      // Get author/instructor name, default to "ACED"
+      if (this.topic?.instructor?.name) {
+        return this.topic.instructor.name;
+      }
+      if (this.topic?.author?.name) {
+        return this.topic.author.name;
+      }
+      if (this.topic?.author && typeof this.topic.author === 'string') {
+        return this.topic.author;
+      }
+      if (this.topic?.createdBy?.name) {
+        return this.topic.createdBy.name;
+      }
+      return 'ACED';
     }
   },
   
@@ -288,30 +313,51 @@ return 'Описание отсутствует';
        
     },
     
+    getStudyMode(topic) {
+      if (!topic) return 'quick-skill';
+
+      // Determine study mode based on course depth
+      // studyMode field takes priority if provided by backend
+      if (topic.studyMode) {
+        return topic.studyMode === 'mastery' || topic.studyMode === 'mastery-path' ? 'mastery-path' : 'quick-skill';
+      }
+
+      // Fallback: determine by lesson count or duration
+      const lessonCount = topic.lessonCount || topic.lessons?.length || this.totalLessons || 0;
+      const totalTime = topic.totalTime || topic.estimatedDuration || 0;
+
+      // Mastery Path if 5+ lessons or 60+ minutes
+      if (lessonCount >= 5 || totalTime >= 60) {
+        return 'mastery-path';
+      }
+
+      return 'quick-skill';
+    },
+
+    getStudyModeClass(topic) {
+      return `study-mode-${this.getStudyMode(topic)}`;
+    },
+
+    getStudyModeLabel(topic) {
+      const mode = this.getStudyMode(topic);
+      return mode === 'mastery-path' ? 'MASTERY PATH' : 'QUICK SKILL';
+    },
+
+    getStudyModeIcon(topic) {
+      const mode = this.getStudyMode(topic);
+      return mode === 'mastery-path' ? '🎯' : '⚡';
+    },
+
     getTopicType(topic) {
       if (!topic) return 'free';
-      
+
       const type = topic.type || topic.accessType || topic.pricing || topic.plan;
-      
+
       if (!type || type === 'free' || type === 'public') return 'free';
       if (type === 'premium' || type === 'paid' || type === 'start') return 'premium';
       if (type === 'pro' || type === 'professional') return 'pro';
-      
+
       return 'free';
-    },
-    
-    getTopicTypeClass(topic) {
-      return `topic-${this.getTopicType(topic)}`;
-    },
-    
-    getTopicTypeLabel(topic) {
-      const type = this.getTopicType(topic);
-      switch (type) {
-        case 'free': return 'Бесплатно';
-        case 'premium': return 'Премиум';
-        case 'pro': return 'Pro';
-        default: return 'Бесплатно';
-      }
     },
 
     getMedalIcon(medal) {
@@ -475,48 +521,64 @@ this.$nextTick(() => {
   background: radial-gradient(circle at center, rgba(139, 92, 246, 0.03), #ffffff);
 }
 
-.topic-free {
-  border-left: 3px solid #64748b;
+/* Study Mode Styles */
+.study-mode-quick-skill {
+  border-left: 3px solid #10b981;
 }
 
-.topic-premium {
+.study-mode-mastery-path {
   border-left: 3px solid #8b5cf6;
 }
 
-.topic-pro {
-  border-left: 3px solid #1e293b;
-}
-
-.topic-badge {
+.study-mode-badge {
   position: absolute;
   top: 8px;
   right: 8px;
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 0.65rem;
-  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.625rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.5px;
   z-index: 10;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
-.topic-badge.free {
-  background: #f8fafc;
-  color: #475569;
-  border: 1px solid #cbd5e1;
+.study-mode-badge .badge-icon {
+  font-size: 0.7rem;
 }
 
-.topic-badge.premium {
-  background: #8b5cf6;
+.study-mode-badge.quick-skill {
+  background: linear-gradient(135deg, #10b981, #059669);
   color: #ffffff;
-  border: 1px solid #8b5cf6;
 }
 
-.topic-badge.pro {
-  background: #1f2937;
+.study-mode-badge.mastery-path {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
   color: #ffffff;
-  border: 1px solid #1f2937;
+}
+
+/* Author Info */
+.author-info {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.author-label {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.author-name {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 600;
 }
 
 .progress-ring {

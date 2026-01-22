@@ -67,33 +67,6 @@
           </div>
         </div>
 
-        <!-- School Mode: Interactive Level Pathway -->
-        <div v-if="isSchoolMode" class="level-pathway-section">
-          <LevelPathway 
-            v-if="currentCourse && currentCourseLessons.length > 0"
-            :key="currentCourse._id || 'pathway'"
-            :lessons="currentCourseLessons"
-            :user-progress="userProgress"
-            :current-level-prop="rewards?.level || 1"
-            :current-x-p-prop="rewards?.totalPoints || 0"
-            :streak-prop="displayStreak"
-            @lesson-click="handleLessonClick"
-            @continue="handleContinueLesson"
-          />
-          <!-- No courses state -->
-          <div v-else class="empty-pathway-card">
-            <div class="empty-pathway-icon">🎮</div>
-            <h3 class="empty-pathway-title">{{ $t('dashboard.yourLearningJourney') }}</h3>
-            <p class="empty-pathway-text">{{ $t('dashboard.addCourseToSeePathway') }}</p>
-            <router-link to="/profile/catalogue" class="add-course-pathway-btn">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="12" y1="5" x2="12" y2="19"/>
-                <line x1="5" y1="12" x2="19" y2="12"/>
-              </svg>
-              {{ $t('dashboard.browseCourses') }}
-            </router-link>
-          </div>
-        </div>
 
         <div v-if="learningProfile" class="section-card learning-dna-card">
           <div class="section-header">
@@ -623,7 +596,6 @@ import {
   updateStreak
 } from '@/api';
 import PaymentModal from '@/components/Modals/PaymentModal.vue';
-import LevelPathway from '@/components/PlatformMode/LevelPathway.vue';
 import AppleTreeGoal from '@/components/Profile/AppleTreeGoal.vue';
 import { useLevelSystem } from '@/composables/useLevelSystem';
 
@@ -637,7 +609,6 @@ export default {
   name: 'ProfessionalMainPage',
   components: {
     PaymentModal,
-    LevelPathway,
     AppleTreeGoal
   },
 
