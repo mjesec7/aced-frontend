@@ -16,6 +16,9 @@ export function useVoiceAssistant() {
     const analysisCache = new Map();
     const speechRecognition = ref(null);
 
+    // Guard to prevent duplicate/concurrent speech requests
+    const isSpeechPending = ref(false);
+
     // Get the current system language (from useLanguage composable)
     const getSystemLanguage = () => {
         const lang = getLanguage() || 'en';
@@ -54,6 +57,7 @@ export function useVoiceAssistant() {
             currentAudioUrl.value = null;
         }
         isSpeaking.value = false;
+        isSpeechPending.value = false; // Reset guard to allow new speech after explicit stop
     };
 
     const accumulatedTranscript = ref('');
@@ -135,6 +139,14 @@ export function useVoiceAssistant() {
             return;
         }
 
+        // GUARD: Prevent duplicate/concurrent speech requests
+        // This fixes the "two voices" issue where multiple triggers try to speak at once
+        if (isSpeechPending.value && !options.force) {
+            console.log('[VoiceAssistant] Speech already pending, ignoring duplicate request');
+            return;
+        }
+        isSpeechPending.value = true;
+
         stopAudio();
 
         try {
@@ -160,12 +172,14 @@ export function useVoiceAssistant() {
                         currentAudioUrl.value = null;
                     }
                     isSpeaking.value = false;
+                    isSpeechPending.value = false; // Reset guard
                 });
             };
 
             // CRITICAL: Only revoke URL AFTER audio finishes playing
             currentAudio.value.onended = () => {
                 isSpeaking.value = false;
+                isSpeechPending.value = false; // Reset guard - allow new speech
                 // Clean up the blob URL after playback completes
                 if (currentAudioUrl.value === audioUrl) {
                     URL.revokeObjectURL(audioUrl);
@@ -176,6 +190,7 @@ export function useVoiceAssistant() {
             currentAudio.value.onerror = (error) => {
                 console.error('[VoiceAssistant] Audio playback error:', error);
                 isSpeaking.value = false;
+                isSpeechPending.value = false; // Reset guard
                 // Clean up on error
                 if (currentAudioUrl.value === audioUrl) {
                     URL.revokeObjectURL(audioUrl);
@@ -188,6 +203,7 @@ export function useVoiceAssistant() {
         } catch (error) {
             console.error('[VoiceAssistant] speakText error:', error);
             isSpeaking.value = false;
+            isSpeechPending.value = false; // Reset guard
         }
     };
 
