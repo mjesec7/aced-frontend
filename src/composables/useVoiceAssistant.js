@@ -16,6 +16,9 @@ export function useVoiceAssistant() {
     const analysisCache = new Map();
     const speechRecognition = ref(null);
 
+    // Guard to prevent duplicate/concurrent speech requests
+    const isSpeechPending = ref(false);
+
     // Get the current system language (from useLanguage composable)
     const getSystemLanguage = () => {
         const lang = getLanguage() || 'en';
@@ -41,13 +44,20 @@ export function useVoiceAssistant() {
         if (currentAudio.value) {
             currentAudio.value.pause();
             currentAudio.value.currentTime = 0;
+            // Remove event listeners before clearing reference
+            currentAudio.value.onended = null;
+            currentAudio.value.onerror = null;
+            currentAudio.value.oncanplaythrough = null;
             currentAudio.value = null;
         }
+        // IMPORTANT: Only revoke the URL here if we're explicitly stopping
+        // The URL will also be revoked in onended/onerror handlers
         if (currentAudioUrl.value) {
             URL.revokeObjectURL(currentAudioUrl.value);
             currentAudioUrl.value = null;
         }
         isSpeaking.value = false;
+        isSpeechPending.value = false; // Reset guard to allow new speech after explicit stop
     };
 
     const accumulatedTranscript = ref('');
@@ -129,6 +139,14 @@ export function useVoiceAssistant() {
             return;
         }
 
+        // GUARD: Prevent duplicate/concurrent speech requests
+        // This fixes the "two voices" issue where multiple triggers try to speak at once
+        if (isSpeechPending.value && !options.force) {
+            console.log('[VoiceAssistant] Speech already pending, ignoring duplicate request');
+            return;
+        }
+        isSpeechPending.value = true;
+
         stopAudio();
 
         try {
@@ -137,27 +155,55 @@ export function useVoiceAssistant() {
             console.log('[VoiceAssistant] Speaking in language:', currentLang);
             const audioBlob = await voiceApi.streamAudio(text, { language: currentLang });
 
-            if (currentAudioUrl.value) {
-                URL.revokeObjectURL(currentAudioUrl.value);
-            }
-            currentAudioUrl.value = URL.createObjectURL(audioBlob);
+            // Create new URL for the audio blob
+            const audioUrl = URL.createObjectURL(audioBlob);
+            currentAudioUrl.value = audioUrl;
 
-            currentAudio.value = new Audio(currentAudioUrl.value);
+            currentAudio.value = new Audio(audioUrl);
             isSpeaking.value = true;
 
+            // Wait for audio to be ready before playing
+            currentAudio.value.oncanplaythrough = () => {
+                currentAudio.value.play().catch(e => {
+                    console.error('[VoiceAssistant] Playback failed:', e);
+                    // Clean up on playback failure
+                    if (currentAudioUrl.value === audioUrl) {
+                        URL.revokeObjectURL(audioUrl);
+                        currentAudioUrl.value = null;
+                    }
+                    isSpeaking.value = false;
+                    isSpeechPending.value = false; // Reset guard
+                });
+            };
+
+            // CRITICAL: Only revoke URL AFTER audio finishes playing
             currentAudio.value.onended = () => {
                 isSpeaking.value = false;
+                isSpeechPending.value = false; // Reset guard - allow new speech
+                // Clean up the blob URL after playback completes
+                if (currentAudioUrl.value === audioUrl) {
+                    URL.revokeObjectURL(audioUrl);
+                    currentAudioUrl.value = null;
+                }
             };
 
             currentAudio.value.onerror = (error) => {
                 console.error('[VoiceAssistant] Audio playback error:', error);
                 isSpeaking.value = false;
+                isSpeechPending.value = false; // Reset guard
+                // Clean up on error
+                if (currentAudioUrl.value === audioUrl) {
+                    URL.revokeObjectURL(audioUrl);
+                    currentAudioUrl.value = null;
+                }
             };
 
-            await currentAudio.value.play();
+            // Load the audio (this triggers oncanplaythrough when ready)
+            currentAudio.value.load();
         } catch (error) {
             console.error('[VoiceAssistant] speakText error:', error);
             isSpeaking.value = false;
+            isSpeechPending.value = false; // Reset guard
         }
     };
 
