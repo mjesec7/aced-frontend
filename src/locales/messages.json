@@ -27,7 +27,9 @@
       "selectLanguage": "Select Language",
       "english": "English",
       "russian": "Русский",
-      "uzbek": "O'zbekcha"
+      "uzbek": "O'zbekcha",
+      "general": "General",
+      "untitled": "Untitled"
     },
     "userSection": {
       "login": "Login",
@@ -857,7 +859,19 @@
       "tryChangingFilter": "Try changing the filter",
       "notStarted": "Not started",
       "inProgress": "In progress",
-      "steps": "steps"
+      "steps": "steps",
+      "subscriptionRequired": "Subscription required",
+      "takeAgain": "Take again",
+      "continueLesson": "Continue lesson",
+      "startLesson": "Start lesson",
+      "readyToStart": "Ready to start learning?",
+      "accessToLessons": "You have access to {available} out of {total} lessons",
+      "subscribeToAccess": "Subscribe to access all lessons",
+      "startFirstLesson": "Start first lesson",
+      "subscribe": "Subscribe",
+      "otherCourses": "Other courses",
+      "exercises": "exercises",
+      "timeSpent": "spent"
     },
     "lessonIntro": {
       "premium": "Premium",
@@ -1012,7 +1026,9 @@
       "english": "English",
       "russian": "Русский",
       "uzbek": "O'zbekcha",
-      "toggleNavigation": "Переключить навигацию"
+      "toggleNavigation": "Переключить навигацию",
+      "general": "Общее",
+      "untitled": "Без названия"
     },
     "userSection": {
       "login": "Вход",
@@ -1823,7 +1839,19 @@
       "tryChangingFilter": "Попробуйте изменить фильтр",
       "notStarted": "Не начато",
       "inProgress": "В процессе",
-      "steps": "шагов"
+      "steps": "шагов",
+      "subscriptionRequired": "Требуется подписка",
+      "takeAgain": "Повторить",
+      "continueLesson": "Продолжить урок",
+      "startLesson": "Начать урок",
+      "readyToStart": "Готовы начать обучение?",
+      "accessToLessons": "У вас есть доступ к {available} из {total} уроков",
+      "subscribeToAccess": "Оформите подписку для доступа ко всем урокам",
+      "startFirstLesson": "Начать первый урок",
+      "subscribe": "Подписаться",
+      "otherCourses": "Другие курсы",
+      "exercises": "заданий",
+      "timeSpent": "потрачено"
     },
     "lessonIntro": {
       "premium": "Премиум",
@@ -1978,7 +2006,9 @@
       "english": "English",
       "russian": "Русский",
       "uzbek": "O'zbekcha",
-      "toggleNavigation": "Navigatsiyani o'zgartirish"
+      "toggleNavigation": "Navigatsiyani o'zgartirish",
+      "general": "Umumiy",
+      "untitled": "Nomsiz"
     },
     "userSection": {
       "login": "Kirish",
@@ -2807,7 +2837,19 @@
       "tryChangingFilter": "Filtrni o'zgartirib ko'ring",
       "notStarted": "Boshlanmagan",
       "inProgress": "Jarayonda",
-      "steps": "qadamlar"
+      "steps": "qadamlar",
+      "subscriptionRequired": "Obuna talab qilinadi",
+      "takeAgain": "Qayta o'tish",
+      "continueLesson": "Darsni davom ettirish",
+      "startLesson": "Darsni boshlash",
+      "readyToStart": "O'qishni boshlashga tayyormisiz?",
+      "accessToLessons": "Sizda {total} ta darsdan {available} tasiga kirish huquqi bor",
+      "subscribeToAccess": "Barcha darslarga kirish uchun obuna bo'ling",
+      "startFirstLesson": "Birinchi darsni boshlash",
+      "subscribe": "Obuna bo'lish",
+      "otherCourses": "Boshqa kurslar",
+      "exercises": "mashqlar",
+      "timeSpent": "sarflandi"
     },
     "lessonIntro": {
       "premium": "Premium",
