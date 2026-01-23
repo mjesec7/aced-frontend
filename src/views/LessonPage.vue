@@ -412,12 +412,14 @@
         <FloatingAIAssistant
           v-if="showFloatingAI"
           :current-step="currentStep"
+          :current-exercise="getCurrentExercise(currentStep)"
           :ai-chat-history="formattedAIChatHistory"
           :ai-is-loading="isAITyping"
           :user-progress="aiUserProgress"
           :ai-usage="aiUsage"
           :lesson-id="lessonIdForAI"
           :current-slide-index="currentIndex"
+          :language="language"
           @close="toggleFloatingAI"
           @send-message="handleAISendMessage"
           @ask-ai="handleAIQuickQuestion"
@@ -1768,12 +1770,14 @@ async function sendAIMessage() {
 }
 
 // Handler for AI send message from FloatingAIAssistant
-// Accepts both string (backward compatibility) and object { message, lessonId, currentStepIndex }
+// Accepts both string (backward compatibility) and object { message, lessonId, currentStepIndex, exerciseContext }
 async function handleAISendMessage(payload) {
   // Handle both old format (string) and new format (object with position data)
   const messageText = typeof payload === 'object' ? payload.message : payload
   const positionLessonId = typeof payload === 'object' ? payload.lessonId : null
   const positionStepIndex = typeof payload === 'object' ? payload.currentStepIndex : null
+  // Use pre-extracted exercise context from FloatingAIAssistant if available
+  const payloadExerciseContext = typeof payload === 'object' ? payload.exerciseContext : null
 
   if (!messageText) return
 
@@ -1798,6 +1802,13 @@ async function handleAISendMessage(payload) {
     // Ensure lessonId is set correctly
     if (positionLessonId) {
       context.lessonContext.lessonId = positionLessonId
+    }
+
+    // Use pre-extracted exercise context from FloatingAIAssistant if available
+    // This is the "translated" exercise data that AI can actually read
+    if (payloadExerciseContext) {
+      context.stepContext.exerciseContent = payloadExerciseContext
+      console.log('[LessonPage] Using pre-extracted exercise context:', payloadExerciseContext)
     }
 
     const response = await getLessonAIResponse(

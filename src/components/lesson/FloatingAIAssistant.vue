@@ -135,6 +135,7 @@
 import { eventBus } from '@/utils/eventBus';
 import voiceApi from '@/api/voice';
 import chatApi from '@/api/chat';
+import { extractExerciseContent } from '@/utils/exerciseContentExtractor';
 
 export default {
   name: 'FloatingAIAssistant',
@@ -173,6 +174,12 @@ export default {
       type: Object,
       default: null
     },
+    // CRITICAL: Current exercise object - allows AI to "see" the exercise details
+    // This should be the actual exercise data (question, options, etc.)
+    currentExercise: {
+      type: Object,
+      default: null
+    },
     // User progress for personalization
     userProgress: {
       type: Object,
@@ -191,6 +198,11 @@ export default {
     currentSlideIndex: {
       type: Number,
       default: 0
+    },
+    // Language for AI responses
+    language: {
+      type: String,
+      default: 'en'
     }
   },
   emits: ['close', 'send-message', 'ask-ai', 'clear-chat'],
@@ -437,15 +449,27 @@ export default {
         return;
       }
 
-      // CRITICAL: Emit message with position data for RAG context
-      // Backend needs lessonId and currentStepIndex to:
-      // 1. Fetch the correct exercise/slide data
-      // 2. Load chat history for this lesson
-      // 3. Retrieve user progress for personalization
+      // EXTRACT: Convert the raw exercise JSON into readable text for AI
+      // This is the "translator" that allows AI to understand exercise data
+      const exerciseSource = this.currentExercise || this.currentStep;
+      const exerciseContext = extractExerciseContent(exerciseSource, this.language);
+
+      // DEBUG: Log what we're sending to help diagnose AI context issues
+      console.log('[FloatingAIAssistant] Sending message with context:');
+      console.log('  -> Message:', this.localFloatingInput.trim());
+      console.log('  -> Exercise Context:', exerciseContext);
+      console.log('  -> Step Type:', this.currentStep?.type);
+      console.log('  -> Lesson ID:', this.lessonId);
+
+      // CRITICAL: Emit message with full context for RAG
+      // Backend needs all this data to construct the AI system prompt
       this.$emit('send-message', {
         message: this.localFloatingInput.trim(),
         lessonId: this.lessonId,
-        currentStepIndex: this.currentSlideIndex
+        currentStepIndex: this.currentSlideIndex,
+        // Include the extracted exercise context so parent doesn't have to re-extract
+        exerciseContext: exerciseContext,
+        stepType: this.currentStep?.type
       });
       this.localFloatingInput = '';
     },
