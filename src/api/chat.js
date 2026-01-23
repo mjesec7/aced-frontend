@@ -38,6 +38,7 @@ const chatApi = {
    * @param {string} params.stepContext.type - Step type (exercise, quiz, explanation)
    * @param {number} params.stepContext.stepIndex - Current step index
    * @param {object} params.stepContext.exerciseData - Exercise data (no answers)
+   * @param {string} params.stepContext.exerciseContent - Human-readable exercise description for AI context
    * @returns {Promise<{reply: string, suggestions?: string[], hasMemory?: boolean, messageCount?: number, contextUsed?: boolean}>}
    */
   async getLessonContextAIResponse({ userInput, language, lessonContext, userProgress, stepContext }) {
@@ -67,7 +68,10 @@ const chatApi = {
           exerciseIndex: stepContext?.exerciseIndex,
           totalExercises: stepContext?.totalExercises,
           exerciseData: stepContext?.exerciseData || null,
-          content: stepContext?.content || null
+          content: stepContext?.content || null,
+          // CRITICAL: Include human-readable exercise content for AI context
+          // This is the "translator" that converts complex exercise objects to text the AI can understand
+          exerciseContent: stepContext?.exerciseContent || null
         },
         // Enable RAG features
         enableMemory: true,
