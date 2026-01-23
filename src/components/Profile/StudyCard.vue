@@ -316,21 +316,20 @@ return 'Описание отсутствует';
     getStudyMode(topic) {
       if (!topic) return 'quick-skill';
 
-      // Determine study mode based on course depth
       // studyMode field takes priority if provided by backend
       if (topic.studyMode) {
-        return topic.studyMode === 'mastery' || topic.studyMode === 'mastery-path' ? 'mastery-path' : 'quick-skill';
+        return topic.studyMode === 'mastery' || topic.studyMode === 'mastery-path' || topic.studyMode === 'deep-dive' ? 'mastery-path' : 'quick-skill';
       }
 
-      // Fallback: determine by lesson count or duration
-      const lessonCount = topic.lessonCount || topic.lessons?.length || this.totalLessons || 0;
-      const totalTime = topic.totalTime || topic.estimatedDuration || 0;
-
-      // Mastery Path if 5+ lessons or 60+ minutes
-      if (lessonCount >= 5 || totalTime >= 60) {
+      // Deep Dive / Mastery Path = playlist with multiple topics
+      if (topic.isPlaylist || topic.isCollection || topic.type === 'playlist') {
+        return 'mastery-path';
+      }
+      if (topic.topics && topic.topics.length > 1) {
         return 'mastery-path';
       }
 
+      // Quick Skill = single topic with lessons
       return 'quick-skill';
     },
 

@@ -677,15 +677,17 @@ export default {
       if (!course) return 'quick-skill';
       // studyMode field takes priority if provided by backend
       if (course.studyMode) {
-        return course.studyMode === 'mastery' || course.studyMode === 'mastery-path' ? 'mastery-path' : 'quick-skill';
+        return course.studyMode === 'mastery' || course.studyMode === 'mastery-path' || course.studyMode === 'deep-dive' ? 'mastery-path' : 'quick-skill';
       }
-      // Fallback: determine by lesson count or duration
-      const lessonCount = course.lessonCount || 0;
-      const totalTime = course.totalTime || 0;
-      // Mastery Path if 5+ lessons or 60+ minutes
-      if (lessonCount >= 5 || totalTime >= 60) {
+      // Deep Dive / Mastery Path = playlist with multiple topics
+      // Check if it's a collection/playlist of topics
+      if (course.isPlaylist || course.isCollection || course.type === 'playlist') {
         return 'mastery-path';
       }
+      if (course.topics && course.topics.length > 1) {
+        return 'mastery-path';
+      }
+      // Quick Skill = single topic with lessons
       return 'quick-skill';
     },
     getStudyModeLabel(course) {
