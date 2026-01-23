@@ -1,9 +1,80 @@
 // src/services/GPTService.js - FULLY ENHANCED VERSION
 import { auth } from '@/firebase';
 import api from '@/api/core';
+import { extractExerciseContent } from '@/utils/exerciseContentExtractor';
 
 // Use the shared api instance from core.js for consistent baseURL handling
 const gptApi = api;
+
+/**
+ * Simple message sender that extracts exercise context automatically
+ * Use this when you need a straightforward AI chat with exercise awareness
+ *
+ * @param {string} message - User's message
+ * @param {Object} currentExercise - Current exercise object (optional)
+ * @param {string} language - Language code (default: 'en')
+ * @returns {Promise<{text: string, usage?: Object}>}
+ */
+export async function sendMessage(message, currentExercise = null, language = 'en') {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error('User not authorized.');
+    }
+
+    if (!message?.trim()) {
+      return { text: 'Please enter a message.' };
+    }
+
+    const token = await user.getIdToken();
+
+    // EXTRACT: Convert the raw exercise JSON into readable text for AI
+    const exerciseContext = extractExerciseContent(currentExercise, language);
+
+    console.log('[GPTService] sendMessage -> Message:', message);
+    console.log('[GPTService] sendMessage -> Exercise Context:', exerciseContext);
+
+    const response = await gptApi.post(
+      '/chat',
+      {
+        userInput: message,
+        exerciseContext, // Human-readable exercise description
+        language,
+        trackUsage: true,
+        monthKey: getCurrentMonthKey()
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 30000
+      }
+    );
+
+    const text = response.data?.reply ||
+                 response.data?.text ||
+                 response.data?.choices?.[0]?.message?.content ||
+                 'AI could not provide an answer.';
+
+    return {
+      text,
+      usage: response.data?.usage || null
+    };
+
+  } catch (error) {
+    console.error('[GPTService] sendMessage error:', error);
+
+    if (error.response?.status === 429) {
+      return { text: 'Too many requests. Please wait and try again.' };
+    }
+    if (error.response?.status === 403) {
+      return { text: 'Access restricted. Check your subscription plan.' };
+    }
+
+    return { text: 'Sorry, an error occurred. Please try again.' };
+  }
+}
 
 // Helper function to get current month key
 const getCurrentMonthKey = () => {
