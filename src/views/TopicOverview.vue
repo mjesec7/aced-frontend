@@ -1042,14 +1042,27 @@ return null;
         return '';
       };
 
-      // Helper to clean description that may contain [object Object]
+      // Helper to clean description that may contain [object Object] or needs translation
       const cleanDescription = (desc) => {
         if (!desc || typeof desc !== 'string') return desc;
+        const subject = getLocalizedSubject(data.subject) || this.$t('common.general') || 'General';
+
         // Replace [object Object] with properly extracted subject
         if (desc.includes('[object Object]')) {
-          const subject = getLocalizedSubject(data.subject);
-          return desc.replace(/\[object Object\]/g, subject || this.$t('common.general') || 'General');
+          return desc.replace(/\[object Object\]/g, subject);
         }
+
+        // Detect and translate "Course with X lessons on Subject" pattern
+        const coursePattern = /^Course with (\d+) lessons? on (.+)$/i;
+        const match = desc.match(coursePattern);
+        if (match) {
+          const count = parseInt(match[1], 10);
+          if (count === 1) {
+            return this.$t('topicOverview.courseWithLesson', { subject });
+          }
+          return this.$t('topicOverview.courseWithLessons', { count, subject });
+        }
+
         return desc;
       };
 
