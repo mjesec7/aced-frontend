@@ -859,7 +859,7 @@ this.lessons = [];
         description: this.extractDescription(rawData),
         topicDescription: this.extractDescription(rawData),
         
-        subject: rawData.subject || 'General',
+        subject: this.extractLocalizedSubject(rawData.subject) || 'General',
         level: rawData.level || 1,
         type: rawData.type || 'free',
         
@@ -1007,42 +1007,83 @@ return null;
       
       return 'Untitled';
     },
-    
+
+    // Extract localized subject from object or string
+    extractLocalizedSubject(subject) {
+      if (!subject) return '';
+      if (typeof subject === 'string') return subject.trim();
+      if (typeof subject === 'object' && subject !== null) {
+        const localized = subject[this.language] || subject.en || subject.ru || subject.uz;
+        if (localized && typeof localized === 'string') return localized.trim();
+        const values = Object.values(subject);
+        for (const val of values) {
+          if (val && typeof val === 'string') return val.trim();
+        }
+      }
+      return '';
+    },
+
     // Enhanced description extraction with fallbacks
     extractDescription(data) {
       if (!data) return 'No description';
-      
+
+      // Helper to extract localized subject
+      const getLocalizedSubject = (subject) => {
+        if (!subject) return '';
+        if (typeof subject === 'string') return subject.trim();
+        if (typeof subject === 'object' && subject !== null) {
+          const localized = subject[this.language] || subject.en || subject.ru || subject.uz;
+          if (localized && typeof localized === 'string') return localized.trim();
+          const values = Object.values(subject);
+          for (const val of values) {
+            if (val && typeof val === 'string') return val.trim();
+          }
+        }
+        return '';
+      };
+
+      // Helper to clean description that may contain [object Object]
+      const cleanDescription = (desc) => {
+        if (!desc || typeof desc !== 'string') return desc;
+        // Replace [object Object] with properly extracted subject
+        if (desc.includes('[object Object]')) {
+          const subject = getLocalizedSubject(data.subject);
+          return desc.replace(/\[object Object\]/g, subject || this.$t('common.general') || 'General');
+        }
+        return desc;
+      };
+
       if (typeof data.description === 'string' && data.description.trim()) {
-        return data.description.trim();
+        return cleanDescription(data.description.trim());
       }
-      
+
       if (typeof data.description === 'object' && data.description !== null) {
         const localized = data.description[this.language] || data.description.en || data.description.ru || data.description.uz;
         if (localized && typeof localized === 'string' && localized.trim()) {
-          return localized.trim();
+          return cleanDescription(localized.trim());
         }
-        
+
         const values = Object.values(data.description);
         for (const value of values) {
           if (value && typeof value === 'string' && value.trim()) {
-            return value.trim();
+            return cleanDescription(value.trim());
           }
         }
       }
-      
+
       const descFields = ['topicDescription', 'desc', 'summary', 'info'];
       for (const field of descFields) {
         if (typeof data[field] === 'string' && data[field].trim()) {
-          return data[field].trim();
+          return cleanDescription(data[field].trim());
         }
         if (typeof data[field] === 'object' && data[field] !== null) {
           const localized = data[field][this.language] || data[field].en || data[field].ru || data[field].uz;
           if (localized && typeof localized === 'string' && localized.trim()) {
-            return localized.trim();
+            return cleanDescription(localized.trim());
           }
         }
       }
-      
+
       return 'No description for this topic.';
     },
     
