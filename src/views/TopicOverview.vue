@@ -218,22 +218,22 @@
                     <line x1="16" y1="17" x2="8" y2="17"/>
                     <polyline points="10,9 9,9 8,9"/>
                   </svg>
-                  {{ lesson.homework.totalExercises }} exercises
+                  {{ lesson.homework.totalExercises }} {{ $t('topicOverview.exercises') }}
                 </span>
                 <span v-if="lesson.progress?.duration" class="meta-item time-spent">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="10"/>
                     <polyline points="12,6 12,12 16,14"/>
                   </svg>
-                  {{ formatDuration(lesson.progress.duration) }} spent
+                  {{ formatDuration(lesson.progress.duration) }} {{ $t('topicOverview.timeSpent') }}
                 </span>
               </div>
             </div>
 
             <div class="lesson-action">
-              <button 
+              <button
                 class="action-btn"
-                :class="{ 
+                :class="{
                   locked: lesson.type === 'premium' && !isPremiumUser,
                   premium: lesson.type === 'premium' && !isPremiumUser,
                   completed: lesson.progress?.completed,
@@ -243,16 +243,16 @@
                 @click.stop="startLesson(lesson)"
               >
                 <span v-if="lesson.type === 'premium' && !isPremiumUser">
-                  🔒 Subscription required
+                  🔒 {{ $t('topicOverview.subscriptionRequired') }}
                 </span>
                 <span v-else-if="lesson.progress?.completed">
-                  ✅ Take again
+                  ✅ {{ $t('topicOverview.takeAgain') }}
                 </span>
                 <span v-else-if="lesson.progress?.progressPercent > 0">
-                  ▶️ Continue lesson
+                  ▶️ {{ $t('topicOverview.continueLesson') }}
                 </span>
                 <span v-else>
-                  🚀 Start lesson
+                  🚀 {{ $t('topicOverview.startLesson') }}
                 </span>
               </button>
             </div>
@@ -270,33 +270,33 @@
 
       <div class="action-section">
         <div class="action-content">
-          <h3 class="action-title">Ready to start learning?</h3>
+          <h3 class="action-title">{{ $t('topicOverview.readyToStart') }}</h3>
           <p class="action-description">
-            {{ reactiveAvailableCount > 0 
-              ? `You have access to ${reactiveAvailableCount} out of ${lessons.length} lessons` 
-              : 'Subscribe to access all lessons'
+            {{ reactiveAvailableCount > 0
+              ? $t('topicOverview.accessToLessons', { available: reactiveAvailableCount, total: lessons.length })
+              : $t('topicOverview.subscribeToAccess')
             }}
           </p>
           <div class="action-buttons">
-            <button 
+            <button
               v-if="reactiveAvailableCount > 0"
-              @click="startFirstLesson" 
+              @click="startFirstLesson"
               class="btn btn-primary btn-start"
             >
-              🚀 Start first lesson
+              🚀 {{ $t('topicOverview.startFirstLesson') }}
             </button>
-            <button 
+            <button
               v-else
-              @click="handleSubscription" 
+              @click="handleSubscription"
               class="btn btn-premium btn-start"
             >
-              ⭐ Subscribe
+              ⭐ {{ $t('topicOverview.subscribe') }}
             </button>
-            <button 
-              @click="navigateToProfile" 
+            <button
+              @click="navigateToProfile"
               class="btn btn-secondary"
             >
-              📚 Other courses
+              📚 {{ $t('topicOverview.otherCourses') }}
             </button>
           </div>
         </div>

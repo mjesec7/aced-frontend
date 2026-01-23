@@ -63,7 +63,7 @@
       
       <!-- Subject Tag -->
       <div class="subject-info">
-        <span class="subject-tag">{{ topic.subject || 'Общий' }}</span>
+        <span class="subject-tag">{{ displaySubject }}</span>
         <span class="progress-badge" v-if="lessonProgress > 0" :class="getProgressBadgeClass()">
           {{ getProgressLabel() }}
         </span>
@@ -194,8 +194,9 @@ export default {
         }
         
         if (this.topic.subject) {
-          const level = this.topic.level ? ` (Уровень ${this.topic.level})` : '';
-          return `${this.topic.subject}${level}`;
+          const subject = this.getLocalizedSubject();
+          const level = this.topic.level ? ` (Level ${this.topic.level})` : '';
+          return `${subject}${level}`;
         }
         
         return 'Курс без названия';
@@ -221,14 +222,14 @@ return 'Курс без названия';
         }
         
         const name = this.displayName;
-        const subject = this.topic.subject || 'Общий предмет';
+        const subject = this.displaySubject;
         const level = this.topic.level || 1;
         const lessonCount = this.totalLessons;
-        
+
         if (lessonCount > 0) {
-          return `Курс "${name}" по предмету "${subject}" (Уровень ${level}) содержит ${lessonCount} уроков.`;
+          return `${name} • ${subject} • ${lessonCount} lessons`;
         } else {
-          return `Курс "${name}" по предмету "${subject}" (Уровень ${level}).`;
+          return `${name} • ${subject}`;
         }
       } catch (error) {
 return 'Описание отсутствует';
@@ -282,6 +283,10 @@ return 'Описание отсутствует';
         return this.topic.createdBy.name;
       }
       return 'ACED';
+    },
+
+    displaySubject() {
+      return this.getLocalizedSubject();
     }
   },
   
@@ -305,12 +310,43 @@ return 'Описание отсутствует';
   },
   
   methods: {
+    getLocalizedSubject() {
+      if (!this.topic?.subject) {
+        return this.$t ? this.$t('common.general') || 'General' : 'General';
+      }
+
+      const subject = this.topic.subject;
+
+      // Handle string subject
+      if (typeof subject === 'string' && subject.trim()) {
+        return subject.trim();
+      }
+
+      // Handle localized subject object {en: "...", ru: "...", uz: "..."}
+      if (typeof subject === 'object' && subject !== null) {
+        const localized = subject[this.lang] || subject.ru || subject.en || subject.uz;
+        if (localized && typeof localized === 'string' && localized.trim()) {
+          return localized.trim();
+        }
+
+        // Try to get any available value
+        const values = Object.values(subject);
+        for (const val of values) {
+          if (val && typeof val === 'string' && val.trim()) {
+            return val.trim();
+          }
+        }
+      }
+
+      return this.$t ? this.$t('common.general') || 'General' : 'General';
+    },
+
     triggerReactivityUpdate() {
       this.componentKey++;
       this.lastStatusUpdate = Date.now();
       this.$forceUpdate();
-      
-       
+
+
     },
     
     getStudyMode(topic) {
