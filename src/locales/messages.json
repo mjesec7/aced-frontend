@@ -871,7 +871,9 @@
       "subscribe": "Subscribe",
       "otherCourses": "Other courses",
       "exercises": "exercises",
-      "timeSpent": "spent"
+      "timeSpent": "spent",
+      "courseWithLessons": "Course with {count} lessons on {subject}",
+      "courseWithLesson": "Course with 1 lesson on {subject}"
     },
     "lessonIntro": {
       "premium": "Premium",
@@ -1851,7 +1853,9 @@
       "subscribe": "Подписаться",
       "otherCourses": "Другие курсы",
       "exercises": "заданий",
-      "timeSpent": "потрачено"
+      "timeSpent": "потрачено",
+      "courseWithLessons": "Курс с {count} уроками по теме {subject}",
+      "courseWithLesson": "Курс с 1 уроком по теме {subject}"
     },
     "lessonIntro": {
       "premium": "Премиум",
@@ -2849,7 +2853,9 @@
       "subscribe": "Obuna bo'lish",
       "otherCourses": "Boshqa kurslar",
       "exercises": "mashqlar",
-      "timeSpent": "sarflandi"
+      "timeSpent": "sarflandi",
+      "courseWithLessons": "{subject} bo'yicha {count} ta darsli kurs",
+      "courseWithLesson": "{subject} bo'yicha 1 ta darsli kurs"
     },
     "lessonIntro": {
       "premium": "Premium",
