@@ -1,788 +1,534 @@
+// src/utils/exerciseContentExtractor.js
+// Extracts exercise content in a human-readable format for AI analysis
+// This allows the AI voice assistant to "read" and explain exercises without seeing answers
+
 /**
- * Exercise Content Extractor
- *
- * Utility for extracting exercise content in a format suitable for AI analysis.
- * This allows the AI speaker and analysis to understand and explain exercises.
+ * Get localized text from a multilingual field
  */
-
-import { getLocalizedText } from '@/composables/useLanguage';
+const getLocalizedText = (field, language = 'en') => {
+  if (!field) return '';
+  if (typeof field === 'string') return field;
+  if (typeof field === 'object') {
+    return field[language] || field.en || field.ru || field.uz || Object.values(field).find(v => typeof v === 'string' && v.trim()) || '';
+  }
+  return String(field || '');
+};
 
 /**
- * Extract readable content from different exercise types
+ * Extract exercise content in a readable format for AI analysis
  * @param {Object} exercise - The exercise object
- * @param {string} lang - Language code for localization
- * @returns {string} - Formatted string describing the exercise
+ * @param {string} language - Language code (en, ru, uz)
+ * @returns {string} Human-readable exercise description
  */
-export function extractExerciseContent(exercise, lang = 'en') {
+export function extractExerciseContent(exercise, language = 'en') {
   if (!exercise) return '';
 
-  const parts = [];
-  const exerciseType = getExerciseType(exercise);
+  const lines = [];
 
-  // Add exercise type header
-  parts.push(`[Exercise Type: ${formatExerciseType(exerciseType)}]`);
+  // Get exercise type
+  const exerciseType = exercise.type || exercise.exerciseType || exercise.content?.type || 'unknown';
+  lines.push(`Exercise Type: ${exerciseType}`);
 
-  // Extract title if available
-  const title = getLocalizedText(exercise, 'title', '', lang) ||
-                getLocalizedText(exercise.content, 'title', '', lang);
-  if (title) parts.push(`Title: ${title}`);
+  // Extract question/prompt from various possible locations
+  const question = getLocalizedText(exercise.question, language) ||
+                   getLocalizedText(exercise.prompt, language) ||
+                   getLocalizedText(exercise.text, language) ||
+                   getLocalizedText(exercise.title, language) ||
+                   getLocalizedText(exercise.content?.question, language) ||
+                   getLocalizedText(exercise.content?.prompt, language) ||
+                   getLocalizedText(exercise.content?.text, language) ||
+                   getLocalizedText(exercise.data?.question, language) ||
+                   getLocalizedText(exercise.data?.prompt, language);
 
-  // Extract description/instructions
-  const description = getLocalizedText(exercise, 'description', '', lang) ||
-                      getLocalizedText(exercise, 'instructions', '', lang) ||
-                      getLocalizedText(exercise.content, 'description', '', lang);
-  if (description) parts.push(`Instructions: ${description}`);
+  if (question) {
+    lines.push(`Question: ${question}`);
+  }
 
-  // Extract question/prompt
-  const question = getLocalizedText(exercise, 'question', '', lang) ||
-                   getLocalizedText(exercise, 'prompt', '', lang) ||
-                   getLocalizedText(exercise.content, 'question', '', lang);
-  if (question) parts.push(`Question: ${question}`);
+  // Extract instructions if separate from question
+  const instructions = getLocalizedText(exercise.instructions, language) ||
+                       getLocalizedText(exercise.description, language) ||
+                       getLocalizedText(exercise.content?.instructions, language);
+
+  if (instructions && instructions !== question) {
+    lines.push(`Instructions: ${instructions}`);
+  }
 
   // Type-specific content extraction
-  switch (exerciseType) {
-    case 'multiple-choice':
-    case 'multiple_choice':
+  const type = exerciseType.toLowerCase().replace(/[-_]/g, '');
+
+  switch (type) {
+    // Multiple Choice
+    case 'multiplechoice':
     case 'quiz':
     case 'mcq':
-      parts.push(extractMultipleChoiceContent(exercise, lang));
+    case 'abc':
+    case 'choice':
+    case 'singlechoice':
+    case 'dialoguecompletion':
+      const options = exercise.options || exercise.choices ||
+                      exercise.content?.options || exercise.data?.options || [];
+      if (options.length > 0) {
+        lines.push('Answer Options:');
+        options.forEach((opt, i) => {
+          const letter = String.fromCharCode(65 + i);
+          const optText = typeof opt === 'string' ? opt :
+                          getLocalizedText(opt.text || opt.label || opt.value, language);
+          lines.push(`  ${letter}) ${optText}`);
+        });
+      }
       break;
 
-    case 'true-false':
-    case 'true_false':
-      parts.push(extractTrueFalseContent(exercise, lang));
+    // True/False
+    case 'truefalse':
+    case 'boolean':
+    case 'tf':
+      const statement = getLocalizedText(exercise.statement, language) ||
+                        getLocalizedText(exercise.content?.statement, language);
+      if (statement) {
+        lines.push(`Statement to evaluate: ${statement}`);
+      }
+      lines.push('Options: True or False');
       break;
 
+    // Matching / Pairs
     case 'matching':
-    case 'chem_matching':
-    case 'chem-matching':
-    case 'chemmatchingstep':
-    case 'pair_matching':
-      parts.push(extractMatchingContent(exercise, lang));
+    case 'memory':
+    case 'pairs':
+    case 'chemmatching':
+    case 'pairmatching':
+    case 'match':
+      const pairs = exercise.pairs || exercise.content?.pairs || exercise.data?.pairs || [];
+      if (pairs.length > 0) {
+        lines.push('Items to match:');
+        lines.push('Left column:');
+        pairs.forEach((pair, i) => {
+          const left = getLocalizedText(pair.left || pair.term || pair.name || pair.key, language);
+          lines.push(`  ${i + 1}. ${left}`);
+        });
+        lines.push('Right column (to find matches):');
+        pairs.forEach((pair, i) => {
+          const right = getLocalizedText(pair.right || pair.definition || pair.match || pair.formula || pair.value, language);
+          lines.push(`  ${i + 1}. ${right}`);
+        });
+      }
       break;
 
-    // --- English Sentence Fix (correct errors in sentence) ---
-    case 'english_sentence_fix':
-    case 'english-sentence-fix':
-    case 'englishsentencefixstep':
-    case 'sentence_fix':
-    case 'sentence-fix':
-      parts.push(extractEnglishSentenceFixContent(exercise, lang));
-      break;
-
-    // --- English Sentence Order (arrange words) ---
-    case 'sentence_order':
-    case 'english_sentence_order':
-    case 'english-sentence-order':
-    case 'englishsentenceorderstep':
-    case 'word_order':
+    // Ordering / Sentence Order
     case 'ordering':
-      parts.push(extractOrderingContent(exercise, lang));
+    case 'order':
+    case 'sequence':
+    case 'sentenceorder':
+    case 'sentenceordering':
+    case 'wordorder':
+    case 'reorder':
+    case 'englishsentenceorder':
+      const items = exercise.items || exercise.words || exercise.elements ||
+                    exercise.content?.items || exercise.content?.words ||
+                    exercise.content?.correctOrder || exercise.data?.items ||
+                    exercise.data?.correctOrder || [];
+      if (items.length > 0) {
+        lines.push('Words/Items to put in correct order:');
+        const itemTexts = items.map(item =>
+          typeof item === 'string' ? item : getLocalizedText(item.text || item.word, language)
+        );
+        lines.push(`  [${itemTexts.join(', ')}]`);
+      }
       break;
 
-    case 'fill_blank':
-    case 'fill-blank':
-      parts.push(extractFillBlankContent(exercise, lang));
+    // Fill in the Blank
+    case 'fillblank':
+    case 'fillinblank':
+    case 'textinput':
+    case 'cloze':
+    case 'fillblanks':
+      const sentence = getLocalizedText(exercise.sentence || exercise.template, language) ||
+                       getLocalizedText(exercise.content?.sentence || exercise.content?.template, language);
+      if (sentence) {
+        lines.push(`Sentence with blanks: ${sentence}`);
+      }
+      const blanks = exercise.blanks || exercise.content?.blanks || [];
+      if (blanks.length > 0) {
+        lines.push(`Number of blanks to fill: ${blanks.length}`);
+      }
       break;
 
-    case 'histogram':
-      parts.push(extractHistogramContent(exercise, lang));
+    // Basket / Sorting / Categorization
+    case 'basket':
+    case 'sorting':
+    case 'categorization':
+    case 'dragdrop':
+    case 'draganddrop':
+      const sortItems = exercise.items || exercise.draggables ||
+                        exercise.content?.items || exercise.data?.items || [];
+      const bins = exercise.bins || exercise.categories || exercise.baskets ||
+                   exercise.dropZones || exercise.targets ||
+                   exercise.content?.bins || exercise.content?.categories ||
+                   exercise.data?.bins || [];
+
+      if (sortItems.length > 0) {
+        lines.push('Items to sort:');
+        sortItems.forEach((item, i) => {
+          const itemText = typeof item === 'string' ? item :
+                          getLocalizedText(item.text || item.content || item.label, language);
+          lines.push(`  ${i + 1}. ${itemText}`);
+        });
+      }
+      if (bins.length > 0) {
+        lines.push('Categories/Bins:');
+        bins.forEach((bin, i) => {
+          const binText = typeof bin === 'string' ? bin :
+                         getLocalizedText(bin.label || bin.name || bin.title, language);
+          lines.push(`  ${i + 1}. ${binText}`);
+        });
+      }
       break;
 
-    case 'data_analysis':
-    case 'data-analysis':
-    case 'dataanalysis':
-      parts.push(extractDataAnalysisContent(exercise, lang));
-      break;
-
+    // Geometry
     case 'geometry':
-    case 'geometry_poly':
-    case 'geometry-poly':
-    case 'geometrypolystep':
-      parts.push(extractGeometryContent(exercise, lang));
+    case 'geometrypoly':
+      const shape = exercise.shape || exercise.content?.shape || exercise.data?.shape;
+      const problem = getLocalizedText(exercise.problem, language) ||
+                      getLocalizedText(exercise.content?.problem, language);
+      if (shape) {
+        lines.push(`Shape: ${shape}`);
+      }
+      if (problem) {
+        lines.push(`Problem: ${problem}`);
+      }
+      const measurements = exercise.measurements || exercise.content?.measurements ||
+                           exercise.values || exercise.content?.values || {};
+      if (Object.keys(measurements).length > 0) {
+        lines.push('Given measurements:');
+        Object.entries(measurements).forEach(([key, value]) => {
+          lines.push(`  ${key}: ${value}`);
+        });
+      }
       break;
 
-    case 'fraction_visual':
-    case 'fraction-visual':
-    case 'fractionvisualstep':
-      parts.push(extractFractionContent(exercise, lang));
+    // Data Analysis / Histogram
+    case 'dataanalysis':
+    case 'histogram':
+      const chartData = exercise.chartData || exercise.data?.chartData ||
+                        exercise.content?.chartData || exercise.data || [];
+      if (Array.isArray(chartData) && chartData.length > 0) {
+        lines.push('Data to analyze:');
+        chartData.forEach(item => {
+          const label = getLocalizedText(item.label, language) || item.name;
+          lines.push(`  ${label}: ${item.value}`);
+        });
+      }
       break;
 
-    case 'chem_mixing':
-    case 'chem-mixing':
-    case 'chemmixingstep':
-      parts.push(extractChemMixingContent(exercise, lang));
+    // Fraction Visual
+    case 'fractionvisual':
+      const targetNumerator = exercise.targetNumerator || exercise.content?.targetNumerator;
+      const targetDenominator = exercise.targetDenominator || exercise.content?.targetDenominator;
+      if (targetNumerator && targetDenominator) {
+        lines.push(`Target fraction: ${targetNumerator}/${targetDenominator}`);
+      }
       break;
 
-    case 'language_noun_bag':
-    case 'language_tone_transformer':
-    case 'language_idiom_bridge':
-    case 'language_word_constellation':
-    case 'language_rhythm_match':
-    case 'language_false_friends':
-    case 'language-false-friends':
-      parts.push(extractLanguageExerciseContent(exercise, exerciseType, lang));
+    // Chemistry Mixing
+    case 'chemmixing':
+      const substances = exercise.substances || exercise.content?.substances ||
+                         exercise.data?.substances || [];
+      if (substances.length > 0) {
+        lines.push('Substances available:');
+        substances.forEach((sub, i) => {
+          const name = getLocalizedText(sub.name || sub.label, language);
+          lines.push(`  ${i + 1}. ${name}`);
+        });
+      }
+      break;
+
+    // English Sentence Fix
+    case 'englishsentencefix':
+      const originalSentence = exercise.originalSentence || exercise.content?.originalSentence;
+      const tokens = exercise.tokens || exercise.content?.tokens || [];
+      if (originalSentence) {
+        lines.push(`Sentence to fix: ${originalSentence}`);
+      }
+      if (tokens.length > 0) {
+        lines.push('Tokens:');
+        tokens.forEach((token, i) => {
+          lines.push(`  ${i + 1}. "${token.text || token}" ${token.isError ? '(has error)' : ''}`);
+        });
+      }
+      break;
+
+    // Language exercises
+    case 'languagenounbag':
+      const words = exercise.words || exercise.content?.words || exercise.data?.words || [];
+      const targetPos = exercise.targetPos || exercise.content?.targetPos || 'noun';
+      lines.push(`Find all ${targetPos}s from the words:`);
+      if (words.length > 0) {
+        lines.push(`  [${words.map(w => typeof w === 'string' ? w : w.word).join(', ')}]`);
+      }
+      break;
+
+    case 'languagetonetransformer':
+    case 'languageidiombridge':
+    case 'languagewordconstellation':
+    case 'languagerhythmmatch':
+    case 'languagefalsefriends':
+      // These have specific content structures - extract what's available
+      const contentData = exercise.content || exercise.data || exercise;
+      if (contentData.text) {
+        lines.push(`Text: ${getLocalizedText(contentData.text, language)}`);
+      }
+      if (contentData.words && Array.isArray(contentData.words)) {
+        lines.push(`Words: [${contentData.words.join(', ')}]`);
+      }
+      if (contentData.idiom) {
+        lines.push(`Idiom: ${getLocalizedText(contentData.idiom, language)}`);
+      }
+      break;
+
+    // Coding exercises
+    case 'coding':
+    case 'codefix':
+    case 'code':
+    case 'programming':
+      const initialCode = exercise.initialCode || exercise.starterCode ||
+                          exercise.code || exercise.content?.initialCode;
+      const programmingLang = exercise.language || exercise.programmingLanguage || 'javascript';
+      if (initialCode) {
+        lines.push(`Programming language: ${programmingLang}`);
+        lines.push(`Initial code:\n${initialCode}`);
+      }
+      break;
+
+    // Selection game
+    case 'selectiongame':
+      const selectionItems = exercise.items || exercise.content?.items || [];
+      const selectionPrompt = getLocalizedText(exercise.prompt, language) ||
+                              getLocalizedText(exercise.content?.prompt, language);
+      if (selectionPrompt) {
+        lines.push(`Task: ${selectionPrompt}`);
+      }
+      if (selectionItems.length > 0) {
+        lines.push('Items to choose from:');
+        selectionItems.forEach((item, i) => {
+          const name = getLocalizedText(item.name || item.label, language);
+          lines.push(`  ${i + 1}. ${name}`);
+        });
+      }
+      break;
+
+    // Map exercise
+    case 'map':
+      const markers = exercise.markers || exercise.content?.markers || exercise.data?.markers || [];
+      if (markers.length > 0) {
+        lines.push('Map markers to identify:');
+        markers.forEach((marker, i) => {
+          const label = getLocalizedText(marker.label || marker.name, language);
+          lines.push(`  ${i + 1}. ${label}`);
+        });
+      }
+      break;
+
+    // Block coding
+    case 'blockcoding':
+      const availableBlocks = exercise.availableBlocks || exercise.content?.availableBlocks || [];
+      if (availableBlocks.length > 0) {
+        lines.push('Available coding blocks:');
+        availableBlocks.forEach((block, i) => {
+          const name = typeof block === 'string' ? block : (block.name || block.type);
+          lines.push(`  ${i + 1}. ${name}`);
+        });
+      }
       break;
 
     default:
-      // Generic content extraction
-      parts.push(extractGenericContent(exercise, lang));
-  }
-
-  return parts.filter(Boolean).join('\n');
-}
-
-/**
- * Get the exercise type from various possible locations
- */
-function getExerciseType(exercise) {
-  return exercise.type?.toLowerCase() ||
-         exercise.exerciseType?.toLowerCase() ||
-         exercise.content?.type?.toLowerCase() ||
-         exercise.data?.type?.toLowerCase() ||
-         'unknown';
-}
-
-/**
- * Format exercise type for display
- */
-function formatExerciseType(type) {
-  const typeMap = {
-    'multiple-choice': 'Multiple Choice',
-    'multiple_choice': 'Multiple Choice',
-    'quiz': 'Quiz',
-    'mcq': 'Multiple Choice Question',
-    'true-false': 'True or False',
-    'true_false': 'True or False',
-    'matching': 'Matching',
-    'chem_matching': 'Chemistry Matching',
-    'pair_matching': 'Pair Matching',
-    'sentence_order': 'Sentence Ordering',
-    'english_sentence_order': 'Sentence Ordering',
-    'word_order': 'Word Ordering',
-    'ordering': 'Ordering',
-    'fill_blank': 'Fill in the Blank',
-    'histogram': 'Histogram Analysis',
-    'data_analysis': 'Data Analysis',
-    'geometry': 'Geometry',
-    'geometry_poly': 'Polygon Geometry',
-    'fraction_visual': 'Visual Fractions',
-    'chem_mixing': 'Chemistry Mixing',
-    'language_noun_bag': 'Noun Classification',
-    'language_tone_transformer': 'Tone Transformation',
-    'language_idiom_bridge': 'Idiom Matching',
-    'language_word_constellation': 'Word Constellation',
-    'language_rhythm_match': 'Rhythm Matching',
-    'language_false_friends': 'False Friends'
-  };
-  return typeMap[type] || type.replace(/_/g, ' ').replace(/-/g, ' ');
-}
-
-/**
- * Extract multiple choice content
- */
-function extractMultipleChoiceContent(exercise, lang) {
-  const parts = [];
-
-  // Get question/prompt
-  const question = getLocalizedText(exercise, 'question', '', lang) ||
-                   getLocalizedText(exercise.content, 'question', '', lang) ||
-                   getLocalizedText(exercise, 'prompt', '', lang) ||
-                   getLocalizedText(exercise.content, 'prompt', '', lang);
-
-  if (question) {
-    parts.push(`Question: "${question}"`);
-  }
-
-  const options = exercise.options ||
-                  exercise.content?.options ||
-                  exercise.data?.options || [];
-
-  if (options.length > 0) {
-    const optionTexts = options.map((opt, idx) => {
-      const text = typeof opt === 'string' ? opt :
-                   getLocalizedText(opt, 'text', '', lang) ||
-                   getLocalizedText(opt, 'label', '', lang) ||
-                   opt.value || String(opt);
-      return `  ${String.fromCharCode(65 + idx)}. ${text}`;
-    });
-    parts.push(`Options:\n${optionTexts.join('\n')}`);
-  }
-
-  // Include correct answer index for AI guidance
-  const correctIndex = exercise.correctIndex ??
-                       exercise.correctAnswer ??
-                       exercise.content?.correctIndex ??
-                       exercise.content?.correctAnswer ??
-                       exercise.data?.correctIndex;
-
-  if (correctIndex !== undefined && correctIndex !== null) {
-    // Map index to letter if it's a number
-    const answerLabel = typeof correctIndex === 'number'
-      ? String.fromCharCode(65 + correctIndex)
-      : correctIndex;
-    parts.push(`(AI Knowledge - Correct Answer: ${answerLabel})`);
-  }
-
-  return parts.join('\n');
-}
-
-/**
- * Extract true/false content
- */
-function extractTrueFalseContent(exercise, lang) {
-  const statement = getLocalizedText(exercise, 'statement', '', lang) ||
-                    getLocalizedText(exercise, 'question', '', lang);
-  return statement ? `Statement to evaluate: ${statement}` : '';
-}
-
-/**
- * Extract matching exercise content
- */
-function extractMatchingContent(exercise, lang) {
-  const parts = [];
-
-  const pairs = exercise.pairs ||
-                exercise.content?.pairs ||
-                exercise.data?.pairs || [];
-
-  const leftItems = exercise.leftItems ||
-                    exercise.content?.leftItems ||
-                    exercise.data?.leftItems || [];
-
-  const rightItems = exercise.rightItems ||
-                     exercise.content?.rightItems ||
-                     exercise.data?.rightItems || [];
-
-  // Get instruction if available
-  const instruction = getLocalizedText(exercise, 'instruction', '', lang) ||
-                      getLocalizedText(exercise, 'description', '', lang) ||
-                      getLocalizedText(exercise.content, 'instruction', '', lang);
-
-  if (instruction) {
-    parts.push(`Task: ${instruction}`);
-  } else {
-    parts.push('Task: Match the items correctly.');
-  }
-
-  if (pairs.length > 0) {
-    parts.push('Items to match:');
-    const pairTexts = pairs.map(pair => {
-      // Handle various pair formats (name/formula for chemistry, left/right for general)
-      const left = getLocalizedText(pair, 'name', '', lang) ||
-                   getLocalizedText(pair, 'left', '', lang) ||
-                   getLocalizedText(pair, 'term', '', lang) ||
-                   pair.name || pair.left || pair.term;
-      const right = getLocalizedText(pair, 'formula', '', lang) ||
-                    getLocalizedText(pair, 'right', '', lang) ||
-                    getLocalizedText(pair, 'definition', '', lang) ||
-                    pair.formula || pair.right || pair.definition;
-      return `  - "${left}" matches with "${right}"`;
-    });
-    parts.push(pairTexts.join('\n'));
-    parts.push(`(AI Knowledge - These are the correct pairings. Guide the user without revealing answers directly.)`);
-    return parts.join('\n');
-  }
-
-  if (leftItems.length > 0 && rightItems.length > 0) {
-    const leftTexts = leftItems.map(item =>
-      typeof item === 'string' ? item : getLocalizedText(item, 'text', '', lang) || item.label || item.value || String(item)
-    );
-    const rightTexts = rightItems.map(item =>
-      typeof item === 'string' ? item : getLocalizedText(item, 'text', '', lang) || item.label || item.value || String(item)
-    );
-    parts.push(`Left column items: ${leftTexts.join(', ')}`);
-    parts.push(`Right column items: ${rightTexts.join(', ')}`);
-    return parts.join('\n');
-  }
-
-  return parts.join('\n');
-}
-
-/**
- * Extract English Sentence Fix content (correct errors in a sentence)
- */
-function extractEnglishSentenceFixContent(exercise, lang) {
-  const parts = [];
-
-  // Get the incorrect sentence that needs to be fixed
-  const sentence = getLocalizedText(exercise, 'sentence', '', lang) ||
-                   getLocalizedText(exercise.content, 'sentence', '', lang) ||
-                   getLocalizedText(exercise, 'incorrectSentence', '', lang) ||
-                   getLocalizedText(exercise.content, 'incorrectSentence', '', lang) ||
-                   getLocalizedText(exercise.data, 'sentence', '', lang);
-
-  if (sentence) {
-    parts.push(`Task: The user must correct errors in this sentence.`);
-    parts.push(`Incorrect Sentence: "${sentence}"`);
-  }
-
-  // Get hint if available
-  const hint = getLocalizedText(exercise, 'hint', '', lang) ||
-               getLocalizedText(exercise.content, 'hint', '', lang);
-  if (hint) {
-    parts.push(`Hint: ${hint}`);
-  }
-
-  // Include the correct answer for AI context (so it can guide the user)
-  const correctSentence = getLocalizedText(exercise, 'correctSentence', '', lang) ||
-                          getLocalizedText(exercise.content, 'correctSentence', '', lang) ||
-                          getLocalizedText(exercise, 'correctAnswer', '', lang) ||
-                          getLocalizedText(exercise.content, 'correctAnswer', '', lang) ||
-                          getLocalizedText(exercise.data, 'correctSentence', '', lang);
-
-  if (correctSentence) {
-    parts.push(`(AI Knowledge - Correct Sentence: "${correctSentence}")`);
-  }
-
-  // Include error type/focus if specified
-  const errorType = exercise.errorType || exercise.content?.errorType || exercise.data?.errorType;
-  if (errorType) {
-    parts.push(`Error Type Focus: ${errorType}`);
-  }
-
-  return parts.join('\n');
-}
-
-/**
- * Extract ordering exercise content
- */
-function extractOrderingContent(exercise, lang) {
-  const parts = [];
-
-  const items = exercise.items ||
-                exercise.content?.items ||
-                exercise.data?.items ||
-                exercise.words ||
-                exercise.content?.words ||
-                exercise.data?.words || [];
-
-  if (items.length > 0) {
-    const itemTexts = items.map(item =>
-      typeof item === 'string' ? item :
-      getLocalizedText(item, 'text', '', lang) || item.word || item.value || String(item)
-    );
-
-    parts.push(`Task: Arrange these words/items in the correct order.`);
-    parts.push(`Scrambled Items: ${itemTexts.join(', ')}`);
-  }
-
-  // Include correct order for AI guidance
-  const correctOrder = exercise.correctOrder ||
-                       exercise.content?.correctOrder ||
-                       exercise.data?.correctOrder ||
-                       exercise.correctSentence ||
-                       exercise.content?.correctSentence;
-
-  if (correctOrder) {
-    const orderText = Array.isArray(correctOrder) ? correctOrder.join(' ') : correctOrder;
-    parts.push(`(AI Knowledge - Correct Order: "${orderText}")`);
-  }
-
-  return parts.join('\n');
-}
-
-/**
- * Extract fill-in-the-blank content
- */
-function extractFillBlankContent(exercise, lang) {
-  const sentence = getLocalizedText(exercise, 'sentence', '', lang) ||
-                   getLocalizedText(exercise, 'text', '', lang) ||
-                   getLocalizedText(exercise.content, 'sentence', '', lang);
-
-  const blanks = exercise.blanks ||
-                 exercise.content?.blanks ||
-                 exercise.data?.blanks || [];
-
-  let result = sentence ? `Sentence: ${sentence}` : '';
-  if (blanks.length > 0) {
-    result += `\nNumber of blanks: ${blanks.length}`;
-  }
-  return result;
-}
-
-/**
- * Extract histogram content
- */
-function extractHistogramContent(exercise, lang) {
-  const data = exercise.data || exercise.content?.data || [];
-  const title = getLocalizedText(exercise, 'title', '', lang);
-
-  let result = title ? `Chart: ${title}\n` : '';
-  if (Array.isArray(data)) {
-    const labels = data.map(item =>
-      typeof item === 'object' ? (item.label || item.name || '') : String(item)
-    ).filter(Boolean);
-    if (labels.length > 0) {
-      result += `Data categories: ${labels.join(', ')}`;
-    }
-  }
-  return result;
-}
-
-/**
- * Extract data analysis content
- */
-function extractDataAnalysisContent(exercise, lang) {
-  const dataset = exercise.dataset ||
-                  exercise.content?.dataset ||
-                  exercise.data?.dataset || {};
-
-  const question = getLocalizedText(exercise, 'analysisQuestion', '', lang) ||
-                   getLocalizedText(exercise.content, 'question', '', lang);
-
-  let result = '';
-  if (dataset.title) {
-    result += `Dataset: ${getLocalizedText(dataset, 'title', '', lang) || dataset.title}\n`;
-  }
-  if (question) {
-    result += `Analysis question: ${question}`;
-  }
-  return result;
-}
-
-/**
- * Extract geometry content
- */
-function extractGeometryContent(exercise, lang) {
-  const parts = [];
-
-  const shape = exercise.shape ||
-                exercise.content?.shape ||
-                exercise.data?.shape || '';
-
-  const measurements = exercise.measurements ||
-                       exercise.content?.measurements ||
-                       exercise.data?.measurements || {};
-
-  const constraints = exercise.constraints ||
-                      exercise.content?.constraints ||
-                      exercise.data?.constraints || {};
-
-  const instruction = getLocalizedText(exercise, 'instruction', '', lang) ||
-                      getLocalizedText(exercise.content, 'instruction', '', lang) ||
-                      getLocalizedText(exercise, 'problem', '', lang) ||
-                      getLocalizedText(exercise.content, 'problem', '', lang);
-
-  if (instruction) {
-    parts.push(`Task: ${instruction}`);
-  } else {
-    parts.push('Task: Solve this geometry problem.');
-  }
-
-  if (shape) {
-    parts.push(`Shape Type: ${shape}`);
-  }
-
-  if (Object.keys(measurements).length > 0) {
-    const measurementParts = Object.entries(measurements).map(
-      ([key, value]) => `${key}: ${value}`
-    );
-    parts.push(`Given Measurements: ${measurementParts.join(', ')}`);
-  }
-
-  if (Object.keys(constraints).length > 0) {
-    parts.push(`Required Constraints: ${JSON.stringify(constraints)}`);
-  }
-
-  // Include values/solution hints for AI
-  const values = exercise.values ||
-                 exercise.content?.values ||
-                 exercise.data?.values || {};
-
-  if (Object.keys(values).length > 0) {
-    const valuesParts = Object.entries(values).map(
-      ([key, value]) => `${key}: ${value}`
-    );
-    parts.push(`(AI Knowledge - Expected Values: ${valuesParts.join(', ')})`);
-  }
-
-  // Include answer if available
-  const answer = exercise.answer ||
-                 exercise.content?.answer ||
-                 exercise.data?.answer;
-
-  if (answer) {
-    parts.push(`(AI Knowledge - Correct Answer: ${typeof answer === 'object' ? JSON.stringify(answer) : answer})`);
-  }
-
-  return parts.join('\n');
-}
-
-/**
- * Extract fraction visual content
- */
-function extractFractionContent(exercise, lang) {
-  const fraction = exercise.fraction ||
-                   exercise.content?.fraction ||
-                   exercise.data?.fraction || {};
-
-  const numerator = fraction.numerator;
-  const denominator = fraction.denominator;
-
-  if (numerator !== undefined && denominator !== undefined) {
-    return `Fraction: ${numerator}/${denominator}`;
-  }
-  return '';
-}
-
-/**
- * Extract chemistry mixing content
- */
-function extractChemMixingContent(exercise, lang) {
-  const parts = [];
-
-  // Get instruction
-  const instruction = getLocalizedText(exercise, 'instruction', '', lang) ||
-                      getLocalizedText(exercise.content, 'instruction', '', lang) ||
-                      getLocalizedText(exercise, 'task', '', lang);
-
-  if (instruction) {
-    parts.push(`Task: ${instruction}`);
-  } else {
-    parts.push('Task: Mix substances to create a chemical reaction.');
-  }
-
-  // Get available chemicals/substances/inventory
-  const chemicals = exercise.chemicals ||
-                    exercise.content?.chemicals ||
-                    exercise.data?.chemicals ||
-                    exercise.inventory ||
-                    exercise.content?.inventory ||
-                    exercise.data?.inventory || [];
-
-  if (chemicals.length > 0) {
-    const chemNames = chemicals.map(chem =>
-      typeof chem === 'string' ? chem :
-      getLocalizedText(chem, 'name', '', lang) || chem.formula || chem.symbol || String(chem)
-    );
-    parts.push(`Available Substances: ${chemNames.join(', ')}`);
-  }
-
-  // Get target reaction/product
-  const targetReaction = getLocalizedText(exercise, 'targetReaction', '', lang) ||
-                         getLocalizedText(exercise.content, 'targetReaction', '', lang);
-  const targetProduct = getLocalizedText(exercise, 'targetProduct', '', lang) ||
-                        getLocalizedText(exercise.content, 'targetProduct', '', lang) ||
-                        getLocalizedText(exercise, 'goal', '', lang);
-
-  if (targetReaction) {
-    parts.push(`Target Reaction: ${targetReaction}`);
-  }
-  if (targetProduct) {
-    parts.push(`Goal: Create ${targetProduct}`);
-  }
-
-  // Include correct combination for AI guidance
-  const correctCombination = exercise.correctCombination ||
-                             exercise.content?.correctCombination ||
-                             exercise.data?.correctCombination ||
-                             exercise.solution ||
-                             exercise.content?.solution;
-
-  if (correctCombination) {
-    const combText = Array.isArray(correctCombination)
-      ? correctCombination.join(' + ')
-      : JSON.stringify(correctCombination);
-    parts.push(`(AI Knowledge - Correct Combination: ${combText})`);
-  }
-
-  return parts.join('\n');
-}
-
-/**
- * Extract language exercise content
- */
-function extractLanguageExerciseContent(exercise, type, lang) {
-  const parts = [];
-
-  // Common language exercise fields
-  const words = exercise.words ||
-                exercise.content?.words ||
-                exercise.data?.words || [];
-
-  const sentences = exercise.sentences ||
-                    exercise.content?.sentences ||
-                    exercise.data?.sentences || [];
-
-  const idioms = exercise.idioms ||
-                 exercise.content?.idioms ||
-                 exercise.data?.idioms || [];
-
-  if (words.length > 0) {
-    const wordTexts = words.map(w =>
-      typeof w === 'string' ? w : getLocalizedText(w, 'word', '', lang) || w.text
-    );
-    parts.push(`Words: ${wordTexts.join(', ')}`);
-  }
-
-  if (sentences.length > 0) {
-    const sentenceTexts = sentences.map(s =>
-      typeof s === 'string' ? s : getLocalizedText(s, 'text', '', lang) || s.sentence
-    );
-    parts.push(`Sentences: ${sentenceTexts.join(' | ')}`);
-  }
-
-  if (idioms.length > 0) {
-    const idiomTexts = idioms.map(i =>
-      typeof i === 'string' ? i : getLocalizedText(i, 'idiom', '', lang) || i.phrase
-    );
-    parts.push(`Idioms: ${idiomTexts.join(', ')}`);
-  }
-
-  return parts.join('\n');
-}
-
-/**
- * Extract generic content from exercise
- * This is a fallback for unknown exercise types - it tries to extract as much useful info as possible
- */
-function extractGenericContent(exercise, lang) {
-  const parts = [];
-
-  // Try to extract instruction/task
-  const instruction = getLocalizedText(exercise, 'instruction', '', lang) ||
-                      getLocalizedText(exercise, 'task', '', lang) ||
-                      getLocalizedText(exercise.content, 'instruction', '', lang) ||
-                      getLocalizedText(exercise.data, 'instruction', '', lang);
-  if (instruction) {
-    parts.push(`Task: ${instruction}`);
-  }
-
-  // Try to extract any text content
-  const textFields = ['text', 'content', 'body', 'problem', 'question', 'prompt'];
-  for (const field of textFields) {
-    const text = getLocalizedText(exercise, field, '', lang) ||
-                 getLocalizedText(exercise.content, field, '', lang) ||
-                 getLocalizedText(exercise.data, field, '', lang);
-    if (text && typeof text === 'string' && text.length > 0) {
-      parts.push(`Content: ${text}`);
-      break;
-    }
-  }
-
-  // Try to extract sentence for sentence-based exercises
-  const sentence = getLocalizedText(exercise, 'sentence', '', lang) ||
-                   getLocalizedText(exercise.content, 'sentence', '', lang);
-  if (sentence) {
-    parts.push(`Sentence: "${sentence}"`);
-  }
-
-  // Try to extract items/words/options
-  const itemsArrays = [
-    exercise.items, exercise.words, exercise.options,
-    exercise.content?.items, exercise.content?.words, exercise.content?.options,
-    exercise.data?.items, exercise.data?.words, exercise.data?.options
-  ];
-  for (const arr of itemsArrays) {
-    if (Array.isArray(arr) && arr.length > 0) {
-      const itemTexts = arr.map(item =>
-        typeof item === 'string' ? item :
-        getLocalizedText(item, 'text', '', lang) || item.word || item.value || item.label || String(item)
-      ).filter(Boolean);
-      if (itemTexts.length > 0) {
-        parts.push(`Items: ${itemTexts.join(', ')}`);
-        break;
+      // For unknown types, try to extract any available structured data
+      if (exercise.content && typeof exercise.content === 'object') {
+        const contentStr = JSON.stringify(exercise.content, null, 2);
+        if (contentStr.length < 500) {
+          lines.push(`Exercise data: ${contentStr}`);
+        }
       }
-    }
-  }
-
-  // Try to extract pairs for matching-like exercises
-  const pairs = exercise.pairs || exercise.content?.pairs || exercise.data?.pairs;
-  if (Array.isArray(pairs) && pairs.length > 0) {
-    const pairTexts = pairs.map(pair => {
-      const left = getLocalizedText(pair, 'left', '', lang) || pair.left || pair.name || pair.term || '';
-      const right = getLocalizedText(pair, 'right', '', lang) || pair.right || pair.formula || pair.definition || '';
-      return `"${left}" ↔ "${right}"`;
-    });
-    parts.push(`Pairs: ${pairTexts.join('; ')}`);
-  }
-
-  // Try to include the correct answer for AI guidance (if available)
-  const answerFields = ['correctAnswer', 'answer', 'correctSentence', 'solution'];
-  for (const field of answerFields) {
-    const answer = getLocalizedText(exercise, field, '', lang) ||
-                   getLocalizedText(exercise.content, field, '', lang) ||
-                   getLocalizedText(exercise.data, field, '', lang);
-    if (answer) {
-      const answerText = typeof answer === 'object' ? JSON.stringify(answer) : answer;
-      parts.push(`(AI Knowledge - Correct Answer: "${answerText}")`);
       break;
-    }
   }
 
-  // If we still have nothing, dump a portion of the raw data
-  if (parts.length === 0 && exercise.content) {
-    try {
-      const rawJson = JSON.stringify(exercise.content).slice(0, 500);
-      parts.push(`Raw Exercise Data: ${rawJson}...`);
-    } catch (e) {
-      parts.push('Unable to extract exercise content.');
-    }
+  // Add hint if available (AI can use this to help guide students)
+  const hint = getLocalizedText(exercise.hint, language) ||
+               getLocalizedText(exercise.content?.hint, language);
+  if (hint) {
+    lines.push(`Hint available: ${hint}`);
   }
 
-  return parts.join('\n');
+  return lines.join('\n');
 }
 
 /**
- * Extract all exercises content from a step
- * @param {Object} step - The lesson step
- * @param {string} lang - Language code
- * @returns {string} - Combined exercise content
+ * Extract all exercises from a step (handles nested structures)
+ * @param {Object} step - The step object
+ * @param {string} language - Language code
+ * @returns {string} Combined readable content of all exercises
  */
-export function extractAllExercisesFromStep(step, lang = 'en') {
+export function extractAllExercisesFromStep(step, language = 'en') {
   if (!step) return '';
 
-  const exercises = step.exercises ||
-                    step.content?.exercises ||
-                    step.data?.exercises || [];
+  const lines = [];
+  const stepType = step.type?.toLowerCase() || '';
 
-  const quizzes = step.quizzes ||
-                  step.content?.questions ||
-                  step.data?.quizzes || [];
+  // Add step title/instructions
+  const stepTitle = getLocalizedText(step.title, language);
+  const stepInstructions = getLocalizedText(step.instructions, language) ||
+                           getLocalizedText(step.text, language);
 
-  // If step itself is an interactive type, extract it
-  const interactiveTypes = [
-    'histogram', 'map', 'block-coding', 'data_analysis', 'fraction_visual',
-    'geometry_poly', 'chem_mixing', 'chem_matching', 'english_sentence_fix',
-    'english_sentence_order', 'language_noun_bag', 'geometry',
-    'language_tone_transformer', 'language_idiom_bridge',
-    'language_word_constellation', 'language_rhythm_match', 'language_false_friends',
-    'matching', 'sentence_order'
-  ];
-
-  const stepType = step.type?.toLowerCase();
-  const contentType = step.content?.type?.toLowerCase();
-
-  if (stepType && interactiveTypes.includes(stepType)) {
-    return extractExerciseContent({ ...step.content, ...step.data, type: stepType }, lang);
+  if (stepTitle) {
+    lines.push(`Step Title: ${stepTitle}`);
+  }
+  if (stepInstructions) {
+    lines.push(`Instructions: ${stepInstructions}`);
   }
 
-  if (contentType && interactiveTypes.includes(contentType)) {
-    return extractExerciseContent(step.content, lang);
+  // Handle different step types
+  if (stepType === 'exercise') {
+    // Check for exercises array in various locations
+    const exercises = step.data || step.exercises ||
+                      step.content?.exercises || step.data?.exercises || [];
+
+    if (Array.isArray(exercises) && exercises.length > 0) {
+      lines.push(`\nThis step contains ${exercises.length} exercise(s):\n`);
+      exercises.forEach((ex, i) => {
+        lines.push(`--- Exercise ${i + 1} ---`);
+        lines.push(extractExerciseContent(ex, language));
+        lines.push('');
+      });
+    } else if (step.data && typeof step.data === 'object' && !Array.isArray(step.data)) {
+      // Single exercise in data
+      lines.push(extractExerciseContent(step.data, language));
+    } else if (step.content && typeof step.content === 'object') {
+      lines.push(extractExerciseContent(step.content, language));
+    }
+  } else if (stepType === 'quiz') {
+    // Quiz questions
+    const questions = step.content?.questions || step.data?.questions ||
+                      step.data || step.quizzes || [];
+
+    if (Array.isArray(questions) && questions.length > 0) {
+      lines.push(`\nThis step contains ${questions.length} quiz question(s):\n`);
+      questions.forEach((q, i) => {
+        lines.push(`--- Question ${i + 1} ---`);
+        lines.push(extractExerciseContent({ ...q, type: q.type || 'quiz' }, language));
+        lines.push('');
+      });
+    }
+  } else if (stepType === 'vocabulary') {
+    // Vocabulary terms
+    const terms = step.vocabulary || step.content?.terms ||
+                  step.data?.vocabulary || step.data?.terms || step.words || [];
+
+    if (Array.isArray(terms) && terms.length > 0) {
+      lines.push(`\nVocabulary (${terms.length} terms):`);
+      terms.slice(0, 10).forEach((term, i) => {
+        const word = getLocalizedText(term.term || term.word, language);
+        const definition = getLocalizedText(term.definition || term.meaning, language);
+        lines.push(`  ${i + 1}. ${word} - ${definition}`);
+      });
+      if (terms.length > 10) {
+        lines.push(`  ... and ${terms.length - 10} more terms`);
+      }
+    }
+  } else {
+    // For special interactive types, the step itself is the exercise
+    const specialTypes = [
+      'histogram', 'map', 'block-coding', 'data_analysis', 'fraction_visual',
+      'geometry_poly', 'chem_mixing', 'chem_matching', 'english_sentence_fix',
+      'english_sentence_order', 'language_noun_bag', 'geometry',
+      'language_tone_transformer', 'language_idiom_bridge',
+      'language_word_constellation', 'language_rhythm_match', 'language_false_friends',
+      'matching', 'sentence_order', 'ordering', 'selection_game'
+    ];
+
+    const normalizedType = stepType.replace(/[-_]/g, '').toLowerCase();
+
+    if (specialTypes.some(t => t.replace(/[-_]/g, '').toLowerCase() === normalizedType)) {
+      const exerciseData = step.content || step.data || step;
+      lines.push(extractExerciseContent({ ...exerciseData, type: stepType }, language));
+    }
   }
 
-  // Extract from exercises array
-  const allContent = [];
+  return lines.join('\n');
+}
 
-  exercises.forEach((ex, idx) => {
-    const content = extractExerciseContent(ex, lang);
-    if (content) {
-      allContent.push(`--- Exercise ${idx + 1} ---\n${content}`);
-    }
-  });
+/**
+ * Build a concise exercise summary for voice narration
+ * @param {Object} exercise - The exercise object
+ * @param {string} language - Language code
+ * @returns {string} A natural language description suitable for speaking
+ */
+export function buildExerciseNarration(exercise, language = 'en') {
+  if (!exercise) return '';
 
-  quizzes.forEach((quiz, idx) => {
-    const content = extractExerciseContent({ ...quiz, type: 'quiz' }, lang);
-    if (content) {
-      allContent.push(`--- Quiz Question ${idx + 1} ---\n${content}`);
-    }
-  });
+  const type = (exercise.type || exercise.exerciseType || '').toLowerCase().replace(/[-_]/g, '');
 
-  return allContent.join('\n\n');
+  const question = getLocalizedText(exercise.question, language) ||
+                   getLocalizedText(exercise.prompt, language) ||
+                   getLocalizedText(exercise.text, language) ||
+                   getLocalizedText(exercise.content?.question, language);
+
+  let narration = '';
+
+  // Start with the question if available
+  if (question) {
+    narration = question;
+  }
+
+  // Add type-specific context
+  switch (type) {
+    case 'multiplechoice':
+    case 'quiz':
+    case 'mcq':
+      const options = exercise.options || exercise.content?.options || [];
+      if (options.length > 0) {
+        const optionTexts = options.map((opt, i) => {
+          const letter = String.fromCharCode(65 + i);
+          const text = typeof opt === 'string' ? opt : getLocalizedText(opt.text || opt.label, language);
+          return `${letter}: ${text}`;
+        });
+        narration += ` Your options are: ${optionTexts.join(', ')}.`;
+      }
+      break;
+
+    case 'matching':
+    case 'pairs':
+      const pairs = exercise.pairs || exercise.content?.pairs || [];
+      if (pairs.length > 0) {
+        narration += ` You need to match ${pairs.length} pairs of items.`;
+      }
+      break;
+
+    case 'ordering':
+    case 'sentenceorder':
+      const items = exercise.items || exercise.words || exercise.content?.items || [];
+      if (items.length > 0) {
+        const itemTexts = items.map(i => typeof i === 'string' ? i : i.text).join(', ');
+        narration += ` Put these in order: ${itemTexts}`;
+      }
+      break;
+
+    case 'truefalse':
+      narration += ' Is this statement true or false?';
+      break;
+
+    case 'basket':
+    case 'sorting':
+      const bins = exercise.bins || exercise.categories || [];
+      if (bins.length > 0) {
+        const binNames = bins.map(b => typeof b === 'string' ? b : b.label).join(' and ');
+        narration += ` Sort the items into ${binNames}.`;
+      }
+      break;
+  }
+
+  return narration;
 }
 
 export default {
   extractExerciseContent,
-  extractAllExercisesFromStep
+  extractAllExercisesFromStep,
+  buildExerciseNarration
 };

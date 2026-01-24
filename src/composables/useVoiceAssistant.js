@@ -3,6 +3,7 @@ import voiceApi from '@/api/voice';
 import chatApi from '@/api/chat';
 import { eventBus } from '@/utils/eventBus';
 import { getLanguage } from '@/composables/useLanguage';
+import { extractExerciseContent, extractAllExercisesFromStep, buildExerciseNarration } from '@/utils/exerciseContentExtractor';
 
 export function useVoiceAssistant() {
     // State
@@ -217,12 +218,22 @@ export function useVoiceAssistant() {
         const currentLang = getSystemLanguage();
         console.log('[VoiceAssistant] Asking AI in language:', currentLang);
 
+        // Extract exercise context if the current step is interactive
+        let exerciseContext = null;
+        if (currentStep) {
+            exerciseContext = getExerciseContextFromStep(currentStep, currentLang);
+            if (exerciseContext) {
+                console.log('[VoiceAssistant] Including exercise context in question');
+            }
+        }
+
         try {
             const response = await chatApi.getLessonContextAIResponse({
                 userInput: question,
                 language: currentLang, // CRITICAL: Pass language to backend
                 lessonContext: currentStep,
-                chatHistory: chatHistory
+                chatHistory: chatHistory,
+                exerciseContext: exerciseContext // Pass exercise context for better AI understanding
             });
 
             const reply = response?.data?.reply || response?.reply;
@@ -322,6 +333,9 @@ export function useVoiceAssistant() {
         };
     };
 
+    /**
+     * Extract basic text content from a step (for explanation steps)
+     */
     const getStepContent = (step) => {
         if (!step) return '';
         let content = '';
@@ -340,23 +354,82 @@ export function useVoiceAssistant() {
         return content || '';
     };
 
+    /**
+     * ENHANCED: Extract exercise context from a step for AI analysis
+     * This is the key function that enables AI to understand exercise content
+     */
+    const getExerciseContextFromStep = (step, language = 'en') => {
+        if (!step) return null;
+
+        const stepType = step.type?.toLowerCase() || '';
+
+        // List of interactive step types that need exercise extraction
+        const interactiveTypes = [
+            'exercise', 'quiz', 'vocabulary',
+            'histogram', 'map', 'block-coding', 'data_analysis', 'fraction_visual',
+            'geometry_poly', 'chem_mixing', 'chem_matching', 'english_sentence_fix',
+            'english_sentence_order', 'language_noun_bag', 'geometry',
+            'language_tone_transformer', 'language_idiom_bridge',
+            'language_word_constellation', 'language_rhythm_match', 'language_false_friends',
+            'matching', 'sentence_order', 'ordering', 'selection_game', 'game'
+        ];
+
+        // Normalize step type for comparison
+        const normalizedType = stepType.replace(/[-_]/g, '').toLowerCase();
+        const isInteractive = interactiveTypes.some(t =>
+            t.replace(/[-_]/g, '').toLowerCase() === normalizedType
+        );
+
+        if (!isInteractive) {
+            return null;
+        }
+
+        // Use the extractor utility to get readable exercise content
+        try {
+            const exerciseContent = extractAllExercisesFromStep(step, language);
+            if (exerciseContent && exerciseContent.trim().length > 20) {
+                console.log('[VoiceAssistant] Extracted exercise content:', exerciseContent.substring(0, 200) + '...');
+                return exerciseContent;
+            }
+        } catch (error) {
+            console.error('[VoiceAssistant] Error extracting exercise content:', error);
+        }
+
+        return null;
+    };
+
+    /**
+     * ENHANCED: Analyze and speak lesson content with exercise awareness
+     * Now properly extracts exercise content for AI analysis
+     */
     const analyzeAndSpeak = async (step, isFirstStep = false, exerciseContext = null) => {
         if (!step) return;
         stopAudio();
 
-        // Get step content and include exercise context if available
+        const currentLang = getSystemLanguage();
+        if (currentLang === 'uz') return; // Uzbek not supported for TTS
+
+        // Get step content - PRIORITIZE exercise context for interactive steps
         let content = getStepContent(step);
 
-        // Append exercise context for richer AI analysis
-        if (exerciseContext) {
-            content += '\n\n[Exercise Context]:\n' + exerciseContext;
+        // If exerciseContext is provided directly, use it
+        // Otherwise, try to extract from the step
+        let finalExerciseContext = exerciseContext;
+        if (!finalExerciseContext) {
+            finalExerciseContext = getExerciseContextFromStep(step, currentLang);
         }
 
-        if (!content || content.length < 20) return;
+        // Append exercise context for richer AI analysis
+        if (finalExerciseContext) {
+            console.log('[VoiceAssistant] Adding exercise context to analysis');
+            content += '\n\n[EXERCISE CONTENT - AI should read and explain this]:\n' + finalExerciseContext;
+        }
 
-        // Use effective language (lesson language > system language)
-        const currentLang = getSystemLanguage();
-        if (currentLang === 'uz') return; // Uzbek not supported
+        // Skip if content is too short
+        if (!content || content.length < 20) {
+            console.log('[VoiceAssistant] Content too short, skipping analysis');
+            return;
+        }
 
         const analysisId = Date.now();
         currentAnalysisId.value = analysisId;
@@ -367,11 +440,15 @@ export function useVoiceAssistant() {
             let data;
 
             // Include exercise context in cache key for unique caching
-            const cacheKey = exerciseContext ? `${stepId}_ex_${exerciseContext.length}` : stepId;
+            const cacheKey = finalExerciseContext
+                ? `${stepId}_ex_${finalExerciseContext.length}_${currentLang}`
+                : `${stepId}_${currentLang}`;
 
             if (analysisCache.has(cacheKey)) {
                 data = analysisCache.get(cacheKey);
+                console.log('[VoiceAssistant] Using cached analysis');
             } else {
+                console.log('[VoiceAssistant] Calling AI analysis API...');
                 const result = await voiceApi.analyzeLesson(
                     content,
                     step.type || 'explanation',
@@ -380,22 +457,34 @@ export function useVoiceAssistant() {
                     isFirstStep // Pass flag for greeting logic
                 );
 
-                if (currentAnalysisId.value !== analysisId) return;
+                if (currentAnalysisId.value !== analysisId) {
+                    console.log('[VoiceAssistant] Analysis cancelled (newer request in progress)');
+                    return;
+                }
+
                 data = result?.data || result || {};
-                if (data.explanation) analysisCache.set(cacheKey, data);
+                if (data.explanation) {
+                    analysisCache.set(cacheKey, data);
+                    console.log('[VoiceAssistant] Analysis cached successfully');
+                }
             }
 
             if (data.explanation && currentAnalysisId.value === analysisId) {
+                // Emit highlights for text highlighting on screen
                 if (data.highlights && data.highlights.length > 0) {
+                    console.log('[VoiceAssistant] Emitting highlights:', data.highlights);
                     eventBus.emit('highlight-text', data.highlights);
                 }
 
-                // Only speak if not muted (don't store - user can trigger manually)
+                // Only speak if not muted
                 if (!isVoiceMuted.value) {
+                    console.log('[VoiceAssistant] Speaking explanation...');
                     await speakText(data.explanation);
                 } else {
                     console.log('[VoiceAssistant] Voice muted, skipping speech');
                 }
+            } else {
+                console.log('[VoiceAssistant] No explanation in response or analysis cancelled');
             }
         } catch (error) {
             console.error('[VoiceAssistant] Analysis error:', error);
@@ -404,6 +493,9 @@ export function useVoiceAssistant() {
         }
     };
 
+    /**
+     * Pre-analyze steps in background for faster response
+     */
     const preAnalyzeSteps = async (steps, language) => {
         if (!steps || !Array.isArray(steps)) return;
 
@@ -416,7 +508,14 @@ export function useVoiceAssistant() {
 
             if (analysisCache.has(stepId)) continue;
 
-            const content = getStepContent(step);
+            // Get content including exercise data
+            let content = getStepContent(step);
+            const exerciseContext = getExerciseContextFromStep(step, language);
+
+            if (exerciseContext) {
+                content += '\n\n[EXERCISE CONTENT]:\n' + exerciseContext;
+            }
+
             if (!content || content.length < 20) continue;
 
             // Don't await here to allow parallel/background processing
@@ -429,7 +528,10 @@ export function useVoiceAssistant() {
             ).then(result => {
                 const data = result?.data || result || {};
                 if (data.explanation) {
-                    analysisCache.set(stepId, data);
+                    const cacheKey = exerciseContext
+                        ? `${stepId}_ex_${exerciseContext.length}_${language}`
+                        : `${stepId}_${language}`;
+                    analysisCache.set(cacheKey, data);
                     console.log(`[VoiceAssistant] Pre-analyzed step ${i + 1}/${steps.length}`);
                 }
             }).catch(err => {
@@ -459,6 +561,8 @@ export function useVoiceAssistant() {
         speakText,
         analyzeAndSpeak,
         preAnalyzeSteps,
-        handleVoiceQuestion
+        handleVoiceQuestion,
+        // NEW: Export exercise content extractor for external use
+        getExerciseContextFromStep
     };
 }
