@@ -71,8 +71,17 @@ export function extractExerciseContent(exercise, language = 'en') {
         lines.push('Answer Options:');
         options.forEach((opt, i) => {
           const letter = String.fromCharCode(65 + i);
-          const optText = typeof opt === 'string' ? opt :
-                          getLocalizedText(opt.text || opt.label || opt.value, language);
+          let optText = '';
+          if (typeof opt === 'string') {
+            optText = opt;
+          } else if (opt && typeof opt === 'object') {
+            // Check if option itself is a multilingual object {en: "...", ru: "..."}
+            if (opt.en || opt.ru || opt.uz) {
+              optText = getLocalizedText(opt, language);
+            } else {
+              optText = getLocalizedText(opt.text || opt.label || opt.value, language);
+            }
+          }
           lines.push(`  ${letter}) ${optText}`);
         });
       }
@@ -82,10 +91,13 @@ export function extractExerciseContent(exercise, language = 'en') {
     case 'truefalse':
     case 'boolean':
     case 'tf':
-      const statement = getLocalizedText(exercise.statement, language) ||
-                        getLocalizedText(exercise.content?.statement, language);
-      if (statement) {
-        lines.push(`Statement to evaluate: ${statement}`);
+      // Check question field first (common in actual data), then statement
+      const tfStatement = getLocalizedText(exercise.question, language) ||
+                          getLocalizedText(exercise.statement, language) ||
+                          getLocalizedText(exercise.content?.question, language) ||
+                          getLocalizedText(exercise.content?.statement, language);
+      if (tfStatement) {
+        lines.push(`Statement to evaluate: ${tfStatement}`);
       }
       lines.push('Options: True or False');
       break;
@@ -125,12 +137,20 @@ export function extractExerciseContent(exercise, language = 'en') {
       const items = exercise.items || exercise.words || exercise.elements ||
                     exercise.content?.items || exercise.content?.words ||
                     exercise.content?.correctOrder || exercise.data?.items ||
-                    exercise.data?.correctOrder || [];
+                    exercise.data?.correctOrder || exercise.correctOrder || [];
       if (items.length > 0) {
         lines.push('Words/Items to put in correct order:');
-        const itemTexts = items.map(item =>
-          typeof item === 'string' ? item : getLocalizedText(item.text || item.word, language)
-        );
+        const itemTexts = items.map(item => {
+          if (typeof item === 'string') return item;
+          // Check if item itself is a multilingual object {en: "...", ru: "..."}
+          if (item && typeof item === 'object') {
+            if (item.en || item.ru || item.uz) {
+              return getLocalizedText(item, language);
+            }
+            return getLocalizedText(item.text || item.word, language);
+          }
+          return String(item || '');
+        });
         lines.push(`  [${itemTexts.join(', ')}]`);
       }
       break;
@@ -213,8 +233,17 @@ export function extractExerciseContent(exercise, language = 'en') {
       if (Array.isArray(chartData) && chartData.length > 0) {
         lines.push('Data to analyze:');
         chartData.forEach(item => {
-          const label = getLocalizedText(item.label, language) || item.name;
-          lines.push(`  ${label}: ${item.value}`);
+          // Handle numericKey/numericLabel format from actual data
+          let label = '';
+          if (item.numericLabel) {
+            label = getLocalizedText(item.numericLabel, language);
+          } else if (item.numericKey) {
+            label = String(item.numericKey);
+          } else {
+            label = getLocalizedText(item.label, language) || item.name || '';
+          }
+          const value = item.value !== undefined ? item.value : item.numericValue || '';
+          lines.push(`  ${label}: ${value}`);
         });
       }
       break;
@@ -486,7 +515,17 @@ export function buildExerciseNarration(exercise, language = 'en') {
       if (options.length > 0) {
         const optionTexts = options.map((opt, i) => {
           const letter = String.fromCharCode(65 + i);
-          const text = typeof opt === 'string' ? opt : getLocalizedText(opt.text || opt.label, language);
+          let text = '';
+          if (typeof opt === 'string') {
+            text = opt;
+          } else if (opt && typeof opt === 'object') {
+            // Check if option itself is a multilingual object
+            if (opt.en || opt.ru || opt.uz) {
+              text = getLocalizedText(opt, language);
+            } else {
+              text = getLocalizedText(opt.text || opt.label, language);
+            }
+          }
           return `${letter}: ${text}`;
         });
         narration += ` Your options are: ${optionTexts.join(', ')}.`;
@@ -503,9 +542,20 @@ export function buildExerciseNarration(exercise, language = 'en') {
 
     case 'ordering':
     case 'sentenceorder':
-      const items = exercise.items || exercise.words || exercise.content?.items || [];
-      if (items.length > 0) {
-        const itemTexts = items.map(i => typeof i === 'string' ? i : i.text).join(', ');
+      const orderItems = exercise.items || exercise.words || exercise.content?.items ||
+                         exercise.correctOrder || exercise.content?.correctOrder || [];
+      if (orderItems.length > 0) {
+        const itemTexts = orderItems.map(item => {
+          if (typeof item === 'string') return item;
+          if (item && typeof item === 'object') {
+            // Check if item is a direct multilingual object
+            if (item.en || item.ru || item.uz) {
+              return getLocalizedText(item, language);
+            }
+            return item.text || item.word || '';
+          }
+          return String(item || '');
+        }).join(', ');
         narration += ` Put these in order: ${itemTexts}`;
       }
       break;
