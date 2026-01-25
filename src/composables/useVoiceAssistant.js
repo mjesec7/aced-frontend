@@ -57,6 +57,12 @@ export function useVoiceAssistant() {
             URL.revokeObjectURL(currentAudioUrl.value);
             currentAudioUrl.value = null;
         }
+
+        // Also stop browser speech synthesis if active
+        if (window.speechSynthesis) {
+            window.speechSynthesis.cancel();
+        }
+
         isSpeaking.value = false;
         isSpeechPending.value = false; // Reset guard to allow new speech after explicit stop
     };
@@ -203,9 +209,69 @@ export function useVoiceAssistant() {
             currentAudio.value.load();
         } catch (error) {
             console.error('[VoiceAssistant] speakText error:', error);
-            isSpeaking.value = false;
-            isSpeechPending.value = false; // Reset guard
+
+            // FALLBACK: Use browser's free speech synthesis when ElevenLabs fails
+            console.log('[VoiceAssistant] Falling back to browser speech synthesis');
+            useBrowserSpeech(text, options.language || getSystemLanguage());
         }
+    };
+
+    /**
+     * Fallback: Use browser's built-in speech synthesis (free)
+     * This is used when ElevenLabs fails (quota exceeded, network error, etc.)
+     */
+    const useBrowserSpeech = (text, language = 'en') => {
+        if (!window.speechSynthesis) {
+            console.error('[VoiceAssistant] Browser speech synthesis not supported');
+            isSpeaking.value = false;
+            isSpeechPending.value = false;
+            return;
+        }
+
+        // Cancel any ongoing speech
+        window.speechSynthesis.cancel();
+
+        const utterance = new SpeechSynthesisUtterance(text);
+
+        // Map language to BCP 47 tags
+        if (language === 'ru') {
+            utterance.lang = 'ru-RU';
+        } else if (language === 'uz') {
+            utterance.lang = 'uz-UZ';
+        } else {
+            utterance.lang = 'en-US';
+        }
+
+        // Try to find a good voice for the language
+        const voices = window.speechSynthesis.getVoices();
+        const preferredVoice = voices.find(v => v.lang.startsWith(utterance.lang.split('-')[0]));
+        if (preferredVoice) {
+            utterance.voice = preferredVoice;
+        }
+
+        // Adjust speech parameters for better quality
+        utterance.rate = 0.9;  // Slightly slower for clarity
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+
+        utterance.onstart = () => {
+            console.log('[VoiceAssistant] Browser speech started');
+            isSpeaking.value = true;
+        };
+
+        utterance.onend = () => {
+            console.log('[VoiceAssistant] Browser speech ended');
+            isSpeaking.value = false;
+            isSpeechPending.value = false;
+        };
+
+        utterance.onerror = (event) => {
+            console.error('[VoiceAssistant] Browser speech error:', event.error);
+            isSpeaking.value = false;
+            isSpeechPending.value = false;
+        };
+
+        window.speechSynthesis.speak(utterance);
     };
 
     const handleVoiceQuestion = async (question, currentStep, chatHistory = []) => {
