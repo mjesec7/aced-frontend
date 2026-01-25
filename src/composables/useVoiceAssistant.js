@@ -42,6 +42,7 @@ export function useVoiceAssistant() {
 
     // Methods
     const stopAudio = () => {
+        // Stop ElevenLabs audio if playing
         if (currentAudio.value) {
             currentAudio.value.pause();
             currentAudio.value.currentTime = 0;
@@ -156,10 +157,11 @@ export function useVoiceAssistant() {
 
         stopAudio();
 
+        // Use effective language (lesson language > system language)
+        const currentLang = options.language || getSystemLanguage();
+        console.log('[VoiceAssistant] Speaking in language:', currentLang);
+
         try {
-            // Use effective language (lesson language > system language)
-            const currentLang = options.language || getSystemLanguage();
-            console.log('[VoiceAssistant] Speaking in language:', currentLang);
             const audioBlob = await voiceApi.streamAudio(text, { language: currentLang });
 
             // Create new URL for the audio blob
@@ -212,7 +214,7 @@ export function useVoiceAssistant() {
 
             // FALLBACK: Use browser's free speech synthesis when ElevenLabs fails
             console.log('[VoiceAssistant] Falling back to browser speech synthesis');
-            useBrowserSpeech(text, options.language || getSystemLanguage());
+            useBrowserSpeech(text, currentLang);
         }
     };
 
@@ -290,16 +292,38 @@ export function useVoiceAssistant() {
             exerciseContext = getExerciseContextFromStep(currentStep, currentLang);
             if (exerciseContext) {
                 console.log('[VoiceAssistant] Including exercise context in question');
+                // Log first question to verify content
+                const questionMatch = exerciseContext.match(/Question: ([^\n]+)/);
+                if (questionMatch) {
+                    console.log('[VoiceAssistant] First exercise question:', questionMatch[1]);
+                }
             }
         }
 
         try {
+            console.log('[VoiceAssistant] Sending to AI - User question:', question);
+
+            // Build stepContext with exerciseContent for the backend
+            const stepContext = {
+                type: currentStep?.type || 'unknown',
+                stepIndex: currentStep?.order || 0,
+                // CRITICAL: Pass exercise content here - this is where backend expects it
+                exerciseContent: exerciseContext || null,
+                content: currentStep?.content || null
+            };
+
             const response = await chatApi.getLessonContextAIResponse({
                 userInput: question,
                 language: currentLang, // CRITICAL: Pass language to backend
-                lessonContext: currentStep,
-                chatHistory: chatHistory,
-                exerciseContext: exerciseContext // Pass exercise context for better AI understanding
+                lessonContext: {
+                    lessonId: currentStep?.lessonId || currentStep?._id,
+                    lessonName: currentStep?.lessonName || currentStep?.title,
+                    topic: currentStep?.topic,
+                    subject: currentStep?.subject,
+                    totalSteps: currentStep?.totalSteps
+                },
+                stepContext: stepContext,
+                chatHistory: chatHistory
             });
 
             const reply = response?.data?.reply || response?.reply;
@@ -454,7 +478,15 @@ export function useVoiceAssistant() {
         try {
             const exerciseContent = extractAllExercisesFromStep(step, language);
             if (exerciseContent && exerciseContent.trim().length > 20) {
-                console.log('[VoiceAssistant] Extracted exercise content:', exerciseContent.substring(0, 200) + '...');
+                // Log summary info, not truncated content
+                const lineCount = exerciseContent.split('\n').length;
+                const charCount = exerciseContent.length;
+                console.log(`[VoiceAssistant] Extracted exercise content: ${charCount} chars, ${lineCount} lines`);
+                // Log first exercise question to verify extraction works
+                const questionMatch = exerciseContent.match(/Question: ([^\n]+)/);
+                if (questionMatch) {
+                    console.log('[VoiceAssistant] First question:', questionMatch[1]);
+                }
                 return exerciseContent;
             }
         } catch (error) {
