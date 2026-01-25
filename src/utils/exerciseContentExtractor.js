@@ -79,6 +79,7 @@ export function extractExerciseContent(exercise, language = 'en') {
             if (opt.en || opt.ru || opt.uz) {
               optText = getLocalizedText(opt, language);
             } else {
+              // Otherwise look for text/label/value properties
               optText = getLocalizedText(opt.text || opt.label || opt.value, language);
             }
           }
@@ -91,15 +92,14 @@ export function extractExerciseContent(exercise, language = 'en') {
     case 'truefalse':
     case 'boolean':
     case 'tf':
-      // Check question field first (common in actual data), then statement
-      const tfStatement = getLocalizedText(exercise.question, language) ||
-                          getLocalizedText(exercise.statement, language) ||
-                          getLocalizedText(exercise.content?.question, language) ||
-                          getLocalizedText(exercise.content?.statement, language);
-      if (tfStatement) {
-        lines.push(`Statement to evaluate: ${tfStatement}`);
+      // The question is already extracted above, so just note the format
+      // Check for statement field as fallback
+      const statement = getLocalizedText(exercise.statement, language) ||
+                        getLocalizedText(exercise.content?.statement, language);
+      if (statement && !question) {
+        lines.push(`Statement to evaluate: ${statement}`);
       }
-      lines.push('Options: True or False');
+      lines.push('Answer: Choose True or False');
       break;
 
     // Matching / Pairs
@@ -139,19 +139,21 @@ export function extractExerciseContent(exercise, language = 'en') {
                     exercise.content?.correctOrder || exercise.data?.items ||
                     exercise.data?.correctOrder || exercise.correctOrder || [];
       if (items.length > 0) {
-        lines.push('Words/Items to put in correct order:');
-        const itemTexts = items.map(item => {
-          if (typeof item === 'string') return item;
-          // Check if item itself is a multilingual object {en: "...", ru: "..."}
-          if (item && typeof item === 'object') {
+        lines.push('Items to put in correct order:');
+        items.forEach((item, i) => {
+          let itemText = '';
+          if (typeof item === 'string') {
+            itemText = item;
+          } else if (item && typeof item === 'object') {
+            // Check if item itself is multilingual {en: "...", ru: "..."}
             if (item.en || item.ru || item.uz) {
-              return getLocalizedText(item, language);
+              itemText = getLocalizedText(item, language);
+            } else {
+              itemText = getLocalizedText(item.text || item.word || item.label, language);
             }
-            return getLocalizedText(item.text || item.word, language);
           }
-          return String(item || '');
+          lines.push(`  ${i + 1}. ${itemText}`);
         });
-        lines.push(`  [${itemTexts.join(', ')}]`);
       }
       break;
 
@@ -228,21 +230,30 @@ export function extractExerciseContent(exercise, language = 'en') {
     // Data Analysis / Histogram
     case 'dataanalysis':
     case 'histogram':
-      const chartData = exercise.chartData || exercise.data?.chartData ||
-                        exercise.content?.chartData || exercise.data || [];
+      // Get prompt if available
+      const dataPrompt = getLocalizedText(exercise.prompt, language) ||
+                         getLocalizedText(exercise.content?.prompt, language);
+      if (dataPrompt) {
+        lines.push(`Task: ${dataPrompt}`);
+      }
+
+      // Get the data array
+      const chartData = exercise.data || exercise.chartData ||
+                        exercise.content?.data || exercise.content?.chartData || [];
+      const numericKey = exercise.numericKey || exercise.content?.numericKey;
+      const numericLabel = getLocalizedText(exercise.numericLabel, language) ||
+                           getLocalizedText(exercise.content?.numericLabel, language);
+
       if (Array.isArray(chartData) && chartData.length > 0) {
-        lines.push('Data to analyze:');
+        if (numericLabel) {
+          lines.push(`Data (${numericLabel}):`);
+        } else {
+          lines.push('Data to analyze:');
+        }
         chartData.forEach(item => {
-          // Handle numericKey/numericLabel format from actual data
-          let label = '';
-          if (item.numericLabel) {
-            label = getLocalizedText(item.numericLabel, language);
-          } else if (item.numericKey) {
-            label = String(item.numericKey);
-          } else {
-            label = getLocalizedText(item.label, language) || item.name || '';
-          }
-          const value = item.value !== undefined ? item.value : item.numericValue || '';
+          const label = item.month || item.label || item.name ||
+                        getLocalizedText(item.label, language);
+          const value = numericKey ? item[numericKey] : item.value;
           lines.push(`  ${label}: ${value}`);
         });
       }
@@ -515,17 +526,7 @@ export function buildExerciseNarration(exercise, language = 'en') {
       if (options.length > 0) {
         const optionTexts = options.map((opt, i) => {
           const letter = String.fromCharCode(65 + i);
-          let text = '';
-          if (typeof opt === 'string') {
-            text = opt;
-          } else if (opt && typeof opt === 'object') {
-            // Check if option itself is a multilingual object
-            if (opt.en || opt.ru || opt.uz) {
-              text = getLocalizedText(opt, language);
-            } else {
-              text = getLocalizedText(opt.text || opt.label, language);
-            }
-          }
+          const text = typeof opt === 'string' ? opt : getLocalizedText(opt.text || opt.label, language);
           return `${letter}: ${text}`;
         });
         narration += ` Your options are: ${optionTexts.join(', ')}.`;
@@ -542,20 +543,9 @@ export function buildExerciseNarration(exercise, language = 'en') {
 
     case 'ordering':
     case 'sentenceorder':
-      const orderItems = exercise.items || exercise.words || exercise.content?.items ||
-                         exercise.correctOrder || exercise.content?.correctOrder || [];
-      if (orderItems.length > 0) {
-        const itemTexts = orderItems.map(item => {
-          if (typeof item === 'string') return item;
-          if (item && typeof item === 'object') {
-            // Check if item is a direct multilingual object
-            if (item.en || item.ru || item.uz) {
-              return getLocalizedText(item, language);
-            }
-            return item.text || item.word || '';
-          }
-          return String(item || '');
-        }).join(', ');
+      const items = exercise.items || exercise.words || exercise.content?.items || [];
+      if (items.length > 0) {
+        const itemTexts = items.map(i => typeof i === 'string' ? i : i.text).join(', ');
         narration += ` Put these in order: ${itemTexts}`;
       }
       break;
