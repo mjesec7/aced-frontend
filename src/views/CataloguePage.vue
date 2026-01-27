@@ -262,6 +262,22 @@
               <div class="study-mode-badge-card" :class="getStudyMode(course)">
                 {{ getStudyModeLabel(course) }}
               </div>
+              <!-- Free/Pro Badge -->
+              <div class="access-badge-card" :class="course.type === 'free' ? 'free' : 'pro'">
+                {{ course.type === 'free' ? $t('catalogue.free') : $t('catalogue.pro') }}
+              </div>
+              <!-- Save Button (Top Right) -->
+              <button
+                @click.stop="addToStudyPlan(course)"
+                :disabled="course.inStudyPlan"
+                class="save-btn-card"
+                :class="{ added: course.inStudyPlan }"
+                :title="course.inStudyPlan ? $t('catalogue.inPlan') : $t('catalogue.addToStudyPlan')"
+              >
+                <svg viewBox="0 0 24 24" :fill="course.inStudyPlan ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2">
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                </svg>
+              </button>
             </div>
 
             <!-- Card Content -->
@@ -269,10 +285,28 @@
               <!-- Title -->
               <h3 class="card-title">{{ getTopicName(course) }}</h3>
 
-              <!-- Author -->
-              <div class="card-author">
-                <span class="author-by">by</span>
-                <span class="author-name">{{ course.instructor?.name || course.author || 'ACED' }}</span>
+              <!-- Subject -->
+              <div class="card-subject">
+                <span class="subject-emoji">{{ getSubjectEmoji(course.subject) }}</span>
+                <span class="subject-name">{{ course.subject || $t('catalogue.uncategorized') }}</span>
+              </div>
+
+              <!-- Course Meta (Lessons/Topics) -->
+              <div class="card-meta">
+                <span class="meta-item">
+                  <svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                  </svg>
+                  {{ course.lessonCount || 0 }} {{ $t('catalogue.lessons') }}
+                </span>
+                <span v-if="getStudyMode(course) === 'mastery-path' && getTopicsCount(course) > 0" class="meta-item">
+                  <svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                  </svg>
+                  {{ getTopicsCount(course) }} {{ $t('catalogue.topics') }}
+                </span>
               </div>
 
               <!-- Progress -->
@@ -289,18 +323,6 @@
                   <span class="progress-percent">{{ course.progress }}%</span>
                 </div>
               </div>
-
-              <!-- Add to plan button -->
-              <button
-                @click.stop="addToStudyPlan(course)"
-                :disabled="course.inStudyPlan"
-                class="add-plan-btn"
-                :class="{ added: course.inStudyPlan }"
-              >
-                <svg viewBox="0 0 24 24" :fill="course.inStudyPlan ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2">
-                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                </svg>
-              </button>
             </div>
           </article>
         </div>
@@ -692,11 +714,21 @@ export default {
     },
     getStudyModeLabel(course) {
       const mode = this.getStudyMode(course);
-      return mode === 'mastery-path' ? 'MASTERY PATH' : 'QUICK SKILL';
+      return mode === 'mastery-path' ? this.$t('catalogue.masteryPath') : this.$t('catalogue.quickSkill');
     },
     getButtonText(p) { if (p === 100) return this.$t('catalogue.review'); if (p > 0) return this.$t('catalogue.continueBtn'); return this.$t('catalogue.start'); },
     hasTopicAccess(type) { return type === 'free' || this.userStatus === 'pro' || this.userStatus === 'start'; },
     getSubjectEmoji(s) { const e = { 'Mathematics': '📐', 'Math': '📐', 'English': '📚', 'Science': '🔬', 'Physics': '⚛️', 'Chemistry': '⚗️', 'Biology': '🧬', 'History': '📜', 'Geography': '🌍', 'Computer Science': '💻', 'Programming': '👨‍💻', 'Art': '🎨', 'Music': '🎵', 'Languages': '🗣️' }; return e[s] || '📖'; },
+    getTopicsCount(course) {
+      // Return number of topics for deep dive/mastery path courses
+      if (course.topics && Array.isArray(course.topics)) {
+        return course.topics.length;
+      }
+      if (course.topicsCount) {
+        return course.topicsCount;
+      }
+      return 0;
+    },
   },
 };
 </script>
@@ -1118,14 +1150,13 @@ export default {
 
 .card-content {
   padding: 1rem;
-  position: relative;
 }
 
 .card-title {
   font-size: 1rem;
   font-weight: 600;
   color: #1e293b;
-  margin: 0 0 4px;
+  margin: 0 0 6px;
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -1208,6 +1239,116 @@ export default {
   text-align: right;
 }
 
+/* Save Button on Card Thumbnail (Top Right) */
+.save-btn-card {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+}
+
+.save-btn-card:hover {
+  background: white;
+  border-color: #a78bfa;
+  color: #7c3aed;
+  transform: scale(1.05);
+}
+
+.save-btn-card.added {
+  background: #7c3aed;
+  border-color: #7c3aed;
+  color: white;
+}
+
+.save-btn-card:disabled {
+  cursor: default;
+}
+
+.save-btn-card svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Access Badge (Free/Pro) */
+.access-badge-card {
+  position: absolute;
+  top: 12px;
+  left: 100px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.access-badge-card.free {
+  background: rgba(255, 255, 255, 0.95);
+  color: #059669;
+  border: 1px solid rgba(5, 150, 105, 0.3);
+}
+
+.access-badge-card.pro {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+}
+
+/* Card Subject */
+.card-subject {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  padding: 4px 0;
+}
+
+.subject-emoji {
+  font-size: 0.875rem;
+}
+
+.subject-name {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #64748b;
+}
+
+/* Card Meta (Lessons/Topics) */
+.card-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.meta-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+/* Legacy add-plan-btn - keep for backward compatibility */
 .add-plan-btn {
   position: absolute;
   top: 12px;
