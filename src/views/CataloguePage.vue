@@ -258,26 +258,30 @@
               <div v-else class="thumbnail-placeholder-large">
                 <span>{{ getSubjectEmoji(course.subject) }}</span>
               </div>
-              <!-- Study Mode Badge -->
-              <div class="study-mode-badge-card" :class="getStudyMode(course)">
-                {{ getStudyModeLabel(course) }}
+              <!-- Top Row Badges -->
+              <div class="thumbnail-badges-row">
+                <div class="study-mode-badge-card" :class="getStudyMode(course)">
+                  {{ getStudyModeLabel(course) }}
+                </div>
+                <button
+                  @click.stop="addToStudyPlan(course)"
+                  :disabled="course.inStudyPlan"
+                  class="save-btn-card"
+                  :class="{ added: course.inStudyPlan }"
+                  :title="course.inStudyPlan ? $t('catalogue.inPlan') : $t('catalogue.addToStudyPlan')"
+                >
+                  <svg viewBox="0 0 24 24" :fill="course.inStudyPlan ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                  </svg>
+                </button>
               </div>
-              <!-- Free/Pro Badge -->
+              <!-- Bottom Access Badge -->
               <div class="access-badge-card" :class="course.type === 'free' ? 'free' : 'pro'">
+                <svg v-if="course.type !== 'free'" class="access-icon" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+                </svg>
                 {{ course.type === 'free' ? $t('catalogue.free') : $t('catalogue.pro') }}
               </div>
-              <!-- Save Button (Top Right) -->
-              <button
-                @click.stop="addToStudyPlan(course)"
-                :disabled="course.inStudyPlan"
-                class="save-btn-card"
-                :class="{ added: course.inStudyPlan }"
-                :title="course.inStudyPlan ? $t('catalogue.inPlan') : $t('catalogue.addToStudyPlan')"
-              >
-                <svg viewBox="0 0 24 24" :fill="course.inStudyPlan ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2">
-                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                </svg>
-              </button>
             </div>
 
             <!-- Card Content -->
@@ -1126,26 +1130,39 @@ export default {
   background: linear-gradient(135deg, #fef3c7, #fbcfe8, #e0e7ff);
 }
 
-.study-mode-badge-card {
+/* Top badges row - flexbox layout */
+.thumbnail-badges-row {
   position: absolute;
   top: 12px;
   left: 12px;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 0.625rem;
-  font-weight: 700;
+  right: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  z-index: 10;
+}
+
+.study-mode-badge-card {
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 0.65rem;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .study-mode-badge-card.quick-skill {
-  background: linear-gradient(135deg, #10b981, #059669);
-  color: white;
+  background: rgba(255, 255, 255, 0.92);
+  color: #0d9488;
+  border: 1px solid rgba(13, 148, 136, 0.2);
 }
 
 .study-mode-badge-card.mastery-path {
-  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-  color: white;
+  background: rgba(255, 255, 255, 0.92);
+  color: #7c3aed;
+  border: 1px solid rgba(124, 58, 237, 0.2);
 }
 
 .card-content {
@@ -1239,38 +1256,34 @@ export default {
   text-align: right;
 }
 
-/* Save Button on Card Thumbnail (Top Right) */
+/* Save Button in Top Right */
 .save-btn-card {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   color: #64748b;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
-  backdrop-filter: blur(4px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  z-index: 10;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
 }
 
 .save-btn-card:hover {
   background: white;
-  border-color: #a78bfa;
   color: #7c3aed;
   transform: scale(1.05);
 }
 
 .save-btn-card.added {
-  background: #7c3aed;
-  border-color: #7c3aed;
-  color: white;
+  background: rgba(124, 58, 237, 0.15);
+  border-color: rgba(124, 58, 237, 0.3);
+  color: #7c3aed;
 }
 
 .save-btn-card:disabled {
@@ -1278,32 +1291,44 @@ export default {
 }
 
 .save-btn-card svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 
-/* Access Badge (Free/Pro) */
+/* Access Badge (Free/Pro) - Bottom Left */
 .access-badge-card {
   position: absolute;
-  top: 12px;
-  left: 100px;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 0.625rem;
-  font-weight: 700;
+  bottom: 12px;
+  left: 12px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 0.65rem;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  z-index: 10;
+}
+
+.access-badge-card .access-icon {
+  width: 10px;
+  height: 10px;
 }
 
 .access-badge-card.free {
-  background: rgba(255, 255, 255, 0.95);
-  color: #059669;
-  border: 1px solid rgba(5, 150, 105, 0.3);
+  background: rgba(255, 255, 255, 0.92);
+  color: #475569;
+  border: 1px solid rgba(71, 85, 105, 0.15);
 }
 
 .access-badge-card.pro {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-  color: white;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.95), rgba(245, 158, 11, 0.95));
+  color: #78350f;
+  border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
 /* Card Subject */
