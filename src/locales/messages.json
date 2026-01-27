@@ -29,7 +29,16 @@
       "russian": "Русский",
       "uzbek": "O'zbekcha",
       "general": "General",
-      "untitled": "Untitled"
+      "untitled": "Untitled",
+      "skip": "Skip"
+    },
+    "rating": {
+      "terrible": "Terrible",
+      "poor": "Poor",
+      "okay": "Okay",
+      "good": "Good",
+      "excellent": "Excellent",
+      "feedbackPlaceholder": "Share your thoughts (optional)..."
     },
     "userSection": {
       "login": "Login",
@@ -246,6 +255,9 @@
       "unlimitedAccess": "Unlimited Access",
       "selectMode": "Select Your Mode",
       "notAvailable": "N/A",
+      "recommendedForYou": "Recommended For You",
+      "basedOnHistory": "Based on your learning history",
+      "viewAll": "View All",
       "encouragement": {
         "start": "🌱 Plant the seeds of knowledge!",
         "growing": "🌿 Your tree is starting to grow!",
@@ -259,6 +271,7 @@
       "title": "Course Catalog",
       "subtitle": "From quick bites to deep dives.",
       "courses": "courses",
+      "creators": "creators",
       "all": "All",
       "quickSkills": "Quick Skills",
       "deepDives": "Deep Dives",
@@ -271,6 +284,11 @@
       "allSubjects": "All Subjects",
       "allLevels": "All Levels",
       "allTypes": "All Types",
+      "allCreators": "All Creators",
+      "sortPopular": "Most Popular",
+      "sortNewest": "Newest",
+      "sortRating": "Highest Rated",
+      "sortTitle": "Title A-Z",
       "free": "Free",
       "premium": "Premium",
       "pro": "PRO",
@@ -297,7 +315,10 @@
       "upperIntermediate": "Upper-Intermediate",
       "advanced": "Advanced",
       "proficient": "Proficient",
-      "uncategorized": "Uncategorized"
+      "uncategorized": "Uncategorized",
+      "rateLesson": "Rate this lesson",
+      "thankYouRating": "Thanks for your feedback!",
+      "submitRating": "Submit"
     },
     "chatBot": {
       "title": "AI Chat",
@@ -1035,7 +1056,16 @@
       "uzbek": "O'zbekcha",
       "toggleNavigation": "Переключить навигацию",
       "general": "Общее",
-      "untitled": "Без названия"
+      "untitled": "Без названия",
+      "skip": "Пропустить"
+    },
+    "rating": {
+      "terrible": "Ужасно",
+      "poor": "Плохо",
+      "okay": "Нормально",
+      "good": "Хорошо",
+      "excellent": "Отлично",
+      "feedbackPlaceholder": "Поделитесь своими мыслями (необязательно)..."
     },
     "userSection": {
       "login": "Вход",
@@ -1252,6 +1282,9 @@
       "unlimitedAccess": "Безлимитный доступ",
       "selectMode": "Выберите режим",
       "notAvailable": "Н/Д",
+      "recommendedForYou": "Рекомендуем для вас",
+      "basedOnHistory": "На основе вашей истории обучения",
+      "viewAll": "Смотреть все",
       "encouragement": {
         "start": "🌱 Посадите семена знаний!",
         "growing": "🌿 Ваше дерево начинает расти!",
@@ -1265,6 +1298,7 @@
       "title": "Каталог курсов",
       "subtitle": "От быстрых навыков до глубокого изучения.",
       "courses": "курсов",
+      "creators": "авторов",
       "all": "Все",
       "quickSkills": "Быстрые навыки",
       "deepDives": "Глубокое изучение",
@@ -1277,6 +1311,11 @@
       "allSubjects": "Все предметы",
       "allLevels": "Все уровни",
       "allTypes": "Все типы",
+      "allCreators": "Все авторы",
+      "sortPopular": "По популярности",
+      "sortNewest": "Новые",
+      "sortRating": "По рейтингу",
+      "sortTitle": "По названию",
       "free": "Бесплатно",
       "premium": "Премиум",
       "pro": "PRO",
@@ -1303,7 +1342,10 @@
       "upperIntermediate": "Выше среднего",
       "advanced": "Продвинутый",
       "proficient": "Профессиональный",
-      "uncategorized": "Без категории"
+      "uncategorized": "Без категории",
+      "rateLesson": "Оцените урок",
+      "thankYouRating": "Спасибо за отзыв!",
+      "submitRating": "Отправить"
     },
     "chatBot": {
       "title": "ИИ Чат",
@@ -2022,7 +2064,16 @@
       "uzbek": "O'zbekcha",
       "toggleNavigation": "Navigatsiyani o'zgartirish",
       "general": "Umumiy",
-      "untitled": "Nomsiz"
+      "untitled": "Nomsiz",
+      "skip": "O'tkazib yuborish"
+    },
+    "rating": {
+      "terrible": "Juda yomon",
+      "poor": "Yomon",
+      "okay": "Yaxshi emas",
+      "good": "Yaxshi",
+      "excellent": "A'lo",
+      "feedbackPlaceholder": "Fikrlaringizni yozing (ixtiyoriy)..."
     },
     "userSection": {
       "login": "Kirish",
@@ -2239,6 +2290,9 @@
       "unlimitedAccess": "Cheksiz kirish",
       "selectMode": "Rejimni tanlang",
       "notAvailable": "N/A",
+      "recommendedForYou": "Siz uchun tavsiyalar",
+      "basedOnHistory": "O'rganish tarixingiz asosida",
+      "viewAll": "Barchasini ko'rish",
       "encouragement": {
         "start": "🌱 Bilim urug'larini eking!",
         "growing": "🌿 Daraxtingiz o'sishni boshladi!",
@@ -2252,6 +2306,7 @@
       "title": "Kurslar katalogi",
       "subtitle": "Tezkor ko'nikmalardan chuqur o'rganishgacha.",
       "courses": "kurslar",
+      "creators": "mualliflar",
       "all": "Barchasi",
       "quickSkills": "Tezkor ko'nikmalar",
       "deepDives": "Chuqur o'rganish",
@@ -2264,6 +2319,11 @@
       "allSubjects": "Barcha fanlar",
       "allLevels": "Barcha darajalar",
       "allTypes": "Barcha turlar",
+      "allCreators": "Barcha mualliflar",
+      "sortPopular": "Eng mashhur",
+      "sortNewest": "Eng yangi",
+      "sortRating": "Eng yuqori reyting",
+      "sortTitle": "Nom bo'yicha",
       "free": "Bepul",
       "premium": "Premium",
       "pro": "PRO",
@@ -2290,7 +2350,10 @@
       "upperIntermediate": "O'rtadan yuqori",
       "advanced": "Yuqori",
       "proficient": "Professional",
-      "uncategorized": "Kategoriyasiz"
+      "uncategorized": "Kategoriyasiz",
+      "rateLesson": "Darsni baholang",
+      "thankYouRating": "Fikringiz uchun rahmat!",
+      "submitRating": "Yuborish"
     },
     "chatBot": {
       "title": "AI Chat",
