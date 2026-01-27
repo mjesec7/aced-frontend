@@ -1,0 +1,47 @@
+/* ============================================
+   LANGUAGE SWITCHER Z-INDEX OVERRIDE
+   This file MUST be imported LAST to ensure
+   these styles have the highest priority.
+   ============================================ */
+
+/* Force backdrop to be above everything except dropdown */
+[data-lang-backdrop],
+.lang-switcher-backdrop,
+div[data-lang-backdrop] {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 2147483646 !important;
+  background: transparent !important;
+  pointer-events: auto !important;
+}
+
+/* Force dropdown to be above EVERYTHING */
+[data-lang-dropdown],
+.lang-switcher-dropdown,
+div[data-lang-dropdown] {
+  position: fixed !important;
+  z-index: 2147483647 !important;
+  background: white !important;
+  pointer-events: auto !important;
+  isolation: isolate !important;
+}
+
+/* Ensure body children don't create problematic stacking contexts */
+body > #app {
+  /* Don't create a stacking context that could trap teleported elements */
+  isolation: auto !important;
+}
+
+/* Override any transform on hero that might create stacking context */
+.hero-wrapper,
+.hero-section,
+#hero {
+  transform: none !important;
+  will-change: auto !important;
+  contain: none !important;
+}

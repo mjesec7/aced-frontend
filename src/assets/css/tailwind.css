@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+@layer base {
+    html {
+        font-size: 13px;
+        /* Compact base size - smaller for better density */
+    }
+
+    /* Responsive font scaling for different devices */
+    @media (max-width: 1200px) {
+        html {
+            font-size: 12.5px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        html {
+            font-size: 12px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        html {
+            font-size: 11.5px;
+        }
+    }
+
+    /* Larger screens can have slightly bigger base */
+    @media (min-width: 1600px) {
+        html {
+            font-size: 13.5px;
+        }
+    }
+}
+
+@theme {
+    /* Lesson Colors */
+    --color-lesson-purple: #a855f7;
+    --color-lesson-purple-light: #f3e8ff;
+    --color-lesson-blue: #3b82f6;
+    --color-lesson-blue-light: #dbeafe;
+    --color-lesson-green: #22c55e;
+    --color-lesson-green-light: #dcfce7;
+    --color-lesson-yellow: #eab308;
+    --color-lesson-yellow-light: #fef9c3;
+
+    /* Tech Colors */
+    --color-tech-primary: #6366f1;
+    --color-tech-surface: #f8fafc;
+    --color-tech-dark: #1e293b;
+}
