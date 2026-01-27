@@ -375,6 +375,62 @@
           </div>
         </div>
 
+        <!-- Recommended For You Section -->
+        <div v-if="recommendedCourses.length > 0" class="section-card recommended-section">
+          <div class="section-header">
+            <div class="header-left">
+              <div class="section-icon-badge recommended">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+              </div>
+              <div>
+                <h2 class="section-title">{{ $t('dashboard.recommendedForYou') }}</h2>
+                <p class="section-subtitle">{{ $t('dashboard.basedOnHistory') }}</p>
+              </div>
+            </div>
+            <router-link to="/profile/catalogue" class="view-all-link">
+              {{ $t('dashboard.viewAll') }}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </router-link>
+          </div>
+
+          <div class="recommended-grid">
+            <div
+              v-for="course in recommendedCourses.slice(0, 4)"
+              :key="course.topicId"
+              class="recommended-card"
+              @click="navigateToRecommendedCourse(course)"
+            >
+              <div class="recommended-thumbnail">
+                <div class="thumbnail-placeholder">
+                  <span>{{ getSubjectEmoji(course.subject) }}</span>
+                </div>
+                <div class="recommended-badge" :class="course.type === 'free' ? 'free' : 'pro'">
+                  {{ course.type === 'free' ? $t('common.free') : 'PRO' }}
+                </div>
+              </div>
+              <div class="recommended-content">
+                <h4 class="recommended-title">{{ getRecommendedCourseName(course) }}</h4>
+                <div class="recommended-meta">
+                  <span class="meta-tag">{{ course.subject }}</span>
+                  <span class="meta-lessons">{{ course.lessonCount || 0 }} {{ $t('catalogue.lessons') }}</span>
+                </div>
+                <div v-if="course.rating" class="recommended-rating">
+                  <svg class="star-icon" viewBox="0 0 24 24" fill="#fbbf24">
+                    <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+                  </svg>
+                  <span>{{ course.rating.toFixed(1) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="section-card">
           <h2 class="section-title-standalone">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -640,7 +696,10 @@ export default {
       
       showPaywall: false,
       requestedTopicId: null,
-      
+
+      recommendedCourses: [],
+      loadingRecommendations: false,
+
       currentDate: '',
       
       // Quick actions will be generated as computed property for mode awareness
@@ -897,6 +956,59 @@ export default {
       this.$router.push({ name: 'PlacementTest' });
     },
 
+    // Recommendations methods
+    async loadRecommendations() {
+      if (this.studyList.length === 0) return;
+
+      try {
+        this.loadingRecommendations = true;
+        const { getTopicsAsCourses } = await import('@/api/courses');
+        const allCourses = await getTopicsAsCourses(this.userId);
+
+        // Get subjects from user's study list
+        const studiedSubjects = [...new Set(this.studyList.map(c => c.subject).filter(Boolean))];
+
+        // Filter recommendations: same subjects, not already in study list
+        const studyListIds = new Set(this.studyList.map(c => c.topicId || c._id));
+
+        this.recommendedCourses = allCourses
+          .filter(course => {
+            const isNotInStudyList = !studyListIds.has(course.topicId);
+            const isSameSubject = studiedSubjects.length === 0 || studiedSubjects.includes(course.subject);
+            return isNotInStudyList && isSameSubject;
+          })
+          .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+          .slice(0, 8);
+      } catch (error) {
+        console.error('Failed to load recommendations:', error);
+        this.recommendedCourses = [];
+      } finally {
+        this.loadingRecommendations = false;
+      }
+    },
+
+    navigateToRecommendedCourse(course) {
+      this.$router.push(`/profile/topic/${course.topicId}`);
+    },
+
+    getSubjectEmoji(subject) {
+      const emojis = {
+        'Mathematics': '📐', 'Math': '📐', 'English': '📚', 'Science': '🔬',
+        'Physics': '⚛️', 'Chemistry': '⚗️', 'Biology': '🧬', 'History': '📜',
+        'Geography': '🌍', 'Computer Science': '💻', 'Programming': '👨‍💻',
+        'Art': '🎨', 'Music': '🎵', 'Languages': '🗣️'
+      };
+      return emojis[subject] || '📖';
+    },
+
+    getRecommendedCourseName(course) {
+      const lang = this.lang || 'en';
+      if (lang === 'en') return course.topicName || course.lessonName || 'Untitled';
+      if (lang === 'ru') return course._rawData?.topic_name_ru || course._rawData?.lesson_name_ru || course.topicName || 'Без названия';
+      if (lang === 'uz') return course._rawData?.topic_name_uz || course._rawData?.lesson_name_uz || course.topicName || 'Nomsiz';
+      return course.topicName || 'Untitled';
+    },
+
     handleStudyListUpdate() {
       this.loadData(true);
     },
@@ -1105,9 +1217,11 @@ this.recommendations = null;
       } catch (error) {
 } finally {
         this.loadingStudyList = false;
+        // Load recommendations based on user's study history
+        this.loadRecommendations();
       }
     },
-    
+
     async enrichStudyList(rawList) {
       const enrichedPromises = rawList
         .filter(entry => entry?.topicId)
@@ -1986,6 +2100,121 @@ this.recommendations = null;
 /* =============================================
    QUICK ACTIONS
    ============================================= */
+/* Recommended Section */
+.recommended-section .section-icon-badge.recommended {
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+}
+
+.recommended-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.recommended-card {
+  background: #f8fafc;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid #e2e8f0;
+}
+
+.recommended-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: #c4b5fd;
+}
+
+.recommended-thumbnail {
+  position: relative;
+  height: 80px;
+  background: linear-gradient(135deg, #fef3c7, #fbcfe8, #e0e7ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.recommended-thumbnail .thumbnail-placeholder {
+  font-size: 2rem;
+}
+
+.recommended-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.recommended-badge.free {
+  background: rgba(255, 255, 255, 0.9);
+  color: #475569;
+}
+
+.recommended-badge.pro {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: #78350f;
+}
+
+.recommended-content {
+  padding: 0.75rem;
+}
+
+.recommended-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 0.5rem;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.recommended-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.meta-tag {
+  font-size: 0.6875rem;
+  color: #7c3aed;
+  background: #f3e8ff;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.meta-lessons {
+  font-size: 0.6875rem;
+  color: #64748b;
+}
+
+.recommended-rating {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 0.5rem;
+}
+
+.recommended-rating .star-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.recommended-rating span {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #475569;
+}
+
 .quick-actions-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
 .action-card {
   position: relative; display: flex; flex-direction: column; align-items: center;

@@ -1,14 +1,50 @@
 <template>
   <div class="catalogue-page">
-    <!-- Clean Header -->
+    <!-- Redesigned Header -->
     <div class="catalogue-header">
-      <div class="header-content">
+      <div class="header-top">
         <div class="header-left">
           <h1 class="page-title">{{ $t('catalogue.title') }}</h1>
           <p class="page-subtitle">{{ $t('catalogue.subtitle') || 'From quick bites to deep dives.' }}</p>
         </div>
+        <div class="header-stats">
+          <div class="stat-item">
+            <span class="stat-number">{{ totalCourseCount }}</span>
+            <span class="stat-label">{{ $t('catalogue.courses') }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number">{{ uniqueCreatorsCount }}</span>
+            <span class="stat-label">{{ $t('catalogue.creators') }}</span>
+          </div>
+        </div>
+      </div>
 
-        <!-- Study Mode Tabs -->
+      <!-- Category Chips -->
+      <div class="category-chips-wrapper">
+        <div class="category-chips">
+          <button
+            class="category-chip"
+            :class="{ active: !selectedSubjectFilter }"
+            @click="selectedSubjectFilter = null"
+          >
+            <span class="chip-emoji">🎯</span>
+            {{ $t('catalogue.all') }}
+          </button>
+          <button
+            v-for="subject in availableSubjects"
+            :key="subject"
+            class="category-chip"
+            :class="{ active: selectedSubjectFilter === subject }"
+            @click="selectedSubjectFilter = subject"
+          >
+            <span class="chip-emoji">{{ getSubjectEmoji(subject) }}</span>
+            {{ subject }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Study Mode Tabs -->
+      <div class="study-mode-row">
         <div class="study-mode-tabs">
           <button
             class="mode-tab"
@@ -105,14 +141,22 @@
         </div>
 
         <!-- Filter Pills -->
-        <select v-model="selectedSubjectFilter" class="filter-select">
-          <option :value="null">{{ $t('catalogue.allSubjects') }}</option>
-          <option v-for="subject in availableSubjects" :key="subject" :value="subject">{{ subject }}</option>
-        </select>
-
         <select v-model="selectedLevelFilter" class="filter-select">
           <option :value="null">{{ $t('catalogue.allLevels') }}</option>
           <option v-for="level in availableLevels" :key="level" :value="level">{{ $t('dashboard.level') }} {{ level }}</option>
+        </select>
+
+        <select v-model="selectedCreatorFilter" class="filter-select">
+          <option :value="null">{{ $t('catalogue.allCreators') }}</option>
+          <option v-for="creator in availableCreators" :key="creator" :value="creator">{{ creator }}</option>
+        </select>
+
+        <!-- Sort Options -->
+        <select v-model="sortOption" class="filter-select sort-select">
+          <option value="popular">{{ $t('catalogue.sortPopular') }}</option>
+          <option value="newest">{{ $t('catalogue.sortNewest') }}</option>
+          <option value="rating">{{ $t('catalogue.sortRating') }}</option>
+          <option value="title">{{ $t('catalogue.sortTitle') }}</option>
         </select>
 
         <button
@@ -289,10 +333,27 @@
               <!-- Title -->
               <h3 class="card-title">{{ getTopicName(course) }}</h3>
 
-              <!-- Subject -->
-              <div class="card-subject">
-                <span class="subject-emoji">{{ getSubjectEmoji(course.subject) }}</span>
-                <span class="subject-name">{{ course.subject || $t('catalogue.uncategorized') }}</span>
+              <!-- Creator Info -->
+              <div class="card-creator" @click.stop="filterByCreator(course.instructor?.name || course.author)">
+                <div class="creator-avatar">
+                  <img v-if="course.instructor?.avatar" :src="course.instructor.avatar" :alt="course.instructor?.name" />
+                  <span v-else class="avatar-placeholder">{{ getCreatorInitials(course) }}</span>
+                </div>
+                <span class="creator-name">{{ course.instructor?.name || course.author || 'ACED' }}</span>
+                <svg v-if="isVerifiedCreator(course)" class="verified-badge" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+              </div>
+
+              <!-- Rating -->
+              <div class="card-rating">
+                <div class="stars">
+                  <svg v-for="star in 5" :key="star" class="star-icon" :class="{ filled: star <= Math.round(course.rating || 0) }" viewBox="0 0 24 24">
+                    <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+                  </svg>
+                </div>
+                <span class="rating-text">{{ (course.rating || 0).toFixed(1) }}</span>
+                <span class="rating-count">({{ course.ratingCount || 0 }})</span>
               </div>
 
               <!-- Course Meta (Lessons/Topics) -->
@@ -406,6 +467,7 @@ import { userStatusMixin } from '@/composables/useUserStatus';
 import { useLevelSystem } from '@/composables/useLevelSystem';
 import { useModeContent } from '@/composables/useModeContent';
 import { getAllLessons, getUserProgress, getUserStudyList, addToStudyList, getTopicsGrouped, getTopicsAsCourses } from '@/api';
+import { getBulkCourseRatings } from '@/api/ratings';
 import { useLanguage, getLocalizedText } from '@/composables/useLanguage';
 import PaymentModal from '@/components/Modals/PaymentModal.vue';
 
@@ -432,6 +494,8 @@ export default {
       searchQuery: '',
       selectedSubjectFilter: null,
       selectedLevelFilter: null,
+      selectedCreatorFilter: null,
+      sortOption: 'popular',
       typeFilter: 'all',
       studyModeFilter: 'all',
       progressFilter: 'all',
@@ -442,10 +506,9 @@ export default {
       showSuccessModal: false,
       showPaywall: false,
       selectedCourse: null,
-      selectedCourse: null,
       requestedTopicId: null,
-      rawData: null, // Store raw API response
-      rawMode: null, // Store which mode the data is for
+      rawData: null,
+      rawMode: null,
     };
   },
 
@@ -459,8 +522,17 @@ export default {
   computed: {
     ...mapGetters('user', { vuexUserStatus: 'userStatus' }),
     userStatus() { return this.vuexUserStatus || localStorage.getItem('userStatus') || 'free'; },
-    availableSubjects() { return [...new Set(this.courses.map(c => c.subject))].sort(); },
+    availableSubjects() { return [...new Set(this.courses.map(c => c.subject).filter(Boolean))].sort(); },
     availableLevels() { return [...new Set(this.courses.map(c => c.level))].sort((a, b) => Number(a) - Number(b)); },
+    availableCreators() {
+      return [...new Set(this.courses.map(c => c.instructor?.name || c.author || 'ACED').filter(Boolean))].sort();
+    },
+    uniqueCreatorsCount() {
+      return this.availableCreators.length;
+    },
+    totalCourseCount() {
+      return this.courses.length;
+    },
     coursesBySubject() {
       if (!this.isSchoolMode) return {};
       const grouped = {};
@@ -477,15 +549,17 @@ export default {
       if (this.isSchoolMode) list = list.filter(c => this.canAccessLevel(Number(c.level || 1)));
       return list.filter(c => {
         if (this.searchQuery) {
-          // Search in the currently displayed localized name
           const displayName = this.getTopicName(c).toLowerCase();
           if (!displayName.includes(this.searchQuery.toLowerCase())) return false;
         }
         if (this.selectedSubjectFilter && c.subject !== this.selectedSubjectFilter) return false;
         if (this.selectedLevelFilter && c.level !== this.selectedLevelFilter) return false;
+        if (this.selectedCreatorFilter) {
+          const creatorName = c.instructor?.name || c.author || 'ACED';
+          if (creatorName !== this.selectedCreatorFilter) return false;
+        }
         if (this.typeFilter === 'free' && c.type !== 'free') return false;
         if (this.typeFilter === 'premium' && c.type === 'free') return false;
-        // Study mode filter
         if (this.studyModeFilter !== 'all') {
           const courseMode = this.getStudyMode(c);
           if (courseMode !== this.studyModeFilter) return false;
@@ -493,16 +567,35 @@ export default {
         return true;
       });
     },
-
+    sortedCourses() {
+      const sorted = [...this.filteredCourses];
+      switch (this.sortOption) {
+        case 'popular':
+          return sorted.sort((a, b) => (b.ratingCount || 0) - (a.ratingCount || 0));
+        case 'newest':
+          return sorted.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+        case 'rating':
+          return sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        case 'title':
+          return sorted.sort((a, b) => this.getTopicName(a).localeCompare(this.getTopicName(b)));
+        default:
+          return sorted;
+      }
+    },
     inProgressCourses() {
       return this.courses.filter(c => c.progress > 0 && c.progress < 100);
     },
-    totalPages() { return Math.max(1, Math.ceil(this.filteredCourses.length / this.coursesPerPage)); },
+    totalPages() { return Math.max(1, Math.ceil(this.sortedCourses.length / this.coursesPerPage)); },
     paginatedCourses() {
-      const shuffled = [...this.filteredCourses].sort((a, b) => this.hashString(a.topicId + this.randomSeed) - this.hashString(b.topicId + this.randomSeed));
-      return shuffled.slice((this.currentPage - 1) * this.coursesPerPage, this.currentPage * this.coursesPerPage);
+      const list = this.sortOption === 'popular' ?
+        [...this.sortedCourses].sort((a, b) => this.hashString(a.topicId + this.randomSeed) - this.hashString(b.topicId + this.randomSeed)) :
+        this.sortedCourses;
+      return list.slice((this.currentPage - 1) * this.coursesPerPage, this.currentPage * this.coursesPerPage);
     },
-    hasActiveFilters() { return !!(this.searchQuery || this.selectedSubjectFilter || this.selectedLevelFilter || this.typeFilter !== 'all' || this.studyModeFilter !== 'all'); },
+    hasActiveFilters() {
+      return !!(this.searchQuery || this.selectedSubjectFilter || this.selectedLevelFilter ||
+                this.selectedCreatorFilter || this.typeFilter !== 'all' || this.studyModeFilter !== 'all');
+    },
   },
 
   async mounted() {
@@ -618,7 +711,6 @@ export default {
             data[s][l].forEach(t => {
               all.push({
                 topicId: t._id || t.id,
-                // Store raw localized objects for reactive language switching
                 _rawData: t,
                 lessonName: t.lessonName || null,
                 topicName: t.topicName || t.name || null,
@@ -628,7 +720,9 @@ export default {
                 totalTime: t.totalTime || 10,
                 type: t.type || 'free',
                 progress: this.userProgress[t._id || t.id] || 0,
-                inStudyPlan: this.studyPlanTopics.includes(t._id || t.id)
+                inStudyPlan: this.studyPlanTopics.includes(t._id || t.id),
+                rating: 0,
+                ratingCount: 0
               });
             });
           }
@@ -637,7 +731,6 @@ export default {
       } else {
         this.courses = data.map(c => ({
           topicId: c._id || c.id || c.topicId,
-          // Store raw localized objects for reactive language switching
           _rawData: c,
           lessonName: c.lessonName || null,
           topicName: c.topicName || c.name || null,
@@ -647,8 +740,36 @@ export default {
           totalTime: c.totalTime || 10,
           type: c.type || 'free',
           progress: this.userProgress[c._id || c.id || c.topicId] || 0,
-          inStudyPlan: this.studyPlanTopics.includes(c._id || c.id || c.topicId)
+          inStudyPlan: this.studyPlanTopics.includes(c._id || c.id || c.topicId),
+          rating: 0,
+          ratingCount: 0
         }));
+      }
+      // Fetch ratings for all courses
+      this.fetchCourseRatings();
+    },
+
+    async fetchCourseRatings() {
+      if (this.courses.length === 0) return;
+      try {
+        const courseIds = this.courses.map(c => c.topicId).filter(Boolean);
+        const result = await getBulkCourseRatings(courseIds);
+        if (result.success && result.data) {
+          // Merge ratings into courses
+          this.courses = this.courses.map(course => {
+            const ratingData = result.data[course.topicId];
+            if (ratingData) {
+              return {
+                ...course,
+                rating: ratingData.averageRating || 0,
+                ratingCount: ratingData.totalRatings || 0
+              };
+            }
+            return course;
+          });
+        }
+      } catch (error) {
+        console.error('Failed to fetch course ratings:', error);
       }
     },
     
@@ -724,7 +845,6 @@ export default {
     hasTopicAccess(type) { return type === 'free' || this.userStatus === 'pro' || this.userStatus === 'start'; },
     getSubjectEmoji(s) { const e = { 'Mathematics': '📐', 'Math': '📐', 'English': '📚', 'Science': '🔬', 'Physics': '⚛️', 'Chemistry': '⚗️', 'Biology': '🧬', 'History': '📜', 'Geography': '🌍', 'Computer Science': '💻', 'Programming': '👨‍💻', 'Art': '🎨', 'Music': '🎵', 'Languages': '🗣️' }; return e[s] || '📖'; },
     getTopicsCount(course) {
-      // Return number of topics for deep dive/mastery path courses
       if (course.topics && Array.isArray(course.topics)) {
         return course.topics.length;
       }
@@ -732,6 +852,30 @@ export default {
         return course.topicsCount;
       }
       return 0;
+    },
+    getCreatorInitials(course) {
+      const name = course.instructor?.name || course.author || 'ACED';
+      return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    },
+    isVerifiedCreator(course) {
+      // Check if creator is verified (ACED is always verified, others can have verified flag)
+      const name = course.instructor?.name || course.author || 'ACED';
+      return name === 'ACED' || course.instructor?.verified === true;
+    },
+    filterByCreator(creatorName) {
+      if (creatorName) {
+        this.selectedCreatorFilter = creatorName;
+        this.currentPage = 1;
+      }
+    },
+    clearFilters() {
+      this.searchQuery = '';
+      this.selectedSubjectFilter = null;
+      this.selectedLevelFilter = null;
+      this.selectedCreatorFilter = null;
+      this.typeFilter = 'all';
+      this.studyModeFilter = 'all';
+      this.currentPage = 1;
     },
   },
 };
@@ -749,15 +893,16 @@ export default {
 .catalogue-header {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem 1.5rem 1.5rem;
+  padding: 2rem 1.5rem 1rem;
 }
 
-.header-content {
+.header-top {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   flex-wrap: wrap;
   gap: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .header-left {
@@ -775,6 +920,85 @@ export default {
   font-size: 0.9375rem;
   color: #64748b;
   margin: 0;
+}
+
+/* Header Stats */
+.header-stats {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-number {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #7c3aed;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Category Chips */
+.category-chips-wrapper {
+  margin-bottom: 1rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.category-chips-wrapper::-webkit-scrollbar {
+  display: none;
+}
+
+.category-chips {
+  display: flex;
+  gap: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.category-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #475569;
+  background: white;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.category-chip:hover {
+  border-color: #c4b5fd;
+  background: #faf5ff;
+}
+
+.category-chip.active {
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  color: white;
+  border-color: transparent;
+}
+
+.chip-emoji {
+  font-size: 1rem;
+}
+
+/* Study Mode Row */
+.study-mode-row {
+  display: flex;
+  justify-content: flex-start;
 }
 
 /* Study Mode Tabs */
@@ -1331,23 +1555,92 @@ export default {
   border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
-/* Card Subject */
-.card-subject {
+/* Card Creator */
+.card-creator {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 10px;
+  gap: 8px;
+  margin-bottom: 8px;
+  cursor: pointer;
   padding: 4px 0;
 }
 
-.subject-emoji {
-  font-size: 0.875rem;
+.card-creator:hover .creator-name {
+  color: #7c3aed;
 }
 
-.subject-name {
+.creator-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: linear-gradient(135deg, #c4b5fd, #a78bfa);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.creator-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-placeholder {
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: white;
+}
+
+.creator-name {
   font-size: 0.75rem;
   font-weight: 500;
-  color: #64748b;
+  color: #475569;
+  transition: color 0.2s ease;
+}
+
+.verified-badge {
+  width: 14px;
+  height: 14px;
+  color: #7c3aed;
+  flex-shrink: 0;
+}
+
+/* Card Rating */
+.card-rating {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.stars {
+  display: flex;
+  gap: 1px;
+}
+
+.star-icon {
+  width: 12px;
+  height: 12px;
+  fill: #e2e8f0;
+  stroke: none;
+}
+
+.star-icon.filled {
+  fill: #fbbf24;
+}
+
+.rating-text {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #475569;
+  margin-left: 2px;
+}
+
+.rating-count {
+  font-size: 0.7rem;
+  color: #94a3b8;
 }
 
 /* Card Meta (Lessons/Topics) */

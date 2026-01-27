@@ -338,6 +338,16 @@
       </template>
     </CompletionScreen>
 
+    <!-- Rating Modal -->
+    <RatingModal
+      :show="showRatingModal"
+      :lesson-id="lessonId"
+      :lesson-name="extractLessonTitle(lesson)"
+      :course-id="topicId"
+      @close="showRatingModal = false"
+      @submit="handleRatingSubmit"
+    />
+
     <!-- Migration Panel -->
     <Teleport to="body">
       <Transition
@@ -443,6 +453,7 @@ import InteractivePanel from '@/components/lesson/InteractivePanel.vue'
 import CompletionScreen from '@/components/lesson/CompletionScreen.vue'
 import FloatingAIAssistant from '@/components/lesson/FloatingAIAssistant.vue'
 import LessonHeader from '@/components/lesson/LessonHeader.vue'
+import RatingModal from '@/components/Modals/RatingModal.vue'
 
 // Import Composables
 import { useVoiceAssistant } from '@/composables/useVoiceAssistant'
@@ -452,6 +463,7 @@ import { eventBus } from '@/utils/eventBus'
 import { getLessonById } from '@/api/lessons'
 import { getLessonAIResponse, getUserUsage } from '@/services/GPTService'
 import { clearChatHistory } from '@/api/chat'
+import { submitLessonRating } from '@/api/ratings'
 
 // Import language composable for multi-language support
 import { useLanguage, getLocalizedText } from '@/composables/useLanguage';
@@ -574,6 +586,7 @@ const showExitModal = ref(false)
 const showProblemReportModal = ref(false)
 const showSuccessMessage = ref(false)
 const showMigrationPanel = ref(false)
+const showRatingModal = ref(false)
 
 // Problem Report
 const problemType = ref('')
@@ -936,6 +949,10 @@ function resetExerciseState(fullReset = true) {
 function completeLesson() {
   lessonCompleted.value = true
   calculateResults()
+  // Show rating modal after a short delay
+  setTimeout(() => {
+    showRatingModal.value = true
+  }, 1500)
 }
 
 function calculateResults() {
@@ -968,6 +985,25 @@ function getMedalIcon() {
 function shareResult() {
   // Share functionality
   console.log('Sharing result...')
+}
+
+async function handleRatingSubmit(ratingData) {
+  try {
+    const result = await submitLessonRating({
+      lessonId: ratingData.lessonId,
+      courseId: ratingData.courseId,
+      rating: ratingData.rating,
+      feedback: ratingData.feedback
+    })
+    if (result.success) {
+      console.log('Rating submitted successfully')
+    } else {
+      console.error('Failed to submit rating:', result.error)
+    }
+  } catch (error) {
+    console.error('Error submitting rating:', error)
+  }
+  showRatingModal.value = false
 }
 
 function handleGoToHomework() {
