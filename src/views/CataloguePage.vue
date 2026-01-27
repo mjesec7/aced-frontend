@@ -467,6 +467,7 @@ import { userStatusMixin } from '@/composables/useUserStatus';
 import { useLevelSystem } from '@/composables/useLevelSystem';
 import { useModeContent } from '@/composables/useModeContent';
 import { getAllLessons, getUserProgress, getUserStudyList, addToStudyList, getTopicsGrouped, getTopicsAsCourses } from '@/api';
+import { getBulkCourseRatings } from '@/api/ratings';
 import { useLanguage, getLocalizedText } from '@/composables/useLanguage';
 import PaymentModal from '@/components/Modals/PaymentModal.vue';
 
@@ -710,7 +711,6 @@ export default {
             data[s][l].forEach(t => {
               all.push({
                 topicId: t._id || t.id,
-                // Store raw localized objects for reactive language switching
                 _rawData: t,
                 lessonName: t.lessonName || null,
                 topicName: t.topicName || t.name || null,
@@ -720,7 +720,9 @@ export default {
                 totalTime: t.totalTime || 10,
                 type: t.type || 'free',
                 progress: this.userProgress[t._id || t.id] || 0,
-                inStudyPlan: this.studyPlanTopics.includes(t._id || t.id)
+                inStudyPlan: this.studyPlanTopics.includes(t._id || t.id),
+                rating: 0,
+                ratingCount: 0
               });
             });
           }
@@ -729,7 +731,6 @@ export default {
       } else {
         this.courses = data.map(c => ({
           topicId: c._id || c.id || c.topicId,
-          // Store raw localized objects for reactive language switching
           _rawData: c,
           lessonName: c.lessonName || null,
           topicName: c.topicName || c.name || null,
@@ -739,8 +740,36 @@ export default {
           totalTime: c.totalTime || 10,
           type: c.type || 'free',
           progress: this.userProgress[c._id || c.id || c.topicId] || 0,
-          inStudyPlan: this.studyPlanTopics.includes(c._id || c.id || c.topicId)
+          inStudyPlan: this.studyPlanTopics.includes(c._id || c.id || c.topicId),
+          rating: 0,
+          ratingCount: 0
         }));
+      }
+      // Fetch ratings for all courses
+      this.fetchCourseRatings();
+    },
+
+    async fetchCourseRatings() {
+      if (this.courses.length === 0) return;
+      try {
+        const courseIds = this.courses.map(c => c.topicId).filter(Boolean);
+        const result = await getBulkCourseRatings(courseIds);
+        if (result.success && result.data) {
+          // Merge ratings into courses
+          this.courses = this.courses.map(course => {
+            const ratingData = result.data[course.topicId];
+            if (ratingData) {
+              return {
+                ...course,
+                rating: ratingData.averageRating || 0,
+                ratingCount: ratingData.totalRatings || 0
+              };
+            }
+            return course;
+          });
+        }
+      } catch (error) {
+        console.error('Failed to fetch course ratings:', error);
       }
     },
     
