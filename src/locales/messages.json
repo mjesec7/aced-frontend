@@ -32,6 +32,23 @@
       "untitled": "Untitled",
       "skip": "Skip"
     },
+    "subjects": {
+      "Mathematics": "Mathematics",
+      "Math": "Math",
+      "English": "English",
+      "Science": "Science",
+      "Physics": "Physics",
+      "Chemistry": "Chemistry",
+      "Biology": "Biology",
+      "History": "History",
+      "Geography": "Geography",
+      "Computer Science": "Computer Science",
+      "Programming": "Programming",
+      "Art": "Art",
+      "Music": "Music",
+      "Languages": "Languages",
+      "Uncategorized": "Uncategorized"
+    },
     "rating": {
       "terrible": "Terrible",
       "poor": "Poor",
@@ -1059,6 +1076,23 @@
       "untitled": "Без названия",
       "skip": "Пропустить"
     },
+    "subjects": {
+      "Mathematics": "Математика",
+      "Math": "Математика",
+      "English": "Английский",
+      "Science": "Наука",
+      "Physics": "Физика",
+      "Chemistry": "Химия",
+      "Biology": "Биология",
+      "History": "История",
+      "Geography": "География",
+      "Computer Science": "Информатика",
+      "Programming": "Программирование",
+      "Art": "Искусство",
+      "Music": "Музыка",
+      "Languages": "Языки",
+      "Uncategorized": "Без категории"
+    },
     "rating": {
       "terrible": "Ужасно",
       "poor": "Плохо",
@@ -2066,6 +2100,23 @@
       "general": "Umumiy",
       "untitled": "Nomsiz",
       "skip": "O'tkazib yuborish"
+    },
+    "subjects": {
+      "Mathematics": "Matematika",
+      "Math": "Matematika",
+      "English": "Ingliz tili",
+      "Science": "Fan",
+      "Physics": "Fizika",
+      "Chemistry": "Kimyo",
+      "Biology": "Biologiya",
+      "History": "Tarix",
+      "Geography": "Geografiya",
+      "Computer Science": "Informatika",
+      "Programming": "Dasturlash",
+      "Art": "San'at",
+      "Music": "Musiqa",
+      "Languages": "Tillar",
+      "Uncategorized": "Toifalanmagan"
     },
     "rating": {
       "terrible": "Juda yomon",

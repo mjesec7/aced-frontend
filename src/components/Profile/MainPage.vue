@@ -417,7 +417,7 @@
               <div class="recommended-content">
                 <h4 class="recommended-title">{{ getRecommendedCourseName(course) }}</h4>
                 <div class="recommended-meta">
-                  <span class="meta-tag">{{ course.subject }}</span>
+                  <span class="meta-tag">{{ getLocalizedSubjectName(course.subject) }}</span>
                   <span class="meta-lessons">{{ course.lessonCount || 0 }} {{ $t('catalogue.lessons') }}</span>
                 </div>
                 <div v-if="course.rating" class="recommended-rating">
@@ -654,6 +654,7 @@ import {
 import PaymentModal from '@/components/Modals/PaymentModal.vue';
 import AppleTreeGoal from '@/components/Profile/AppleTreeGoal.vue';
 import { useLevelSystem } from '@/composables/useLevelSystem';
+import { useLanguage, getLocalizedText } from '@/composables/useLanguage';
 
 const startOfDay = (date) => {
   const newDate = new Date(date);
@@ -670,9 +671,11 @@ export default {
 
   setup() {
     const { isSchoolMode, isStudyCentreMode } = useLevelSystem();
+    const { language } = useLanguage();
     return {
       isSchoolMode,
-      isStudyCentreMode
+      isStudyCentreMode,
+      language
     };
   },
 
@@ -1001,12 +1004,41 @@ export default {
       return emojis[subject] || '📖';
     },
 
+    getLocalizedSubjectName(subject) {
+      if (!subject) return this.$t('subjects.Uncategorized');
+      // Try to get the translated version, fallback to original
+      const translationKey = `subjects.${subject}`;
+      const translated = this.$t(translationKey);
+      // If translation exists and is different from the key, use it
+      if (translated && translated !== translationKey) {
+        return translated;
+      }
+      // Fallback to original subject name
+      return subject;
+    },
+
     getRecommendedCourseName(course) {
-      const lang = this.lang || 'en';
-      if (lang === 'en') return course.topicName || course.lessonName || 'Untitled';
-      if (lang === 'ru') return course._rawData?.topic_name_ru || course._rawData?.lesson_name_ru || course.topicName || 'Без названия';
-      if (lang === 'uz') return course._rawData?.topic_name_uz || course._rawData?.lesson_name_uz || course.topicName || 'Nomsiz';
-      return course.topicName || 'Untitled';
+      if (!course) return this.$t('course.untitled') || 'Untitled';
+
+      // Try lessonName first
+      if (course.lessonName) {
+        const name = getLocalizedText(course.lessonName, null, '', this.language);
+        if (name) return name;
+      }
+
+      // Try topicName
+      if (course.topicName) {
+        const name = getLocalizedText(course.topicName, null, '', this.language);
+        if (name) return name;
+      }
+
+      // Try name field
+      if (course.name) {
+        const name = getLocalizedText(course.name, null, '', this.language);
+        if (name) return name;
+      }
+
+      return this.$t('course.untitled') || 'Untitled';
     },
 
     handleStudyListUpdate() {
@@ -1370,7 +1402,42 @@ this.recommendations = null;
     },
     
     getCourseName(course) {
-      return course.name || course.topicName || course.topic || course.title || 'Untitled Course';
+      if (!course) return this.$t('course.untitled') || 'Untitled Course';
+
+      // Try lessonName first (the JSON format uses lessonName for course titles)
+      if (course.lessonName) {
+        const name = getLocalizedText(course.lessonName, null, '', this.language);
+        if (name) return name;
+      }
+
+      // Try name field (could be string or localized object)
+      if (course.name) {
+        if (typeof course.name === 'object') {
+          const name = getLocalizedText(course.name, null, '', this.language);
+          if (name) return name;
+        } else if (typeof course.name === 'string') {
+          return course.name;
+        }
+      }
+
+      // Try topicName field
+      if (course.topicName) {
+        const name = getLocalizedText(course.topicName, null, '', this.language);
+        if (name) return name;
+      }
+
+      // Try topic field (usually a simple string)
+      if (course.topic && typeof course.topic === 'string') {
+        return course.topic;
+      }
+
+      // Try title field
+      if (course.title) {
+        const name = getLocalizedText(course.title, null, '', this.language);
+        if (name) return name;
+      }
+
+      return this.$t('course.untitled') || 'Untitled Course';
     },
     
     getTypeClass(course) {

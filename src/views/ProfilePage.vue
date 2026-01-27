@@ -30,28 +30,7 @@
           <span class="breadcrumb-text">{{ currentPageTitle }}</span>
         </div>
 
-        <div class="header-actions">
-          <button
-            class="action-btn notification-btn"
-            @click="toggleNotifications"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-            </svg>
-            <span class="notification-dot" v-if="hasNotifications"></span>
-          </button>
-
-          <button
-            class="action-btn search-btn"
-            @click="toggleSearch"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="11" cy="11" r="8"/>
-              <path d="m21 21-4.35-4.35"/>
-            </svg>
-          </button>
-        </div>
+        <!-- Header actions removed for cleaner design -->
       </header>
 
       <div class="profile-content">
@@ -92,7 +71,6 @@ export default {
   data() {
     return {
       sidebarOpen: true,
-      hasNotifications: true,
       showFab: true,
       componentKey: 0,
       lastUpdate: Date.now()
@@ -178,14 +156,6 @@ export default {
         window.eventBus.off('userStatusChanged', this.profileStatusHandler);
         window.eventBus.off('promocodeApplied', this.profileStatusHandler);
       }
-    },
-
-    toggleNotifications() {
-      // Handle notifications toggle
-    },
-
-    toggleSearch() {
-      // Handle search toggle
     },
 
     openQuickActions() {
@@ -317,47 +287,6 @@ export default {
   letter-spacing: -0.01em;
 }
 
-.header-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.action-btn {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  color: #64748b;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  position: relative;
-}
-
-.action-btn:hover {
-  background: #f8fafc;
-  color: #1e293b;
-  transform: translateY(-1px);
-}
-
-.action-btn svg {
-  width: 18px;
-  height: 18px;
-}
-
-.notification-dot {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 8px;
-  height: 8px;
-  background: #ef4444;
-  border-radius: 50%;
-  border: 2px solid white;
-}
 
 /* === PROFILE CONTENT === */
 .profile-content {

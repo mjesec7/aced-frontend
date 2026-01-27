@@ -38,7 +38,7 @@
             @click="selectedSubjectFilter = subject"
           >
             <span class="chip-emoji">{{ getSubjectEmoji(subject) }}</span>
-            {{ subject }}
+            {{ getLocalizedSubjectName(subject) }}
           </button>
         </div>
       </div>
@@ -199,7 +199,7 @@
         <section v-for="(courses, subject) in coursesBySubject" :key="subject">
           <div class="flex items-center gap-3 mb-4">
             <span class="text-2xl">{{ getSubjectEmoji(subject) }}</span>
-            <h2 class="text-xl font-bold text-slate-800">{{ subject }}</h2>
+            <h2 class="text-xl font-bold text-slate-800">{{ getLocalizedSubjectName(subject) }}</h2>
             <span class="px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 text-xs font-medium">{{ courses.length }}</span>
           </div>
 
@@ -803,6 +803,18 @@ export default {
       if (l?.subjectName) return getLocalizedText(l.subjectName);
       if (l?.subject) return String(l.subject);
       return 'Uncategorized';
+    },
+    getLocalizedSubjectName(subject) {
+      if (!subject) return this.$t('subjects.Uncategorized');
+      // Try to get the translated version, fallback to original
+      const translationKey = `subjects.${subject}`;
+      const translated = this.$t(translationKey);
+      // If translation exists and is different from the key, use it
+      if (translated && translated !== translationKey) {
+        return translated;
+      }
+      // Fallback to original subject name
+      return subject;
     },
     getTopicName(l) {
       // Priority: lessonName (localized), topicName (localized), name (localized), title (localized), topic (string)
