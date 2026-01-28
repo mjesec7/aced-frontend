@@ -760,6 +760,30 @@ const lessonIdForAI = computed(() => {
   return String(l._id || routeId || '');
 })
 
+// Lesson ID for RatingModal (reuses same logic as lessonIdForAI)
+const lessonId = computed(() => {
+  const l = lesson.value;
+  const routeId = route.params.id || route.params.lessonId;
+  if (!l) return routeId || '';
+  if (typeof l._id === 'string') return l._id;
+  if (l._id && l._id.$oid) return l._id.$oid;
+  if (l.id) return l.id;
+  return String(l._id || routeId || '');
+})
+
+// Topic/Course ID for RatingModal (extracted from lesson data or route)
+const topicId = computed(() => {
+  const l = lesson.value;
+  if (!l) return route.params.topicId || route.params.courseId || '';
+  // Try various field names that might contain the topic/course ID
+  const courseId = l.courseId || l.topicId || l.course || l.topic;
+  if (typeof courseId === 'string') return courseId;
+  if (courseId && courseId.$oid) return courseId.$oid;
+  if (courseId && courseId._id) return courseId._id;
+  // Fallback to route params
+  return route.params.topicId || route.params.courseId || '';
+})
+
 const leftPanelStyle = computed(() => ({
   width: resizeDisabled.value ? '100%' : `${leftPanelWidth.value}%`
 }))
