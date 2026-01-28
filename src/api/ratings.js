@@ -48,7 +48,7 @@ export const submitLessonRating = async (ratingData) => {
     console.error('Error submitting rating:', error);
     return {
       success: false,
-      error: error.response?.data?.message || 'Failed to submit rating'
+      error: error.response?.data?.error || error.response?.data?.message || 'Failed to submit rating'
     };
   }
 };
@@ -73,7 +73,7 @@ export const submitCourseRating = async (ratingData) => {
     console.error('Error submitting course rating:', error);
     return {
       success: false,
-      error: error.response?.data?.message || 'Failed to submit rating'
+      error: error.response?.data?.error || error.response?.data?.message || 'Failed to submit rating'
     };
   }
 };
@@ -100,7 +100,7 @@ export const getCourseRating = async (courseId) => {
     console.error('Error fetching course rating:', error);
     return {
       success: false,
-      error: error.response?.data?.message || 'Failed to fetch rating',
+      error: error.response?.data?.error || error.response?.data?.message || 'Failed to fetch rating',
       data: { averageRating: 0, totalRatings: 0 }
     };
   }
@@ -125,7 +125,7 @@ export const getBulkCourseRatings = async (courseIds) => {
     console.error('Error fetching bulk ratings:', error);
     return {
       success: false,
-      error: error.response?.data?.message || 'Failed to fetch ratings',
+      error: error.response?.data?.error || error.response?.data?.message || 'Failed to fetch ratings',
       data: {}
     };
   }
@@ -147,7 +147,7 @@ export const getUserCourseRating = async (courseId) => {
     console.error('Error fetching user rating:', error);
     return {
       success: false,
-      error: error.response?.data?.message || 'Failed to fetch user rating'
+      error: error.response?.data?.error || error.response?.data?.message || 'Failed to fetch user rating'
     };
   }
 };
@@ -166,7 +166,7 @@ export const updateRating = async (ratingId, updateData) => {
     console.error('Error updating rating:', error);
     return {
       success: false,
-      error: error.response?.data?.message || 'Failed to update rating'
+      error: error.response?.data?.error || error.response?.data?.message || 'Failed to update rating'
     };
   }
 };
@@ -184,7 +184,7 @@ export const deleteRating = async (ratingId) => {
     console.error('Error deleting rating:', error);
     return {
       success: false,
-      error: error.response?.data?.message || 'Failed to delete rating'
+      error: error.response?.data?.error || error.response?.data?.message || 'Failed to delete rating'
     };
   }
 };
@@ -208,7 +208,7 @@ export const getCourseReviews = async (courseId, options = {}) => {
     console.error('Error fetching course reviews:', error);
     return {
       success: false,
-      error: error.response?.data?.message || 'Failed to fetch reviews',
+      error: error.response?.data?.error || error.response?.data?.message || 'Failed to fetch reviews',
       data: { reviews: [], total: 0 }
     };
   }

@@ -118,14 +118,11 @@
 
           const token = await user.getIdToken();
 
-          // Submit rating to backend
-          await api.post('/ratings', {
-            userId: user.uid,
+          // Submit rating to backend using the correct endpoint
+          await api.post('/ratings/course', {
             courseId: ratingData.courseId,
-            lessonId: ratingData.lessonId,
             rating: ratingData.rating,
-            feedback: ratingData.feedback,
-            timestamp: new Date().toISOString()
+            feedback: ratingData.feedback || ''
           }, {
             headers: { Authorization: `Bearer ${token}` }
           });
