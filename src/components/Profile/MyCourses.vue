@@ -600,10 +600,8 @@ export default {
             enriched.forEach(course => {
               const courseId = course.topicId || course._id;
               const ratingData = ratingsResponse.data[courseId];
-              if (ratingData) {
-                course.rating = ratingData.averageRating || 0;
-                course.totalRatings = ratingData.totalRatings || 0;
-              }
+              course.rating = ratingData?.averageRating || 0;
+              course.totalRatings = ratingData?.totalRatings || 0;
             });
           }
         } catch (ratingsError) {

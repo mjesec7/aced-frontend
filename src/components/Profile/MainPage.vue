@@ -993,7 +993,6 @@ export default {
           try {
             const ratingsResponse = await getBulkCourseRatings(courseIds);
             if (ratingsResponse.success && ratingsResponse.data) {
-              // Merge ratings into courses
               filteredCourses = filteredCourses.map(course => {
                 const courseId = course.topicId || course._id;
                 const ratingData = ratingsResponse.data[courseId];

@@ -568,7 +568,7 @@ response = await getUpdatedCourses(filters);
         }
         
         if (response && response.success) {
-          this.processCoursesResponse(response);
+          await this.processCoursesResponse(response);
           this.lastFetchTime = Date.now();
 } else {
           throw new Error(response?.error || 'Failed to fetch courses');
@@ -620,7 +620,7 @@ this.handleLoadError(error);
       } catch (error) {
         console.warn('Failed to fetch course ratings:', error);
       }
-},
+    },
 
     processCourses(courses) {
       if (!Array.isArray(courses)) {

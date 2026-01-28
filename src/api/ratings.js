@@ -86,7 +86,16 @@ export const submitCourseRating = async (ratingData) => {
 export const getCourseRating = async (courseId) => {
   try {
     const response = await api.get(`/ratings/course/${courseId}`);
-    return { success: true, data: response.data };
+    // Backend returns: { success, averageRating, totalRatings, distribution }
+    // We wrap it consistently for frontend use
+    return {
+      success: response.data?.success ?? true,
+      data: {
+        averageRating: response.data?.averageRating ?? 0,
+        totalRatings: response.data?.totalRatings ?? 0,
+        distribution: response.data?.distribution ?? {}
+      }
+    };
   } catch (error) {
     console.error('Error fetching course rating:', error);
     return {
@@ -105,7 +114,13 @@ export const getCourseRating = async (courseId) => {
 export const getBulkCourseRatings = async (courseIds) => {
   try {
     const response = await api.post('/ratings/courses/bulk', { courseIds });
-    return { success: true, data: response.data };
+    // Backend returns: { success: true, data: { courseId: { averageRating, totalRatings } } }
+    // Extract the nested data map for frontend use
+    const ratingsMap = response.data?.data ?? response.data ?? {};
+    return {
+      success: response.data?.success ?? true,
+      data: ratingsMap
+    };
   } catch (error) {
     console.error('Error fetching bulk ratings:', error);
     return {
