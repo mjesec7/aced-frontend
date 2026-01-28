@@ -771,288 +771,60 @@ const lessonId = computed(() => {
   return String(l._id || routeId || '');
 })
 
+// Helper to extract ID from various formats (string, ObjectId, object with $oid)
+const extractId = (idObj) => {
+  if (!idObj) return null;
+  if (typeof idObj === 'string') return idObj;
+  if (idObj.$oid) return idObj.$oid;
+  if (idObj._id) return typeof idObj._id === 'object' ? (idObj._id.$oid || String(idObj._id)) : idObj._id;
+  if (idObj.id) return idObj.id;
+  return String(idObj);
+};
+
 // Topic/Course ID for RatingModal (extracted from lesson data or route)
 const topicId = computed(() => {
   const l = lesson.value;
-  if (!l) return route.params.topicId || route.params.courseId || '';
+  // 1. Try route params first if available
+  const routeId = route.params.topicId || route.params.courseId;
+  if (routeId) return routeId;
+
+  if (!l) return '';
   
-  // Try various field names that might contain the topic/course ID
-  // Order matters: topicId is the primary field in lesson model
+  // 2. Try various field names in lesson object
   const rawId = l.topicId || l.courseId || l.course || l.topic;
   
-  // Extract string from various possible formats
-  let extractedId = '';
-  if (typeof rawId === 'string') {
-    extractedId = rawId;
-  } else if (rawId && typeof rawId === 'object') {
-    // Handle MongoDB ObjectId formats
-    extractedId = rawId.$oid || rawId._id || rawId.id || String(rawId);
-  }
-  
-  // Fallback to route params if no ID found
-  if (!extractedId) {
-    extractedId = route.params.topicId || route.params.courseId || '';
-  }
+  // 3. Extract string using helper
+  const extractedId = extractId(rawId);
   
   // Debug: log the extracted topicId for rating
   console.log('📊 [Rating] topicId computed:', { raw: rawId, extracted: extractedId, lessonId: lessonId.value });
   
-  return extractedId;
+  return extractedId || '';
 })
-
-const leftPanelStyle = computed(() => ({
-  width: resizeDisabled.value ? '100%' : `${leftPanelWidth.value}%`
-}))
-
-const rightPanelStyle = computed(() => ({
-  width: resizeDisabled.value ? '0%' : `${100 - leftPanelWidth.value}%`
-}))
-
-// ==================== METHODS ====================
-
-// Loading & Navigation
-async function loadLesson() {
-  loading.value = true
-  error.value = null
-
-  try {
-    const lessonId = route.params.id
-    if (!lessonId) {
-      throw new Error('No lesson ID provided')
-    }
-
-    const result = await getLessonById(lessonId)
-
-    if (result.success && result.data) {
-      const lessonData = result.data
-
-      // Extract localized title and description using helper functions
-      const localizedTitle = extractLessonTitle(lessonData)
-      const localizedDescription = extractLessonDescription(lessonData)
-
-      // DEBUG: Log lesson data loading
-      console.log('📥 [LessonPage] loadLesson raw result:', {
-        lesson: lessonData,
-        topic: result.topic,
-        stats: result.stats
-      });
-
-      console.log('📥 [LessonPage] loadLesson setting lesson.value:', {
-        id: lessonData._id || lessonData.id,
-        title: localizedTitle,
-        topicId: lessonData.topicId,
-        resultTopicId: result.topic?._id || result.topic?.id,
-        isRef: isRef(lesson) // Check if it's a ref
-      });
-
-      // Map backend fields to frontend display with localization
-      lesson.value = {
-        ...lessonData,
-        title: localizedTitle,
-        subtitle: localizedDescription,
-        estimatedDuration: lessonData.timing?.estimatedDuration || 0,
-        // Ensure topic/course ID is available for rating and other features
-        topicId: lessonData.topicId || (result.topic ? (result.topic._id || result.topic.id) : null),
-        courseId: lessonData.courseId || (result.topic ? (result.topic._id || result.topic.id) : null)
-      }
-
-      // Extract and process steps with localization
-      const rawSteps = lessonData.steps || []
-      steps.value = rawSteps.map((step, index) => processStepWithLocalization(step, index)).filter(Boolean)
-
-      // Trigger pre-analysis in the background (uses system language from i18n)
-      if (steps.value.length > 0) {
-        preAnalyzeSteps(steps.value, language.value)
-      }
-    } else {
-      throw new Error(result.error || 'Failed to load lesson data')
-    }
-  } catch (err) {
-    console.error('[LessonPage] loadLesson error:', err)
-    error.value = err.message || 'Failed to load lesson'
-  } finally {
-    loading.value = false
-  }
-}
-
-function retryLoad() {
-  loadLesson()
-}
-
-function handleReturnToCatalogue() {
-  router.push('/profile/catalogue')
-}
-
-function handleToggleSpeech() {
-  if (isSpeaking.value) {
-    stopAudio()
-  } else {
-    // Get exercise context for richer AI analysis
-    const exerciseContext = getExerciseContextForAI()
-    analyzeAndSpeak(currentStep.value, false, exerciseContext)
-  }
-}
-
-function handleToggleVoiceMute() {
-  toggleVoiceMute()
-}
-
-// Get exercise content for AI analysis context
-function getExerciseContextForAI() {
-  const step = currentStep.value
-  if (!step) return null
-
-  // Check if this is an interactive step
-  if (isInteractiveStep.value || isGameStep.value) {
-    // Get current exercise
-    const exercise = getCurrentExercise(step)
-    if (exercise) {
-      return extractExerciseContent(exercise, language.value)
-    }
-    // Fall back to extracting all exercises from step
-    return extractAllExercisesFromStep(step, language.value)
-  }
-
-  return null
-}
-
-function handleSpeakingStart() {
-  // Handled by composable
-}
-
-function handleSpeakingEnd() {
-  // Handled by composable
-}
-
-function startLesson() {
-  started.value = true
-  if (steps.value[currentIndex.value] && !isVoiceMuted.value) {
-    const step = steps.value[currentIndex.value]
-    const stepType = step?.type?.toLowerCase()
-
-    // Only auto-analyze on content steps
-    const contentStepTypes = ['explanation', 'reading', 'vocabulary', 'example']
-    const isContentStep = contentStepTypes.includes(stepType)
-
-    if (isContentStep) {
-      analyzeAndSpeak(step, true, null) // isFirstStep = true
-    }
-  }
-}
-
-function continuePreviousProgress() {
-  if (previousProgress.value) {
-    currentIndex.value = previousProgress.value.stepIndex || 0
-  }
-  started.value = true
-}
-
-function confirmExit() {
-  showExitModal.value = true
-}
-
-function cancelExit() {
-  showExitModal.value = false
-}
-
-function exitLesson() {
-  showExitModal.value = false
-  handleReturnToCatalogue()
-}
-
-// Navigation
-function goNext() {
-  if (currentIndex.value < steps.value.length - 1) {
-    currentIndex.value++
-    resetExerciseState()
-  } else {
-    completeLesson()
-  }
-}
-
-function goPrevious() {
-  if (currentIndex.value > 0) {
-    currentIndex.value--
-    resetExerciseState()
-  }
-}
-
-function resetExerciseState(fullReset = true) {
-  userAnswer.value = ''
-  confirmation.value = null
-  answerWasCorrect.value = false
-  currentHint.value = ''
-  smartHint.value = ''
-  fillBlankAnswers.value = {}
-  matchingPairs.value = []
-  selectedMatchingItem.value = null
-  attemptCount.value = 0
-  isOnSecondChance.value = false
-  showCorrectAnswer.value = false
-  correctAnswerText.value = ''
-  // Only reset indices when doing a full reset (e.g., moving to a new step)
-  if (fullReset) {
-    currentExerciseIndex.value = 0
-    currentQuizIndex.value = 0
-  }
-}
-
-function completeLesson() {
-  lessonCompleted.value = true
-  calculateResults()
-  // Show rating modal after a short delay
-  setTimeout(() => {
-    showRatingModal.value = true
-  }, 1500)
-}
-
-function calculateResults() {
-  const totalSteps = steps.value.length
-  const accuracy = totalSteps > 0 ? (totalSteps - mistakeCount.value) / totalSteps : 1
-  
-  if (accuracy >= 0.9) {
-    stars.value = 3
-    medalLabel.value = 'Gold'
-  } else if (accuracy >= 0.7) {
-    stars.value = 2
-    medalLabel.value = 'Silver'
-  } else {
-    stars.value = 1
-    medalLabel.value = 'Bronze'
-  }
-  
-  progressInsight.value = `You completed ${totalSteps} steps with ${mistakeCount.value} mistakes.`
-}
-
-function getMedalIcon() {
-  const icons = {
-    Gold: '🥇',
-    Silver: '🥈',
-    Bronze: '🥉'
-  }
-  return icons[medalLabel.value] || '🏅'
-}
-
-function shareResult() {
-  // Share functionality
-  console.log('Sharing result...')
-}
 
 async function handleRatingSubmit(ratingData) {
   console.log('🌟 [LessonPage] handleRatingSubmit called with:', ratingData);
   
+  // Ensure we have a clean string ID
+  let courseId = extractId(ratingData.courseId);
+
   // Validate data before sending
-  if (!ratingData.courseId) {
+  if (!courseId) {
     console.warn('⚠️ [LessonPage] Missing courseId in rating data! Attempting to recover...');
     
-    // 1. Try immediate properties
-    let recoveredId = lesson.value?.topicId || lesson.value?.courseId || 
-                      lesson.value?.topic?._id || lesson.value?.topic?.id || 
-                      route.params.topicId || route.params.courseId;
+    // 1. Try immediate properties from lesson
+    const l = lesson.value;
+    const rawId = l?.topicId || l?.courseId || l?.topic?._id || l?.topic?.id || l?.topic;
+    courseId = extractId(rawId);
 
-    // 2. If still missing, try to find topic by name
-    if (!recoveredId && lesson.value?.topic) {
-      const topicName = typeof lesson.value.topic === 'string' ? lesson.value.topic : lesson.value.topic.name;
+    // 2. Try route params
+    if (!courseId) {
+      courseId = route.params.topicId || route.params.courseId;
+    }
+
+    // 3. If still missing, try to find topic by name
+    if (!courseId && l?.topic) {
+      const topicName = typeof l.topic === 'string' ? l.topic : l.topic.name;
       if (topicName) {
         console.log('🔍 [LessonPage] Searching for topic by name:', topicName);
         try {
@@ -1064,8 +836,8 @@ async function handleRatingSubmit(ratingData) {
               (t.translations?.en?.topic === topicName)
             );
             if (matchingTopic) {
-              recoveredId = matchingTopic._id || matchingTopic.id;
-              console.log('✅ [LessonPage] Found topic by name:', recoveredId);
+              courseId = extractId(matchingTopic._id || matchingTopic.id);
+              console.log('✅ [LessonPage] Found topic by name:', courseId);
             }
           }
         } catch (err) {
@@ -1074,27 +846,22 @@ async function handleRatingSubmit(ratingData) {
       }
     }
 
-    // 3. Fallback: If we absolutely cannot find a course ID, but we have a lesson ID,
-    // we might be able to use a "default" or "general" topic ID if the backend supports it,
-    // OR we just have to fail gracefully. 
-    // However, for now, let's try to send the lesson's parentId if it exists.
-    if (!recoveredId) {
-      recoveredId = lesson.value?.parentId || lesson.value?.parent;
+    // 4. Fallback: parentId
+    if (!courseId) {
+      courseId = extractId(l?.parentId || l?.parent);
     }
 
-    ratingData.courseId = recoveredId;
-    console.log('🔄 [LessonPage] Final recovered courseId:', ratingData.courseId);
+    console.log('🔄 [LessonPage] Final recovered courseId:', courseId);
   }
 
-  if (!ratingData.courseId) {
+  if (!courseId) {
     console.error('❌ [LessonPage] Could not recover courseId. Submission will likely fail.');
-    // Optional: Show user friendly error here instead of sending bad request
   }
 
   try {
     const result = await submitLessonRating({
       lessonId: ratingData.lessonId,
-      courseId: ratingData.courseId,
+      courseId: courseId, // Use the cleaned/recovered courseId
       rating: ratingData.rating,
       feedback: ratingData.feedback
     })
