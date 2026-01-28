@@ -39,7 +39,7 @@ export const submitLessonRating = async (ratingData) => {
   try {
     const response = await api.post('/ratings/lesson', {
       lessonId: ratingData.lessonId,
-      courseId: ratingData.courseId,
+      courseId: ratingData.courseId || ratingData.topicId, // Allow topicId as alias for courseId
       rating: ratingData.rating,
       feedback: ratingData.feedback || ''
     });

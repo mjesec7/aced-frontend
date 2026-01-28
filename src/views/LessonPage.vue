@@ -1106,22 +1106,34 @@ async function handleRatingSubmit(ratingData) {
     if (!courseId) {
       courseId = extractId(l?.parentId || l?.parent);
     }
+    
+    // 5. Fallback: Just try to use the topicId object directly if we have it, 
+    // maybe the API wrapper will handle it or we can pass it as topicId
+    if (!courseId && l?.topicId) {
+      console.log('⚠️ [LessonPage] Using raw topicId as fallback:', l.topicId);
+      // We will pass this as 'topicId' to the API wrapper
+    }
 
     console.log('🔄 [LessonPage] Final recovered courseId:', courseId);
   }
 
   if (!courseId) {
     console.error('❌ [LessonPage] Could not recover courseId. Submission will likely fail.');
-    // Try to send lessonId as courseId as a desperate last resort? No, that's wrong.
   }
 
   try {
-    const result = await submitLessonRating({
+    // Pass both courseId and topicId (as fallback)
+    const payload = {
       lessonId: ratingData.lessonId,
-      courseId: courseId, // Use the cleaned/recovered courseId
+      courseId: courseId, 
+      topicId: courseId || extractId(lesson.value?.topicId), // Pass topicId as well
       rating: ratingData.rating,
       feedback: ratingData.feedback
-    })
+    };
+    
+    console.log('📤 [LessonPage] Submitting payload:', payload);
+
+    const result = await submitLessonRating(payload)
     
     console.log('📤 [LessonPage] Rating API Result:', result);
     
