@@ -1118,15 +1118,41 @@ async function handleRatingSubmit(ratingData) {
   }
 
   if (!courseId) {
-    console.error('❌ [LessonPage] Could not recover courseId. Submission will likely fail.');
+    console.warn('⚠️ [LessonPage] Could not recover courseId, but continuing with topicId fallback.');
   }
 
+  // Always try to extract topicId separately for fallback
+  const extractTopicId = () => {
+    const l = lesson.value;
+    if (!l) return null;
+    
+    // Handle MongoDB Extended JSON format { "$oid": "..." }
+    if (l.topicId && typeof l.topicId === 'object' && l.topicId.$oid) {
+      return l.topicId.$oid;
+    }
+    // Handle direct string ID
+    if (l.topicId && typeof l.topicId === 'string') {
+      return l.topicId;
+    }
+    // Handle ObjectId object with toString
+    if (l.topicId && typeof l.topicId.toString === 'function') {
+      const str = l.topicId.toString();
+      // Check if it's a valid ObjectId string (24 hex chars)
+      if (/^[a-fA-F0-9]{24}$/.test(str)) {
+        return str;
+      }
+    }
+    return extractId(l.topic_id) || extractId(l.topic?._id) || null;
+  };
+
+  const topicId = extractTopicId();
+
   try {
-    // Pass both courseId and topicId (as fallback)
+    // Pass both courseId and topicId - backend will use topicId as fallback
     const payload = {
       lessonId: ratingData.lessonId,
-      courseId: courseId, 
-      topicId: courseId || extractId(lesson.value?.topicId), // Pass topicId as well
+      courseId: courseId || null, 
+      topicId: topicId, // Pass topicId separately for backend fallback
       rating: ratingData.rating,
       feedback: ratingData.feedback
     };
