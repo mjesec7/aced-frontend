@@ -785,13 +785,13 @@ const extractId = (idObj) => {
 const topicId = computed(() => {
   const l = lesson.value;
   // 1. Try route params first if available
-  const routeId = route.params.topicId || route.params.courseId;
+  const routeId = route.params.topicId || route.params.topic_id || route.params.courseId;
   if (routeId) return routeId;
 
   if (!l) return '';
   
   // 2. Try various field names in lesson object
-  const rawId = l.topicId || l.courseId || l.course || l.topic;
+  const rawId = l.topicId || l.topic_id || l.courseId || l.course || l.topic;
   
   // 3. Extract string using helper
   const extractedId = extractId(rawId);
@@ -854,7 +854,7 @@ async function loadLesson() {
         subtitle: localizedDescription,
         estimatedDuration: lessonData.timing?.estimatedDuration || 0,
         // Ensure topic/course ID is available for rating and other features
-        topicId: lessonData.topicId || (result.topic ? (result.topic._id || result.topic.id) : null),
+        topicId: lessonData.topicId || lessonData.topic_id || (result.topic ? (result.topic._id || result.topic.id) : null),
         courseId: lessonData.courseId || (result.topic ? (result.topic._id || result.topic.id) : null)
       }
 
@@ -1056,7 +1056,7 @@ async function handleRatingSubmit(ratingData) {
     // DEBUG: Log the entire lesson object to see what we have
     console.log('🔍 [LessonPage] Inspecting lesson object:', JSON.parse(JSON.stringify(l)));
     
-    const rawId = l?.topicId || l?.courseId || l?.topic?._id || l?.topic?.id || l?.topic;
+    const rawId = l?.topicId || l?.topic_id || l?.courseId || l?.topic?._id || l?.topic?.id || l?.topic;
     courseId = extractId(rawId);
     console.log('🔍 [LessonPage] Extracted from rawId:', { rawId, courseId });
 
@@ -1074,7 +1074,7 @@ async function handleRatingSubmit(ratingData) {
 
     // 2. Try route params
     if (!courseId) {
-      courseId = route.params.topicId || route.params.courseId;
+      courseId = route.params.topicId || route.params.topic_id || route.params.courseId;
       console.log('🔍 [LessonPage] Checked route params:', courseId);
     }
 
