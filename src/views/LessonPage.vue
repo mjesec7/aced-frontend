@@ -831,9 +831,17 @@ async function loadLesson() {
       const localizedDescription = extractLessonDescription(lessonData)
 
       // DEBUG: Log lesson data loading
+      console.log('📥 [LessonPage] loadLesson raw result:', {
+        lesson: lessonData,
+        topic: result.topic,
+        stats: result.stats
+      });
+
       console.log('📥 [LessonPage] loadLesson setting lesson.value:', {
         id: lessonData._id || lessonData.id,
         title: localizedTitle,
+        topicId: lessonData.topicId,
+        resultTopicId: result.topic?._id || result.topic?.id,
         isRef: isRef(lesson) // Check if it's a ref
       });
 
@@ -1031,6 +1039,18 @@ function shareResult() {
 }
 
 async function handleRatingSubmit(ratingData) {
+  console.log('🌟 [LessonPage] handleRatingSubmit called with:', ratingData);
+  
+  // Validate data before sending
+  if (!ratingData.courseId) {
+    console.warn('⚠️ [LessonPage] Missing courseId in rating data! Attempting to recover...');
+    // Try to recover courseId from other sources
+    ratingData.courseId = lesson.value?.topicId || lesson.value?.courseId || 
+                          lesson.value?.topic?._id || lesson.value?.topic?.id || 
+                          route.params.topicId || route.params.courseId;
+    console.log('🔄 [LessonPage] Recovered courseId:', ratingData.courseId);
+  }
+
   try {
     const result = await submitLessonRating({
       lessonId: ratingData.lessonId,
@@ -1038,6 +1058,9 @@ async function handleRatingSubmit(ratingData) {
       rating: ratingData.rating,
       feedback: ratingData.feedback
     })
+    
+    console.log('📤 [LessonPage] Rating API Result:', result);
+    
     if (result.success) {
       console.log('Rating submitted successfully')
     } else {
