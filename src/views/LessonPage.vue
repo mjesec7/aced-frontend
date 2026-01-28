@@ -1052,17 +1052,35 @@ async function handleRatingSubmit(ratingData) {
     
     // 1. Try immediate properties from lesson
     const l = lesson.value;
+    
+    // DEBUG: Log the entire lesson object to see what we have
+    console.log('🔍 [LessonPage] Inspecting lesson object:', JSON.parse(JSON.stringify(l)));
+    
     const rawId = l?.topicId || l?.courseId || l?.topic?._id || l?.topic?.id || l?.topic;
     courseId = extractId(rawId);
+    console.log('🔍 [LessonPage] Extracted from rawId:', { rawId, courseId });
+
+    // 1.5 Explicit check for MongoDB Extended JSON format on topicId
+    if (!courseId && l?.topicId) {
+      if (l.topicId.$oid) {
+        courseId = l.topicId.$oid;
+        console.log('✅ [LessonPage] Found topicId.$oid:', courseId);
+      } else if (typeof l.topicId === 'object') {
+        // Try to stringify it if it's an object but not standard format
+        console.log('⚠️ [LessonPage] topicId is object but no $oid:', l.topicId);
+        // If it looks like an ID (24 hex chars), use it? No, risky.
+      }
+    }
 
     // 2. Try route params
     if (!courseId) {
       courseId = route.params.topicId || route.params.courseId;
+      console.log('🔍 [LessonPage] Checked route params:', courseId);
     }
 
     // 3. If still missing, try to find topic by name
-    if (!courseId && l?.topic) {
-      const topicName = typeof l.topic === 'string' ? l.topic : l.topic.name;
+    if (!courseId && (l?.topic || l?.topicName)) {
+      const topicName = typeof l.topic === 'string' ? l.topic : (l.topic?.name || l.topicName);
       if (topicName) {
         console.log('🔍 [LessonPage] Searching for topic by name:', topicName);
         try {
@@ -1094,6 +1112,7 @@ async function handleRatingSubmit(ratingData) {
 
   if (!courseId) {
     console.error('❌ [LessonPage] Could not recover courseId. Submission will likely fail.');
+    // Try to send lessonId as courseId as a desperate last resort? No, that's wrong.
   }
 
   try {
