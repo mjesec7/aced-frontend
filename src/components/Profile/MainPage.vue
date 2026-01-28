@@ -317,6 +317,12 @@
                       </svg>
                       {{ $t('dashboard.level') }} {{ course.level || 1 }}
                     </span>
+                    <span v-if="course.rating > 0" class="meta-item rating-item">
+                      <svg viewBox="0 0 24 24" fill="#fbbf24" stroke="none">
+                        <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+                      </svg>
+                      {{ course.rating.toFixed(1) }}
+                    </span>
                     <span class="meta-item">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10"/>
@@ -651,6 +657,7 @@ import {
   getUserRewards,
   updateStreak
 } from '@/api';
+import { getBulkCourseRatings } from '@/api/ratings';
 import PaymentModal from '@/components/Modals/PaymentModal.vue';
 import AppleTreeGoal from '@/components/Profile/AppleTreeGoal.vue';
 import { useLevelSystem } from '@/composables/useLevelSystem';
@@ -964,7 +971,8 @@ export default {
       try {
         this.loadingRecommendations = true;
         const { getTopicsAsCourses } = await import('@/api/courses');
-        const allCourses = await getTopicsAsCourses(this.userId);
+        const result = await getTopicsAsCourses(this.userId);
+        const allCourses = result.courses || result || [];
 
         // Get subjects from user's study list
         const studiedSubjects = [...new Set(this.studyList.map(c => c.subject).filter(Boolean))];
@@ -972,12 +980,36 @@ export default {
         // Filter recommendations: same subjects, not already in study list
         const studyListIds = new Set(this.studyList.map(c => c.topicId || c._id));
 
-        this.recommendedCourses = allCourses
+        let filteredCourses = allCourses
           .filter(course => {
             const isNotInStudyList = !studyListIds.has(course.topicId);
             const isSameSubject = studiedSubjects.length === 0 || studiedSubjects.includes(course.subject);
             return isNotInStudyList && isSameSubject;
-          })
+          });
+
+        // Fetch ratings for filtered courses
+        if (filteredCourses.length > 0) {
+          const courseIds = filteredCourses.map(c => c.topicId || c._id).filter(Boolean);
+          try {
+            const ratingsResponse = await getBulkCourseRatings(courseIds);
+            if (ratingsResponse.success && ratingsResponse.data) {
+              // Merge ratings into courses
+              filteredCourses = filteredCourses.map(course => {
+                const courseId = course.topicId || course._id;
+                const ratingData = ratingsResponse.data[courseId];
+                return {
+                  ...course,
+                  rating: ratingData?.averageRating || course.rating || 0,
+                  totalRatings: ratingData?.totalRatings || 0
+                };
+              });
+            }
+          } catch (ratingsError) {
+            console.warn('Failed to fetch ratings:', ratingsError);
+          }
+        }
+
+        this.recommendedCourses = filteredCourses
           .sort((a, b) => (b.rating || 0) - (a.rating || 0))
           .slice(0, 8);
       } catch (error) {
@@ -1281,14 +1313,14 @@ this.recommendations = null;
           try {
             const topicResult = await getTopicById(entry.topicId);
             let topic = topicResult?.success ? topicResult.data : entry;
-            
+
             if (!topic.lessons || topic.lessons.length === 0) {
               const lessonsResult = await getLessonsByTopic(entry.topicId);
               if (lessonsResult?.success && lessonsResult.data) {
                 topic.lessons = lessonsResult.data;
               }
             }
-            
+
             return {
               ...topic,
               progress: this.calculateProgress(topic),
@@ -1305,9 +1337,32 @@ this.recommendations = null;
             };
           }
         });
-      
-      const enriched = await Promise.all(enrichedPromises);
-      return enriched.filter(Boolean);
+
+      let enriched = await Promise.all(enrichedPromises);
+      enriched = enriched.filter(Boolean);
+
+      // Fetch ratings for study list courses
+      if (enriched.length > 0) {
+        const courseIds = enriched.map(c => c.topicId || c._id).filter(Boolean);
+        try {
+          const ratingsResponse = await getBulkCourseRatings(courseIds);
+          if (ratingsResponse.success && ratingsResponse.data) {
+            enriched = enriched.map(course => {
+              const courseId = course.topicId || course._id;
+              const ratingData = ratingsResponse.data[courseId];
+              return {
+                ...course,
+                rating: ratingData?.averageRating || course.rating || 0,
+                totalRatings: ratingData?.totalRatings || 0
+              };
+            });
+          }
+        } catch (ratingsError) {
+          console.warn('Failed to fetch study list ratings:', ratingsError);
+        }
+      }
+
+      return enriched;
     },
     
     calculateProgress(topic) {
@@ -2151,6 +2206,8 @@ this.recommendations = null;
 .course-meta { display: flex; gap: 1rem; flex-wrap: wrap; }
 .meta-item { display: flex; align-items: center; gap: 0.375rem; font-size: 0.8125rem; color: #6b7280; }
 .meta-item svg { width: 0.875rem; height: 0.875rem; }
+.meta-item.rating-item { color: #d97706; font-weight: 600; }
+.meta-item.rating-item svg { width: 1rem; height: 1rem; }
 .play-btn {
   width: 2.5rem; height: 2.5rem; background: #f3e8ff; border: none; border-radius: 8px;
   display: flex; align-items: center; justify-content: center; cursor: pointer;

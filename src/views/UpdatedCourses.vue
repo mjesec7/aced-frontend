@@ -159,6 +159,12 @@
                     </svg>
                     <span>{{ course.duration || '30 min' }}</span>
                   </div>
+                  <div v-if="course.rating > 0" class="course-card-rating">
+                    <svg viewBox="0 0 24 24" fill="#fbbf24" width="14" height="14">
+                      <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+                    </svg>
+                    <span>{{ course.rating.toFixed(1) }}</span>
+                  </div>
                   <div class="course-card-level">{{ course.level || 'Basic' }}</div>
                 </div>
                 <div class="course-card-provider">
@@ -338,13 +344,14 @@
 </template>
 
 <script>
-import { 
+import {
   getUpdatedCourses,
   getCourseById,
   getUpdatedCoursesWithFormat,
   getCourseStructured,
   getCourseStructuredEnhanced
 } from '@/api.js';
+import { getBulkCourseRatings } from '@/api/ratings';
 import { mapGetters, mapState } from 'vuex';
 import LessonLoader from '../components/Updated/LessonPlayer.vue';
 
@@ -580,14 +587,39 @@ this.handleLoadError(error);
              Array.isArray(response.courses);
     },
 
-    processCoursesResponse(response) {
+    async processCoursesResponse(response) {
       // Enhanced course processing with validation
       this.courses = this.processCourses(response.courses || []);
       this.availableCategories = this.processCategories(response.categories || []);
       this.availableLevels = this.processLevels(response.difficulties || []);
-      
+
       // Store metadata
       this.storeCourseMetadata(response);
+
+      // Fetch ratings for all courses
+      await this.fetchCourseRatings();
+    },
+
+    async fetchCourseRatings() {
+      try {
+        const courseIds = this.courses.map(course => course._id || course.id).filter(Boolean);
+        if (courseIds.length === 0) return;
+
+        const ratingsResponse = await getBulkCourseRatings(courseIds);
+        if (ratingsResponse.success && ratingsResponse.data) {
+          this.courses = this.courses.map(course => {
+            const courseId = course._id || course.id;
+            const ratingData = ratingsResponse.data[courseId];
+            return {
+              ...course,
+              rating: ratingData?.averageRating || course.rating || 0,
+              totalRatings: ratingData?.totalRatings || 0
+            };
+          });
+        }
+      } catch (error) {
+        console.warn('Failed to fetch course ratings:', error);
+      }
 },
 
     processCourses(courses) {
@@ -1786,6 +1818,25 @@ this.triggerReactivityUpdate();
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.course-card-rating {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #d97706;
+  font-weight: 600;
+}
+
+.course-card-rating svg {
+  flex-shrink: 0;
+}
+
+.course-card-level {
+  padding: 2px 8px;
+  background: var(--color-muted);
+  border-radius: 4px;
+  font-size: 12px;
 }
 
 .course-card-provider {

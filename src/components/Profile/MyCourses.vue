@@ -279,6 +279,12 @@
               </svg>
               Level {{ course.level || 1 }}
             </span>
+            <span v-if="course.rating > 0" class="meta-tag rating-tag">
+              <svg viewBox="0 0 24 24" fill="#fbbf24" stroke="none">
+                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+              </svg>
+              {{ course.rating.toFixed(1) }}
+            </span>
           </div>
 
           <!-- Progress Section -->
@@ -387,6 +393,7 @@ import {
   getLessonsByTopic,
   removeFromStudyList
 } from '@/api';
+import { getBulkCourseRatings } from '@/api/ratings';
 import PaymentModal from '@/components/Modals/PaymentModal.vue';
 
 export default {
@@ -557,32 +564,53 @@ export default {
     
     async enrichCourses(rawList) {
       const enriched = [];
-      
+
       for (const entry of rawList) {
         if (!entry?.topicId) continue;
-        
+
         try {
           const topicResult = await getTopicById(entry.topicId);
           let topic = topicResult?.success ? topicResult.data : entry;
-          
+
           if (!topic.lessons || topic.lessons.length === 0) {
             const lessonsResult = await getLessonsByTopic(entry.topicId);
             if (lessonsResult?.success && lessonsResult.data) {
               topic.lessons = lessonsResult.data;
             }
           }
-          
+
           const progress = this.calculateProgress(topic.lessons);
-          
+
           enriched.push({
             ...topic,
             progress,
             lastAccessed: entry.lastAccessed || new Date().toISOString()
           });
         } catch (error) {
-}
+          console.warn('Error enriching course:', error);
+        }
       }
-      
+
+      // Fetch ratings for all courses
+      if (enriched.length > 0) {
+        const courseIds = enriched.map(c => c.topicId || c._id).filter(Boolean);
+        try {
+          const ratingsResponse = await getBulkCourseRatings(courseIds);
+          if (ratingsResponse.success && ratingsResponse.data) {
+            enriched.forEach(course => {
+              const courseId = course.topicId || course._id;
+              const ratingData = ratingsResponse.data[courseId];
+              if (ratingData) {
+                course.rating = ratingData.averageRating || 0;
+                course.totalRatings = ratingData.totalRatings || 0;
+              }
+            });
+          }
+        } catch (ratingsError) {
+          console.warn('Failed to fetch course ratings:', ratingsError);
+        }
+      }
+
       return enriched;
     },
     
@@ -1361,6 +1389,16 @@ alert('Failed to delete course');
 .meta-tag svg {
   width: 0.875rem;
   height: 0.875rem;
+}
+
+.meta-tag.rating-tag {
+  color: #d97706;
+  font-weight: 600;
+}
+
+.meta-tag.rating-tag svg {
+  width: 1rem;
+  height: 1rem;
 }
 
 .progress-section {

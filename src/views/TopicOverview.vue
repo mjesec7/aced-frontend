@@ -58,6 +58,15 @@
             <div class="stat-number">{{ Math.round(overallProgress) }}%</div>
             <div class="stat-label">{{ $t('topicOverview.progress') }}</div>
           </div>
+          <div v-if="courseRating > 0" class="stat-card rating-card">
+            <div class="stat-number rating-number">
+              <svg class="star-icon" viewBox="0 0 24 24" fill="#fbbf24">
+                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+              </svg>
+              {{ courseRating.toFixed(1) }}
+            </div>
+            <div class="stat-label">{{ totalRatings }} {{ $t('topicOverview.ratings') || 'ratings' }}</div>
+          </div>
         </div>
       </div>
 
@@ -307,6 +316,7 @@
 
 <script>
 import { getTopicById, getLessonsByTopic, getUserStatus, getUserProgress, getLessonProgress } from '@/api';
+import { getCourseRating } from '@/api/ratings';
 import { auth } from '@/firebase';
 import { useLanguage, getLocalizedText } from '@/composables/useLanguage';
 
@@ -333,6 +343,8 @@ export default {
       showDebugInfo: false,
       debugInfo: null,
       lastApiResponse: null,
+      courseRating: 0,
+      totalRatings: 0,
 
       // Enhanced reactivity tracking
       componentKey: 0,
@@ -765,7 +777,18 @@ if (this.isDevelopment) {
         this.topic = this.normalizeTopicData(topicData);
 
         await this.loadLessonsForTopic(this.topic._id || this.topic.id);
-        
+
+        // Fetch course rating
+        try {
+          const ratingResult = await getCourseRating(topicId);
+          if (ratingResult.success && ratingResult.data) {
+            this.courseRating = ratingResult.data.averageRating || 0;
+            this.totalRatings = ratingResult.data.totalRatings || 0;
+          }
+        } catch (ratingError) {
+          console.warn('Failed to fetch course rating:', ratingError);
+        }
+
       } catch (err) {
 this.error = this.handleError(err, 'loading topic');
         this.topic = null;
@@ -1611,6 +1634,30 @@ TOPIC STATS
   font-size: 0.8125rem;
   color: #6b7280;
   font-weight: 500;
+}
+
+/* Rating Card */
+.rating-card {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border-color: #fcd34d;
+}
+
+.rating-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  color: #d97706;
+}
+
+.rating-number .star-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+}
+
+.rating-card .stat-label {
+  color: #92400e;
 }
 
 /* ========================================

@@ -241,70 +241,68 @@ const checkAnswer = () => {
 
 <style scoped>
 /* ============================================
-   BASE STYLES
-   ============================================ */
-/* ============================================
-   BASE STYLES
+   DATA ANALYSIS - MODERN DESIGN
    ============================================ */
 .data-analysis-container {
   width: 100%;
   min-height: 300px;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%);
-  border-radius: 1.5rem;
-  padding: 1.5rem;
+  background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 50%, #faf5ff 100%);
+  border-radius: 20px;
+  padding: 1.75rem;
   position: relative;
   overflow: hidden;
-  border: 1px solid #cbd5e1;
+  border: 1px solid rgba(59, 130, 246, 0.15);
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.08);
 }
 
 .bg-decoration {
   position: absolute;
   border-radius: 50%;
-  filter: blur(60px);
+  filter: blur(80px);
+  opacity: 0.6;
 }
 
 .bg-decoration-1 {
-  top: -80px;
-  right: -80px;
-  width: 200px;
-  height: 200px;
-  background: rgba(59, 130, 246, 0.15);
+  top: -100px;
+  right: -100px;
+  width: 250px;
+  height: 250px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(99, 102, 241, 0.15));
 }
 
 .bg-decoration-2 {
-  bottom: -80px;
-  left: -80px;
-  width: 160px;
-  height: 160px;
-  background: rgba(16, 185, 129, 0.15);
+  bottom: -100px;
+  left: -100px;
+  width: 200px;
+  height: 200px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(34, 197, 94, 0.15));
 }
 
 /* Header */
 .da-header {
   text-align: center;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .da-badge {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.375rem 0.75rem;
-  background: white;
-  border-radius: 9999px;
-  border: 1px solid #e2e8f0;
-  margin-bottom: 0.5rem;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #3b82f6, #06b6d4);
+  border-radius: 100px;
+  margin-bottom: 0.75rem;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
 }
 
 .da-badge-icon {
-  font-size: 1rem;
+  font-size: 1.125rem;
 }
 
 .da-badge-text {
-  font-size: 0.65rem;
-  font-weight: 600;
-  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: white;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -314,179 +312,220 @@ const checkAnswer = () => {
   font-weight: 700;
   color: #1e293b;
   margin: 0;
+  line-height: 1.4;
+  max-width: 500px;
+  margin: 0 auto;
 }
 
 /* Chart Section */
 .da-chart-section {
   background: white;
-  border-radius: 1rem;
+  border-radius: 16px;
   border: 1px solid #e2e8f0;
-  padding: 1rem;
-  margin-bottom: 1rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .da-chart {
   display: flex;
   align-items: flex-end;
-  justify-content: space-between;
-  gap: 0.5rem;
-  height: 140px;
-  margin-bottom: 0.5rem;
+  justify-content: space-around;
+  gap: 0.75rem;
+  height: 160px;
+  margin-bottom: 0.75rem;
+  padding: 0 0.5rem;
 }
 
 .da-bar-wrapper {
   flex: 1;
+  max-width: 80px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.5rem;
 }
 
 .da-bar-value {
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   font-weight: 700;
-  color: #475569;
+  color: #1e293b;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .da-bar {
   width: 100%;
-  border-radius: 0.375rem 0.375rem 0 0;
-  transition: all 0.5s ease-out;
+  border-radius: 8px 8px 0 0;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.da-bar:hover {
+  transform: scaleX(1.05);
 }
 
 .da-bar:hover .da-tooltip {
   opacity: 1;
+  transform: translateX(-50%) translateY(-4px);
 }
 
 .da-tooltip {
   position: absolute;
-  top: -2.5rem;
+  top: -3rem;
   left: 50%;
-  transform: translateX(-50%);
-  padding: 0.375rem 0.625rem;
-  background: #1e293b;
+  transform: translateX(-50%) translateY(0);
+  padding: 0.5rem 0.875rem;
+  background: linear-gradient(135deg, #1e293b, #334155);
   color: white;
-  font-size: 0.625rem;
-  font-weight: 500;
-  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 10px;
   opacity: 0;
-  transition: opacity 0.2s;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
   z-index: 10;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.da-tooltip::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid #334155;
 }
 
 .da-bar-label {
-  font-size: 0.6rem;
-  color: #64748b;
+  font-size: 0.75rem;
+  color: #475569;
   text-align: center;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   width: 100%;
-  font-weight: 500;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .da-axis-label {
   text-align: center;
+  padding-top: 0.5rem;
+  border-top: 1px solid #f1f5f9;
 }
 
 .da-axis-label span {
-  font-size: 0.6rem;
+  font-size: 0.6875rem;
   color: #94a3b8;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 /* Input Section */
 .da-input-section {
   background: white;
-  border-radius: 1rem;
+  border-radius: 16px;
   border: 1px solid #e2e8f0;
-  padding: 1rem;
-  margin-bottom: 0.75rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
 }
 
 .da-input-label {
   display: block;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #64748b;
-  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #374151;
+  margin-bottom: 0.75rem;
 }
 
 .da-input-row {
   display: flex;
-  gap: 0.75rem;
+  gap: 1rem;
   align-items: center;
 }
 
 .da-input {
   flex: 1;
-  padding: 0.625rem 0.875rem;
+  padding: 0.875rem 1rem;
   background: #f8fafc;
-  border: 1px solid #cbd5e1;
-  border-radius: 0.75rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
   color: #1e293b;
-  font-size: 1rem;
-  font-family: ui-monospace, monospace;
-  font-weight: 600;
+  font-size: 1.125rem;
+  font-family: ui-monospace, 'SF Mono', Monaco, monospace;
+  font-weight: 700;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .da-input:focus {
   outline: none;
   border-color: #3b82f6;
   background: white;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
 }
 
 .da-input:disabled {
   opacity: 0.6;
   background: #f1f5f9;
+  cursor: not-allowed;
 }
 
 .da-input-unit {
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   color: #64748b;
-  font-weight: 500;
+  font-weight: 600;
+  padding: 0.5rem 0.75rem;
+  background: #f1f5f9;
+  border-radius: 8px;
 }
 
 .da-hint {
-  margin-top: 0.5rem;
-  font-size: 0.65rem;
+  margin-top: 0.75rem;
+  font-size: 0.8125rem;
   color: #64748b;
+  background: linear-gradient(135deg, #fef3c7, #fef9c3);
+  padding: 0.625rem 0.875rem;
+  border-radius: 10px;
+  border: 1px solid rgba(251, 191, 36, 0.3);
 }
 
 /* Buttons */
 .da-button-wrapper {
   display: flex;
   justify-content: center;
+  margin-bottom: 0.5rem;
 }
 
 .da-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  border-radius: 1rem;
+  gap: 0.625rem;
+  padding: 0.875rem 2rem;
+  border-radius: 14px;
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: 1rem;
   color: white;
   border: none;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .da-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  background: #cbd5e1;
+  background: #94a3b8;
   box-shadow: none;
+  transform: none;
 }
 
 .da-btn-icon {
@@ -496,74 +535,95 @@ const checkAnswer = () => {
 
 .da-btn-primary {
   background: linear-gradient(135deg, #3b82f6, #06b6d4);
-  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
 }
 
 .da-btn-primary:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.5);
+}
+
+.da-btn-primary:active:not(:disabled) {
+  transform: translateY(-1px);
 }
 
 .da-btn-success {
   background: linear-gradient(135deg, #10b981, #059669);
-  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4);
 }
 
 .da-btn-success:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.5);
+}
+
+.da-btn-success:active {
+  transform: translateY(-1px);
 }
 
 /* Feedback */
 .da-feedback {
-  margin-top: 0.75rem;
-  padding: 0.875rem;
-  border-radius: 1rem;
-  border: 1px solid;
+  margin-top: 1rem;
+  padding: 1.25rem;
+  border-radius: 16px;
+  border: 2px solid;
   display: flex;
   align-items: flex-start;
-  gap: 0.75rem;
+  gap: 1rem;
+  animation: feedbackSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes feedbackSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .da-feedback-success {
-  background: #ecfdf5;
-  border-color: #6ee7b7;
+  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+  border-color: #34d399;
 }
 
 .da-feedback-error {
-  background: #fef2f2;
-  border-color: #fca5a5;
+  background: linear-gradient(135deg, #fef2f2, #fee2e2);
+  border-color: #f87171;
 }
 
 .da-feedback-icon {
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 0.75rem;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .da-feedback-success .da-feedback-icon {
-  background: #10b981;
-  color: white;
+  background: linear-gradient(135deg, #10b981, #059669);
 }
 
 .da-feedback-error .da-feedback-icon {
-  background: #ef4444;
-  color: white;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
 }
 
 .da-feedback-content {
   flex: 1;
+  padding-top: 0.25rem;
 }
 
 .da-feedback-title {
-  font-size: 0.9rem;
+  font-size: 1.0625rem;
   font-weight: 700;
-  margin: 0 0 0.25rem 0;
+  margin: 0 0 0.375rem 0;
+  letter-spacing: -0.01em;
 }
 
 .da-feedback-success .da-feedback-title {
@@ -575,9 +635,10 @@ const checkAnswer = () => {
 }
 
 .da-feedback-message {
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   color: #475569;
   margin: 0;
+  line-height: 1.5;
 }
 
 /* Bar Colors */
