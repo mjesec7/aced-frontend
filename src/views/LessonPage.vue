@@ -460,7 +460,7 @@ import { useVoiceAssistant } from '@/composables/useVoiceAssistant'
 import { eventBus } from '@/utils/eventBus'
 
 // Import API
-import { getLessonById } from '@/api/lessons'
+import { getLessonById, getTopics } from '@/api/lessons'
 import { getLessonAIResponse, getUserUsage } from '@/services/GPTService'
 import { clearChatHistory } from '@/api/chat'
 import { submitLessonRating } from '@/api/ratings'
@@ -1044,11 +1044,51 @@ async function handleRatingSubmit(ratingData) {
   // Validate data before sending
   if (!ratingData.courseId) {
     console.warn('⚠️ [LessonPage] Missing courseId in rating data! Attempting to recover...');
-    // Try to recover courseId from other sources
-    ratingData.courseId = lesson.value?.topicId || lesson.value?.courseId || 
-                          lesson.value?.topic?._id || lesson.value?.topic?.id || 
-                          route.params.topicId || route.params.courseId;
-    console.log('🔄 [LessonPage] Recovered courseId:', ratingData.courseId);
+    
+    // 1. Try immediate properties
+    let recoveredId = lesson.value?.topicId || lesson.value?.courseId || 
+                      lesson.value?.topic?._id || lesson.value?.topic?.id || 
+                      route.params.topicId || route.params.courseId;
+
+    // 2. If still missing, try to find topic by name
+    if (!recoveredId && lesson.value?.topic) {
+      const topicName = typeof lesson.value.topic === 'string' ? lesson.value.topic : lesson.value.topic.name;
+      if (topicName) {
+        console.log('🔍 [LessonPage] Searching for topic by name:', topicName);
+        try {
+          const topicsResult = await getTopics();
+          if (topicsResult.success && Array.isArray(topicsResult.data)) {
+            const matchingTopic = topicsResult.data.find(t => 
+              t.name === topicName || 
+              t.topicName === topicName ||
+              (t.translations?.en?.topic === topicName)
+            );
+            if (matchingTopic) {
+              recoveredId = matchingTopic._id || matchingTopic.id;
+              console.log('✅ [LessonPage] Found topic by name:', recoveredId);
+            }
+          }
+        } catch (err) {
+          console.error('❌ [LessonPage] Failed to search topics:', err);
+        }
+      }
+    }
+
+    // 3. Fallback: If we absolutely cannot find a course ID, but we have a lesson ID,
+    // we might be able to use a "default" or "general" topic ID if the backend supports it,
+    // OR we just have to fail gracefully. 
+    // However, for now, let's try to send the lesson's parentId if it exists.
+    if (!recoveredId) {
+      recoveredId = lesson.value?.parentId || lesson.value?.parent;
+    }
+
+    ratingData.courseId = recoveredId;
+    console.log('🔄 [LessonPage] Final recovered courseId:', ratingData.courseId);
+  }
+
+  if (!ratingData.courseId) {
+    console.error('❌ [LessonPage] Could not recover courseId. Submission will likely fail.');
+    // Optional: Show user friendly error here instead of sending bad request
   }
 
   try {
