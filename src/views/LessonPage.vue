@@ -836,26 +836,37 @@ async function loadLesson() {
       console.log('📥 [LessonPage] loadLesson raw result:', {
         lesson: lessonData,
         topic: result.topic,
-        stats: result.stats
+        stats: result.stats,
+        originalTopicId: result.originalTopicId
       });
 
       console.log('📥 [LessonPage] loadLesson setting lesson.value:', {
         id: lessonData._id || lessonData.id,
         title: localizedTitle,
         topicId: lessonData.topicId,
+        _originalTopicId: lessonData._originalTopicId,
+        resultOriginalTopicId: result.originalTopicId,
         resultTopicId: result.topic?._id || result.topic?.id,
         isRef: isRef(lesson) // Check if it's a ref
       });
 
       // Map backend fields to frontend display with localization
+      // Use originalTopicId from the backend as the source of truth for topicId
+      const resolvedTopicId = result.originalTopicId || 
+                              lessonData._originalTopicId ||
+                              lessonData.topicId || 
+                              lessonData.topic_id || 
+                              (result.topic ? (result.topic._id || result.topic.id) : null);
+      
       lesson.value = {
         ...lessonData,
         title: localizedTitle,
         subtitle: localizedDescription,
         estimatedDuration: lessonData.timing?.estimatedDuration || 0,
         // Ensure topic/course ID is available for rating and other features
-        topicId: lessonData.topicId || lessonData.topic_id || (result.topic ? (result.topic._id || result.topic.id) : null),
-        courseId: lessonData.courseId || (result.topic ? (result.topic._id || result.topic.id) : null)
+        // Use the resolved topicId which now includes the preserved originalTopicId
+        topicId: resolvedTopicId,
+        courseId: lessonData.courseId || resolvedTopicId
       }
 
       // Extract and process steps with localization
