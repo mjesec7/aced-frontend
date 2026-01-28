@@ -802,6 +802,244 @@ const topicId = computed(() => {
   return extractedId || '';
 })
 
+const leftPanelStyle = computed(() => ({
+  width: resizeDisabled.value ? '100%' : `${leftPanelWidth.value}%`
+}))
+
+const rightPanelStyle = computed(() => ({
+  width: resizeDisabled.value ? '0%' : `${100 - leftPanelWidth.value}%`
+}))
+
+// ==================== METHODS ====================
+
+// Loading & Navigation
+async function loadLesson() {
+  loading.value = true
+  error.value = null
+
+  try {
+    const lessonId = route.params.id
+    if (!lessonId) {
+      throw new Error('No lesson ID provided')
+    }
+
+    const result = await getLessonById(lessonId)
+
+    if (result.success && result.data) {
+      const lessonData = result.data
+
+      // Extract localized title and description using helper functions
+      const localizedTitle = extractLessonTitle(lessonData)
+      const localizedDescription = extractLessonDescription(lessonData)
+
+      // DEBUG: Log lesson data loading
+      console.log('📥 [LessonPage] loadLesson raw result:', {
+        lesson: lessonData,
+        topic: result.topic,
+        stats: result.stats
+      });
+
+      console.log('📥 [LessonPage] loadLesson setting lesson.value:', {
+        id: lessonData._id || lessonData.id,
+        title: localizedTitle,
+        topicId: lessonData.topicId,
+        resultTopicId: result.topic?._id || result.topic?.id,
+        isRef: isRef(lesson) // Check if it's a ref
+      });
+
+      // Map backend fields to frontend display with localization
+      lesson.value = {
+        ...lessonData,
+        title: localizedTitle,
+        subtitle: localizedDescription,
+        estimatedDuration: lessonData.timing?.estimatedDuration || 0,
+        // Ensure topic/course ID is available for rating and other features
+        topicId: lessonData.topicId || (result.topic ? (result.topic._id || result.topic.id) : null),
+        courseId: lessonData.courseId || (result.topic ? (result.topic._id || result.topic.id) : null)
+      }
+
+      // Extract and process steps with localization
+      const rawSteps = lessonData.steps || []
+      steps.value = rawSteps.map((step, index) => processStepWithLocalization(step, index)).filter(Boolean)
+
+      // Trigger pre-analysis in the background (uses system language from i18n)
+      if (steps.value.length > 0) {
+        preAnalyzeSteps(steps.value, language.value)
+      }
+    } else {
+      throw new Error(result.error || 'Failed to load lesson data')
+    }
+  } catch (err) {
+    console.error('[LessonPage] loadLesson error:', err)
+    error.value = err.message || 'Failed to load lesson'
+  } finally {
+    loading.value = false
+  }
+}
+
+function retryLoad() {
+  loadLesson()
+}
+
+function handleReturnToCatalogue() {
+  router.push('/profile/catalogue')
+}
+
+function handleToggleSpeech() {
+  if (isSpeaking.value) {
+    stopAudio()
+  } else {
+    // Get exercise context for richer AI analysis
+    const exerciseContext = getExerciseContextForAI()
+    analyzeAndSpeak(currentStep.value, false, exerciseContext)
+  }
+}
+
+function handleToggleVoiceMute() {
+  toggleVoiceMute()
+}
+
+// Get exercise content for AI analysis context
+function getExerciseContextForAI() {
+  const step = currentStep.value
+  if (!step) return null
+
+  // Check if this is an interactive step
+  if (isInteractiveStep.value || isGameStep.value) {
+    // Get current exercise
+    const exercise = getCurrentExercise(step)
+    if (exercise) {
+      return extractExerciseContent(exercise, language.value)
+    }
+    // Fall back to extracting all exercises from step
+    return extractAllExercisesFromStep(step, language.value)
+  }
+
+  return null
+}
+
+function handleSpeakingStart() {
+  // Handled by composable
+}
+
+function handleSpeakingEnd() {
+  // Handled by composable
+}
+
+function startLesson() {
+  started.value = true
+  if (steps.value[currentIndex.value] && !isVoiceMuted.value) {
+    const step = steps.value[currentIndex.value]
+    const stepType = step?.type?.toLowerCase()
+
+    // Only auto-analyze on content steps
+    const contentStepTypes = ['explanation', 'reading', 'vocabulary', 'example']
+    const isContentStep = contentStepTypes.includes(stepType)
+
+    if (isContentStep) {
+      analyzeAndSpeak(step, true, null) // isFirstStep = true
+    }
+  }
+}
+
+function continuePreviousProgress() {
+  if (previousProgress.value) {
+    currentIndex.value = previousProgress.value.stepIndex || 0
+  }
+  started.value = true
+}
+
+function confirmExit() {
+  showExitModal.value = true
+}
+
+function cancelExit() {
+  showExitModal.value = false
+}
+
+function exitLesson() {
+  showExitModal.value = false
+  handleReturnToCatalogue()
+}
+
+// Navigation
+function goNext() {
+  if (currentIndex.value < steps.value.length - 1) {
+    currentIndex.value++
+    resetExerciseState()
+  } else {
+    completeLesson()
+  }
+}
+
+function goPrevious() {
+  if (currentIndex.value > 0) {
+    currentIndex.value--
+    resetExerciseState()
+  }
+}
+
+function resetExerciseState(fullReset = true) {
+  userAnswer.value = ''
+  confirmation.value = null
+  answerWasCorrect.value = false
+  currentHint.value = ''
+  smartHint.value = ''
+  fillBlankAnswers.value = {}
+  matchingPairs.value = []
+  selectedMatchingItem.value = null
+  attemptCount.value = 0
+  isOnSecondChance.value = false
+  showCorrectAnswer.value = false
+  correctAnswerText.value = ''
+  // Only reset indices when doing a full reset (e.g., moving to a new step)
+  if (fullReset) {
+    currentExerciseIndex.value = 0
+    currentQuizIndex.value = 0
+  }
+}
+
+function completeLesson() {
+  lessonCompleted.value = true
+  calculateResults()
+  // Show rating modal after a short delay
+  setTimeout(() => {
+    showRatingModal.value = true
+  }, 1500)
+}
+
+function calculateResults() {
+  const totalSteps = steps.value.length
+  const accuracy = totalSteps > 0 ? (totalSteps - mistakeCount.value) / totalSteps : 1
+  
+  if (accuracy >= 0.9) {
+    stars.value = 3
+    medalLabel.value = 'Gold'
+  } else if (accuracy >= 0.7) {
+    stars.value = 2
+    medalLabel.value = 'Silver'
+  } else {
+    stars.value = 1
+    medalLabel.value = 'Bronze'
+  }
+  
+  progressInsight.value = `You completed ${totalSteps} steps with ${mistakeCount.value} mistakes.`
+}
+
+function getMedalIcon() {
+  const icons = {
+    Gold: '🥇',
+    Silver: '🥈',
+    Bronze: '🥉'
+  }
+  return icons[medalLabel.value] || '🏅'
+}
+
+function shareResult() {
+  // Share functionality
+  console.log('Sharing result...')
+}
+
 async function handleRatingSubmit(ratingData) {
   console.log('🌟 [LessonPage] handleRatingSubmit called with:', ratingData);
   
