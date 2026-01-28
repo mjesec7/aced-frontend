@@ -842,7 +842,10 @@ async function loadLesson() {
         ...lessonData,
         title: localizedTitle,
         subtitle: localizedDescription,
-        estimatedDuration: lessonData.timing?.estimatedDuration || 0
+        estimatedDuration: lessonData.timing?.estimatedDuration || 0,
+        // Ensure topic/course ID is available for rating and other features
+        topicId: lessonData.topicId || (result.topic ? (result.topic._id || result.topic.id) : null),
+        courseId: lessonData.courseId || (result.topic ? (result.topic._id || result.topic.id) : null)
       }
 
       // Extract and process steps with localization
