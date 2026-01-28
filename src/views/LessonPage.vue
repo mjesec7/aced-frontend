@@ -775,13 +775,29 @@ const lessonId = computed(() => {
 const topicId = computed(() => {
   const l = lesson.value;
   if (!l) return route.params.topicId || route.params.courseId || '';
+  
   // Try various field names that might contain the topic/course ID
-  const courseId = l.courseId || l.topicId || l.course || l.topic;
-  if (typeof courseId === 'string') return courseId;
-  if (courseId && courseId.$oid) return courseId.$oid;
-  if (courseId && courseId._id) return courseId._id;
-  // Fallback to route params
-  return route.params.topicId || route.params.courseId || '';
+  // Order matters: topicId is the primary field in lesson model
+  const rawId = l.topicId || l.courseId || l.course || l.topic;
+  
+  // Extract string from various possible formats
+  let extractedId = '';
+  if (typeof rawId === 'string') {
+    extractedId = rawId;
+  } else if (rawId && typeof rawId === 'object') {
+    // Handle MongoDB ObjectId formats
+    extractedId = rawId.$oid || rawId._id || rawId.id || String(rawId);
+  }
+  
+  // Fallback to route params if no ID found
+  if (!extractedId) {
+    extractedId = route.params.topicId || route.params.courseId || '';
+  }
+  
+  // Debug: log the extracted topicId for rating
+  console.log('📊 [Rating] topicId computed:', { raw: rawId, extracted: extractedId, lessonId: lessonId.value });
+  
+  return extractedId;
 })
 
 const leftPanelStyle = computed(() => ({
