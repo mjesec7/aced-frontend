@@ -614,26 +614,38 @@ export default {
         
         try {
           if (this.isSchoolMode) {
+            console.log('📚 [CataloguePage] Fetching topics grouped (School Mode)...');
             const r = await getTopicsGrouped();
+            console.log('📚 [CataloguePage] getTopicsGrouped result:', r);
             if (r.success && r.data) { 
               this.rawData = r.data;
               this.rawMode = 'school';
               this.processModeContent(r.data, 'school'); 
+            } else if (r.error) {
+              console.error('❌ [CataloguePage] Failed to fetch grouped topics:', r.error);
             }
           } else {
+            console.log('🎓 [CataloguePage] Fetching topics as courses (Study Centre Mode)...');
             const r = await getTopicsAsCourses();
+            console.log('🎓 [CataloguePage] getTopicsAsCourses result:', r);
             if (r.success && r.courses) { 
               this.rawData = r.courses;
               this.rawMode = 'study-centre';
               this.processModeContent(r.courses, 'study-centre'); 
+            } else if (r.error) {
+              console.error('❌ [CataloguePage] Failed to fetch courses:', r.error);
             }
           }
-        } catch {}
+        } catch (topicError) {
+          console.error('❌ [CataloguePage] Error fetching topics/courses:', topicError);
+        }
         
         const lessonsRes = await getAllLessons();
         this.lessons = lessonsRes?.data || [];
         this.mergeOrphanLessons();
-      } catch {} finally { this.isLoading = false; }
+      } catch (error) {
+        console.error('❌ [CataloguePage] loadData error:', error);
+      } finally { this.isLoading = false; }
     },
 
     refreshCourses() {
