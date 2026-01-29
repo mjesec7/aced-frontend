@@ -75,12 +75,43 @@
       this.lessonId = this.$route.query.lessonId;
       this.courseName = this.$route.query.courseName || this.$t('topicFinished.courseTitle');
 
-      // Show rating modal after 3 seconds (after confetti celebration)
-      setTimeout(() => {
-        this.showRatingModal = true;
-      }, 3000);
+      // Check if user already rated, then show modal only if not rated yet
+      this.checkAndShowRatingModal();
     },
     methods: {
+      async checkAndShowRatingModal() {
+        try {
+          const user = auth.currentUser;
+          if (!user || !this.courseId) {
+            return;
+          }
+
+          const token = await user.getIdToken();
+          
+          // Check if user already rated this course
+          const response = await api.get(`/ratings/course/${this.courseId}/user`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+
+          // Only show rating modal if user hasn't rated yet
+          if (!response.data?.data) {
+            setTimeout(() => {
+              this.showRatingModal = true;
+            }, 3000);
+          } else {
+            console.log('User already rated this course, skipping rating modal');
+          }
+        } catch (error) {
+          // If 404 or error, user hasn't rated - show modal
+          if (error.response?.status === 404) {
+            setTimeout(() => {
+              this.showRatingModal = true;
+            }, 3000);
+          } else {
+            console.error('Error checking existing rating:', error);
+          }
+        }
+      },
       launchConfetti() {
         const duration = 4 * 1000;
         const end = Date.now() + duration;
