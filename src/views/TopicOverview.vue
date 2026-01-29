@@ -2508,7 +2508,6 @@ if (this.isDevelopment) {
 @media (prefers-color-scheme: dark) {
   /* Future dark mode styles can go here */
 }
-</style>
 
 
 @keyframes spin {
