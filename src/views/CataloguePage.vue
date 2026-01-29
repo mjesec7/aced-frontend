@@ -620,7 +620,11 @@ export default {
             if (r.success && r.data) { 
               this.rawData = r.data;
               this.rawMode = 'school';
-              this.processModeContent(r.data, 'school'); 
+              this.processModeContent(r.data, 'school');
+              // ✅ DIAGNOSTIC: Log if grouped data is empty
+              if (Object.keys(r.data).length === 0) {
+                console.warn('⚠️ [CataloguePage] Grouped topics data is empty - check if lessons exist in database with isActive: true');
+              }
             } else if (r.error) {
               console.error('❌ [CataloguePage] Failed to fetch grouped topics:', r.error);
             }
@@ -631,7 +635,11 @@ export default {
             if (r.success && r.courses) { 
               this.rawData = r.courses;
               this.rawMode = 'study-centre';
-              this.processModeContent(r.courses, 'study-centre'); 
+              this.processModeContent(r.courses, 'study-centre');
+              // ✅ DIAGNOSTIC: Log if courses array is empty
+              if (r.courses.length === 0) {
+                console.warn('⚠️ [CataloguePage] Courses array is empty - check if lessons exist in database with isActive: true');
+              }
             } else if (r.error) {
               console.error('❌ [CataloguePage] Failed to fetch courses:', r.error);
             }
