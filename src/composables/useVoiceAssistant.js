@@ -17,6 +17,12 @@ export function useVoiceAssistant() {
     const analysisCache = new Map();
     const speechRecognition = ref(null);
 
+    // Voice Answer Mode State
+    const isVoiceAnswerMode = ref(false);
+    const voiceAnswerTranscript = ref('');
+    const isVerifyingAnswer = ref(false);
+    const voiceAnswerResult = ref(null); // { correct: boolean, similarity: number, feedback: string }
+
     // Guard to prevent duplicate/concurrent speech requests
     const isSpeechPending = ref(false);
 
@@ -87,6 +93,248 @@ export function useVoiceAssistant() {
     };
 
     const isSupported = ref(!!(window.SpeechRecognition || window.webkitSpeechRecognition));
+
+    /**
+     * Start listening for a voice answer to a specific question
+     * @param {string} correctAnswer - The expected correct answer text
+     * @param {object} options - Additional options for voice answer mode
+     */
+    const startVoiceAnswerMode = (correctAnswer, options = {}) => {
+        if (!isSupported.value) {
+            console.warn('[VoiceAssistant] Speech recognition not supported');
+            return { success: false, error: 'Speech recognition not supported' };
+        }
+
+        isVoiceAnswerMode.value = true;
+        voiceAnswerTranscript.value = '';
+        voiceAnswerResult.value = null;
+
+        // Store the correct answer for later verification
+        window.__voiceAnswerExpected = {
+            correctAnswer,
+            similarityThreshold: options.similarityThreshold || 0.85,
+            language: options.language || getSystemLanguage()
+        };
+
+        console.log('[VoiceAssistant] Voice answer mode started. Expected:', correctAnswer);
+
+        // Re-initialize speech recognition with voice answer handlers
+        initializeVoiceAnswerRecognition();
+
+        try {
+            accumulatedTranscript.value = '';
+            isListening.value = true;
+            speechRecognition.value.start();
+            return { success: true };
+        } catch (error) {
+            console.error('[VoiceAssistant] Failed to start voice answer mode:', error);
+            isVoiceAnswerMode.value = false;
+            isListening.value = false;
+            return { success: false, error: error.message };
+        }
+    };
+
+    /**
+     * Stop voice answer mode and return the transcript
+     */
+    const stopVoiceAnswerMode = () => {
+        const transcript = accumulatedTranscript.value.trim();
+        stopListening();
+        isVoiceAnswerMode.value = false;
+        voiceAnswerTranscript.value = transcript;
+        window.__voiceAnswerExpected = null;
+        return transcript;
+    };
+
+    /**
+     * Initialize speech recognition specifically for voice answer mode
+     */
+    const initializeVoiceAnswerRecognition = () => {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) return;
+
+        if (speechRecognition.value) {
+            speechRecognition.value.onresult = null;
+            speechRecognition.value.onerror = null;
+            speechRecognition.value.onend = null;
+            speechRecognition.value.onstart = null;
+        }
+
+        speechRecognition.value = new SpeechRecognition();
+        const expectedData = window.__voiceAnswerExpected || {};
+        const currentLang = expectedData.language || getSystemLanguage();
+
+        // Map languages to BCP 47 tags
+        if (currentLang === 'ru') speechRecognition.value.lang = 'ru-RU';
+        else if (currentLang === 'uz') speechRecognition.value.lang = 'uz-UZ';
+        else speechRecognition.value.lang = 'en-US';
+
+        speechRecognition.value.interimResults = true;
+        speechRecognition.value.continuous = false; // Single utterance for answers
+
+        speechRecognition.value.onstart = () => {
+            console.log('[VoiceAssistant] Voice answer listening started');
+            isListening.value = true;
+        };
+
+        speechRecognition.value.onresult = async (event) => {
+            if (silenceTimer.value) {
+                clearTimeout(silenceTimer.value);
+            }
+
+            let interimTranscript = '';
+
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    accumulatedTranscript.value += event.results[i][0].transcript + ' ';
+                } else {
+                    interimTranscript += event.results[i][0].transcript;
+                }
+            }
+
+            // Emit interim transcript for UI feedback
+            if (interimTranscript) {
+                eventBus.emit('voice-answer-interim', interimTranscript);
+            }
+
+            // Start silence timer for voice answer mode (shorter timeout)
+            silenceTimer.value = setTimeout(async () => {
+                const finalTranscript = accumulatedTranscript.value.trim();
+                if (finalTranscript && isVoiceAnswerMode.value) {
+                    console.log('[VoiceAssistant] Voice answer final:', finalTranscript);
+                    stopListening();
+                    voiceAnswerTranscript.value = finalTranscript;
+
+                    // Verify the answer
+                    const result = await verifyVoiceAnswer(finalTranscript);
+                    voiceAnswerResult.value = result;
+
+                    // Emit the result
+                    eventBus.emit('voice-answer-complete', {
+                        transcript: finalTranscript,
+                        ...result
+                    });
+
+                    accumulatedTranscript.value = '';
+                    isVoiceAnswerMode.value = false;
+                }
+            }, 1200); // Shorter timeout for answer mode
+        };
+
+        speechRecognition.value.onerror = (event) => {
+            console.error('[VoiceAssistant] Voice answer error:', event.error);
+            if (event.error === 'not-allowed') {
+                eventBus.emit('voice-answer-error', { error: 'microphone_denied' });
+            } else {
+                eventBus.emit('voice-answer-error', { error: event.error });
+            }
+            isListening.value = false;
+            isVoiceAnswerMode.value = false;
+        };
+
+        speechRecognition.value.onend = () => {
+            console.log('[VoiceAssistant] Voice answer recognition ended');
+            if (isVoiceAnswerMode.value && isListening.value) {
+                // If we're still in voice answer mode, the silence timeout will handle it
+                isListening.value = false;
+            }
+        };
+    };
+
+    /**
+     * Verify the voice answer against the expected answer
+     * Uses backend for similarity comparison or local fallback
+     */
+    const verifyVoiceAnswer = async (transcript) => {
+        if (!transcript) {
+            return { correct: false, similarity: 0, feedback: 'No answer detected' };
+        }
+
+        const expectedData = window.__voiceAnswerExpected || {};
+        const correctAnswer = expectedData.correctAnswer || '';
+        const threshold = expectedData.similarityThreshold || 0.85;
+
+        if (!correctAnswer) {
+            console.warn('[VoiceAssistant] No correct answer set for verification');
+            return { correct: false, similarity: 0, feedback: 'Verification error' };
+        }
+
+        isVerifyingAnswer.value = true;
+
+        try {
+            // Try backend verification first
+            const response = await voiceApi.verifyVoiceAnswer(transcript, correctAnswer, {
+                language: expectedData.language,
+                threshold
+            });
+
+            if (response && response.success !== undefined) {
+                isVerifyingAnswer.value = false;
+                return {
+                    correct: response.correct,
+                    similarity: response.similarity || 0,
+                    feedback: response.feedback || (response.correct ? 'Correct!' : 'Try again')
+                };
+            }
+        } catch (error) {
+            console.warn('[VoiceAssistant] Backend verification failed, using local:', error);
+        }
+
+        // Fallback to local similarity check
+        const similarity = calculateStringSimilarity(
+            transcript.toLowerCase().trim(),
+            correctAnswer.toLowerCase().trim()
+        );
+
+        const correct = similarity >= threshold;
+
+        isVerifyingAnswer.value = false;
+
+        return {
+            correct,
+            similarity,
+            feedback: correct ? 'Correct!' : `Try again. You said: "${transcript}"`
+        };
+    };
+
+    /**
+     * Calculate string similarity using Levenshtein distance
+     * Returns a value between 0 (completely different) and 1 (identical)
+     */
+    const calculateStringSimilarity = (str1, str2) => {
+        if (str1 === str2) return 1;
+        if (!str1 || !str2) return 0;
+
+        const len1 = str1.length;
+        const len2 = str2.length;
+
+        // Quick check: if lengths differ significantly, likely not similar
+        if (Math.abs(len1 - len2) > Math.max(len1, len2) * 0.5) {
+            return 0;
+        }
+
+        // Create distance matrix
+        const matrix = Array(len2 + 1).fill(null).map(() => Array(len1 + 1).fill(null));
+
+        for (let i = 0; i <= len1; i++) matrix[0][i] = i;
+        for (let j = 0; j <= len2; j++) matrix[j][0] = j;
+
+        for (let j = 1; j <= len2; j++) {
+            for (let i = 1; i <= len1; i++) {
+                const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1;
+                matrix[j][i] = Math.min(
+                    matrix[j][i - 1] + 1,     // deletion
+                    matrix[j - 1][i] + 1,     // insertion
+                    matrix[j - 1][i - 1] + indicator // substitution
+                );
+            }
+        }
+
+        const distance = matrix[len2][len1];
+        const maxLen = Math.max(len1, len2);
+
+        return 1 - (distance / maxLen);
+    };
 
     const startListening = () => {
         if (!isSupported.value) {
@@ -650,6 +898,11 @@ export function useVoiceAssistant() {
         isAnalyzing,
         isVoiceMuted,
         isSupported,
+        // Voice Answer State
+        isVoiceAnswerMode,
+        voiceAnswerTranscript,
+        isVerifyingAnswer,
+        voiceAnswerResult,
         // Methods
         stopAudio,
         startListening,
@@ -660,6 +913,10 @@ export function useVoiceAssistant() {
         analyzeAndSpeak,
         preAnalyzeSteps,
         handleVoiceQuestion,
+        // Voice Answer Methods
+        startVoiceAnswerMode,
+        stopVoiceAnswerMode,
+        verifyVoiceAnswer,
         // NEW: Export exercise content extractor for external use
         getExerciseContextFromStep
     };

@@ -408,6 +408,23 @@
         "showLess": "Show less",
         "showAll": "Show all",
         "clear": "Clear"
+      },
+      "voiceAnswer": {
+        "title": "Voice Answer",
+        "tapToSpeak": "Tap the microphone and say the answer",
+        "listening": "Listening...",
+        "checking": "Checking your answer...",
+        "correct": "Correct! Well done!",
+        "incorrect": "Not quite right",
+        "tryAgain": "Try again",
+        "youSaid": "You said",
+        "correctAnswerIs": "The correct answer is",
+        "match": "Match",
+        "microphoneDenied": "Microphone access denied. Please enable it in your browser settings.",
+        "notSupported": "Voice recognition is not supported in your browser. Please use Chrome, Edge, or Safari.",
+        "error": "An error occurred. Please try again.",
+        "speakClearly": "Speak clearly into your microphone",
+        "almostThere": "Almost there! Try saying it more clearly."
       }
     },
     "games": {
@@ -1440,7 +1457,24 @@
       "progress": "Прогресс",
       "aiHelp": "ИИ Помощь",
       "askQuestion": "Задайте вопрос...",
-      "vocabulary": "Словарь"
+      "vocabulary": "Словарь",
+      "voiceAnswer": {
+        "title": "Голосовой ответ",
+        "tapToSpeak": "Нажмите на микрофон и скажите ответ",
+        "listening": "Слушаю...",
+        "checking": "Проверяю ваш ответ...",
+        "correct": "Правильно! Молодец!",
+        "incorrect": "Не совсем верно",
+        "tryAgain": "Попробуйте еще раз",
+        "youSaid": "Вы сказали",
+        "correctAnswerIs": "Правильный ответ",
+        "match": "Совпадение",
+        "microphoneDenied": "Доступ к микрофону запрещен. Пожалуйста, включите его в настройках браузера.",
+        "notSupported": "Голосовое распознавание не поддерживается в вашем браузере. Используйте Chrome, Edge или Safari.",
+        "error": "Произошла ошибка. Попробуйте еще раз.",
+        "speakClearly": "Говорите четко в микрофон",
+        "almostThere": "Почти! Попробуйте сказать четче."
+      }
     },
     "games": {
       "score": "Счет",
@@ -2489,6 +2523,23 @@
         "showLess": "Kamroq ko'rsatish",
         "showAll": "Hammasini ko'rsatish",
         "clear": "Tozalash"
+      },
+      "voiceAnswer": {
+        "title": "Ovozli javob",
+        "tapToSpeak": "Mikrofonni bosing va javobni ayting",
+        "listening": "Eshitilmoqda...",
+        "checking": "Javobingiz tekshirilmoqda...",
+        "correct": "To'g'ri! Barakalla!",
+        "incorrect": "Noto'g'ri",
+        "tryAgain": "Qaytadan urinib ko'ring",
+        "youSaid": "Siz aytdingiz",
+        "correctAnswerIs": "To'g'ri javob",
+        "match": "Moslik",
+        "microphoneDenied": "Mikrofonga ruxsat berilmadi. Iltimos, brauzer sozlamalarida yoqing.",
+        "notSupported": "Ovozni aniqlash brauzeringizda qo'llab-quvvatlanmaydi. Chrome, Edge yoki Safari-dan foydalaning.",
+        "error": "Xatolik yuz berdi. Qaytadan urinib ko'ring.",
+        "speakClearly": "Mikrofonga aniq gapiring",
+        "almostThere": "Deyarli! Aniqroq aytib ko'ring."
       }
     },
     "games": {

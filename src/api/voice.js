@@ -109,6 +109,32 @@ const voiceApi = {
         error: error.message
       };
     }
+  },
+
+  /**
+   * Verify a voice answer against the correct answer
+   * Uses fuzzy matching to account for speech-to-text inaccuracies
+   * @param {string} transcript - The user's spoken answer (transcribed)
+   * @param {string} correctAnswer - The expected correct answer
+   * @param {object} options - Verification options
+   * @param {string} options.language - Language code (en, ru, uz)
+   * @param {number} options.threshold - Similarity threshold (0-1, default 0.85)
+   * @returns {Promise<{success: boolean, correct: boolean, similarity: number, feedback: string}>}
+   */
+  async verifyVoiceAnswer(transcript, correctAnswer, options = {}) {
+    try {
+      const response = await api.post('/voice/verify-answer', {
+        transcript,
+        correctAnswer,
+        language: options.language || 'en',
+        threshold: options.threshold || 0.85
+      });
+      return response.data;
+    } catch (error) {
+      console.error('[VoiceAPI] verifyVoiceAnswer error:', error);
+      // Return error state so caller can handle fallback
+      throw error;
+    }
   }
 };
 
@@ -117,6 +143,7 @@ export const analyzeLesson = voiceApi.analyzeLesson;
 export const streamAudio = voiceApi.streamAudio;
 export const getVoices = voiceApi.getVoices;
 export const checkVoiceAvailability = voiceApi.checkAvailability;
+export const verifyVoiceAnswer = voiceApi.verifyVoiceAnswer;
 
 // Default export for the entire API object
 export default voiceApi;

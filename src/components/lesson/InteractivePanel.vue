@@ -208,7 +208,7 @@
         </div>
 
         <!-- SPECIAL INTERACTIVE TYPES -->
-        <template v-else-if="isSpecialInteractiveType">
+        <template v-else-if="isSpecialInteractiveType && !isVoiceAnswerType">
           <ModernHistogram v-if="exerciseType === 'histogram'" :title="exerciseContentData.title || exerciseTitle" :description="exerciseContentData.description || exerciseDescription" :data="exerciseContentData.data" :correctValue="exerciseContentData.correctValue" :min="exerciseContentData.min || 0" :max="exerciseContentData.max || 100000" :step="exerciseContentData.step || 100" @complete="handleInteractiveComplete" @next="emit('next-exercise')" />
           <ModernMap v-else-if="exerciseType === 'map'" :title="exerciseContentData.title || exerciseTitle" :description="exerciseContentData.description || exerciseDescription" :image="exerciseContentData.image" :markers="exerciseContentData.markers" @complete="handleInteractiveComplete" @next="emit('next-exercise')" />
           <ModernBlockCoding v-else-if="exerciseType === 'block-coding'" :type="exerciseContentData.subtype || exerciseContentData.type || 'maze'" :title="exerciseContentData.title || exerciseTitle" :description="exerciseContentData.description || exerciseDescription" :availableBlocks="exerciseContentData.availableBlocks" :config="exerciseContentData.config" @complete="handleInteractiveComplete" @next="emit('next-exercise')" />
@@ -227,6 +227,134 @@
           <LanguageRhythmMatch v-else-if="exerciseType === 'language_rhythm_match'" :step="exerciseContentData" @complete="handleInteractiveComplete" />
           <LanguageFalseFriends v-else-if="exerciseType === 'language_false_friends'" :step="exerciseContentData" @complete="handleInteractiveComplete" />
         </template>
+
+        <!-- VOICE ANSWER EXERCISE -->
+        <div v-else-if="isVoiceAnswerType" class="exercise-card voice-answer-card">
+          <div class="mb-4 sm:mb-6">
+            <span class="inline-flex items-center px-3 py-1 rounded-full bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-700 font-semibold text-xs sm:text-sm">
+              <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+              </svg>
+              Voice Answer
+            </span>
+          </div>
+
+          <!-- Question/Prompt -->
+          <h3 class="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 leading-relaxed mb-6 sm:mb-8 text-center">
+            {{ voicePrompt }}
+          </h3>
+
+          <!-- Voice Not Supported Warning -->
+          <div v-if="!isVoiceSupported" class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-center">
+            <p class="text-amber-700 text-sm">
+              Voice recognition is not supported in your browser. Please use Chrome, Edge, or Safari.
+            </p>
+          </div>
+
+          <!-- Microphone Button & Waveform -->
+          <div v-else class="flex flex-col items-center">
+            <!-- Microphone Button -->
+            <button
+              @click="handleVoiceAnswerClick"
+              :disabled="showCorrectAnswer || isVerifyingAnswer"
+              class="voice-mic-btn"
+              :class="{
+                'voice-mic-listening': isListening,
+                'voice-mic-verifying': isVerifyingAnswer,
+                'voice-mic-success': voiceAnswerFeedback?.correct,
+                'voice-mic-error': voiceAnswerFeedback && !voiceAnswerFeedback.correct && !voiceAnswerFeedback.error
+              }"
+            >
+              <!-- Microphone Icon -->
+              <svg v-if="!isListening && !isVerifyingAnswer" class="w-10 h-10 sm:w-12 sm:h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+              </svg>
+              <!-- Listening Animation -->
+              <div v-else-if="isListening" class="voice-waveform">
+                <span class="voice-bar"></span>
+                <span class="voice-bar"></span>
+                <span class="voice-bar"></span>
+                <span class="voice-bar"></span>
+                <span class="voice-bar"></span>
+              </div>
+              <!-- Verifying Spinner -->
+              <div v-else-if="isVerifyingAnswer" class="animate-spin rounded-full h-10 w-10 border-b-2 border-white"></div>
+            </button>
+
+            <!-- Status Text -->
+            <p class="mt-4 text-sm sm:text-base text-slate-600">
+              <span v-if="!isListening && !isVerifyingAnswer && !voiceAnswerFeedback">
+                Tap the microphone and say the answer
+              </span>
+              <span v-else-if="isListening" class="text-indigo-600 font-medium">
+                Listening...
+              </span>
+              <span v-else-if="isVerifyingAnswer" class="text-purple-600 font-medium">
+                Checking your answer...
+              </span>
+            </p>
+
+            <!-- Interim Transcript Display -->
+            <div v-if="isListening && voiceInterimTranscript" class="mt-4 p-3 bg-slate-100 rounded-lg max-w-md">
+              <p class="text-slate-700 text-center italic">"{{ voiceInterimTranscript }}"</p>
+            </div>
+
+            <!-- Final Transcript Display -->
+            <div v-if="voiceAnswerTranscript && !isListening" class="mt-4 p-3 bg-slate-100 rounded-lg max-w-md">
+              <p class="text-slate-700 text-center">You said: "<strong>{{ voiceAnswerTranscript }}</strong>"</p>
+            </div>
+          </div>
+
+          <!-- Feedback Box -->
+          <transition name="slide-fade">
+            <div v-if="voiceAnswerFeedback && !voiceAnswerFeedback.error" class="feedback-box mt-6 mx-auto max-w-md" :class="voiceAnswerFeedback.correct ? 'feedback-success' : 'feedback-error'">
+              <div class="feedback-icon">
+                <svg v-if="voiceAnswerFeedback.correct" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                </svg>
+                <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </div>
+              <div>
+                <h4 class="font-bold text-sm sm:text-base">{{ voiceAnswerFeedback.correct ? 'Correct!' : 'Not quite right' }}</h4>
+                <p v-if="!voiceAnswerFeedback.correct" class="text-xs sm:text-sm mt-1">
+                  {{ voiceAnswerFeedback.feedback || `The correct answer is: "${voiceCorrectAnswer}"` }}
+                </p>
+                <p v-if="voiceAnswerFeedback.similarity" class="text-xs mt-1 opacity-75">
+                  Match: {{ Math.round(voiceAnswerFeedback.similarity * 100) }}%
+                </p>
+              </div>
+            </div>
+          </transition>
+
+          <!-- Error Display -->
+          <div v-if="voiceAnswerFeedback?.error" class="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl text-center">
+            <p class="text-red-600 text-sm">
+              {{ voiceAnswerFeedback.message === 'microphone_denied'
+                ? 'Microphone access denied. Please enable it in your browser settings.'
+                : 'An error occurred. Please try again.' }}
+            </p>
+          </div>
+
+          <!-- Try Again / Continue Button -->
+          <footer v-if="voiceAnswerFeedback" class="mt-6 flex justify-center gap-3">
+            <button
+              v-if="!voiceAnswerFeedback.correct && !voiceAnswerFeedback.error"
+              @click="voiceAnswerFeedback = null; voiceInterimTranscript = ''"
+              class="btn-secondary"
+            >
+              Try Again
+            </button>
+            <button
+              v-if="voiceAnswerFeedback.correct"
+              @click="handleNext"
+              class="btn-success"
+            >
+              Continue →
+            </button>
+          </footer>
+        </div>
 
         <!-- FALLBACK / SHORT ANSWER -->
         <div v-else class="exercise-card">
@@ -307,10 +435,12 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useExercises } from '@/composables/useExercises';
 import { useSelectionGame } from '@/composables/useSelectionGame';
 import { useLanguage } from '@/composables/useLanguage';
+import { useVoiceAssistant } from '@/composables/useVoiceAssistant';
+import { eventBus } from '@/utils/eventBus';
 
 // Game Components
 import GameContainer from '@/components/games/base/GameContainer.vue';
@@ -347,13 +477,29 @@ const emit = defineEmits(['submit', 'next-exercise']);
 
 const { getLocalizedText } = useLanguage();
 
-const { 
-  userAnswer, 
-  confirmation, 
-  answerWasCorrect, 
-  showCorrectAnswer, 
-  submitAnswer: submitLogic, 
-  resetExerciseState 
+// Voice Assistant for voice answer exercises
+const {
+  isListening,
+  isVoiceAnswerMode,
+  voiceAnswerTranscript,
+  isVerifyingAnswer,
+  voiceAnswerResult,
+  isSupported: isVoiceSupported,
+  startVoiceAnswerMode,
+  stopVoiceAnswerMode
+} = useVoiceAssistant();
+
+// Voice answer state
+const voiceInterimTranscript = ref('');
+const voiceAnswerFeedback = ref(null);
+
+const {
+  userAnswer,
+  confirmation,
+  answerWasCorrect,
+  showCorrectAnswer,
+  submitAnswer: submitLogic,
+  resetExerciseState
 } = useExercises();
 
 const specialInteractiveTypes = [
@@ -364,8 +510,13 @@ const specialInteractiveTypes = [
   'language_word_constellation', 'language_rhythm_match', 'language_false_friends',
   // Add common aliases
   'matching', 'sentence_order', 'sentence_ordering', 'word_order', 'ordering',
-  'data-analysis', 'dataanalysis'
+  'data-analysis', 'dataanalysis',
+  // Voice answer types
+  'voice_answer', 'voice_spelling', 'voice-answer', 'voice-spelling', 'speaking'
 ];
+
+// Voice answer specific types
+const voiceAnswerTypes = ['voice_answer', 'voice_spelling', 'voice-answer', 'voice-spelling', 'speaking'];
 
 // Map exercise type aliases to canonical types
 const typeAliases = {
@@ -436,6 +587,72 @@ const isSpecialInteractiveType = computed(() => {
   if (!type) return false;
   // Check if type is in special types list or has an alias mapping
   return specialInteractiveTypes.includes(type) || Object.keys(typeAliases).includes(type.toLowerCase());
+});
+
+// Check if current exercise is a voice answer type
+const isVoiceAnswerType = computed(() => {
+  const type = exerciseType.value?.toLowerCase();
+  return voiceAnswerTypes.includes(type);
+});
+
+// Get the correct answer for voice verification
+const voiceCorrectAnswer = computed(() => {
+  if (!isVoiceAnswerType.value) return '';
+  const ex = props.currentExercise;
+  return getLocalizedText(ex?.correctAnswer) ||
+         getLocalizedText(ex?.content?.correctAnswer) ||
+         getLocalizedText(ex?.data?.correctAnswer) ||
+         getLocalizedText(ex?.expected) ||
+         '';
+});
+
+// Voice answer prompt/question
+const voicePrompt = computed(() => {
+  if (!isVoiceAnswerType.value) return '';
+  const ex = props.currentExercise;
+  return getLocalizedText(ex?.prompt) ||
+         getLocalizedText(ex?.question) ||
+         getLocalizedText(ex?.content?.prompt) ||
+         getLocalizedText(ex?.content?.question) ||
+         'Say the answer';
+});
+
+// Handle voice answer button click
+const handleVoiceAnswerClick = () => {
+  if (isListening.value) {
+    stopVoiceAnswerMode();
+  } else {
+    voiceInterimTranscript.value = '';
+    voiceAnswerFeedback.value = null;
+    startVoiceAnswerMode(voiceCorrectAnswer.value, {
+      language: props.currentExercise?.language || 'en'
+    });
+  }
+};
+
+// Setup event listeners for voice answer events
+onMounted(() => {
+  eventBus.on('voice-answer-interim', (transcript) => {
+    voiceInterimTranscript.value = transcript;
+  });
+
+  eventBus.on('voice-answer-complete', (result) => {
+    voiceAnswerFeedback.value = result;
+    if (result.correct) {
+      answerWasCorrect.value = true;
+      showCorrectAnswer.value = true;
+    }
+  });
+
+  eventBus.on('voice-answer-error', (error) => {
+    voiceAnswerFeedback.value = { error: true, message: error.error };
+  });
+});
+
+onUnmounted(() => {
+  eventBus.off('voice-answer-interim');
+  eventBus.off('voice-answer-complete');
+  eventBus.off('voice-answer-error');
 });
 
 const exerciseContentData = computed(() => {
@@ -967,5 +1184,127 @@ watch(() => props.currentExercise, () => { resetExerciseState(); userAnswer.valu
     min-height: 36px;
     border-radius: 0.5rem;
   }
+}
+
+/* ============================================
+   VOICE ANSWER STYLES
+   ============================================ */
+
+.voice-answer-card {
+  text-align: center;
+}
+
+.voice-mic-btn {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35);
+}
+
+@media (min-width: 640px) {
+  .voice-mic-btn {
+    width: 120px;
+    height: 120px;
+  }
+}
+
+.voice-mic-btn:hover:not(:disabled) {
+  transform: scale(1.05);
+  box-shadow: 0 12px 32px rgba(99, 102, 241, 0.45);
+}
+
+.voice-mic-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.voice-mic-listening {
+  background: linear-gradient(135deg, #ec4899, #f43f5e);
+  animation: pulse-listening 1.5s ease-in-out infinite;
+  box-shadow: 0 8px 24px rgba(236, 72, 153, 0.4);
+}
+
+.voice-mic-verifying {
+  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+}
+
+.voice-mic-success {
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.35);
+}
+
+.voice-mic-error {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  box-shadow: 0 8px 24px rgba(239, 68, 68, 0.35);
+}
+
+@keyframes pulse-listening {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 8px 24px rgba(236, 72, 153, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 12px 36px rgba(236, 72, 153, 0.6);
+  }
+}
+
+/* Voice Waveform Animation */
+.voice-waveform {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 40px;
+}
+
+.voice-bar {
+  width: 4px;
+  height: 20px;
+  background: white;
+  border-radius: 2px;
+  animation: voice-wave 1s ease-in-out infinite;
+}
+
+.voice-bar:nth-child(1) { animation-delay: 0s; }
+.voice-bar:nth-child(2) { animation-delay: 0.1s; }
+.voice-bar:nth-child(3) { animation-delay: 0.2s; }
+.voice-bar:nth-child(4) { animation-delay: 0.3s; }
+.voice-bar:nth-child(5) { animation-delay: 0.4s; }
+
+@keyframes voice-wave {
+  0%, 100% {
+    height: 10px;
+  }
+  50% {
+    height: 35px;
+  }
+}
+
+/* Secondary Button */
+.btn-secondary {
+  padding: 0.75rem 1.5rem;
+  background: white;
+  color: #6366f1;
+  border: 2px solid #6366f1;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 44px;
+}
+
+.btn-secondary:hover {
+  background: #f5f3ff;
+  transform: translateY(-2px);
 }
 </style>

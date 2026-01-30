@@ -126,7 +126,13 @@ export function useLessonOrchestrator() {
       'language_idiom_bridge',
       'language_word_constellation',
       'language_rhythm_match',
-      'language_false_friends'
+      'language_false_friends',
+      // Voice answer types
+      'voice_answer',
+      'voice_spelling',
+      'voice-answer',
+      'voice-spelling',
+      'speaking'
     ].includes(currentStep.value.type)
   })
 
@@ -361,6 +367,12 @@ export function useLessonOrchestrator() {
           case 'language_word_constellation':
           case 'language_rhythm_match':
           case 'language_false_friends':
+          // Voice answer types
+          case 'voice_answer':
+          case 'voice_spelling':
+          case 'voice-answer':
+          case 'voice-spelling':
+          case 'speaking':
             processedStep = processInteractiveStep(step, index)
             break
           case 'explanation':
