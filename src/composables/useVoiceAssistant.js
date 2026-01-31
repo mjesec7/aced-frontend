@@ -29,14 +29,12 @@ export function useVoiceAssistant() {
     // Get the current system language (from useLanguage composable)
     const getSystemLanguage = () => {
         const lang = getLanguage() || 'en';
-        console.log('[VoiceAssistant] System language:', lang);
         return lang;
     };
 
     // Toggle voice mute - just toggles state, does NOT auto-speak
     const toggleVoiceMute = () => {
         isVoiceMuted.value = !isVoiceMuted.value;
-        console.log('[VoiceAssistant] Voice muted:', isVoiceMuted.value);
 
         // If muting while speaking, stop the audio
         if (isVoiceMuted.value && isSpeaking.value) {
@@ -116,8 +114,6 @@ export function useVoiceAssistant() {
             language: options.language || getSystemLanguage()
         };
 
-        console.log('[VoiceAssistant] Voice answer mode started. Expected:', correctAnswer);
-
         // Re-initialize speech recognition with voice answer handlers
         initializeVoiceAnswerRecognition();
 
@@ -173,7 +169,6 @@ export function useVoiceAssistant() {
         speechRecognition.value.continuous = false; // Single utterance for answers
 
         speechRecognition.value.onstart = () => {
-            console.log('[VoiceAssistant] Voice answer listening started');
             isListening.value = true;
         };
 
@@ -201,7 +196,6 @@ export function useVoiceAssistant() {
             silenceTimer.value = setTimeout(async () => {
                 const finalTranscript = accumulatedTranscript.value.trim();
                 if (finalTranscript && isVoiceAnswerMode.value) {
-                    console.log('[VoiceAssistant] Voice answer final:', finalTranscript);
                     stopListening();
                     voiceAnswerTranscript.value = finalTranscript;
 
@@ -233,7 +227,6 @@ export function useVoiceAssistant() {
         };
 
         speechRecognition.value.onend = () => {
-            console.log('[VoiceAssistant] Voice answer recognition ended');
             if (isVoiceAnswerMode.value && isListening.value) {
                 // If we're still in voice answer mode, the silence timeout will handle it
                 isListening.value = false;
@@ -352,7 +345,6 @@ export function useVoiceAssistant() {
             isListening.value = true;
             speechRecognition.value.start();
         } catch (error) {
-            console.log('[VoiceAssistant] Speech recognition start error:', error);
             isListening.value = false;
         }
     };
@@ -379,7 +371,6 @@ export function useVoiceAssistant() {
         // 2. Auto-unmute if muted (user wants to interact)
         if (isVoiceMuted.value) {
             isVoiceMuted.value = false;
-            console.log('[VoiceAssistant] Auto-unmuted for microphone');
         }
 
         // 3. Start listening
@@ -391,14 +382,12 @@ export function useVoiceAssistant() {
 
         // If muted, don't speak (but store text if from analysis)
         if (isVoiceMuted.value && !options.force) {
-            console.log('[VoiceAssistant] Voice is muted, skipping speech');
             return;
         }
 
         // GUARD: Prevent duplicate/concurrent speech requests
         // This fixes the "two voices" issue where multiple triggers try to speak at once
         if (isSpeechPending.value && !options.force) {
-            console.log('[VoiceAssistant] Speech already pending, ignoring duplicate request');
             return;
         }
         isSpeechPending.value = true;
@@ -407,7 +396,6 @@ export function useVoiceAssistant() {
 
         // Use effective language (lesson language > system language)
         const currentLang = options.language || getSystemLanguage();
-        console.log('[VoiceAssistant] Speaking in language:', currentLang);
 
         try {
             const audioBlob = await voiceApi.streamAudio(text, { language: currentLang });
@@ -461,7 +449,6 @@ export function useVoiceAssistant() {
             console.error('[VoiceAssistant] speakText error:', error);
 
             // FALLBACK: Use browser's free speech synthesis when ElevenLabs fails
-            console.log('[VoiceAssistant] Falling back to browser speech synthesis');
             useBrowserSpeech(text, currentLang);
         }
     };
@@ -505,12 +492,10 @@ export function useVoiceAssistant() {
         utterance.volume = 1.0;
 
         utterance.onstart = () => {
-            console.log('[VoiceAssistant] Browser speech started');
             isSpeaking.value = true;
         };
 
         utterance.onend = () => {
-            console.log('[VoiceAssistant] Browser speech ended');
             isSpeaking.value = false;
             isSpeechPending.value = false;
         };
@@ -532,24 +517,14 @@ export function useVoiceAssistant() {
 
         // Get the current system language for AI response
         const currentLang = getSystemLanguage();
-        console.log('[VoiceAssistant] Asking AI in language:', currentLang);
 
         // Extract exercise context if the current step is interactive
         let exerciseContext = null;
         if (currentStep) {
             exerciseContext = getExerciseContextFromStep(currentStep, currentLang);
-            if (exerciseContext) {
-                console.log('[VoiceAssistant] Including exercise context in question');
-                // Log first question to verify content
-                const questionMatch = exerciseContext.match(/Question: ([^\n]+)/);
-                if (questionMatch) {
-                    console.log('[VoiceAssistant] First exercise question:', questionMatch[1]);
-                }
-            }
         }
 
         try {
-            console.log('[VoiceAssistant] Sending to AI - User question:', question);
 
             // Build stepContext with exerciseContent for the backend
             const stepContext = {
@@ -601,20 +576,16 @@ export function useVoiceAssistant() {
 
         speechRecognition.value = new SpeechRecognition();
         const currentLang = getSystemLanguage();
-        console.log('[VoiceAssistant] Initializing speech recognition with language:', currentLang);
 
         // Map languages to BCP 47 tags
         if (currentLang === 'ru') speechRecognition.value.lang = 'ru-RU';
         else if (currentLang === 'uz') speechRecognition.value.lang = 'uz-UZ';
         else speechRecognition.value.lang = 'en-US';
 
-        console.log('[VoiceAssistant] Using BCP 47 tag:', speechRecognition.value.lang);
-
         speechRecognition.value.interimResults = true;
         speechRecognition.value.continuous = true;
 
         speechRecognition.value.onstart = () => {
-            console.log('[VoiceAssistant] Speech recognition session started');
             isListening.value = true;
         };
 
@@ -634,15 +605,10 @@ export function useVoiceAssistant() {
                 }
             }
 
-            if (interimTranscript) {
-                console.log('[VoiceAssistant] Interim:', interimTranscript);
-            }
-
             // Start silence timer (1.5 seconds for faster response)
             silenceTimer.value = setTimeout(() => {
                 const finalTranscript = accumulatedTranscript.value.trim();
                 if (finalTranscript) {
-                    console.log('[VoiceAssistant] Silence detected. Final transcript:', finalTranscript);
                     stopListening();
                     eventBus.emit('voice-transcript', finalTranscript);
                     accumulatedTranscript.value = ''; // Clear for next time
@@ -659,13 +625,12 @@ export function useVoiceAssistant() {
         };
 
         speechRecognition.value.onend = () => {
-            console.log('[VoiceAssistant] Speech recognition ended');
             // If we are still supposed to be listening (e.g. continuous mode), restart
             if (isListening.value) {
                 try {
                     speechRecognition.value.start();
                 } catch (e) {
-                    console.error('[VoiceAssistant] Restart error:', e);
+                    // Ignore restart errors
                 }
             }
         };
@@ -726,15 +691,6 @@ export function useVoiceAssistant() {
         try {
             const exerciseContent = extractAllExercisesFromStep(step, language);
             if (exerciseContent && exerciseContent.trim().length > 20) {
-                // Log summary info, not truncated content
-                const lineCount = exerciseContent.split('\n').length;
-                const charCount = exerciseContent.length;
-                console.log(`[VoiceAssistant] Extracted exercise content: ${charCount} chars, ${lineCount} lines`);
-                // Log first exercise question to verify extraction works
-                const questionMatch = exerciseContent.match(/Question: ([^\n]+)/);
-                if (questionMatch) {
-                    console.log('[VoiceAssistant] First question:', questionMatch[1]);
-                }
                 return exerciseContent;
             }
         } catch (error) {
@@ -767,13 +723,11 @@ export function useVoiceAssistant() {
 
         // Append exercise context for richer AI analysis
         if (finalExerciseContext) {
-            console.log('[VoiceAssistant] Adding exercise context to analysis');
             content += '\n\n[EXERCISE CONTENT - AI should read and explain this]:\n' + finalExerciseContext;
         }
 
         // Skip if content is too short
         if (!content || content.length < 20) {
-            console.log('[VoiceAssistant] Content too short, skipping analysis');
             return;
         }
 
@@ -792,9 +746,7 @@ export function useVoiceAssistant() {
 
             if (analysisCache.has(cacheKey)) {
                 data = analysisCache.get(cacheKey);
-                console.log('[VoiceAssistant] Using cached analysis');
             } else {
-                console.log('[VoiceAssistant] Calling AI analysis API...');
                 const result = await voiceApi.analyzeLesson(
                     content,
                     step.type || 'explanation',
@@ -804,33 +756,25 @@ export function useVoiceAssistant() {
                 );
 
                 if (currentAnalysisId.value !== analysisId) {
-                    console.log('[VoiceAssistant] Analysis cancelled (newer request in progress)');
                     return;
                 }
 
                 data = result?.data || result || {};
                 if (data.explanation) {
                     analysisCache.set(cacheKey, data);
-                    console.log('[VoiceAssistant] Analysis cached successfully');
                 }
             }
 
             if (data.explanation && currentAnalysisId.value === analysisId) {
                 // Emit highlights for text highlighting on screen
                 if (data.highlights && data.highlights.length > 0) {
-                    console.log('[VoiceAssistant] Emitting highlights:', data.highlights);
                     eventBus.emit('highlight-text', data.highlights);
                 }
 
                 // Only speak if not muted
                 if (!isVoiceMuted.value) {
-                    console.log('[VoiceAssistant] Speaking explanation...');
                     await speakText(data.explanation);
-                } else {
-                    console.log('[VoiceAssistant] Voice muted, skipping speech');
                 }
-            } else {
-                console.log('[VoiceAssistant] No explanation in response or analysis cancelled');
             }
         } catch (error) {
             console.error('[VoiceAssistant] Analysis error:', error);
@@ -844,8 +788,6 @@ export function useVoiceAssistant() {
      */
     const preAnalyzeSteps = async (steps, language) => {
         if (!steps || !Array.isArray(steps)) return;
-
-        console.log(`[VoiceAssistant] Starting pre-analysis for ${steps.length} steps...`);
 
         // Analyze in background, don't await the whole thing
         for (let i = 0; i < steps.length; i++) {
@@ -878,10 +820,9 @@ export function useVoiceAssistant() {
                         ? `${stepId}_ex_${exerciseContext.length}_${language}`
                         : `${stepId}_${language}`;
                     analysisCache.set(cacheKey, data);
-                    console.log(`[VoiceAssistant] Pre-analyzed step ${i + 1}/${steps.length}`);
                 }
-            }).catch(err => {
-                console.warn(`[VoiceAssistant] Pre-analysis failed for step ${i + 1}:`, err);
+            }).catch(() => {
+                // Pre-analysis failed, will be analyzed on demand
             });
         }
     };

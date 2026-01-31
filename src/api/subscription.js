@@ -131,8 +131,6 @@ export const fetchSubscriptionFromServer = async (userId) => {
  * Save subscription to server for global persistence
  */
 export const saveSubscriptionToServer = async (userId, subscriptionData) => {
-  console.log('💾 [subscription.js] saveSubscriptionToServer called');
-
   try {
     const token = await getAuthToken();
     if (!token) {
@@ -171,7 +169,6 @@ export const saveSubscriptionToServer = async (userId, subscriptionData) => {
     try {
       const response = await api.put(`users/${userId}/status`, serverData, { headers });
       if (response.data && response.data.success !== false) {
-        console.log('✅ [subscription.js] Subscription saved to server');
         return {
           success: true,
           data: response.data,
@@ -216,8 +213,6 @@ export const saveSubscriptionToServer = async (userId, subscriptionData) => {
  * Load subscription from server for global sync
  */
 export const loadSubscriptionFromServer = async (userId) => {
-  console.log('📥 [subscription.js] loadSubscriptionFromServer called for:', userId);
-
   // Use the primary fetch function
   return await fetchSubscriptionFromServer(userId);
 };
@@ -226,8 +221,6 @@ export const loadSubscriptionFromServer = async (userId) => {
  * Sync subscription status globally (bidirectional)
  */
 export const syncSubscriptionGlobally = async (userId, localSubscription = null) => {
-  console.log('🔄 [subscription.js] syncSubscriptionGlobally called');
-
   try {
     // Step 1: Always fetch from server first
     const serverResult = await fetchSubscriptionFromServer(userId);
@@ -264,7 +257,6 @@ export const syncSubscriptionGlobally = async (userId, localSubscription = null)
 
       // If local has higher plan, sync to server
       if (localPriority > serverPriority) {
-        console.log('📤 [subscription.js] Local plan is higher, syncing to server');
         await saveSubscriptionToServer(userId, localSubscription);
         finalSubscription = localSubscription;
         syncAction = 'local-to-server';
@@ -295,8 +287,6 @@ export const syncSubscriptionGlobally = async (userId, localSubscription = null)
         localStorage.setItem('subscriptionExpiry', finalSubscription.expiryDate || '');
         localStorage.setItem('lastGlobalSync', Date.now().toString());
 
-        console.log('✅ [subscription.js] Sync complete:', finalSubscription.plan);
-
         return {
           success: true,
           subscription: finalSubscription,
@@ -326,8 +316,6 @@ export const syncSubscriptionGlobally = async (userId, localSubscription = null)
  * Enhanced user status update with server persistence
  */
 export const updateUserStatusWithPersistence = async (userId, newStatus, source = 'manual') => {
-  console.log('📝 [subscription.js] updateUserStatusWithPersistence called:', newStatus);
-
   try {
     const token = await getAuthToken();
 
@@ -350,7 +338,6 @@ export const updateUserStatusWithPersistence = async (userId, newStatus, source 
 
       if (response.status === 200) {
         serverUpdateSuccess = true;
-        console.log('✅ [subscription.js] Server update successful');
       }
     } catch (endpointError) {
       console.warn('⚠️ [subscription.js] Server update failed:', endpointError.message);
@@ -450,8 +437,6 @@ export const updateUserStatusWithPersistence = async (userId, newStatus, source 
  * Enhanced promocode application with global persistence
  */
 export const applyPromocodeWithGlobalPersistence = async (userId, promocode, plan) => {
-  console.log('🎟️ [subscription.js] applyPromocodeWithGlobalPersistence called');
-
   try {
     // 1. Apply promocode via server
     const token = await getAuthToken();
@@ -496,8 +481,6 @@ export const applyPromocodeWithGlobalPersistence = async (userId, promocode, pla
  * Enhanced payment completion with global persistence
  */
 export const completePaymentWithGlobalPersistence = async (userId, paymentData) => {
-  console.log('💰 [subscription.js] completePaymentWithGlobalPersistence called');
-
   try {
     // 1. Complete payment via server
     const token = await getAuthToken();
@@ -541,8 +524,6 @@ export const completePaymentWithGlobalPersistence = async (userId, paymentData) 
  * Check global sync status with server
  */
 export const checkGlobalSyncStatus = async (userId, localSubscription = null) => {
-  console.log('🔍 [subscription.js] checkGlobalSyncStatus called');
-
   try {
     const token = await getAuthToken();
     if (!token) {

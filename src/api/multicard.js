@@ -108,7 +108,6 @@ export const testMulticardAuth = testMulticardConnection;
  * @returns {Promise<Object>} Payment initiation result
  */
 export const initiateMulticardPayment = async (paymentData) => {
-  console.log('💳 [multicard.js] initiateMulticardPayment called with:', paymentData);
   try {
     // Validation
     if (!paymentData.userId) {
@@ -153,9 +152,7 @@ export const initiateMulticardPayment = async (paymentData) => {
       provider: 'multicard' // ✅ Add provider field
     };
 
-    console.log('💳 [multicard.js] Sending request to /multicard/initiate with:', requestPayload);
     const { data } = await multicardApi.post('/multicard/initiate', requestPayload);
-    console.log('💳 [multicard.js] Response from /multicard/initiate:', data);
 
     // Handle success
     if (data.success && data.data) {

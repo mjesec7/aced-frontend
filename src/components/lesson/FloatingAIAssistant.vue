@@ -454,13 +454,6 @@ export default {
       const exerciseSource = this.currentExercise || this.currentStep;
       const exerciseContext = extractExerciseContent(exerciseSource, this.language);
 
-      // DEBUG: Log what we're sending to help diagnose AI context issues
-      console.log('[FloatingAIAssistant] Sending message with context:');
-      console.log('  -> Message:', this.localFloatingInput.trim());
-      console.log('  -> Exercise Context:', exerciseContext);
-      console.log('  -> Step Type:', this.currentStep?.type);
-      console.log('  -> Lesson ID:', this.lessonId);
-
       // CRITICAL: Emit message with full context for RAG
       // Backend needs all this data to construct the AI system prompt
       this.$emit('send-message', {

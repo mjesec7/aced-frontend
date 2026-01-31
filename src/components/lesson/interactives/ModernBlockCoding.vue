@@ -248,7 +248,6 @@ resetVisualization();
 
 import { onMounted } from 'vue';
 onMounted(() => {
-  console.log('ModernBlockCoding mounted with props:', props);
 });
 </script>
 

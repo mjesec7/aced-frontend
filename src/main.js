@@ -63,7 +63,6 @@ initializeLanguage(i18n);
 // ============================================================================
 setPersistence(auth, browserLocalPersistence)
   .then(() => {
-    console.log('🔥 Firebase auth persistence set to LOCAL');
   })
   .catch((error) => {
     console.error('❌ Firebase persistence setup failed:', error);

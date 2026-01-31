@@ -98,8 +98,6 @@
             setTimeout(() => {
               this.showRatingModal = true;
             }, 3000);
-          } else {
-            console.log('User already rated this course, skipping rating modal');
           }
         } catch (error) {
           // If 404 or error, user hasn't rated - show modal

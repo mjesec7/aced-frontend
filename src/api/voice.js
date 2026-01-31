@@ -27,9 +27,6 @@ const voiceApi = {
       return response.data;
     } catch (error) {
       console.error('[VoiceAPI] analyzeLesson error:', error);
-      if (error.response) {
-        console.error('[VoiceAPI] Error details:', error.response.data);
-      }
       throw error;
     }
   },
@@ -58,21 +55,6 @@ const voiceApi = {
       return response.data;
     } catch (error) {
       console.error('[VoiceAPI] streamAudio error:', error);
-      if (error.response && error.response.data) {
-        const errorData = error.response.data;
-        if (errorData instanceof Blob) {
-          // Parse Blob error
-          try {
-            const text = await errorData.text();
-            const json = JSON.parse(text);
-            console.error('[VoiceAPI] Stream Error details:', json);
-          } catch (e) {
-            console.error('[VoiceAPI] Stream Error text:', await errorData.text());
-          }
-        } else {
-          console.error('[VoiceAPI] Stream Error details:', errorData);
-        }
-      }
       throw error;
     }
   },

@@ -46,7 +46,6 @@ export const submitLessonRating = async (ratingData) => {
     });
     return { success: true, data: response.data };
   } catch (error) {
-    console.error('Error submitting rating:', error);
     return {
       success: false,
       error: error.response?.data?.error || error.response?.data?.message || 'Failed to submit rating'
@@ -71,7 +70,6 @@ export const submitCourseRating = async (ratingData) => {
     });
     return { success: true, data: response.data };
   } catch (error) {
-    console.error('Error submitting course rating:', error);
     return {
       success: false,
       error: error.response?.data?.error || error.response?.data?.message || 'Failed to submit rating'
@@ -98,7 +96,6 @@ export const getCourseRating = async (courseId) => {
       }
     };
   } catch (error) {
-    console.error('Error fetching course rating:', error);
     return {
       success: false,
       error: error.response?.data?.error || error.response?.data?.message || 'Failed to fetch rating',
@@ -145,7 +142,6 @@ export const getUserCourseRating = async (courseId) => {
     if (error.response?.status === 404) {
       return { success: true, data: null }; // User hasn't rated yet
     }
-    console.error('Error fetching user rating:', error);
     return {
       success: false,
       error: error.response?.data?.error || error.response?.data?.message || 'Failed to fetch user rating'
@@ -164,7 +160,6 @@ export const updateRating = async (ratingId, updateData) => {
     const response = await api.put(`/ratings/${ratingId}`, updateData);
     return { success: true, data: response.data };
   } catch (error) {
-    console.error('Error updating rating:', error);
     return {
       success: false,
       error: error.response?.data?.error || error.response?.data?.message || 'Failed to update rating'
@@ -206,7 +201,6 @@ export const getCourseReviews = async (courseId, options = {}) => {
     });
     return { success: true, data: response.data };
   } catch (error) {
-    console.error('Error fetching course reviews:', error);
     return {
       success: false,
       error: error.response?.data?.error || error.response?.data?.message || 'Failed to fetch reviews',

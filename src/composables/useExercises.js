@@ -680,13 +680,11 @@ export function useExercises() {
 
   const getCurrentExercise = (currentStep) => {
     if (!currentStep) {
-      console.log('No current step provided');
       return null;
     }
 
     // Skip game steps entirely in exercise logic
     if (currentStep.gameType || currentStep.type === 'game') {
-      console.log('This is a game step, not an exercise');
       return null;
     }
 
@@ -718,64 +716,41 @@ export function useExercises() {
 
     // Only process valid exercise types
     if (!validExerciseTypes.includes(currentStep.type)) {
-      console.log(`Step type ${currentStep.type} is not a recognized exercise type`);
       return null;
     }
 
     let exercises = [];
 
     try {
-      console.log('Processing step:', currentStep);
-      console.log('Step.data:', currentStep.data);
-      console.log('Step.data is array?', Array.isArray(currentStep.data));
-      console.log('Step.data.length:', currentStep.data?.length);
-      console.log('Step.data contents:', currentStep.data ? JSON.stringify(currentStep.data, null, 2) : 'N/A');
-      console.log('Step.content:', currentStep.content);
-      console.log('Step.content.type:', currentStep.content?.type);
-      console.log('Step keys:', Object.keys(currentStep));
-
       // Priority order for finding exercises
       if (Array.isArray(currentStep.data) && currentStep.data.length > 0) {
-        console.log('Found exercises directly in data array, length:', currentStep.data.length);
         exercises = currentStep.data;
       } else if (currentStep.data?.exercises && Array.isArray(currentStep.data.exercises)) {
-        console.log('Found exercises in data.exercises');
         exercises = currentStep.data.exercises;
       } else if (currentStep.content?.exercises && Array.isArray(currentStep.content.exercises)) {
-        console.log('Found exercises in content.exercises');
         exercises = currentStep.content.exercises;
       } else if (currentStep.exercises && Array.isArray(currentStep.exercises)) {
-        console.log('Found exercises in step.exercises');
         exercises = currentStep.exercises;
       } else if (currentStep.data?.question || currentStep.data?.type) {
-        console.log('Found single exercise in data (by question or type)');
         exercises = [currentStep.data];
       } else if (currentStep.content?.question || currentStep.content?.type) {
-        console.log('Found single exercise in content (by question or type)');
         exercises = [currentStep.content];
       } else if (currentStep.question) {
-        console.log('Found single exercise as step itself');
         exercises = [currentStep];
       } else {
         // For new interactive exercise types, the step itself IS the exercise
-        console.log('Step is the exercise itself (new interactive type)');
         exercises = [currentStep];
       }
 
-      console.log(`Found ${exercises.length} exercises`);
-
       if (exercises.length === 0) {
-        console.warn('No exercises found in step');
         return null;
       }
 
       if (currentExerciseIndex.value >= exercises.length) {
-        console.log('Resetting exercise index from', currentExerciseIndex.value, 'to 0');
         currentExerciseIndex.value = 0;
       }
 
       const exercise = exercises[currentExerciseIndex.value];
-      console.log('Returning exercise:', exercise);
 
       if (exercise) {
         detectQuestionsFromExercise(exercise);
@@ -819,6 +794,7 @@ export function useExercises() {
       return quizzes[currentQuizIndex.value] || null
 
     } catch (error) {
+      console.error('Error in getCurrentQuiz:', error);
       return null
     }
   }

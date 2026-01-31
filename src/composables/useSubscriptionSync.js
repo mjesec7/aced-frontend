@@ -33,25 +33,21 @@ export function useSubscriptionSync() {
 
     // Circuit breaker: Don't sync during error cooldown
     if (errorCooldownUntil > now) {
-      console.log('⏳ [useSubscriptionSync] In error cooldown, skipping...');
       return;
     }
 
     // Debounce: Don't sync too frequently
     if (!force && (now - lastSyncAttempt) < MIN_SYNC_INTERVAL) {
-      console.log('⏳ [useSubscriptionSync] Debounced, skipping...');
       return;
     }
 
     // Don't sync if already syncing
     if (isSyncing.value && !force) {
-      console.log('⏳ [useSubscriptionSync] Already syncing, skipping...');
       return;
     }
 
     // Don't sync too frequently (minimum 30 seconds between syncs)
     if (lastSyncTime.value && (now - lastSyncTime.value) < 30000 && !force) {
-      console.log('⏳ [useSubscriptionSync] Recent sync, skipping...');
       return;
     }
 
@@ -68,17 +64,13 @@ export function useSubscriptionSync() {
         auth.currentUser?.uid;
 
       if (!userId) {
-        console.log('⚠️ [useSubscriptionSync] No user ID, skipping sync');
         return;
       }
-
-      console.log('🔄 [useSubscriptionSync] Syncing subscription for:', userId);
 
       // Fetch from server
       const result = await fetchSubscriptionFromServer(userId);
 
       if (result.success && result.subscription) {
-        console.log('✅ [useSubscriptionSync] Server returned:', result.subscription.plan);
 
         // Reset error counter on success
         consecutiveErrors = 0;
@@ -104,7 +96,6 @@ export function useSubscriptionSync() {
 
         return result.subscription;
       } else {
-        console.warn('⚠️ [useSubscriptionSync] Server fetch failed:', result.error);
         syncError.value = result.error;
 
         // Track consecutive errors
@@ -114,13 +105,11 @@ export function useSubscriptionSync() {
         if (result.error?.includes('quota') ||
           result.error?.includes('QUOTA') ||
           consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
-          console.error('🛑 [useSubscriptionSync] Activating error cooldown');
           errorCooldownUntil = now + ERROR_COOLDOWN_MS;
           consecutiveErrors = 0;
         }
       }
     } catch (error) {
-      console.error('❌ [useSubscriptionSync] Error:', error);
       syncError.value = error.message;
 
       // Track consecutive errors
@@ -130,7 +119,6 @@ export function useSubscriptionSync() {
       if (error.code === 'auth/quota-exceeded' ||
         error.message?.includes('quota') ||
         consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
-        console.error('🛑 [useSubscriptionSync] Activating error cooldown');
         errorCooldownUntil = now + ERROR_COOLDOWN_MS;
         consecutiveErrors = 0;
       }
@@ -150,8 +138,6 @@ export function useSubscriptionSync() {
     syncInterval = setInterval(() => {
       syncSubscription();
     }, 5 * 60 * 1000);
-
-    console.log('🔄 [useSubscriptionSync] Periodic sync started (every 5 min)');
   };
 
   /**
@@ -178,18 +164,14 @@ export function useSubscriptionSync() {
    * Initialize sync on mount
    */
   const initialize = () => {
-    console.log('🚀 [useSubscriptionSync] Initializing...');
-
     // Listen for auth state changes
     authUnsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
-        console.log('👤 [useSubscriptionSync] User authenticated, syncing...');
         setTimeout(() => {
           syncSubscription(true);
           startPeriodicSync();
         }, 500);
       } else {
-        console.log('👤 [useSubscriptionSync] User signed out');
         stopPeriodicSync();
       }
     });

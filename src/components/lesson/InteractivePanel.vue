@@ -235,7 +235,7 @@
               <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
               </svg>
-              Voice Answer
+              {{ t('lesson.voiceAnswer.title') }}
             </span>
           </div>
 
@@ -244,14 +244,48 @@
             {{ voicePrompt }}
           </h3>
 
-          <!-- Voice Not Supported Warning -->
-          <div v-if="!isVoiceSupported" class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-center">
-            <p class="text-amber-700 text-sm">
-              Voice recognition is not supported in your browser. Please use Chrome, Edge, or Safari.
-            </p>
+          <!-- Voice Not Supported Warning - Show text input instead -->
+          <div v-if="!isVoiceSupported || useTextInputMode" class="flex flex-col items-center">
+            <!-- Switch back to voice button (if voice is supported) -->
+            <button 
+              v-if="isVoiceSupported && useTextInputMode && !showCorrectAnswer"
+              @click="useTextInputMode = false"
+              class="mb-4 text-sm text-indigo-600 hover:text-indigo-800 underline flex items-center gap-1"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+              </svg>
+              {{ t('lesson.voiceAnswer.switchToVoice') }}
+            </button>
+
+            <!-- Browser not supported message -->
+            <div v-if="!isVoiceSupported" class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 text-center max-w-md">
+              <p class="text-amber-700 text-sm">
+                {{ t('lesson.voiceAnswer.notSupported') }}
+              </p>
+            </div>
+
+            <!-- Text Input for Answer -->
+            <div class="w-full max-w-md">
+              <textarea 
+                v-model="textAnswerInput"
+                :placeholder="t('lesson.voiceAnswer.typeYourAnswer')"
+                :disabled="showCorrectAnswer"
+                class="w-full p-3 sm:p-4 rounded-xl border-2 border-slate-200 bg-slate-50 focus:bg-white focus:border-indigo-500 focus:ring-0 transition-all outline-none resize-none h-24 text-base text-slate-800 placeholder-slate-400"
+              ></textarea>
+              
+              <button
+                v-if="!showCorrectAnswer"
+                @click="submitTextAnswer"
+                :disabled="!textAnswerInput.trim()"
+                class="mt-3 w-full btn-primary"
+              >
+                {{ t('lesson.voiceAnswer.submitAnswer') }}
+              </button>
+            </div>
           </div>
 
-          <!-- Microphone Button & Waveform -->
+          <!-- Microphone Button & Waveform (Voice Mode) -->
           <div v-else class="flex flex-col items-center">
             <!-- Microphone Button -->
             <button
@@ -284,15 +318,27 @@
             <!-- Status Text -->
             <p class="mt-4 text-sm sm:text-base text-slate-600">
               <span v-if="!isListening && !isVerifyingAnswer && !voiceAnswerFeedback">
-                Tap the microphone and say the answer
+                {{ t('lesson.voiceAnswer.tapToSpeak') }}
               </span>
               <span v-else-if="isListening" class="text-indigo-600 font-medium">
-                Listening...
+                {{ t('lesson.voiceAnswer.listening') }}
               </span>
               <span v-else-if="isVerifyingAnswer" class="text-purple-600 font-medium">
-                Checking your answer...
+                {{ t('lesson.voiceAnswer.checking') }}
               </span>
             </p>
+
+            <!-- "I can't talk" button -->
+            <button 
+              v-if="!isListening && !isVerifyingAnswer && !voiceAnswerFeedback && !showCorrectAnswer"
+              @click="useTextInputMode = true"
+              class="mt-4 text-sm text-slate-500 hover:text-slate-700 underline flex items-center gap-1"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+              </svg>
+              {{ t('lesson.voiceAnswer.cantTalk') }}
+            </button>
 
             <!-- Interim Transcript Display -->
             <div v-if="isListening && voiceInterimTranscript" class="mt-4 p-3 bg-slate-100 rounded-lg max-w-md">
@@ -301,7 +347,7 @@
 
             <!-- Final Transcript Display -->
             <div v-if="voiceAnswerTranscript && !isListening" class="mt-4 p-3 bg-slate-100 rounded-lg max-w-md">
-              <p class="text-slate-700 text-center">You said: "<strong>{{ voiceAnswerTranscript }}</strong>"</p>
+              <p class="text-slate-700 text-center">{{ t('lesson.voiceAnswer.youSaid') }}: "<strong>{{ voiceAnswerTranscript }}</strong>"</p>
             </div>
           </div>
 
@@ -317,12 +363,12 @@
                 </svg>
               </div>
               <div>
-                <h4 class="font-bold text-sm sm:text-base">{{ voiceAnswerFeedback.correct ? 'Correct!' : 'Not quite right' }}</h4>
+                <h4 class="font-bold text-sm sm:text-base">{{ voiceAnswerFeedback.correct ? t('lesson.voiceAnswer.correct') : t('lesson.voiceAnswer.incorrect') }}</h4>
                 <p v-if="!voiceAnswerFeedback.correct" class="text-xs sm:text-sm mt-1">
-                  {{ voiceAnswerFeedback.feedback || `The correct answer is: "${voiceCorrectAnswer}"` }}
+                  {{ voiceAnswerFeedback.feedback || `${t('lesson.voiceAnswer.correctAnswerIs')}: "${voiceCorrectAnswer}"` }}
                 </p>
                 <p v-if="voiceAnswerFeedback.similarity" class="text-xs mt-1 opacity-75">
-                  Match: {{ Math.round(voiceAnswerFeedback.similarity * 100) }}%
+                  {{ t('lesson.voiceAnswer.match') }}: {{ Math.round(voiceAnswerFeedback.similarity * 100) }}%
                 </p>
               </div>
             </div>
@@ -332,8 +378,8 @@
           <div v-if="voiceAnswerFeedback?.error" class="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl text-center">
             <p class="text-red-600 text-sm">
               {{ voiceAnswerFeedback.message === 'microphone_denied'
-                ? 'Microphone access denied. Please enable it in your browser settings.'
-                : 'An error occurred. Please try again.' }}
+                ? t('lesson.voiceAnswer.microphoneDenied')
+                : t('lesson.voiceAnswer.error') }}
             </p>
           </div>
 
@@ -341,10 +387,10 @@
           <footer v-if="voiceAnswerFeedback" class="mt-6 flex justify-center gap-3">
             <button
               v-if="!voiceAnswerFeedback.correct && !voiceAnswerFeedback.error"
-              @click="voiceAnswerFeedback = null; voiceInterimTranscript = ''"
+              @click="voiceAnswerFeedback = null; voiceInterimTranscript = ''; textAnswerInput = ''"
               class="btn-secondary"
             >
-              Try Again
+              {{ t('lesson.voiceAnswer.tryAgain') }}
             </button>
             <button
               v-if="voiceAnswerFeedback.correct"
@@ -436,6 +482,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useExercises } from '@/composables/useExercises';
 import { useSelectionGame } from '@/composables/useSelectionGame';
 import { useLanguage } from '@/composables/useLanguage';
@@ -476,6 +523,7 @@ const props = defineProps({
 const emit = defineEmits(['submit', 'next-exercise']);
 
 const { getLocalizedText } = useLanguage();
+const { t } = useI18n();
 
 // Voice Assistant for voice answer exercises
 const {
@@ -486,12 +534,15 @@ const {
   voiceAnswerResult,
   isSupported: isVoiceSupported,
   startVoiceAnswerMode,
-  stopVoiceAnswerMode
+  stopVoiceAnswerMode,
+  verifyVoiceAnswer
 } = useVoiceAssistant();
 
 // Voice answer state
 const voiceInterimTranscript = ref('');
 const voiceAnswerFeedback = ref(null);
+const useTextInputMode = ref(false);
+const textAnswerInput = ref('');
 
 const {
   userAnswer,
@@ -627,6 +678,28 @@ const handleVoiceAnswerClick = () => {
     startVoiceAnswerMode(voiceCorrectAnswer.value, {
       language: props.currentExercise?.language || 'en'
     });
+  }
+};
+
+// Handle text answer submission (for "I can't talk" mode)
+const submitTextAnswer = async () => {
+  const answer = textAnswerInput.value.trim();
+  if (!answer) return;
+
+  // Set the expected answer for verification
+  window.__voiceAnswerExpected = {
+    correctAnswer: voiceCorrectAnswer.value,
+    similarityThreshold: 0.85,
+    language: props.currentExercise?.language || 'en'
+  };
+
+  // Verify the text answer using the same verification logic
+  const result = await verifyVoiceAnswer(answer);
+  voiceAnswerFeedback.value = result;
+  
+  if (result.correct) {
+    answerWasCorrect.value = true;
+    showCorrectAnswer.value = true;
   }
 };
 
@@ -771,7 +844,15 @@ const selectionGameData = computed(() => isSelectionGame.value ? (exerciseConten
 
 const { score: selectionScore, currentQuestion: selectionCurrentQuestion, questions: selectionQuestions, selectedItemId: selectionSelectedItemId, feedback: selectionFeedback, handleSelection: selectionHandleSelection } = useSelectionGame(selectionGameData);
 
-watch(() => props.currentExercise, () => { resetExerciseState(); userAnswer.value = null; }, { immediate: true });
+watch(() => props.currentExercise, () => { 
+  resetExerciseState(); 
+  userAnswer.value = null; 
+  // Reset voice answer state
+  useTextInputMode.value = false;
+  textAnswerInput.value = '';
+  voiceAnswerFeedback.value = null;
+  voiceInterimTranscript.value = '';
+}, { immediate: true });
 </script>
 
 <style scoped>

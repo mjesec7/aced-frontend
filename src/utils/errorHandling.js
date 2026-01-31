@@ -4,7 +4,6 @@
 // 🚨 SETUP GLOBAL ERROR HANDLING
 // ============================================================================
 export function setupGlobalErrorHandling(eventBus) {
-    console.log('✅ Setting up global error handling');
   
     // ============================================================================
     // 🔴 GLOBAL JAVASCRIPT ERROR HANDLER
@@ -27,7 +26,6 @@ export function setupGlobalErrorHandling(eventBus) {
               timestamp: Date.now()
             });
   
-            console.log('✅ Recovery attempt completed');
           }).catch(err => {
             console.error('❌ Store import failed:', err);
           });
@@ -64,7 +62,6 @@ export function setupGlobalErrorHandling(eventBus) {
             timestamp: Date.now()
           });
   
-          console.log('✅ Recovery event triggered');
         } catch (recoveryError) {
           console.error('❌ Recovery failed:', recoveryError);
         }
@@ -82,8 +79,6 @@ export function setupGlobalErrorHandling(eventBus) {
     // ============================================================================
     window.addEventListener('storage', (event) => {
       if (event.key === 'userStatus' && event.newValue !== event.oldValue) {
-        console.log('🔄 Cross-tab status change detected');
-  
         const newStatus = event.newValue || 'free';
         const oldStatus = event.oldValue || 'free';
   
@@ -98,8 +93,6 @@ export function setupGlobalErrorHandling(eventBus) {
   
       // Also listen for other subscription-related changes
       if (event.key === 'subscriptionData' && event.newValue !== event.oldValue) {
-        console.log('🔄 Cross-tab subscription change detected');
-  
         try {
           const newSubscription = event.newValue ? JSON.parse(event.newValue) : null;
           const oldSubscription = event.oldValue ? JSON.parse(event.oldValue) : null;
@@ -125,8 +118,6 @@ export function setupGlobalErrorHandling(eventBus) {
   // 🔧 ENHANCED ERROR RECOVERY
   // ============================================================================
   export async function recoverUserStatus() {
-    console.log('🔧 Attempting user status recovery...');
-  
     try {
       const { default: store } = await import('../store');
   
@@ -162,8 +153,6 @@ export function setupGlobalErrorHandling(eventBus) {
       // If no cached data, set default state
       store.commit('user/SET_USER_STATUS', 'free');
       store.commit('user/CLEAR_USER');
-  
-      console.log('✅ User status set to default (free)');
   
       // Trigger status change event
       setTimeout(() => {

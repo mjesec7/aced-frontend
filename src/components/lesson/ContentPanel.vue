@@ -370,17 +370,6 @@ export default {
      */
     getStepContent(step) {
       if (!step) return 'Step not found';
-      
-      // Debug logging (remove in production)
-      console.log('🔍 getStepContent:', {
-        type: step.type,
-        hasContent: !!step.content,
-        hasContentText: !!step.content?.text,
-        contentTextType: typeof step.content?.text,
-        hasData: !!step.data,
-        hasData: !!step.data,
-        lang: this.currentLanguage
-      });
 
       // Game steps - special handling
       if (step.gameType) {
@@ -394,7 +383,6 @@ export default {
       // Priority 1: step.content.text (Water Cycle multilingual format)
       if (step.content?.text !== undefined) {
         content = step.content.text;
-        console.log('📝 Found content.text:', typeof content);
       }
       // Priority 2: step.data.content
       else if (step.data?.content !== undefined) {
@@ -428,7 +416,6 @@ export default {
       // Apply localization if content exists
       if (content !== null && content !== undefined) {
         const localizedContent = this.getLocalizedText(content);
-        console.log('✅ Localized content length:', localizedContent?.length);
         
         if (localizedContent && localizedContent.trim()) {
           return localizedContent;

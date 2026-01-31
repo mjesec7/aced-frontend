@@ -52,8 +52,6 @@ const resolveUserId = (userId) => {
  * CRITICAL: This is the main function to fetch user data from server
  */
 export const getUserInfo = async (userId) => {
-  console.log('📡 [user.js] getUserInfo called for:', userId);
-
   try {
     const token = await getAuthToken();
     if (!token) {
@@ -69,10 +67,7 @@ export const getUserInfo = async (userId) => {
 
     const headers = { Authorization: `Bearer ${token}` };
 
-    console.log('📡 [user.js] Fetching user from server:', resolvedUserId);
     const { data } = await api.get(`users/${resolvedUserId}`, { headers });
-
-    console.log('✅ [user.js] Server response:', data);
 
     // Handle different response formats
     const userData = data.user || data.data || data;
@@ -97,8 +92,6 @@ export const getUserInfo = async (userId) => {
  * This is the primary function for subscription status
  */
 export const getUserStatus = async (userId) => {
-  console.log('📡 [user.js] getUserStatus called for:', userId);
-
   try {
     const token = await getAuthToken();
     if (!token) {
@@ -133,7 +126,6 @@ export const getUserStatus = async (userId) => {
 
     for (const endpoint of endpoints) {
       try {
-        console.log(`📡 [user.js] Trying endpoint: ${endpoint}`);
         const { data } = await api.get(endpoint, { headers });
 
         if (data && data.success !== false) {
@@ -144,8 +136,6 @@ export const getUserStatus = async (userId) => {
             userData.plan ||
             data.status ||
             'free';
-
-          console.log('✅ [user.js] Got status from server:', status);
 
           return {
             success: true,
@@ -190,8 +180,6 @@ export const getUserStatus = async (userId) => {
  * This bypasses all caching and local storage
  */
 export const fetchSubscriptionFromServer = async (userId) => {
-  console.log('🔄 [user.js] fetchSubscriptionFromServer called for:', userId);
-
   try {
     const token = await getAuthToken();
     if (!token) {
@@ -221,8 +209,6 @@ export const fetchSubscriptionFromServer = async (userId) => {
       fetchTime: new Date().toISOString()
     };
 
-    console.log('✅ [user.js] Subscription data from server:', subscriptionData);
-
     return {
       success: true,
       subscription: subscriptionData,
@@ -243,8 +229,6 @@ export const fetchSubscriptionFromServer = async (userId) => {
  * Save user with enhanced error handling
  */
 export const saveUser = async (userData) => {
-  console.log('📡 [user.js] saveUser called');
-
   try {
     const token = await getAuthToken();
     if (!token) throw new Error('No authentication token');

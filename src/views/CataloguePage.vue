@@ -614,9 +614,7 @@ export default {
         
         try {
           if (this.isSchoolMode) {
-            console.log('📚 [CataloguePage] Fetching topics grouped (School Mode)...');
             const r = await getTopicsGrouped();
-            console.log('📚 [CataloguePage] getTopicsGrouped result:', r);
             if (r.success && r.data) { 
               this.rawData = r.data;
               this.rawMode = 'school';
@@ -629,9 +627,7 @@ export default {
               console.error('❌ [CataloguePage] Failed to fetch grouped topics:', r.error);
             }
           } else {
-            console.log('🎓 [CataloguePage] Fetching topics as courses (Study Centre Mode)...');
             const r = await getTopicsAsCourses();
-            console.log('🎓 [CataloguePage] getTopicsAsCourses result:', r);
             if (r.success && r.courses) { 
               this.rawData = r.courses;
               this.rawMode = 'study-centre';

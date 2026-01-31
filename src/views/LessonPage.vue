@@ -796,9 +796,6 @@ const topicId = computed(() => {
   // 3. Extract string using helper
   const extractedId = extractId(rawId);
   
-  // Debug: log the extracted topicId for rating
-  console.log('📊 [Rating] topicId computed:', { raw: rawId, extracted: extractedId, lessonId: lessonId.value });
-  
   return extractedId || '';
 })
 
@@ -831,24 +828,6 @@ async function loadLesson() {
       // Extract localized title and description using helper functions
       const localizedTitle = extractLessonTitle(lessonData)
       const localizedDescription = extractLessonDescription(lessonData)
-
-      // DEBUG: Log lesson data loading
-      console.log('📥 [LessonPage] loadLesson raw result:', {
-        lesson: lessonData,
-        topic: result.topic,
-        stats: result.stats,
-        originalTopicId: result.originalTopicId
-      });
-
-      console.log('📥 [LessonPage] loadLesson setting lesson.value:', {
-        id: lessonData._id || lessonData.id,
-        title: localizedTitle,
-        topicId: lessonData.topicId,
-        _originalTopicId: lessonData._originalTopicId,
-        resultOriginalTopicId: result.originalTopicId,
-        resultTopicId: result.topic?._id || result.topic?.id,
-        isRef: isRef(lesson) // Check if it's a ref
-      });
 
       // Map backend fields to frontend display with localization
       // Use originalTopicId from the backend as the source of truth for topicId
@@ -1048,12 +1027,9 @@ function getMedalIcon() {
 
 function shareResult() {
   // Share functionality
-  console.log('Sharing result...')
 }
 
 async function handleRatingSubmit(ratingData) {
-  console.log('🌟 [LessonPage] handleRatingSubmit called with:', ratingData);
-  
   // Ensure we have a clean string ID
   let courseId = extractId(ratingData.courseId);
 
@@ -1064,36 +1040,25 @@ async function handleRatingSubmit(ratingData) {
     // 1. Try immediate properties from lesson
     const l = lesson.value;
     
-    // DEBUG: Log the entire lesson object to see what we have
-    console.log('🔍 [LessonPage] Inspecting lesson object:', JSON.parse(JSON.stringify(l)));
-    
     const rawId = l?.topicId || l?.topic_id || l?.courseId || l?.topic?._id || l?.topic?.id || l?.topic;
     courseId = extractId(rawId);
-    console.log('🔍 [LessonPage] Extracted from rawId:', { rawId, courseId });
 
     // 1.5 Explicit check for MongoDB Extended JSON format on topicId
     if (!courseId && l?.topicId) {
       if (l.topicId.$oid) {
         courseId = l.topicId.$oid;
-        console.log('✅ [LessonPage] Found topicId.$oid:', courseId);
-      } else if (typeof l.topicId === 'object') {
-        // Try to stringify it if it's an object but not standard format
-        console.log('⚠️ [LessonPage] topicId is object but no $oid:', l.topicId);
-        // If it looks like an ID (24 hex chars), use it? No, risky.
       }
     }
 
     // 2. Try route params
     if (!courseId) {
       courseId = route.params.topicId || route.params.topic_id || route.params.courseId;
-      console.log('🔍 [LessonPage] Checked route params:', courseId);
     }
 
     // 3. If still missing, try to find topic by name
     if (!courseId && (l?.topic || l?.topicName)) {
       const topicName = typeof l.topic === 'string' ? l.topic : (l.topic?.name || l.topicName);
       if (topicName) {
-        console.log('🔍 [LessonPage] Searching for topic by name:', topicName);
         try {
           const topicsResult = await getTopics();
           if (topicsResult.success && Array.isArray(topicsResult.data)) {
@@ -1104,7 +1069,6 @@ async function handleRatingSubmit(ratingData) {
             );
             if (matchingTopic) {
               courseId = extractId(matchingTopic._id || matchingTopic.id);
-              console.log('✅ [LessonPage] Found topic by name:', courseId);
             }
           }
         } catch (err) {
@@ -1120,12 +1084,6 @@ async function handleRatingSubmit(ratingData) {
     
     // 5. Fallback: Just try to use the topicId object directly if we have it, 
     // maybe the API wrapper will handle it or we can pass it as topicId
-    if (!courseId && l?.topicId) {
-      console.log('⚠️ [LessonPage] Using raw topicId as fallback:', l.topicId);
-      // We will pass this as 'topicId' to the API wrapper
-    }
-
-    console.log('🔄 [LessonPage] Final recovered courseId:', courseId);
   }
 
   if (!courseId) {
@@ -1167,15 +1125,11 @@ async function handleRatingSubmit(ratingData) {
       rating: ratingData.rating,
       feedback: ratingData.feedback
     };
-    
-    console.log('📤 [LessonPage] Submitting payload:', payload);
 
     const result = await submitLessonRating(payload)
     
-    console.log('📤 [LessonPage] Rating API Result:', result);
-    
     if (result.success) {
-      console.log('Rating submitted successfully')
+      // Rating submitted successfully
     } else {
       console.error('Failed to submit rating:', result.error)
     }
@@ -1719,13 +1673,6 @@ function buildExerciseData() {
     )
   }
 
-  // DEBUG: Log raw exercise data to help debug missing questions
-  console.log('[LessonPage] Exercise Data Extraction:', {
-    stepType,
-    raw: exercise,
-    extracted: exerciseData
-  });
-
   // Helper to get array from multiple possible locations
   const getArray = (...sources) => {
     for (const source of sources) {
@@ -1857,17 +1804,6 @@ function buildAIRequestContext() {
   };
 
   const safeLessonId = getSafeLessonId(lesson.value);
-
-  // DEBUG: Log AI Context building
-  console.log('🚀 [FRONTEND DEBUG] Building context:', {
-    lessonId: safeLessonId,
-    routeParams: route.params,
-    routeId: route.params.id,
-    routeLessonId: route.params.lessonId,
-    rawId: lesson.value?._id,
-    lessonName: lesson.value?.lessonName,
-    stepIndex: currentIndex.value
-  });
 
   return {
     lessonContext: {
@@ -2023,7 +1959,6 @@ async function handleAISendMessage(payload) {
     // This is the "translated" exercise data that AI can actually read
     if (payloadExerciseContext) {
       context.stepContext.exerciseContent = payloadExerciseContext
-      console.log('[LessonPage] Using pre-extracted exercise context:', payloadExerciseContext)
     }
 
     const response = await getLessonAIResponse(
@@ -2086,7 +2021,7 @@ async function clearAIChat() {
 
 // Handler for analysis complete
 function handleAnalysisComplete({ explanation, highlights }) {
-  console.log('[LessonPage] Analysis complete:', { explanation, highlightCount: highlights?.length })
+  // Analysis complete - can be used for UI updates if needed
 }
 
 // Migration

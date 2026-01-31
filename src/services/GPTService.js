@@ -31,9 +31,6 @@ export async function sendMessage(message, currentExercise = null, language = 'e
     // EXTRACT: Convert the raw exercise JSON into readable text for AI
     const exerciseContext = extractExerciseContent(currentExercise, language);
 
-    console.log('[GPTService] sendMessage -> Message:', message);
-    console.log('[GPTService] sendMessage -> Exercise Context:', exerciseContext);
-
     const response = await gptApi.post(
       '/chat',
       {
@@ -309,8 +306,6 @@ export async function getLessonAIResponse(userInput, lessonContext, userProgress
       // Include exercise content for AI analysis
       exerciseContent: stepContext?.exerciseContent || null
     };
-
-    console.log('[GPTService] Sending request with language:', language);
 
     const response = await gptApi.post('/chat/lesson-context', {
       userInput,

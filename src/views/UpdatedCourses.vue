@@ -412,7 +412,7 @@ export default {
                           'free';
         return userStatus;
       } catch (error) {
-return 'free';
+        return 'free';
       }
     },
 
@@ -470,10 +470,10 @@ return 'free';
   },
 
   async mounted() {
-try {
+    try {
       await this.initializeComponent();
     } catch (error) {
-this.error = 'Ошибка инициализации компонента';
+      this.error = 'Ошибка инициализации компонента';
     }
   },
 
@@ -487,18 +487,17 @@ this.error = 'Ошибка инициализации компонента';
     // =====================================
     
     async initializeComponent() {
-try {
+      try {
         // Check if we need to refresh cache
         if (this.shouldRefreshCache || this.courses.length === 0) {
           await this.loadCoursesWithRetry();
-        } else {
-}
+        }
         
         this.setupEventListeners();
         this.validateComponentState();
         
       } catch (error) {
-this.handleInitializationError(error);
+        this.handleInitializationError(error);
       }
     },
 
@@ -509,7 +508,7 @@ this.handleInitializationError(error);
           this.retryCount = 0;
           break;
         } catch (error) {
-if (attempt === this.maxRetries) {
+          if (attempt === this.maxRetries) {
             this.handleLoadError(error);
           } else {
             // Wait before retry with exponential backoff
@@ -522,17 +521,17 @@ if (attempt === this.maxRetries) {
     validateComponentState() {
       // Validate that we have the required data structure
       if (!Array.isArray(this.courses)) {
-this.courses = [];
+        this.courses = [];
       }
 
       if (!Array.isArray(this.availableCategories)) {
-this.availableCategories = [];
+        this.availableCategories = [];
       }
 
       if (!Array.isArray(this.availableLevels)) {
-this.availableLevels = [];
+        this.availableLevels = [];
       }
-},
+    },
 
     handleInitializationError(error) {
       this.error = this.getErrorMessage(error);
@@ -559,22 +558,22 @@ this.availableLevels = [];
       
       try {
         const filters = this.buildFilters();
-// ✅ ENHANCED: Try structured format first, fallback to standard
+        // Try structured format first, fallback to standard
         let response = await getUpdatedCoursesWithFormat(filters, 'structured');
         
         // Validate response structure
         if (!this.validateResponse(response)) {
-response = await getUpdatedCourses(filters);
+          response = await getUpdatedCourses(filters);
         }
         
         if (response && response.success) {
           await this.processCoursesResponse(response);
           this.lastFetchTime = Date.now();
-} else {
+        } else {
           throw new Error(response?.error || 'Failed to fetch courses');
         }
       } catch (error) {
-this.handleLoadError(error);
+        this.handleLoadError(error);
       } finally {
         this.loading = false;
       }
@@ -624,14 +623,14 @@ this.handleLoadError(error);
 
     processCourses(courses) {
       if (!Array.isArray(courses)) {
-return [];
+        return [];
       }
       
       return courses.map((course, index) => {
         try {
           return this.processSingleCourse(course, index);
         } catch (error) {
-return this.createFallbackCourse(course, index);
+          return this.createFallbackCourse(course, index);
         }
       }).filter(course => course !== null);
     },
@@ -746,7 +745,8 @@ return this.createFallbackCourse(course, index);
 
         sessionStorage.setItem('coursesMetadata', JSON.stringify(metadata));
       } catch (error) {
-}
+        // Silent fail
+      }
     },
 
     // =====================================
@@ -899,7 +899,7 @@ return this.createFallbackCourse(course, index);
 
     handleImageError(event, course) {
       // This method is kept for compatibility but won't be needed with CSS gradients
-},
+    },
 
     // =====================================
     // ENHANCED MODAL METHODS
@@ -907,7 +907,7 @@ return this.createFallbackCourse(course, index);
 
     async openModal(course) {
       if (!course || (!course._id && !course.id)) {
-return;
+        return;
       }
 
       this.selectedCourse = null;
@@ -915,18 +915,18 @@ return;
       this.modalLoading = true;
       
       try {
-const courseId = course._id || course.id;
+        const courseId = course._id || course.id;
         
-        // ✅ ENHANCED: Try structured format first with better error handling
+        // Try structured format first with better error handling
         let response = await getCourseStructuredEnhanced(courseId);
         
         if (response && response.success && response.data) {
           this.selectedCourse = this.enhanceCourseForModal(response.data, course);
-} else {
-this.selectedCourse = this.enhanceCourseForModal(course, course);
+        } else {
+          this.selectedCourse = this.enhanceCourseForModal(course, course);
         }
       } catch (error) {
-this.selectedCourse = this.enhanceCourseForModal(course, course);
+        this.selectedCourse = this.enhanceCourseForModal(course, course);
       } finally {
         this.modalLoading = false;
       }
@@ -975,9 +975,9 @@ this.selectedCourse = this.enhanceCourseForModal(course, course);
 
     async startCourse(course) {
       if (!course) {
-return;
+        return;
       }
-// Enhanced premium access check
+      // Enhanced premium access check
       if (course.isPremium && !this.isPremiumUser) {
         const message = this.getPremiumMessage(course);
         this.showToast(message, 'error');
@@ -985,7 +985,7 @@ return;
       }
       
       try {
-        // ✅ ENHANCED: Ensure we have complete course data for better learning experience
+        // Ensure we have complete course data for better learning experience
         let completeCourse = await this.ensureCompleteCourseData(course);
         
         this.selectedCourse = completeCourse;
@@ -996,7 +996,7 @@ return;
         this.trackCourseStart(completeCourse);
         
       } catch (error) {
-this.showToast('Ошибка при запуске курса', 'error');
+        this.showToast('Ошибка при запуске курса', 'error');
       }
     },
 
@@ -1004,7 +1004,7 @@ this.showToast('Ошибка при запуске курса', 'error');
       // If we don't have structured data or curriculum, try to fetch it
       if (!course.structuredData && (!course.curriculum || !course.curriculum.length)) {
         try {
-// Try structured format first
+          // Try structured format first
           let response = await getCourseStructuredEnhanced(course._id || course.id);
           
           if (response && response.success && response.data) {
@@ -1019,7 +1019,7 @@ this.showToast('Ошибка при запуске курса', 'error');
             };
           }
         } catch (error) {
-// Continue with original course data
+          // Continue with original course data
         }
       }
       
@@ -1051,7 +1051,8 @@ this.showToast('Ошибка при запуске курса', 'error');
         // Emit event for potential analytics
         this.$emit('courseStarted', trackingData);
       } catch (error) {
-}
+        // Silent fail for tracking
+      }
     },
 
     // =====================================
@@ -1107,9 +1108,7 @@ this.showToast('Ошибка при запуске курса', 'error');
         this.$notify({ type, message, duration: 4000 });
       } else {
         // Fallback for environments without toast
-        if (type === 'error') {
-} else {
-}
+        // Fallback: no toast available
       }
     },
 
@@ -1327,7 +1326,7 @@ this.showToast('Ошибка при запуске курса', 'error');
     // =====================================
 
     cleanup() {
-// Clear timeouts
+      // Clear timeouts
       if (this.debounceTimeout) {
         clearTimeout(this.debounceTimeout);
         this.debounceTimeout = null;
@@ -1341,7 +1340,7 @@ this.showToast('Ошибка при запуске курса', 'error');
         clearInterval(this.refreshInterval);
         this.refreshInterval = null;
       }
-},
+    },
 
     setupEventListeners() {
       // Enhanced event listeners setup
@@ -1354,7 +1353,8 @@ this.showToast('Ошибка при запуске курса', 'error');
         };
         
         this.handleOffline = () => {
-};
+          // Handle offline state
+        };
 
         window.addEventListener('online', this.handleOnline);
         window.addEventListener('offline', this.handleOffline);
@@ -1398,7 +1398,7 @@ this.showToast('Ошибка при запуске курса', 'error');
 
     handleUserStatusChange(newStatus, oldStatus) {
       if (!newStatus || newStatus === oldStatus) return;
-this.triggerReactivityUpdate();
+      this.triggerReactivityUpdate();
 
       // Show success message for upgrades
       if (newStatus && newStatus !== 'free' && oldStatus === 'free') {

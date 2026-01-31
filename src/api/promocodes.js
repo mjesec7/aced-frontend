@@ -14,7 +14,6 @@ const getAuthToken = async () => {
     }
     return localStorage.getItem('token') || null;
   } catch (error) {
-    console.error('[promocodes.js] Error getting auth token:', error);
     return null;
   }
 };

@@ -491,7 +491,7 @@ export default {
       this.setupEventListeners();
       this.setupPeriodicChecks();
     } catch (error) {
-this.loading = false; 
+      this.loading = false; 
     }
   },
   
@@ -501,7 +501,7 @@ this.loading = false;
       try {
         this.$router.push({ name: 'CataloguePage' });
       } catch (error) {
-this.$router.push('/profile/catalogue');
+        this.$router.push('/profile/catalogue');
       }
     },
 
@@ -523,7 +523,7 @@ this.$router.push('/profile/catalogue');
           await this.loadUserProgressForLessons();
         }
       } catch (error) {
-this.error = this.handleError(error, 'component initialization');
+        this.error = this.handleError(error, 'component initialization');
         this.loading = false;
         this.topic = null;
         this.lessons = [];
@@ -590,7 +590,8 @@ this.error = this.handleError(error, 'component initialization');
         });
 
       } catch (error) {
-} finally {
+        // Silent fail for progress loading
+      } finally {
         this.progressLoading = false;
       }
     },
@@ -762,7 +763,7 @@ this.error = this.handleError(error, 'component initialization');
         }
         
         if (!topicData || !topicData._id && !topicData.id) {
-if (this.isDevelopment) {
+        if (this.isDevelopment) {
             this.debugInfo = {
               message: 'No valid topic data found in response',
               response: topicResult,
@@ -790,7 +791,7 @@ if (this.isDevelopment) {
         }
 
       } catch (err) {
-this.error = this.handleError(err, 'loading topic');
+        this.error = this.handleError(err, 'loading topic');
         this.topic = null;
         this.lessons = [];
         
@@ -851,7 +852,7 @@ this.error = this.handleError(err, 'loading topic');
           .filter(lesson => lesson !== null);
         
       } catch (lessonError) {
-this.lessons = [];
+        this.lessons = [];
         
         if (this.isDevelopment) {
           this.debugInfo = {
@@ -896,9 +897,9 @@ this.lessons = [];
         _raw: this.isDevelopment ? rawData : undefined
       };
 
-      if (!normalized._id && !normalized.id) {
-return null;
-      }
+        if (!normalized._id && !normalized.id) {
+          return null;
+        }
       if (!normalized.name || normalized.name === 'Untitled') {
           normalized.name = `Topic ${normalized._id?.substring(0, 8) || ''}`;
       }
@@ -1210,9 +1211,6 @@ let errorMessage = `An error occurred during ${context}. Please try again.`;
         }
       }
       
-      if (this.isDevelopment) {
-}
-
       return errorMessage;
     },
     
@@ -1275,7 +1273,7 @@ this.error = 'Error: invalid lesson or missing ID.';
         this.$router.push({ name: 'LessonPage', params: { id: lessonId } });
         
       } catch (error) {
-this.error = 'Error starting lesson';
+        this.error = 'Error starting lesson';
       }
     },
     
@@ -1307,11 +1305,11 @@ this.error = 'Error starting first lesson';
             from: 'topic',
             topicId: this.topic?._id || this.topic?.id
           }
-        }).catch(err => {
-window.location.href = '/payment/start';
+        }).catch(() => {
+          window.location.href = '/payment/start';
         });
       } catch (error) {
-window.location.href = '/payment/start';
+        window.location.href = '/payment/start';
       }
     },
     
@@ -1413,8 +1411,7 @@ window.location.href = '/payment/start';
   
   // Error boundary for template errors
   errorCaptured(err, vm, info) {
-
-if (this.isDevelopment) {
+    if (this.isDevelopment) {
       this.debugInfo = {
         ...this.debugInfo,
         templateError: err.message,

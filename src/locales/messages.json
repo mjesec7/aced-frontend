@@ -424,7 +424,11 @@
         "notSupported": "Voice recognition is not supported in your browser. Please use Chrome, Edge, or Safari.",
         "error": "An error occurred. Please try again.",
         "speakClearly": "Speak clearly into your microphone",
-        "almostThere": "Almost there! Try saying it more clearly."
+        "almostThere": "Almost there! Try saying it more clearly.",
+        "cantTalk": "I can't talk",
+        "typeYourAnswer": "Type your answer here...",
+        "switchToVoice": "Use voice instead",
+        "submitAnswer": "Submit Answer"
       }
     },
     "games": {
@@ -1473,7 +1477,11 @@
         "notSupported": "Голосовое распознавание не поддерживается в вашем браузере. Используйте Chrome, Edge или Safari.",
         "error": "Произошла ошибка. Попробуйте еще раз.",
         "speakClearly": "Говорите четко в микрофон",
-        "almostThere": "Почти! Попробуйте сказать четче."
+        "almostThere": "Почти! Попробуйте сказать четче.",
+        "cantTalk": "Не могу говорить",
+        "typeYourAnswer": "Введите ваш ответ здесь...",
+        "switchToVoice": "Использовать голос",
+        "submitAnswer": "Отправить ответ"
       }
     },
     "games": {
@@ -2539,7 +2547,11 @@
         "notSupported": "Ovozni aniqlash brauzeringizda qo'llab-quvvatlanmaydi. Chrome, Edge yoki Safari-dan foydalaning.",
         "error": "Xatolik yuz berdi. Qaytadan urinib ko'ring.",
         "speakClearly": "Mikrofonga aniq gapiring",
-        "almostThere": "Deyarli! Aniqroq aytib ko'ring."
+        "almostThere": "Deyarli! Aniqroq aytib ko'ring.",
+        "cantTalk": "Gapira olmayman",
+        "typeYourAnswer": "Javobingizni bu yerga yozing...",
+        "switchToVoice": "Ovozdan foydalanish",
+        "submitAnswer": "Javobni yuborish"
       }
     },
     "games": {

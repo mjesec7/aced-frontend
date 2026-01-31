@@ -388,35 +388,27 @@ export function useLessonOrchestrator() {
           }
         }
 
-        // DEBUG LOGGING
-        console.log(`Step ${index}: type=${processedStep.type}`, processedStep);
-
         // Filter out geography/map steps as requested
         let isMapStep = processedStep.type === 'map' || processedStep.type === 'geography'
 
         // Check title/prompt for "Geography" or "Map" as fallback
         if (!isMapStep && (processedStep.title?.includes('Geography') || processedStep.prompt?.includes('Geography'))) {
           isMapStep = true;
-          console.log('Filtered map by title/prompt');
         }
 
         if (!isMapStep && processedStep.type === 'exercise') {
           if (Array.isArray(processedStep.data)) {
             isMapStep = processedStep.data.some(ex => {
               const isMap = ex.type === 'map' || ex.type === 'geography' || ex.content?.type === 'map';
-              if (isMap) console.log('Found map in array:', ex);
               return isMap;
             })
           } else if (processedStep.data && typeof processedStep.data === 'object') {
             isMapStep = processedStep.data.type === 'map' || processedStep.data.type === 'geography' || processedStep.data.content?.type === 'map'
-            if (isMapStep) console.log('Found map in object:', processedStep.data);
           }
         }
 
         if (!isMapStep) {
           steps.value.push(processedStep)
-        } else {
-          console.log('Filtered out map step:', processedStep);
         }
 
       } catch (stepError) {

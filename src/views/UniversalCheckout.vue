@@ -423,7 +423,7 @@ export default {
       try {
         const result = await validatePromocode(this.promoCodeInput.toUpperCase());
         if (result?.valid) { this.promoData = result.data; this.promoMessage = `Valid! ${(result.data?.grantsPlan || 'Pro').toUpperCase()} Plan`; }
-      } catch (err) { console.error('Error validating promo on load:', err); }
+      } catch (err) { /* Silent fail for promo validation */ }
     },
     async applyPromoCode() {
       if (!this.promoCodeInput || this.promoApplying) return;
@@ -491,7 +491,7 @@ export default {
         await this.$store.dispatch('user/loadUserStatus'); this.$store.commit('user/FORCE_UPDATE');
         window.dispatchEvent(new CustomEvent('userStatusChanged', { detail: { source: 'payment' } }));
         setTimeout(() => { this.$router.push('/settings'); }, 3000);
-      } catch (error) { console.error('Failed to update status:', error); }
+      } catch (error) { /* Silent fail for status update */ }
     },
     formatAmount(amount) {
       if (!amount) return 'FREE';

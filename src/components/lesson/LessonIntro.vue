@@ -129,11 +129,9 @@ export default {
     return { language, t };
   },
   mounted() {
-    console.log('🟢 [LessonIntro v2] MOUNTED - lesson:', this.lesson?.lessonName, 'type:', typeof this.lesson?.lessonName);
   },
   methods: {
     getLocalized(field) {
-      console.log('🟢 [LessonIntro v2] getLocalized input:', field, 'type:', typeof field);
       // Handle null/undefined
       if (field === null || field === undefined) return '';
 
@@ -143,9 +141,7 @@ export default {
       // If it's an object with language keys (multilingual format)
       if (typeof field === 'object') {
         const lang = this.language || localStorage.getItem('lang') || 'ru';
-        console.log('🟢 [LessonIntro v2] Object detected, lang:', lang, 'keys:', Object.keys(field));
         const value = field[lang] || field['en'] || field['ru'] || field['uz'];
-        console.log('🟢 [LessonIntro v2] Selected value:', value);
         if (value && typeof value === 'string') {
           return value.replace(/^(en|ru|uz):/i, '').trim();
         }

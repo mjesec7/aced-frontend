@@ -175,7 +175,7 @@ export class PerformanceMonitor {
    * Log metrics summary to console
    */
   static logSummary() {
-    console.table(this.getMetricsSummary())
+    // Metrics summary available via getMetricsSummary()
   }
 }
 
