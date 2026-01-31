@@ -69,9 +69,17 @@ export default createStore({
         commit('setToken', token);
         commit('setAuthInitialized', true);
 
-        localStorage.setItem('user', JSON.stringify(savedUser));
+        // 🔒 SECURITY: Only store sanitized (non-sensitive) user data
+        const safeUser = {
+          uid: savedUser.firebaseId,
+          displayName: savedUser.displayName || savedUser.name || '',
+          photoURL: savedUser.photoURL || null,
+          subscriptionPlan: savedUser.subscriptionPlan || 'free'
+          // Don't store: email, tokens, internal IDs
+        };
+        localStorage.setItem('user', JSON.stringify(safeUser));
         localStorage.setItem('firebaseUserId', savedUser.firebaseId);
-        localStorage.setItem('token', token);
+        // Note: Token is managed by Firebase SDK, don't store in localStorage
 
       } catch (err) {
 }

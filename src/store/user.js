@@ -103,6 +103,61 @@ const getUserId = (state) => {
     null;
 };
 
+// =============================================
+// 🔒 SECURITY: Sanitize user data for localStorage
+// =============================================
+
+/**
+ * Sanitize user object before storing in localStorage.
+ * Only store non-sensitive fields to prevent data leaks via XSS.
+ * @param {Object} user - Full user object
+ * @returns {Object} Sanitized user object safe for localStorage
+ */
+const sanitizeUserForStorage = (user) => {
+  if (!user) return null;
+  
+  // Only store essential, non-sensitive fields
+  return {
+    uid: user.firebaseId || user.uid,
+    displayName: user.displayName || user.name || '',
+    photoURL: user.photoURL || null,
+    // Subscription info (non-sensitive)
+    subscriptionPlan: user.subscriptionPlan || 'free',
+    // Don't store: email, _id, internal IDs, sensitive fields
+  };
+};
+
+/**
+ * Clear all sensitive data from localStorage on logout.
+ * This ensures no personal data persists after logout.
+ */
+const clearSensitiveStorage = () => {
+  const keysToRemove = [
+    'currentUser',
+    'user',
+    'token',
+    'authToken',
+    'userId',
+    'firebaseUserId',
+    'userStatus',
+    'userPlan',
+    'subscriptionPlan',
+    'plan',
+    'subscriptionData',
+    'subscriptionExpiry',
+    'lastServerSync',
+    'appliedPromocodes'
+  ];
+  
+  keysToRemove.forEach(key => {
+    try {
+      localStorage.removeItem(key);
+    } catch (e) {
+      // Silent fail for localStorage errors
+    }
+  });
+};
+
 // Circuit breaker for token refresh
 let storeTokenCache = {
   token: null,
@@ -258,9 +313,15 @@ const mutations = {
 
     if (user) {
       try {
-        localStorage.setItem('currentUser', JSON.stringify(user));
-        localStorage.setItem('userId', user.firebaseId || user.uid || user._id);
-        localStorage.setItem('firebaseUserId', user.firebaseId || user.uid);
+        // 🔒 SECURITY: Only store sanitized (non-sensitive) user data
+        const safeUser = sanitizeUserForStorage(user);
+        localStorage.setItem('currentUser', JSON.stringify(safeUser));
+        // Store only the ID, not other sensitive identifiers
+        const safeId = user.firebaseId || user.uid;
+        if (safeId) {
+          localStorage.setItem('userId', safeId);
+          localStorage.setItem('firebaseUserId', safeId);
+        }
       } catch (e) {
         console.warn('[store/user] Failed to save user to localStorage:', e);
       }
@@ -293,14 +354,8 @@ const mutations = {
     state.system.lastUpdate = timestamp;
     state.system.forceUpdateCounter++;
 
-    // Clear localStorage
-    const keysToRemove = [
-      'currentUser', 'userStatus', 'subscriptionData', 'subscriptionPlan',
-      'userPlan', 'plan', 'subscriptionExpiry', 'userId', 'firebaseUserId'
-    ];
-    keysToRemove.forEach(key => {
-      try { localStorage.removeItem(key); } catch (e) { }
-    });
+    // 🔒 SECURITY: Clear ALL sensitive data from localStorage
+    clearSensitiveStorage();
 
     triggerGlobalEvent('userCleared', { timestamp });
   },

@@ -772,7 +772,17 @@
       "cancel": "Cancel",
       "save": "Save",
       "update": "Update",
-      "toggleNavigation": "Toggle navigation"
+      "toggleNavigation": "Toggle navigation",
+      "subscriptionStatus": "Subscription Status",
+      "subscriptionActive": "Your subscription is active",
+      "expiringSoon": "Your subscription is expiring soon",
+      "activatedOn": "Activated On",
+      "expiresOn": "Expires On",
+      "canRenewAfter": "Can Renew",
+      "availableNow": "Available Now",
+      "subscriptionExpiringSoon": "Your subscription is expiring soon!",
+      "renewToKeepAccess": "Renew within {days} days to keep uninterrupted access to all features.",
+      "renewSubscription": "Renew Subscription"
     },
     "analytics": {
       "pageTitle": "Learning Analytics",
@@ -1824,7 +1834,17 @@
       "deleteForever": "Удалить навсегда",
       "cancel": "Отмена",
       "save": "Сохранить",
-      "update": "Обновить"
+      "update": "Обновить",
+      "subscriptionStatus": "Статус подписки",
+      "subscriptionActive": "Ваша подписка активна",
+      "expiringSoon": "Ваша подписка скоро истекает",
+      "activatedOn": "Активирована",
+      "expiresOn": "Истекает",
+      "canRenewAfter": "Продление",
+      "availableNow": "Доступно сейчас",
+      "subscriptionExpiringSoon": "Ваша подписка скоро истекает!",
+      "renewToKeepAccess": "Продлите в течение {days} дней, чтобы сохранить доступ ко всем функциям.",
+      "renewSubscription": "Продлить подписку"
     },
     "analytics": {
       "pageTitle": "Аналитика обучения",
@@ -2894,7 +2914,17 @@
       "deleteForever": "Butunlay o'chirish",
       "cancel": "Bekor qilish",
       "save": "Saqlash",
-      "update": "Yangilash"
+      "update": "Yangilash",
+      "subscriptionStatus": "Obuna holati",
+      "subscriptionActive": "Obunangiz faol",
+      "expiringSoon": "Obunangiz tez orada tugaydi",
+      "activatedOn": "Faollashtirilgan",
+      "expiresOn": "Tugash sanasi",
+      "canRenewAfter": "Yangilash",
+      "availableNow": "Hozir mavjud",
+      "subscriptionExpiringSoon": "Obunangiz tez orada tugaydi!",
+      "renewToKeepAccess": "Barcha funksiyalarga kirishni saqlab qolish uchun {days} kun ichida yangilang.",
+      "renewSubscription": "Obunani yangilash"
     },
     "analytics": {
       "pageTitle": "O'quv tahlili",

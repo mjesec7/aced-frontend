@@ -90,6 +90,72 @@
         </div>
       </div>
 
+      <!-- SUBSCRIPTION STATUS CARD (for active subscriptions) -->
+      <div v-if="currentPlan !== 'free' && subscriptionExpiryInfo" class="bg-white rounded-2xl shadow-sm overflow-hidden mb-6">
+        <div class="flex items-center gap-3 p-5 border-b border-slate-100" :class="subscriptionExpiryInfo.isExpiring ? 'bg-amber-50' : 'bg-emerald-50'">
+          <div class="w-10 h-10 flex items-center justify-center rounded-xl text-white flex-shrink-0" :class="subscriptionExpiryInfo.isExpiring ? 'bg-gradient-to-br from-amber-400 to-orange-500' : 'bg-gradient-to-br from-emerald-400 to-teal-500'">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+          </div>
+          <div>
+            <h2 class="text-base font-semibold text-slate-900">{{ $t('settings.subscriptionStatus') }}</h2>
+            <p class="text-xs" :class="subscriptionExpiryInfo.isExpiring ? 'text-amber-700' : 'text-emerald-700'">
+              {{ subscriptionExpiryInfo.isExpiring ? $t('settings.expiringSoon') : $t('settings.subscriptionActive') }}
+            </p>
+          </div>
+        </div>
+        
+        <div class="p-5">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <!-- Subscription Start Date -->
+            <div class="p-4 bg-slate-50 rounded-xl">
+              <p class="text-xs text-slate-500 uppercase tracking-wide font-medium mb-1">{{ $t('settings.activatedOn') }}</p>
+              <p class="text-sm font-semibold text-slate-900">{{ subscriptionActivatedDate }}</p>
+            </div>
+            
+            <!-- Subscription Expiry Date -->
+            <div class="p-4 rounded-xl" :class="subscriptionExpiryInfo.isExpiring ? 'bg-amber-50' : 'bg-slate-50'">
+              <p class="text-xs uppercase tracking-wide font-medium mb-1" :class="subscriptionExpiryInfo.isExpiring ? 'text-amber-600' : 'text-slate-500'">{{ $t('settings.expiresOn') }}</p>
+              <p class="text-sm font-semibold" :class="subscriptionExpiryInfo.isExpiring ? 'text-amber-700' : 'text-slate-900'">{{ subscriptionExpiryInfo.formattedDate }}</p>
+            </div>
+            
+            <!-- Renewal Info -->
+            <div class="p-4 bg-slate-50 rounded-xl">
+              <p class="text-xs text-slate-500 uppercase tracking-wide font-medium mb-1">{{ $t('settings.canRenewAfter') }}</p>
+              <p class="text-sm font-semibold text-slate-900">{{ renewalAvailableDate }}</p>
+            </div>
+          </div>
+          
+          <!-- Expiring Soon Warning -->
+          <div v-if="subscriptionExpiryInfo.isExpiring" class="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-amber-500 flex-shrink-0 mt-0.5">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            <div>
+              <p class="text-sm font-semibold text-amber-800">{{ $t('settings.subscriptionExpiringSoon') }}</p>
+              <p class="text-xs text-amber-700 mt-1">{{ $t('settings.renewToKeepAccess', { days: subscriptionExpiryInfo.daysRemaining }) }}</p>
+            </div>
+          </div>
+          
+          <!-- Renew Button (shows when expiring or can renew) -->
+          <div v-if="subscriptionExpiryInfo.isExpiring || canRenew" class="mt-4 flex justify-end">
+            <button 
+              @click="goToUpgrade(1)" 
+              class="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold rounded-xl transition-all"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"/>
+              </svg>
+              {{ $t('settings.renewSubscription') }}
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- SUBSCRIPTION TARIFFS -->
       <div class="bg-white rounded-2xl shadow-sm overflow-hidden mb-6">
         <div class="flex items-center gap-3 p-5 border-b border-slate-100">
@@ -492,8 +558,33 @@ export default {
         date: expiry,
         formattedDate: expiry.toLocaleDateString(),
         daysRemaining: Math.max(0, daysRemaining),
-        isExpiring: daysRemaining <= 3
+        isExpiring: daysRemaining <= 7  // Show warning 7 days before expiry
       };
+    });
+
+    // Formatted activation date
+    const subscriptionActivatedDate = computed(() => {
+      if (!serverSubscriptionData.value?.activatedAt) return '—';
+      return new Date(serverSubscriptionData.value.activatedAt).toLocaleDateString();
+    });
+
+    // When user can renew (7 days before expiry)
+    const renewalAvailableDate = computed(() => {
+      if (!serverSubscriptionData.value?.expiryDate) return '—';
+      const expiry = new Date(serverSubscriptionData.value.expiryDate);
+      const renewalDate = new Date(expiry.getTime() - (7 * 24 * 60 * 60 * 1000));
+      const now = new Date();
+      if (now >= renewalDate) return t('settings.availableNow');
+      return renewalDate.toLocaleDateString();
+    });
+
+    // Can user renew? (within 7 days of expiry or already expired)
+    const canRenew = computed(() => {
+      if (!serverSubscriptionData.value?.expiryDate) return false;
+      const expiry = new Date(serverSubscriptionData.value.expiryDate);
+      const now = new Date();
+      const daysUntilExpiry = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
+      return daysUntilExpiry <= 7;
     });
 
     const currentUsageMessages = computed(() => store.getters['user/currentUsage']?.messages || 0);
@@ -623,7 +714,8 @@ export default {
     return {
       loading, user, tempUser, isEditingName, oldPassword, newPassword, confirmPassword,
       promocode, applyingPromo, promoError, promoSuccess, showDeleteModal,
-      currentPlan, currentPlanLabel, subscriptionExpiryInfo,
+      currentPlan, currentPlanLabel, subscriptionExpiryInfo, subscriptionActivatedDate,
+      renewalAvailableDate, canRenew,
       currentUsageMessages, currentUsageImages, usageLimitsMessages, usageLimitsImages, isGoogleUser,
       refreshFromServer, loadInitialData, startEditingName, cancelEditingName, saveNameChanges,
       saveChanges, sendPasswordReset, goToUpgrade, applyPromocode, goToProfile, handleLogout,
