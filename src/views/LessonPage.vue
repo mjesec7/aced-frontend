@@ -856,11 +856,6 @@ async function loadLesson() {
       if (steps.value.length > 0) {
         preAnalyzeSteps(steps.value, language.value)
       }
-      
-      // Auto-start the lesson immediately after loading
-      nextTick(() => {
-        startLesson()
-      })
     } else {
       throw new Error(result.error || 'Failed to load lesson data')
     }
@@ -923,17 +918,16 @@ function handleSpeakingEnd() {
 
 function startLesson() {
   started.value = true
+  
+  // Always start speaking on first step when lesson begins (unless muted)
   if (steps.value[currentIndex.value] && !isVoiceMuted.value) {
     const step = steps.value[currentIndex.value]
-    const stepType = step?.type?.toLowerCase()
-
-    // Only auto-analyze on content steps
-    const contentStepTypes = ['explanation', 'reading', 'vocabulary', 'example']
-    const isContentStep = contentStepTypes.includes(stepType)
-
-    if (isContentStep) {
-      analyzeAndSpeak(step, true, null) // isFirstStep = true
-    }
+    
+    // Use nextTick to ensure DOM is ready, then start speaking
+    nextTick(() => {
+      console.log('[LessonPage] Starting voice for first step:', step?.type)
+      analyzeAndSpeak(step, true, null) // isFirstStep = true for greeting
+    })
   }
 }
 
