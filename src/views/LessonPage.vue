@@ -856,6 +856,11 @@ async function loadLesson() {
       if (steps.value.length > 0) {
         preAnalyzeSteps(steps.value, language.value)
       }
+      
+      // Auto-start the lesson immediately after loading
+      nextTick(() => {
+        startLesson()
+      })
     } else {
       throw new Error(result.error || 'Failed to load lesson data')
     }
@@ -2121,11 +2126,6 @@ onMounted(() => {
   })
 
   loadLesson()
-  
-  // Check if we should auto-start (e.g. from a direct link or refresh)
-  if (route.query.start === 'true') {
-    startLesson()
-  }
 })
 
 onUnmounted(() => {
