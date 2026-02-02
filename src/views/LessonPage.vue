@@ -2100,6 +2100,26 @@ onMounted(() => {
     })
   })
 
+  // Auto-progress to next step when voice finishes speaking (for content steps only)
+  eventBus.on('voice-speech-ended', () => {
+    if (!started.value || isVoiceMuted.value) return
+    
+    const step = steps.value[currentIndex.value]
+    const stepType = step?.type?.toLowerCase()
+    
+    // Only auto-progress on content steps (explanation, reading, etc.)
+    // NOT on interactive steps (exercise, quiz, game) - user needs to complete them
+    const contentStepTypes = ['explanation', 'reading', 'example', 'introduction', 'summary']
+    const isContentStep = contentStepTypes.includes(stepType)
+    
+    if (isContentStep && currentIndex.value < steps.value.length - 1) {
+      // Small delay before moving to next step for smoother UX
+      setTimeout(() => {
+        goNext()
+      }, 1500)
+    }
+  })
+
   loadLesson()
   
   // Check if we should auto-start (e.g. from a direct link or refresh)
@@ -2112,6 +2132,7 @@ onUnmounted(() => {
   eventBus.off('voice-transcript')
   eventBus.off('ai-voice-input')
   eventBus.off('ai-voice-response')
+  eventBus.off('voice-speech-ended')
 })
 </script>
 

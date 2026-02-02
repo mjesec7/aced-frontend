@@ -430,6 +430,8 @@ export function useVoiceAssistant() {
                     URL.revokeObjectURL(audioUrl);
                     currentAudioUrl.value = null;
                 }
+                // Emit event for auto-progress to next step
+                eventBus.emit('voice-speech-ended');
             };
 
             currentAudio.value.onerror = (error) => {
@@ -498,6 +500,8 @@ export function useVoiceAssistant() {
         utterance.onend = () => {
             isSpeaking.value = false;
             isSpeechPending.value = false;
+            // Emit event for auto-progress to next step
+            eventBus.emit('voice-speech-ended');
         };
 
         utterance.onerror = (event) => {
