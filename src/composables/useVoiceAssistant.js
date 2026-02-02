@@ -785,20 +785,28 @@ export function useVoiceAssistant() {
 
     /**
      * Pre-analyze steps in background for faster response
+     * Throttled to avoid hitting rate limits
      */
     const preAnalyzeSteps = async (steps, language) => {
         if (!steps || !Array.isArray(steps)) return;
 
-        // Analyze in background, don't await the whole thing
-        for (let i = 0; i < steps.length; i++) {
-            const step = steps[i];
+        // Only pre-analyze the next 3 steps to avoid flooding the server
+        const stepsToAnalyze = steps.slice(0, 3);
+        
+        for (let i = 0; i < stepsToAnalyze.length; i++) {
+            const step = stepsToAnalyze[i];
             const stepId = step.id || step._id;
+            
+            // Build cache key first to check if already cached
+            const exerciseContext = getExerciseContextFromStep(step, language);
+            const cacheKey = exerciseContext
+                ? `${stepId}_ex_${exerciseContext.length}_${language}`
+                : `${stepId}_${language}`;
 
-            if (analysisCache.has(stepId)) continue;
+            if (analysisCache.has(cacheKey)) continue;
 
             // Get content including exercise data
             let content = getStepContent(step);
-            const exerciseContext = getExerciseContextFromStep(step, language);
 
             if (exerciseContext) {
                 content += '\n\n[EXERCISE CONTENT]:\n' + exerciseContext;
@@ -806,7 +814,12 @@ export function useVoiceAssistant() {
 
             if (!content || content.length < 20) continue;
 
-            // Don't await here to allow parallel/background processing
+            // Add delay between requests to avoid rate limiting (2 seconds between each)
+            if (i > 0) {
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+
+            // Fire request but don't block
             voiceApi.analyzeLesson(
                 content,
                 step.type || 'explanation',
@@ -816,9 +829,6 @@ export function useVoiceAssistant() {
             ).then(result => {
                 const data = result?.data || result || {};
                 if (data.explanation) {
-                    const cacheKey = exerciseContext
-                        ? `${stepId}_ex_${exerciseContext.length}_${language}`
-                        : `${stepId}_${language}`;
                     analysisCache.set(cacheKey, data);
                 }
             }).catch(() => {
