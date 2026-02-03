@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import path from 'path';
 
+// Build version: 2026-02-03
 export default defineConfig({
   base: '/', // ✅ Recommended for SPA
   plugins: [vue()],
