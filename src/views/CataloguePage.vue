@@ -662,14 +662,84 @@ export default {
     },
     
     processProgressData(data) {
-      const progressMap = {}, lessonsByTopic = {};
+      const progressMap = {};
+      const lessonsByTopic = {};
+      const lessonToTopic = {}; // Map lessonId -> topicId for reverse lookup
+
+      // Build lesson-to-topic mapping
       this.lessons.forEach(l => {
         const tid = this.extractTopicId(l.topicId);
-        if (tid) { if (!lessonsByTopic[tid]) lessonsByTopic[tid] = new Set(); lessonsByTopic[tid].add(this.extractTopicId(l._id)); }
+        const lessonId = this.extractTopicId(l._id);
+        if (tid && lessonId) {
+          if (!lessonsByTopic[tid]) lessonsByTopic[tid] = new Set();
+          lessonsByTopic[tid].add(lessonId);
+          lessonToTopic[lessonId] = tid;
+        }
       });
-      data.forEach(p => { const tid = this.extractTopicId(p.topicId); if (tid && p.completed) { if (!progressMap[tid]) progressMap[tid] = 0; progressMap[tid]++; } });
+
+      // Track completed lessons to avoid double counting
+      const completedLessons = new Set();
+
+      // Process progress data
+      data.forEach(p => {
+        if (!p.completed) return;
+
+        const lessonId = this.extractTopicId(p.lessonId);
+        let topicId = this.extractTopicId(p.topicId);
+
+        // Skip if already counted this lesson
+        if (lessonId && completedLessons.has(lessonId)) return;
+
+        // Try to find the correct topic for this lesson
+        if (lessonId) {
+          // First, check if we have a direct mapping from lessons
+          if (lessonToTopic[lessonId]) {
+            topicId = lessonToTopic[lessonId];
+          } else if (!lessonsByTopic[topicId]) {
+            // If topicId doesn't exist in our topics, search for the lesson in all topics
+            for (const tid in lessonsByTopic) {
+              if (lessonsByTopic[tid].has(lessonId)) {
+                topicId = tid;
+                break;
+              }
+            }
+          }
+
+          // Also check if the lessonId IS a topicId (for single-lesson topics)
+          if (!topicId && lessonsByTopic[lessonId]) {
+            topicId = lessonId;
+          }
+        }
+
+        // Count progress for the topic
+        if (topicId && lessonsByTopic[topicId]) {
+          if (!progressMap[topicId]) progressMap[topicId] = 0;
+          progressMap[topicId]++;
+          if (lessonId) completedLessons.add(lessonId);
+        } else if (topicId) {
+          // Even if we don't have the topic in lessonsByTopic, still track it
+          // This handles cases where the topic exists in courses but not in lessons array
+          if (!progressMap[topicId]) progressMap[topicId] = 0;
+          progressMap[topicId]++;
+          if (lessonId) completedLessons.add(lessonId);
+        }
+      });
+
+      // Calculate final percentages
       const final = {};
-      for (const tid in lessonsByTopic) { final[tid] = lessonsByTopic[tid].size > 0 ? Math.round((progressMap[tid] || 0) / lessonsByTopic[tid].size * 100) : 0; }
+      for (const tid in lessonsByTopic) {
+        final[tid] = lessonsByTopic[tid].size > 0
+          ? Math.round((progressMap[tid] || 0) / lessonsByTopic[tid].size * 100)
+          : 0;
+      }
+
+      // Also include progress for topics not in lessonsByTopic (from progressMap)
+      for (const tid in progressMap) {
+        if (!(tid in final)) {
+          final[tid] = progressMap[tid] > 0 ? 100 : 0; // Assume 100% if we have progress but no lesson count
+        }
+      }
+
       return final;
     },
     

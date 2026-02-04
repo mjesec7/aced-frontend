@@ -208,7 +208,7 @@
         </div>
 
         <!-- SPECIAL INTERACTIVE TYPES -->
-        <template v-else-if="isSpecialInteractiveType && !isVoiceAnswerType">
+        <template v-else-if="isSpecialInteractiveType && !isVoiceAnswerType && !isFillBlankType">
           <ModernHistogram v-if="exerciseType === 'histogram'" :title="exerciseContentData.title || exerciseTitle" :description="exerciseContentData.description || exerciseDescription" :data="exerciseContentData.data" :correctValue="exerciseContentData.correctValue" :min="exerciseContentData.min || 0" :max="exerciseContentData.max || 100000" :step="exerciseContentData.step || 100" @complete="handleInteractiveComplete" @next="emit('next-exercise')" />
           <ModernMap v-else-if="exerciseType === 'map'" :title="exerciseContentData.title || exerciseTitle" :description="exerciseContentData.description || exerciseDescription" :image="exerciseContentData.image" :markers="exerciseContentData.markers" @complete="handleInteractiveComplete" @next="emit('next-exercise')" />
           <ModernBlockCoding v-else-if="exerciseType === 'block-coding'" :type="exerciseContentData.subtype || exerciseContentData.type || 'maze'" :title="exerciseContentData.title || exerciseTitle" :description="exerciseContentData.description || exerciseDescription" :availableBlocks="exerciseContentData.availableBlocks" :config="exerciseContentData.config" @complete="handleInteractiveComplete" @next="emit('next-exercise')" />
@@ -402,6 +402,78 @@
           </footer>
         </div>
 
+        <!-- FILL-IN-BLANK EXERCISE -->
+        <div v-else-if="isFillBlankType" class="exercise-card fill-blank-card">
+          <div class="mb-4 sm:mb-6">
+            <span class="inline-flex items-center px-3 py-1 rounded-full bg-gradient-to-r from-teal-100 to-cyan-100 text-teal-700 font-semibold text-xs sm:text-sm">
+              <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+              </svg>
+              Fill in the Blanks
+            </span>
+          </div>
+
+          <!-- Sentence with inline blanks -->
+          <div class="fill-blank-sentence text-lg sm:text-xl leading-relaxed mb-6">
+            <template v-for="(part, idx) in parsedFillBlankContent" :key="idx">
+              <span v-if="part.type === 'text'" class="text-slate-800">{{ part.content }}</span>
+              <span v-else class="fill-blank-input-wrapper inline-block mx-1">
+                <input
+                  type="text"
+                  :value="fillBlankAnswers[part.id] || ''"
+                  @input="updateFillBlankAnswer(part.id, $event.target.value)"
+                  :placeholder="part.placeholder || '...'"
+                  :disabled="showCorrectAnswer"
+                  class="fill-blank-input"
+                  :class="{
+                    'correct': showCorrectAnswer && isBlankCorrect(part.id),
+                    'incorrect': showCorrectAnswer && !isBlankCorrect(part.id)
+                  }"
+                />
+                <span v-if="showCorrectAnswer && !isBlankCorrect(part.id)" class="fill-blank-correct-answer">
+                  {{ getBlankCorrectAnswer(part.id) }}
+                </span>
+              </span>
+            </template>
+          </div>
+
+          <!-- Feedback -->
+          <transition name="slide-fade">
+            <div v-if="showCorrectAnswer" class="feedback-box" :class="answerWasCorrect ? 'feedback-success' : 'feedback-error'">
+              <div class="feedback-icon">
+                <svg v-if="answerWasCorrect" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                </svg>
+                <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </div>
+              <div>
+                <h4 class="font-bold text-sm sm:text-base">{{ answerWasCorrect ? 'Perfect! All blanks correct!' : 'Check the corrections above' }}</h4>
+              </div>
+            </div>
+          </transition>
+
+          <!-- Submit/Continue buttons -->
+          <footer class="mt-6 flex justify-end">
+            <button
+              v-if="!showCorrectAnswer"
+              @click="submitFillBlank"
+              :disabled="!canSubmitFillBlank"
+              class="btn-primary"
+            >
+              Check Answer
+            </button>
+            <button
+              v-else
+              @click="handleNext"
+              class="btn-success"
+            >
+              Continue →
+            </button>
+          </footer>
+        </div>
+
         <!-- FALLBACK / SHORT ANSWER -->
         <div v-else class="exercise-card">
           <div class="mb-4">
@@ -414,10 +486,10 @@
             {{ questionText }}
           </h3>
 
-          <textarea 
+          <textarea
             v-model="userAnswer"
-            placeholder="Type your answer here..." 
-            :disabled="showCorrectAnswer" 
+            placeholder="Type your answer here..."
+            :disabled="showCorrectAnswer"
             class="w-full p-3 sm:p-4 rounded-xl border-2 border-slate-200 bg-slate-50 focus:bg-white focus:border-purple-500 focus:ring-0 transition-all outline-none resize-none h-32 text-base text-slate-800 placeholder-slate-400"
           ></textarea>
 
@@ -563,7 +635,9 @@ const specialInteractiveTypes = [
   'matching', 'sentence_order', 'sentence_ordering', 'word_order', 'ordering',
   'data-analysis', 'dataanalysis',
   // Voice answer types
-  'voice_answer', 'voice_spelling', 'voice-answer', 'voice-spelling', 'speaking'
+  'voice_answer', 'voice_spelling', 'voice-answer', 'voice-spelling', 'speaking',
+  // Fill-in-blank types
+  'fill-blanks', 'fill_blanks', 'fill-blank', 'fill_blank', 'fillblank', 'cloze', 'fill-in-blank', 'fill-in-blanks'
 ];
 
 // Voice answer specific types
@@ -581,8 +655,19 @@ const typeAliases = {
   'reorder': 'english_sentence_order',
   'data-analysis': 'data_analysis',
   'dataanalysis': 'data_analysis',
-  'data analysis': 'data_analysis'
+  'data analysis': 'data_analysis',
+  'fill-blanks': 'fill-blanks',
+  'fill_blanks': 'fill-blanks',
+  'fill-blank': 'fill-blanks',
+  'fill_blank': 'fill-blanks',
+  'fillblank': 'fill-blanks',
+  'cloze': 'fill-blanks',
+  'fill-in-blank': 'fill-blanks',
+  'fill-in-blanks': 'fill-blanks'
 };
+
+// Fill-in-blank specific types
+const fillBlankTypes = ['fill-blanks', 'fill_blanks', 'fill-blank', 'fill_blank', 'fillblank', 'cloze', 'fill-in-blank', 'fill-in-blanks'];
 
 // Normalize exercise type - handle aliases
 const normalizeExerciseType = (type) => {
@@ -645,6 +730,128 @@ const isVoiceAnswerType = computed(() => {
   const type = exerciseType.value?.toLowerCase();
   return voiceAnswerTypes.includes(type);
 });
+
+// Check if current exercise is a fill-in-blank type
+const isFillBlankType = computed(() => {
+  const type = exerciseType.value?.toLowerCase();
+  return fillBlankTypes.includes(type);
+});
+
+// Fill-in-blank answers state
+const fillBlankAnswers = ref({});
+
+// Get blanks from exercise data
+const exerciseBlanks = computed(() => {
+  if (!isFillBlankType.value || !props.currentExercise) return [];
+  const ex = props.currentExercise;
+  return ex.blanks || ex.content?.blanks || ex.data?.blanks || [];
+});
+
+// Get the sentence/template with blanks
+const fillBlankSentence = computed(() => {
+  if (!isFillBlankType.value || !props.currentExercise) return '';
+  const ex = props.currentExercise;
+  return getLocalizedText(ex.sentence) ||
+         getLocalizedText(ex.template) ||
+         getLocalizedText(ex.content?.sentence) ||
+         getLocalizedText(ex.content?.template) ||
+         getLocalizedText(ex.data?.sentence) ||
+         getLocalizedText(ex.data?.template) ||
+         getLocalizedText(ex.question) ||
+         '';
+});
+
+// Parse sentence to identify blank positions
+const parsedFillBlankContent = computed(() => {
+  const sentence = fillBlankSentence.value;
+  if (!sentence) return [];
+
+  const blanks = exerciseBlanks.value;
+  const parts = [];
+
+  // Split by common blank patterns: _____, [blank], {blank}, {{blank}}
+  const blankPattern = /(_____+|\[blank\]|\{[^}]*\}|\{\{[^}]*\}\})/gi;
+  const segments = sentence.split(blankPattern);
+
+  let blankIndex = 0;
+  segments.forEach((segment) => {
+    if (segment.match(blankPattern)) {
+      // This is a blank
+      const blank = blanks[blankIndex] || { id: `blank_${blankIndex}`, placeholder: '' };
+      parts.push({
+        type: 'blank',
+        id: blank.id || `blank_${blankIndex}`,
+        placeholder: blank.placeholder || blank.hint || '',
+        index: blankIndex
+      });
+      blankIndex++;
+    } else if (segment.trim()) {
+      // This is text
+      parts.push({
+        type: 'text',
+        content: segment
+      });
+    }
+  });
+
+  return parts;
+});
+
+// Check if all fill-blank answers are provided
+const canSubmitFillBlank = computed(() => {
+  if (!isFillBlankType.value) return false;
+  const blanks = exerciseBlanks.value;
+  if (blanks.length === 0) return Object.keys(fillBlankAnswers.value).length > 0;
+  return blanks.every(blank => {
+    const answer = fillBlankAnswers.value[blank.id];
+    return answer && answer.trim().length > 0;
+  });
+});
+
+// Update fill-blank answer
+const updateFillBlankAnswer = (blankId, value) => {
+  fillBlankAnswers.value = {
+    ...fillBlankAnswers.value,
+    [blankId]: value
+  };
+};
+
+// Validate fill-blank answers
+const validateFillBlankAnswers = () => {
+  const blanks = exerciseBlanks.value;
+  if (blanks.length === 0) return true;
+
+  return blanks.every(blank => {
+    const userAnswer = (fillBlankAnswers.value[blank.id] || '').trim().toLowerCase();
+    const correctAnswer = (blank.correctAnswer || blank.answer || '').trim().toLowerCase();
+    return userAnswer === correctAnswer;
+  });
+};
+
+// Submit fill-blank answer
+const submitFillBlank = () => {
+  const isCorrect = validateFillBlankAnswers();
+  answerWasCorrect.value = isCorrect;
+  showCorrectAnswer.value = true;
+  emit('submit');
+};
+
+// Check if a specific blank answer is correct
+const isBlankCorrect = (blankId) => {
+  const blanks = exerciseBlanks.value;
+  const blank = blanks.find(b => b.id === blankId);
+  if (!blank) return false;
+  const userAnswer = (fillBlankAnswers.value[blankId] || '').trim().toLowerCase();
+  const correctAnswer = (blank.correctAnswer || blank.answer || '').trim().toLowerCase();
+  return userAnswer === correctAnswer;
+};
+
+// Get correct answer for a specific blank
+const getBlankCorrectAnswer = (blankId) => {
+  const blanks = exerciseBlanks.value;
+  const blank = blanks.find(b => b.id === blankId);
+  return blank?.correctAnswer || blank?.answer || '';
+};
 
 // Get the correct answer for voice verification
 const voiceCorrectAnswer = computed(() => {
@@ -844,14 +1051,16 @@ const selectionGameData = computed(() => isSelectionGame.value ? (exerciseConten
 
 const { score: selectionScore, currentQuestion: selectionCurrentQuestion, questions: selectionQuestions, selectedItemId: selectionSelectedItemId, feedback: selectionFeedback, handleSelection: selectionHandleSelection } = useSelectionGame(selectionGameData);
 
-watch(() => props.currentExercise, () => { 
-  resetExerciseState(); 
-  userAnswer.value = null; 
+watch(() => props.currentExercise, () => {
+  resetExerciseState();
+  userAnswer.value = null;
   // Reset voice answer state
   useTextInputMode.value = false;
   textAnswerInput.value = '';
   voiceAnswerFeedback.value = null;
   voiceInterimTranscript.value = '';
+  // Reset fill-blank state
+  fillBlankAnswers.value = {};
 }, { immediate: true });
 </script>
 
@@ -1387,5 +1596,84 @@ watch(() => props.currentExercise, () => {
 .btn-secondary:hover {
   background: #f5f3ff;
   transform: translateY(-2px);
+}
+
+/* ============================================
+   FILL-IN-BLANK STYLES
+   ============================================ */
+
+.fill-blank-card {
+  text-align: left;
+}
+
+.fill-blank-sentence {
+  line-height: 2.5;
+  font-weight: 500;
+}
+
+.fill-blank-input-wrapper {
+  position: relative;
+  vertical-align: baseline;
+}
+
+.fill-blank-input {
+  width: auto;
+  min-width: 80px;
+  max-width: 200px;
+  padding: 4px 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: inherit;
+  font-weight: 600;
+  text-align: center;
+  background: #f8fafc;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.fill-blank-input:focus {
+  border-color: #8b5cf6;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+}
+
+.fill-blank-input:disabled {
+  cursor: not-allowed;
+}
+
+.fill-blank-input.correct {
+  border-color: #10b981;
+  background: #ecfdf5;
+  color: #065f46;
+}
+
+.fill-blank-input.incorrect {
+  border-color: #ef4444;
+  background: #fef2f2;
+  color: #991b1b;
+  text-decoration: line-through;
+}
+
+.fill-blank-correct-answer {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #10b981;
+  margin-top: 2px;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .fill-blank-sentence {
+    font-size: 1rem;
+    line-height: 2.2;
+  }
+
+  .fill-blank-input {
+    min-width: 60px;
+    max-width: 150px;
+    padding: 3px 8px;
+    font-size: 0.875rem;
+  }
 }
 </style>
