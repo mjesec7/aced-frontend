@@ -452,12 +452,17 @@
                 <h4 class="font-bold text-sm sm:text-base">{{ answerWasCorrect ? 'Perfect! All blanks correct!' : 'Some answers need correction' }}</h4>
                 <!-- Show detailed corrections when wrong -->
                 <div v-if="!answerWasCorrect && incorrectBlanks.length > 0" class="mt-2 text-sm space-y-1">
-                  <div v-for="blank in incorrectBlanks" :key="blank.id" class="flex items-center gap-2">
+                  <div v-for="blank in incorrectBlanks" :key="blank.id" class="flex flex-wrap items-center gap-2">
                     <span class="line-through text-red-400">{{ blank.userAnswer || '(empty)' }}</span>
                     <span class="text-slate-400">→</span>
                     <span class="font-semibold text-green-700">{{ blank.correctAnswer }}</span>
+                    <span v-if="blank.hint" class="text-slate-500 text-xs italic">({{ blank.hint }})</span>
                   </div>
                 </div>
+                <!-- Show exercise-level explanation if available -->
+                <p v-if="!answerWasCorrect && fillBlankExplanation" class="mt-3 text-sm text-slate-600 bg-slate-50 p-2 rounded">
+                  💡 {{ fillBlankExplanation }}
+                </p>
               </div>
             </div>
           </transition>
@@ -870,8 +875,22 @@ const incorrectBlanks = computed(() => {
     .map(blank => ({
       id: blank.id,
       userAnswer: fillBlankAnswers.value[blank.id] || '',
-      correctAnswer: blank.correctAnswer || blank.answer || ''
+      correctAnswer: blank.correctAnswer || blank.answer || '',
+      hint: blank.hint || blank.explanation || blank.reason || ''
     }));
+});
+
+// Get exercise-level explanation for fill-blank
+const fillBlankExplanation = computed(() => {
+  if (!isFillBlankType.value || !props.currentExercise) return '';
+  const ex = props.currentExercise;
+  return getLocalizedText(ex.explanation) ||
+         getLocalizedText(ex.hint) ||
+         getLocalizedText(ex.feedback) ||
+         getLocalizedText(ex.content?.explanation) ||
+         getLocalizedText(ex.content?.hint) ||
+         getLocalizedText(ex.data?.explanation) ||
+         '';
 });
 
 // Get the correct answer for voice verification
@@ -1053,7 +1072,19 @@ const handleGeometrySubmit = (result) => {
 
 const isGameMode = computed(() => {
   if (!props.currentExercise) return false;
-  return props.currentExercise.type === 'game' || Boolean(props.currentExercise.gameType) || ['basket-catch', 'whack-a-mole'].includes(props.currentExercise.type);
+  const ex = props.currentExercise;
+  const type = ex.type?.toLowerCase();
+  const exerciseType = ex.exerciseType?.toLowerCase();
+  const gameType = ex.gameType?.toLowerCase();
+  
+  // List of known game types
+  const gameTypes = ['game', 'basket-catch', 'whack-a-mole', 'memory-cards', 'lightning-round', 'pattern-builder', 'maze-runner', 'catching'];
+  
+  return type === 'game' || 
+         exerciseType === 'game' ||
+         Boolean(gameType) || 
+         gameTypes.includes(type) ||
+         gameTypes.includes(exerciseType);
 });
 
 const gameType = computed(() => isGameMode.value ? (props.currentExercise.gameType || props.currentExercise.type || 'basket-catch') : null);
