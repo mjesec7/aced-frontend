@@ -1207,6 +1207,17 @@ const specialInteractiveTypes = [
 function getCurrentExercise(step) {
   if (!step) return null
 
+  // Handle game type steps - return game data with proper type
+  if (step.type === 'game') {
+    const gameData = step.data || step.content || step.gameData || {}
+    return {
+      ...gameData,
+      type: 'game',
+      gameType: step.gameType || gameData.gameType || step.content?.gameType || 'basket-catch',
+      exerciseType: 'game'
+    }
+  }
+
   // Check if step itself is a special interactive type
   const stepType = step.type?.toLowerCase()
   if (stepType && specialInteractiveTypes.includes(stepType)) {

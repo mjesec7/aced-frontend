@@ -448,8 +448,16 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
               </div>
-              <div>
-                <h4 class="font-bold text-sm sm:text-base">{{ answerWasCorrect ? 'Perfect! All blanks correct!' : 'Check the corrections above' }}</h4>
+              <div class="flex-1">
+                <h4 class="font-bold text-sm sm:text-base">{{ answerWasCorrect ? 'Perfect! All blanks correct!' : 'Some answers need correction' }}</h4>
+                <!-- Show detailed corrections when wrong -->
+                <div v-if="!answerWasCorrect && incorrectBlanks.length > 0" class="mt-2 text-sm space-y-1">
+                  <div v-for="blank in incorrectBlanks" :key="blank.id" class="flex items-center gap-2">
+                    <span class="line-through text-red-400">{{ blank.userAnswer || '(empty)' }}</span>
+                    <span class="text-slate-400">→</span>
+                    <span class="font-semibold text-green-700">{{ blank.correctAnswer }}</span>
+                  </div>
+                </div>
               </div>
             </div>
           </transition>
@@ -531,7 +539,8 @@
         </footer>
 
         <!-- Continue Button for special interactive types (shows after completion) -->
-        <footer v-else-if="showCorrectAnswer" class="mt-6 flex justify-end">
+        <!-- Exclude fill-blank and voice-answer since they have their own internal footers -->
+        <footer v-else-if="showCorrectAnswer && !isFillBlankType && !isVoiceAnswerType" class="mt-6 flex justify-end">
           <button
             @click="handleNext"
             class="btn-success"
@@ -852,6 +861,18 @@ const getBlankCorrectAnswer = (blankId) => {
   const blank = blanks.find(b => b.id === blankId);
   return blank?.correctAnswer || blank?.answer || '';
 };
+
+// Get list of incorrect blanks with user's wrong answer and the correct answer
+const incorrectBlanks = computed(() => {
+  const blanks = exerciseBlanks.value;
+  return blanks
+    .filter(blank => !isBlankCorrect(blank.id))
+    .map(blank => ({
+      id: blank.id,
+      userAnswer: fillBlankAnswers.value[blank.id] || '',
+      correctAnswer: blank.correctAnswer || blank.answer || ''
+    }));
+});
 
 // Get the correct answer for voice verification
 const voiceCorrectAnswer = computed(() => {
