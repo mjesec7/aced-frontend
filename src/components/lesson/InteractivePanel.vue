@@ -413,6 +413,16 @@
             </span>
           </div>
 
+          <!-- Context/Instructions to help user know which form to use -->
+          <div v-if="fillBlankContext" class="mb-4 p-3 bg-gradient-to-r from-teal-50 to-cyan-50 border border-teal-200 rounded-xl">
+            <div class="flex items-start gap-2">
+              <svg class="w-5 h-5 text-teal-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <p class="text-teal-700 text-sm sm:text-base">{{ fillBlankContext }}</p>
+            </div>
+          </div>
+
           <!-- Sentence with inline blanks -->
           <div class="fill-blank-sentence text-lg sm:text-xl leading-relaxed mb-6">
             <template v-for="(part, idx) in parsedFillBlankContent" :key="idx">
@@ -890,6 +900,21 @@ const fillBlankExplanation = computed(() => {
          getLocalizedText(ex.content?.explanation) ||
          getLocalizedText(ex.content?.hint) ||
          getLocalizedText(ex.data?.explanation) ||
+         '';
+});
+
+// Get context/instructions for fill-blank exercises (helps user understand what form to use)
+const fillBlankContext = computed(() => {
+  if (!isFillBlankType.value || !props.currentExercise) return '';
+  const ex = props.currentExercise;
+  return getLocalizedText(ex.context) ||
+         getLocalizedText(ex.instructions) ||
+         getLocalizedText(ex.content?.context) ||
+         getLocalizedText(ex.content?.instructions) ||
+         getLocalizedText(ex.data?.context) ||
+         getLocalizedText(ex.data?.instructions) ||
+         getLocalizedText(ex.clarification) ||
+         getLocalizedText(ex.content?.clarification) ||
          '';
 });
 
