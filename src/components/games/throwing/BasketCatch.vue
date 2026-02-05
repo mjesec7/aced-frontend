@@ -241,6 +241,9 @@ const stopGame = () => {
 
 watch(() => props.lives, (val) => { if(val <= 0) stopGame(); });
 onMounted(() => {
+    console.log('🎮 [BasketCatch] Component mounted!');
+    console.log('  - gameData:', props.gameData);
+    console.log('  - questions:', questions.value);
     // Clean start state and auto-start game
     fallingItems.value = [];
     // Notify parent that game has started
