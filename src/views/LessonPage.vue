@@ -2188,8 +2188,15 @@ onUnmounted(() => {
   background-color: #f8fafc;
 }
 
+/* Game mode: interactive side needs full flex height */
+.split-content.is-game-active .interactive-side {
+  flex: 1;
+  min-height: 400px;
+}
+
 .interactive-container {
   height: 100%;
+  min-height: 400px;
   display: flex;
   flex-direction: column;
 }
