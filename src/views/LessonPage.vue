@@ -269,6 +269,9 @@
               :quiz-index="currentQuizIndex"
               :total-exercises="getTotalExercises(currentStep)"
               :total-quizzes="getTotalQuizzes(currentStep)"
+              :user-id="userId"
+              :lesson-id="lessonId"
+              :step-index="currentIndex"
               :user-answer="userAnswer"
               :confirmation="confirmation"
               :answer-was-correct="answerWasCorrect"
@@ -464,6 +467,7 @@ import { getLessonById, getTopics } from '@/api/lessons'
 import { getLessonAIResponse, getUserUsage } from '@/services/GPTService'
 import { clearChatHistory } from '@/api/chat'
 import { submitLessonRating } from '@/api/ratings'
+import { auth } from '@/firebase'
 
 // Import language composable for multi-language support
 import { useLanguage, getLocalizedText } from '@/composables/useLanguage';
@@ -797,6 +801,11 @@ const topicId = computed(() => {
   const extractedId = extractId(rawId);
   
   return extractedId || '';
+})
+
+// Current user ID for game submission
+const userId = computed(() => {
+  return auth.currentUser?.uid || '';
 })
 
 const leftPanelStyle = computed(() => ({

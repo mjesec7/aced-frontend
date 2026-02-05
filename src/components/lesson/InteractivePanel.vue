@@ -907,7 +907,9 @@ const fillBlankExplanation = computed(() => {
 const fillBlankContext = computed(() => {
   if (!isFillBlankType.value || !props.currentExercise) return '';
   const ex = props.currentExercise;
-  return getLocalizedText(ex.context) ||
+  
+  // First, try to get explicit context from the exercise data
+  const explicitContext = getLocalizedText(ex.context) ||
          getLocalizedText(ex.instructions) ||
          getLocalizedText(ex.content?.context) ||
          getLocalizedText(ex.content?.instructions) ||
@@ -916,6 +918,53 @@ const fillBlankContext = computed(() => {
          getLocalizedText(ex.clarification) ||
          getLocalizedText(ex.content?.clarification) ||
          '';
+  
+  if (explicitContext) return explicitContext;
+  
+  // AUTO-GENERATE context based on the correct answers
+  const blanks = exerciseBlanks.value;
+  if (blanks.length === 0) return '';
+  
+  // Analyze the correct answers to generate context hints
+  const answers = blanks.map(b => (b.correctAnswer || b.answer || '').toLowerCase().trim());
+  
+  // Detect patterns in answers and generate helpful context
+  const negativeContractions = ["isn't", "aren't", "wasn't", "weren't", "don't", "doesn't", "didn't", "won't", "wouldn't", "can't", "couldn't", "shouldn't", "hasn't", "haven't", "hadn't"];
+  const positiveVerbs = ["is", "are", "was", "were", "do", "does", "did", "will", "would", "can", "could", "should", "has", "have", "had", "am"];
+  const questionWords = ["is", "are", "was", "were", "do", "does", "did", "will", "would", "can", "could", "should", "has", "have", "had"];
+  
+  // Check if any answer contains negative contractions
+  const hasNegative = answers.some(a => negativeContractions.some(neg => a === neg || a.includes(neg)));
+  const hasPositive = answers.some(a => positiveVerbs.some(pos => a === pos));
+  
+  // Get the lesson/exercise title for context
+  const title = getLocalizedText(ex.title) || 
+                getLocalizedText(props.currentExercise?.title) || 
+                getLocalizedText(props.currentExercise?.content?.title) || '';
+  
+  // Generate context based on detected patterns
+  if (hasNegative && title.toLowerCase().includes('negative')) {
+    return '💡 Use the negative form (with contraction: isn\'t, aren\'t, wasn\'t, weren\'t, etc.)';
+  }
+  
+  if (hasNegative) {
+    return '💡 This sentence requires the negative form of the verb.';
+  }
+  
+  if (title.toLowerCase().includes('question') && questionWords.some(q => answers.includes(q))) {
+    return '💡 Complete the question form of the sentence.';
+  }
+  
+  if (hasPositive && title.toLowerCase().includes('positive')) {
+    return '💡 Use the positive/affirmative form of the verb.';
+  }
+  
+  // Fallback: show a generic hint if we detected verb patterns
+  if (hasPositive || hasNegative) {
+    return '💡 Choose the correct form of the verb based on the sentence context.';
+  }
+  
+  return '';
 });
 
 // Get the correct answer for voice verification
