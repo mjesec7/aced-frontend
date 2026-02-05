@@ -1270,12 +1270,17 @@ watch(() => props.currentExercise, () => {
   background: transparent;
 }
 
-/* Game container - CRITICAL: fills all space */
+/* Game container - CRITICAL: fills all space using flex */
 .game-full-container {
-  position: absolute;
-  inset: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   width: 100%;
+  min-height: 400px;  
   height: 100%;
+  /* DEBUG: Remove this line after testing */
+  background: red !important;
+  border: 5px solid yellow !important;
 }
 
 /* Exercise scroll container */
