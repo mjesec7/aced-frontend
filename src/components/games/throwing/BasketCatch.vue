@@ -97,33 +97,59 @@ const feedbackIcon = ref('');
 // Colors
 const BUBBLE_COLORS = ['#FFE0B2', '#C8E6C9', '#BBDEFB', '#F8BBD0', '#E1BEE7'];
 
-// Questions Logic
+// Questions/Items Logic
 const questions = computed(() => props.gameData.questions || [{ q: "Ready?", a: "Go", wrong: [] }]);
+const items = computed(() => props.gameData.items || []);
+const correctItems = computed(() => items.value.filter(i => i.isCorrect));
+const wrongItems = computed(() => items.value.filter(i => !i.isCorrect));
 const currentQuestion = computed(() => questions.value[currentQuestionIndex.value]);
-const currentQuestionText = computed(() => currentQuestion.value?.q || currentQuestion.value?.question || "Loading...");
+const currentQuestionText = computed(() => {
+  // Use instructions or first question
+  if (props.gameData.gameplayData?.instructions?.en) return props.gameData.gameplayData.instructions.en;
+  return currentQuestion.value?.q || currentQuestion.value?.question || "Catch the correct items!";
+});
 
 // Game Loop
 const spawnItem = () => {
   if (!gameActive.value || props.isPaused) return;
 
-  const q = currentQuestion.value;
-  if (!q) return;
-
-  const isCorrectSpawn = Math.random() > 0.5;
-
-  const correctAnswer = q.a || q.correctAnswer || q.answer;
-  const wrongAnswers = q.wrong || q.wrongAnswers || ["0", "1"];
-  // Pick random wrong answer
-  const wrongAnswer = wrongAnswers[Math.floor(Math.random() * wrongAnswers.length)];
-
-  const text = isCorrectSpawn ? correctAnswer : wrongAnswer;
+  // Use items array if available, otherwise fall back to questions
+  let text = '';
+  let isCorrectSpawn = false;
+  
+  if (items.value.length > 0) {
+    // Use items from gameConfig - 50% chance correct/wrong
+    isCorrectSpawn = Math.random() > 0.4; // Slightly favor correct items
+    
+    if (isCorrectSpawn && correctItems.value.length > 0) {
+      const item = correctItems.value[Math.floor(Math.random() * correctItems.value.length)];
+      text = item.content || item.text || item.id;
+    } else if (wrongItems.value.length > 0) {
+      const item = wrongItems.value[Math.floor(Math.random() * wrongItems.value.length)];
+      text = item.content || item.text || item.id;
+      isCorrectSpawn = false;
+    } else {
+      // Fallback if no items
+      text = isCorrectSpawn ? "correct" : "wrong";
+    }
+  } else {
+    // Fallback to questions format
+    const q = currentQuestion.value;
+    if (!q) return;
+    
+    isCorrectSpawn = Math.random() > 0.5;
+    const correctAnswer = q.a || q.correctAnswer || q.answer;
+    const wrongAnswers = q.wrong || q.wrongAnswers || ["0", "1"];
+    const wrongAnswer = wrongAnswers[Math.floor(Math.random() * wrongAnswers.length)];
+    text = isCorrectSpawn ? correctAnswer : wrongAnswer;
+  }
 
   const newItem = {
     id: `item-${itemIdCounter.value++}`,
     text: text,
     isCorrect: isCorrectSpawn,
-    x: Math.random() * 80 + 10, // 10% - 90%
-    speed: props.gameData.difficulty === 'hard' ? 2.5 : 4,
+    x: Math.random() * 70 + 15, // 15% - 85% (more centered)
+    speed: props.gameData.difficulty === 'hard' ? 3 : props.gameData.difficulty === 'easy' ? 5 : 4,
     color: BUBBLE_COLORS[Math.floor(Math.random() * BUBBLE_COLORS.length)]
   };
 

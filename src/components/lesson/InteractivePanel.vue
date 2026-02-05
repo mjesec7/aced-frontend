@@ -1278,9 +1278,6 @@ watch(() => props.currentExercise, () => {
   width: 100%;
   min-height: 400px;  
   height: 100%;
-  /* DEBUG: Remove this line after testing */
-  background: red !important;
-  border: 5px solid yellow !important;
 }
 
 /* Exercise scroll container */

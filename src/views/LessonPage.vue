@@ -2171,7 +2171,7 @@ onUnmounted(() => {
 }
 
 .split-content.is-game-active {
-  flex-direction: column;
+  /* Keep row layout - game stays in right panel */
 }
 
 .split-panel {
