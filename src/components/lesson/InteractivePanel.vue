@@ -1182,14 +1182,35 @@ const gameData = computed(() => {
   const step = props.currentStep;
   const ex = props.currentExercise;
   
-  // Merge step content, step data, and exercise data
-  return {
+  // Merge step content, step data, gameConfig, and exercise data
+  // gameConfig contains the actual game settings (items, timeLimit, lives, etc.)
+  const merged = {
+    ...step?.gameConfig,  // CRITICAL: gameConfig has the actual game data!
     ...step?.content,
     ...step?.data,
     ...step?.gameData,
+    ...ex?.gameConfig,
     ...ex,
     ...ex?.gameData
   };
+  
+  // Transform 'items' to 'questions' format for BasketCatch compatibility
+  // BasketCatch expects: { q: "question", a: "answer", wrong: ["wrong1", "wrong2"] }
+  if (merged.items && !merged.questions) {
+    const correctItems = merged.items.filter(item => item.isCorrect);
+    const wrongItems = merged.items.filter(item => !item.isCorrect);
+    
+    merged.questions = [{
+      q: step?.instructions?.en || merged.gameplayData?.instructions?.en || "Catch the correct items!",
+      a: correctItems.map(i => i.content).join(', ') || "correct",
+      wrong: wrongItems.map(i => i.content) || [],
+      correctItems: correctItems,
+      wrongItems: wrongItems
+    }];
+  }
+  
+  console.log('🎮 [InteractivePanel] Final gameData:', merged);
+  return merged;
 });
 
 // DEBUG: Log game mode detection
