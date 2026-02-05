@@ -609,6 +609,7 @@ import LanguageFalseFriends from './interactives/LanguageFalseFriends.vue';
 
 const props = defineProps({
   currentExercise: Object,
+  currentStep: Object, // Added: for game step detection
   exerciseIndex: Number,
   totalExercises: Number,
   userId: String,
@@ -1145,11 +1146,17 @@ const handleGeometrySubmit = (result) => {
 };
 
 const isGameMode = computed(() => {
-  if (!props.currentExercise) return false;
+  // Check currentStep for game type (games are step-level, not exercise-level)
+  const step = props.currentStep;
+  if (step?.type === 'game') return true;
+  
+  // Also check currentExercise in case it has game data
   const ex = props.currentExercise;
-  const type = ex.type?.toLowerCase();
-  const exerciseType = ex.exerciseType?.toLowerCase();
-  const gameType = ex.gameType?.toLowerCase();
+  if (!ex && !step) return false;
+  
+  const type = ex?.type?.toLowerCase() || step?.content?.type?.toLowerCase();
+  const exerciseType = ex?.exerciseType?.toLowerCase();
+  const gameType = ex?.gameType?.toLowerCase() || step?.gameType?.toLowerCase();
   
   // List of known game types
   const gameTypes = ['game', 'basket-catch', 'whack-a-mole', 'memory-cards', 'lightning-round', 'pattern-builder', 'maze-runner', 'catching'];
@@ -1161,8 +1168,29 @@ const isGameMode = computed(() => {
          gameTypes.includes(exerciseType);
 });
 
-const gameType = computed(() => isGameMode.value ? (props.currentExercise.gameType || props.currentExercise.type || 'basket-catch') : null);
-const gameData = computed(() => isGameMode.value ? { ...props.currentExercise, ...props.currentExercise.gameData } : null);
+// Get game type from step or exercise
+const gameType = computed(() => {
+  if (!isGameMode.value) return null;
+  const step = props.currentStep;
+  const ex = props.currentExercise;
+  return step?.gameType || step?.content?.gameType || ex?.gameType || ex?.type || 'basket-catch';
+});
+
+// Get game data from step or exercise
+const gameData = computed(() => {
+  if (!isGameMode.value) return null;
+  const step = props.currentStep;
+  const ex = props.currentExercise;
+  
+  // Merge step content, step data, and exercise data
+  return {
+    ...step?.content,
+    ...step?.data,
+    ...step?.gameData,
+    ...ex,
+    ...ex?.gameData
+  };
+});
 
 const handleGameComplete = (result) => {
   answerWasCorrect.value = result.completed || result.stars >= 2;
