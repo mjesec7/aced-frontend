@@ -394,22 +394,26 @@ return [];
 /**
  * Get topics grouped by subject and level (School Mode)
  * Returns structure: { subject: { level: [topics] } }
+ * @param {string} userId - Optional user ID to include progress data
  */
-export const getTopicsGrouped = async () => {
+export const getTopicsGrouped = async (userId = null) => {
   try {
-    const { data } = await api.get('topics/grouped');
+    // Build URL with userId for progress tracking
+    const url = userId ? `topics/grouped?userId=${userId}` : 'topics/grouped';
+    const { data } = await api.get(url);
 
     if (data.success) {
       return {
         success: true,
         data: data.data,
-        mode: 'school'
+        mode: 'school',
+        hasProgressData: data.hasProgressData || false
       };
     } else {
       throw new Error('Failed to fetch grouped topics');
     }
   } catch (error) {
-return {
+    return {
       success: false,
       data: {},
       error: error.message
@@ -419,11 +423,17 @@ return {
 
 /**
  * Get topics as course cards (Study Centre Mode)
- * @param {Object} filters - Optional filters (search, subject, level)
+ * @param {Object} filters - Optional filters (search, subject, level, userId)
+ * @param {string} userId - Optional user ID to include progress data
  */
-export const getTopicsAsCourses = async (filters = {}) => {
+export const getTopicsAsCourses = async (filters = {}, userId = null) => {
   try {
     const params = new URLSearchParams();
+
+    // Add userId for progress tracking if provided
+    if (userId) {
+      params.append('userId', userId);
+    }
 
     Object.keys(filters).forEach(key => {
       if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
@@ -441,13 +451,14 @@ export const getTopicsAsCourses = async (filters = {}) => {
         success: true,
         courses: data.data,
         total: data.total,
-        mode: 'study-centre'
+        mode: 'study-centre',
+        hasProgressData: data.hasProgressData || false
       };
     } else {
       throw new Error('Failed to fetch courses');
     }
   } catch (error) {
-return {
+    return {
       success: false,
       courses: [],
       error: error.message

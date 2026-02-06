@@ -257,7 +257,8 @@ export const getUserPoints = async (userId) => {
 };
 
 /**
- * Get user analytics
+ * Get user analytics - comprehensive progress and performance data
+ * Tries multiple endpoints for backwards compatibility
  */
 export const getUserAnalytics = async (userId) => {
   try {
@@ -268,10 +269,22 @@ export const getUserAnalytics = async (userId) => {
 
     const headers = { Authorization: `Bearer ${token}` };
 
+    // Try the new dedicated user-analytics endpoint first (most comprehensive)
+    try {
+      const { data } = await api.get(`user-analytics/${userId}`, { headers });
+      if (data.success) {
+        return data;
+      }
+    } catch (e) {
+      console.log('user-analytics endpoint not available, trying fallbacks...');
+    }
+
+    // Fallback 1: users/:userId/analytics
     try {
       const { data } = await api.get(`users/${userId}/analytics`, { headers });
       return data;
     } catch (error) {
+      // Fallback 2: analytics/:userId
       try {
         const { data } = await api.get(`analytics/${userId}`, { headers });
         return data;
@@ -280,6 +293,7 @@ export const getUserAnalytics = async (userId) => {
       }
     }
   } catch (error) {
+    console.error('Failed to fetch user analytics:', error);
     throw error;
   }
 };

@@ -507,10 +507,13 @@ export default {
     },
     
     totalHours() {
-      const minutes = this.studyList.reduce((sum, c) => 
+      // Use actual tracked duration from progress (in seconds), convert to hours
+      const seconds = this.studyList.reduce((sum, c) =>
         sum + (c.progress?.completedTime || 0), 0
       );
-      return (minutes / 60).toFixed(1);
+      // If duration is in minutes (legacy), use as-is; if in seconds, convert
+      const hours = seconds > 1000 ? (seconds / 3600) : (seconds / 60);
+      return hours.toFixed(1);
     },
     
     hasActiveFilters() {
@@ -581,10 +584,13 @@ export default {
 
           const progress = this.calculateProgress(topic.lessons);
 
+          // Use the most recent activity timestamp for sorting
+          const lastAccessed = progress.lastActivity || entry.lastAccessed || new Date().toISOString();
+
           enriched.push({
             ...topic,
             progress,
-            lastAccessed: entry.lastAccessed || new Date().toISOString()
+            lastAccessed
           });
         } catch (error) {
           console.warn('Error enriching course:', error);
@@ -614,39 +620,60 @@ export default {
     
     calculateProgress(lessons) {
       if (!lessons || lessons.length === 0) {
-        return { 
-          percent: 0, 
-          completedLessons: 0, 
+        return {
+          percent: 0,
+          completedLessons: 0,
           totalLessons: 0,
           completedTime: 0,
-          totalTime: 0
+          totalTime: 0,
+          totalPoints: 0,
+          totalStars: 0,
+          lastActivity: null
         };
       }
-      
+
       let completed = 0;
       let completedTime = 0;
       let totalTime = 0;
-      
+      let totalPoints = 0;
+      let totalStars = 0;
+      let lastActivity = null;
+
       lessons.forEach(lesson => {
         const lessonTime = lesson.estimatedTime || lesson.duration || 10;
         totalTime += lessonTime;
-        
-        const progress = this.userProgress.find(p => 
-          (p.lessonId?._id || p.lessonId) === lesson._id
-        );
-        
+
+        // Convert IDs to strings for proper comparison
+        const lessonId = String(lesson._id || lesson.id);
+        const progress = this.userProgress.find(p => {
+          const progressLessonId = String(p.lessonId?._id || p.lessonId || '');
+          return progressLessonId === lessonId;
+        });
+
         if (progress?.completed) {
           completed++;
-          completedTime += lessonTime;
+          // Use actual duration from progress if available, otherwise estimate
+          completedTime += progress.duration || lessonTime;
+          totalPoints += progress.points || 0;
+          totalStars += progress.stars || 0;
+
+          // Track the most recent activity
+          const activityDate = progress.completedAt || progress.updatedAt;
+          if (activityDate && (!lastActivity || new Date(activityDate) > new Date(lastActivity))) {
+            lastActivity = activityDate;
+          }
         }
       });
-      
+
       return {
         percent: Math.round((completed / lessons.length) * 100),
         completedLessons: completed,
         totalLessons: lessons.length,
         completedTime,
-        totalTime
+        totalTime,
+        totalPoints,
+        totalStars,
+        lastActivity
       };
     },
     

@@ -614,8 +614,9 @@ export default {
         
         try {
           if (this.isSchoolMode) {
-            const r = await getTopicsGrouped();
-            if (r.success && r.data) { 
+            // ✅ FIXED: Pass userId to get progress data with topics
+            const r = await getTopicsGrouped(this.userId);
+            if (r.success && r.data) {
               this.rawData = r.data;
               this.rawMode = 'school';
               this.processModeContent(r.data, 'school');
@@ -627,8 +628,9 @@ export default {
               console.error('❌ [CataloguePage] Failed to fetch grouped topics:', r.error);
             }
           } else {
-            const r = await getTopicsAsCourses();
-            if (r.success && r.courses) { 
+            // ✅ FIXED: Pass userId to get progress data with courses
+            const r = await getTopicsAsCourses({}, this.userId);
+            if (r.success && r.courses) {
               this.rawData = r.courses;
               this.rawMode = 'study-centre';
               this.processModeContent(r.courses, 'study-centre');

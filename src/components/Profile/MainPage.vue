@@ -1367,27 +1367,39 @@ this.recommendations = null;
     calculateProgress(topic) {
       const lessons = topic.lessons || [];
       if (lessons.length === 0) {
-        return { percent: 0, completedLessons: 0, totalLessons: 0, completedTime: 0, totalTime: 0 };
+        return { percent: 0, completedLessons: 0, totalLessons: 0, completedTime: 0, totalTime: 0, totalPoints: 0, totalStars: 0 };
       }
-      
+
       let completedLessons = 0;
       let completedTime = 0;
+      let totalPoints = 0;
+      let totalStars = 0;
       const totalTime = lessons.reduce((sum, lesson) => sum + (lesson.estimatedTime || 10), 0);
-      
+
       lessons.forEach(lesson => {
-        const progress = this.userProgress.find(p => (p.lessonId?._id || p.lessonId) === lesson._id);
+        // Convert IDs to strings for proper comparison
+        const lessonId = String(lesson._id || lesson.id);
+        const progress = this.userProgress.find(p => {
+          const progressLessonId = String(p.lessonId?._id || p.lessonId || '');
+          return progressLessonId === lessonId;
+        });
         if (progress?.completed) {
           completedLessons++;
-          completedTime += lesson.estimatedTime || 10;
+          // Use actual duration from progress if available
+          completedTime += progress.duration || lesson.estimatedTime || 10;
+          totalPoints += progress.points || 0;
+          totalStars += progress.stars || 0;
         }
       });
-      
+
       return {
         percent: Math.round((completedLessons / lessons.length) * 100),
         completedLessons,
         totalLessons: lessons.length,
         completedTime,
-        totalTime
+        totalTime,
+        totalPoints,
+        totalStars
       };
     },
 
@@ -1398,9 +1410,13 @@ this.recommendations = null;
       const testsThisWeek = thisWeekProgress.filter(p => p.testScore != null).length;
       
       const hoursThisWeek = this.studyList.reduce((sum, course) => {
-        const lessonTimes = course.lessons.reduce((lessonSum, lesson) => {
-            const progress = thisWeekProgress.find(p => (p.lessonId?._id || p.lessonId) === lesson._id);
-            return lessonSum + (progress?.completed ? (lesson.estimatedTime || 10) : 0);
+        const lessonTimes = (course.lessons || []).reduce((lessonSum, lesson) => {
+            const lessonId = String(lesson._id || lesson.id);
+            const progress = thisWeekProgress.find(p => {
+              const progressLessonId = String(p.lessonId?._id || p.lessonId || '');
+              return progressLessonId === lessonId;
+            });
+            return lessonSum + (progress?.completed ? (progress.duration || lesson.estimatedTime || 10) : 0);
         }, 0);
         return sum + lessonTimes;
       }, 0) / 60;
