@@ -1,7 +1,7 @@
 <template>
   <div class="interactive-step step-animate-in">
     <p class="text-base text-slate-600 mb-5 leading-relaxed">
-      {{ step.prompt }}
+      {{ getLocalizedText(step.prompt) }}
     </p>
 
     <!-- Sentence Display -->
@@ -45,7 +45,7 @@
 
         <p class="text-xs text-slate-500 bg-slate-50 px-3 py-2 rounded-lg border border-slate-100 flex items-center gap-2">
           <span class="text-sm">💡</span>
-          {{ selectedError.explanation }}
+          {{ getLocalizedText(selectedError.explanation) }}
         </p>
       </div>
     </transition>
@@ -68,6 +68,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue';
+import { getLocalizedText } from '@/composables/useLanguage';
 
 const props = defineProps({
   step: { type: Object, required: true }

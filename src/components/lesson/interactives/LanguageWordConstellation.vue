@@ -39,7 +39,7 @@
       </div>
 
       <h2 class="text-lg font-bold text-slate-900 leading-snug">
-        {{ step.prompt || 'Drag to connect words that are synonyms, antonyms, or related to the central concept.' }}
+        {{ getLocalizedText(step.prompt) || 'Drag to connect words that are synonyms, antonyms, or related to the central concept.' }}
       </h2>
     </div>
 
@@ -124,8 +124,8 @@
       >
         <div class="word-glow"></div>
         <div class="word-content">
-          <span class="word-text">{{ word.text }}</span>
-          <span v-if="word.type && showTypes" class="word-type">{{ word.type }}</span>
+          <span class="word-text">{{ getLocalizedText(word.text) }}</span>
+          <span v-if="word.type && showTypes" class="word-type">{{ getLocalizedText(word.type) }}</span>
         </div>
 
         <!-- Connection count badge -->
@@ -197,6 +197,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, reactive } from 'vue';
+import { getLocalizedText } from '@/composables/useLanguage';
 
 const props = defineProps({
   step: { type: Object, required: true }
@@ -247,9 +248,9 @@ const relationshipTypes = [
 // Computed
 const centralWordText = computed(() => {
   if (typeof props.step.centralWord === 'object' && props.step.centralWord !== null) {
-    return props.step.centralWord.text || 'Center';
+    return getLocalizedText(props.step.centralWord.text) || 'Center';
   }
-  return props.step.centralWord;
+  return getLocalizedText(props.step.centralWord);
 });
 
 const correctConnections = computed(() => {

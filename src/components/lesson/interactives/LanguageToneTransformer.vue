@@ -7,7 +7,7 @@
         <span class="text-xs font-semibold text-violet-600 uppercase tracking-wide">Tone Transformer</span>
       </div>
       <h2 class="text-lg font-bold text-slate-900 leading-snug">
-        {{ step.prompt || 'Transform the sentence to match the target tone' }}
+        {{ getLocalizedText(step.prompt) || 'Transform the sentence to match the target tone' }}
       </h2>
     </div>
 
@@ -18,7 +18,7 @@
       </div>
       <div class="bg-slate-50/80 border border-slate-200/60 rounded-xl p-5 pt-4">
         <p class="text-base text-slate-800 font-medium leading-relaxed mt-1">
-          "{{ step.originalSentence }}"
+          "{{ getLocalizedText(step.originalSentence) }}"
         </p>
         <div class="mt-2.5 flex items-center gap-2">
           <ToneIndicator :tone="step.originalTone" />
@@ -159,7 +159,7 @@
     <!-- Hint Display -->
     <div v-if="hintVisible && !isCorrect" class="mt-4 p-3.5 bg-indigo-50/60 rounded-xl border border-indigo-100">
       <p class="text-sm text-indigo-700">
-        <span class="font-bold">Hint:</span> {{ step.hint || `Try starting with: "${step.correctAnswer.split(' ').slice(0, 3).join(' ')}..."` }}
+        <span class="font-bold">Hint:</span> {{ getLocalizedText(step.hint) || `Try starting with: "${step.correctAnswer.split(' ').slice(0, 3).join(' ')}..."` }}
       </p>
     </div>
   </div>
@@ -167,6 +167,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue';
+import { getLocalizedText } from '@/composables/useLanguage';
 
 // Tone Indicator Component (inline)
 const ToneIndicator = {

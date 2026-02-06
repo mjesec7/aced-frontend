@@ -7,18 +7,18 @@
         <span class="text-xs font-semibold text-violet-600 uppercase tracking-wide">False Friends</span>
       </div>
       <h2 class="text-lg font-bold text-slate-900 leading-snug">
-        {{ step.prompt || 'Identify words that look similar but have different meanings!' }}
+        {{ getLocalizedText(step.prompt) || 'Identify words that look similar but have different meanings!' }}
       </h2>
     </div>
 
     <!-- Language Pair -->
     <div class="flex items-center justify-center gap-3 mb-5 py-2.5 px-4 bg-slate-50/80 rounded-xl border border-slate-200/60">
       <span class="text-lg">{{ getLanguageFlag(step.language1) }}</span>
-      <span class="text-sm font-semibold text-slate-700">{{ step.language1 }}</span>
+      <span class="text-sm font-semibold text-slate-700">{{ getLocalizedText(step.language1) }}</span>
       <span class="text-violet-400">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
       </span>
-      <span class="text-sm font-semibold text-slate-700">{{ step.language2 }}</span>
+      <span class="text-sm font-semibold text-slate-700">{{ getLocalizedText(step.language2) }}</span>
       <span class="text-lg">{{ getLanguageFlag(step.language2) }}</span>
     </div>
 
@@ -47,12 +47,12 @@
           :class="revealed ? 'border-violet-300 shadow-sm' : 'border-slate-200/60'"
         >
           <div class="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 bg-slate-100 border border-slate-200/60 rounded-md text-[10px] font-semibold text-slate-500 uppercase tracking-wide">
-            {{ step.language1 }}
+            {{ getLocalizedText(step.language1) }}
           </div>
           <div class="flex flex-col items-center gap-1.5 mt-3">
-            <span class="text-xl font-bold text-slate-900">{{ currentWord.word1 }}</span>
+            <span class="text-xl font-bold text-slate-900">{{ getLocalizedText(currentWord.word1) }}</span>
             <span v-if="revealed" class="text-xs text-slate-500 italic bg-slate-50 px-2.5 py-0.5 rounded-md">
-              {{ currentWord.meaning1 }}
+              {{ getLocalizedText(currentWord.meaning1) }}
             </span>
           </div>
           <div v-if="!revealed" class="text-slate-300 text-lg mt-2 word-mystery-bounce">?</div>
@@ -84,12 +84,12 @@
           :class="revealed ? 'border-violet-300 shadow-sm' : 'border-slate-200/60'"
         >
           <div class="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 bg-slate-100 border border-slate-200/60 rounded-md text-[10px] font-semibold text-slate-500 uppercase tracking-wide">
-            {{ step.language2 }}
+            {{ getLocalizedText(step.language2) }}
           </div>
           <div class="flex flex-col items-center gap-1.5 mt-3">
-            <span class="text-xl font-bold text-slate-900">{{ currentWord.word2 }}</span>
+            <span class="text-xl font-bold text-slate-900">{{ getLocalizedText(currentWord.word2) }}</span>
             <span v-if="revealed" class="text-xs text-slate-500 italic bg-slate-50 px-2.5 py-0.5 rounded-md">
-              {{ currentWord.meaning2 }}
+              {{ getLocalizedText(currentWord.meaning2) }}
             </span>
           </div>
           <div v-if="!revealed" class="text-slate-300 text-lg mt-2 word-mystery-bounce">?</div>
@@ -119,17 +119,17 @@
             <span class="text-sm">💡</span>
             <span class="text-xs font-bold uppercase tracking-wide">Explanation</span>
           </div>
-          <p class="text-sm text-slate-600 leading-relaxed mb-3">{{ currentWord.explanation }}</p>
+          <p class="text-sm text-slate-600 leading-relaxed mb-3">{{ getLocalizedText(currentWord.explanation) }}</p>
 
           <!-- Usage examples -->
           <div v-if="currentWord.example1 || currentWord.example2" class="grid grid-cols-2 gap-2">
             <div v-if="currentWord.example1" class="bg-slate-50/80 p-2.5 rounded-lg">
-              <span class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-0.5">{{ step.language1 }}</span>
-              <span class="text-xs text-slate-700 italic">"{{ currentWord.example1 }}"</span>
+              <span class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-0.5">{{ getLocalizedText(step.language1) }}</span>
+              <span class="text-xs text-slate-700 italic">"{{ getLocalizedText(currentWord.example1) }}"</span>
             </div>
             <div v-if="currentWord.example2" class="bg-slate-50/80 p-2.5 rounded-lg">
-              <span class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-0.5">{{ step.language2 }}</span>
-              <span class="text-xs text-slate-700 italic">"{{ currentWord.example2 }}"</span>
+              <span class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-0.5">{{ getLocalizedText(step.language2) }}</span>
+              <span class="text-xs text-slate-700 italic">"{{ getLocalizedText(currentWord.example2) }}"</span>
             </div>
           </div>
         </div>
@@ -231,6 +231,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue';
+import { getLocalizedText } from '@/composables/useLanguage';
 
 const props = defineProps({
   step: { type: Object, required: true }

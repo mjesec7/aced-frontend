@@ -606,10 +606,17 @@ export default {
     async loadData() {
       this.isLoading = true;
       try {
-        const [progressRes, studyRes] = await Promise.all([getUserProgress(this.userId), getUserStudyList(this.userId)]);
+        // Load lessons, progress, and study list in parallel
+        const [lessonsRes, progressRes, studyRes] = await Promise.all([
+          getAllLessons(),
+          getUserProgress(this.userId),
+          getUserStudyList(this.userId)
+        ]);
+        // Set lessons FIRST so processProgressData can map them to topics
+        this.lessons = lessonsRes?.data || [];
         if (progressRes?.success) this.userProgress = this.processProgressData(progressRes.data);
         if (studyRes?.success) this.studyPlanTopics = studyRes.data.map(i => this.extractTopicId(i.topicId)).filter(Boolean);
-        
+
         try {
           if (this.isSchoolMode) {
             // ✅ FIXED: Pass userId to get progress data with topics
@@ -644,8 +651,6 @@ export default {
           console.error('❌ [CataloguePage] Error fetching topics/courses:', topicError);
         }
         
-        const lessonsRes = await getAllLessons();
-        this.lessons = lessonsRes?.data || [];
         this.mergeOrphanLessons();
       } catch (error) {
         console.error('❌ [CataloguePage] loadData error:', error);
@@ -820,7 +825,7 @@ export default {
                 lessonCount: t.lessonCount || 0,
                 totalTime: t.totalTime || 10,
                 type: t.type || 'free',
-                progress: this.userProgress[t._id || t.id] || 0,
+                progress: t.progressPercent || this.userProgress[t._id || t.id] || 0,
                 inStudyPlan: this.studyPlanTopics.includes(t._id || t.id),
                 rating: 0,
                 ratingCount: 0
@@ -840,7 +845,7 @@ export default {
           lessonCount: c.lessonCount || 0,
           totalTime: c.totalTime || 10,
           type: c.type || 'free',
-          progress: this.userProgress[c._id || c.id || c.topicId] || 0,
+          progress: c.progressPercent || this.userProgress[c._id || c.id || c.topicId] || 0,
           inStudyPlan: this.studyPlanTopics.includes(c._id || c.id || c.topicId),
           rating: 0,
           ratingCount: 0

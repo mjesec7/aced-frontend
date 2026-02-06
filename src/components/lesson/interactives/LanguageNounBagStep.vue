@@ -7,7 +7,7 @@
         <span class="text-xs font-semibold text-violet-600 uppercase tracking-wide">{{ bagLabel }}</span>
       </div>
       <h2 class="text-lg font-bold text-slate-900 leading-snug">
-        {{ step.prompt }}
+        {{ getLocalizedText(step.prompt) }}
       </h2>
     </div>
 
@@ -119,6 +119,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue';
+import { getLocalizedText } from '@/composables/useLanguage';
 
 const props = defineProps({
   step: { type: Object, required: true }
@@ -135,9 +136,9 @@ const draggedItem = ref(null);
 // Computed labels (support multilingual)
 const targetPos = computed(() => props.step.targetPos || 'noun');
 
-const availableLabel = computed(() => props.step.availableLabel || 'Available Words');
+const availableLabel = computed(() => getLocalizedText(props.step.availableLabel) || 'Available Words');
 const bagLabel = computed(() => {
-  if (props.step.bagLabel) return props.step.bagLabel;
+  if (props.step.bagLabel) return getLocalizedText(props.step.bagLabel);
   const labels = {
     noun: 'Noun Bag',
     verb: 'Verb Collection',
@@ -146,9 +147,9 @@ const bagLabel = computed(() => {
   };
   return labels[targetPos.value] || 'Word Bag';
 });
-const emptyAvailableMessage = computed(() => props.step.emptyAvailableMessage || 'All words are in the bag.');
-const emptyBagMessage = computed(() => props.step.emptyBagMessage || 'Drag words here');
-const checkButtonLabel = computed(() => props.step.checkButtonLabel || 'Check Selection');
+const emptyAvailableMessage = computed(() => getLocalizedText(props.step.emptyAvailableMessage) || 'All words are in the bag.');
+const emptyBagMessage = computed(() => getLocalizedText(props.step.emptyBagMessage) || 'Drag words here');
+const checkButtonLabel = computed(() => getLocalizedText(props.step.checkButtonLabel) || 'Check Selection');
 
 // All target words (e.g., all nouns)
 const allTargetWords = computed(() =>
@@ -203,15 +204,15 @@ const checkSelection = () => {
   const isCorrect = allTargetFound && noExtraWords;
 
   if (isCorrect) {
-    feedback.value = props.step.successMessage || `✅ Perfect! All ${targetPos.value}s are in the bag.`;
+    feedback.value = getLocalizedText(props.step.successMessage) || `✅ Perfect! All ${targetPos.value}s are in the bag.`;
     status.value = 'correct';
     emit('complete', true);
   } else if (nonTargetInBag.length > 0) {
-    feedback.value = props.step.extraWordsMessage || `❌ You included non-${targetPos.value}s in the bag. Remove them.`;
+    feedback.value = getLocalizedText(props.step.extraWordsMessage) || `❌ You included non-${targetPos.value}s in the bag. Remove them.`;
     status.value = 'incorrect';
     emit('complete', false);
   } else {
-    feedback.value = props.step.missingWordsMessage || `❌ You haven't added all ${targetPos.value}s yet.`;
+    feedback.value = getLocalizedText(props.step.missingWordsMessage) || `❌ You haven't added all ${targetPos.value}s yet.`;
     status.value = 'incorrect';
     emit('complete', false);
   }

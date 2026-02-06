@@ -7,7 +7,7 @@
         <span class="text-xs font-semibold text-violet-600 uppercase tracking-wide">Rhythm Match</span>
       </div>
       <h2 class="text-lg font-bold text-slate-900 leading-snug">
-        {{ step.prompt || 'Match sentences with the same stress pattern (rhythm)' }}
+        {{ getLocalizedText(step.prompt) || 'Match sentences with the same stress pattern (rhythm)' }}
       </h2>
     </div>
 
@@ -54,7 +54,7 @@
 
         <!-- Example sentence -->
         <p class="text-base text-slate-800 font-medium text-center">
-          "{{ step.targetSentence }}"
+          "{{ getLocalizedText(step.targetSentence) }}"
         </p>
         <p class="text-xs text-slate-400 text-center mt-1.5">
           {{ getPatternName(step.targetPattern) }}
@@ -101,7 +101,7 @@
 
         <!-- Sentence -->
         <div class="flex-1 min-w-0">
-          <p class="text-sm text-slate-800 font-medium">{{ option.sentence }}</p>
+          <p class="text-sm text-slate-800 font-medium">{{ getLocalizedText(option.sentence) }}</p>
           <p v-if="showResult && isCorrectOption(idx)" class="text-xs text-emerald-600 mt-0.5">
             Pattern: {{ option.pattern.map(b => b === 1 ? '●' : '○').join(' ') }}
           </p>
@@ -133,7 +133,7 @@
           <span class="text-sm">💡</span>
           <div>
             <p class="text-xs font-bold text-indigo-700 uppercase tracking-wide mb-1">Understanding Rhythm</p>
-            <p class="text-sm text-indigo-600/80 leading-relaxed">{{ step.explanation }}</p>
+            <p class="text-sm text-indigo-600/80 leading-relaxed">{{ getLocalizedText(step.explanation) }}</p>
           </div>
         </div>
       </div>
@@ -169,6 +169,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue';
+import { getLocalizedText } from '@/composables/useLanguage';
 
 const props = defineProps({
   step: { type: Object, required: true }

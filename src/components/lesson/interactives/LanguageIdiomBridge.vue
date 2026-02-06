@@ -7,7 +7,7 @@
         <span class="text-xs font-semibold text-violet-600 uppercase tracking-wide">Idiom Bridge</span>
       </div>
       <h2 class="text-lg font-bold text-slate-900 leading-snug">
-        {{ step.prompt || 'Connect idioms with the same meaning across languages' }}
+        {{ getLocalizedText(step.prompt) || 'Connect idioms with the same meaning across languages' }}
       </h2>
     </div>
 
@@ -15,10 +15,10 @@
     <div class="flex justify-between mb-4 px-2">
       <div class="flex items-center gap-2">
         <span class="text-lg">{{ getLanguageFlag(step.sourceLanguage) }}</span>
-        <span class="text-sm font-semibold text-slate-700">{{ step.sourceLanguage || 'English' }}</span>
+        <span class="text-sm font-semibold text-slate-700">{{ getLocalizedText(step.sourceLanguage) || 'English' }}</span>
       </div>
       <div class="flex items-center gap-2">
-        <span class="text-sm font-semibold text-slate-700">{{ step.targetLanguage || 'Spanish' }}</span>
+        <span class="text-sm font-semibold text-slate-700">{{ getLocalizedText(step.targetLanguage) || 'Spanish' }}</span>
         <span class="text-lg">{{ getLanguageFlag(step.targetLanguage) }}</span>
       </div>
     </div>
@@ -69,9 +69,9 @@
             }"
           >
             <div class="idiom-content">
-              <p class="text-sm font-semibold text-slate-800">{{ idiom.text }}</p>
+              <p class="text-sm font-semibold text-slate-800">{{ getLocalizedText(idiom.text) }}</p>
               <p v-if="idiom.literal" class="text-xs text-slate-400 italic mt-0.5">
-                (Literally: {{ idiom.literal }})
+                (Literally: {{ getLocalizedText(idiom.literal) }})
               </p>
             </div>
             <div class="connection-dot right-dot" :class="{ 'dot-active': activeSource === idx }"></div>
@@ -103,9 +103,9 @@
           >
             <div class="connection-dot left-dot" :class="{ 'dot-active': hoveringTarget === idx }"></div>
             <div class="idiom-content">
-              <p class="text-sm font-semibold text-slate-800">{{ idiom.text }}</p>
+              <p class="text-sm font-semibold text-slate-800">{{ getLocalizedText(idiom.text) }}</p>
               <p v-if="idiom.literal" class="text-xs text-slate-400 italic mt-0.5">
-                (Literally: {{ idiom.literal }})
+                (Literally: {{ getLocalizedText(idiom.literal) }})
               </p>
             </div>
           </div>
@@ -121,7 +121,7 @@
         class="px-4 py-2.5 bg-emerald-50/80 rounded-lg border border-emerald-100 text-sm"
       >
         <p class="text-emerald-700">
-          <span class="font-semibold">Shared meaning:</span> {{ match.meaning }}
+          <span class="font-semibold">Shared meaning:</span> {{ getLocalizedText(match.meaning) }}
         </p>
       </div>
     </transition-group>
@@ -166,6 +166,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
+import { getLocalizedText } from '@/composables/useLanguage';
 
 const props = defineProps({
   step: { type: Object, required: true }
@@ -333,7 +334,7 @@ const endConnection = (targetIdx) => {
     // Reveal the shared meaning
     revealedMeanings.value.push({
       id: sourceIdiom.matchId,
-      meaning: sourceIdiom.meaning || targetIdiom.meaning || 'These idioms share the same meaning!'
+      meaning: getLocalizedText(sourceIdiom.meaning) || getLocalizedText(targetIdiom.meaning) || 'These idioms share the same meaning!'
     });
 
     if (correctMatches.value.length === props.step.sourceIdioms.length) {

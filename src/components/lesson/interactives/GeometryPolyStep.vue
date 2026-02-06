@@ -6,7 +6,7 @@
         <span class="text-sm">📐</span>
         <span class="text-xs font-semibold text-violet-600 uppercase tracking-wide">Geometry</span>
       </div>
-      <h2 class="text-lg font-bold text-slate-900 leading-snug">{{ step.prompt }}</h2>
+      <h2 class="text-lg font-bold text-slate-900 leading-snug">{{ getLocalizedText(step.prompt) }}</h2>
     </div>
 
     <!-- SVG Canvas -->
@@ -126,6 +126,7 @@
 
 <script setup>
 import { ref, computed } from 'vue';
+import { getLocalizedText } from '@/composables/useLanguage';
 
 const props = defineProps({
   step: { type: Object, required: true }
