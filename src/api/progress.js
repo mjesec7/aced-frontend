@@ -40,21 +40,15 @@ export const submitProgress = async (userId, progressData) => {
       ...progressData
     };
 
-    // Try multiple endpoints
+    // Try endpoints that actually exist on the backend
     const endpoints = [
-      `users/${userId}/progress/save`,
-      `progress`,
-      `users/${userId}/lesson/${progressData.lessonId}`,
-      `user-progress`
+      'progress',        // POST /api/progress (primary - with verifyToken)
+      'user-progress'    // POST /api/user-progress (legacy alias)
     ];
 
     for (const endpoint of endpoints) {
       try {
-        const dataToSend = endpoint.includes('/progress') && !endpoint.includes('users')
-          ? enhancedData
-          : { ...enhancedData, userId: undefined };
-
-        const { data } = await api.post(endpoint, dataToSend, { headers, timeout: 15000 });
+        const { data } = await api.post(endpoint, enhancedData, { headers, timeout: 15000 });
 
         if (data && (data.success !== false)) {
           return {
@@ -87,14 +81,11 @@ export const getLessonProgress = async (userId, lessonId) => {
 
     const headers = { Authorization: `Bearer ${token}` };
 
-    // Try multiple endpoints
+    // Try endpoints that actually exist on the backend
     const endpoints = [
-      `progress/lesson/${lessonId}/user/${userId}`, // Matches backend: /api/progress/lesson/:lessonId/user/:userId
-      `user-progress/user/${userId}/lesson/${lessonId}`,
-      `user/${userId}/lesson/${lessonId}`,
-      `progress?userId=${userId}&lessonId=${lessonId}`,
-      `api/progress/${userId}/${lessonId}`,
-      `api/user-progress/${userId}/${lessonId}`
+      `progress?userId=${userId}&lessonId=${lessonId}`,             // GET /api/progress?userId=X&lessonId=Y
+      `progress/lesson/${lessonId}/user/${userId}`,                  // GET /api/progress/lesson/:lessonId/user/:userId
+      `progress/user/${userId}/lesson/${lessonId}`                   // GET /api/progress/user/:userId/lesson/:lessonId
     ];
 
     for (const endpoint of endpoints) {
@@ -145,11 +136,9 @@ export const getUserProgress = async (userId) => {
 
     const headers = { Authorization: `Bearer ${token}` };
 
-    // Try multiple endpoints
+    // Try endpoints that actually exist on the backend
     const endpoints = [
-      `users/${userId}/progress`,
-      `user-progress/user/${userId}`,
-      `progress?userId=${userId}`,
+      `progress?userId=${userId}`,                // GET /api/progress?userId=X (primary)
     ];
 
     for (const endpoint of endpoints) {

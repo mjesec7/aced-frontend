@@ -468,6 +468,7 @@ import { getLessonAIResponse, getUserUsage } from '@/services/GPTService'
 import { clearChatHistory } from '@/api/chat'
 import { submitLessonRating } from '@/api/ratings'
 import { getUserStudyList, addToStudyList } from '@/api/user'
+import { submitProgress } from '@/api/progress'
 import { auth } from '@/firebase'
 
 // Import language composable for multi-language support
@@ -1013,6 +1014,8 @@ function cancelExit() {
 
 function exitLesson() {
   showExitModal.value = false
+  // Save partial progress before leaving
+  saveProgressToBackend(false)
   handleReturnToCatalogue()
 }
 
@@ -1056,6 +1059,8 @@ function resetExerciseState(fullReset = true) {
 function completeLesson() {
   lessonCompleted.value = true
   calculateResults()
+  // Save completed progress to backend
+  saveProgressToBackend(true)
   // Show rating modal after a short delay
   setTimeout(() => {
     showRatingModal.value = true
@@ -1078,6 +1083,50 @@ function calculateResults() {
   }
   
   progressInsight.value = `You completed ${totalSteps} steps with ${mistakeCount.value} mistakes.`
+}
+
+async function saveProgressToBackend(isCompleted = false) {
+  if (!userId.value) return
+  const lessonId = lesson.value?._id || lesson.value?.id || route.params.id || route.params.lessonId
+  if (!lessonId) return
+
+  // Extract topicId from lesson data
+  const rawTopicId = lesson.value?.topicId
+  let topicId = null
+  if (typeof rawTopicId === 'string') topicId = rawTopicId
+  else if (rawTopicId?.$oid) topicId = rawTopicId.$oid
+  else if (rawTopicId?._id) topicId = typeof rawTopicId._id === 'string' ? rawTopicId._id : String(rawTopicId._id)
+  else if (rawTopicId) topicId = String(rawTopicId)
+
+  // Build completed steps array
+  const completedStepsArr = []
+  for (let i = 0; i < currentIndex.value + (isCompleted ? 1 : 0); i++) {
+    completedStepsArr.push(i)
+  }
+
+  // Determine medal from label
+  const medalMap = { Gold: 'gold', Silver: 'silver', Bronze: 'bronze' }
+  const medal = medalMap[medalLabel.value] || 'none'
+
+  try {
+    await submitProgress(userId.value, {
+      lessonId: String(lessonId),
+      topicId: topicId,
+      completedSteps: completedStepsArr,
+      currentStep: currentIndex.value,
+      totalSteps: steps.value.length,
+      progressPercent: isCompleted ? 100 : progressPercentage.value,
+      completed: isCompleted,
+      mistakes: mistakeCount.value,
+      stars: Math.min(3, stars.value),
+      points: earnedPoints.value,
+      duration: 0,
+      medal: medal,
+      hintsUsed: 0
+    })
+  } catch (err) {
+    console.error('Failed to save progress:', err.message)
+  }
 }
 
 function getMedalIcon() {
