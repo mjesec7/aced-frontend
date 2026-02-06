@@ -24,16 +24,20 @@
         <p class="start-description">{{ currentQuestionText }}</p>
         <div class="start-rules">
           <div class="rule-item">
+            <span class="rule-icon">🎯</span>
+            <span>Catch {{ totalItemsToWin }} correct items to win</span>
+          </div>
+          <div class="rule-item">
             <span class="rule-icon">✅</span>
-            <span>Catch correct answers</span>
+            <span>+100 points for correct answers</span>
           </div>
           <div class="rule-item">
             <span class="rule-icon">❌</span>
-            <span>Avoid wrong answers</span>
+            <span>-50 points for wrong answers</span>
           </div>
           <div class="rule-item">
             <span class="rule-icon">❤️</span>
-            <span>You have 5 lives</span>
+            <span>You have 5 lives (5 mistakes = game over)</span>
           </div>
         </div>
         <button class="start-btn" @click="startGame">
@@ -88,6 +92,9 @@
     <div v-if="gameActive" class="question-display">
       <div class="question-icon">❓</div>
       <div class="question-text">{{ currentQuestionText }}</div>
+      <div class="progress-indicator">
+        🎯 {{ correctCaught }} / {{ totalItemsToWin }} caught
+      </div>
     </div>
 
     <div class="game-world">
@@ -165,13 +172,22 @@ const BUBBLE_COLORS = ['#FFE0B2', '#C8E6C9', '#BBDEFB', '#F8BBD0', '#E1BEE7'];
 // Questions/Items Logic
 const questions = computed(() => props.gameData.questions || [{ q: "Ready?", a: "Go", wrong: [] }]);
 const items = computed(() => props.gameData.items || []);
-const correctItems = computed(() => items.value.filter(i => i.isCorrect));
-const wrongItems = computed(() => items.value.filter(i => !i.isCorrect));
+const correctItemsList = computed(() => items.value.filter(i => i.isCorrect));
+const wrongItemsList = computed(() => items.value.filter(i => !i.isCorrect));
 const currentQuestion = computed(() => questions.value[currentQuestionIndex.value]);
+
+// Total items needed to win - use gameData config, or correct items count, or minimum 5
+const totalItemsToWin = computed(() => {
+  if (props.gameData.targetScore) return Math.ceil(props.gameData.targetScore / 100);
+  if (props.gameData.itemsToCollect) return props.gameData.itemsToCollect;
+  if (correctItemsList.value.length > 0) return Math.max(5, correctItemsList.value.length);
+  return Math.max(5, questions.value.length); // Minimum 5 items to catch
+});
+
 const currentQuestionText = computed(() => {
   // Use instructions or first question
   if (props.gameData.gameplayData?.instructions?.en) return props.gameData.gameplayData.instructions.en;
-  return currentQuestion.value?.q || currentQuestion.value?.question || "Catch the correct items!";
+  return currentQuestion.value?.q || currentQuestion.value?.question || `Catch ${totalItemsToWin.value} correct items!`;
 });
 
 // Game Loop
@@ -186,11 +202,11 @@ const spawnItem = () => {
     // Use items from gameConfig - 50% chance correct/wrong
     isCorrectSpawn = Math.random() > 0.4; // Slightly favor correct items
     
-    if (isCorrectSpawn && correctItems.value.length > 0) {
-      const item = correctItems.value[Math.floor(Math.random() * correctItems.value.length)];
+    if (isCorrectSpawn && correctItemsList.value.length > 0) {
+      const item = correctItemsList.value[Math.floor(Math.random() * correctItemsList.value.length)];
       text = item.content || item.text || item.id;
-    } else if (wrongItems.value.length > 0) {
-      const item = wrongItems.value[Math.floor(Math.random() * wrongItems.value.length)];
+    } else if (wrongItemsList.value.length > 0) {
+      const item = wrongItemsList.value[Math.floor(Math.random() * wrongItemsList.value.length)];
       text = item.content || item.text || item.id;
       isCorrectSpawn = false;
     } else {
@@ -256,22 +272,23 @@ const catchItem = (item) => {
   if (item.isCorrect) {
       emit('score-change', 100);
       correctCaught.value++;
+      emit('item-collected', { isCorrect: true });
       triggerFeedback('Correct!', 'success', '✨');
-      fallingItems.value = []; // Clear items for next question focus
-
-      setTimeout(() => {
-          if (currentQuestionIndex.value < questions.value.length - 1) {
-              currentQuestionIndex.value++;
-          } else {
-              // All questions completed - user wins!
+      
+      // Check if user has caught enough correct items to win
+      if (correctCaught.value >= totalItemsToWin.value) {
+          // Clear remaining items and end game as win
+          fallingItems.value = [];
+          setTimeout(() => {
               endGame(true);
-          }
-      }, 800);
+          }, 800);
+      }
   } else {
-      emit('score-change', -20);
+      emit('score-change', -50); // Higher penalty for wrong answers
       emit('life-lost');
+      emit('item-collected', { isCorrect: false });
       mistakesMade.value++;
-      triggerFeedback('Wrong!', 'error', '❌');
+      triggerFeedback('Wrong! -50', 'error', '❌');
       
       // Check if out of lives (5 mistakes = game over)
       if (props.lives <= 1) {
@@ -694,8 +711,15 @@ onUnmounted(stopGame);
   color: #1e293b;
 }
 
-
-
+.progress-indicator {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #3b82f6;
+  background: #eff6ff;
+  padding: 4px 12px;
+  border-radius: 10px;
+  margin-left: 8px;
+}
 /* FALLING ITEMS (CSS ANIMATION) */
 .falling-orb {
     position: absolute;
