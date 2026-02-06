@@ -1,52 +1,51 @@
 <template>
   <div class="interactive-step step-animate-in">
     <!-- Header -->
-    <!-- Header -->
-    <div class="text-center mb-6 relative">
-      <div class="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-gradient-to-r from-indigo-100 to-purple-100 border border-indigo-200 mb-4">
-        <span class="text-2xl">✨</span>
-        <span class="font-bold text-indigo-700">Word Constellation</span>
+    <div class="mb-5 relative">
+      <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-violet-50 border border-violet-100 rounded-lg mb-3">
+        <span class="text-sm">✨</span>
+        <span class="text-xs font-semibold text-violet-600 uppercase tracking-wide">Word Constellation</span>
       </div>
-      
-      <button 
-        @click="showHelp = !showHelp" 
-        class="absolute right-0 top-0 p-2 text-indigo-400 hover:text-indigo-600 transition-colors"
+
+      <button
+        @click="showHelp = !showHelp"
+        class="absolute right-0 top-0 p-1.5 text-slate-400 hover:text-violet-600 transition-colors"
         title="How to play"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       </button>
 
-      <div v-if="showHelp" class="absolute top-12 right-0 w-72 bg-white p-5 rounded-xl shadow-xl border border-indigo-100 z-50 text-left">
-        <h4 class="font-bold text-indigo-700 mb-2 flex items-center gap-2">
+      <div v-if="showHelp" class="absolute top-10 right-0 w-64 bg-white p-4 rounded-xl shadow-lg border border-slate-200/60 z-50 text-left">
+        <h4 class="text-xs font-bold text-violet-600 uppercase tracking-wide mb-2 flex items-center gap-1.5">
           <span>🎮</span> How to Play
         </h4>
-        <ul class="space-y-2 text-sm text-gray-600">
-          <li class="flex gap-2">
-            <span class="text-indigo-500 font-bold">1.</span>
-            <span>Look for words related to the <strong>Central Word</strong>.</span>
+        <ul class="space-y-1.5 text-xs text-slate-500">
+          <li class="flex gap-1.5">
+            <span class="text-violet-400 font-bold">1.</span>
+            <span>Look for words related to the <strong class="text-slate-700">Central Word</strong>.</span>
           </li>
-          <li class="flex gap-2">
-            <span class="text-indigo-500 font-bold">2.</span>
-            <span><strong>Drag</strong> from one word to another to connect them.</span>
+          <li class="flex gap-1.5">
+            <span class="text-violet-400 font-bold">2.</span>
+            <span><strong class="text-slate-700">Drag</strong> from one word to another to connect them.</span>
           </li>
-          <li class="flex gap-2">
-            <span class="text-indigo-500 font-bold">3.</span>
+          <li class="flex gap-1.5">
+            <span class="text-violet-400 font-bold">3.</span>
             <span>Find all connections to reveal the full constellation!</span>
           </li>
         </ul>
-        <button @click="showHelp = false" class="mt-3 w-full py-1 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-bold hover:bg-indigo-100">Got it!</button>
+        <button @click="showHelp = false" class="mt-2.5 w-full py-1 bg-violet-50 text-violet-600 rounded-lg text-[10px] font-bold hover:bg-violet-100 cursor-pointer">Got it!</button>
       </div>
 
-      <p class="text-lg text-gray-600 leading-relaxed max-w-xl mx-auto">
+      <h2 class="text-lg font-bold text-slate-900 leading-snug">
         {{ step.prompt || 'Drag to connect words that are synonyms, antonyms, or related to the central concept.' }}
-      </p>
+      </h2>
     </div>
 
     <!-- Central Word -->
-    <div class="text-center mb-4">
-      <span class="inline-block px-6 py-3 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-xl shadow-lg">
+    <div class="text-center mb-3">
+      <span class="inline-block px-5 py-2.5 rounded-xl bg-violet-100 border border-violet-200 text-violet-700 font-bold text-base">
         {{ centralWordText }}
       </span>
     </div>
@@ -55,15 +54,15 @@
     <div class="constellation-canvas" ref="canvas" @mousemove="handleMouseMove" @mouseup="handleMouseUp" @touchmove="handleTouchMove" @touchend="handleMouseUp">
       <!-- SVG for connections -->
       <svg class="absolute inset-0 w-full h-full pointer-events-none">
-        <!-- Background stars -->
+        <!-- Background dots (replacing stars for light theme) -->
         <circle
           v-for="star in backgroundStars"
           :key="star.id"
           :cx="star.x"
           :cy="star.y"
           :r="star.r"
-          fill="white"
-          :opacity="star.opacity"
+          fill="#c7d2fe"
+          :opacity="star.opacity * 0.4"
           class="twinkle"
           :style="{ animationDelay: star.delay + 's' }"
         />
@@ -77,7 +76,7 @@
           :x2="getWordPosition(conn.to).x"
           :y2="getWordPosition(conn.to).y"
           stroke="url(#connectionGradient)"
-          stroke-width="3"
+          stroke-width="2.5"
           stroke-linecap="round"
           class="constellation-line"
         />
@@ -90,8 +89,8 @@
           :x2="dragEnd.x"
           :y2="dragEnd.y"
           stroke="#a5b4fc"
-          stroke-width="2"
-          stroke-dasharray="6 4"
+          stroke-width="1.5"
+          stroke-dasharray="5 3"
           stroke-linecap="round"
         />
 
@@ -99,7 +98,7 @@
         <defs>
           <linearGradient id="connectionGradient" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stop-color="#818cf8" />
-            <stop offset="50%" stop-color="#c084fc" />
+            <stop offset="50%" stop-color="#a78bfa" />
             <stop offset="100%" stop-color="#818cf8" />
           </linearGradient>
         </defs>
@@ -137,7 +136,7 @@
 
       <!-- Central Star (the main word) -->
       <div class="central-star" :style="getCentralStyle()">
-        <div class="star-rays"></div>
+        <div class="star-glow"></div>
         <div class="star-core">
           <span>{{ centralWordText }}</span>
         </div>
@@ -145,11 +144,11 @@
     </div>
 
     <!-- Relationship Types Legend -->
-    <div v-if="step.showLegend !== false" class="mt-6 flex flex-wrap justify-center gap-3">
+    <div v-if="step.showLegend !== false" class="mt-4 flex flex-wrap justify-center gap-2">
       <div
         v-for="relType in relationshipTypes"
         :key="relType.type"
-        class="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm"
+        class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs border"
         :class="relType.class"
       >
         <span>{{ relType.icon }}</span>
@@ -158,15 +157,15 @@
     </div>
 
     <!-- Progress & Feedback -->
-    <div class="mt-6">
-      <div class="flex items-center gap-4 mb-4">
-        <div class="flex-1 h-3 bg-gray-200 rounded-full overflow-hidden">
+    <div class="mt-5">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
           <div
-            class="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500"
+            class="h-full bg-violet-500 rounded-full transition-all duration-500"
             :style="{ width: `${progressPercent}%` }"
           ></div>
         </div>
-        <span class="text-sm font-bold text-gray-600">
+        <span class="text-xs font-semibold text-slate-500">
           {{ correctConnections.length }} / {{ step.requiredConnections?.length || step.words.length }}
         </span>
       </div>
@@ -181,16 +180,16 @@
       <button
         v-if="correctConnections.length > 0 && !isComplete"
         @click="resetConstellation"
-        class="px-6 py-3 rounded-full font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
+        class="px-5 py-2.5 rounded-lg text-sm font-medium text-slate-500 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
       >
         Reset
       </button>
       <button
         v-if="isComplete"
         @click="$emit('complete', true)"
-        class="px-8 py-3 rounded-full font-bold text-white bg-gradient-to-r from-indigo-600 to-purple-600 shadow-md hover:shadow-lg transition-all"
+        class="step-btn-primary step-btn-success"
       >
-        Constellation Complete! →
+        Constellation Complete!
       </button>
     </div>
   </div>
@@ -239,10 +238,10 @@ const generateBackgroundStars = () => {
 
 // Relationship types
 const relationshipTypes = [
-  { type: 'synonym', label: 'Synonym', icon: '≈', class: 'bg-blue-100 text-blue-700' },
-  { type: 'antonym', label: 'Antonym', icon: '↔', class: 'bg-red-100 text-red-700' },
-  { type: 'related', label: 'Related', icon: '→', class: 'bg-green-100 text-green-700' },
-  { type: 'category', label: 'Category', icon: '⊂', class: 'bg-purple-100 text-purple-700' }
+  { type: 'synonym', label: 'Synonym', icon: '≈', class: 'bg-indigo-50 text-indigo-600 border-indigo-100' },
+  { type: 'antonym', label: 'Antonym', icon: '↔', class: 'bg-red-50 text-red-600 border-red-100' },
+  { type: 'related', label: 'Related', icon: '→', class: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
+  { type: 'category', label: 'Category', icon: '⊂', class: 'bg-violet-50 text-violet-600 border-violet-100' }
 ];
 
 // Computed
@@ -444,21 +443,21 @@ const resetConstellation = () => {
 .constellation-canvas {
   position: relative;
   width: 100%;
-  height: 450px;
-  background: linear-gradient(180deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
-  border-radius: 24px;
+  height: 420px;
+  background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 50%, #e0e7ff 100%);
+  border-radius: 0.75rem;
   overflow: hidden;
-  box-shadow: inset 0 0 100px rgba(99, 102, 241, 0.2);
+  border: 1px solid rgba(226, 232, 240, 0.6);
 }
 
-/* Background star twinkle */
+/* Background dot twinkle */
 .twinkle {
   animation: twinkle 3s ease-in-out infinite;
 }
 
 @keyframes twinkle {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 0.8; }
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 0.4; }
 }
 
 /* Word nodes */
@@ -475,9 +474,9 @@ const resetConstellation = () => {
 
 .word-glow {
   position: absolute;
-  inset: -8px;
+  inset: -6px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.4) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -489,70 +488,70 @@ const resetConstellation = () => {
 
 .word-node.dragging .word-glow {
   opacity: 1;
-  animation: pulse 1s ease infinite;
+  animation: node-pulse 1s ease infinite;
 }
 
-@keyframes pulse {
+@keyframes node-pulse {
   0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.2); }
+  50% { transform: scale(1.15); }
 }
 
 .word-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 12px 20px;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 16px;
-  border: 2px solid #e0e7ff;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  transition: all 0.3s ease;
+  padding: 10px 16px;
+  background: white;
+  border-radius: 0.75rem;
+  border: 1.5px solid rgba(226, 232, 240, 0.6);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.25s ease;
 }
 
 .word-node:hover .word-content {
-  transform: scale(1.05);
+  transform: scale(1.04);
   border-color: #a5b4fc;
 }
 
 .word-node.connected .word-content {
-  background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
-  border-color: #818cf8;
+  background: rgba(139, 92, 246, 0.04);
+  border-color: #8b5cf6;
 }
 
 .word-node.hovering .word-content {
   border-color: #818cf8;
-  box-shadow: 0 0 20px rgba(129, 140, 248, 0.5);
+  box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.15);
 }
 
 .word-text {
   font-weight: 600;
-  font-size: 14px;
-  color: #1e1b4b;
+  font-size: 13px;
+  color: #1e293b;
 }
 
 .word-type {
-  font-size: 10px;
-  color: #6366f1;
+  font-size: 9px;
+  color: #7c3aed;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-top: 2px;
+  margin-top: 1px;
 }
 
 .connection-badge {
   position: absolute;
-  top: -8px;
-  right: -8px;
-  width: 24px;
-  height: 24px;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);
+  background: #7c3aed;
   color: white;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: bold;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 1px 4px rgba(124, 58, 237, 0.3);
 }
 
 /* Central star */
@@ -561,27 +560,27 @@ const resetConstellation = () => {
   z-index: 5;
 }
 
-.star-rays {
+.star-glow {
   position: absolute;
-  inset: -30px;
-  background: radial-gradient(circle, rgba(251, 191, 36, 0.3) 0%, transparent 70%);
+  inset: -20px;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.12) 0%, transparent 70%);
   animation: star-pulse 2s ease-in-out infinite;
 }
 
 @keyframes star-pulse {
   0%, 100% { opacity: 0.5; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.1); }
+  50% { opacity: 1; transform: scale(1.08); }
 }
 
 .star-core {
-  padding: 16px 28px;
-  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-  border-radius: 20px;
-  color: white;
+  padding: 12px 22px;
+  background: white;
+  border: 2px solid #8b5cf6;
+  border-radius: 0.75rem;
+  color: #5b21b6;
   font-weight: bold;
-  font-size: 18px;
-  box-shadow: 0 0 40px rgba(251, 191, 36, 0.6);
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  font-size: 16px;
+  box-shadow: 0 2px 12px rgba(139, 92, 246, 0.15);
 }
 
 /* Constellation lines */
@@ -597,38 +596,14 @@ const resetConstellation = () => {
 
 /* Shake animation */
 .shake {
-  animation: shake 0.5s ease;
+  animation: node-shake 0.5s ease;
 }
 
-@keyframes shake {
+@keyframes node-shake {
   0%, 100% { transform: translate(-50%, -50%); }
-  20% { transform: translate(-50%, -50%) translateX(-5px); }
-  40% { transform: translate(-50%, -50%) translateX(5px); }
-  60% { transform: translate(-50%, -50%) translateX(-5px); }
-  80% { transform: translate(-50%, -50%) translateX(5px); }
-}
-
-/* Feedback */
-.step-feedback {
-  min-height: 24px;
-  padding: 12px 16px;
-  border-radius: 12px;
-  font-weight: 500;
-}
-
-.step-feedback:empty {
-  display: none;
-}
-
-.step-feedback.success {
-  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
-  color: #065f46;
-  border: 1px solid #6ee7b7;
-}
-
-.step-feedback.error {
-  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-  color: #991b1b;
-  border: 1px solid #fca5a5;
+  20% { transform: translate(-50%, -50%) translateX(-4px); }
+  40% { transform: translate(-50%, -50%) translateX(4px); }
+  60% { transform: translate(-50%, -50%) translateX(-4px); }
+  80% { transform: translate(-50%, -50%) translateX(4px); }
 }
 </style>

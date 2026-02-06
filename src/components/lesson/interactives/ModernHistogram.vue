@@ -1,13 +1,17 @@
 <template>
-  <div class="histogram-wrapper">
-    <!-- Title Section -->
-    <div class="histogram-header">
-      <h3 class="histogram-title">{{ title || 'Data Visualization' }}</h3>
-      <p v-if="description" class="histogram-description">{{ description }}</p>
+  <div class="interactive-step step-animate-in">
+    <!-- Header -->
+    <div class="mb-5">
+      <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-violet-50 border border-violet-100 rounded-lg mb-3">
+        <span class="text-sm">📊</span>
+        <span class="text-xs font-semibold text-violet-600 uppercase tracking-wide">Histogram</span>
+      </div>
+      <h2 class="text-lg font-bold text-slate-900 leading-snug">{{ title || 'Data Visualization' }}</h2>
+      <p v-if="description" class="text-sm text-slate-500 mt-1 leading-relaxed">{{ description }}</p>
     </div>
 
-    <!-- Chart Visualization -->
-    <div class="chart-container">
+    <!-- Chart Section -->
+    <div class="bg-slate-50/80 rounded-xl border border-slate-200/60 p-4 mb-4">
       <div class="chart-inner">
         <!-- Y-axis Grid Lines -->
         <div class="chart-grid">
@@ -18,25 +22,19 @@
 
         <!-- Bars -->
         <div class="bars-container">
-          <div 
-            v-for="(value, index) in chartData.values" 
+          <div
+            v-for="(value, index) in chartData.values"
             :key="index"
             class="bar-wrapper"
             @click="selectValue(chartData.labels[index])"
           >
-            <!-- Bar -->
-            <div 
+            <div
               class="bar"
               :class="{ 'bar-selected': selectedIndex === index }"
-              :style="{ 
-                height: `${(value / maxValue) * 100}%`,
-              }"
+              :style="{ height: `${(value / maxValue) * 100}%` }"
             >
-              <!-- Value Label on Hover -->
               <div class="bar-value">{{ value }}</div>
             </div>
-
-            <!-- Label -->
             <div class="bar-label">{{ chartData.labels[index] }}</div>
           </div>
         </div>
@@ -44,16 +42,15 @@
     </div>
 
     <!-- Slider Section -->
-    <div class="slider-section">
-      <div class="slider-header">
-        <span class="slider-label">Select Value</span>
-        <span class="slider-current-value">{{ currentValue }}</span>
+    <div class="bg-white rounded-xl border border-slate-200/60 p-4 mb-4">
+      <div class="flex justify-between items-center mb-3">
+        <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Select Value</span>
+        <span class="text-lg font-bold text-violet-600">{{ currentValue }}</span>
       </div>
 
-      <div class="slider-container">
-        <span class="slider-min">{{ min }}</span>
-        
-        <div class="slider-track-wrapper">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="text-xs font-semibold text-slate-400 min-w-[40px] text-right">{{ min }}</span>
+        <div class="slider-track-wrapper flex-1">
           <input
             type="range"
             :min="min"
@@ -65,34 +62,56 @@
             @input="handleSliderInput"
           />
           <div class="slider-track">
-            <div 
-              class="slider-fill" 
+            <div
+              class="slider-fill"
               :style="{ width: sliderPercentage + '%' }"
             ></div>
           </div>
         </div>
-        
-        <span class="slider-max">{{ max }}</span>
+        <span class="text-xs font-semibold text-slate-400 min-w-[40px]">{{ max }}</span>
       </div>
 
       <!-- Submit Button -->
       <button
         @click="checkAnswer"
         :disabled="isLocked"
-        class="submit-button"
-        :class="{ 'submit-button-success': isLocked }"
+        class="step-btn-primary w-full"
+        :class="{ 'step-btn-success': isLocked }"
       >
-        {{ isLocked ? '✓ Correct!' : 'Submit Answer' }}
+        {{ isLocked ? 'Correct!' : 'Submit Answer' }}
       </button>
-
-      <!-- Feedback -->
-      <transition name="fade-slide">
-        <div v-if="feedback" class="feedback" :class="{ 'feedback-success': isCorrect, 'feedback-error': !isCorrect }">
-          <span class="feedback-icon">{{ isCorrect ? '🎯' : '💫' }}</span>
-          <span class="feedback-text">{{ feedback }}</span>
-        </div>
-      </transition>
     </div>
+
+    <!-- Feedback -->
+    <transition
+      enter-active-class="transition-all duration-300 ease-out"
+      enter-from-class="opacity-0 translate-y-2"
+      enter-to-class="opacity-100 translate-y-0"
+      leave-active-class="transition-all duration-200 ease-in"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0 translate-y-2"
+    >
+      <div
+        v-if="feedback"
+        class="flex items-start gap-3 p-4 rounded-xl border"
+        :class="isCorrect
+          ? 'bg-emerald-50/50 border-emerald-200/60'
+          : 'bg-red-50/50 border-red-200/60'"
+      >
+        <div
+          class="w-9 h-9 rounded-lg flex items-center justify-center text-white text-base shrink-0"
+          :class="isCorrect ? 'bg-emerald-500' : 'bg-red-500'"
+        >
+          {{ isCorrect ? '🎯' : '💫' }}
+        </div>
+        <div class="pt-0.5">
+          <h4 class="text-sm font-bold mb-0.5" :class="isCorrect ? 'text-emerald-700' : 'text-red-700'">
+            {{ isCorrect ? 'Perfect!' : 'Not quite' }}
+          </h4>
+          <p class="text-sm text-slate-600 leading-relaxed">{{ feedback }}</p>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -140,7 +159,6 @@ const sliderPercentage = computed(() => ((currentValue.value - props.min) / (pro
 
 // Methods
 const handleSliderInput = (event) => {
-  // Smooth slider update
   currentValue.value = Number(event.target.value);
 };
 
@@ -152,7 +170,7 @@ const selectValue = (label) => {
 
 const checkAnswer = () => {
   if (isLocked.value) return;
-  
+
   const tolerance = props.step || 100;
   if (Math.abs(currentValue.value - props.correctValue) <= tolerance) {
     isCorrect.value = true;
@@ -182,50 +200,12 @@ watch(() => props.correctValue, () => {
 </script>
 
 <style scoped>
-.histogram-wrapper {
-  width: 100%;
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 24px;
-  background: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-/* Header */
-.histogram-header {
-  margin-bottom: 32px;
-  text-align: center;
-}
-
-.histogram-title {
-  font-size: 24px;
-  font-weight: 700;
-  color: #1e293b;
-  margin: 0 0 8px 0;
-}
-
-.histogram-description {
-  font-size: 14px;
-  color: #64748b;
-  margin: 0;
-}
-
-/* Chart Container */
-.chart-container {
-  background: #f8fafc;
-  border-radius: 12px;
-  padding: 24px;
-  margin-bottom: 32px;
-  border: 1px solid #e2e8f0;
-}
-
+/* Chart Layout */
 .chart-inner {
   position: relative;
-  height: 300px;
+  height: 220px;
 }
 
-/* Grid Lines */
 .chart-grid {
   position: absolute;
   top: 0;
@@ -241,30 +221,29 @@ watch(() => props.correctValue, () => {
 .grid-line {
   width: 100%;
   height: 1px;
-  background: #e2e8f0;
+  background: rgba(226, 232, 240, 0.6);
   position: relative;
 }
 
 .grid-label {
   position: absolute;
-  left: -40px;
+  left: -36px;
   top: -8px;
-  font-size: 12px;
+  font-size: 11px;
   color: #94a3b8;
   font-weight: 500;
 }
 
-/* Bars Container */
 .bars-container {
   position: absolute;
   bottom: 0;
-  left: 40px;
+  left: 36px;
   right: 0;
   height: calc(100% - 30px);
   display: flex;
   align-items: flex-end;
   justify-content: space-around;
-  gap: 8px;
+  gap: 6px;
 }
 
 .bar-wrapper {
@@ -279,36 +258,36 @@ watch(() => props.correctValue, () => {
 
 .bar {
   width: 100%;
-  max-width: 60px;
+  max-width: 56px;
   background: linear-gradient(180deg, #8b5cf6 0%, #7c3aed 100%);
-  border-radius: 8px 8px 0 0;
+  border-radius: 6px 6px 0 0;
   transition: all 0.3s ease;
   position: relative;
-  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
+  box-shadow: 0 1px 4px rgba(139, 92, 246, 0.15);
 }
 
 .bar:hover {
   background: linear-gradient(180deg, #7c3aed 0%, #6d28d9 100%);
-  transform: translateY(-4px);
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 3px 10px rgba(139, 92, 246, 0.25);
 }
 
 .bar-selected {
-  background: linear-gradient(180deg, #ec4899 0%, #db2777 100%) !important;
-  box-shadow: 0 4px 16px rgba(236, 72, 153, 0.4) !important;
-  transform: scale(1.05) !important;
+  background: linear-gradient(180deg, #6366f1 0%, #4f46e5 100%) !important;
+  box-shadow: 0 3px 12px rgba(99, 102, 241, 0.3) !important;
+  transform: scale(1.03) !important;
 }
 
 .bar-value {
   position: absolute;
-  top: -28px;
+  top: -26px;
   left: 50%;
   transform: translateX(-50%);
   background: #1e293b;
   color: white;
-  padding: 4px 8px;
+  padding: 3px 8px;
   border-radius: 6px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
   opacity: 0;
@@ -322,67 +301,15 @@ watch(() => props.correctValue, () => {
 
 .bar-label {
   margin-top: 8px;
-  font-size: 13px;
-  color: #475569;
+  font-size: 12px;
+  color: #64748b;
   font-weight: 500;
 }
 
-/* Slider Section */
-.slider-section {
-  background: #f8fafc;
-  border-radius: 12px;
-  padding: 24px;
-  border: 1px solid #e2e8f0;
-}
-
-.slider-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.slider-label {
-  font-size: 14px;
-  font-weight: 600;
-  color: #475569;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.slider-current-value {
-  font-size: 20px;
-  font-weight: 700;
-  color: #8b5cf6;
-}
-
-.slider-container {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.slider-min,
-.slider-max {
-  font-size: 12px;
-  color: #94a3b8;
-  font-weight: 600;
-  min-width: 50px;
-}
-
-.slider-min {
-  text-align: right;
-}
-
-.slider-max {
-  text-align: left;
-}
-
+/* Slider */
 .slider-track-wrapper {
   position: relative;
-  flex: 1;
-  height: 40px;
+  height: 36px;
   display: flex;
   align-items: center;
 }
@@ -390,7 +317,7 @@ watch(() => props.correctValue, () => {
 .slider-track {
   position: absolute;
   width: 100%;
-  height: 8px;
+  height: 6px;
   background: #e2e8f0;
   border-radius: 999px;
   overflow: hidden;
@@ -399,7 +326,7 @@ watch(() => props.correctValue, () => {
 
 .slider-fill {
   height: 100%;
-  background: linear-gradient(90deg, #8b5cf6 0%, #ec4899 100%);
+  background: linear-gradient(90deg, #8b5cf6 0%, #6366f1 100%);
   transition: width 0.05s linear;
   border-radius: 999px;
 }
@@ -407,7 +334,7 @@ watch(() => props.correctValue, () => {
 .slider-input {
   position: relative;
   width: 100%;
-  height: 8px;
+  height: 6px;
   -webkit-appearance: none;
   appearance: none;
   background: transparent;
@@ -419,39 +346,30 @@ watch(() => props.correctValue, () => {
 .slider-input::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   background: white;
-  border: 3px solid #8b5cf6;
+  border: 3px solid #7c3aed;
   border-radius: 50%;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
-  transition: all 0.2s ease;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+  transition: all 0.15s;
 }
 
 .slider-input::-webkit-slider-thumb:hover {
-  transform: scale(1.2);
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
-}
-
-.slider-input::-webkit-slider-thumb:active {
-  transform: scale(1.1);
+  transform: scale(1.15);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
 }
 
 .slider-input::-moz-range-thumb {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   background: white;
-  border: 3px solid #8b5cf6;
+  border: 3px solid #7c3aed;
   border-radius: 50%;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
-  transition: all 0.2s ease;
-}
-
-.slider-input::-moz-range-thumb:hover {
-  transform: scale(1.2);
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+  transition: all 0.15s;
 }
 
 .slider-input:disabled {
@@ -459,113 +377,19 @@ watch(() => props.correctValue, () => {
   opacity: 0.5;
 }
 
-/* Submit Button */
-.submit-button {
-  width: 100%;
-  padding: 14px 24px;
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
-}
-
-.submit-button:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(139, 92, 246, 0.4);
-}
-
-.submit-button:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.submit-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-.submit-button-success {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-}
-
-/* Feedback */
-.feedback {
-  margin-top: 16px;
-  padding: 12px 16px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.feedback-success {
-  background: #d1fae5;
-  color: #065f46;
-  border: 2px solid #10b981;
-}
-
-.feedback-error {
-  background: #fee2e2;
-  color: #991b1b;
-  border: 2px solid #ef4444;
-}
-
-.feedback-icon {
-  font-size: 20px;
-}
-
-.feedback-text {
-  flex: 1;
-}
-
-/* Transitions */
-.fade-slide-enter-active,
-.fade-slide-leave-active {
-  transition: all 0.3s ease;
-}
-
-.fade-slide-enter-from {
-  opacity: 0;
-  transform: translateY(-10px);
-}
-
-.fade-slide-leave-to {
-  opacity: 0;
-  transform: translateY(10px);
-}
-
 /* Responsive */
 @media (max-width: 768px) {
-  .histogram-wrapper {
-    padding: 16px;
-  }
-
   .chart-inner {
-    height: 250px;
+    height: 180px;
   }
 
   .bars-container {
-    left: 30px;
+    left: 28px;
   }
 
   .grid-label {
-    left: -30px;
+    left: -28px;
     font-size: 10px;
-  }
-
-  .histogram-title {
-    font-size: 20px;
-  }
-
-  .slider-current-value {
-    font-size: 18px;
   }
 }
 </style>

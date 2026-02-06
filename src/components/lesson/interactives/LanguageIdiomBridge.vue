@@ -1,25 +1,25 @@
 <template>
   <div class="interactive-step step-animate-in">
     <!-- Header -->
-    <div class="text-center mb-8">
-      <div class="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 border border-amber-200 mb-4">
-        <span class="text-2xl">🌉</span>
-        <span class="font-bold text-amber-700">Idiom Bridge</span>
+    <div class="mb-5">
+      <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-violet-50 border border-violet-100 rounded-lg mb-3">
+        <span class="text-sm">🌉</span>
+        <span class="text-xs font-semibold text-violet-600 uppercase tracking-wide">Idiom Bridge</span>
       </div>
-      <p class="text-lg text-gray-600 leading-relaxed max-w-xl mx-auto">
+      <h2 class="text-lg font-bold text-slate-900 leading-snug">
         {{ step.prompt || 'Connect idioms with the same meaning across languages' }}
-      </p>
+      </h2>
     </div>
 
     <!-- Language Labels -->
-    <div class="flex justify-between mb-4 px-4">
+    <div class="flex justify-between mb-4 px-2">
       <div class="flex items-center gap-2">
-        <span class="text-2xl">{{ getLanguageFlag(step.sourceLanguage) }}</span>
-        <span class="font-bold text-gray-700">{{ step.sourceLanguage || 'English' }}</span>
+        <span class="text-lg">{{ getLanguageFlag(step.sourceLanguage) }}</span>
+        <span class="text-sm font-semibold text-slate-700">{{ step.sourceLanguage || 'English' }}</span>
       </div>
       <div class="flex items-center gap-2">
-        <span class="font-bold text-gray-700">{{ step.targetLanguage || 'Spanish' }}</span>
-        <span class="text-2xl">{{ getLanguageFlag(step.targetLanguage) }}</span>
+        <span class="text-sm font-semibold text-slate-700">{{ step.targetLanguage || 'Spanish' }}</span>
+        <span class="text-lg">{{ getLanguageFlag(step.targetLanguage) }}</span>
       </div>
     </div>
 
@@ -33,9 +33,9 @@
           :key="`conn-${idx}`"
           :d="conn.path"
           :stroke="conn.correct ? '#10b981' : '#ef4444'"
-          stroke-width="3"
+          stroke-width="2.5"
           fill="none"
-          class="connection-line"
+          stroke-linecap="round"
           :class="{ 'animate-draw': conn.animate }"
         />
         <!-- Active connection being drawn -->
@@ -43,17 +43,17 @@
           v-if="activePath"
           :d="activePath"
           stroke="#8b5cf6"
-          stroke-width="3"
-          stroke-dasharray="8 4"
+          stroke-width="2"
+          stroke-dasharray="6 4"
           fill="none"
           class="active-connection"
         />
       </svg>
 
       <!-- Two Columns Layout -->
-      <div class="flex justify-between gap-8">
+      <div class="flex justify-between gap-6">
         <!-- Source Idioms (Left) -->
-        <div class="flex-1 space-y-4">
+        <div class="flex-1 space-y-3">
           <div
             v-for="(idiom, idx) in step.sourceIdioms"
             :key="`source-${idx}`"
@@ -69,8 +69,8 @@
             }"
           >
             <div class="idiom-content">
-              <p class="font-semibold text-gray-800">{{ idiom.text }}</p>
-              <p v-if="idiom.literal" class="text-sm text-gray-500 italic mt-1">
+              <p class="text-sm font-semibold text-slate-800">{{ idiom.text }}</p>
+              <p v-if="idiom.literal" class="text-xs text-slate-400 italic mt-0.5">
                 (Literally: {{ idiom.literal }})
               </p>
             </div>
@@ -78,18 +78,13 @@
           </div>
         </div>
 
-        <!-- Bridge Visual -->
-        <div class="flex flex-col items-center justify-center px-4">
-          <div class="bridge-pillar"></div>
-          <div class="bridge-deck">
-            <div class="bridge-cable left-cable"></div>
-            <div class="bridge-cable right-cable"></div>
-          </div>
-          <div class="bridge-pillar"></div>
+        <!-- Bridge Visual (minimal) -->
+        <div class="flex flex-col items-center justify-center px-2">
+          <div class="w-px h-full bg-slate-200/60"></div>
         </div>
 
         <!-- Target Idioms (Right) -->
-        <div class="flex-1 space-y-4">
+        <div class="flex-1 space-y-3">
           <div
             v-for="(idiom, idx) in shuffledTargets"
             :key="`target-${idx}`"
@@ -108,8 +103,8 @@
           >
             <div class="connection-dot left-dot" :class="{ 'dot-active': hoveringTarget === idx }"></div>
             <div class="idiom-content">
-              <p class="font-semibold text-gray-800">{{ idiom.text }}</p>
-              <p v-if="idiom.literal" class="text-sm text-gray-500 italic mt-1">
+              <p class="text-sm font-semibold text-slate-800">{{ idiom.text }}</p>
+              <p v-if="idiom.literal" class="text-xs text-slate-400 italic mt-0.5">
                 (Literally: {{ idiom.literal }})
               </p>
             </div>
@@ -119,27 +114,27 @@
     </div>
 
     <!-- Meaning Reveal (after correct match) -->
-    <transition-group name="meaning-reveal" tag="div" class="mt-6 space-y-2">
+    <transition-group name="meaning-reveal" tag="div" class="mt-4 space-y-2">
       <div
         v-for="match in revealedMeanings"
         :key="match.id"
-        class="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200"
+        class="px-4 py-2.5 bg-emerald-50/80 rounded-lg border border-emerald-100 text-sm"
       >
-        <p class="text-green-800">
-          <span class="font-bold">Shared meaning:</span> {{ match.meaning }}
+        <p class="text-emerald-700">
+          <span class="font-semibold">Shared meaning:</span> {{ match.meaning }}
         </p>
       </div>
     </transition-group>
 
     <!-- Progress -->
-    <div class="mt-6 flex items-center gap-4">
-      <div class="flex-1 h-3 bg-gray-200 rounded-full overflow-hidden">
+    <div class="mt-5 flex items-center gap-3">
+      <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
         <div
-          class="h-full bg-gradient-to-r from-amber-400 to-orange-500 rounded-full transition-all duration-500"
+          class="h-full bg-violet-500 rounded-full transition-all duration-500"
           :style="{ width: `${(correctMatches.length / step.sourceIdioms.length) * 100}%` }"
         ></div>
       </div>
-      <span class="text-sm font-bold text-gray-600">
+      <span class="text-xs font-semibold text-slate-500">
         {{ correctMatches.length }} / {{ step.sourceIdioms.length }}
       </span>
     </div>
@@ -154,16 +149,16 @@
       <button
         v-if="!allCorrect"
         @click="resetConnections"
-        class="px-6 py-3 rounded-full font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
+        class="px-5 py-2.5 rounded-lg text-sm font-medium text-slate-500 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
       >
         Reset All
       </button>
       <button
         v-if="allCorrect"
         @click="$emit('complete', true)"
-        class="px-8 py-3 rounded-full font-bold text-white bg-gradient-to-r from-green-500 to-emerald-600 shadow-md hover:shadow-lg transition-all"
+        class="step-btn-primary step-btn-success"
       >
-        Continue →
+        Continue
       </button>
     </div>
   </div>
@@ -223,21 +218,20 @@ const isTargetIncorrect = (idx) => connections.value.some(c => c.targetIdx === i
 
 // Initialize
 watch(() => props.step, () => {
-  // Shuffle target idioms
   // Shuffle target idioms with check to avoid direct alignment
   let shuffled = [...props.step.targetIdioms];
   let attempts = 0;
-  
+
   // Try to shuffle until we don't have too many direct matches
   do {
     shuffled.sort(() => Math.random() - 0.5);
     attempts++;
-    
+
     // Check for direct alignment (source[i] matches target[i])
-    const directMatches = shuffled.filter((item, index) => 
+    const directMatches = shuffled.filter((item, index) =>
       props.step.sourceIdioms[index] && item.matchId === props.step.sourceIdioms[index].matchId
     ).length;
-    
+
     // Accept if fewer than 30% are directly aligned, or if we tried enough times
     // For small arrays (length < 4), we just accept any shuffle that isn't 100% match
     if (shuffled.length < 4) {
@@ -414,93 +408,89 @@ const getLanguageFlag = (lang) => {
 <style scoped>
 .bridge-container {
   position: relative;
-  min-height: 400px;
-  padding: 20px;
-  background: linear-gradient(180deg, #fef3c7 0%, #fef9c3 50%, #ecfdf5 100%);
-  border-radius: 24px;
-  border: 2px solid #fcd34d;
+  min-height: 350px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(226, 232, 240, 0.6);
 }
 
 .idiom-card {
   position: relative;
-  padding: 16px 24px;
-  border-radius: 16px;
-  border: 2px solid #e5e7eb;
+  padding: 12px 16px;
+  border-radius: 0.75rem;
+  border: 1.5px solid rgba(226, 232, 240, 0.6);
   background: white;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.25s ease;
   z-index: 20;
 }
 
 .source-card {
-  padding-right: 40px;
+  padding-right: 32px;
 }
 
 .target-card {
-  padding-left: 40px;
+  padding-left: 32px;
 }
 
 .idiom-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .idiom-card.active {
   border-color: #8b5cf6;
-  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.2);
-}
-
-.idiom-card.connected {
-  opacity: 0.9;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.12);
 }
 
 .idiom-card.correct {
   border-color: #10b981;
-  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  background: rgba(16, 185, 129, 0.04);
 }
 
 .idiom-card.incorrect {
   border-color: #ef4444;
-  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-  animation: shake 0.5s ease;
+  background: rgba(239, 68, 68, 0.04);
+  animation: card-shake 0.4s ease;
 }
 
 .idiom-card.hovering {
   border-color: #8b5cf6;
-  background: #f5f3ff;
+  background: rgba(139, 92, 246, 0.03);
 }
 
-@keyframes shake {
+@keyframes card-shake {
   0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  75% { transform: translateX(5px); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
 }
 
 .connection-dot {
   position: absolute;
-  width: 16px;
-  height: 16px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
-  background: #e5e7eb;
-  border: 3px solid white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: #e2e8f0;
+  border: 2px solid white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   top: 50%;
   transform: translateY(-50%);
-  transition: all 0.3s ease;
+  transition: all 0.25s ease;
 }
 
 .right-dot {
-  right: -8px;
+  right: -6px;
 }
 
 .left-dot {
-  left: -8px;
+  left: -6px;
 }
 
 .dot-active {
   background: #8b5cf6;
-  transform: translateY(-50%) scale(1.3);
-  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.3);
+  transform: translateY(-50%) scale(1.2);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
 }
 
 .correct .connection-dot {
@@ -511,47 +501,8 @@ const getLanguageFlag = (lang) => {
   background: #ef4444;
 }
 
-/* Bridge Visual */
-.bridge-pillar {
-  width: 20px;
-  height: 80px;
-  background: linear-gradient(180deg, #78716c 0%, #57534e 100%);
-  border-radius: 4px;
-}
-
-.bridge-deck {
-  width: 8px;
-  height: 200px;
-  background: linear-gradient(90deg, #a8a29e 0%, #78716c 50%, #a8a29e 100%);
-  position: relative;
-}
-
-.bridge-cable {
-  position: absolute;
-  width: 60px;
-  height: 2px;
-  background: #57534e;
-  top: 20%;
-}
-
-.left-cable {
-  right: 0;
-  transform: rotate(-30deg);
-  transform-origin: right center;
-}
-
-.right-cable {
-  left: 0;
-  transform: rotate(30deg);
-  transform-origin: left center;
-}
-
 /* SVG Connections */
-.connection-line {
-  stroke-linecap: round;
-}
-
-.connection-line.animate-draw {
+.animate-draw {
   stroke-dasharray: 1000;
   stroke-dashoffset: 1000;
   animation: draw-line 0.5s ease forwards;
@@ -569,43 +520,19 @@ const getLanguageFlag = (lang) => {
 
 @keyframes dash {
   to {
-    stroke-dashoffset: -12;
+    stroke-dashoffset: -10;
   }
-}
-
-/* Feedback */
-.step-feedback {
-  min-height: 24px;
-  padding: 12px 16px;
-  border-radius: 12px;
-  font-weight: 500;
-}
-
-.step-feedback:empty {
-  display: none;
-}
-
-.step-feedback.success {
-  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
-  color: #065f46;
-  border: 1px solid #6ee7b7;
-}
-
-.step-feedback.error {
-  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-  color: #991b1b;
-  border: 1px solid #fca5a5;
 }
 
 /* Meaning reveal animation */
 .meaning-reveal-enter-active {
-  animation: slide-in 0.4s ease;
+  animation: slide-in 0.35s ease;
 }
 
 @keyframes slide-in {
   from {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translateY(-8px);
   }
   to {
     opacity: 1;

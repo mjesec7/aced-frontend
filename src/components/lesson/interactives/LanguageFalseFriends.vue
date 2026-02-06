@@ -1,99 +1,135 @@
 <template>
   <div class="interactive-step step-animate-in">
     <!-- Header -->
-    <div class="text-center mb-6">
-      <div class="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-gradient-to-r from-rose-100 to-orange-100 border border-rose-200 mb-4">
-        <span class="text-2xl">🔍</span>
-        <span class="font-bold text-rose-700">False Friends Detective</span>
+    <div class="mb-5">
+      <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-violet-50 border border-violet-100 rounded-lg mb-3">
+        <span class="text-sm">🔍</span>
+        <span class="text-xs font-semibold text-violet-600 uppercase tracking-wide">False Friends</span>
       </div>
-      <p class="text-lg text-gray-600 leading-relaxed max-w-xl mx-auto">
+      <h2 class="text-lg font-bold text-slate-900 leading-snug">
         {{ step.prompt || 'Identify words that look similar but have different meanings!' }}
-      </p>
+      </h2>
     </div>
 
     <!-- Language Pair -->
-    <div class="flex items-center justify-center gap-4 mb-6">
-      <span class="text-2xl">{{ getLanguageFlag(step.language1) }}</span>
-      <span class="font-bold text-gray-700">{{ step.language1 }}</span>
-      <span class="text-2xl text-rose-500">⚡</span>
-      <span class="font-bold text-gray-700">{{ step.language2 }}</span>
-      <span class="text-2xl">{{ getLanguageFlag(step.language2) }}</span>
+    <div class="flex items-center justify-center gap-3 mb-5 py-2.5 px-4 bg-slate-50/80 rounded-xl border border-slate-200/60">
+      <span class="text-lg">{{ getLanguageFlag(step.language1) }}</span>
+      <span class="text-sm font-semibold text-slate-700">{{ step.language1 }}</span>
+      <span class="text-violet-400">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+      </span>
+      <span class="text-sm font-semibold text-slate-700">{{ step.language2 }}</span>
+      <span class="text-lg">{{ getLanguageFlag(step.language2) }}</span>
     </div>
 
     <!-- Case Display -->
-    <div class="case-file mb-8">
-      <div class="case-header">
-        <span class="case-number">Case #{{ currentIndex + 1 }}</span>
-        <span class="case-status" :class="getCurrentStatus()">{{ getStatusText() }}</span>
+    <div class="bg-slate-50/80 border border-slate-200/60 rounded-xl p-5 mb-5">
+      <!-- Case Header -->
+      <div class="flex justify-between items-center mb-4">
+        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Case #{{ currentIndex + 1 }}</span>
+        <span
+          class="px-3 py-1 rounded-lg text-xs font-semibold"
+          :class="{
+            'bg-amber-50 text-amber-600 border border-amber-100 case-status-pulse': getCurrentStatus() === 'investigating',
+            'bg-emerald-50 text-emerald-600 border border-emerald-100': getCurrentStatus() === 'correct',
+            'bg-red-50 text-red-600 border border-red-100': getCurrentStatus() === 'incorrect'
+          }"
+        >
+          {{ getStatusText() }}
+        </span>
       </div>
 
       <!-- Word Comparison -->
-      <div class="word-comparison">
+      <div class="flex items-stretch gap-3 mb-5">
         <!-- Word 1 -->
-        <div class="word-card" :class="{ 'revealed': revealed }">
-          <div class="language-badge">{{ step.language1 }}</div>
-          <div class="word-display">
-            <span class="word-text">{{ currentWord.word1 }}</span>
-            <span v-if="revealed" class="word-meaning">{{ currentWord.meaning1 }}</span>
+        <div
+          class="flex-1 bg-white rounded-xl border-2 p-4 text-center relative transition-all duration-300"
+          :class="revealed ? 'border-violet-300 shadow-sm' : 'border-slate-200/60'"
+        >
+          <div class="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 bg-slate-100 border border-slate-200/60 rounded-md text-[10px] font-semibold text-slate-500 uppercase tracking-wide">
+            {{ step.language1 }}
           </div>
-          <div v-if="!revealed" class="word-mystery">?</div>
+          <div class="flex flex-col items-center gap-1.5 mt-3">
+            <span class="text-xl font-bold text-slate-900">{{ currentWord.word1 }}</span>
+            <span v-if="revealed" class="text-xs text-slate-500 italic bg-slate-50 px-2.5 py-0.5 rounded-md">
+              {{ currentWord.meaning1 }}
+            </span>
+          </div>
+          <div v-if="!revealed" class="text-slate-300 text-lg mt-2 word-mystery-bounce">?</div>
         </div>
 
         <!-- Comparison Indicator -->
-        <div class="comparison-center">
-          <div class="comparison-icon" :class="{ 'false-friend': revealed && currentWord.isFalseFriend }">
-            <span v-if="!revealed">🤔</span>
-            <span v-else-if="currentWord.isFalseFriend">⚠️</span>
-            <span v-else>✓</span>
+        <div class="flex flex-col items-center justify-center min-w-[48px]">
+          <div
+            class="w-10 h-10 rounded-full flex items-center justify-center text-base transition-all duration-300"
+            :class="{
+              'bg-slate-100 text-slate-400': !revealed,
+              'bg-red-50 border border-red-200 text-red-500 comparison-shake': revealed && currentWord.isFalseFriend,
+              'bg-emerald-50 border border-emerald-200 text-emerald-500': revealed && !currentWord.isFalseFriend
+            }"
+          >
+            <span v-if="!revealed">?</span>
+            <span v-else-if="currentWord.isFalseFriend">!</span>
+            <span v-else>&#10003;</span>
           </div>
-          <div v-if="revealed" class="comparison-label">
-            {{ currentWord.isFalseFriend ? 'FALSE FRIEND!' : 'True cognate' }}
+          <div v-if="revealed" class="mt-1.5 text-[10px] font-bold uppercase tracking-wide text-center leading-tight"
+            :class="currentWord.isFalseFriend ? 'text-red-500' : 'text-emerald-600'">
+            {{ currentWord.isFalseFriend ? 'FALSE FRIEND' : 'True cognate' }}
           </div>
         </div>
 
         <!-- Word 2 -->
-        <div class="word-card" :class="{ 'revealed': revealed }">
-          <div class="language-badge">{{ step.language2 }}</div>
-          <div class="word-display">
-            <span class="word-text">{{ currentWord.word2 }}</span>
-            <span v-if="revealed" class="word-meaning">{{ currentWord.meaning2 }}</span>
+        <div
+          class="flex-1 bg-white rounded-xl border-2 p-4 text-center relative transition-all duration-300"
+          :class="revealed ? 'border-violet-300 shadow-sm' : 'border-slate-200/60'"
+        >
+          <div class="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 bg-slate-100 border border-slate-200/60 rounded-md text-[10px] font-semibold text-slate-500 uppercase tracking-wide">
+            {{ step.language2 }}
           </div>
-          <div v-if="!revealed" class="word-mystery">?</div>
+          <div class="flex flex-col items-center gap-1.5 mt-3">
+            <span class="text-xl font-bold text-slate-900">{{ currentWord.word2 }}</span>
+            <span v-if="revealed" class="text-xs text-slate-500 italic bg-slate-50 px-2.5 py-0.5 rounded-md">
+              {{ currentWord.meaning2 }}
+            </span>
+          </div>
+          <div v-if="!revealed" class="text-slate-300 text-lg mt-2 word-mystery-bounce">?</div>
         </div>
       </div>
 
       <!-- Guess Buttons -->
-      <div v-if="!revealed" class="guess-buttons">
-        <button @click="makeGuess(true)" class="guess-btn false-friend-btn">
-          <span class="text-2xl mb-1">⚠️</span>
-          <span class="font-bold">False Friend</span>
-          <span class="text-sm opacity-75">Different meanings</span>
+      <div v-if="!revealed" class="flex gap-3 justify-center">
+        <button @click="makeGuess(true)"
+          class="flex-1 max-w-[180px] flex flex-col items-center gap-1 px-4 py-3 rounded-xl border-2 border-red-200 bg-red-50/50 text-red-700 font-medium transition-all hover:bg-red-100 hover:border-red-300 hover:-translate-y-0.5 hover:shadow-sm cursor-pointer">
+          <span class="text-base">!</span>
+          <span class="text-sm font-semibold">False Friend</span>
+          <span class="text-[10px] text-red-400">Different meanings</span>
         </button>
-        <button @click="makeGuess(false)" class="guess-btn true-cognate-btn">
-          <span class="text-2xl mb-1">✓</span>
-          <span class="font-bold">True Cognate</span>
-          <span class="text-sm opacity-75">Same meaning</span>
+        <button @click="makeGuess(false)"
+          class="flex-1 max-w-[180px] flex flex-col items-center gap-1 px-4 py-3 rounded-xl border-2 border-emerald-200 bg-emerald-50/50 text-emerald-700 font-medium transition-all hover:bg-emerald-100 hover:border-emerald-300 hover:-translate-y-0.5 hover:shadow-sm cursor-pointer">
+          <span class="text-base">&#10003;</span>
+          <span class="text-sm font-semibold">True Cognate</span>
+          <span class="text-[10px] text-emerald-400">Same meaning</span>
         </button>
       </div>
 
       <!-- Explanation (after reveal) -->
       <transition name="slide-up">
-        <div v-if="revealed && currentWord.explanation" class="explanation-box">
-          <div class="explanation-header">
-            <span class="text-lg">💡</span>
-            <span class="font-bold">Detective Notes</span>
+        <div v-if="revealed && currentWord.explanation" class="mt-4 bg-white rounded-xl border border-indigo-100 p-4">
+          <div class="flex items-center gap-2 text-indigo-600 mb-2">
+            <span class="text-sm">💡</span>
+            <span class="text-xs font-bold uppercase tracking-wide">Explanation</span>
           </div>
-          <p class="explanation-text">{{ currentWord.explanation }}</p>
+          <p class="text-sm text-slate-600 leading-relaxed mb-3">{{ currentWord.explanation }}</p>
 
           <!-- Usage examples -->
-          <div v-if="currentWord.example1 || currentWord.example2" class="examples-grid">
-            <div v-if="currentWord.example1" class="example-item">
-              <span class="example-lang">{{ step.language1 }}:</span>
-              <span class="example-text">"{{ currentWord.example1 }}"</span>
+          <div v-if="currentWord.example1 || currentWord.example2" class="grid grid-cols-2 gap-2">
+            <div v-if="currentWord.example1" class="bg-slate-50/80 p-2.5 rounded-lg">
+              <span class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-0.5">{{ step.language1 }}</span>
+              <span class="text-xs text-slate-700 italic">"{{ currentWord.example1 }}"</span>
             </div>
-            <div v-if="currentWord.example2" class="example-item">
-              <span class="example-lang">{{ step.language2 }}:</span>
-              <span class="example-text">"{{ currentWord.example2 }}"</span>
+            <div v-if="currentWord.example2" class="bg-slate-50/80 p-2.5 rounded-lg">
+              <span class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-0.5">{{ step.language2 }}</span>
+              <span class="text-xs text-slate-700 italic">"{{ currentWord.example2 }}"</span>
             </div>
           </div>
         </div>
@@ -101,28 +137,28 @@
     </div>
 
     <!-- Progress Tracker -->
-    <div class="progress-tracker mb-6">
-      <div class="progress-dots">
+    <div class="flex flex-col items-center gap-2.5 mb-4">
+      <div class="flex gap-2">
         <div
           v-for="(word, idx) in step.words"
           :key="idx"
-          class="progress-dot"
+          class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all duration-300"
           :class="{
-            'current': idx === currentIndex,
-            'correct': results[idx] === 'correct',
-            'incorrect': results[idx] === 'incorrect',
-            'pending': !results[idx] && idx !== currentIndex
+            'bg-violet-100 text-violet-600 ring-2 ring-violet-300 ring-offset-1 progress-dot-pulse': idx === currentIndex,
+            'bg-emerald-100 text-emerald-600': results[idx] === 'correct',
+            'bg-red-100 text-red-600': results[idx] === 'incorrect',
+            'bg-slate-100 text-slate-400': !results[idx] && idx !== currentIndex
           }"
         >
-          <span v-if="results[idx] === 'correct'">✓</span>
-          <span v-else-if="results[idx] === 'incorrect'">✗</span>
+          <span v-if="results[idx] === 'correct'">&#10003;</span>
+          <span v-else-if="results[idx] === 'incorrect'">&#10007;</span>
           <span v-else>{{ idx + 1 }}</span>
         </div>
       </div>
-      <div class="progress-score">
-        <span class="score-correct">{{ correctCount }} correct</span>
-        <span class="score-divider">/</span>
-        <span class="score-total">{{ step.words.length }} total</span>
+      <div class="flex items-center gap-1.5 text-xs">
+        <span class="font-semibold text-emerald-600">{{ correctCount }} correct</span>
+        <span class="text-slate-300">/</span>
+        <span class="text-slate-500">{{ step.words.length }} total</span>
       </div>
     </div>
 
@@ -136,49 +172,54 @@
       <button
         v-if="revealed && !isComplete"
         @click="nextWord"
-        class="px-8 py-3 rounded-full font-bold text-white bg-gradient-to-r from-rose-500 to-orange-500 shadow-md hover:shadow-lg transition-all"
+        class="step-btn-primary"
       >
-        Next Case →
+        Next Case
       </button>
       <button
         v-if="isComplete"
         @click="showResults = true"
-        class="px-8 py-3 rounded-full font-bold text-white bg-gradient-to-r from-green-500 to-emerald-600 shadow-md hover:shadow-lg transition-all"
+        class="step-btn-primary step-btn-success"
       >
-        {{ correctCount >= step.words.length / 2 ? 'Case Closed! →' : 'Review Results →' }}
+        {{ correctCount >= step.words.length / 2 ? 'View Results' : 'Review Results' }}
       </button>
     </div>
 
     <!-- Final Results Modal -->
     <transition name="modal">
-      <div v-if="showResults" class="results-overlay" @click.self="showResults = false">
-        <div class="results-modal">
-          <div class="results-header">
-            <span class="text-4xl">{{ correctCount >= step.words.length / 2 ? '🏆' : '📚' }}</span>
-            <h3>Investigation Complete!</h3>
+      <div v-if="showResults" class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50" @click.self="showResults = false">
+        <div class="bg-white rounded-xl p-6 max-w-md w-[90%] max-h-[80vh] overflow-y-auto shadow-xl border border-slate-200/60">
+          <div class="text-center mb-5">
+            <span class="text-3xl">{{ correctCount >= step.words.length / 2 ? '🏆' : '📚' }}</span>
+            <h3 class="text-lg font-bold text-slate-900 mt-2">Investigation Complete!</h3>
           </div>
-          <div class="results-score">
-            <div class="score-circle">
-              <span class="score-number">{{ correctCount }}</span>
-              <span class="score-label">/ {{ step.words.length }}</span>
+
+          <div class="text-center mb-5">
+            <div class="inline-flex flex-col items-center justify-center w-20 h-20 rounded-full bg-violet-50 border-2 border-violet-200">
+              <span class="text-2xl font-bold text-violet-700">{{ correctCount }}</span>
+              <span class="text-xs text-violet-400">/ {{ step.words.length }}</span>
             </div>
-            <p class="score-message">{{ getScoreMessage() }}</p>
+            <p class="text-sm text-slate-500 mt-3">{{ getScoreMessage() }}</p>
           </div>
-          <div class="results-breakdown">
+
+          <div class="space-y-2 mb-5">
             <div
               v-for="(word, idx) in step.words"
               :key="idx"
-              class="result-item"
-              :class="results[idx]"
+              class="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm"
+              :class="results[idx] === 'correct' ? 'bg-emerald-50/80' : 'bg-red-50/80'"
             >
-              <span class="result-words">{{ word.word1 }} ↔ {{ word.word2 }}</span>
-              <span class="result-type">{{ word.isFalseFriend ? '⚠️ False Friend' : '✓ Cognate' }}</span>
-              <span class="result-status">{{ results[idx] === 'correct' ? '✓' : '✗' }}</span>
+              <span class="font-medium text-slate-700">{{ word.word1 }} ↔ {{ word.word2 }}</span>
+              <span class="text-[10px] text-slate-400">{{ word.isFalseFriend ? '! False Friend' : '&#10003; Cognate' }}</span>
+              <span class="font-bold" :class="results[idx] === 'correct' ? 'text-emerald-600' : 'text-red-500'">
+                {{ results[idx] === 'correct' ? '&#10003;' : '&#10007;' }}
+              </span>
             </div>
           </div>
+
           <button
             @click="$emit('complete', correctCount >= step.words.length / 2)"
-            class="results-close-btn"
+            class="step-btn-primary w-full text-center"
           >
             Continue
           </button>
@@ -289,520 +330,53 @@ const getLanguageFlag = (lang) => {
 </script>
 
 <style scoped>
-.case-file {
-  background: linear-gradient(180deg, #fffbeb 0%, #fef3c7 100%);
-  border: 3px solid #f59e0b;
-  border-radius: 24px;
-  padding: 24px;
-  box-shadow: 0 8px 32px rgba(245, 158, 11, 0.2);
-  position: relative;
-  overflow: hidden;
+/* Animations only */
+.word-mystery-bounce {
+  animation: mystery-bounce 1.2s ease infinite;
 }
 
-.case-file::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 8px;
-  background: repeating-linear-gradient(
-    90deg,
-    #f59e0b 0px,
-    #f59e0b 20px,
-    #fbbf24 20px,
-    #fbbf24 40px
-  );
+@keyframes mystery-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
 }
 
-.case-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  padding-top: 8px;
+.case-status-pulse {
+  animation: status-pulse 2s infinite;
 }
 
-.case-number {
-  font-weight: 800;
-  font-size: 18px;
-  color: #92400e;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.case-status {
-  padding: 6px 16px;
-  border-radius: 20px;
-  font-weight: 600;
-  font-size: 14px;
-}
-
-.case-status.investigating {
-  background: #fef3c7;
-  color: #92400e;
-  animation: pulse-status 2s infinite;
-}
-
-.case-status.correct {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.case-status.incorrect {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-@keyframes pulse-status {
+@keyframes status-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.6; }
 }
 
-/* Word Comparison */
-.word-comparison {
-  display: flex;
-  justify-content: space-between;
-  align-items: stretch;
-  gap: 20px;
-  margin-bottom: 24px;
+.comparison-shake {
+  animation: comp-shake 0.5s ease;
 }
 
-.word-card {
-  flex: 1;
-  background: white;
-  border: 2px solid #e5e7eb;
-  border-radius: 16px;
-  padding: 20px;
-  text-align: center;
-  position: relative;
-  transition: all 0.5s ease;
-}
-
-.word-card.revealed {
-  border-color: #8b5cf6;
-  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.2);
-}
-
-.language-badge {
-  position: absolute;
-  top: -12px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 4px 16px;
-  background: #f3f4f6;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #6b7280;
-  border: 2px solid #e5e7eb;
-}
-
-.word-display {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  margin-top: 16px;
-}
-
-.word-text {
-  font-size: 28px;
-  font-weight: 700;
-  color: #1f2937;
-}
-
-.word-meaning {
-  font-size: 14px;
-  color: #6b7280;
-  font-style: italic;
-  background: #f3f4f6;
-  padding: 4px 12px;
-  border-radius: 8px;
-}
-
-.word-mystery {
-  position: absolute;
-  bottom: 16px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 24px;
-  color: #9ca3af;
-  animation: bounce-mystery 1s ease infinite;
-}
-
-@keyframes bounce-mystery {
-  0%, 100% { transform: translateX(-50%) translateY(0); }
-  50% { transform: translateX(-50%) translateY(-4px); }
-}
-
-/* Comparison Center */
-.comparison-center {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-width: 60px;
-}
-
-.comparison-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: #f3f4f6;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  transition: all 0.5s ease;
-}
-
-.comparison-icon.false-friend {
-  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-  animation: shake-warning 0.5s ease;
-}
-
-@keyframes shake-warning {
+@keyframes comp-shake {
   0%, 100% { transform: translateX(0) rotate(0); }
-  25% { transform: translateX(-5px) rotate(-5deg); }
-  75% { transform: translateX(5px) rotate(5deg); }
+  25% { transform: translateX(-3px) rotate(-3deg); }
+  75% { transform: translateX(3px) rotate(3deg); }
 }
 
-.comparison-label {
-  margin-top: 8px;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  text-align: center;
-  color: #6b7280;
+.progress-dot-pulse {
+  animation: dot-pulse 2s infinite;
 }
 
-/* Guess Buttons */
-.guess-buttons {
-  display: flex;
-  gap: 16px;
-  justify-content: center;
-}
-
-.guess-btn {
-  flex: 1;
-  max-width: 200px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 20px;
-  border-radius: 16px;
-  border: 2px solid;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.false-friend-btn {
-  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-  border-color: #fca5a5;
-  color: #b91c1c;
-}
-
-.false-friend-btn:hover {
-  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-  transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.2);
-}
-
-.true-cognate-btn {
-  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
-  border-color: #6ee7b7;
-  color: #065f46;
-}
-
-.true-cognate-btn:hover {
-  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-  transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.2);
-}
-
-/* Explanation Box */
-.explanation-box {
-  background: white;
-  border-radius: 16px;
-  padding: 20px;
-  margin-top: 20px;
-  border: 2px solid #e0e7ff;
-}
-
-.explanation-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #4338ca;
-  margin-bottom: 12px;
-}
-
-.explanation-text {
-  color: #4b5563;
-  line-height: 1.6;
-  margin-bottom: 16px;
-}
-
-.examples-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.example-item {
-  background: #f9fafb;
-  padding: 12px;
-  border-radius: 12px;
-}
-
-.example-lang {
-  display: block;
-  font-size: 12px;
-  font-weight: 600;
-  color: #6b7280;
-  margin-bottom: 4px;
-}
-
-.example-text {
-  color: #374151;
-  font-style: italic;
-}
-
-/* Progress Tracker */
-.progress-tracker {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-}
-
-.progress-dots {
-  display: flex;
-  gap: 12px;
-}
-
-.progress-dot {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  font-size: 14px;
-  transition: all 0.3s ease;
-}
-
-.progress-dot.pending {
-  background: #f3f4f6;
-  color: #9ca3af;
-}
-
-.progress-dot.current {
-  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-  color: white;
-  box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.3);
-  animation: pulse-current 2s infinite;
-}
-
-@keyframes pulse-current {
-  0%, 100% { box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.3); }
-  50% { box-shadow: 0 0 0 8px rgba(251, 191, 36, 0.1); }
-}
-
-.progress-dot.correct {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
-}
-
-.progress-dot.incorrect {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  color: white;
-}
-
-.progress-score {
-  display: flex;
-  gap: 8px;
-  font-size: 14px;
-}
-
-.score-correct {
-  color: #059669;
-  font-weight: 600;
-}
-
-.score-divider {
-  color: #d1d5db;
-}
-
-.score-total {
-  color: #6b7280;
-}
-
-/* Results Modal */
-.results-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 50;
-}
-
-.results-modal {
-  background: white;
-  border-radius: 24px;
-  padding: 32px;
-  max-width: 500px;
-  width: 90%;
-  max-height: 80vh;
-  overflow-y: auto;
-}
-
-.results-header {
-  text-align: center;
-  margin-bottom: 24px;
-}
-
-.results-header h3 {
-  font-size: 24px;
-  font-weight: 700;
-  color: #1f2937;
-  margin-top: 8px;
-}
-
-.results-score {
-  text-align: center;
-  margin-bottom: 24px;
-}
-
-.score-circle {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 16px;
-  box-shadow: 0 8px 24px rgba(251, 191, 36, 0.3);
-}
-
-.score-number {
-  font-size: 32px;
-  font-weight: 800;
-  color: white;
-}
-
-.score-label {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.score-message {
-  color: #6b7280;
-}
-
-.results-breakdown {
-  space-y: 8px;
-}
-
-.result-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  border-radius: 12px;
-  margin-bottom: 8px;
-}
-
-.result-item.correct {
-  background: #ecfdf5;
-}
-
-.result-item.incorrect {
-  background: #fef2f2;
-}
-
-.result-words {
-  font-weight: 500;
-  color: #374151;
-}
-
-.result-type {
-  font-size: 12px;
-  color: #6b7280;
-}
-
-.result-status {
-  font-weight: bold;
-}
-
-.result-item.correct .result-status {
-  color: #059669;
-}
-
-.result-item.incorrect .result-status {
-  color: #dc2626;
-}
-
-.results-close-btn {
-  width: 100%;
-  padding: 14px;
-  margin-top: 20px;
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  color: white;
-  font-weight: 600;
-  border-radius: 12px;
-  border: none;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.results-close-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
-}
-
-/* Feedback */
-.step-feedback {
-  min-height: 24px;
-  padding: 12px 16px;
-  border-radius: 12px;
-  font-weight: 500;
-}
-
-.step-feedback:empty {
-  display: none;
-}
-
-.step-feedback.success {
-  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
-  color: #065f46;
-  border: 1px solid #6ee7b7;
-}
-
-.step-feedback.error {
-  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-  color: #991b1b;
-  border: 1px solid #fca5a5;
+@keyframes dot-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.3); }
+  50% { box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1); }
 }
 
 /* Transitions */
 .slide-up-enter-active {
   transition: all 0.4s ease;
 }
-
 .slide-up-leave-active {
   transition: all 0.3s ease;
 }
-
 .slide-up-enter-from {
-  transform: translateY(20px);
+  transform: translateY(12px);
   opacity: 0;
 }
 
@@ -810,14 +384,8 @@ const getLanguageFlag = (lang) => {
 .modal-leave-active {
   transition: all 0.3s ease;
 }
-
 .modal-enter-from,
 .modal-leave-to {
   opacity: 0;
-}
-
-.modal-enter-from .results-modal,
-.modal-leave-to .results-modal {
-  transform: scale(0.9);
 }
 </style>

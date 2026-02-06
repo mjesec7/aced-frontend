@@ -1,25 +1,25 @@
 <template>
-  <div class="matching-exercise-container">
+  <div class="interactive-step step-animate-in">
     <!-- Header -->
-    <div class="matching-header">
-      <div class="matching-badge">
-        <span class="badge-icon">🔗</span>
-        <span class="badge-text">Matching Exercise</span>
+    <div class="mb-5">
+      <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-violet-50 border border-violet-100 rounded-lg mb-3">
+        <span class="text-sm">🔗</span>
+        <span class="text-xs font-semibold text-violet-600 uppercase tracking-wide">Matching Exercise</span>
       </div>
-      <p class="matching-prompt">
+      <h2 class="text-lg font-bold text-slate-900 leading-snug">
         {{ getLocalizedText(step.prompt) }}
-      </p>
+      </h2>
     </div>
 
     <!-- Matching Grid -->
-    <div class="matching-grid">
+    <div class="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4 mb-4">
       <!-- Left Column -->
-      <div class="matching-column left-column">
-        <h3 class="column-header">
-          <span class="header-icon">📋</span>
+      <div class="bg-white rounded-xl border border-slate-200/60 p-4">
+        <h3 class="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3 pb-2.5 border-b border-slate-100">
+          <span class="text-sm">📋</span>
           {{ leftHeader }}
         </h3>
-        <div class="items-list">
+        <div class="flex flex-col gap-2.5">
           <button
             v-for="pair in normalizedPairs"
             :key="`left-${pair.id}`"
@@ -27,26 +27,31 @@
             class="matching-item"
             :class="getItemClass(pair.id, 'left')"
           >
-            <span class="item-text">{{ getLeftText(pair) }}</span>
-            <span v-if="matchedIds.includes(pair.id)" class="matched-check">✓</span>
+            <span class="flex-1 text-left">{{ getLeftText(pair) }}</span>
+            <span
+              v-if="matchedIds.includes(pair.id)"
+              class="w-5 h-5 bg-emerald-500 text-white rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+            >
+              ✓
+            </span>
           </button>
         </div>
       </div>
 
-      <!-- Connection Line Visual -->
-      <div class="connection-indicator">
-        <div class="connection-line"></div>
-        <span class="connection-icon">↔</span>
-        <div class="connection-line"></div>
+      <!-- Connection Indicator -->
+      <div class="hidden md:flex flex-col items-center justify-center py-6">
+        <div class="w-0.5 h-8 bg-gradient-to-b from-violet-300 to-indigo-300 rounded-full"></div>
+        <span class="text-violet-400 text-lg my-1.5">↔</span>
+        <div class="w-0.5 h-8 bg-gradient-to-b from-indigo-300 to-violet-300 rounded-full"></div>
       </div>
 
       <!-- Right Column -->
-      <div class="matching-column right-column">
-        <h3 class="column-header">
-          <span class="header-icon">🎯</span>
+      <div class="bg-white rounded-xl border border-slate-200/60 p-4">
+        <h3 class="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3 pb-2.5 border-b border-slate-100">
+          <span class="text-sm">🎯</span>
           {{ rightHeader }}
         </h3>
-        <div class="items-list">
+        <div class="flex flex-col gap-2.5">
           <button
             v-for="pair in shuffledPairs"
             :key="`right-${pair.id}`"
@@ -54,42 +59,77 @@
             class="matching-item"
             :class="getItemClass(pair.id, 'right')"
           >
-            <span class="item-text">{{ getRightText(pair) }}</span>
-            <span v-if="matchedIds.includes(pair.id)" class="matched-check">✓</span>
+            <span class="flex-1 text-left">{{ getRightText(pair) }}</span>
+            <span
+              v-if="matchedIds.includes(pair.id)"
+              class="w-5 h-5 bg-emerald-500 text-white rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+            >
+              ✓
+            </span>
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Progress Indicator -->
-    <div class="matching-progress">
-      <div class="progress-bar">
+    <!-- Progress Bar -->
+    <div class="bg-slate-50/80 rounded-xl border border-slate-200/60 p-3 flex items-center gap-3 mb-4">
+      <div class="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
         <div
-          class="progress-fill"
+          class="h-full bg-gradient-to-r from-violet-500 to-emerald-500 rounded-full transition-all duration-500"
           :style="{ width: `${(matchedIds.length / normalizedPairs.length) * 100}%` }"
         ></div>
       </div>
-      <span class="progress-text">{{ matchedIds.length }} / {{ normalizedPairs.length }} matched</span>
+      <span class="text-xs font-semibold text-slate-500 whitespace-nowrap">{{ matchedIds.length }} / {{ normalizedPairs.length }} matched</span>
     </div>
 
-    <!-- Feedback Area -->
-    <transition name="feedback-slide">
+    <!-- Feedback -->
+    <transition
+      enter-active-class="transition-all duration-300 ease-out"
+      enter-from-class="opacity-0 translate-y-2"
+      enter-to-class="opacity-100 translate-y-0"
+      leave-active-class="transition-all duration-200 ease-in"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0 -translate-y-2"
+    >
       <div
         v-if="feedback.text"
-        class="matching-feedback"
-        :class="feedback.type === 'correct' ? 'feedback-success' : 'feedback-error'"
+        class="flex items-start gap-3 p-4 rounded-xl border mb-4"
+        :class="feedback.type === 'correct'
+          ? 'bg-emerald-50/50 border-emerald-200/60'
+          : 'bg-red-50/50 border-red-200/60'"
       >
-        <span class="feedback-icon">{{ feedback.type === 'correct' ? '✅' : '❌' }}</span>
-        <span class="feedback-text">{{ feedback.text }}</span>
+        <div
+          class="w-9 h-9 rounded-lg flex items-center justify-center text-white text-base shrink-0"
+          :class="feedback.type === 'correct' ? 'bg-emerald-500' : 'bg-red-500'"
+        >
+          {{ feedback.type === 'correct' ? '✅' : '❌' }}
+        </div>
+        <div class="pt-0.5">
+          <h4 class="text-sm font-bold mb-0.5" :class="feedback.type === 'correct' ? 'text-emerald-700' : 'text-red-700'">
+            {{ feedback.type === 'correct' ? 'Match!' : 'Try again' }}
+          </h4>
+          <p class="text-sm text-slate-600 leading-relaxed">{{ feedback.text }}</p>
+        </div>
       </div>
     </transition>
 
-    <!-- Completion Message -->
-    <transition name="complete-bounce">
-      <div v-if="isComplete" class="completion-card">
-        <div class="completion-icon">🎉</div>
-        <h4 class="completion-title">Excellent Work!</h4>
-        <p class="completion-text">You matched all pairs correctly!</p>
+    <!-- Completion Card -->
+    <transition
+      enter-active-class="transition-all duration-500 ease-out"
+      enter-from-class="opacity-0 scale-95"
+      enter-to-class="opacity-100 scale-100"
+    >
+      <div
+        v-if="isComplete"
+        class="flex flex-col items-center gap-2 p-6 rounded-xl bg-emerald-50/50 border border-emerald-200/60 text-center"
+      >
+        <div
+          class="w-12 h-12 rounded-xl bg-emerald-500 flex items-center justify-center text-white text-2xl"
+        >
+          🎉
+        </div>
+        <h4 class="text-lg font-bold text-emerald-700">Excellent Work!</h4>
+        <p class="text-sm text-emerald-600">You matched all pairs correctly!</p>
       </div>
     </transition>
   </div>
@@ -123,31 +163,28 @@ const rightHeader = computed(() => {
 
 // Helper to get left column text (supports name, term, left, key)
 const getLeftText = (pair) => {
-  return getLocalizedText(pair.name) || 
-         getLocalizedText(pair.term) || 
-         getLocalizedText(pair.left) || 
-         getLocalizedText(pair.key) || 
+  return getLocalizedText(pair.name) ||
+         getLocalizedText(pair.term) ||
+         getLocalizedText(pair.left) ||
+         getLocalizedText(pair.key) ||
          'Item';
 };
 
 // Helper to get right column text (supports formula, definition, right, value)
 const getRightText = (pair) => {
-  return getLocalizedText(pair.formula) || 
-         getLocalizedText(pair.definition) || 
-         getLocalizedText(pair.right) || 
-         getLocalizedText(pair.value) || 
+  return getLocalizedText(pair.formula) ||
+         getLocalizedText(pair.definition) ||
+         getLocalizedText(pair.right) ||
+         getLocalizedText(pair.value) ||
          'Match';
 };
 
 // Normalize pairs - handle different data structures
 const normalizedPairs = computed(() => {
-  // Try different locations for pairs data
   const pairs = props.step?.pairs || props.step?.items || props.step?.content?.pairs || [];
   if (!Array.isArray(pairs) || pairs.length === 0) {
-    console.warn('ChemMatchingStep: No pairs found in step data', props.step);
     return [];
   }
-  // Ensure each pair has an id
   return pairs.map((pair, index) => ({
     ...pair,
     id: pair.id ?? index
@@ -195,12 +232,12 @@ const checkMatch = (leftId, rightId) => {
   if (leftId === rightId) {
     // Correct match
     matchedIds.value = [...matchedIds.value, leftId];
-    feedback.value = { text: '✅ Correct match!', type: 'correct' };
+    feedback.value = { text: 'Correct match!', type: 'correct' };
     selectedLeftId.value = null;
     selectedRightId.value = null;
   } else {
     // Incorrect match
-    feedback.value = { text: '❌ Not a correct pair. Try again.', type: 'wrong' };
+    feedback.value = { text: 'Not a correct pair. Try again.', type: 'wrong' };
     // Delay clearing to let user see what they clicked
     setTimeout(() => {
       selectedLeftId.value = null;
@@ -231,297 +268,52 @@ const getItemClass = (id, type) => {
 </script>
 
 <style scoped>
-.matching-exercise-container {
-  padding: 1.5rem;
-  background: linear-gradient(135deg, #faf5ff 0%, #f0f9ff 100%);
-  border-radius: 20px;
-  min-height: 100%;
-}
-
-.matching-header {
-  text-align: center;
-  margin-bottom: 2rem;
-}
-
-.matching-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background: linear-gradient(135deg, #a855f7, #6366f1);
-  border-radius: 100px;
-  margin-bottom: 1rem;
-}
-
-.badge-icon {
-  font-size: 1.25rem;
-}
-
-.badge-text {
-  color: white;
-  font-weight: 600;
-  font-size: 0.875rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.matching-prompt {
-  font-size: 1.125rem;
-  color: #374151;
-  line-height: 1.6;
-  max-width: 600px;
-  margin: 0 auto;
-}
-
-.matching-grid {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  gap: 1.5rem;
-  align-items: start;
-  margin-bottom: 1.5rem;
-}
-
-@media (max-width: 768px) {
-  .matching-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-
-  .connection-indicator {
-    display: none;
-  }
-}
-
-.matching-column {
-  background: white;
-  border-radius: 16px;
-  padding: 1.25rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  border: 1px solid #e5e7eb;
-}
-
-.column-header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 2px solid #f3f4f6;
-}
-
-.header-icon {
-  font-size: 1rem;
-}
-
-.items-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
 .matching-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 1rem 1.25rem;
-  border-radius: 12px;
-  border: 2px solid transparent;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  border: 1.5px solid transparent;
   font-weight: 500;
   font-size: 0.9375rem;
   text-align: left;
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.item-text {
-  flex: 1;
-}
-
-.matched-check {
-  width: 24px;
-  height: 24px;
-  background: #10b981;
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.875rem;
-  font-weight: 700;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .item-default {
-  background: #f9fafb;
-  border-color: #e5e7eb;
-  color: #374151;
+  background: #f8fafc;
+  border-color: rgba(226, 232, 240, 0.8);
+  color: #334155;
 }
 
 .item-default:hover {
-  background: #f3f4f6;
-  border-color: #a855f7;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.15);
+  background: #f1f5f9;
+  border-color: rgba(139, 92, 246, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.1);
 }
 
 .item-selected {
-  background: linear-gradient(135deg, #f3e8ff, #e0e7ff);
-  border-color: #a855f7;
-  color: #7c3aed;
-  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.2);
-  transform: scale(1.02);
+  background: rgba(139, 92, 246, 0.06);
+  border-color: #7c3aed;
+  color: #6d28d9;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.15);
 }
 
 .item-matched {
-  background: linear-gradient(135deg, #dcfce7, #d1fae5);
-  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.06);
+  border-color: rgba(16, 185, 129, 0.3);
   color: #047857;
   cursor: default;
 }
 
 .item-error {
-  background: #fef2f2;
-  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.06);
+  border-color: rgba(239, 68, 68, 0.3);
   color: #dc2626;
-  animation: shake 0.5s ease-in-out;
-}
-
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  20%, 60% { transform: translateX(-5px); }
-  40%, 80% { transform: translateX(5px); }
-}
-
-.connection-indicator {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem 0;
-}
-
-.connection-line {
-  width: 2px;
-  height: 40px;
-  background: linear-gradient(180deg, #a855f7, #6366f1);
-  border-radius: 2px;
-}
-
-.connection-icon {
-  font-size: 1.5rem;
-  color: #a855f7;
-  margin: 0.5rem 0;
-}
-
-.matching-progress {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-  padding: 0 0.5rem;
-}
-
-.progress-bar {
-  flex: 1;
-  height: 8px;
-  background: #e5e7eb;
-  border-radius: 100px;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #a855f7, #10b981);
-  border-radius: 100px;
-  transition: width 0.5s ease;
-}
-
-.progress-text {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #6b7280;
-  white-space: nowrap;
-}
-
-.matching-feedback {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  padding: 1rem 1.5rem;
-  border-radius: 12px;
-  font-weight: 600;
-  margin-bottom: 1rem;
-}
-
-.feedback-success {
-  background: linear-gradient(135deg, #dcfce7, #d1fae5);
-  color: #047857;
-}
-
-.feedback-error {
-  background: linear-gradient(135deg, #fef2f2, #fee2e2);
-  color: #dc2626;
-}
-
-.feedback-icon {
-  font-size: 1.25rem;
-}
-
-.feedback-text {
-  font-size: 1rem;
-}
-
-.completion-card {
-  text-align: center;
-  padding: 2rem;
-  background: linear-gradient(135deg, #dcfce7, #d1fae5);
-  border-radius: 16px;
-  border: 2px solid #10b981;
-}
-
-.completion-icon {
-  font-size: 3rem;
-  margin-bottom: 0.75rem;
-}
-
-.completion-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #047857;
-  margin: 0 0 0.5rem 0;
-}
-
-.completion-text {
-  color: #059669;
-  font-size: 1rem;
-  margin: 0;
-}
-
-/* Transitions */
-.feedback-slide-enter-active,
-.feedback-slide-leave-active {
-  transition: all 0.3s ease;
-}
-
-.feedback-slide-enter-from,
-.feedback-slide-leave-to {
-  opacity: 0;
-  transform: translateY(-10px);
-}
-
-.complete-bounce-enter-active {
-  animation: bounce-in 0.5s ease;
-}
-
-@keyframes bounce-in {
-  0% { transform: scale(0.9); opacity: 0; }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); opacity: 1; }
+  animation: step-shake 0.4s ease-in-out;
 }
 </style>

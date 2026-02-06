@@ -1,11 +1,16 @@
 <template>
   <div class="interactive-step step-animate-in">
-    <p class="text-lg text-gray-600 mb-6 leading-relaxed">
-      {{ step.prompt }}
-    </p>
+    <!-- Header -->
+    <div class="mb-5">
+      <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-violet-50 border border-violet-100 rounded-lg mb-3">
+        <span class="text-sm">📐</span>
+        <span class="text-xs font-semibold text-violet-600 uppercase tracking-wide">Geometry</span>
+      </div>
+      <h2 class="text-lg font-bold text-slate-900 leading-snug">{{ step.prompt }}</h2>
+    </div>
 
     <!-- SVG Canvas -->
-    <div class="bg-gray-100 rounded-xl overflow-hidden shadow-inner border border-gray-200 select-none">
+    <div class="geometry-canvas mb-4">
       <svg viewBox="0 0 400 300" class="w-full h-auto">
         <!-- Guide Rays -->
         <line
@@ -15,7 +20,7 @@
           :y1="center.y"
           :x2="pt.x"
           :y2="pt.y"
-          stroke="#e5e7eb"
+          stroke="#e2e8f0"
           stroke-width="2"
           stroke-dasharray="4"
         />
@@ -23,14 +28,14 @@
         <!-- Main Triangle -->
         <polygon
           :points="polyString"
-          fill="rgba(59, 130, 246, 0.1)"
-          stroke="#3b82f6"
+          fill="rgba(124, 58, 237, 0.08)"
+          stroke="#7c3aed"
           stroke-width="3"
         />
 
         <!-- Vertices & Exterior Angles -->
         <g v-for="(pt, i) in points" :key="`ext-${i}`">
-          <circle :cx="pt.x" :cy="pt.y" r="4" fill="#3b82f6" />
+          <circle :cx="pt.x" :cy="pt.y" r="4" fill="#7c3aed" />
           <!-- Show wedge when shrinking -->
           <path
             v-if="sliderVal > 0.8"
@@ -56,18 +61,20 @@
     </div>
 
     <!-- Slider Control -->
-    <div class="flex items-center gap-4 bg-white p-4 rounded-lg border border-gray-200 shadow-sm mt-6">
-      <span class="text-xs font-bold text-gray-500 uppercase">Large</span>
-      <input
-        type="range"
-        min="0"
-        max="1"
-        step="0.01"
-        v-model.number="sliderVal"
-        @input="handleSliderChange"
-        class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
-      />
-      <span class="text-xs font-bold text-gray-500 uppercase">Point</span>
+    <div class="bg-slate-50/80 rounded-xl border border-slate-200/60 p-4 mb-4">
+      <div class="flex items-center gap-4">
+        <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Large</span>
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          v-model.number="sliderVal"
+          @input="handleSliderChange"
+          class="step-slider flex-1"
+        />
+        <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Point</span>
+      </div>
     </div>
 
     <!-- Question Block - Only appears when shrunk -->
@@ -79,39 +86,39 @@
       leave-from-class="max-h-64 opacity-100"
       leave-to-class="max-h-0 opacity-0"
     >
-      <div v-if="sliderVal > 0.5" class="flex flex-col gap-4 mt-4">
-        <p class="font-semibold text-gray-800">
-          What shape do the exterior angles form?
-        </p>
-        <div class="flex gap-3 flex-wrap">
+      <div v-if="sliderVal > 0.5" class="overflow-hidden">
+        <div class="bg-white rounded-xl border border-slate-200/60 p-4 mb-4">
+          <p class="text-sm font-semibold text-slate-800 mb-3">
+            What shape do the exterior angles form?
+          </p>
+          <div class="flex gap-2.5 flex-wrap mb-3">
+            <button
+              v-for="opt in step.shapes"
+              :key="opt"
+              @click="handleSelect(opt)"
+              :disabled="status === 'correct'"
+              class="option-card flex-1 min-w-[80px] text-center text-sm"
+              :class="{
+                'selected': selectedShape === opt,
+              }"
+            >
+              {{ opt }}
+            </button>
+          </div>
+
           <button
-            v-for="opt in step.shapes"
-            :key="opt"
-            @click="handleSelect(opt)"
+            v-if="selectedShape"
+            @click="handleConfirm"
             :disabled="status === 'correct'"
-            class="flex-1 min-w-[80px] py-3 px-2 rounded-lg border font-medium transition-all"
+            class="step-btn-primary w-full"
             :class="{
-              'border-blue-500 bg-blue-50 text-blue-700 shadow-sm': selectedShape === opt,
-              'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 hover:border-gray-300': selectedShape !== opt
+              'step-btn-success': status === 'correct',
+              'step-btn-error': status === 'incorrect'
             }"
           >
-            {{ opt }}
+            {{ status === 'correct' ? 'Correct!' : status === 'incorrect' ? 'Incorrect, look closer!' : 'Confirm' }}
           </button>
         </div>
-        
-        <button
-          v-if="selectedShape"
-          @click="handleConfirm"
-          :disabled="status === 'correct'"
-          class="w-full py-3 rounded-lg font-bold text-white transition-all shadow-md"
-          :class="{
-            'bg-green-500 cursor-default': status === 'correct',
-            'bg-red-500 hover:bg-red-600': status === 'incorrect',
-            'bg-zinc-900 hover:bg-zinc-800': status === 'idle'
-          }"
-        >
-          {{ status === 'correct' ? 'Correct!' : status === 'incorrect' ? 'Incorrect, look closer!' : 'Confirm' }}
-        </button>
       </div>
     </transition>
   </div>

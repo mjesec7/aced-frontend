@@ -1,137 +1,115 @@
 <template>
-  <div class="data-analysis-container">
-
-    <!-- Background Decorations -->
-    <div class="absolute inset-0 overflow-hidden pointer-events-none">
-      <div class="bg-decoration bg-decoration-1"></div>
-      <div class="bg-decoration bg-decoration-2"></div>
+  <div class="interactive-step step-animate-in">
+    <!-- Header -->
+    <div class="mb-5">
+      <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-violet-50 border border-violet-100 rounded-lg mb-3">
+        <span class="text-sm">📊</span>
+        <span class="text-xs font-semibold text-violet-600 uppercase tracking-wide">Data Analysis</span>
+      </div>
+      <h2 class="text-lg font-bold text-slate-900 leading-snug">
+        {{ getLocalizedText(step.prompt) || 'Analyze the Data' }}
+      </h2>
     </div>
 
-    <div class="relative z-10">
-
-      <!-- Header -->
-      <div class="da-header">
-        <div class="da-badge">
-          <span class="da-badge-icon">📊</span>
-          <span class="da-badge-text">Data Analysis</span>
-        </div>
-        <h2 class="da-title">
-          {{ getLocalizedText(step.prompt) || 'Analyze the Data' }}
-        </h2>
-      </div>
-
-      <!-- Chart Section -->
-      <div class="da-chart-section">
-
-        <!-- Bar Chart -->
-        <div class="da-chart">
+    <!-- Chart Section -->
+    <div class="bg-slate-50/80 rounded-xl border border-slate-200/60 p-4 mb-4">
+      <div class="flex items-end justify-around gap-2 h-36 mb-2 px-1">
+        <div
+          v-for="(item, index) in chartData"
+          :key="index"
+          class="flex-1 max-w-[72px] flex flex-col items-center gap-1.5"
+        >
+          <span class="text-xs font-bold text-slate-700">{{ item.value }}</span>
           <div
-            v-for="(item, index) in chartData"
-            :key="index"
-            class="da-bar-wrapper"
+            class="w-full rounded-t-lg transition-all duration-500 relative group"
+            :class="barColors[index % barColors.length]"
+            :style="{ height: getBarHeight(item.value) + '%', animationDelay: (index * 0.08) + 's' }"
+            style="animation: growUp 0.5s ease-out backwards;"
           >
-            <!-- Value Label -->
-            <span class="da-bar-value">{{ item.value }}</span>
-
-            <!-- Bar -->
-            <div
-              class="da-bar bar-animate"
-              :class="getBarColor(index)"
-              :style="{ height: getBarHeight(item.value) + '%', animationDelay: (index * 0.1) + 's' }"
-            >
-              <!-- Hover Tooltip -->
-              <div class="da-tooltip">
-                {{ item.label }}: {{ item.value }} {{ numericLabel }}
-              </div>
+            <div class="absolute -top-8 left-1/2 -translate-x-1/2 px-2.5 py-1 bg-slate-800 text-white text-[11px] font-semibold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              {{ item.label }}: {{ item.value }} {{ numericLabel }}
             </div>
-
-            <!-- Label -->
-            <span class="da-bar-label">{{ item.label }}</span>
           </div>
-        </div>
-
-        <!-- Y-Axis Label -->
-        <div class="da-axis-label">
-          <span>{{ numericLabel }}</span>
+          <span class="text-[11px] font-medium text-slate-500 text-center truncate w-full">{{ item.label }}</span>
         </div>
       </div>
-
-      <!-- Answer Input -->
-      <div class="da-input-section">
-        <label class="da-input-label">
-          Enter your answer:
-        </label>
-        <div class="da-input-row">
-          <input
-            type="number"
-            v-model.number="userAnswer"
-            :disabled="isCompleted"
-            :step="0.01"
-            class="da-input"
-            placeholder="0.00"
-            @keyup.enter="checkAnswer"
-          />
-          <span class="da-input-unit">{{ numericLabel }}</span>
-        </div>
-
-        <!-- Hint -->
-        <p class="da-hint">
-          💡 Tip: Calculate the average of all values (sum ÷ count)
-        </p>
+      <div class="text-center pt-2 border-t border-slate-100">
+        <span class="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">{{ numericLabel }}</span>
       </div>
+    </div>
 
-      <!-- Submit Button -->
-      <div class="da-button-wrapper">
-        <button
-          v-if="!isCompleted"
-          @click="checkAnswer"
-          :disabled="userAnswer === null || userAnswer === ''"
-          class="da-btn da-btn-primary"
-        >
-          <svg class="da-btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-          </svg>
-          Calculate
-        </button>
-
-        <button
-          v-else
-          @click="$emit('complete', true)"
-          class="da-btn da-btn-success"
-        >
-          Continue
-          <svg class="da-btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
-          </svg>
-        </button>
+    <!-- Answer Input -->
+    <div class="bg-white rounded-xl border border-slate-200/60 p-4 mb-4">
+      <label class="block text-sm font-semibold text-slate-700 mb-2">Enter your answer:</label>
+      <div class="flex gap-3 items-center">
+        <input
+          type="number"
+          v-model.number="userAnswer"
+          :disabled="isCompleted"
+          :step="0.01"
+          class="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 text-base font-mono font-bold focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 disabled:opacity-50 disabled:bg-slate-100 transition-all"
+          placeholder="0.00"
+          @keyup.enter="checkAnswer"
+        />
+        <span class="text-sm text-slate-500 font-semibold px-2.5 py-1.5 bg-slate-50 rounded-lg border border-slate-100">{{ numericLabel }}</span>
       </div>
+      <p class="mt-2.5 text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-lg border border-amber-100">
+        💡 Tip: Calculate the average of all values (sum ÷ count)
+      </p>
+    </div>
 
-      <!-- Feedback -->
-      <transition
-        enter-active-class="transition-all duration-500 ease-out"
-        enter-from-class="opacity-0 translate-y-4 scale-95"
-        enter-to-class="opacity-100 translate-y-0 scale-100"
+    <!-- Button -->
+    <div class="flex justify-center mb-3">
+      <button
+        v-if="!isCompleted"
+        @click="checkAnswer"
+        :disabled="userAnswer === null || userAnswer === ''"
+        class="step-btn-primary inline-flex items-center gap-2"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+        </svg>
+        Calculate
+      </button>
+      <button
+        v-else
+        @click="$emit('complete', true)"
+        class="step-btn-primary step-btn-success inline-flex items-center gap-2"
+      >
+        Continue
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Feedback -->
+    <transition
+      enter-active-class="transition-all duration-300 ease-out"
+      enter-from-class="opacity-0 translate-y-2"
+      enter-to-class="opacity-100 translate-y-0"
+    >
+      <div
+        v-if="feedback.show"
+        class="flex items-start gap-3 p-4 rounded-xl border"
+        :class="feedback.isCorrect
+          ? 'bg-emerald-50/50 border-emerald-200/60'
+          : 'bg-red-50/50 border-red-200/60'"
       >
         <div
-          v-if="feedback.show"
-          class="da-feedback"
-          :class="feedback.isCorrect ? 'da-feedback-success' : 'da-feedback-error'"
+          class="w-9 h-9 rounded-lg flex items-center justify-center text-white text-base shrink-0"
+          :class="feedback.isCorrect ? 'bg-emerald-500' : 'bg-red-500'"
         >
-          <div class="da-feedback-icon">
-            {{ feedback.isCorrect ? '🎯' : '📐' }}
-          </div>
-          <div class="da-feedback-content">
-            <h4 class="da-feedback-title">
-              {{ feedback.isCorrect ? 'Correct!' : 'Not quite' }}
-            </h4>
-            <p class="da-feedback-message">
-              {{ feedback.message }}
-            </p>
-          </div>
+          {{ feedback.isCorrect ? '🎯' : '📐' }}
         </div>
-      </transition>
-
-    </div>
+        <div class="pt-0.5">
+          <h4 class="text-sm font-bold mb-0.5" :class="feedback.isCorrect ? 'text-emerald-700' : 'text-red-700'">
+            {{ feedback.isCorrect ? 'Correct!' : 'Not quite' }}
+          </h4>
+          <p class="text-sm text-slate-600 leading-relaxed">{{ feedback.message }}</p>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -161,16 +139,15 @@ const props = defineProps({
 
 const emit = defineEmits(['complete']);
 
-// State
 const userAnswer = ref(null);
 const isCompleted = ref(false);
-const feedback = ref({
-  show: false,
-  isCorrect: false,
-  message: ''
-});
+const feedback = ref({ show: false, isCorrect: false, message: '' });
 
-// Computed - with fallbacks for different data structures
+const barColors = [
+  'bg-violet-400', 'bg-indigo-400', 'bg-blue-400',
+  'bg-cyan-400', 'bg-teal-400', 'bg-emerald-400'
+];
+
 const numericLabel = computed(() => {
   const label = props.step?.numericLabel || props.step?.numeric_label || props.step?.content?.numericLabel || 'Value';
   return getLocalizedText(label) || label;
@@ -180,10 +157,7 @@ const numericKey = computed(() => props.step?.numericKey || props.step?.numeric_
 
 const chartData = computed(() => {
   const data = props.step?.data || props.step?.content?.data || [];
-  if (!Array.isArray(data)) {
-    console.warn('DataAnalysisStep: No data array found', props.step);
-    return [];
-  }
+  if (!Array.isArray(data)) return [];
   return data.map(item => ({
     label: getLocalizedText(item.label) || item.label || 'Item',
     value: item[numericKey.value] || item.value || 0
@@ -195,37 +169,18 @@ const maxValue = computed(() => {
   return Math.max(...chartData.value.map(d => d.value));
 });
 
-// Methods
 const getBarHeight = (value) => {
   if (!value || !maxValue.value) return 5;
-  return Math.max(10, (value / maxValue.value) * 100);
-};
-
-const getBarColor = (index) => {
-  const colors = [
-    'bg-gradient-to-t from-blue-600 to-blue-400',
-    'bg-gradient-to-t from-cyan-600 to-cyan-400',
-    'bg-gradient-to-t from-teal-600 to-teal-400',
-    'bg-gradient-to-t from-emerald-600 to-emerald-400',
-    'bg-gradient-to-t from-green-600 to-green-400',
-    'bg-gradient-to-t from-lime-600 to-lime-400',
-  ];
-  return colors[index % colors.length];
+  return Math.max(12, (value / maxValue.value) * 100);
 };
 
 const checkAnswer = () => {
   if (userAnswer.value === null) return;
-
   const tolerance = props.step?.tolerance || props.step?.content?.tolerance || 0.5;
   const correctAnswer = props.step?.correctAnswer || props.step?.correct_answer || props.step?.content?.correctAnswer;
-
-  if (correctAnswer === undefined || correctAnswer === null) {
-    console.warn('DataAnalysisStep: No correct answer found', props.step);
-    return;
-  }
+  if (correctAnswer === undefined || correctAnswer === null) return;
 
   const isCorrect = Math.abs(userAnswer.value - correctAnswer) <= tolerance;
-
   isCompleted.value = true;
   feedback.value = {
     show: true,
@@ -234,782 +189,13 @@ const checkAnswer = () => {
       ? `Excellent! The correct answer is ${Number(correctAnswer).toFixed(2)}. Your calculation is spot on!`
       : `The correct answer is ${Number(correctAnswer).toFixed(2)}. You answered ${userAnswer.value.toFixed(2)}. Remember: Average = Sum of all values ÷ Number of values`
   };
-
   emit('complete', isCorrect);
 };
 </script>
 
 <style scoped>
-/* ============================================
-   DATA ANALYSIS - MODERN DESIGN
-   ============================================ */
-.data-analysis-container {
-  width: 100%;
-  min-height: 300px;
-  background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 50%, #faf5ff 100%);
-  border-radius: 20px;
-  padding: 1.75rem;
-  position: relative;
-  overflow: hidden;
-  border: 1px solid rgba(59, 130, 246, 0.15);
-  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.08);
-}
-
-.bg-decoration {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.6;
-}
-
-.bg-decoration-1 {
-  top: -100px;
-  right: -100px;
-  width: 250px;
-  height: 250px;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(99, 102, 241, 0.15));
-}
-
-.bg-decoration-2 {
-  bottom: -100px;
-  left: -100px;
-  width: 200px;
-  height: 200px;
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(34, 197, 94, 0.15));
-}
-
-/* Header */
-.da-header {
-  text-align: center;
-  margin-bottom: 1.5rem;
-}
-
-.da-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background: linear-gradient(135deg, #3b82f6, #06b6d4);
-  border-radius: 100px;
-  margin-bottom: 0.75rem;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-}
-
-.da-badge-icon {
-  font-size: 1.125rem;
-}
-
-.da-badge-text {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: white;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.da-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #1e293b;
-  margin: 0;
-  line-height: 1.4;
-  max-width: 500px;
-  margin: 0 auto;
-}
-
-/* Chart Section */
-.da-chart-section {
-  background: white;
-  border-radius: 16px;
-  border: 1px solid #e2e8f0;
-  padding: 1.25rem;
-  margin-bottom: 1.25rem;
-  box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8);
-}
-
-.da-chart {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-around;
-  gap: 0.75rem;
-  height: 160px;
-  margin-bottom: 0.75rem;
-  padding: 0 0.5rem;
-}
-
-.da-bar-wrapper {
-  flex: 1;
-  max-width: 80px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.da-bar-value {
-  font-size: 0.8125rem;
-  font-weight: 700;
-  color: #1e293b;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-
-.da-bar {
-  width: 100%;
-  border-radius: 8px 8px 0 0;
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.da-bar:hover {
-  transform: scaleX(1.05);
-}
-
-.da-bar:hover .da-tooltip {
-  opacity: 1;
-  transform: translateX(-50%) translateY(-4px);
-}
-
-.da-tooltip {
-  position: absolute;
-  top: -3rem;
-  left: 50%;
-  transform: translateX(-50%) translateY(0);
-  padding: 0.5rem 0.875rem;
-  background: linear-gradient(135deg, #1e293b, #334155);
-  color: white;
-  font-size: 0.75rem;
-  font-weight: 600;
-  border-radius: 10px;
-  opacity: 0;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  white-space: nowrap;
-  z-index: 10;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-.da-tooltip::after {
-  content: '';
-  position: absolute;
-  bottom: -6px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-top: 6px solid #334155;
-}
-
-.da-bar-label {
-  font-size: 0.75rem;
-  color: #475569;
-  text-align: center;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  width: 100%;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-
-.da-axis-label {
-  text-align: center;
-  padding-top: 0.5rem;
-  border-top: 1px solid #f1f5f9;
-}
-
-.da-axis-label span {
-  font-size: 0.6875rem;
-  color: #94a3b8;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-weight: 700;
-}
-
-/* Input Section */
-.da-input-section {
-  background: white;
-  border-radius: 16px;
-  border: 1px solid #e2e8f0;
-  padding: 1.25rem;
-  margin-bottom: 1rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-}
-
-.da-input-label {
-  display: block;
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: #374151;
-  margin-bottom: 0.75rem;
-}
-
-.da-input-row {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-.da-input {
-  flex: 1;
-  padding: 0.875rem 1rem;
-  background: #f8fafc;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  color: #1e293b;
-  font-size: 1.125rem;
-  font-family: ui-monospace, 'SF Mono', Monaco, monospace;
-  font-weight: 700;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.da-input:focus {
-  outline: none;
-  border-color: #3b82f6;
-  background: white;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
-}
-
-.da-input:disabled {
-  opacity: 0.6;
-  background: #f1f5f9;
-  cursor: not-allowed;
-}
-
-.da-input-unit {
-  font-size: 0.875rem;
-  color: #64748b;
-  font-weight: 600;
-  padding: 0.5rem 0.75rem;
-  background: #f1f5f9;
-  border-radius: 8px;
-}
-
-.da-hint {
-  margin-top: 0.75rem;
-  font-size: 0.8125rem;
-  color: #64748b;
-  background: linear-gradient(135deg, #fef3c7, #fef9c3);
-  padding: 0.625rem 0.875rem;
-  border-radius: 10px;
-  border: 1px solid rgba(251, 191, 36, 0.3);
-}
-
-/* Buttons */
-.da-button-wrapper {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 0.5rem;
-}
-
-.da-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.625rem;
-  padding: 0.875rem 2rem;
-  border-radius: 14px;
-  font-weight: 700;
-  font-size: 1rem;
-  color: white;
-  border: none;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.da-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  background: #94a3b8;
-  box-shadow: none;
-  transform: none;
-}
-
-.da-btn-icon {
-  width: 1.25rem;
-  height: 1.25rem;
-}
-
-.da-btn-primary {
-  background: linear-gradient(135deg, #3b82f6, #06b6d4);
-  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
-}
-
-.da-btn-primary:hover:not(:disabled) {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.5);
-}
-
-.da-btn-primary:active:not(:disabled) {
-  transform: translateY(-1px);
-}
-
-.da-btn-success {
-  background: linear-gradient(135deg, #10b981, #059669);
-  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4);
-}
-
-.da-btn-success:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.5);
-}
-
-.da-btn-success:active {
-  transform: translateY(-1px);
-}
-
-/* Feedback */
-.da-feedback {
-  margin-top: 1rem;
-  padding: 1.25rem;
-  border-radius: 16px;
-  border: 2px solid;
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-  animation: feedbackSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-@keyframes feedbackSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.da-feedback-success {
-  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
-  border-color: #34d399;
-}
-
-.da-feedback-error {
-  background: linear-gradient(135deg, #fef2f2, #fee2e2);
-  border-color: #f87171;
-}
-
-.da-feedback-icon {
-  width: 3rem;
-  height: 3rem;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.da-feedback-success .da-feedback-icon {
-  background: linear-gradient(135deg, #10b981, #059669);
-}
-
-.da-feedback-error .da-feedback-icon {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-}
-
-.da-feedback-content {
-  flex: 1;
-  padding-top: 0.25rem;
-}
-
-.da-feedback-title {
-  font-size: 1.0625rem;
-  font-weight: 700;
-  margin: 0 0 0.375rem 0;
-  letter-spacing: -0.01em;
-}
-
-.da-feedback-success .da-feedback-title {
-  color: #047857;
-}
-
-.da-feedback-error .da-feedback-title {
-  color: #b91c1c;
-}
-
-.da-feedback-message {
-  font-size: 0.875rem;
-  color: #475569;
-  margin: 0;
-  line-height: 1.5;
-}
-
-/* Bar Colors */
-.bg-gradient-to-t.from-blue-600.to-blue-400 {
-  background: linear-gradient(to top, #2563eb, #60a5fa);
-}
-.bg-gradient-to-t.from-cyan-600.to-cyan-400 {
-  background: linear-gradient(to top, #0891b2, #22d3ee);
-}
-.bg-gradient-to-t.from-teal-600.to-teal-400 {
-  background: linear-gradient(to top, #0d9488, #2dd4bf);
-}
-.bg-gradient-to-t.from-emerald-600.to-emerald-400 {
-  background: linear-gradient(to top, #059669, #34d399);
-}
-.bg-gradient-to-t.from-green-600.to-green-400 {
-  background: linear-gradient(to top, #16a34a, #4ade80);
-}
-.bg-gradient-to-t.from-lime-600.to-lime-400 {
-  background: linear-gradient(to top, #65a30d, #a3e635);
-}
-
-/* Animation */
 @keyframes growUp {
-  from {
-    transform: scaleY(0);
-    transform-origin: bottom;
-  }
-  to {
-    transform: scaleY(1);
-    transform-origin: bottom;
-  }
-}
-
-.bar-animate {
-  animation: growUp 0.6s ease-out backwards;
-}
-
-/* ============================================
-   TABLET RESPONSIVE (768px - 1366px)
-   ============================================ */
-
-@media (min-width: 768px) and (max-width: 1023px) {
-  .data-analysis-container {
-    padding: 1rem;
-    border-radius: 1.25rem;
-    min-height: 250px;
-  }
-
-  .da-header {
-    margin-bottom: 0.75rem;
-  }
-
-  .da-badge {
-    padding: 0.25rem 0.5rem;
-    margin-bottom: 0.375rem;
-  }
-
-  .da-badge-icon {
-    font-size: 0.875rem;
-  }
-
-  .da-badge-text {
-    font-size: 0.6rem;
-  }
-
-  .da-title {
-    font-size: 1rem;
-  }
-
-  .da-chart-section {
-    padding: 0.75rem;
-    margin-bottom: 0.75rem;
-  }
-
-  .da-chart {
-    height: 100px;
-    gap: 0.375rem;
-  }
-
-  .da-bar-value {
-    font-size: 0.6rem;
-  }
-
-  .da-bar-label {
-    font-size: 0.5rem;
-  }
-
-  .da-input-section {
-    padding: 0.75rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .da-input {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.875rem;
-  }
-
-  .da-btn {
-    padding: 0.625rem 1.25rem;
-    font-size: 0.8rem;
-  }
-
-  .da-btn-icon {
-    width: 1rem;
-    height: 1rem;
-  }
-
-  .da-feedback {
-    padding: 0.625rem;
-    margin-top: 0.5rem;
-  }
-
-  .da-feedback-icon {
-    width: 2rem;
-    height: 2rem;
-    font-size: 1rem;
-  }
-
-  .da-feedback-title {
-    font-size: 0.8rem;
-  }
-
-  .da-feedback-message {
-    font-size: 0.65rem;
-  }
-}
-
-/* iPad Air & Larger Tablets */
-@media (min-width: 1024px) and (max-width: 1366px) {
-  .data-analysis-container {
-    padding: 1.25rem;
-    min-height: 280px;
-  }
-
-  .da-chart {
-    height: 120px;
-  }
-
-  .da-title {
-    font-size: 1.125rem;
-  }
-}
-
-/* Tablet Landscape */
-@media (min-width: 768px) and (max-height: 800px) and (orientation: landscape) {
-  .data-analysis-container {
-    padding: 0.75rem;
-    min-height: 200px;
-    border-radius: 1rem;
-  }
-
-  .da-header {
-    margin-bottom: 0.5rem;
-  }
-
-  .da-badge {
-    padding: 0.2rem 0.4rem;
-    margin-bottom: 0.25rem;
-  }
-
-  .da-badge-icon {
-    font-size: 0.75rem;
-  }
-
-  .da-badge-text {
-    font-size: 0.5rem;
-  }
-
-  .da-title {
-    font-size: 0.875rem;
-  }
-
-  .da-chart-section {
-    padding: 0.5rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .da-chart {
-    height: 80px;
-    gap: 0.25rem;
-  }
-
-  .da-bar-value {
-    font-size: 0.5rem;
-  }
-
-  .da-bar-label {
-    font-size: 0.45rem;
-  }
-
-  .da-input-section {
-    padding: 0.5rem;
-    margin-bottom: 0.375rem;
-  }
-
-  .da-input-label {
-    font-size: 0.65rem;
-    margin-bottom: 0.25rem;
-  }
-
-  .da-input {
-    padding: 0.375rem 0.5rem;
-    font-size: 0.75rem;
-  }
-
-  .da-hint {
-    font-size: 0.55rem;
-    margin-top: 0.25rem;
-  }
-
-  .da-btn {
-    padding: 0.5rem 1rem;
-    font-size: 0.7rem;
-    border-radius: 0.75rem;
-  }
-
-  .da-btn-icon {
-    width: 0.875rem;
-    height: 0.875rem;
-  }
-
-  .da-feedback {
-    padding: 0.5rem;
-    margin-top: 0.375rem;
-    gap: 0.5rem;
-  }
-
-  .da-feedback-icon {
-    width: 1.5rem;
-    height: 1.5rem;
-    font-size: 0.875rem;
-  }
-
-  .da-feedback-title {
-    font-size: 0.7rem;
-  }
-
-  .da-feedback-message {
-    font-size: 0.6rem;
-  }
-}
-
-/* Short screens */
-@media (max-height: 600px) {
-  .data-analysis-container {
-    padding: 0.5rem;
-    min-height: 180px;
-    border-radius: 0.75rem;
-  }
-
-  .da-header {
-    margin-bottom: 0.375rem;
-  }
-
-  .da-badge {
-    padding: 0.15rem 0.35rem;
-    margin-bottom: 0.2rem;
-  }
-
-  .da-badge-icon {
-    font-size: 0.65rem;
-  }
-
-  .da-badge-text {
-    font-size: 0.45rem;
-  }
-
-  .da-title {
-    font-size: 0.75rem;
-  }
-
-  .da-chart-section {
-    padding: 0.375rem;
-    margin-bottom: 0.375rem;
-    border-radius: 0.5rem;
-  }
-
-  .da-chart {
-    height: 60px;
-    gap: 0.2rem;
-    margin-bottom: 0.25rem;
-  }
-
-  .da-bar-value {
-    font-size: 0.45rem;
-  }
-
-  .da-bar {
-    border-radius: 0.2rem 0.2rem 0 0;
-  }
-
-  .da-bar-label {
-    font-size: 0.4rem;
-  }
-
-  .da-input-section {
-    padding: 0.375rem;
-    margin-bottom: 0.25rem;
-    border-radius: 0.5rem;
-  }
-
-  .da-input-label {
-    font-size: 0.55rem;
-    margin-bottom: 0.2rem;
-  }
-
-  .da-input {
-    padding: 0.3rem 0.4rem;
-    font-size: 0.65rem;
-    border-radius: 0.5rem;
-  }
-
-  .da-input-unit {
-    font-size: 0.55rem;
-  }
-
-  .da-hint {
-    font-size: 0.5rem;
-    margin-top: 0.2rem;
-  }
-
-  .da-btn {
-    padding: 0.375rem 0.75rem;
-    font-size: 0.6rem;
-    border-radius: 0.5rem;
-    gap: 0.25rem;
-  }
-
-  .da-btn-icon {
-    width: 0.75rem;
-    height: 0.75rem;
-  }
-
-  .da-feedback {
-    padding: 0.375rem;
-    margin-top: 0.25rem;
-    gap: 0.375rem;
-    border-radius: 0.5rem;
-  }
-
-  .da-feedback-icon {
-    width: 1.25rem;
-    height: 1.25rem;
-    font-size: 0.7rem;
-    border-radius: 0.375rem;
-  }
-
-  .da-feedback-title {
-    font-size: 0.6rem;
-  }
-
-  .da-feedback-message {
-    font-size: 0.5rem;
-  }
-}
-
-/* Mobile */
-@media (max-width: 640px) {
-  .data-analysis-container {
-    padding: 0.875rem;
-    min-height: 280px;
-    border-radius: 1rem;
-  }
-
-  .da-title {
-    font-size: 1rem;
-  }
-
-  .da-chart {
-    height: 120px;
-  }
+  from { transform: scaleY(0); transform-origin: bottom; }
+  to { transform: scaleY(1); transform-origin: bottom; }
 }
 </style>

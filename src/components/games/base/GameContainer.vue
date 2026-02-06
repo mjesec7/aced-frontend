@@ -68,17 +68,6 @@ const gameComponent = computed(() => {
     'maze-runner': MazeRunner
   };
   const resolved = components[props.gameType] || BasketCatch;
-  
-  // DEBUG: Log component resolution
-  console.log('🎮 [GameContainer] Component Resolution:');
-  console.log('  - gameType prop:', props.gameType);
-  console.log('  - resolved component:', resolved?.name || resolved);
-  console.log('  - gameData:', props.gameData);
-  console.log('  - userId:', props.userId);
-  console.log('  - lessonId:', props.lessonId);
-  console.log('  - stepIndex:', props.stepIndex);
-  console.log('  - Available game types:', Object.keys(components));
-  
   return resolved;
 });
 

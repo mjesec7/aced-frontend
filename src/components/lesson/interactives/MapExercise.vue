@@ -1,109 +1,111 @@
 <template>
-  <div class="w-full mx-auto bg-white rounded-xl shadow-lg overflow-hidden border border-slate-100">
-    <div class="p-4 md:p-5">
-      <!-- Header -->
-      <div class="text-center mb-4">
-        <h2 class="text-xl font-bold text-slate-900 mb-1">{{ title }}</h2>
-        <p class="text-sm text-slate-600">{{ description }}</p>
+  <div class="interactive-step step-animate-in">
+    <!-- Header -->
+    <div class="mb-5">
+      <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-violet-50 border border-violet-100 rounded-lg mb-3">
+        <span class="text-sm">🗺️</span>
+        <span class="text-xs font-semibold text-violet-600 uppercase tracking-wide">Map Challenge</span>
       </div>
+      <h2 class="text-lg font-bold text-slate-900 leading-snug">{{ title }}</h2>
+      <p class="text-sm text-slate-500 mt-1">{{ description }}</p>
+    </div>
 
-      <!-- Map Container -->
-      <div class="relative w-full" style="height: 400px;">
-        <div class="absolute inset-0 bg-slate-100 rounded-lg overflow-hidden shadow-inner border border-slate-200">
-          <!-- Map Image -->
-          <img 
-            :src="image" 
-            alt="Map" 
-            class="w-full h-full object-contain"
-          />
+    <!-- Map Container -->
+    <div class="relative w-full rounded-xl overflow-hidden border border-slate-200/60 bg-slate-50/80" style="height: 400px;">
+      <!-- Map Image -->
+      <img
+        :src="image"
+        alt="Map"
+        class="w-full h-full object-contain"
+      />
 
-          <!-- Markers -->
-          <div 
-            v-for="marker in markers" 
-            :key="marker.id"
-            class="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-all duration-300"
-            :style="{ left: marker.x + '%', top: marker.y + '%' }"
-            @click="handleMarkerClick(marker)"
-          >
-          <!-- Marker Pin -->
-          <div 
-            class="relative group"
+      <!-- Markers -->
+      <div
+        v-for="marker in markers"
+        :key="marker.id"
+        class="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-all duration-300"
+        :style="{ left: marker.x + '%', top: marker.y + '%' }"
+        @click="handleMarkerClick(marker)"
+      >
+        <!-- Marker Pin -->
+        <div
+          class="relative group"
+          :class="[
+            selectedMarkerId === marker.id && isCorrect ? 'z-20' : 'z-10',
+            showFeedback && selectedMarkerId === marker.id ? 'scale-110' : 'hover:scale-110'
+          ]"
+        >
+          <!-- Pin Icon -->
+          <div
+            class="w-8 h-8 md:w-9 md:h-9 rounded-full flex items-center justify-center border-2 transition-all duration-200"
             :class="[
-              selectedMarkerId === marker.id && isCorrect ? 'z-20' : 'z-10',
-              showFeedback && selectedMarkerId === marker.id ? 'scale-110' : 'hover:scale-110'
+              selectedMarkerId === marker.id
+                ? (isCorrect && marker.isCorrect
+                    ? 'bg-emerald-500 border-white text-white shadow-lg shadow-emerald-500/30'
+                    : 'bg-red-500 border-white text-white shadow-lg shadow-red-500/30')
+                : 'bg-white border-violet-400 text-violet-600 shadow-md hover:border-violet-500 hover:shadow-lg'
             ]"
           >
-            <!-- Pin Icon -->
-            <div 
-              class="w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center shadow-lg border-2 transition-colors"
-              :class="[
-                selectedMarkerId === marker.id
-                  ? (isCorrect && marker.isCorrect ? 'bg-green-500 border-white text-white' : 'bg-red-500 border-white text-white')
-                  : 'bg-white border-purple-500 text-purple-600'
-              ]"
-            >
-              <svg v-if="selectedMarkerId === marker.id && isCorrect && marker.isCorrect" class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
-              </svg>
-              <svg v-else-if="selectedMarkerId === marker.id && !marker.isCorrect" class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path>
-              </svg>
-              <div v-else class="w-3 h-3 md:w-4 md:h-4 bg-purple-600 rounded-full"></div>
-            </div>
+            <svg v-if="selectedMarkerId === marker.id && isCorrect && marker.isCorrect" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+            </svg>
+            <svg v-else-if="selectedMarkerId === marker.id && !marker.isCorrect" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+            <div v-else class="w-3 h-3 bg-violet-500 rounded-full"></div>
+          </div>
 
-            <!-- Label Tooltip -->
-            <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-slate-900 text-white text-xs md:text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-              {{ marker.label }}
-              <div class="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900"></div>
-            </div>
-            </div>
+          <!-- Label Tooltip -->
+          <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2.5 px-3 py-1.5 bg-slate-800 text-white text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-lg">
+            {{ marker.label }}
+            <div class="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-800"></div>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Feedback & Action -->
-      <div class="mt-4 flex flex-col items-center min-h-[80px]">
-        <transition name="fade-scale" mode="out-in">
-          <div v-if="showFeedback" class="text-center w-full">
-            <div 
-              class="inline-flex items-center gap-3 px-6 py-4 rounded-2xl border-2 shadow-sm mb-4"
-              :class="isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'"
+    <!-- Feedback & Action -->
+    <div class="mt-5 flex flex-col items-center min-h-[72px]">
+      <transition name="fade-scale" mode="out-in">
+        <div v-if="showFeedback" class="w-full">
+          <!-- Feedback message -->
+          <div
+            class="step-feedback mb-4"
+            :class="isCorrect ? 'success' : 'error'"
+          >
+            {{ isCorrect ? 'Correct! You found the right location. +15 XP' : 'Not quite right. Try another location.' }}
+          </div>
+
+          <!-- Action buttons -->
+          <div class="flex justify-center">
+            <button
+              v-if="isCorrect"
+              @click="$emit('next')"
+              class="step-btn-primary step-btn-success flex items-center gap-2"
             >
-              <div class="p-2 rounded-full" :class="isCorrect ? 'bg-green-100' : 'bg-red-100'">
-                <span class="text-2xl">{{ isCorrect ? '🎉' : '🤔' }}</span>
-              </div>
-              <div class="text-left">
-                <h3 class="font-bold text-lg" :class="isCorrect ? 'text-green-800' : 'text-red-800'">
-                  {{ isCorrect ? 'Correct!' : 'Not quite.' }}
-                </h3>
-                <p class="text-sm" :class="isCorrect ? 'text-green-700' : 'text-red-700'">
-                  {{ isCorrect ? '+15 XP' : 'Try looking for another location.' }}
-                </p>
-              </div>
-            </div>
+              Continue
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+              </svg>
+            </button>
+            <button
+              v-else-if="attemptCount >= maxAttempts"
+              @click="skipExercise"
+              class="step-btn-primary flex items-center gap-2"
+            >
+              Skip & Continue
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+              </svg>
+            </button>
+          </div>
+        </div>
 
-            <div v-if="isCorrect">
-              <button
-                @click="$emit('next')"
-                class="px-8 py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition-all transform active:scale-95 shadow-lg hover:shadow-xl flex items-center gap-2 mx-auto"
-              >
-                Continue <span class="text-xl">→</span>
-              </button>
-            </div>
-            <div v-else-if="attemptCount >= maxAttempts">
-              <button
-                @click="skipExercise"
-                class="px-8 py-3 bg-orange-500 text-white rounded-xl font-bold hover:bg-orange-600 transition-all transform active:scale-95 shadow-lg hover:shadow-xl flex items-center gap-2 mx-auto"
-              >
-                Skip → Continue Anyway
-              </button>
-            </div>
-          </div>
-          <div v-else class="text-slate-400 text-sm font-medium">
-            Select a marker on the map to answer
-          </div>
-        </transition>
-      </div>
+        <div v-else class="text-slate-400 text-sm font-medium flex items-center gap-2">
+          <span class="text-base">📍</span>
+          Select a marker on the map to answer
+        </div>
+      </transition>
     </div>
   </div>
 </template>
@@ -146,7 +148,7 @@ const handleMarkerClick = (marker) => {
   attemptCount.value++;
   selectedMarkerId.value = marker.id;
   showFeedback.value = true;
-  
+
   if (marker.isCorrect) {
     isCorrect.value = true;
     emit('complete', true);
@@ -177,6 +179,6 @@ const skipExercise = () => {
 .fade-scale-enter-from,
 .fade-scale-leave-to {
   opacity: 0;
-  transform: scale(0.9);
+  transform: scale(0.95);
 }
 </style>

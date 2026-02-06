@@ -1,11 +1,11 @@
 <template>
   <div class="interactive-step step-animate-in">
-    <p class="text-lg text-gray-600 mb-6 leading-relaxed">
+    <p class="text-base text-slate-600 mb-5 leading-relaxed">
       {{ step.prompt }}
     </p>
 
     <!-- Sentence Display -->
-    <div class="bg-gray-50 p-6 rounded-xl border border-gray-200 flex flex-wrap gap-2 items-center leading-loose mb-6">
+    <div class="bg-slate-50/80 p-5 rounded-xl border border-slate-200/60 flex flex-wrap gap-2 items-center leading-loose mb-5">
       <button
         v-for="(word, idx) in currentWords"
         :key="idx"
@@ -17,52 +17,49 @@
       </button>
     </div>
 
-    <!-- Options Panel (shown when error word selected) -->
+    <!-- Options Panel -->
     <transition name="slide-fade">
-      <div 
-        v-if="selectedError" 
-        class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-6 animate-fade-in"
+      <div
+        v-if="selectedError"
+        class="bg-white p-4 rounded-xl border border-slate-200/60 mb-5"
       >
-        <p class="text-sm font-semibold text-gray-500 mb-3">
-          Choose the correct form for: 
-          <span class="text-gray-900 font-bold">"{{ originalWord }}"</span>
+        <p class="text-sm font-medium text-slate-500 mb-3">
+          Choose the correct form for:
+          <span class="text-slate-900 font-bold">"{{ originalWord }}"</span>
         </p>
-        
+
         <div class="flex flex-wrap gap-2 mb-3">
           <button
             v-for="opt in selectedError.options"
             :key="opt"
             @click="applyOption(opt)"
-            class="px-4 py-2 rounded-lg border font-medium transition-colors"
+            class="px-4 py-2 rounded-lg border-1.5 font-medium transition-all duration-200"
             :class="{
-              'bg-purple-100 text-purple-700 border-purple-300': currentWords[selectedErrorIndex] === opt,
-              'bg-white text-gray-700 border-gray-200 hover:bg-gray-50': currentWords[selectedErrorIndex] !== opt
+              'bg-violet-50 text-violet-700 border-violet-200': currentWords[selectedErrorIndex] === opt,
+              'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300': currentWords[selectedErrorIndex] !== opt
             }"
           >
             {{ opt }}
           </button>
         </div>
-        
-        <p class="text-xs text-gray-500 italic flex items-center gap-2">
-          <span class="text-lg">💡</span>
+
+        <p class="text-xs text-slate-500 bg-slate-50 px-3 py-2 rounded-lg border border-slate-100 flex items-center gap-2">
+          <span class="text-sm">💡</span>
           {{ selectedError.explanation }}
         </p>
       </div>
     </transition>
 
     <!-- Feedback -->
-    <div class="step-feedback mb-4" :class="isCorrect ? 'success' : 'error'">
+    <div v-if="feedback" class="step-feedback mb-4" :class="isCorrect ? 'success' : 'error'">
       {{ feedback }}
     </div>
 
     <button
       @click="checkSentence"
       :disabled="isCorrect"
-      class="px-6 py-3 rounded-full font-bold text-white shadow-md transition-transform active:scale-95"
-      :class="{
-        'bg-green-500 cursor-default': isCorrect,
-        'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700': !isCorrect
-      }"
+      class="step-btn-primary"
+      :class="{ 'step-btn-success': isCorrect }"
     >
       {{ isCorrect ? 'Correct!' : 'Check Sentence' }}
     </button>
@@ -83,7 +80,6 @@ const selectedErrorIndex = ref(null);
 const feedback = ref('');
 const isCorrect = ref(false);
 
-// Initialize
 watch(() => props.step, () => {
   if (props.step.tokens?.length) {
     currentWords.value = [...props.step.tokens];
@@ -109,32 +105,21 @@ const originalWord = computed(() => {
 
 const getTokenClass = (idx) => {
   const isError = errorIndices.value.has(idx);
-  if (!isError) return 'border-transparent bg-white cursor-default text-gray-800';
+  if (!isError) return 'border-transparent bg-white cursor-default text-slate-800';
 
   const isSelected = idx === selectedErrorIndex.value;
   const errorDef = props.step.errors.find(e => e.index === idx);
   const isFixed = errorDef && currentWords.value[idx] === errorDef.correct;
 
   let classes = 'cursor-pointer transition-all duration-200 border ';
-  
-  if (isSelected) {
-    classes += 'ring-2 ring-purple-500 shadow-sm ';
-  }
-
-  if (isFixed) {
-    classes += 'bg-green-100 text-green-800 border-green-200';
-  } else {
-    classes += 'bg-orange-100 text-orange-800 border-orange-200';
-  }
-
+  if (isSelected) classes += 'ring-2 ring-violet-300 shadow-sm ';
+  if (isFixed) classes += 'bg-emerald-50 text-emerald-800 border-emerald-200';
+  else classes += 'bg-amber-50 text-amber-800 border-amber-200';
   return classes;
 };
 
 const handleWordClick = (idx) => {
-  if (!errorIndices.value.has(idx)) {
-    selectedErrorIndex.value = null;
-    return;
-  }
+  if (!errorIndices.value.has(idx)) { selectedErrorIndex.value = null; return; }
   selectedErrorIndex.value = idx;
   feedback.value = '';
 };
@@ -145,16 +130,13 @@ const applyOption = (option) => {
 };
 
 const checkSentence = () => {
-  const allCorrect = props.step.errors.every(
-    err => currentWords.value[err.index] === err.correct
-  );
-
+  const allCorrect = props.step.errors.every(err => currentWords.value[err.index] === err.correct);
   if (allCorrect) {
-    feedback.value = '✅ Great! You fixed all the mistakes.';
+    feedback.value = 'Great! You fixed all the mistakes.';
     isCorrect.value = true;
     emit('complete', true);
   } else {
-    feedback.value = '❌ There are still some mistakes. Tap the highlighted words.';
+    feedback.value = 'There are still some mistakes. Tap the highlighted words.';
     isCorrect.value = false;
     emit('complete', false);
   }
@@ -162,17 +144,7 @@ const checkSentence = () => {
 </script>
 
 <style scoped>
-.slide-fade-enter-active {
-  transition: all 0.3s ease-out;
-}
-
-.slide-fade-leave-active {
-  transition: all 0.2s ease-in;
-}
-
-.slide-fade-enter-from,
-.slide-fade-leave-to {
-  transform: translateY(-10px);
-  opacity: 0;
-}
+.slide-fade-enter-active { transition: all 0.25s ease-out; }
+.slide-fade-leave-active { transition: all 0.15s ease-in; }
+.slide-fade-enter-from, .slide-fade-leave-to { transform: translateY(-8px); opacity: 0; }
 </style>

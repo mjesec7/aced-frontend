@@ -1,20 +1,27 @@
 <template>
   <div class="interactive-step step-animate-in">
-    <p class="text-lg text-gray-600 mb-8 leading-relaxed">
-      {{ step.prompt }}
-    </p>
+    <!-- Header -->
+    <div class="mb-5">
+      <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-violet-50 border border-violet-100 rounded-lg mb-3">
+        <span class="text-sm">🧳</span>
+        <span class="text-xs font-semibold text-violet-600 uppercase tracking-wide">{{ bagLabel }}</span>
+      </div>
+      <h2 class="text-lg font-bold text-slate-900 leading-snug">
+        {{ step.prompt }}
+      </h2>
+    </div>
 
     <!-- Available Words Area -->
-    <div 
-      class="bg-gray-50 p-4 rounded-xl border-2 transition-all duration-200 min-h-[120px]"
+    <div
+      class="bg-slate-50/80 p-4 rounded-xl border transition-all duration-200 min-h-[100px]"
       :class="{
-        'border-blue-300 bg-blue-50 ring-2 ring-blue-100': draggedItem?.source === 'bag',
-        'border-gray-200': draggedItem?.source !== 'bag'
+        'border-violet-300 bg-violet-50/30 ring-1 ring-violet-100': draggedItem?.source === 'bag',
+        'border-slate-200/60': draggedItem?.source !== 'bag'
       }"
       @dragover.prevent
       @drop="onDrop('available')"
     >
-      <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">
+      <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2.5">
         {{ availableLabel }}
       </h3>
       <div class="flex flex-wrap gap-2">
@@ -24,44 +31,41 @@
           :draggable="status !== 'correct'"
           @dragstart="onDragStart($event, 'available', idx)"
           @click="moveToBag(idx)"
-          class="px-4 py-2 rounded-full border border-gray-300 bg-white text-gray-700 font-medium transition-all active:scale-95 select-none cursor-grab active:cursor-grabbing"
+          class="px-3.5 py-1.5 rounded-lg border bg-white text-sm text-slate-700 font-medium transition-all select-none cursor-grab active:cursor-grabbing active:scale-95"
           :class="{
-            'hover:bg-gray-100 hover:border-gray-400 hover:shadow-sm': status !== 'correct',
-            'opacity-50 cursor-not-allowed': status === 'correct'
+            'border-slate-200/60 hover:border-violet-300 hover:bg-violet-50/30 hover:shadow-sm': status !== 'correct',
+            'border-slate-200/60 opacity-50 cursor-not-allowed': status === 'correct'
           }"
         >
           {{ word.text }}
         </div>
-        <span v-if="availableWords.length === 0" class="text-gray-400 italic text-sm self-center">
+        <span v-if="availableWords.length === 0" class="text-slate-400 italic text-xs self-center">
           {{ emptyAvailableMessage }}
         </span>
       </div>
     </div>
 
     <!-- Bag / Suitcase -->
-    <div class="flex flex-col items-center mt-8">
+    <div class="flex flex-col items-center mt-6">
       <div class="relative w-full max-w-sm">
         <!-- Handle -->
-        <div class="absolute -top-4 left-1/2 transform -translate-x-1/2 w-16 h-8 border-4 border-gray-400 rounded-t-xl z-0" />
-        
+        <div class="suitcase-handle"></div>
+
         <!-- Case Body -->
-        <div 
-          class="relative z-10 bg-indigo-50 border-4 rounded-2xl p-6 min-h-[160px] shadow-lg flex flex-col items-center transition-all duration-200"
-          :class="{
-            'border-indigo-400 bg-indigo-100 ring-4 ring-indigo-200 scale-[1.02]': draggedItem?.source === 'available',
-            'border-indigo-200': draggedItem?.source !== 'available'
-          }"
+        <div
+          class="suitcase-body"
+          :class="{ 'active': draggedItem?.source === 'available' }"
           @dragover.prevent
           @drop="onDrop('bag')"
         >
-          <h3 class="text-sm font-bold text-indigo-400 uppercase tracking-wider mb-4">
+          <h3 class="text-[10px] font-bold text-violet-400 uppercase tracking-wider mb-3 text-center">
             {{ bagLabel }}
           </h3>
-          
+
           <div class="flex flex-wrap gap-2 justify-center w-full">
-            <div 
+            <div
               v-if="bagWords.length === 0"
-              class="text-indigo-300 text-sm italic py-4 border-2 border-dashed border-indigo-200 rounded-lg w-full text-center pointer-events-none"
+              class="text-violet-300 text-xs italic py-3 border border-dashed border-violet-200/60 rounded-lg w-full text-center pointer-events-none"
             >
               {{ emptyBagMessage }}
             </div>
@@ -71,30 +75,30 @@
               :draggable="status !== 'correct'"
               @dragstart="onDragStart($event, 'bag', idx)"
               @click="removeFromBag(idx)"
-              class="px-4 py-2 rounded-full border border-indigo-300 bg-indigo-100 text-indigo-800 font-medium transition-all active:scale-95 select-none cursor-grab active:cursor-grabbing group relative"
+              class="px-3.5 py-1.5 rounded-lg border border-violet-200 bg-violet-50 text-violet-700 text-sm font-medium transition-all select-none cursor-grab active:cursor-grabbing active:scale-95 group relative"
               :class="{
                 'hover:bg-red-50 hover:text-red-600 hover:border-red-200': status !== 'correct',
                 'opacity-80 cursor-not-allowed': status === 'correct'
               }"
             >
               {{ word.text }}
-              <span class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 font-bold text-xs pointer-events-none text-red-500">
-                ✕
+              <span class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 font-bold text-[10px] pointer-events-none text-red-400">
+                &#10005;
               </span>
             </div>
           </div>
         </div>
 
         <!-- Wheels -->
-        <div class="flex justify-between px-8 -mt-3 relative z-20">
-          <div class="w-6 h-6 bg-gray-800 rounded-full shadow-md" />
-          <div class="w-6 h-6 bg-gray-800 rounded-full shadow-md" />
+        <div class="suitcase-wheels">
+          <div class="suitcase-wheel"></div>
+          <div class="suitcase-wheel"></div>
         </div>
       </div>
     </div>
 
     <!-- Feedback & Check -->
-    <div class="step-feedback mt-6" :class="status === 'correct' ? 'success' : status === 'incorrect' ? 'error' : ''">
+    <div class="step-feedback mt-5" :class="status === 'correct' ? 'success' : status === 'incorrect' ? 'error' : ''">
       {{ feedback }}
     </div>
 
@@ -102,10 +106,9 @@
       <button
         @click="checkSelection"
         :disabled="status === 'correct'"
-        class="px-8 py-3 rounded-full font-bold text-white shadow-md transition-transform active:scale-95"
+        class="step-btn-primary"
         :class="{
-          'bg-green-500 cursor-default': status === 'correct',
-          'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700': status !== 'correct'
+          'step-btn-success cursor-default': status === 'correct',
         }"
       >
         {{ status === 'correct' ? 'Correct!' : checkButtonLabel }}
@@ -148,7 +151,7 @@ const emptyBagMessage = computed(() => props.step.emptyBagMessage || 'Drag words
 const checkButtonLabel = computed(() => props.step.checkButtonLabel || 'Check Selection');
 
 // All target words (e.g., all nouns)
-const allTargetWords = computed(() => 
+const allTargetWords = computed(() =>
   props.step.words.filter(w => w.pos === targetPos.value)
 );
 
@@ -163,13 +166,13 @@ watch(() => props.step, () => {
 
 const moveToBag = (index) => {
   if (status.value === 'correct') return;
-  
+
   const newAvailable = [...availableWords.value];
   const [movedWord] = newAvailable.splice(index, 1);
-  
+
   availableWords.value = newAvailable;
   bagWords.value = [...bagWords.value, movedWord];
-  
+
   feedback.value = '';
   status.value = 'idle';
 };
@@ -232,7 +235,7 @@ const onDrop = (target) => {
   } else if (draggedItem.value.source === 'bag' && target === 'available') {
     removeFromBag(draggedItem.value.index);
   }
-  
+
   draggedItem.value = null;
 };
 </script>

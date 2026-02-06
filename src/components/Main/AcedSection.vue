@@ -220,7 +220,7 @@ export default {
 
     async fetchCoursesFromLessons() {
       try {
-        const lessonsResult = await getAllLessons();
+        const lessonsResult = await getAllLessons({ populate: 'true' });
         if (lessonsResult?.success && Array.isArray(lessonsResult.data) && lessonsResult.data.length > 0) {
           return this.buildCoursesFromLessons(lessonsResult.data);
         }
@@ -245,11 +245,14 @@ export default {
         const topicId = typeof lesson.topicId === 'string' ? lesson.topicId : lesson.topicId._id || String(lesson.topicId);
 
         if (!coursesMap.has(topicId)) {
+          // Extract topic name: prefer populated topicId.name, then lesson.topic string
+          const topicName = (typeof lesson.topicId === 'object' && lesson.topicId?.name) ? lesson.topicId.name : null;
           coursesMap.set(topicId, {
             _id: topicId,
-            // Store the localized objects directly for language support
+            // Use topic name for course card, not individual lesson name
+            topicName: topicName || null,
+            name: topicName || (lesson.topic && typeof lesson.topic === 'string' ? lesson.topic : null),
             lessonName: lesson.lessonName || null,
-            name: lesson.lessonName || lesson.topic || null,
             description: lesson.description || null,
             level: lesson.level || 1,
             type: lesson.type || 'free',
@@ -260,10 +263,13 @@ export default {
           const course = coursesMap.get(topicId);
           course.lessons.push(lesson);
           course.totalTime += parseInt(lesson.estimatedTime || 10);
-          // Update localized fields from first lesson if not set
-          if (!course.lessonName && lesson.lessonName) {
-            course.lessonName = lesson.lessonName;
-            course.name = lesson.lessonName;
+          // Update topic name from populated topicId if not set
+          if (!course.topicName && typeof lesson.topicId === 'object' && lesson.topicId?.name) {
+            course.topicName = lesson.topicId.name;
+            course.name = lesson.topicId.name;
+          }
+          if (!course.name && lesson.topic && typeof lesson.topic === 'string') {
+            course.name = lesson.topic;
           }
           if (!course.description && lesson.description) {
             course.description = lesson.description;
@@ -345,10 +351,10 @@ export default {
     getTopicName(course) {
       if (!course) return this.$t('course.untitled');
 
-      // Pass this.language as the 4th param to make Vue track the dependency for reactivity
-      // Try lessonName first (the JSON format uses lessonName for course titles)
-      if (course.lessonName) {
-        const name = getLocalizedText(course.lessonName, null, '', this.language);
+      // Try topic-level name fields first (these represent the course/topic name)
+      // Try topicName field (localized object from populated topicId)
+      if (course.topicName) {
+        const name = getLocalizedText(course.topicName, null, '', this.language);
         if (name) return name;
       }
 
@@ -362,15 +368,15 @@ export default {
         }
       }
 
-      // Try topicName field
-      if (course.topicName) {
-        const name = getLocalizedText(course.topicName, null, '', this.language);
-        if (name) return name;
-      }
-
       // Try title field
       if (course.title) {
         const name = getLocalizedText(course.title, null, '', this.language);
+        if (name) return name;
+      }
+
+      // Fallback to lessonName (individual lesson name, less ideal for course cards)
+      if (course.lessonName) {
+        const name = getLocalizedText(course.lessonName, null, '', this.language);
         if (name) return name;
       }
 

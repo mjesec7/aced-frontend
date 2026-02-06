@@ -1245,26 +1245,10 @@ const gameData = computed(() => {
     }];
   }
   
-  console.log('🎮 [InteractivePanel] Final gameData:', merged);
   return merged;
 });
 
-// DEBUG: Log game mode detection
-watch([isGameMode, gameType, gameData], ([mode, type, data]) => {
-  console.log('🎮 [InteractivePanel] Game Mode Debug:');
-  console.log('  - isGameMode:', mode);
-  console.log('  - gameType:', type);
-  console.log('  - gameData:', data);
-  console.log('  - userId:', props.userId);
-  console.log('  - lessonId:', props.lessonId);
-  console.log('  - stepIndex:', props.stepIndex);
-  console.log('  - currentStep:', props.currentStep);
-  console.log('  - currentStep.type:', props.currentStep?.type);
-  console.log('  - currentExercise:', props.currentExercise);
-}, { immediate: true });
-
 const handleGameComplete = (result) => {
-  console.log('🎮 [InteractivePanel] Game completed:', result);
   answerWasCorrect.value = result.completed || result.stars >= 2;
   showCorrectAnswer.value = true;
   

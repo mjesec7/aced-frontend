@@ -1,50 +1,55 @@
 <template>
   <div class="interactive-step step-animate-in">
-    <p class="text-lg text-gray-600 mb-6 leading-relaxed">
-      {{ step.prompt }}
-    </p>
+    <!-- Header -->
+    <div class="mb-5">
+      <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-violet-50 border border-violet-100 rounded-lg mb-3">
+        <span class="text-sm">🧪</span>
+        <span class="text-xs font-semibold text-violet-600 uppercase tracking-wide">Lab Mixing</span>
+      </div>
+      <h2 class="text-lg font-bold text-slate-900 leading-snug">{{ step.prompt }}</h2>
+    </div>
 
     <!-- Lab Layout -->
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-8 items-end justify-items-center mb-8">
-      
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 items-end justify-items-center mb-5">
+
       <!-- Substance A -->
-      <div class="flex flex-col gap-3 w-full max-w-[150px]">
-        <h3 class="text-sm font-bold text-gray-500 text-center truncate" :title="substanceA.name">
+      <div class="flex flex-col gap-2.5 w-full max-w-[150px]">
+        <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wide text-center truncate" :title="substanceA.name">
           {{ substanceA.name }}
         </h3>
         <div class="flex justify-center">
           <div class="chem-tube">
-            <div 
+            <div
               class="chem-tube-fill"
-              :style="{ 
+              :style="{
                 height: `${fillHeight(volumeA, substanceA.maxVolume)}%`,
-                backgroundColor: substanceA.color 
+                backgroundColor: substanceA.color
               }"
             />
             <div class="chem-tube-graduations" />
           </div>
         </div>
         <div class="flex flex-col gap-1">
-          <label class="text-xs font-semibold text-gray-400">Volume (ml)</label>
+          <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Volume (ml)</label>
           <input
             type="number"
             v-model.number="volumeA"
             :max="substanceA.maxVolume"
             :min="0"
             :disabled="mixingState === 'mixing'"
-            class="p-2 border border-gray-200 rounded-lg text-center font-mono font-bold 
-                   focus:ring-2 focus:ring-purple-400 outline-none
-                   bg-white text-gray-900"
+            class="px-3 py-2 bg-white border border-slate-200 rounded-lg text-center font-mono font-bold text-slate-900
+                   focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100
+                   disabled:opacity-50 disabled:bg-slate-100 transition-all"
             @input="resetMixing"
           />
         </div>
       </div>
 
       <!-- Mixing Beaker -->
-      <div class="flex flex-col items-center gap-4 w-full order-last sm:order-none">
+      <div class="flex flex-col items-center gap-3 w-full order-last sm:order-none">
         <div class="relative">
           <div class="chem-beaker">
-            <div 
+            <div
               class="chem-beaker-fill"
               :class="{ 'animate-pulse': mixingState === 'mixing' }"
               :style="{
@@ -52,7 +57,7 @@
                 backgroundColor: beakerColor
               }"
             />
-            
+
             <!-- Bubbles Animation -->
             <div v-if="mixingState === 'mixing'" class="chem-bubbles">
               <div class="chem-bubble" />
@@ -63,9 +68,9 @@
 
           <!-- Explosion Emoji -->
           <transition name="bounce">
-            <div 
-              v-if="mixingState === 'fail'" 
-              class="absolute -top-6 -right-8 text-6xl animate-bounce z-10"
+            <div
+              v-if="mixingState === 'fail'"
+              class="absolute -top-6 -right-8 text-5xl animate-bounce z-10"
             >
               💥
             </div>
@@ -86,33 +91,33 @@
       </div>
 
       <!-- Substance B -->
-      <div class="flex flex-col gap-3 w-full max-w-[150px]">
-        <h3 class="text-sm font-bold text-gray-500 text-center truncate" :title="substanceB.name">
+      <div class="flex flex-col gap-2.5 w-full max-w-[150px]">
+        <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wide text-center truncate" :title="substanceB.name">
           {{ substanceB.name }}
         </h3>
         <div class="flex justify-center">
           <div class="chem-tube">
-            <div 
+            <div
               class="chem-tube-fill"
-              :style="{ 
+              :style="{
                 height: `${fillHeight(volumeB, substanceB.maxVolume)}%`,
-                backgroundColor: substanceB.color 
+                backgroundColor: substanceB.color
               }"
             />
             <div class="chem-tube-graduations" />
           </div>
         </div>
         <div class="flex flex-col gap-1">
-          <label class="text-xs font-semibold text-gray-400">Volume (ml)</label>
+          <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Volume (ml)</label>
           <input
             type="number"
             v-model.number="volumeB"
             :max="substanceB.maxVolume"
             :min="0"
             :disabled="mixingState === 'mixing'"
-            class="p-2 border border-gray-200 rounded-lg text-center font-mono font-bold 
-                   focus:ring-2 focus:ring-purple-400 outline-none
-                   bg-white text-gray-900"
+            class="px-3 py-2 bg-white border border-slate-200 rounded-lg text-center font-mono font-bold text-slate-900
+                   focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100
+                   disabled:opacity-50 disabled:bg-slate-100 transition-all"
             @input="resetMixing"
           />
         </div>
@@ -120,22 +125,49 @@
     </div>
 
     <!-- Info Panel -->
-    <div class="bg-gray-50 rounded-xl p-4 text-sm flex flex-col sm:flex-row justify-between gap-2 border border-gray-100">
-      <div>
-        <span class="font-semibold">Target:</span> 
-        {{ substanceA.targetVolume }}ml + {{ substanceB.targetVolume }}ml 
-        <span class="text-gray-400">(±{{ step.tolerance }}ml)</span>
+    <div class="bg-slate-50/80 rounded-xl border border-slate-200/60 p-4 text-sm flex flex-col sm:flex-row justify-between gap-2 mb-4">
+      <div class="text-slate-700">
+        <span class="font-semibold">Target:</span>
+        {{ substanceA.targetVolume }}ml + {{ substanceB.targetVolume }}ml
+        <span class="text-slate-400 ml-1">(+/- {{ step.tolerance }}ml)</span>
       </div>
-      <div>
-        <span class="font-semibold">Current:</span> 
+      <div class="text-slate-700">
+        <span class="font-semibold">Current:</span>
         {{ volumeA || 0 }}ml + {{ volumeB || 0 }}ml
       </div>
     </div>
 
     <!-- Feedback -->
-    <div class="step-feedback mt-4" :class="mixingState === 'success' ? 'success' : mixingState === 'fail' ? 'error' : ''">
-      {{ feedback }}
-    </div>
+    <transition
+      enter-active-class="transition-all duration-300 ease-out"
+      enter-from-class="opacity-0 translate-y-2"
+      enter-to-class="opacity-100 translate-y-0"
+    >
+      <div
+        v-if="feedback"
+        class="flex items-start gap-3 p-4 rounded-xl border"
+        :class="mixingState === 'success'
+          ? 'bg-emerald-50/50 border-emerald-200/60'
+          : mixingState === 'fail'
+            ? 'bg-red-50/50 border-red-200/60'
+            : 'bg-indigo-50/50 border-indigo-200/60'"
+      >
+        <div
+          class="w-9 h-9 rounded-lg flex items-center justify-center text-white text-base shrink-0"
+          :class="mixingState === 'success' ? 'bg-emerald-500' : mixingState === 'fail' ? 'bg-red-500' : 'bg-indigo-500'"
+        >
+          {{ mixingState === 'success' ? '✅' : mixingState === 'fail' ? '💥' : '🧪' }}
+        </div>
+        <div class="pt-0.5">
+          <h4 class="text-sm font-bold mb-0.5"
+            :class="mixingState === 'success' ? 'text-emerald-700' : mixingState === 'fail' ? 'text-red-700' : 'text-indigo-700'"
+          >
+            {{ mixingState === 'success' ? 'Reaction Complete' : mixingState === 'fail' ? 'Unstable!' : 'Mixing...' }}
+          </h4>
+          <p class="text-sm text-slate-600 leading-relaxed">{{ feedback }}</p>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -184,7 +216,7 @@ const startReaction = () => {
   if (mixingState.value === 'mixing') return;
 
   mixingState.value = 'mixing';
-  feedback.value = 'Mixing... 🧪';
+  feedback.value = 'Mixing substances together...';
 
   setTimeout(() => {
     const tolerance = props.step.tolerance || 5;
@@ -193,11 +225,11 @@ const startReaction = () => {
 
     if (okA && okB) {
       mixingState.value = 'success';
-      feedback.value = '✅ Perfect! The solution is stable and balanced.';
+      feedback.value = 'Perfect! The solution is stable and balanced.';
       emit('complete', true);
     } else {
       mixingState.value = 'fail';
-      feedback.value = '💥 The proportions were off! The reaction became unstable.';
+      feedback.value = 'The proportions were off! The reaction became unstable.';
       emit('complete', false);
     }
   }, 1500);

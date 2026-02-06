@@ -1,36 +1,36 @@
 <template>
   <div class="interactive-step step-animate-in">
     <!-- Header -->
-    <div class="text-center mb-6">
-      <div class="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-gradient-to-r from-cyan-100 to-teal-100 border border-cyan-200 mb-4">
-        <span class="text-2xl">🎵</span>
-        <span class="font-bold text-cyan-700">Rhythm Match</span>
+    <div class="mb-5">
+      <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-violet-50 border border-violet-100 rounded-lg mb-3">
+        <span class="text-sm">🎵</span>
+        <span class="text-xs font-semibold text-violet-600 uppercase tracking-wide">Rhythm Match</span>
       </div>
-      <p class="text-lg text-gray-600 leading-relaxed max-w-xl mx-auto">
+      <h2 class="text-lg font-bold text-slate-900 leading-snug">
         {{ step.prompt || 'Match sentences with the same stress pattern (rhythm)' }}
-      </p>
+      </h2>
     </div>
 
     <!-- Audio Visualization Legend -->
-    <div class="flex justify-center gap-6 mb-6">
-      <div class="flex items-center gap-2">
-        <div class="w-4 h-8 rounded bg-cyan-500"></div>
-        <span class="text-sm text-gray-600">Stressed syllable</span>
+    <div class="flex justify-center gap-5 mb-5">
+      <div class="flex items-center gap-1.5">
+        <div class="w-3 h-6 rounded-sm bg-indigo-500"></div>
+        <span class="text-xs text-slate-500">Stressed</span>
       </div>
-      <div class="flex items-center gap-2">
-        <div class="w-4 h-4 rounded bg-cyan-300"></div>
-        <span class="text-sm text-gray-600">Unstressed syllable</span>
+      <div class="flex items-center gap-1.5">
+        <div class="w-3 h-3 rounded-sm bg-indigo-300"></div>
+        <span class="text-xs text-slate-500">Unstressed</span>
       </div>
     </div>
 
     <!-- Target Pattern -->
-    <div class="mb-8">
-      <div class="text-center mb-3">
-        <span class="text-sm font-bold text-gray-500 uppercase tracking-wider">Target Rhythm Pattern</span>
+    <div class="mb-6">
+      <div class="text-center mb-2">
+        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Target Rhythm Pattern</span>
       </div>
-      <div class="target-pattern-card">
+      <div class="bg-slate-50/80 border border-slate-200/60 rounded-xl p-5">
         <!-- Waveform Visualization -->
-        <div class="waveform-container mb-4">
+        <div class="waveform-container mb-3">
           <div
             v-for="(beat, idx) in step.targetPattern"
             :key="idx"
@@ -41,30 +41,31 @@
         </div>
 
         <!-- Pattern notation -->
-        <div class="flex justify-center gap-2 mb-3">
+        <div class="flex justify-center gap-1.5 mb-2.5">
           <span
             v-for="(beat, idx) in step.targetPattern"
             :key="`notation-${idx}`"
-            class="text-2xl"
+            class="text-lg"
+            :class="beat === 1 ? 'text-indigo-600' : 'text-slate-300'"
           >
             {{ beat === 1 ? '●' : '○' }}
           </span>
         </div>
 
         <!-- Example sentence -->
-        <p class="text-lg text-gray-800 font-medium text-center">
+        <p class="text-base text-slate-800 font-medium text-center">
           "{{ step.targetSentence }}"
         </p>
-        <p class="text-sm text-gray-500 text-center mt-2">
+        <p class="text-xs text-slate-400 text-center mt-1.5">
           {{ getPatternName(step.targetPattern) }}
         </p>
 
         <!-- Play button -->
         <button
           @click="playPattern(step.targetPattern)"
-          class="mt-4 mx-auto flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-100 hover:bg-cyan-200 text-cyan-700 font-medium transition-colors"
+          class="mt-3 mx-auto flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-sm font-medium transition-colors cursor-pointer border border-indigo-100"
         >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
@@ -74,8 +75,8 @@
     </div>
 
     <!-- Sentence Options -->
-    <div class="space-y-4 mb-6">
-      <p class="text-center text-gray-600 font-medium">Which sentence has the same rhythm?</p>
+    <div class="space-y-2.5 mb-5">
+      <p class="text-xs font-bold text-slate-400 uppercase tracking-wider text-center mb-1">Which sentence has the same rhythm?</p>
 
       <div
         v-for="(option, idx) in step.options"
@@ -99,9 +100,9 @@
         </div>
 
         <!-- Sentence -->
-        <div class="flex-1">
-          <p class="text-gray-800 font-medium">{{ option.sentence }}</p>
-          <p v-if="showResult && isCorrectOption(idx)" class="text-sm text-green-600 mt-1">
+        <div class="flex-1 min-w-0">
+          <p class="text-sm text-slate-800 font-medium">{{ option.sentence }}</p>
+          <p v-if="showResult && isCorrectOption(idx)" class="text-xs text-emerald-600 mt-0.5">
             Pattern: {{ option.pattern.map(b => b === 1 ? '●' : '○').join(' ') }}
           </p>
         </div>
@@ -109,17 +110,17 @@
         <!-- Play button -->
         <button
           @click.stop="playPattern(option.pattern)"
-          class="flex-shrink-0 w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+          class="flex-shrink-0 w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors cursor-pointer"
         >
-          <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
           </svg>
         </button>
 
         <!-- Selection indicator -->
         <div v-if="selectedOption === idx" class="selection-indicator">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
           </svg>
         </div>
       </div>
@@ -127,12 +128,12 @@
 
     <!-- Pattern Explanation (shown after answer) -->
     <transition name="slide-fade">
-      <div v-if="showResult && step.explanation" class="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
-        <div class="flex items-start gap-3">
-          <span class="text-xl">💡</span>
+      <div v-if="showResult && step.explanation" class="mb-5 p-4 bg-indigo-50/60 rounded-xl border border-indigo-100">
+        <div class="flex items-start gap-2.5">
+          <span class="text-sm">💡</span>
           <div>
-            <p class="font-semibold text-blue-800 mb-1">Understanding Rhythm</p>
-            <p class="text-blue-700 text-sm">{{ step.explanation }}</p>
+            <p class="text-xs font-bold text-indigo-700 uppercase tracking-wide mb-1">Understanding Rhythm</p>
+            <p class="text-sm text-indigo-600/80 leading-relaxed">{{ step.explanation }}</p>
           </div>
         </div>
       </div>
@@ -149,22 +150,18 @@
         v-if="!showResult"
         @click="checkAnswer"
         :disabled="selectedOption === null"
-        class="px-8 py-3 rounded-full font-bold text-white shadow-md transition-all active:scale-95"
-        :class="selectedOption !== null
-          ? 'bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700'
-          : 'bg-gray-300 cursor-not-allowed'"
+        class="step-btn-primary"
+        :class="{ 'opacity-40 cursor-not-allowed': selectedOption === null }"
       >
         Check Rhythm
       </button>
       <button
         v-else
         @click="$emit('complete', isCorrect)"
-        class="px-8 py-3 rounded-full font-bold text-white shadow-md transition-all"
-        :class="isCorrect
-          ? 'bg-gradient-to-r from-green-500 to-emerald-600'
-          : 'bg-gradient-to-r from-cyan-600 to-teal-600'"
+        class="step-btn-primary"
+        :class="isCorrect ? 'step-btn-success' : ''"
       >
-        {{ isCorrect ? 'Continue →' : 'Try Another →' }}
+        {{ isCorrect ? 'Continue' : 'Try Another' }}
       </button>
     </div>
   </div>
@@ -219,7 +216,7 @@ const checkAnswer = () => {
   }
 
   showResult.value = true;
-  
+
   // Robust comparison
   const correctIdx = parseInt(props.step.correctIndex);
   const selectedIdx = parseInt(selectedOption.value);
@@ -304,42 +301,34 @@ const playPattern = async (pattern) => {
 </script>
 
 <style scoped>
-.target-pattern-card {
-  background: linear-gradient(135deg, #ecfeff 0%, #cffafe 50%, #a5f3fc 100%);
-  border: 2px solid #22d3d1;
-  border-radius: 24px;
-  padding: 24px;
-  box-shadow: 0 8px 32px rgba(34, 211, 238, 0.2);
-}
-
 .waveform-container {
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  gap: 8px;
-  height: 80px;
+  gap: 6px;
+  height: 60px;
 }
 
 .waveform-bar {
-  width: 24px;
-  border-radius: 4px 4px 0 0;
+  width: 20px;
+  border-radius: 3px 3px 0 0;
   transition: all 0.3s ease;
-  animation: wave-bounce 1s ease infinite;
+  animation: wave-bounce 1.2s ease infinite;
 }
 
 .waveform-bar.stressed {
-  height: 70px;
-  background: linear-gradient(180deg, #0891b2 0%, #06b6d4 100%);
+  height: 52px;
+  background: linear-gradient(180deg, #6366f1 0%, #818cf8 100%);
 }
 
 .waveform-bar.unstressed {
-  height: 35px;
-  background: linear-gradient(180deg, #67e8f9 0%, #a5f3fc 100%);
+  height: 26px;
+  background: linear-gradient(180deg, #a5b4fc 0%, #c7d2fe 100%);
 }
 
 @keyframes wave-bounce {
   0%, 100% { transform: scaleY(1); }
-  50% { transform: scaleY(1.1); }
+  50% { transform: scaleY(1.08); }
 }
 
 .waveform-bar:nth-child(odd) {
@@ -350,78 +339,79 @@ const playPattern = async (pattern) => {
 .mini-waveform {
   display: flex;
   align-items: flex-end;
-  gap: 3px;
-  height: 40px;
-  padding: 8px;
-  background: #f1f5f9;
-  border-radius: 12px;
+  gap: 2px;
+  height: 32px;
+  padding: 6px;
+  background: #f8fafc;
+  border-radius: 0.5rem;
   flex-shrink: 0;
+  border: 1px solid rgba(226, 232, 240, 0.6);
 }
 
 .mini-bar {
-  width: 8px;
+  width: 6px;
   border-radius: 2px 2px 0 0;
 }
 
 .mini-bar.stressed {
-  height: 32px;
-  background: #06b6d4;
+  height: 24px;
+  background: #6366f1;
 }
 
 .mini-bar.unstressed {
-  height: 16px;
-  background: #a5f3fc;
+  height: 12px;
+  background: #c7d2fe;
 }
 
-/* Option cards */
+/* Option cards - leveraging the shared .option-card from interactives.css */
 .option-card {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px 20px;
+  gap: 12px;
+  padding: 12px 14px;
   background: white;
-  border: 2px solid #e5e7eb;
-  border-radius: 16px;
+  border: 1.5px solid rgba(226, 232, 240, 0.6);
+  border-radius: 0.75rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.25s ease;
   position: relative;
 }
 
 .option-card:hover {
-  border-color: #22d3d1;
-  box-shadow: 0 4px 12px rgba(34, 211, 238, 0.15);
-  transform: translateX(4px);
+  border-color: rgba(139, 92, 246, 0.3);
+  background: rgba(139, 92, 246, 0.02);
+  transform: translateX(2px);
 }
 
 .option-card.selected {
-  border-color: #0891b2;
-  background: linear-gradient(135deg, #ecfeff 0%, #cffafe 100%);
-  box-shadow: 0 4px 16px rgba(8, 145, 178, 0.2);
+  border-color: #7c3aed;
+  background: rgba(139, 92, 246, 0.04);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.08);
 }
 
 .option-card.correct {
   border-color: #10b981;
-  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  background: rgba(16, 185, 129, 0.04);
 }
 
 .option-card.incorrect {
   border-color: #ef4444;
-  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  background: rgba(239, 68, 68, 0.04);
 }
 
 .selection-indicator {
   position: absolute;
-  top: -8px;
-  right: -8px;
-  width: 28px;
-  height: 28px;
+  top: -6px;
+  right: -6px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
-  background: #0891b2;
+  background: #7c3aed;
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(8, 145, 178, 0.4);
+  box-shadow: 0 1px 4px rgba(124, 58, 237, 0.3);
 }
 
 .correct .selection-indicator {
@@ -432,42 +422,18 @@ const playPattern = async (pattern) => {
   background: #ef4444;
 }
 
-/* Feedback */
-.step-feedback {
-  min-height: 24px;
-  padding: 12px 16px;
-  border-radius: 12px;
-  font-weight: 500;
-}
-
-.step-feedback:empty {
-  display: none;
-}
-
-.step-feedback.success {
-  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
-  color: #065f46;
-  border: 1px solid #6ee7b7;
-}
-
-.step-feedback.error {
-  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-  color: #991b1b;
-  border: 1px solid #fca5a5;
-}
-
 /* Transitions */
 .slide-fade-enter-active {
-  transition: all 0.4s ease;
+  transition: all 0.35s ease;
 }
 
 .slide-fade-leave-active {
-  transition: all 0.3s ease;
+  transition: all 0.25s ease;
 }
 
 .slide-fade-enter-from,
 .slide-fade-leave-to {
-  transform: translateY(-10px);
+  transform: translateY(-8px);
   opacity: 0;
 }
 </style>

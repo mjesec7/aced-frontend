@@ -222,9 +222,8 @@
                   >
                     {{ course.type === 'free' ? 'FREE' : 'PRO' }}
                   </span>
-                  <button 
-                    @click.stop="addToStudyPlan(course)"
-                    :disabled="course.inStudyPlan"
+                  <button
+                    @click.stop="toggleStudyPlan(course)"
                     class="p-1.5 rounded-lg transition-all"
                     :class="course.inStudyPlan ? 'bg-indigo-100 text-indigo-500' : 'hover:bg-gray-100 text-gray-400 hover:text-gray-600'"
                   >
@@ -308,8 +307,7 @@
                   {{ getStudyModeLabel(course) }}
                 </div>
                 <button
-                  @click.stop="addToStudyPlan(course)"
-                  :disabled="course.inStudyPlan"
+                  @click.stop="toggleStudyPlan(course)"
                   class="save-btn-card"
                   :class="{ added: course.inStudyPlan }"
                   :title="course.inStudyPlan ? $t('catalogue.inPlan') : $t('catalogue.addToStudyPlan')"
@@ -466,7 +464,7 @@ import { mapGetters } from 'vuex';
 import { userStatusMixin } from '@/composables/useUserStatus';
 import { useLevelSystem } from '@/composables/useLevelSystem';
 import { useModeContent } from '@/composables/useModeContent';
-import { getAllLessons, getUserProgress, getUserStudyList, addToStudyList, getTopicsGrouped, getTopicsAsCourses } from '@/api';
+import { getAllLessons, getUserProgress, getUserStudyList, addToStudyList, removeFromStudyList, getTopicsGrouped, getTopicsAsCourses } from '@/api';
 import { getBulkCourseRatings } from '@/api/ratings';
 import { useLanguage, getLocalizedText } from '@/composables/useLanguage';
 import PaymentModal from '@/components/Modals/PaymentModal.vue';
@@ -881,7 +879,28 @@ export default {
     nextPage() { if (this.currentPage < this.totalPages) { this.currentPage++; window.scrollTo({ top: 0, behavior: 'smooth' }); } },
     prevPage() { if (this.currentPage > 1) { this.currentPage--; window.scrollTo({ top: 0, behavior: 'smooth' }); } },
     handleCourseAccess(topicId, type) { if (!this.hasTopicAccess(type)) { this.requestedTopicId = topicId; this.showPaywall = true; return; } this.$router.push(`/topic/${topicId}/overview`); },
-    addToStudyPlan(course) { if (course.inStudyPlan) return; this.selectedCourse = course; this.showAddModal = true; },
+    async toggleStudyPlan(course) {
+      if (!this.userId) return;
+      if (course.inStudyPlan) {
+        // Remove from study plan
+        try {
+          let rawId = course.topicId || course._id || course.id;
+          if (rawId && typeof rawId === 'object') rawId = rawId._id || rawId.id;
+          const r = await removeFromStudyList(this.userId, rawId);
+          if (r?.success) {
+            course.inStudyPlan = false;
+            this.studyPlanTopics = this.studyPlanTopics.filter(t => t !== course.topicId);
+            const idx = this.courses.findIndex(c => c.topicId === course.topicId);
+            if (idx !== -1) this.courses[idx].inStudyPlan = false;
+            if (window.eventBus) window.eventBus.emit('studyListUpdated');
+          }
+        } catch (e) { console.error('Failed to remove from study plan:', e.message); }
+      } else {
+        // Add to study plan
+        this.selectedCourse = course;
+        this.showAddModal = true;
+      }
+    },
     async confirmAddToStudyPlan() {
       if (!this.selectedCourse || !this.userId) return;
       try {
