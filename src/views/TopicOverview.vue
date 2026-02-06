@@ -1956,6 +1956,11 @@ this.error = 'Error starting first lesson';
   height: 12px;
 }
 
+/* Shift badge right when progress circle is present */
+.lesson-progress-indicator ~ .lesson-badge {
+  margin-left: 48px;
+}
+
 /* ========================================
    LESSON CONTENT
    ======================================== */
@@ -2470,6 +2475,10 @@ this.error = 'Error starting first lesson';
     height: 34px;
   }
 
+  .lesson-progress-indicator ~ .lesson-badge {
+    margin-left: 42px;
+  }
+
   .action-title {
     font-size: 1.25rem;
   }
@@ -2961,6 +2970,11 @@ LESSON BADGE
   height: 12px;
 }
 
+/* Shift badge right when progress circle is present */
+.lesson-progress-indicator ~ .lesson-badge {
+  margin-left: 44px;
+}
+
 /* ========================================
 LESSON CONTENT
 ======================================== */
@@ -3381,6 +3395,10 @@ RESPONSIVE
   .progress-circle {
     width: 32px;
     height: 32px;
+  }
+
+  .lesson-progress-indicator ~ .lesson-badge {
+    margin-left: 40px;
   }
 
   .section-title {

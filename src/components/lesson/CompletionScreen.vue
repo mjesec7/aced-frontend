@@ -6,12 +6,12 @@
     </div>
 
     <!-- Main Content -->
-    <div class="flex-1 flex flex-col items-center justify-center px-6 py-10 overflow-y-auto">
-      <div class="w-full max-w-md text-center flex flex-col gap-8">
+    <div class="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 py-6 sm:py-10 overflow-y-auto">
+      <div class="w-full max-w-md text-center flex flex-col gap-6 sm:gap-8">
         <!-- Completion Info Group -->
         <div class="flex flex-col gap-4">
           <!-- Medal Icon -->
-          <div class="w-24 h-24 mx-auto rounded-full flex items-center justify-center text-5xl" :class="medalBgClass">
+          <div class="w-20 h-20 sm:w-24 sm:h-24 mx-auto rounded-full flex items-center justify-center text-4xl sm:text-5xl" :class="medalBgClass">
             {{ medalIcon }}
           </div>
 
@@ -22,19 +22,19 @@
         </div>
 
         <!-- Stats Row -->
-        <div class="flex justify-center gap-10 py-4">
+        <div class="flex justify-center gap-6 sm:gap-10 py-4">
           <div class="text-center">
-            <div class="text-3xl font-bold text-slate-900">{{ readableTime }}</div>
+            <div class="text-2xl sm:text-3xl font-bold text-slate-900">{{ readableTime }}</div>
             <div class="text-xs text-slate-400 uppercase tracking-wide mt-1">time</div>
           </div>
           <div class="w-px bg-slate-200"></div>
           <div class="text-center">
-            <div class="text-3xl font-bold text-slate-900">{{ stars }}</div>
+            <div class="text-2xl sm:text-3xl font-bold text-slate-900">{{ stars }}</div>
             <div class="text-xs text-slate-400 uppercase tracking-wide mt-1">stars</div>
           </div>
           <div class="w-px bg-slate-200"></div>
           <div class="text-center">
-            <div class="text-3xl font-bold text-slate-900">{{ earnedPoints }}</div>
+            <div class="text-2xl sm:text-3xl font-bold text-slate-900">{{ earnedPoints }}</div>
             <div class="text-xs text-slate-400 uppercase tracking-wide mt-1">points</div>
           </div>
         </div>
@@ -64,11 +64,11 @@
     </div>
 
     <!-- Bottom Actions -->
-    <div class="px-6 pb-8 pt-4 border-t border-slate-100 bg-white">
-      <div class="max-w-md mx-auto space-y-4">
+    <div class="px-4 sm:px-6 pb-6 sm:pb-8 pt-4 border-t border-slate-100 bg-white">
+      <div class="max-w-md mx-auto space-y-3 sm:space-y-4">
         <button
           @click="$emit('return-to-catalogue')"
-          class="w-full py-4 bg-slate-900 text-white font-semibold rounded-xl hover:bg-slate-800 transition-colors text-lg"
+          class="w-full py-3.5 sm:py-4 bg-slate-900 text-white font-semibold rounded-xl hover:bg-slate-800 transition-colors text-base sm:text-lg"
         >
           Continue
         </button>

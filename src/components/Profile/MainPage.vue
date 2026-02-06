@@ -2760,6 +2760,56 @@ this.recommendations = null;
   .courses-list .course-card {
     padding: 1rem;
   }
+
+  .recommended-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .quick-actions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .requirements-progress {
+    gap: 0.75rem;
+  }
+
+  .requirement-check {
+    width: 2.25rem;
+    height: 2.25rem;
+    font-size: 0.875rem;
+  }
+
+  .test-card-icon {
+    width: 48px;
+    height: 48px;
+  }
+
+  .test-card-title {
+    font-size: 1rem;
+  }
+
+  .take-test-action-btn {
+    white-space: normal;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .welcome-section .main-title {
+    font-size: 1.25rem;
+  }
+
+  .course-meta {
+    gap: 0.5rem;
+  }
+
+  .empty-pathway-card {
+    padding: 1.5rem;
+  }
+
+  .empty-pathway-title {
+    font-size: 1.125rem;
+  }
 }
 
 /* =============================================

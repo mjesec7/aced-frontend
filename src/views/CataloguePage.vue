@@ -1989,4 +1989,108 @@ export default {
     width: 100%;
   }
 }
+
+@media (max-width: 640px) {
+  .catalogue-header {
+    padding: 1.25rem 0.75rem 0.75rem;
+  }
+
+  .page-title {
+    font-size: 1.375rem;
+  }
+
+  .header-stats {
+    gap: 0.75rem;
+  }
+
+  .mode-tab {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  .category-chip {
+    padding: 6px 10px;
+    font-size: 0.75rem;
+  }
+
+  .continue-card {
+    min-width: 260px;
+  }
+
+  .card-content {
+    padding: 0.75rem;
+  }
+
+  .clear-filters-btn,
+  .shuffle-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .catalogue-header {
+    padding: 1rem 0.75rem 0.75rem;
+  }
+
+  .page-title {
+    font-size: 1.25rem;
+  }
+
+  .header-top {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .header-stats {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .stat-badge {
+    padding: 0.375rem 0.625rem;
+    font-size: 0.75rem;
+  }
+
+  .continue-card {
+    min-width: 100%;
+    flex-direction: column;
+  }
+
+  .continue-card-thumbnail {
+    width: 100%;
+    height: 100px;
+    border-radius: 12px;
+  }
+
+  .continue-card-content {
+    min-width: 100%;
+  }
+
+  .course-grid {
+    gap: 1rem;
+    padding: 0 0.75rem 2rem;
+  }
+
+  .card-thumbnail {
+    height: 130px;
+  }
+
+  .pagination-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .pagination-text {
+    font-size: 0.8125rem;
+  }
+
+  .empty-icon {
+    font-size: 3rem;
+  }
+
+  .empty-title {
+    font-size: 1.125rem;
+  }
+}
 </style>
