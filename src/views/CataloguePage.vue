@@ -665,6 +665,7 @@ export default {
       const progressMap = {};
       const lessonsByTopic = {};
       const lessonToTopic = {}; // Map lessonId -> topicId for reverse lookup
+      const lessonProgress = {}; // Track individual lesson progress
 
       // Build lesson-to-topic mapping
       this.lessons.forEach(l => {
@@ -677,18 +678,22 @@ export default {
         }
       });
 
-      // Track completed lessons to avoid double counting
-      const completedLessons = new Set();
+      // Track lessons to avoid double counting
+      const processedLessons = new Set();
 
-      // Process progress data
+      // Process progress data - now includes partial progress
       data.forEach(p => {
-        if (!p.completed) return;
-
         const lessonId = this.extractTopicId(p.lessonId);
         let topicId = this.extractTopicId(p.topicId);
 
-        // Skip if already counted this lesson
-        if (lessonId && completedLessons.has(lessonId)) return;
+        // Skip if already processed this lesson
+        if (lessonId && processedLessons.has(lessonId)) return;
+
+        // Get progress value - either 100 if completed or use progressPercent
+        const progressValue = p.completed ? 100 : (p.progressPercent || 0);
+        
+        // Skip lessons with 0 progress
+        if (progressValue === 0) return;
 
         // Try to find the correct topic for this lesson
         if (lessonId) {
@@ -711,32 +716,42 @@ export default {
           }
         }
 
-        // Count progress for the topic
-        if (topicId && lessonsByTopic[topicId]) {
-          if (!progressMap[topicId]) progressMap[topicId] = 0;
-          progressMap[topicId]++;
-          if (lessonId) completedLessons.add(lessonId);
-        } else if (topicId) {
-          // Even if we don't have the topic in lessonsByTopic, still track it
-          // This handles cases where the topic exists in courses but not in lessons array
-          if (!progressMap[topicId]) progressMap[topicId] = 0;
-          progressMap[topicId]++;
-          if (lessonId) completedLessons.add(lessonId);
+        // Store lesson progress and associate with topic
+        if (topicId) {
+          if (!lessonProgress[topicId]) lessonProgress[topicId] = [];
+          lessonProgress[topicId].push({
+            lessonId,
+            progress: progressValue,
+            completed: p.completed
+          });
+          if (lessonId) processedLessons.add(lessonId);
         }
       });
 
-      // Calculate final percentages
+      // Calculate final percentages based on weighted lesson progress
       const final = {};
       for (const tid in lessonsByTopic) {
-        final[tid] = lessonsByTopic[tid].size > 0
-          ? Math.round((progressMap[tid] || 0) / lessonsByTopic[tid].size * 100)
-          : 0;
+        const totalLessons = lessonsByTopic[tid].size;
+        if (totalLessons === 0) {
+          final[tid] = 0;
+          continue;
+        }
+
+        // Sum up progress from all lessons in topic
+        const topicProgress = lessonProgress[tid] || [];
+        const totalProgress = topicProgress.reduce((sum, lp) => sum + lp.progress, 0);
+        
+        // Calculate average progress across all lessons in topic
+        // (Use total lessons count, not just lessons with progress, for accurate calculation)
+        final[tid] = Math.round(totalProgress / totalLessons);
       }
 
-      // Also include progress for topics not in lessonsByTopic (from progressMap)
-      for (const tid in progressMap) {
+      // Also include progress for topics not in lessonsByTopic (from lessonProgress)
+      for (const tid in lessonProgress) {
         if (!(tid in final)) {
-          final[tid] = progressMap[tid] > 0 ? 100 : 0; // Assume 100% if we have progress but no lesson count
+          const topicData = lessonProgress[tid];
+          const avgProgress = topicData.reduce((sum, lp) => sum + lp.progress, 0) / topicData.length;
+          final[tid] = Math.round(avgProgress);
         }
       }
 

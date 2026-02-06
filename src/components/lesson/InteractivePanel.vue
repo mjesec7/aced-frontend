@@ -153,55 +153,91 @@
           </transition>
         </div>
 
-        <!-- TRUE/FALSE -->
-        <div v-else-if="isTrueFalseType" class="exercise-card text-center">
-          <div class="mb-4 sm:mb-6">
-            <span class="inline-flex items-center px-3 py-1 rounded-full bg-gradient-to-r from-cyan-100 to-blue-100 text-cyan-700 font-semibold text-xs sm:text-sm">
+        <!-- TRUE/FALSE - Premium Design -->
+        <div v-else-if="isTrueFalseType" class="tf-exercise-container">
+          <!-- Header Badge -->
+          <div class="tf-header">
+            <span class="tf-badge">
+              <svg class="tf-badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M9 12l2 2 4-4"/>
+              </svg>
               True or False
             </span>
           </div>
 
-          <h3 class="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 leading-relaxed mb-6 sm:mb-8">
-            {{ questionText }}
-          </h3>
+          <!-- Statement Card -->
+          <div class="tf-statement-card">
+            <div class="tf-statement-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M8.5 19H5a2 2 0 01-2-2V7a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2h-3.5"/>
+                <path d="M12 19v-9"/>
+                <path d="M8 14l4-4 4 4"/>
+              </svg>
+            </div>
+            <p class="tf-statement-text">{{ questionText }}</p>
+          </div>
 
-          <div class="flex justify-center gap-4 sm:gap-6">
+          <!-- Choice Buttons -->
+          <div class="tf-buttons-container">
             <button
               @click="userAnswer = true"
               :disabled="showCorrectAnswer"
-              class="tf-btn"
-              :class="userAnswer === true ? 'tf-true-selected' : 'tf-default'"
+              class="tf-choice-btn tf-true-btn"
+              :class="{ 
+                'tf-selected': userAnswer === true,
+                'tf-correct': showCorrectAnswer && currentExercise.correctAnswer === true && userAnswer === true,
+                'tf-incorrect': showCorrectAnswer && currentExercise.correctAnswer !== true && userAnswer === true
+              }"
             >
-              <span class="text-3xl mb-1">👍</span>
-              <span class="text-sm sm:text-base font-bold">True</span>
+              <div class="tf-icon-wrapper tf-icon-true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path d="M5 13l4 4L19 7"/>
+                </svg>
+              </div>
+              <span class="tf-btn-label">True</span>
+              <div class="tf-btn-glow"></div>
             </button>
 
             <button
               @click="userAnswer = false"
               :disabled="showCorrectAnswer"
-              class="tf-btn"
-              :class="userAnswer === false ? 'tf-false-selected' : 'tf-default'"
+              class="tf-choice-btn tf-false-btn"
+              :class="{ 
+                'tf-selected': userAnswer === false,
+                'tf-correct': showCorrectAnswer && currentExercise.correctAnswer === false && userAnswer === false,
+                'tf-incorrect': showCorrectAnswer && currentExercise.correctAnswer !== false && userAnswer === false
+              }"
             >
-              <span class="text-3xl mb-1">👎</span>
-              <span class="text-sm sm:text-base font-bold">False</span>
+              <div class="tf-icon-wrapper tf-icon-false">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+              </div>
+              <span class="tf-btn-label">False</span>
+              <div class="tf-btn-glow"></div>
             </button>
           </div>
 
-          <transition name="slide-fade">
-            <div v-if="showCorrectAnswer" class="feedback-box mt-6 mx-auto max-w-sm" :class="answerWasCorrect ? 'feedback-success' : 'feedback-error'">
-              <div class="feedback-icon">
-                <svg v-if="answerWasCorrect" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+          <!-- Feedback Section -->
+          <transition name="tf-feedback-enter">
+            <div v-if="showCorrectAnswer" class="tf-feedback" :class="answerWasCorrect ? 'tf-feedback-correct' : 'tf-feedback-wrong'">
+              <div class="tf-feedback-icon-wrap">
+                <svg v-if="answerWasCorrect" class="tf-feedback-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M8 12l2.5 2.5L16 9"/>
                 </svg>
-                <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/>
+                <svg v-else class="tf-feedback-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M15 9l-6 6M9 9l6 6"/>
                 </svg>
               </div>
-              <div>
-                <h4 class="font-bold text-sm sm:text-base">{{ answerWasCorrect ? 'Correct! 🎉' : 'Not Quite' }}</h4>
-                <p v-if="!answerWasCorrect" class="text-xs sm:text-sm mt-1">
-                  The statement is actually <strong>{{ currentExercise.correctAnswer ? 'True' : 'False' }}</strong>
+              <div class="tf-feedback-content">
+                <h4 class="tf-feedback-title">{{ answerWasCorrect ? 'Excellent! 🎉' : 'Not Quite Right' }}</h4>
+                <p v-if="!answerWasCorrect" class="tf-feedback-text">
+                  The correct answer is <strong>{{ currentExercise.correctAnswer ? 'True' : 'False' }}</strong>
                 </p>
+                <p v-else class="tf-feedback-text">Great job recognizing the answer!</p>
               </div>
             </div>
           </transition>
@@ -1374,24 +1410,369 @@ watch(() => props.currentExercise, () => {
 
 .option-check { width: 1.25rem; height: 1.25rem; color: #8b5cf6; flex-shrink: 0; }
 
-/* True/False buttons */
-.tf-btn {
-  flex: 1; max-width: 140px;
-  padding: 1rem; border-radius: 1rem;
-  border: 3px solid;
-  display: flex; flex-direction: column; align-items: center;
-  cursor: pointer; transition: all 0.3s;
-  min-height: 90px;
+/* ============================================
+   TRUE/FALSE EXERCISE - PREMIUM DESIGN
+   ============================================ */
+
+/* Container */
+.tf-exercise-container {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.9));
+  backdrop-filter: blur(12px);
+  border-radius: 1.5rem;
+  padding: 2rem;
+  box-shadow: 0 8px 32px rgba(99, 102, 241, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  max-width: 600px;
+  margin: 0 auto;
 }
 
 @media (min-width: 640px) {
-  .tf-btn { max-width: 180px; padding: 1.5rem; border-radius: 1.25rem; min-height: 110px; }
+  .tf-exercise-container {
+    padding: 2.5rem 3rem;
+  }
 }
 
-.tf-default { border-color: #e2e8f0; background: white; }
-.tf-default:hover:not(:disabled) { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1); }
-.tf-true-selected { border-color: #10b981; background: linear-gradient(135deg, #ecfdf5, #d1fae5); transform: translateY(-4px); box-shadow: 0 8px 24px rgba(16, 185, 129, 0.25); }
-.tf-false-selected { border-color: #ef4444; background: linear-gradient(135deg, #fef2f2, #fee2e2); transform: translateY(-4px); box-shadow: 0 8px 24px rgba(239, 68, 68, 0.25); }
+/* Header Badge */
+.tf-header {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.tf-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+  color: #4338ca;
+  border-radius: 2rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
+}
+
+.tf-badge-icon {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+/* Statement Card */
+.tf-statement-card {
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+  border-left: 4px solid #8b5cf6;
+  border-radius: 1rem;
+  padding: 1.5rem 1.75rem;
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.tf-statement-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  min-width: 2.5rem;
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.tf-statement-icon svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.tf-statement-text {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.6;
+  flex: 1;
+}
+
+@media (min-width: 640px) {
+  .tf-statement-text {
+    font-size: 1.25rem;
+  }
+}
+
+/* Choice Buttons Container */
+.tf-buttons-container {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .tf-buttons-container {
+    gap: 1.5rem;
+  }
+}
+
+/* Choice Buttons */
+.tf-choice-btn {
+  flex: 1;
+  max-width: 180px;
+  padding: 1.5rem 1rem;
+  border-radius: 1.25rem;
+  border: 3px solid transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 130px;
+  position: relative;
+  overflow: hidden;
+  background: white;
+}
+
+@media (min-width: 640px) {
+  .tf-choice-btn {
+    max-width: 200px;
+    min-height: 145px;
+    padding: 1.75rem 1.25rem;
+  }
+}
+
+/* True Button Default */
+.tf-true-btn {
+  border-color: rgba(16, 185, 129, 0.3);
+  background: linear-gradient(145deg, #ffffff, #ecfdf5);
+}
+
+.tf-true-btn:hover:not(:disabled):not(.tf-selected) {
+  transform: translateY(-6px);
+  border-color: #10b981;
+  box-shadow: 0 12px 28px rgba(16, 185, 129, 0.25);
+}
+
+/* False Button Default */
+.tf-false-btn {
+  border-color: rgba(239, 68, 68, 0.3);
+  background: linear-gradient(145deg, #ffffff, #fef2f2);
+}
+
+.tf-false-btn:hover:not(:disabled):not(.tf-selected) {
+  transform: translateY(-6px);
+  border-color: #ef4444;
+  box-shadow: 0 12px 28px rgba(239, 68, 68, 0.25);
+}
+
+/* Icon Wrapper */
+.tf-icon-wrapper {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.tf-icon-wrapper svg {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.tf-icon-true {
+  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+  color: #059669;
+}
+
+.tf-icon-false {
+  background: linear-gradient(135deg, #fee2e2, #fecaca);
+  color: #dc2626;
+}
+
+/* Button Label */
+.tf-btn-label {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #374151;
+  transition: all 0.3s ease;
+}
+
+@media (min-width: 640px) {
+  .tf-btn-label {
+    font-size: 1.125rem;
+  }
+}
+
+/* Button Glow Effect */
+.tf-btn-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+/* Selected States */
+.tf-choice-btn.tf-selected {
+  transform: translateY(-4px);
+}
+
+.tf-true-btn.tf-selected {
+  background: linear-gradient(135deg, #10b981, #059669);
+  border-color: #10b981;
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.4);
+}
+
+.tf-true-btn.tf-selected .tf-icon-wrapper {
+  background: rgba(255, 255, 255, 0.25);
+  color: white;
+}
+
+.tf-true-btn.tf-selected .tf-btn-label {
+  color: white;
+}
+
+.tf-false-btn.tf-selected {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  border-color: #ef4444;
+  box-shadow: 0 8px 24px rgba(239, 68, 68, 0.4);
+}
+
+.tf-false-btn.tf-selected .tf-icon-wrapper {
+  background: rgba(255, 255, 255, 0.25);
+  color: white;
+}
+
+.tf-false-btn.tf-selected .tf-btn-label {
+  color: white;
+}
+
+/* Correct/Incorrect States */
+.tf-choice-btn.tf-correct {
+  animation: tf-pulse-correct 0.6s ease-out;
+}
+
+.tf-choice-btn.tf-incorrect {
+  animation: tf-shake 0.5s ease-out;
+}
+
+@keyframes tf-pulse-correct {
+  0%, 100% { transform: translateY(-4px) scale(1); }
+  50% { transform: translateY(-4px) scale(1.05); }
+}
+
+@keyframes tf-shake {
+  0%, 100% { transform: translateX(0) translateY(-4px); }
+  20%, 60% { transform: translateX(-6px) translateY(-4px); }
+  40%, 80% { transform: translateX(6px) translateY(-4px); }
+}
+
+/* Disabled State */
+.tf-choice-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.85;
+}
+
+/* Feedback Section */
+.tf-feedback {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-radius: 1rem;
+  margin-top: 1.5rem;
+  border: 2px solid;
+}
+
+.tf-feedback-correct {
+  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+  border-color: #6ee7b7;
+}
+
+.tf-feedback-wrong {
+  background: linear-gradient(135deg, #fef2f2, #fee2e2);
+  border-color: #fca5a5;
+}
+
+.tf-feedback-icon-wrap {
+  width: 2.75rem;
+  height: 2.75rem;
+  min-width: 2.75rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tf-feedback-correct .tf-feedback-icon-wrap {
+  background: #10b981;
+  color: white;
+}
+
+.tf-feedback-wrong .tf-feedback-icon-wrap {
+  background: #ef4444;
+  color: white;
+}
+
+.tf-feedback-svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.tf-feedback-content {
+  flex: 1;
+}
+
+.tf-feedback-title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.tf-feedback-correct .tf-feedback-title {
+  color: #065f46;
+}
+
+.tf-feedback-wrong .tf-feedback-title {
+  color: #991b1b;
+}
+
+.tf-feedback-text {
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.tf-feedback-correct .tf-feedback-text {
+  color: #047857;
+}
+
+.tf-feedback-wrong .tf-feedback-text {
+  color: #b91c1c;
+}
+
+/* Feedback Animation */
+.tf-feedback-enter-enter-active {
+  animation: tf-feedback-slide 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tf-feedback-enter-leave-active {
+  animation: tf-feedback-slide 0.3s ease-out reverse;
+}
+
+@keyframes tf-feedback-slide {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
 /* Feedback box */
 .feedback-box {
