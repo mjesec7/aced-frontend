@@ -1228,9 +1228,14 @@ watch([isGameMode, gameType, gameData], ([mode, type, data]) => {
 }, { immediate: true });
 
 const handleGameComplete = (result) => {
+  console.log('🎮 [InteractivePanel] Game completed:', result);
   answerWasCorrect.value = result.completed || result.stars >= 2;
   showCorrectAnswer.value = true;
-  setTimeout(() => emit('next-exercise'), 1500);
+  
+  // Don't auto-advance - let user click Continue in the game's result screen
+  // The game component will emit game-complete when user clicks Continue,
+  // which then advances to next step
+  emit('next-exercise');
 };
 
 const handleGameExit = () => { resetExerciseState(); showCorrectAnswer.value = false; };

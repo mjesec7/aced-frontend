@@ -4,7 +4,6 @@
     ref="gameContainer"
     @mousemove="handleMouseMove"
     @touchmove="handleTouchMove"
-    @click="handleGameClick"
   >
     <!-- Fun Background Elements -->
     <div class="sun">☀️</div>
@@ -17,13 +16,72 @@
     <div class="cloud cloud-7">☁️</div>
     <div class="cloud cloud-8">☁️</div>
 
+    <!-- START SCREEN OVERLAY -->
+    <div v-if="!gameActive && !gameEnded" class="start-overlay">
+      <div class="start-card">
+        <div class="start-icon">🧺</div>
+        <h2>Basket Catch</h2>
+        <p class="start-description">{{ currentQuestionText }}</p>
+        <div class="start-rules">
+          <div class="rule-item">
+            <span class="rule-icon">✅</span>
+            <span>Catch correct answers</span>
+          </div>
+          <div class="rule-item">
+            <span class="rule-icon">❌</span>
+            <span>Avoid wrong answers</span>
+          </div>
+          <div class="rule-item">
+            <span class="rule-icon">❤️</span>
+            <span>You have 5 lives</span>
+          </div>
+        </div>
+        <button class="start-btn" @click="startGame">
+          🎮 Start the Game
+        </button>
+      </div>
+    </div>
+
+    <!-- GAME OVER OVERLAY -->
+    <div v-if="gameEnded" class="game-over-overlay">
+      <div class="game-over-card" :class="gameWon ? 'won' : 'lost'">
+        <div class="game-over-icon">{{ gameWon ? '🎉' : '💔' }}</div>
+        <h2>{{ gameWon ? 'Congratulations!' : 'Game Over' }}</h2>
+        <p class="game-over-message">
+          {{ gameWon ? 'You caught all the correct answers!' : 'You ran out of lives!' }}
+        </p>
+        <div class="game-over-stats">
+          <div class="stat-item">
+            <span class="stat-value">{{ finalScore }}</span>
+            <span class="stat-label">Score</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value">{{ correctCaught }}</span>
+            <span class="stat-label">Correct</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value">{{ mistakesMade }}</span>
+            <span class="stat-label">Mistakes</span>
+          </div>
+        </div>
+        <div class="game-over-actions">
+          <button class="try-again-btn" @click="restartGame">
+            🔄 Try Again
+          </button>
+          <button class="continue-btn" @click="handleContinue">
+            Continue →
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Right Sidebar HUD -->
     <GameHUDSidebar
       v-if="gameActive"
       :score="score"
       :time-remaining="timeRemaining"
       :lives="lives"
-      :max-lives="3"
+      :max-lives="5"
     />
 
     <!-- Question Display -->
@@ -70,12 +128,12 @@ import GameHUDSidebar from '../base/GameHUDSidebar.vue';
 const props = defineProps({
   gameData: { type: Object, required: true },
   score: { type: Number, default: 0 },
-  lives: { type: Number, default: 3 },
+  lives: { type: Number, default: 5 },
   timeRemaining: { type: Number, default: 60 },
   isPaused: { type: Boolean, default: false }
 });
 
-const emit = defineEmits(['score-change', 'life-lost', 'item-collected', 'game-complete', 'pause', 'game-started']);
+const emit = defineEmits(['score-change', 'life-lost', 'item-collected', 'game-complete', 'pause', 'game-started', 'try-again']);
 
 // Refs
 const gameContainer = ref(null);
@@ -87,6 +145,13 @@ const itemIdCounter = ref(0);
 const spawnInterval = ref(null);
 const collisionInterval = ref(null);
 const currentQuestionIndex = ref(0);
+
+// Game End State
+const gameEnded = ref(false);
+const gameWon = ref(false);
+const finalScore = ref(0);
+const correctCaught = ref(0);
+const mistakesMade = ref(0);
 
 // Feedback
 const showFeedback = ref(false);
@@ -190,6 +255,7 @@ const catchItem = (item) => {
 
   if (item.isCorrect) {
       emit('score-change', 100);
+      correctCaught.value++;
       triggerFeedback('Correct!', 'success', '✨');
       fallingItems.value = []; // Clear items for next question focus
 
@@ -197,13 +263,22 @@ const catchItem = (item) => {
           if (currentQuestionIndex.value < questions.value.length - 1) {
               currentQuestionIndex.value++;
           } else {
-              emit('game-complete', { score: props.score + 100 });
+              // All questions completed - user wins!
+              endGame(true);
           }
       }, 800);
   } else {
       emit('score-change', -20);
       emit('life-lost');
+      mistakesMade.value++;
       triggerFeedback('Wrong!', 'error', '❌');
+      
+      // Check if out of lives (5 mistakes = game over)
+      if (props.lives <= 1) {
+          setTimeout(() => {
+              endGame(false);
+          }, 800);
+      }
   }
 };
 
@@ -242,21 +317,24 @@ const updateBasket = (x, width) => {
     basketPosition.value = Math.max(10, Math.min(90, percent));
 };
 
-const handleGameClick = () => {
-    if (!gameActive.value) startGame();
-};
-
 // Lifecycle
 const startGame = () => {
     gameActive.value = true;
+    gameEnded.value = false;
+    gameWon.value = false;
     fallingItems.value = [];
     currentQuestionIndex.value = 0;
+    correctCaught.value = 0;
+    mistakesMade.value = 0;
 
     if (spawnInterval.value) clearInterval(spawnInterval.value);
     if (collisionInterval.value) clearInterval(collisionInterval.value);
 
     spawnInterval.value = setInterval(spawnItem, 1400);
     collisionInterval.value = setInterval(checkCollisions, 50);
+    
+    // Notify parent that game has started
+    emit('game-started');
 };
 
 const stopGame = () => {
@@ -265,19 +343,54 @@ const stopGame = () => {
     clearInterval(collisionInterval.value);
 };
 
-watch(() => props.lives, (val) => { if(val <= 0) stopGame(); });
+const endGame = (won) => {
+    stopGame();
+    gameEnded.value = true;
+    gameWon.value = won;
+    finalScore.value = props.score;
+    fallingItems.value = [];
+};
+
+const restartGame = () => {
+    // Reset all game state
+    gameEnded.value = false;
+    gameWon.value = false;
+    finalScore.value = 0;
+    correctCaught.value = 0;
+    mistakesMade.value = 0;
+    
+    // Emit try-again to reset parent state (lives, score)
+    emit('try-again');
+    
+    // Start fresh game
+    startGame();
+};
+
+const handleContinue = () => {
+    // Emit game-complete to advance to next step
+    emit('game-complete', { 
+        score: finalScore.value, 
+        completed: gameWon.value,
+        stars: gameWon.value ? (mistakesMade.value === 0 ? 3 : mistakesMade.value <= 2 ? 2 : 1) : 0,
+        correctCaught: correctCaught.value,
+        mistakesMade: mistakesMade.value
+    });
+};
+
+watch(() => props.lives, (val) => { 
+    if(val <= 0 && gameActive.value) {
+        endGame(false);
+    }
+});
+
 onMounted(() => {
     console.log('🎮 [BasketCatch] Component mounted!');
     console.log('  - gameData:', props.gameData);
     console.log('  - questions:', questions.value);
-    // Clean start state and auto-start game
+    // Clean start state - DO NOT auto-start, wait for user to click start button
     fallingItems.value = [];
-    // Notify parent that game has started
-    emit('game-started');
-    // Auto-start the game
-    setTimeout(() => {
-        startGame();
-    }, 100);
+    gameEnded.value = false;
+    gameActive.value = false;
 });
 onUnmounted(stopGame);
 </script>
@@ -296,7 +409,214 @@ onUnmounted(stopGame);
   user-select: none;
   border: 4px solid white;
   box-shadow: inset 0 0 30px rgba(0,0,0,0.05);
-  cursor: none;
+  cursor: default;
+}
+
+/* START SCREEN OVERLAY */
+.start-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.start-card {
+  background: white;
+  padding: 32px 40px;
+  border-radius: 24px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 380px;
+  width: 90%;
+  animation: slideUp 0.4s ease-out;
+}
+
+.start-icon {
+  font-size: 4rem;
+  margin-bottom: 16px;
+}
+
+.start-card h2 {
+  margin: 0 0 12px 0;
+  color: #1e293b;
+  font-size: 1.8rem;
+  font-weight: 800;
+}
+
+.start-description {
+  color: #64748b;
+  font-size: 1rem;
+  margin-bottom: 20px;
+}
+
+.start-rules {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.rule-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border-radius: 10px;
+}
+
+.rule-icon {
+  font-size: 1.2rem;
+}
+
+.start-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  color: white;
+  border: none;
+  padding: 16px 32px;
+  border-radius: 14px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  width: 100%;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+}
+
+.start-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+}
+
+/* GAME OVER OVERLAY */
+.game-over-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+}
+
+.game-over-card {
+  background: white;
+  padding: 32px 40px;
+  border-radius: 24px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 400px;
+  width: 90%;
+  animation: popIn 0.4s ease-out;
+}
+
+.game-over-card.won {
+  border: 4px solid #22c55e;
+}
+
+.game-over-card.lost {
+  border: 4px solid #ef4444;
+}
+
+.game-over-icon {
+  font-size: 4rem;
+  margin-bottom: 12px;
+}
+
+.game-over-card h2 {
+  margin: 0 0 8px 0;
+  font-size: 1.8rem;
+  font-weight: 800;
+}
+
+.game-over-card.won h2 {
+  color: #22c55e;
+}
+
+.game-over-card.lost h2 {
+  color: #ef4444;
+}
+
+.game-over-message {
+  color: #64748b;
+  font-size: 1rem;
+  margin-bottom: 20px;
+}
+
+.game-over-stats {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 12px;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-value {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.game-over-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.try-again-btn {
+  flex: 1;
+  background: #f1f5f9;
+  color: #475569;
+  border: none;
+  padding: 14px 20px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.try-again-btn:hover {
+  background: #e2e8f0;
+}
+
+.continue-btn {
+  flex: 1;
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  color: white;
+  border: none;
+  padding: 14px 20px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);
+}
+
+.continue-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(34, 197, 94, 0.5);
 }
 
 /* FLOATING CLOUDS */

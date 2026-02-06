@@ -12,6 +12,7 @@
       @game-complete="handleGameComplete"
       @item-collected="handleItemCollected"
       @game-started="handleGameStarted"
+      @try-again="handleTryAgain"
     />
 
     <!-- Loading State -->
@@ -48,7 +49,7 @@ const emit = defineEmits(['game-complete', 'game-exit']);
 const gameStarted = ref(false);
 const isLoading = ref(false);
 const score = ref(0);
-const lives = ref(3);
+const lives = ref(5);
 const timeRemaining = ref(60);
 const startTime = ref(0);
 const itemsCollected = ref(0);
@@ -82,7 +83,7 @@ const gameComponent = computed(() => {
 });
 
 const timeLimit = computed(() => props.gameData.timeLimit || 60);
-const maxLives = computed(() => props.gameData.lives || 3);
+const maxLives = computed(() => props.gameData.lives || 5);
 
 const accuracy = computed(() => {
   if (itemsCollected.value === 0) return 0;
@@ -134,6 +135,23 @@ const handleItemCollected = ({ isCorrect }) => {
   } else {
     wrongItems.value++;
   }
+};
+
+// Handle try again - reset game state for replay
+const handleTryAgain = () => {
+  score.value = 0;
+  lives.value = maxLives.value;
+  timeRemaining.value = timeLimit.value;
+  itemsCollected.value = 0;
+  correctItems.value = 0;
+  wrongItems.value = 0;
+  startTime.value = Date.now();
+  
+  // Restart timer
+  if (timerInterval.value) {
+    clearInterval(timerInterval.value);
+  }
+  startTimer();
 };
 
 // When game component emits complete, save results and pass up

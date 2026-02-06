@@ -467,6 +467,7 @@ import { getLessonById, getTopics } from '@/api/lessons'
 import { getLessonAIResponse, getUserUsage } from '@/services/GPTService'
 import { clearChatHistory } from '@/api/chat'
 import { submitLessonRating } from '@/api/ratings'
+import { getUserStudyList, addToStudyList } from '@/api/user'
 import { auth } from '@/firebase'
 
 // Import language composable for multi-language support
@@ -865,6 +866,9 @@ async function loadLesson() {
       if (steps.value.length > 0) {
         preAnalyzeSteps(steps.value, language.value)
       }
+      
+      // Auto-enroll: Add course to study list if not already added
+      await autoEnrollCourse(lessonData, resolvedTopicId)
     } else {
       throw new Error(result.error || 'Failed to load lesson data')
     }
@@ -873,6 +877,58 @@ async function loadLesson() {
     error.value = err.message || 'Failed to load lesson'
   } finally {
     loading.value = false
+  }
+}
+
+// Auto-enroll: Add course to user's study list if not already present
+async function autoEnrollCourse(lessonData, courseId) {
+  try {
+    const currentUser = auth.currentUser
+    if (!currentUser || !courseId) {
+      console.log('[LessonPage] Skipping auto-enroll: no user or courseId')
+      return
+    }
+    
+    // Get user's current study list
+    const studyListResult = await getUserStudyList(currentUser.uid)
+    if (!studyListResult.success) {
+      console.warn('[LessonPage] Could not fetch study list for auto-enroll')
+      return
+    }
+    
+    // Check if course is already in the list
+    const studyList = studyListResult.data || []
+    const isAlreadyEnrolled = studyList.some(item => {
+      const itemId = item.topicId || item._id || item.id
+      return itemId === courseId
+    })
+    
+    if (isAlreadyEnrolled) {
+      console.log('[LessonPage] Course already in study list:', courseId)
+      return
+    }
+    
+    // Add course to study list
+    console.log('[LessonPage] Auto-enrolling in course:', courseId)
+    const topicData = {
+      topicId: courseId,
+      topic: lessonData.topicName || lessonData.topic || extractLessonTitle(lessonData),
+      subject: lessonData.subject || 'General',
+      level: lessonData.level || 1,
+      lessonCount: lessonData.lessonCount || 1,
+      totalTime: lessonData.timing?.estimatedDuration || 10,
+      type: lessonData.isPremium ? 'premium' : 'free'
+    }
+    
+    const addResult = await addToStudyList(currentUser.uid, topicData)
+    if (addResult.success) {
+      console.log('✅ [LessonPage] Successfully auto-enrolled in course:', courseId)
+    } else {
+      console.warn('[LessonPage] Failed to auto-enroll:', addResult.error)
+    }
+  } catch (err) {
+    // Non-critical error - don't block lesson loading
+    console.warn('[LessonPage] Auto-enroll error:', err.message)
   }
 }
 
