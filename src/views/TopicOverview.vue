@@ -603,11 +603,14 @@ export default {
       }
 
       this.lessons.forEach(lesson => {
-        const lessonId = lesson._id || lesson.id;
-        const progressRecord = progressArray.find(p => 
-          p.lessonId === lessonId || 
-          (p.lesson && (p.lesson._id === lessonId || p.lesson.id === lessonId))
-        );
+        const lessonId = String(lesson._id || lesson.id);
+        const progressRecord = progressArray.find(p => {
+          // lessonId may be a populated object (from backend .populate()) or a string/ObjectId
+          const pLessonId = (p.lessonId && typeof p.lessonId === 'object')
+            ? String(p.lessonId._id || p.lessonId.id || p.lessonId)
+            : String(p.lessonId || '');
+          return pLessonId === lessonId;
+        });
 
         if (progressRecord) {
           lesson.progress = this.normalizeProgressData(progressRecord);

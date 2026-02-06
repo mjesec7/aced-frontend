@@ -971,7 +971,7 @@ export default {
       try {
         this.loadingRecommendations = true;
         const { getTopicsAsCourses } = await import('@/api/courses');
-        const result = await getTopicsAsCourses(this.userId);
+        const result = await getTopicsAsCourses({}, this.userId);
         const allCourses = result.courses || result || [];
 
         // Get subjects from user's study list
@@ -1070,25 +1070,30 @@ export default {
     getRecommendedCourseName(course) {
       const lang = getLanguage();
 
-      // Try topicName first
+      // Try topicName first (localized object from populated topicId)
       if (course.topicName) {
-        const localizedText = getLocalizedText(course.topicName, null, null, lang);
-        if (localizedText && localizedText !== '') return localizedText;
+        const localizedText = getLocalizedText(course.topicName, null, '', lang);
+        if (localizedText) return localizedText;
+      }
+
+      // Try name field (returned by backend as-courses endpoint)
+      if (course.name) {
+        const localizedText = getLocalizedText(course.name, null, '', lang);
+        if (localizedText) return localizedText;
+      }
+
+      // Try title field
+      if (course.title) {
+        const localizedText = getLocalizedText(course.title, null, '', lang);
+        if (localizedText) return localizedText;
       }
 
       // Try lessonName
       if (course.lessonName) {
-        const localizedText = getLocalizedText(course.lessonName, null, null, lang);
-        if (localizedText && localizedText !== '') return localizedText;
+        const localizedText = getLocalizedText(course.lessonName, null, '', lang);
+        if (localizedText) return localizedText;
       }
 
-      // Try _rawData properties as fallback
-      if (course._rawData) {
-        const rawField = `topic_name_${lang}` || `lesson_name_${lang}`;
-        if (course._rawData[rawField]) return course._rawData[rawField];
-      }
-
-      // Final fallback with proper translation
       return this.$t('common.untitled') || 'Untitled';
     },
 
