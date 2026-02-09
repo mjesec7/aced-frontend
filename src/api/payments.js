@@ -88,10 +88,6 @@ return null;
 // Payment API interceptors
 paymentApi.interceptors.request.use(async (config) => {
   try {
-    // Special handling for payment endpoints
-    config.headers['X-Request-Source'] = 'frontend';
-    config.headers['X-User-Agent'] = navigator.userAgent.substring(0, 50);
-    
     const token = await getValidToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
