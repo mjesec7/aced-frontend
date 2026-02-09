@@ -379,7 +379,7 @@
         return createOfdData([
           {
             name: `ACED ${selectedPlan.value.toUpperCase()} Plan Subscription`,
-            price: planInfo.value.price,
+            price: uzsToTiyin(planInfo.value.price),
             quantity: 1,
             mxik: '10899002001000000',
             packageCode: '1'
