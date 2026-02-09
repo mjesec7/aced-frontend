@@ -215,18 +215,22 @@ const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
   try {
 // Get merchant ID with validation
     const merchantId = import.meta.env.VITE_PAYME_MERCHANT_ID;
-    
+
     if (!merchantId || merchantId === 'undefined' || typeof merchantId !== 'string') {
       throw new Error('PayMe Merchant ID not configured. Check your .env file.');
     }
 
-    const amounts = getPaymentAmounts();
-    const planAmount = amounts[plan]?.tiyin;
-    
+    // Use amount from options first, then fall back to plan lookup
+    let planAmount = options.amount ? Number(options.amount) : null;
     if (!planAmount) {
-      throw new Error(`Plan "${plan}" not found. Available: start, pro`);
+      const amounts = getPaymentAmounts();
+      planAmount = amounts[plan]?.tiyin;
     }
-    
+
+    if (!planAmount) {
+      throw new Error(`Plan "${plan}" not found and no amount provided.`);
+    }
+
     // Generate clean order ID (alphanumeric only)
     const timestamp = Date.now();
     const randomPart = Math.random().toString(36).substr(2, 6);
@@ -298,13 +302,17 @@ const generateDirectPaymeForm = async (userId, plan, options = {}) => {
       throw new Error('Invalid PayMe Merchant ID configuration');
     }
     
-    const amounts = getPaymentAmounts();
-    const planAmount = amounts[plan]?.tiyin;
-    
+    // Use amount from options first, then fall back to plan lookup
+    let planAmount = options.amount ? Number(options.amount) : null;
     if (!planAmount) {
-      throw new Error(`Unknown plan: ${plan}`);
+      const amounts = getPaymentAmounts();
+      planAmount = amounts[plan]?.tiyin;
     }
-    
+
+    if (!planAmount) {
+      throw new Error(`Unknown plan: ${plan}. Provide an amount.`);
+    }
+
     // ✅ CRITICAL FIX: Generate CLEAN order ID (only alphanumeric)
     const timestamp = Date.now();
     const randomStr = Math.random().toString(36).substr(2, 9);
@@ -412,27 +420,46 @@ return {
 // =============================================
 
 // ✅ MAIN PAYMENT INITIATION FUNCTION
-export const initiatePaymePayment = async (userId, plan, additionalData = {}) => {
+export const initiatePaymePayment = async (paymentDataOrUserId, plan, additionalData = {}) => {
+  // Support both object and separate args: initiatePaymePayment({userId, plan, amount, ...}) or (userId, plan, data)
+  let userId, finalPlan, options;
+  if (typeof paymentDataOrUserId === 'object' && paymentDataOrUserId !== null) {
+    const data = paymentDataOrUserId;
+    userId = data.userId;
+    finalPlan = data.plan || 'pro';
+    options = { amount: data.amount, lang: data.lang, method: data.method || 'get', ...data };
+  } else {
+    userId = paymentDataOrUserId;
+    finalPlan = plan;
+    options = additionalData;
+  }
+
   if (!trackPaymentAttempt(userId, 'payment-initiation')) {
     throw new Error('Слишком много попыток инициации платежа. Подождите несколько секунд.');
   }
-  
+
   try {
-const amounts = getPaymentAmounts();
-    const planAmount = amounts[plan]?.tiyin;
-    
+    // Validate we have an amount (from options or plan lookup)
+    let planAmount = options.amount ? Number(options.amount) : null;
     if (!planAmount) {
-      throw new Error(`Неизвестный план: ${plan}`);
+      const amounts = getPaymentAmounts();
+      planAmount = amounts[finalPlan]?.tiyin;
     }
-    
-    // ✅ FIXED: Always use direct generation for better reliability
-    const method = additionalData.method || 'get';
-    
+
+    if (!planAmount) {
+      throw new Error(`Неизвестный план: ${finalPlan}`);
+    }
+
+    // Ensure amount is passed through to URL/form generators
+    options.amount = planAmount;
+    const method = options.method || 'get';
+
     if (method === 'get') {
-      const result = await generateDirectPaymeUrl(userId, plan, additionalData);
+      const result = await generateDirectPaymeUrl(userId, finalPlan, options);
       if (result.success) {
         return {
           success: true,
+          data: { paymentUrl: result.paymentUrl },
           paymentUrl: result.paymentUrl,
           transaction: result.transaction,
           method: 'GET',
@@ -442,12 +469,13 @@ const amounts = getPaymentAmounts();
         throw new Error(result.error);
       }
     }
-    
+
     if (method === 'post') {
-      const result = await generateDirectPaymeForm(userId, plan, additionalData);
+      const result = await generateDirectPaymeForm(userId, finalPlan, options);
       if (result.success) {
         return {
           success: true,
+          data: { paymentUrl: result.paymentUrl },
           formHtml: result.formHtml,
           transaction: result.transaction,
           method: 'POST',
@@ -457,12 +485,13 @@ const amounts = getPaymentAmounts();
         throw new Error(result.error);
       }
     }
-    
+
     // Fallback to GET method
-    const result = await generateDirectPaymeUrl(userId, plan, additionalData);
+    const result = await generateDirectPaymeUrl(userId, finalPlan, options);
     if (result.success) {
       return {
         success: true,
+        data: { paymentUrl: result.paymentUrl },
         paymentUrl: result.paymentUrl,
         transaction: result.transaction,
         method: 'GET',
