@@ -171,8 +171,38 @@
 
         
         <div class="p-5">
-          <!-- Tariff Cards - 3 equal columns -->
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <!-- Tariff Cards -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- 1 Day -->
+            <div class="relative p-5 border-2 border-slate-200 hover:border-amber-400 rounded-2xl transition-all hover:shadow-lg flex flex-col">
+              <div class="text-center flex-1 flex flex-col">
+                <h3 class="text-lg font-bold text-slate-900">{{ $t('settings.oneDay') || '1 Day' }}</h3>
+                <div class="text-2xl font-bold text-amber-600 mt-2">10,000</div>
+                <div class="text-sm text-slate-500 mb-4">{{ $t('settings.uzs') }}</div>
+                <ul class="text-left text-xs text-slate-600 space-y-2 flex-1">
+                  <li class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    {{ $t('settings.unlimitedMessages') }}
+                  </li>
+                  <li class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    {{ $t('settings.unlimitedImages') }}
+                  </li>
+                  <li class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    {{ $t('settings.aiTutorAccess') }}
+                  </li>
+                </ul>
+                <button
+                  @click="goToUpgrade(0)"
+                  :disabled="currentPlan !== 'free'"
+                  class="w-full py-2.5 mt-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {{ currentPlan === 'free' ? ($t('tariffs.tryNow') || 'Try Now') : $t('common.active') }}
+                </button>
+              </div>
+            </div>
+
             <!-- 1 Month -->
             <div class="relative p-5 border-2 border-slate-200 hover:border-indigo-400 rounded-2xl transition-all hover:shadow-lg flex flex-col">
               <div class="text-center flex-1 flex flex-col">
