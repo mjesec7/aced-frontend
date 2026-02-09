@@ -9,7 +9,8 @@ import {
 import { getAuth } from "firebase/auth";
 import { getAnalytics, isSupported as isAnalyticsSupported } from "firebase/analytics";
 
-// 🔧 Firebase config for aced-9cf72 (public-safe)
+// Firebase web config - these are public client-side identifiers (not secrets).
+// Security is enforced by Firebase Security Rules, not by hiding these values.
 const firebaseConfig = {
   apiKey: "AIzaSyDg032Kbbm2NbSYgYiwu_xgQDUZ1vHf1jA",
   authDomain: "auth.aced.live",

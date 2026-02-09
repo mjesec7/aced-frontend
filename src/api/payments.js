@@ -214,10 +214,10 @@ export const getTransactionStateText = (state) => {
 const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
   try {
 // Get merchant ID with validation
-    const merchantId = import.meta.env.VITE_PAYME_MERCHANT_ID;
+    const merchantId = (import.meta.env.VITE_PAYME_MERCHANT_ID || '').trim();
 
-    if (!merchantId || merchantId === 'undefined' || typeof merchantId !== 'string') {
-      throw new Error('PayMe Merchant ID not configured. Check your .env file.');
+    if (!merchantId || merchantId === 'undefined' || merchantId.length < 10) {
+      throw new Error('PayMe Merchant ID not configured. Set VITE_PAYME_MERCHANT_ID.');
     }
 
     // Use amount from options first, then fall back to plan lookup
@@ -295,7 +295,7 @@ return {
 const generateDirectPaymeForm = async (userId, plan, options = {}) => {
   try {
 // ✅ CRITICAL FIX: Clean merchant ID
-    const merchantId = (import.meta.env.VITE_PAYME_MERCHANT_ID || '68016cc1a5e04614247f7174').trim();
+    const merchantId = (import.meta.env.VITE_PAYME_MERCHANT_ID || '').trim();
     
     // ✅ VALIDATION: Check merchant ID
     if (!merchantId || merchantId === 'undefined' || merchantId.length < 10) {
