@@ -419,19 +419,23 @@ return {
 // 🎯 MAIN PAYMENT API FUNCTIONS
 // =============================================
 
-// ✅ MAIN PAYMENT INITIATION FUNCTION
+// ✅ MAIN PAYMENT INITIATION FUNCTION - calls backend API
 export const initiatePaymePayment = async (paymentDataOrUserId, plan, additionalData = {}) => {
-  // Support both object and separate args: initiatePaymePayment({userId, plan, amount, ...}) or (userId, plan, data)
-  let userId, finalPlan, options;
+  // Support both object and separate args
+  let userId, finalPlan, amount, duration, lang;
   if (typeof paymentDataOrUserId === 'object' && paymentDataOrUserId !== null) {
     const data = paymentDataOrUserId;
     userId = data.userId;
     finalPlan = data.plan || 'pro';
-    options = { amount: data.amount, lang: data.lang, method: data.method || 'get', ...data };
+    amount = data.amount;
+    duration = data.duration;
+    lang = data.lang;
   } else {
     userId = paymentDataOrUserId;
     finalPlan = plan;
-    options = additionalData;
+    amount = additionalData.amount;
+    duration = additionalData.duration;
+    lang = additionalData.lang;
   }
 
   if (!trackPaymentAttempt(userId, 'payment-initiation')) {
@@ -439,66 +443,23 @@ export const initiatePaymePayment = async (paymentDataOrUserId, plan, additional
   }
 
   try {
-    // Validate we have an amount (from options or plan lookup)
-    let planAmount = options.amount ? Number(options.amount) : null;
-    if (!planAmount) {
-      const amounts = getPaymentAmounts();
-      planAmount = amounts[finalPlan]?.tiyin;
-    }
+    const { data } = await paymentApi.post('/api/payments/initiate', {
+      userId,
+      plan: finalPlan,
+      amount,
+      duration,
+      lang,
+      method: 'get'
+    });
 
-    if (!planAmount) {
-      throw new Error(`Неизвестный план: ${finalPlan}`);
-    }
-
-    // Ensure amount is passed through to URL/form generators
-    options.amount = planAmount;
-    const method = options.method || 'get';
-
-    if (method === 'get') {
-      const result = await generateDirectPaymeUrl(userId, finalPlan, options);
-      if (result.success) {
-        return {
-          success: true,
-          data: { paymentUrl: result.paymentUrl },
-          paymentUrl: result.paymentUrl,
-          transaction: result.transaction,
-          method: 'GET',
-          message: 'Payment URL generated successfully'
-        };
-      } else {
-        throw new Error(result.error);
-      }
-    }
-
-    if (method === 'post') {
-      const result = await generateDirectPaymeForm(userId, finalPlan, options);
-      if (result.success) {
-        return {
-          success: true,
-          data: { paymentUrl: result.paymentUrl },
-          formHtml: result.formHtml,
-          transaction: result.transaction,
-          method: 'POST',
-          message: 'Payment form generated successfully'
-        };
-      } else {
-        throw new Error(result.error);
-      }
-    }
-
-    // Fallback to GET method
-    const result = await generateDirectPaymeUrl(userId, finalPlan, options);
-    if (result.success) {
+    if (data.success && data.paymentUrl) {
       return {
         success: true,
-        data: { paymentUrl: result.paymentUrl },
-        paymentUrl: result.paymentUrl,
-        transaction: result.transaction,
-        method: 'GET',
-        message: 'Payment URL generated successfully (fallback)'
+        data: { paymentUrl: data.paymentUrl },
+        transaction: data.transaction
       };
     } else {
-      throw new Error(result.error);
+      throw new Error(data.message || 'Failed to initiate payment');
     }
     
   } catch (error) {
