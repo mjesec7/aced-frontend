@@ -18,7 +18,36 @@
       </div>
 
       <!-- Pricing Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+        <!-- 1 Day -->
+        <div class="bg-white rounded-2xl border border-gray-100 p-8 hover:border-amber-200 transition-colors">
+          <div class="mb-6">
+            <h3 class="text-lg font-bold text-gray-900 mb-1">{{ $t('tariffSection.daily') || 'Daily' }}</h3>
+            <p class="text-gray-500 text-sm">{{ $t('tariffSection.tryItOut') || 'Try it out' }}</p>
+          </div>
+
+          <div class="mb-6">
+            <span class="text-4xl font-bold text-gray-900">10K</span>
+            <span class="text-gray-500 ml-1">UZS</span>
+          </div>
+
+          <button
+            @click="handleSubscribe(0)"
+            class="w-full py-3 px-6 bg-white text-gray-700 font-semibold rounded-xl border-2 border-gray-200 hover:border-amber-500 hover:text-amber-600 transition-all mb-6"
+          >
+            {{ $t('tariffSection.tryNow') || 'Try Now' }}
+          </button>
+
+          <ul class="space-y-3">
+            <li v-for="(feature, i) in translatedFeatures" :key="i" class="flex items-center gap-3 text-sm text-gray-600">
+              <svg class="w-5 h-5 text-violet-500" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+              </svg>
+              {{ feature }}
+            </li>
+          </ul>
+        </div>
 
         <!-- 1 Month -->
         <div class="bg-white rounded-2xl border border-gray-100 p-8 hover:border-violet-200 transition-colors">

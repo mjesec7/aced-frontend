@@ -182,7 +182,16 @@
             <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             {{ $t('checkout.selectDuration') }}
           </h3>
-          <div class="grid grid-cols-3 gap-3">
+          <div class="grid grid-cols-4 gap-3">
+            <!-- 1 Day -->
+            <label :class="['relative p-4 border-2 rounded-xl cursor-pointer transition-all text-center', selectedDuration === 0 ? 'border-amber-500 bg-amber-50' : 'border-slate-200 hover:border-slate-300 bg-white']" @click="selectedDuration = 0">
+              <input type="radio" v-model="selectedDuration" :value="0" class="hidden"/>
+              <span class="block text-xl font-bold text-slate-900">1</span>
+              <span class="block text-xs text-slate-500 uppercase">{{ $t('checkout.day') || 'Day' }}</span>
+              <span class="block text-lg font-semibold text-amber-600 mt-2">10,000</span>
+              <span class="text-xs text-slate-400">UZS</span>
+              <div v-if="selectedDuration === 0" class="absolute top-2 right-2 w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center text-white text-xs">✓</div>
+            </label>
             <!-- 1 Month -->
             <label :class="['relative p-4 border-2 rounded-xl cursor-pointer transition-all text-center', selectedDuration === 1 ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 hover:border-slate-300 bg-white']" @click="selectedDuration = 1">
               <input type="radio" v-model="selectedDuration" :value="1" class="hidden"/>
@@ -348,7 +357,7 @@ export default {
       if (this.promoApplied && this.promoData) return 0;
       let amt = parseInt(this.amount) || 0;
       if (amt > 0) return amt;
-      const amounts = { 1: 25000000, 3: 67500000, 6: 120000000 };
+      const amounts = { 0: 1000000, 1: 25000000, 3: 67500000, 6: 120000000 };
       return amounts[this.selectedDuration] || amounts[3];
     },
     planName() {
@@ -357,7 +366,7 @@ export default {
         let durationText = this.promoData.durationText || (days <= 31 ? '1 Month' : days <= 95 ? '3 Months' : days <= 185 ? '6 Months' : `${days} Days`);
         return `${(this.promoData.grantsPlan || 'Pro').toUpperCase()} Plan (via Promocode - ${durationText})`;
       }
-      return this.selectedDuration === 1 ? 'Pro Plan (1 Month)' : this.selectedDuration === 3 ? 'Pro Plan (3 Months)' : 'Pro Plan (6 Months)';
+      return this.selectedDuration === 0 ? 'Pro Plan (1 Day)' : this.selectedDuration === 1 ? 'Pro Plan (1 Month)' : this.selectedDuration === 3 ? 'Pro Plan (3 Months)' : 'Pro Plan (6 Months)';
     },
     canProceedToPayment() {
       if (this.promoApplied && this.promoData) return Boolean(this.finalUserId);
