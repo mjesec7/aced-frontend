@@ -522,7 +522,7 @@ export const applyPromoCode = debounceRequest(async (userId, plan, promoCode) =>
   }
   
   try {
-const response = await paymentApi.post('/payments/promo-code', {
+const response = await paymentApi.post('/api/payments/promo-code', {
       userId,
       plan,
       promoCode
@@ -544,9 +544,9 @@ return {
 // ✅ PAYMENT STATUS CHECK
 export const checkPaymentStatus = async (transactionId, userId = null) => {
   try {
-    const url = userId 
-      ? `/payments/status/${transactionId}/${userId}`
-      : `/payments/status/${transactionId}`;
+    const url = userId
+      ? `/api/payments/status/${transactionId}/${userId}`
+      : `/api/payments/status/${transactionId}`;
 const response = await paymentApi.get(url);
     
     return {
@@ -566,7 +566,7 @@ return {
 // ✅ USER VALIDATION FOR PAYMENTS
 export const validateUser = async (userId) => {
   try {
-const response = await paymentApi.get(`/payments/validate-user/${userId}`);
+const response = await paymentApi.get(`/api/payments/validate-user/${userId}`);
     
     return {
       success: true,
