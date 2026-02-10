@@ -667,9 +667,29 @@ export default {
         loading.value = true;
         user.value.name = tempUser.value.name;
         user.value.surname = tempUser.value.surname;
+
+        // Persist name to backend
+        const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
+        if (token) {
+          const fullName = [tempUser.value.name, tempUser.value.surname].filter(Boolean).join(' ');
+          await store.dispatch('user/saveUser', {
+            userData: {
+              uid: auth.currentUser.uid,
+              email: auth.currentUser.email,
+              displayName: fullName,
+              name: fullName,
+              photoURL: auth.currentUser.photoURL
+            },
+            token
+          });
+        }
+
         isEditingName.value = false;
-      } catch (error) { /* Silent */ }
-      finally { loading.value = false; }
+      } catch (error) {
+        console.error('Failed to save name:', error);
+      } finally {
+        loading.value = false;
+      }
     };
 
     const saveChanges = async () => {

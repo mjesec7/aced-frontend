@@ -943,6 +943,13 @@ const actions = {
         })
       });
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('❌ [store/user] saveUser server error:', response.status, errorData);
+        // Don't throw on non-critical save errors - return failure gracefully
+        return { success: false, error: errorData.error || errorData.details || `Server error ${response.status}` };
+      }
+
       const result = await response.json();
 
       if (result.success && result.user) {
@@ -954,7 +961,7 @@ const actions = {
 
         return { success: true, user: result.user };
       } else {
-        throw new Error(result.error || 'Failed to save user');
+        return { success: false, error: result.error || result.details || 'Failed to save user' };
       }
 
     } catch (error) {
