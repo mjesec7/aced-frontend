@@ -147,15 +147,19 @@ export const getPaymeErrorMessage = (errorCode) => {
 export const getPaymentAmounts = () => {
   return {
     start: {
-      tiyin: 26000000,  // 260,000 UZS in tiyin
-      uzs: 260000,      // 260,000 UZS
-      label: 'Start Plan'
+      tiyin: 25000000,  // 250,000 UZS in tiyin (1 month)
+      uzs: 250000,
+      label: 'Pro Plan (1 Month)'
     },
     pro: {
-      tiyin: 45500000,  // 455,000 UZS in tiyin
-      uzs: 455000,      // 455,000 UZS
-      label: 'Pro Plan'
-    }
+      tiyin: 25000000,  // 250,000 UZS in tiyin (1 month default)
+      uzs: 250000,
+      label: 'Pro Plan (1 Month)'
+    },
+    'pro-1day': { tiyin: 1000000, uzs: 10000, label: 'Pro Plan (1 Day)' },
+    'pro-1': { tiyin: 25000000, uzs: 250000, label: 'Pro Plan (1 Month)' },
+    'pro-3': { tiyin: 67500000, uzs: 675000, label: 'Pro Plan (3 Months)' },
+    'pro-6': { tiyin: 120000000, uzs: 1200000, label: 'Pro Plan (6 Months)' }
   };
 };
 

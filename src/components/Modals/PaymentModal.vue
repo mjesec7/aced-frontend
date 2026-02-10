@@ -28,7 +28,7 @@
             >
               <div class="plan-header">
                 <span class="plan-name">Start</span>
-                <span class="plan-price">260,000 {{ $t('payment.sum') }}</span>
+                <span class="plan-price">250,000 {{ $t('payment.sum') }}</span>
               </div>
               <ul class="plan-features">
                 <li>{{ $t('payment.basicCourses') }}</li>
@@ -46,7 +46,7 @@
               <div class="recommended-badge">{{ $t('payment.recommended') }}</div>
               <div class="plan-header">
                 <span class="plan-name">Pro</span>
-                <span class="plan-price">450,000 {{ $t('payment.sum') }}</span>
+                <span class="plan-price">675,000 {{ $t('payment.sum') }}</span>
               </div>
               <ul class="plan-features">
                 <li>{{ $t('payment.allStartCourses') }}</li>
@@ -160,30 +160,15 @@ export default {
         this.promoError = this.selectedPlan ? '' : this.$t('payment.selectPlanFirst')
         return
       }
-      
-      this.isProcessing = true
-      
-      try {
-        const payload = this.promoSuccess 
-          ? { promoCode: this.promoCode }
-          : { plan: this.selectedPlan }
-        
-        const response = await fetch('/api/payment/initiate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        })
-        
-        const data = await response.json()
-        
-        if (data.paymentUrl) {
-          window.location.href = data.paymentUrl
-        }
-      } catch (error) {
-        this.promoError = this.$t('payment.paymentError')
-      } finally {
-        this.isProcessing = false
-      }
+
+      this.close()
+
+      // Redirect to UniversalCheckout with selected plan
+      const duration = this.selectedPlan === 'start' ? 1 : 3
+      this.$router.push({
+        name: 'UniversalCheckout',
+        query: { plan: 'pro', duration }
+      })
     },
     resetState() {
       this.selectedPlan = null
