@@ -147,7 +147,8 @@ export const initiateMulticardPayment = async (paymentData) => {
       lang: paymentData.lang || 'ru',
       userName: paymentData.userName || '',
       userEmail: paymentData.userEmail || '',
-      provider: 'multicard' // ✅ Add provider field
+      provider: 'multicard', // ✅ Add provider field
+      ...(paymentData.billingId && { billing_id: paymentData.billingId }) // ✅ Add billing_id if provided
     };
 
     const { data } = await multicardApi.post('/multicard/initiate', requestPayload);

@@ -400,12 +400,20 @@ export default {
     if (this.$route.query.duration) this.selectedDuration = parseInt(this.$route.query.duration) || 3;
     if (this.$route.query.plan) this.selectedPlan = this.$route.query.plan;
     if (this.$route.query.promoCode) this.promoCodeInput = this.$route.query.promoCode;
+    if (this.$route.query.billing_id) this.billingId = this.$route.query.billing_id; // ✅ Read billing_id from URL
   },
 
   async mounted() {
     this.loadPaymentData();
     this.validatePaymentData();
     if (this.promoCodeInput) await this.validatePromoCodeOnLoad();
+  },
+
+  data() {
+    return {
+      billingId: null, // ✅ Add to data
+      // ... existing data ...
+    };
   },
 
   methods: {
@@ -473,7 +481,7 @@ export default {
       else throw new Error(result.error || 'Failed to initiate payment');
     },
     async processMulticardPayment() {
-      const paymentData = { userId: this.finalUserId, userName: this.finalUserName, userEmail: this.finalUserEmail, plan: this.finalPlan, amount: this.finalAmount, duration: this.selectedDuration, lang: this.selectedLanguage };
+      const paymentData = { userId: this.finalUserId, userName: this.finalUserName, userEmail: this.finalUserEmail, plan: this.finalPlan, amount: this.finalAmount, duration: this.selectedDuration, lang: this.selectedLanguage, billingId: this.billingId }; // ✅ Add billingId
       let result = this.selectedCardToken ? await createPaymentByToken(this.selectedCardToken, paymentData) : await initiateMulticardPayment(paymentData);
       if (result.success) {
         if (result.data?.paymentUrl || result.data?.checkoutUrl) window.location.href = result.data.paymentUrl || result.data.checkoutUrl;
