@@ -411,8 +411,19 @@ export default {
 
   data() {
     return {
-      billingId: null, // ✅ Add to data
-      // ... existing data ...
+      loading: false, processing: false, error: '', paymentStatus: null, transactionId: null, failureReason: '',
+      showOtpModal: false, otpDigits: ['', '', '', '', '', ''], otpInputs: [], otpError: null, currentPaymentUuid: null,
+      internalUserId: '', internalUserName: '', internalUserEmail: '',
+      selectedDuration: 3, selectedPlan: 'pro', paymentProvider: 'multicard', selectedCardToken: null, savedCards: [],
+      selectedLanguage: 'en', loadingMessage: 'Processing your payment...',
+      providers: {
+        multicard: { name: 'Bank Card', description: 'Visa, Mastercard, UzCard, Humo', emoji: '💳', enabled: true },
+        payme: { name: 'Payme', description: 'Pay with Payme app', emoji: '📱', enabled: true },
+        click: { name: 'Click', description: 'Pay with Click app', emoji: '🔵', enabled: false }
+      },
+      promoCodeInput: '', promoApplying: false, promoApplied: false, promoError: false, promoMessage: '', promoData: null,
+      showDebugInfo: process.env.NODE_ENV === 'development',
+      billingId: null // ✅ Add billingId
     };
   },
 
