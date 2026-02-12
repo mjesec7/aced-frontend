@@ -133,9 +133,8 @@ export const initiateMulticardPayment = async (paymentData) => {
       qty: 1,
       price: finalAmount,
       total: finalAmount,
-      name: `ACED ${paymentData.plan.toUpperCase()} Plan Subscription`,
-      mxik: '10899002001000000',
-      package_code: '1873404',
+      name: `ACED ${paymentData.plan.toUpperCase()} Plan`,
+      package_code: '1236095', // Distance learning services
       vat: 0
     }];
 
@@ -513,9 +512,9 @@ export const createOfdData = (items) => {
     price: typeof item.price === 'number' ? item.price : uzsToTiyin(item.price),
     mxik: item.mxik || '10899002001000000',
     total: (item.quantity || 1) * (typeof item.price === 'number' ? item.price : uzsToTiyin(item.price)),
-    package_code: item.packageCode || '1873404',
+    package_code: String(item.packageCode || '1236095'),
     name: item.name,
-    ...(item.vat !== undefined && { vat: item.vat }),
+    vat: item.vat || 0,
     ...(item.tin && { tin: item.tin })
   }));
 };
