@@ -259,6 +259,13 @@ export default {
   font-family: 'Inter', system-ui, sans-serif;
 }
 
+/* Custom Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Unbounded:wght@400;500;600;700&display=swap');
+
+.brand-name {
+  font-family: 'Unbounded', sans-serif;
+}
+
 /* Base Layout */
 .sidebar {
   width: 280px;
