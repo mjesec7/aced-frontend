@@ -782,7 +782,13 @@
       "availableNow": "Available Now",
       "subscriptionExpiringSoon": "Your subscription is expiring soon!",
       "renewToKeepAccess": "Renew within {days} days to keep uninterrupted access to all features.",
-      "renewSubscription": "Renew Subscription"
+      "renewSubscription": "Renew Subscription",
+      "paymentHistory": "Payment History",
+      "yourTransactions": "Your recent transactions",
+      "noPayments": "No payments yet",
+      "paid": "Paid",
+      "pending": "Pending",
+      "failed": "Failed"
     },
     "analytics": {
       "pageTitle": "Learning Analytics",
@@ -1909,7 +1915,13 @@
       "availableNow": "Доступно сейчас",
       "subscriptionExpiringSoon": "Ваша подписка скоро истекает!",
       "renewToKeepAccess": "Продлите в течение {days} дней, чтобы сохранить доступ ко всем функциям.",
-      "renewSubscription": "Продлить подписку"
+      "renewSubscription": "Продлить подписку",
+      "paymentHistory": "История платежей",
+      "yourTransactions": "Ваши последние транзакции",
+      "noPayments": "Платежей пока нет",
+      "paid": "Оплачено",
+      "pending": "В ожидании",
+      "failed": "Ошибка"
     },
     "analytics": {
       "pageTitle": "Аналитика обучения",
@@ -3054,7 +3066,13 @@
       "availableNow": "Hozir mavjud",
       "subscriptionExpiringSoon": "Obunangiz tez orada tugaydi!",
       "renewToKeepAccess": "Barcha funksiyalarga kirishni saqlab qolish uchun {days} kun ichida yangilang.",
-      "renewSubscription": "Obunani yangilash"
+      "renewSubscription": "Obunani yangilash",
+      "paymentHistory": "To'lov tarixi",
+      "yourTransactions": "Oxirgi tranzaksiyalaringiz",
+      "noPayments": "Hali to'lovlar yo'q",
+      "paid": "To'langan",
+      "pending": "Kutilmoqda",
+      "failed": "Xato"
     },
     "analytics": {
       "pageTitle": "O'quv tahlili",
