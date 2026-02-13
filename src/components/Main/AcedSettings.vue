@@ -326,6 +326,74 @@
         </div>
       </div>
 
+      <!-- PAYMENT HISTORY -->
+      <div class="bg-white rounded-2xl shadow-sm overflow-hidden mb-6">
+        <div class="flex items-center gap-3 p-5 border-b border-slate-100">
+          <div class="w-10 h-10 flex items-center justify-center bg-gradient-to-br from-emerald-400 to-teal-500 rounded-xl text-white">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+              <line x1="1" y1="10" x2="23" y2="10"/>
+            </svg>
+          </div>
+          <div>
+            <h2 class="text-base font-semibold text-slate-900">{{ $t('settings.paymentHistory') || 'Payment History' }}</h2>
+            <p class="text-xs text-slate-500">{{ $t('settings.yourTransactions') || 'Your recent transactions' }}</p>
+          </div>
+        </div>
+
+        <div class="p-5">
+          <!-- Loading -->
+          <div v-if="loadingTransactions" class="flex items-center justify-center py-8">
+            <div class="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+            <span class="ml-3 text-sm text-slate-500">{{ $t('common.loading') || 'Loading...' }}</span>
+          </div>
+
+          <!-- Empty State -->
+          <div v-else-if="!paymentTransactions.length" class="text-center py-8">
+            <div class="w-14 h-14 mx-auto bg-slate-100 rounded-2xl flex items-center justify-center mb-3">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                <line x1="1" y1="10" x2="23" y2="10"/>
+              </svg>
+            </div>
+            <p class="text-sm text-slate-500">{{ $t('settings.noPayments') || 'No payments yet' }}</p>
+          </div>
+
+          <!-- Transactions List -->
+          <div v-else class="space-y-3">
+            <div v-for="tx in paymentTransactions" :key="tx.id" class="flex items-center justify-between p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-9 h-9 flex items-center justify-center rounded-lg flex-shrink-0"
+                     :class="tx.status === 'paid' ? 'bg-emerald-100 text-emerald-600' : tx.status === 'pending' ? 'bg-amber-100 text-amber-600' : 'bg-red-100 text-red-600'">
+                  <svg v-if="tx.status === 'paid'" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  <svg v-else-if="tx.status === 'pending'" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </div>
+                <div class="min-w-0">
+                  <p class="text-sm font-semibold text-slate-900 truncate">ACED {{ tx.plan?.toUpperCase() || 'PRO' }}</p>
+                  <p class="text-[11px] text-slate-500">{{ formatDate(tx.paidAt || tx.createdAt) }}
+                    <span v-if="tx.cardPan" class="ml-1">• {{ tx.cardPan }}</span>
+                  </p>
+                </div>
+              </div>
+              <div class="text-right flex-shrink-0 ml-3">
+                <p class="text-sm font-bold text-slate-900">{{ tx.amount?.toLocaleString() }} <span class="text-xs font-normal text-slate-500">UZS</span></p>
+                <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                      :class="tx.status === 'paid' ? 'bg-emerald-100 text-emerald-700' : tx.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'">
+                  {{ tx.status === 'paid' ? ($t('settings.paid') || 'Paid') : tx.status === 'pending' ? ($t('settings.pending') || 'Pending') : ($t('settings.failed') || 'Failed') }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- PROFILE & SECURITY SECTION -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <!-- PROFILE CARD -->
@@ -574,6 +642,8 @@ export default {
     const promoError = ref('');
     const promoSuccess = ref('');
     const showDeleteModal = ref(false);
+    const paymentTransactions = ref([]);
+    const loadingTransactions = ref(false);
 
     // Computed
     const currentPlan = computed(() => serverSubscriptionData.value?.plan || 'free');
@@ -636,6 +706,32 @@ export default {
       } catch (error) { /* Silent */ }
     };
 
+    const fetchPaymentHistory = async () => {
+      loadingTransactions.value = true;
+      try {
+        const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
+        if (!token) return;
+        const API_URL = import.meta.env.VITE_API_URL || 'https://api.aced.live';
+        const response = await fetch(`${API_URL}/api/payments/multicard/my-transactions`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        if (data.success) {
+          paymentTransactions.value = data.transactions || [];
+        }
+      } catch (error) {
+        console.error('Failed to fetch payment history:', error);
+      } finally {
+        loadingTransactions.value = false;
+      }
+    };
+
+    const formatDate = (dateStr) => {
+      if (!dateStr) return '—';
+      const d = new Date(dateStr);
+      return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    };
+
     const loadInitialData = async () => {
       loading.value = true;
       try {
@@ -655,6 +751,7 @@ export default {
           };
         }
         await refreshFromServer();
+        await fetchPaymentHistory();
       } catch (error) { /* Silent */ }
       finally { loading.value = false; }
     };
@@ -764,12 +861,13 @@ export default {
     return {
       loading, user, tempUser, isEditingName, oldPassword, newPassword, confirmPassword,
       promocode, applyingPromo, promoError, promoSuccess, showDeleteModal,
+      paymentTransactions, loadingTransactions,
       currentPlan, currentPlanLabel, subscriptionExpiryInfo, subscriptionActivatedDate,
       renewalAvailableDate, canRenew,
       currentUsageMessages, currentUsageImages, usageLimitsMessages, usageLimitsImages, isGoogleUser,
       refreshFromServer, loadInitialData, startEditingName, cancelEditingName, saveNameChanges,
       saveChanges, sendPasswordReset, goToUpgrade, applyPromocode, goToProfile, handleLogout,
-      confirmDeleteAccount, deleteAccount
+      confirmDeleteAccount, deleteAccount, formatDate
     };
   }
 };
