@@ -788,7 +788,8 @@
       "noPayments": "No payments yet",
       "paid": "Paid",
       "pending": "Pending",
-      "failed": "Failed"
+      "failed": "Failed",
+      "viewAll": "View All"
     },
     "analytics": {
       "pageTitle": "Learning Analytics",
@@ -1921,7 +1922,8 @@
       "noPayments": "Платежей пока нет",
       "paid": "Оплачено",
       "pending": "В ожидании",
-      "failed": "Ошибка"
+      "failed": "Ошибка",
+      "viewAll": "Все платежи"
     },
     "analytics": {
       "pageTitle": "Аналитика обучения",
@@ -3072,7 +3074,8 @@
       "noPayments": "Hali to'lovlar yo'q",
       "paid": "To'langan",
       "pending": "Kutilmoqda",
-      "failed": "Xato"
+      "failed": "Xato",
+      "viewAll": "Barchasini ko'rish"
     },
     "analytics": {
       "pageTitle": "O'quv tahlili",

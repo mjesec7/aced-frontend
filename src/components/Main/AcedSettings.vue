@@ -328,71 +328,110 @@
 
       <!-- PAYMENT HISTORY -->
       <div class="bg-white rounded-2xl shadow-sm overflow-hidden mb-6">
-        <div class="flex items-center gap-3 p-5 border-b border-slate-100">
-          <div class="w-10 h-10 flex items-center justify-center bg-gradient-to-br from-emerald-400 to-teal-500 rounded-xl text-white">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-              <line x1="1" y1="10" x2="23" y2="10"/>
-            </svg>
+        <div class="flex items-center justify-between p-5 border-b border-slate-100">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 flex items-center justify-center bg-gradient-to-br from-emerald-400 to-teal-500 rounded-xl text-white">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+              </svg>
+            </div>
+            <div>
+              <h2 class="text-base font-semibold text-slate-900">{{ $t('settings.paymentHistory') }}</h2>
+              <p class="text-xs text-slate-500">{{ $t('settings.yourTransactions') }}</p>
+            </div>
           </div>
-          <div>
-            <h2 class="text-base font-semibold text-slate-900">{{ $t('settings.paymentHistory') || 'Payment History' }}</h2>
-            <p class="text-xs text-slate-500">{{ $t('settings.yourTransactions') || 'Your recent transactions' }}</p>
-          </div>
+          <button v-if="paymentTransactions.length > 3" @click="showPaymentModal = true"
+                  class="text-xs font-semibold text-indigo-600 hover:text-indigo-700 px-3 py-1.5 rounded-lg hover:bg-indigo-50 transition-all">
+            {{ $t('settings.viewAll') || 'View All' }} ({{ paymentTransactions.length }})
+          </button>
         </div>
 
         <div class="p-5">
-          <!-- Loading -->
-          <div v-if="loadingTransactions" class="flex items-center justify-center py-8">
-            <div class="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-            <span class="ml-3 text-sm text-slate-500">{{ $t('common.loading') || 'Loading...' }}</span>
+          <div v-if="loadingTransactions" class="flex items-center justify-center py-6">
+            <div class="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+            <span class="ml-2 text-sm text-slate-500">{{ $t('common.loading') }}</span>
           </div>
 
-          <!-- Empty State -->
-          <div v-else-if="!paymentTransactions.length" class="text-center py-8">
-            <div class="w-14 h-14 mx-auto bg-slate-100 rounded-2xl flex items-center justify-center mb-3">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400">
-                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-                <line x1="1" y1="10" x2="23" y2="10"/>
+          <div v-else-if="!paymentTransactions.length" class="text-center py-6">
+            <div class="w-12 h-12 mx-auto bg-slate-100 rounded-xl flex items-center justify-center mb-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
               </svg>
             </div>
-            <p class="text-sm text-slate-500">{{ $t('settings.noPayments') || 'No payments yet' }}</p>
+            <p class="text-sm text-slate-500">{{ $t('settings.noPayments') }}</p>
           </div>
 
-          <!-- Transactions List -->
-          <div v-else class="space-y-3">
-            <div v-for="tx in paymentTransactions" :key="tx.id" class="flex items-center justify-between p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
-              <div class="flex items-center gap-3 min-w-0">
-                <div class="w-9 h-9 flex items-center justify-center rounded-lg flex-shrink-0"
-                     :class="tx.status === 'paid' ? 'bg-emerald-100 text-emerald-600' : tx.status === 'pending' ? 'bg-amber-100 text-amber-600' : 'bg-red-100 text-red-600'">
-                  <svg v-if="tx.status === 'paid'" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="20 6 9 17 4 12"/>
-                  </svg>
-                  <svg v-else-if="tx.status === 'pending'" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-                  </svg>
-                  <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                  </svg>
+          <!-- Preview: last 3 transactions -->
+          <div v-else class="space-y-2">
+            <div v-for="tx in paymentTransactions.slice(0, 3)" :key="tx.id"
+                 class="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="w-8 h-8 flex items-center justify-center rounded-lg flex-shrink-0"
+                     :class="txIconClass(tx.status)">
+                  <svg v-if="tx.status === 'paid'" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  <svg v-else-if="tx.status === 'pending'" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </div>
                 <div class="min-w-0">
-                  <p class="text-sm font-semibold text-slate-900 truncate">ACED {{ tx.plan?.toUpperCase() || 'PRO' }}</p>
-                  <p class="text-[11px] text-slate-500">{{ formatDate(tx.paidAt || tx.createdAt) }}
-                    <span v-if="tx.cardPan" class="ml-1">• {{ tx.cardPan }}</span>
-                  </p>
+                  <p class="text-sm font-semibold text-slate-800 truncate">ACED {{ tx.plan?.toUpperCase() || 'PRO' }}</p>
+                  <p class="text-[11px] text-slate-400">{{ formatDate(tx.paidAt || tx.createdAt) }}<span v-if="tx.cardPan"> · {{ tx.cardPan }}</span></p>
                 </div>
               </div>
-              <div class="text-right flex-shrink-0 ml-3">
-                <p class="text-sm font-bold text-slate-900">{{ tx.amount?.toLocaleString() }} <span class="text-xs font-normal text-slate-500">UZS</span></p>
-                <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold"
-                      :class="tx.status === 'paid' ? 'bg-emerald-100 text-emerald-700' : tx.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'">
-                  {{ tx.status === 'paid' ? ($t('settings.paid') || 'Paid') : tx.status === 'pending' ? ($t('settings.pending') || 'Pending') : ($t('settings.failed') || 'Failed') }}
+              <div class="text-right flex-shrink-0 ml-2">
+                <p class="text-sm font-bold text-slate-800">{{ tx.amount?.toLocaleString() }} <span class="text-[10px] font-normal text-slate-400">UZS</span></p>
+                <span class="inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold" :class="txBadgeClass(tx.status)">
+                  {{ txStatusLabel(tx.status) }}
                 </span>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      <!-- PAYMENT HISTORY MODAL -->
+      <teleport to="body">
+        <transition name="fade">
+          <div v-if="showPaymentModal" class="fixed inset-0 z-[999] flex items-center justify-center p-4" @click.self="showPaymentModal = false">
+            <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+            <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
+              <!-- Modal Header -->
+              <div class="flex items-center justify-between p-5 border-b border-slate-100 flex-shrink-0">
+                <div>
+                  <h3 class="text-lg font-bold text-slate-900">{{ $t('settings.paymentHistory') }}</h3>
+                  <p class="text-xs text-slate-500">{{ paymentTransactions.length }} {{ $t('settings.yourTransactions') }}</p>
+                </div>
+                <button @click="showPaymentModal = false" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+              <!-- Modal Body (scrollable) -->
+              <div class="overflow-y-auto flex-1 p-4 space-y-2">
+                <div v-for="tx in paymentTransactions" :key="tx.id"
+                     class="flex items-center justify-between p-3.5 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
+                  <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="w-8 h-8 flex items-center justify-center rounded-lg flex-shrink-0"
+                         :class="txIconClass(tx.status)">
+                      <svg v-if="tx.status === 'paid'" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                      <svg v-else-if="tx.status === 'pending'" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      <svg v-else xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </div>
+                    <div class="min-w-0">
+                      <p class="text-sm font-semibold text-slate-800 truncate">ACED {{ tx.plan?.toUpperCase() || 'PRO' }}</p>
+                      <p class="text-[11px] text-slate-400">{{ formatDate(tx.paidAt || tx.createdAt) }}<span v-if="tx.cardPan"> · {{ tx.cardPan }}</span></p>
+                    </div>
+                  </div>
+                  <div class="text-right flex-shrink-0 ml-2">
+                    <p class="text-sm font-bold text-slate-800">{{ tx.amount?.toLocaleString() }} <span class="text-[10px] font-normal text-slate-400">UZS</span></p>
+                    <span class="inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold" :class="txBadgeClass(tx.status)">
+                      {{ txStatusLabel(tx.status) }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </transition>
+      </teleport>
 
       <!-- PROFILE & SECURITY SECTION -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
@@ -644,6 +683,7 @@ export default {
     const showDeleteModal = ref(false);
     const paymentTransactions = ref([]);
     const loadingTransactions = ref(false);
+    const showPaymentModal = ref(false);
 
     // Computed
     const currentPlan = computed(() => serverSubscriptionData.value?.plan || 'free');
@@ -730,6 +770,24 @@ export default {
       if (!dateStr) return '—';
       const d = new Date(dateStr);
       return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    };
+
+    const txIconClass = (status) => {
+      if (status === 'paid') return 'bg-emerald-100 text-emerald-600';
+      if (status === 'pending') return 'bg-amber-100 text-amber-600';
+      return 'bg-red-100 text-red-600';
+    };
+
+    const txBadgeClass = (status) => {
+      if (status === 'paid') return 'bg-emerald-100 text-emerald-700';
+      if (status === 'pending') return 'bg-amber-100 text-amber-700';
+      return 'bg-red-100 text-red-700';
+    };
+
+    const txStatusLabel = (status) => {
+      if (status === 'paid') return t('settings.paid');
+      if (status === 'pending') return t('settings.pending');
+      return t('settings.failed');
     };
 
     const loadInitialData = async () => {
@@ -861,13 +919,13 @@ export default {
     return {
       loading, user, tempUser, isEditingName, oldPassword, newPassword, confirmPassword,
       promocode, applyingPromo, promoError, promoSuccess, showDeleteModal,
-      paymentTransactions, loadingTransactions,
+      paymentTransactions, loadingTransactions, showPaymentModal,
       currentPlan, currentPlanLabel, subscriptionExpiryInfo, subscriptionActivatedDate,
       renewalAvailableDate, canRenew,
       currentUsageMessages, currentUsageImages, usageLimitsMessages, usageLimitsImages, isGoogleUser,
       refreshFromServer, loadInitialData, startEditingName, cancelEditingName, saveNameChanges,
       saveChanges, sendPasswordReset, goToUpgrade, applyPromocode, goToProfile, handleLogout,
-      confirmDeleteAccount, deleteAccount, formatDate
+      confirmDeleteAccount, deleteAccount, formatDate, txIconClass, txBadgeClass, txStatusLabel
     };
   }
 };
