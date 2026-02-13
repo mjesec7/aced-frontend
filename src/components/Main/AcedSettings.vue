@@ -366,21 +366,18 @@
             <div v-for="tx in paymentTransactions.slice(0, 3)" :key="tx.id"
                  class="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
               <div class="flex items-center gap-2.5 min-w-0">
-                <div class="w-8 h-8 flex items-center justify-center rounded-lg flex-shrink-0"
-                     :class="txIconClass(tx.status)">
-                  <svg v-if="tx.status === 'paid'" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                  <svg v-else-if="tx.status === 'pending'" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                  <svg v-else xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                <div class="w-8 h-8 flex items-center justify-center rounded-lg flex-shrink-0 bg-emerald-100 text-emerald-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                 </div>
                 <div class="min-w-0">
-                  <p class="text-sm font-semibold text-slate-800 truncate">ACED {{ tx.plan?.toUpperCase() || 'PRO' }}</p>
+                  <p class="text-sm font-semibold text-slate-800 truncate">ACED PRO · {{ getDurationLabel(tx.amount) }}</p>
                   <p class="text-[11px] text-slate-400">{{ formatDate(tx.paidAt || tx.createdAt) }}<span v-if="tx.cardPan"> · {{ tx.cardPan }}</span></p>
                 </div>
               </div>
               <div class="text-right flex-shrink-0 ml-2">
-                <p class="text-sm font-bold text-slate-800">{{ tx.amount?.toLocaleString() }} <span class="text-[10px] font-normal text-slate-400">UZS</span></p>
-                <span class="inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold" :class="txBadgeClass(tx.status)">
-                  {{ txStatusLabel(tx.status) }}
+                <p class="text-sm font-bold text-emerald-600">{{ tx.amount?.toLocaleString() }} <span class="text-[10px] font-normal text-slate-400">UZS</span></p>
+                <span class="inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold bg-emerald-100 text-emerald-700">
+                  {{ $t('settings.paid') }}
                 </span>
               </div>
             </div>
@@ -409,21 +406,18 @@
                 <div v-for="tx in paymentTransactions" :key="tx.id"
                      class="flex items-center justify-between p-3.5 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
                   <div class="flex items-center gap-2.5 min-w-0">
-                    <div class="w-8 h-8 flex items-center justify-center rounded-lg flex-shrink-0"
-                         :class="txIconClass(tx.status)">
-                      <svg v-if="tx.status === 'paid'" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                      <svg v-else-if="tx.status === 'pending'" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                      <svg v-else xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    <div class="w-8 h-8 flex items-center justify-center rounded-lg flex-shrink-0 bg-emerald-100 text-emerald-600">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                     </div>
                     <div class="min-w-0">
-                      <p class="text-sm font-semibold text-slate-800 truncate">ACED {{ tx.plan?.toUpperCase() || 'PRO' }}</p>
+                      <p class="text-sm font-semibold text-slate-800 truncate">ACED PRO · {{ getDurationLabel(tx.amount) }}</p>
                       <p class="text-[11px] text-slate-400">{{ formatDate(tx.paidAt || tx.createdAt) }}<span v-if="tx.cardPan"> · {{ tx.cardPan }}</span></p>
                     </div>
                   </div>
                   <div class="text-right flex-shrink-0 ml-2">
-                    <p class="text-sm font-bold text-slate-800">{{ tx.amount?.toLocaleString() }} <span class="text-[10px] font-normal text-slate-400">UZS</span></p>
-                    <span class="inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold" :class="txBadgeClass(tx.status)">
-                      {{ txStatusLabel(tx.status) }}
+                    <p class="text-sm font-bold text-emerald-600">{{ tx.amount?.toLocaleString() }} <span class="text-[10px] font-normal text-slate-400">UZS</span></p>
+                    <span class="inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold bg-emerald-100 text-emerald-700">
+                      {{ $t('settings.paid') }}
                     </span>
                   </div>
                 </div>
@@ -757,7 +751,8 @@ export default {
         });
         const data = await response.json();
         if (data.success) {
-          paymentTransactions.value = data.transactions || [];
+          // Only show successful transactions
+          paymentTransactions.value = (data.transactions || []).filter(tx => tx.status === 'paid');
         }
       } catch (error) {
         console.error('Failed to fetch payment history:', error);
@@ -790,6 +785,14 @@ export default {
       return t('settings.failed');
     };
 
+    // Get human-readable duration label from amount in UZS
+    const getDurationLabel = (amountUZS) => {
+      if (amountUZS >= 1200000) return t('settings.sixMonthsDuration') || '6 months';
+      if (amountUZS >= 675000) return t('settings.threeMonthsDuration') || '3 months';
+      if (amountUZS >= 250000) return t('settings.oneMonthDuration') || '1 month';
+      return t('settings.oneDayDuration') || '1 day';
+    };
+
     const loadInitialData = async () => {
       loading.value = true;
       try {
@@ -810,6 +813,8 @@ export default {
         }
         await refreshFromServer();
         await fetchPaymentHistory();
+        // Re-fetch subscription status — the sync in fetchPaymentHistory may have upgraded the user
+        await refreshFromServer();
       } catch (error) { /* Silent */ }
       finally { loading.value = false; }
     };
@@ -925,7 +930,7 @@ export default {
       currentUsageMessages, currentUsageImages, usageLimitsMessages, usageLimitsImages, isGoogleUser,
       refreshFromServer, loadInitialData, startEditingName, cancelEditingName, saveNameChanges,
       saveChanges, sendPasswordReset, goToUpgrade, applyPromocode, goToProfile, handleLogout,
-      confirmDeleteAccount, deleteAccount, formatDate, txIconClass, txBadgeClass, txStatusLabel
+      confirmDeleteAccount, deleteAccount, formatDate, txIconClass, txBadgeClass, txStatusLabel, getDurationLabel
     };
   }
 };

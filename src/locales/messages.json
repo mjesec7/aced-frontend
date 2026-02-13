@@ -789,7 +789,11 @@
       "paid": "Paid",
       "pending": "Pending",
       "failed": "Failed",
-      "viewAll": "View All"
+      "viewAll": "View All",
+      "oneDayDuration": "1 day",
+      "oneMonthDuration": "1 month",
+      "threeMonthsDuration": "3 months",
+      "sixMonthsDuration": "6 months"
     },
     "analytics": {
       "pageTitle": "Learning Analytics",
@@ -1923,7 +1927,11 @@
       "paid": "Оплачено",
       "pending": "В ожидании",
       "failed": "Ошибка",
-      "viewAll": "Все платежи"
+      "viewAll": "Все платежи",
+      "oneDayDuration": "1 день",
+      "oneMonthDuration": "1 месяц",
+      "threeMonthsDuration": "3 месяца",
+      "sixMonthsDuration": "6 месяцев"
     },
     "analytics": {
       "pageTitle": "Аналитика обучения",
@@ -3075,7 +3083,11 @@
       "paid": "To'langan",
       "pending": "Kutilmoqda",
       "failed": "Xato",
-      "viewAll": "Barchasini ko'rish"
+      "viewAll": "Barchasini ko'rish",
+      "oneDayDuration": "1 kun",
+      "oneMonthDuration": "1 oy",
+      "threeMonthsDuration": "3 oy",
+      "sixMonthsDuration": "6 oy"
     },
     "analytics": {
       "pageTitle": "O'quv tahlili",
