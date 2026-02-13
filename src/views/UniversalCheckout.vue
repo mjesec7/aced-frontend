@@ -188,7 +188,7 @@
               <input type="radio" v-model="selectedDuration" :value="0" class="hidden"/>
               <span class="block text-xl font-bold text-slate-900">1</span>
               <span class="block text-xs text-slate-500 uppercase">{{ $t('checkout.day') || 'Day' }}</span>
-              <span class="block text-lg font-semibold text-amber-600 mt-2">10,000</span>
+              <span class="block text-lg font-semibold text-amber-600 mt-2">{{ planPrice(0) }}</span>
               <span class="text-xs text-slate-400">UZS</span>
               <div v-if="selectedDuration === 0" class="absolute top-2 right-2 w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center text-white text-xs">✓</div>
             </label>
@@ -197,7 +197,7 @@
               <input type="radio" v-model="selectedDuration" :value="1" class="hidden"/>
               <span class="block text-xl font-bold text-slate-900">1</span>
               <span class="block text-xs text-slate-500 uppercase">{{ $t('checkout.month') }}</span>
-              <span class="block text-lg font-semibold text-indigo-600 mt-2">250,000</span>
+              <span class="block text-lg font-semibold text-indigo-600 mt-2">{{ planPrice(1) }}</span>
               <span class="text-xs text-slate-400">UZS</span>
               <div v-if="selectedDuration === 1" class="absolute top-2 right-2 w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center text-white text-xs">✓</div>
             </label>
@@ -207,7 +207,7 @@
               <input type="radio" v-model="selectedDuration" :value="3" class="hidden"/>
               <span class="block text-xl font-bold text-slate-900">3</span>
               <span class="block text-xs text-slate-500 uppercase">{{ $t('checkout.months') }}</span>
-              <span class="block text-lg font-semibold text-purple-600 mt-2">675,000</span>
+              <span class="block text-lg font-semibold text-purple-600 mt-2">{{ planPrice(3) }}</span>
               <span class="text-xs text-slate-400">UZS</span>
               <span class="block text-[10px] text-emerald-500 font-medium">{{ $t('checkout.save', { percent: 10 }) }}</span>
               <div v-if="selectedDuration === 3" class="absolute top-2 right-2 w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center text-white text-xs">✓</div>
@@ -217,7 +217,7 @@
               <input type="radio" v-model="selectedDuration" :value="6" class="hidden"/>
               <span class="block text-xl font-bold text-slate-900">6</span>
               <span class="block text-xs text-slate-500 uppercase">{{ $t('checkout.months') }}</span>
-              <span class="block text-lg font-semibold text-emerald-600 mt-2">1,200,000</span>
+              <span class="block text-lg font-semibold text-emerald-600 mt-2">{{ planPrice(6) }}</span>
               <span class="text-xs text-slate-400">UZS</span>
               <span class="block text-[10px] text-emerald-500 font-medium">{{ $t('checkout.save', { percent: 20 }) }}</span>
               <div v-if="selectedDuration === 6" class="absolute top-2 right-2 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xs">✓</div>
@@ -317,6 +317,7 @@
 <script>
 import { auth } from '@/firebase';
 import { initiatePaymePayment, initiateMulticardPayment, createPaymentByToken, confirmPayment } from '@/api';
+import { PLANS, getPlanByDuration, getAmountForDuration } from '@/config/plans';
 import { applyPromocode, validatePromocode } from '@/api/promocodes';
 
 export default {
@@ -349,6 +350,8 @@ export default {
   },
   
   computed: {
+    planConfig() { return getPlanByDuration(this.selectedDuration); },
+    planPrice() { return (duration) => getPlanByDuration(duration).displayPrice; },
     finalPlan() { return this.plan || this.selectedPlan || ''; },
     finalUserId() { return this.internalUserId || this.userId || this.$route.query.userId || auth.currentUser?.uid || ''; },
     finalUserName() { return this.internalUserName || this.userName || this.$route.query.userName || auth.currentUser?.displayName || 'User'; },
@@ -357,8 +360,7 @@ export default {
       if (this.promoApplied && this.promoData) return 0;
       let amt = parseInt(this.amount) || 0;
       if (amt > 0) return amt;
-      const amounts = { 0: 1000000, 1: 25000000, 3: 67500000, 6: 120000000 };
-      return amounts[this.selectedDuration] || amounts[3];
+      return getAmountForDuration(this.selectedDuration);
     },
     planName() {
       if (this.promoApplied && this.promoData) {
@@ -366,7 +368,8 @@ export default {
         let durationText = this.promoData.durationText || (days <= 31 ? '1 Month' : days <= 95 ? '3 Months' : days <= 185 ? '6 Months' : `${days} Days`);
         return `${(this.promoData.grantsPlan || 'Pro').toUpperCase()} Plan (via Promocode - ${durationText})`;
       }
-      return this.selectedDuration === 0 ? 'Pro Plan (1 Day)' : this.selectedDuration === 1 ? 'Pro Plan (1 Month)' : this.selectedDuration === 3 ? 'Pro Plan (3 Months)' : 'Pro Plan (6 Months)';
+      const plan = getPlanByDuration(this.selectedDuration);
+      return `Pro Plan (${plan.label})`;
     },
     canProceedToPayment() {
       if (this.promoApplied && this.promoData) return Boolean(this.finalUserId);

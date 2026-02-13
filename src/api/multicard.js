@@ -1,6 +1,7 @@
 // src/api/multicard.js - Multicard Payment Integration (UPDATED & FIXED)
 import axios from 'axios';
 import { auth } from '@/firebase';
+import { getAmountForDuration } from '@/config/plans';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live';
 
@@ -122,11 +123,9 @@ export const initiateMulticardPayment = async (paymentData) => {
       throw new Error('plan must be "start", "pro" or "test"');
     }
 
-    // Amount in tiyin (1 UZS = 100 tiyin)
-    // Tiers: 1-day=1,000,000 | 1-month=25,000,000 | 3-month=67,500,000 | 6-month=120,000,000
-    // Default to 1-month (25,000,000 tiyin) if no amount provided
+    // Amount in tiyin — sourced from shared plans config
     const finalAmount = paymentData.amount ||
-      (paymentData.plan === 'test' ? 1000000 : 25000000);
+      (paymentData.plan === 'test' ? 1_000_000 : getAmountForDuration(paymentData.duration ?? 1));
 
     // ✅ CRITICAL: Build OFD data correctly - it should be an array
     const ofdData = Array.isArray(paymentData.ofd) ? paymentData.ofd : [{

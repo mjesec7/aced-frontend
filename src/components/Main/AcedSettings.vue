@@ -370,7 +370,7 @@
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                 </div>
                 <div class="min-w-0">
-                  <p class="text-sm font-semibold text-slate-800 truncate">ACED PRO · {{ getDurationLabel(tx.amount) }}</p>
+                  <p class="text-sm font-semibold text-slate-800 truncate">ACED PRO · {{ getDurationLabel(tx.durationMonths) }}</p>
                   <p class="text-[11px] text-slate-400">{{ formatDate(tx.paidAt || tx.createdAt) }}<span v-if="tx.cardPan"> · {{ tx.cardPan }}</span></p>
                 </div>
               </div>
@@ -410,7 +410,7 @@
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                     </div>
                     <div class="min-w-0">
-                      <p class="text-sm font-semibold text-slate-800 truncate">ACED PRO · {{ getDurationLabel(tx.amount) }}</p>
+                      <p class="text-sm font-semibold text-slate-800 truncate">ACED PRO · {{ getDurationLabel(tx.durationMonths) }}</p>
                       <p class="text-[11px] text-slate-400">{{ formatDate(tx.paidAt || tx.createdAt) }}<span v-if="tx.cardPan"> · {{ tx.cardPan }}</span></p>
                     </div>
                   </div>
@@ -785,11 +785,11 @@ export default {
       return t('settings.failed');
     };
 
-    // Get human-readable duration label from amount in UZS
-    const getDurationLabel = (amountUZS) => {
-      if (amountUZS >= 1200000) return t('settings.sixMonthsDuration') || '6 months';
-      if (amountUZS >= 675000) return t('settings.threeMonthsDuration') || '3 months';
-      if (amountUZS >= 250000) return t('settings.oneMonthDuration') || '1 month';
+    // Get localized duration label from durationMonths (0=1day, 1, 3, 6)
+    const getDurationLabel = (durationMonths) => {
+      if (durationMonths >= 6) return t('settings.sixMonthsDuration') || '6 months';
+      if (durationMonths >= 3) return t('settings.threeMonthsDuration') || '3 months';
+      if (durationMonths >= 1) return t('settings.oneMonthDuration') || '1 month';
       return t('settings.oneDayDuration') || '1 day';
     };
 
