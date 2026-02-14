@@ -171,7 +171,7 @@ async function handleUserAuthenticated(firebaseUser) {
 
     // ✅ CRITICAL: ALWAYS fetch from server to get latest subscription status
     try {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL;
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live';
       const response = await fetch(`${baseUrl}/api/users/${userId}`, {
         method: 'GET',
         headers: {
