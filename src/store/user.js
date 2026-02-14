@@ -865,8 +865,8 @@ const actions = {
       const oldStatus = state.userStatus;
 
       // Import and use API
-      const { applyPromocode } = await import('@/api/subscription');
-      const result = await applyPromocode(getUserId(state), normalizedCode, plan);
+      const { applyPromocode: applyPromo } = await import('@/api/promocodes');
+      const result = await applyPromo(normalizedCode, getUserId(state));
 
       if (result.success) {
         commit('ADD_PROMOCODE', {
