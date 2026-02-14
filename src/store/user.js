@@ -307,9 +307,12 @@ const state = () => ({
 const mutations = {
   SET_USER(state, user) {
     const timestamp = Date.now();
+    if (!state.system) {
+      state.system = { initialized: false, lastUpdate: 0, forceUpdateCounter: 0, loading: {}, errors: { lastError: null, errorCount: 0 } };
+    }
     state.currentUser = user ? { ...user, lastUpdate: timestamp } : null;
     state.system.lastUpdate = timestamp;
-    state.system.forceUpdateCounter++;
+    state.system.forceUpdateCounter = (state.system.forceUpdateCounter || 0) + 1;
 
     if (user) {
       try {
@@ -495,6 +498,9 @@ const mutations = {
   },
 
   SET_ERROR(state, error) {
+    if (!state.system) {
+      state.system = { initialized: false, lastUpdate: 0, forceUpdateCounter: 0, loading: {}, errors: { lastError: null, errorCount: 0 } };
+    }
     if (!state.system.errors) {
       state.system.errors = { lastError: null, errorCount: 0 };
     }
