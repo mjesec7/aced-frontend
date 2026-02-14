@@ -1,6 +1,6 @@
 <!-- src/components/Modals/PaymentSuccessModal.vue -->
 <template>
-  <div v-if="visible" class="modal-overlay" @click.self="closeModal">
+  <div v-if="isVisible" class="modal-overlay" @click.self="closeModal">
     <div class="modal-content">
       <!-- Close Button -->
       <button class="close-btn" @click="closeModal" aria-label="Закрыть">
@@ -84,7 +84,7 @@ export default {
   props: {
     visible: {
       type: Boolean,
-      default: false
+      default: null // null = auto-detect (true when used as route page)
     },
     transactionData: {
       type: Object,
@@ -93,11 +93,28 @@ export default {
     plan: {
       type: String,
       default: ''
+    },
+    provider: {
+      type: String,
+      default: ''
+    },
+    invoice_id: {
+      type: String,
+      default: ''
     }
   },
   emits: ['close', 'go-to-courses', 'go-to-profile'],
   
+  data() {
+    return {
+      autoVisible: false
+    };
+  },
   computed: {
+    isVisible() {
+      // If visible prop is explicitly set, use it. Otherwise auto-show (route page mode).
+      return this.visible !== null ? this.visible : this.autoVisible;
+    },
     planName() {
       const currentPlan = this.plan || this.transactionData?.plan || '';
       const plans = {
@@ -132,28 +149,26 @@ export default {
   },
   
   watch: {
-    visible(newVal) {
+    isVisible(newVal) {
       if (newVal) {
-        // Update user status when modal opens
         this.updateUserStatus();
-        
-        // Focus trap for accessibility
-        this.$nextTick(() => {
-          this.$el?.focus();
-        });
-        
-        // Prevent body scroll when modal is open
+        this.$nextTick(() => { this.$el?.focus(); });
         document.body.style.overflow = 'hidden';
       } else {
-        // Restore body scroll when modal closes
         document.body.style.overflow = '';
       }
     }
   },
-  
+
   mounted() {
-    // Handle escape key
     document.addEventListener('keydown', this.handleKeydown);
+
+    // Auto-show when used as a route page (visible prop not explicitly set)
+    if (this.visible === null) {
+      this.autoVisible = true;
+      // Immediately update status — plan comes from URL query via backend redirect
+      this.updateUserStatus();
+    }
   },
   
   beforeUnmount() {
@@ -169,25 +184,40 @@ export default {
 
     async updateUserStatus() {
       try {
-        // Update user subscription status in store
-        if (this.$store.getters['user/isAuthenticated']) {
-          await this.$store.dispatch('user/checkPendingPayments');
-          const statusResult = await this.$store.dispatch('user/loadUserStatus');
+        // Immediately set plan in localStorage (like promocode flow does)
+        const grantedPlan = this.plan || this.transactionData?.plan || 'pro';
+        localStorage.setItem('userStatus', grantedPlan);
 
-          // Force global update to notify all components
+        if (this.$store) {
+          // Update store immediately so UI reflects the change
+          if (this.$store.commit) {
+            this.$store.commit('user/SET_USER_STATUS', grantedPlan);
+          }
+
+          // Fetch authoritative status from server (with retry for webhook race condition)
+          const fetchWithRetry = async (attempts = 3, delay = 2000) => {
+            for (let i = 0; i < attempts; i++) {
+              try {
+                const result = await this.$store.dispatch('user/loadUserStatus');
+                if (result?.status && result.status !== 'free') return result;
+              } catch (e) { /* retry */ }
+              if (i < attempts - 1) await new Promise(r => setTimeout(r, delay));
+            }
+            return null;
+          };
+
+          const statusResult = await fetchWithRetry();
           this.$store.commit('user/FORCE_UPDATE');
 
-          // Emit global event for components not connected to store
-          if (typeof window !== 'undefined') {
-            const eventData = {
-              source: 'payment-success',
-              plan: statusResult?.status,
-              transactionId: this.transactionData?.id || this.transactionData?.transactionId,
-              timestamp: Date.now()
-            };
-            window.dispatchEvent(new CustomEvent('userStatusChanged', { detail: eventData }));
-            window.dispatchEvent(new CustomEvent('subscriptionUpdated', { detail: eventData }));
-          }
+          // Emit global events for all components
+          const eventData = {
+            source: 'payment-success',
+            plan: statusResult?.status || grantedPlan,
+            transactionId: this.transactionData?.id || this.transactionData?.transactionId || this.invoice_id,
+            timestamp: Date.now()
+          };
+          window.dispatchEvent(new CustomEvent('userStatusChanged', { detail: eventData }));
+          window.dispatchEvent(new CustomEvent('subscriptionUpdated', { detail: eventData }));
         }
       } catch (error) {
         console.error('Failed to update user status:', error);

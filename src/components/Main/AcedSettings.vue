@@ -935,3 +935,25 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+div {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4 {
+  font-family: 'Unbounded', 'Inter', sans-serif;
+  letter-spacing: -0.01em;
+}
+
+input, button {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+p, span, label {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  letter-spacing: -0.005em;
+}
+</style>
