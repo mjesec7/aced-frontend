@@ -28,8 +28,8 @@
           </div>
 
           <div class="mb-6">
-            <span class="text-4xl font-bold text-gray-900">10K</span>
-            <span class="text-gray-500 ml-1">UZS</span>
+            <span class="text-4xl font-bold text-gray-900">{{ priceDisplay(10000) }}</span>
+            <span class="text-gray-500 ml-1">{{ currencyCode }}</span>
           </div>
 
           <button
@@ -57,8 +57,8 @@
           </div>
 
           <div class="mb-6">
-            <span class="text-4xl font-bold text-gray-900">250K</span>
-            <span class="text-gray-500 ml-1">UZS{{ $t('tariffSection.perMonth') }}</span>
+            <span class="text-4xl font-bold text-gray-900">{{ priceDisplay(250000) }}</span>
+            <span class="text-gray-500 ml-1">{{ currencyCode }}{{ $t('tariffSection.perMonth') }}</span>
           </div>
 
           <button
@@ -90,8 +90,8 @@
           </div>
 
           <div class="mb-2">
-            <span class="text-4xl font-bold text-gray-900">675K</span>
-            <span class="text-gray-500 ml-1">UZS</span>
+            <span class="text-4xl font-bold text-gray-900">{{ priceDisplay(675000) }}</span>
+            <span class="text-gray-500 ml-1">{{ currencyCode }}</span>
           </div>
           <div class="mb-6">
             <span class="text-sm text-gray-500">{{ $t('tariffSection.forMonths', { months: 3 }) }}</span>
@@ -123,8 +123,8 @@
           </div>
 
           <div class="mb-2">
-            <span class="text-4xl font-bold text-gray-900">1.2M</span>
-            <span class="text-gray-500 ml-1">UZS</span>
+            <span class="text-4xl font-bold text-gray-900">{{ priceDisplay(1200000) }}</span>
+            <span class="text-gray-500 ml-1">{{ currencyCode }}</span>
           </div>
           <div class="mb-6">
             <span class="text-sm text-gray-500">{{ $t('tariffSection.forMonths', { months: 6 }) }}</span>
@@ -177,9 +177,14 @@
 
 <script>
 import { mapGetters } from 'vuex';
+import { useCurrency } from '@/composables/useCurrency';
 
 export default {
   name: 'TariffSection',
+  setup() {
+    const { formatPrice, currencyCode, isUzbekLocale, exchangeRate } = useCurrency();
+    return { formatPrice, currencyCode, isUzbekLocale, exchangeRate };
+  },
   data() {
     return {
       features: [
@@ -201,6 +206,19 @@ export default {
     }
   },
   methods: {
+    priceDisplay(uzsAmount) {
+      if (this.isUzbekLocale) {
+        // Show compact UZS format (10K, 250K, 675K, 1.2M)
+        if (uzsAmount >= 1000000) return (uzsAmount / 1000000).toFixed(1).replace('.0', '') + 'M';
+        if (uzsAmount >= 1000) return Math.round(uzsAmount / 1000) + 'K';
+        return uzsAmount.toLocaleString();
+      }
+      // USD: convert and show dollar amount
+      const usd = uzsAmount / this.exchangeRate;
+      if (usd < 1) return '$' + usd.toFixed(2);
+      if (usd < 100) return '$' + usd.toFixed(1).replace('.0', '');
+      return '$' + Math.round(usd);
+    },
     handleSubscribe(duration) {
       if (!this.isAuthenticated) {
         window.dispatchEvent(new CustomEvent("open-Login-modal"));

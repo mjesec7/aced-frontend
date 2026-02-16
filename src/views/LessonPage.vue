@@ -2293,6 +2293,20 @@ onMounted(() => {
   })
 
   loadLesson()
+
+  // Fetch initial AI usage so chat panel shows correct limits
+  getUserUsage().then(usageInfo => {
+    if (usageInfo.success && usageInfo.usage) {
+      aiUsage.value = {
+        current: usageInfo.usage.current || usageInfo.usage.messages || 0,
+        limit: usageInfo.limits?.messages || usageInfo.usage.limit || 50,
+        remaining: usageInfo.usage.remaining ?? 50,
+        percentage: usageInfo.usage.percentage || 0,
+        unlimited: usageInfo.usage.unlimited || false,
+        plan: usageInfo.plan || 'free'
+      }
+    }
+  }).catch(() => { /* Non-critical - defaults are fine */ })
 })
 
 onUnmounted(() => {

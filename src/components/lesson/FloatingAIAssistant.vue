@@ -509,7 +509,7 @@ export default {
     0 0 0 1px rgba(255, 255, 255, 0.1);
   z-index: 1001;
   overflow: hidden;
-  max-height: 60vh; /* Responsive height */
+  max-height: 75vh; /* Responsive height */
   display: flex;
   flex-direction: column;
   animation: assistantSlideIn 0.3s ease-out;
@@ -732,8 +732,8 @@ export default {
   flex: 1;
   overflow-y: auto;
   padding: 8px 0;
-  max-height: 250px;
-  min-height: 120px;
+  max-height: 350px;
+  min-height: 200px;
 }
 
 .empty-chat-state {
@@ -1013,7 +1013,7 @@ export default {
     right: 16px;
     left: 16px;
     bottom: 70px;
-    max-height: 60vh;
+    max-height: 75vh;
   }
 }
 </style>

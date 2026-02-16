@@ -189,7 +189,7 @@
               <span class="block text-xl font-bold text-slate-900">1</span>
               <span class="block text-xs text-slate-500 uppercase">{{ $t('checkout.day') || 'Day' }}</span>
               <span class="block text-lg font-semibold text-amber-600 mt-2">{{ planPrice(0) }}</span>
-              <span class="text-xs text-slate-400">UZS</span>
+              <span class="text-xs text-slate-400">{{ currencyCode }}</span>
               <div v-if="selectedDuration === 0" class="absolute top-2 right-2 w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center text-white text-xs">✓</div>
             </label>
             <!-- 1 Month -->
@@ -198,7 +198,7 @@
               <span class="block text-xl font-bold text-slate-900">1</span>
               <span class="block text-xs text-slate-500 uppercase">{{ $t('checkout.month') }}</span>
               <span class="block text-lg font-semibold text-indigo-600 mt-2">{{ planPrice(1) }}</span>
-              <span class="text-xs text-slate-400">UZS</span>
+              <span class="text-xs text-slate-400">{{ currencyCode }}</span>
               <div v-if="selectedDuration === 1" class="absolute top-2 right-2 w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center text-white text-xs">✓</div>
             </label>
             <!-- 3 Months -->
@@ -208,7 +208,7 @@
               <span class="block text-xl font-bold text-slate-900">3</span>
               <span class="block text-xs text-slate-500 uppercase">{{ $t('checkout.months') }}</span>
               <span class="block text-lg font-semibold text-purple-600 mt-2">{{ planPrice(3) }}</span>
-              <span class="text-xs text-slate-400">UZS</span>
+              <span class="text-xs text-slate-400">{{ currencyCode }}</span>
               <span class="block text-[10px] text-emerald-500 font-medium">{{ $t('checkout.save', { percent: 10 }) }}</span>
               <div v-if="selectedDuration === 3" class="absolute top-2 right-2 w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center text-white text-xs">✓</div>
             </label>
@@ -218,7 +218,7 @@
               <span class="block text-xl font-bold text-slate-900">6</span>
               <span class="block text-xs text-slate-500 uppercase">{{ $t('checkout.months') }}</span>
               <span class="block text-lg font-semibold text-emerald-600 mt-2">{{ planPrice(6) }}</span>
-              <span class="text-xs text-slate-400">UZS</span>
+              <span class="text-xs text-slate-400">{{ currencyCode }}</span>
               <span class="block text-[10px] text-emerald-500 font-medium">{{ $t('checkout.save', { percent: 20 }) }}</span>
               <div v-if="selectedDuration === 6" class="absolute top-2 right-2 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xs">✓</div>
             </label>
@@ -319,9 +319,14 @@ import { auth } from '@/firebase';
 import { initiatePaymePayment, initiateMulticardPayment, createPaymentByToken, confirmPayment } from '@/api';
 import { PLANS, getPlanByDuration, getAmountForDuration } from '@/config/plans';
 import { applyPromocode, validatePromocode } from '@/api/promocodes';
+import { useCurrency } from '@/composables/useCurrency';
 
 export default {
   name: 'UniversalCheckout',
+  setup() {
+    const { formatPrice, currencyCode, currencySymbol, isUzbekLocale, exchangeRate } = useCurrency()
+    return { formatPrice, currencyCode, currencySymbol, isUzbekLocale, exchangeRate }
+  },
   props: {
     plan: { type: String, default: '' },
     provider: { type: String, default: 'multicard' },
@@ -351,7 +356,18 @@ export default {
   
   computed: {
     planConfig() { return getPlanByDuration(this.selectedDuration); },
-    planPrice() { return (duration) => getPlanByDuration(duration).displayPrice; },
+    planPrice() {
+      return (duration) => {
+        const plan = getPlanByDuration(duration);
+        if (this.isUzbekLocale) {
+          return new Intl.NumberFormat('uz-UZ').format(plan.priceUZS);
+        }
+        const usd = plan.priceUZS / this.exchangeRate;
+        if (usd < 1) return usd.toFixed(2);
+        if (usd < 10) return usd.toFixed(1);
+        return Math.round(usd).toLocaleString('en-US');
+      };
+    },
     finalPlan() { return this.plan || this.selectedPlan || ''; },
     finalUserId() { return this.internalUserId || this.userId || this.$route.query.userId || auth.currentUser?.uid || ''; },
     finalUserName() { return this.internalUserName || this.userName || this.$route.query.userName || auth.currentUser?.displayName || 'User'; },
@@ -527,7 +543,7 @@ export default {
     formatAmount(amount) {
       if (!amount) return 'FREE';
       const uzs = Math.floor(amount / 100);
-      return new Intl.NumberFormat('en-US').format(uzs) + ' sum';
+      return this.formatPrice(uzs);
     },
     goBack() { this.paymentStatus ? this.paymentStatus = null : this.$router.go(-1); },
     goToDashboard() { this.$router.push('/dashboard'); },

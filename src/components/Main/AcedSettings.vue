@@ -177,8 +177,8 @@
             <div class="relative p-5 border-2 border-slate-200 hover:border-amber-400 rounded-2xl transition-all hover:shadow-lg flex flex-col">
               <div class="text-center flex-1 flex flex-col">
                 <h3 class="text-lg font-bold text-slate-900">{{ $t('settings.oneDay') || '1 Day' }}</h3>
-                <div class="text-2xl font-bold text-amber-600 mt-2">10,000</div>
-                <div class="text-sm text-slate-500 mb-4">{{ $t('settings.uzs') }}</div>
+                <div class="text-2xl font-bold text-amber-600 mt-2">{{ formatPrice(10000) }}</div>
+                <div class="text-sm text-slate-500 mb-4">{{ currencyCode }}</div>
                 <ul class="text-left text-xs text-slate-600 space-y-2 flex-1">
                   <li class="flex items-center gap-2">
                     <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
@@ -207,8 +207,8 @@
             <div class="relative p-5 border-2 border-slate-200 hover:border-indigo-400 rounded-2xl transition-all hover:shadow-lg flex flex-col">
               <div class="text-center flex-1 flex flex-col">
                 <h3 class="text-lg font-bold text-slate-900">{{ $t('settings.oneMonth') }}</h3>
-                <div class="text-2xl font-bold text-indigo-600 mt-2">250,000</div>
-                <div class="text-sm text-slate-500 mb-4">{{ $t('settings.uzs') }}</div>
+                <div class="text-2xl font-bold text-indigo-600 mt-2">{{ formatPrice(250000) }}</div>
+                <div class="text-sm text-slate-500 mb-4">{{ currencyCode }}</div>
                 <ul class="text-left text-xs text-slate-600 space-y-2 flex-1">
                   <li class="flex items-center gap-2">
                     <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
@@ -240,8 +240,8 @@
               </div>
               <div class="text-center flex-1 flex flex-col pt-1">
                 <h3 class="text-lg font-bold text-slate-900">{{ $t('settings.threeMonths') }}</h3>
-                <div class="text-2xl font-bold text-indigo-600 mt-2">675,000</div>
-                <div class="text-sm text-slate-500">{{ $t('settings.uzs') }}</div>
+                <div class="text-2xl font-bold text-indigo-600 mt-2">{{ formatPrice(675000) }}</div>
+                <div class="text-sm text-slate-500">{{ currencyCode }}</div>
                 <div class="inline-block px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-full my-2 mx-auto">{{ $t('tariffs.save', { percent: 10 }) }}</div>
                 <ul class="text-left text-xs text-slate-600 space-y-2 flex-1">
                   <li class="flex items-center gap-2">
@@ -274,8 +274,8 @@
               </div>
               <div class="text-center flex-1 flex flex-col pt-1">
                 <h3 class="text-lg font-bold text-slate-900">{{ $t('settings.sixMonths') }}</h3>
-                <div class="text-2xl font-bold text-indigo-600 mt-2">1,200,000</div>
-                <div class="text-sm text-slate-500">{{ $t('settings.uzs') }}</div>
+                <div class="text-2xl font-bold text-indigo-600 mt-2">{{ formatPrice(1200000) }}</div>
+                <div class="text-sm text-slate-500">{{ currencyCode }}</div>
                 <div class="inline-block px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-full my-2 mx-auto">{{ $t('tariffs.save', { percent: 20 }) }}</div>
                 <ul class="text-left text-xs text-slate-600 space-y-2 flex-1">
                   <li class="flex items-center gap-2">
@@ -647,6 +647,7 @@ import {
   deleteUser
 } from 'firebase/auth';
 import { fetchSubscriptionFromServer } from '@/api/subscription';
+import { useCurrency } from '@/composables/useCurrency';
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue';
 
 export default {
@@ -660,6 +661,7 @@ export default {
     const store = useStore();
     const router = useRouter();
     const { t } = useI18n();
+    const { formatPrice, currencyCode, isUzbekLocale, exchangeRate } = useCurrency();
 
     // State
     const loading = ref(false);
@@ -930,7 +932,8 @@ export default {
       currentUsageMessages, currentUsageImages, usageLimitsMessages, usageLimitsImages, isGoogleUser,
       refreshFromServer, loadInitialData, startEditingName, cancelEditingName, saveNameChanges,
       saveChanges, sendPasswordReset, goToUpgrade, applyPromocode, goToProfile, handleLogout,
-      confirmDeleteAccount, deleteAccount, formatDate, txIconClass, txBadgeClass, txStatusLabel, getDurationLabel
+      confirmDeleteAccount, deleteAccount, formatDate, txIconClass, txBadgeClass, txStatusLabel, getDurationLabel,
+      formatPrice, currencyCode, isUzbekLocale, exchangeRate
     };
   }
 };

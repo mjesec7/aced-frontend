@@ -5,6 +5,40 @@ import { eventBus } from '@/utils/eventBus';
 import { getLanguage } from '@/composables/useLanguage';
 import { extractExerciseContent, extractAllExercisesFromStep, buildExerciseNarration } from '@/utils/exerciseContentExtractor';
 
+// iOS detection helper
+const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+// Track whether user has interacted (iOS audio unlock)
+let audioUnlocked = false;
+const unlockAudio = () => {
+    if (audioUnlocked) return;
+    audioUnlocked = true;
+    // Create and play a silent audio to unlock iOS audio playback
+    if (isIOS()) {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const buffer = ctx.createBuffer(1, 1, 22050);
+            const source = ctx.createBufferSource();
+            source.buffer = buffer;
+            source.connect(ctx.destination);
+            source.start(0);
+            ctx.resume();
+        } catch (e) {
+            // Silent fail - just mark as unlocked
+        }
+    }
+};
+
+// Listen for first user interaction to unlock audio (runs once)
+if (typeof window !== 'undefined') {
+    const events = ['touchstart', 'touchend', 'click'];
+    const handler = () => {
+        unlockAudio();
+        events.forEach(e => document.removeEventListener(e, handler, true));
+    };
+    events.forEach(e => document.addEventListener(e, handler, { once: true, capture: true }));
+}
+
 export function useVoiceAssistant() {
     // State
     const isSpeaking = ref(false);
@@ -397,9 +431,12 @@ export function useVoiceAssistant() {
         // Use effective language (lesson language > system language)
         const currentLang = options.language || getSystemLanguage();
 
-        // MOBILE FIX: Check if we have user activation context
-        // Mobile browsers require user gesture to start audio
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        // iOS FIX: If on iOS and audio hasn't been unlocked by user gesture,
+        // go straight to browser speech synthesis (which iOS allows more reliably)
+        if (isIOS() && !audioUnlocked) {
+            useBrowserSpeech(text, currentLang);
+            return;
+        }
 
         try {
             const audioBlob = await voiceApi.streamAudio(text, { language: currentLang });
