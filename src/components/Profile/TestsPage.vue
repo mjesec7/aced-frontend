@@ -1,553 +1,404 @@
 <template>
-  <div class="min-h-screen bg-white">
-    <!-- Clean Header -->
-    <div class="max-w-6xl mx-auto px-6 pt-8 pb-6">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-4">
-          <div class="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center">
-            <span class="text-2xl">📝</span>
-          </div>
-          <div>
-            <h1 class="text-2xl font-bold text-slate-800">{{ $t('tests.title') }}</h1>
-            <p class="text-slate-500 text-sm">{{ filteredTests.length }} {{ $t('tests.available') }}</p>
-          </div>
-        </div>
-        
-        <!-- Inline Stats -->
-        <div class="hidden md:flex items-center gap-3">
-          <div class="px-4 py-2 rounded-full bg-blue-50 text-blue-600 text-sm font-medium">
-            📚 {{ uniqueSubjects.length }} {{ $t('tests.subjects') }}
-          </div>
-          <div class="px-4 py-2 rounded-full bg-purple-50 text-purple-600 text-sm font-medium">
-            ⭐ {{ uniqueLevels.length }} {{ $t('tests.levels') }}
-          </div>
+  <div class="tests-page-wrapper">
+    <!-- Left: Dashboard -->
+    <main :class="['tests-dashboard', mobileView === 'game' && 'hide-mobile']">
+      <!-- Mobile Header -->
+      <div class="mobile-header lg-hide">
+        <div class="mobile-brand">
+          <div class="brand-icon">A</div>
+          <span class="brand-text">Aced</span>
         </div>
       </div>
-    </div>
 
-    <!-- Filter Bar -->
-    <div v-if="!activeTest" class="max-w-6xl mx-auto px-6 pb-6">
-      <div class="flex flex-wrap items-center gap-3">
-        <!-- Search -->
-        <div class="relative flex-1 min-w-64">
-          <input
-            v-model="searchQuery"
-            type="text"
-            class="w-full px-4 py-2.5 pl-10 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all"
-            :placeholder="$t('tests.searchPlaceholder')"
-          />
-          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8"/>
-            <path d="m21 21-4.35-4.35"/>
-          </svg>
-        </div>
-
-        <!-- Filter Pills -->
-        <select
-          v-model="selectedSubject"
-          class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-slate-600 bg-white focus:outline-none focus:border-indigo-400 cursor-pointer hover:border-gray-300 transition-all"
-        >
-          <option value="">{{ $t('tests.allSubjects') }}</option>
-          <option v-for="subject in uniqueSubjects" :key="subject" :value="subject">{{ getTranslatedSubject(subject) }}</option>
-        </select>
-
-        <select
-          v-model="selectedLevel"
-          class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-slate-600 bg-white focus:outline-none focus:border-indigo-400 cursor-pointer hover:border-gray-300 transition-all"
-        >
-          <option value="">{{ $t('tests.allLevels') }}</option>
-          <option v-for="level in uniqueLevels" :key="level" :value="level">{{ $t('tests.level') }} {{ level }}</option>
-        </select>
-
-        <button
-          v-if="hasActiveFilters"
-          @click="clearFilters"
-          class="px-4 py-2.5 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 transition-all"
-        >
-          {{ $t('tests.clear') }}
-        </button>
-      </div>
-    </div>
-
-    <!-- Loading -->
-    <div v-if="loading" class="flex flex-col items-center justify-center py-24">
-      <div class="w-8 h-8 border-2 border-indigo-200 border-t-indigo-500 rounded-full animate-spin"></div>
-      <p class="mt-4 text-slate-500 text-sm">{{ $t('tests.loading') }}</p>
-    </div>
-
-    <!-- Tests Grid -->
-    <div v-else-if="!activeTest" class="max-w-6xl mx-auto px-6 pb-12">
-      <!-- Empty State -->
-      <div v-if="filteredTests.length === 0" class="text-center py-24">
-        <div class="text-6xl mb-4">🔍</div>
-        <h3 class="text-lg font-semibold text-slate-800 mb-2">{{ $t('tests.noTestsFound') }}</h3>
-        <p class="text-slate-500 text-sm">{{ $t('tests.tryAdjusting') }}</p>
-      </div>
-
-      <!-- Grid -->
-      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <article
-          v-for="test in filteredTests"
-          :key="test._id"
-          @click="handleStartTest(test)"
-          class="group p-5 rounded-2xl border border-gray-100 hover:border-indigo-400 hover:scale-[1.02] transition-all duration-300 cursor-pointer bg-white shadow-sm hover:shadow-xl"
-        >
-          <!-- Top Row -->
-          <div class="flex items-start justify-between mb-4">
-            <div class="flex items-center gap-2">
-              <span class="text-lg">{{ getSubjectEmoji(test.subject) }}</span>
-              <span class="text-xs font-medium text-slate-500 uppercase tracking-wide">{{ getTranslatedSubject(test.subject) || $t('common.general') }}</span>
+      <div class="dashboard-scroll">
+        <div class="dashboard-inner">
+          <!-- Page Header -->
+          <div class="page-header">
+            <div class="page-header-left">
+              <div class="title-row">
+                <h1 class="page-title">{{ t.myTests }}</h1>
+                <div class="lang-picker">
+                  <button v-for="lang in ['en','uz','ru']" :key="lang" @click="currentLanguage = lang"
+                    :class="['lang-btn', currentLanguage === lang && 'active']">{{ lang.toUpperCase() }}</button>
+                </div>
+              </div>
+              <p class="page-subtitle">{{ t.manageExams }}</p>
             </div>
-            <span class="px-2 py-1 rounded-lg bg-slate-100 text-slate-600 text-xs font-medium">
-              {{ $t('tests.level') }} {{ test.level || 1 }}
-            </span>
-          </div>
-
-          <!-- Title -->
-          <h3 class="font-semibold text-slate-800 mb-3 line-clamp-2 group-hover:text-indigo-600 transition-colors">
-            {{ test.title }}
-          </h3>
-
-          <!-- Meta -->
-          <div class="flex items-center gap-4 text-xs text-slate-500">
-            <span class="flex items-center gap-1">
-              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-                <line x1="12" y1="17" x2="12.01" y2="17"/>
-              </svg>
-              {{ test.questions?.length || 0 }} {{ $t('tests.questions') }}
-            </span>
-            <span v-if="test.duration" class="flex items-center gap-1">
-              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <polyline points="12 6 12 12 16 14"/>
-              </svg>
-              {{ test.duration }}m
-            </span>
-          </div>
-
-          <!-- Action -->
-          <div class="mt-4 pt-4 border-t border-gray-50 flex justify-end">
-            <span class="text-sm font-medium text-indigo-500 group-hover:text-indigo-600 flex items-center gap-1">
-              {{ $t('tests.start') }}
-              <svg class="w-4 h-4 group-hover:translate-x-0.5 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M5 12h14M12 5l7 7-7 7"/>
-              </svg>
-            </span>
-          </div>
-        </article>
-      </div>
-    </div>
-
-    <!-- Test Taking Interface -->
-    <div v-else-if="!isTestCompleted" class="max-w-2xl mx-auto px-6 py-8">
-      <!-- Progress -->
-      <div class="mb-8">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-sm font-medium text-slate-600">{{ $t('tests.questionOf', { current: currentQuestionIndex + 1, total: activeTest.questions.length }) }}</span>
-          <span class="text-sm font-medium text-indigo-500">{{ Math.round(progressPercentage) }}%</span>
-        </div>
-        <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-          <div 
-            class="h-full bg-indigo-500 rounded-full transition-all duration-500 ease-out"
-            :style="{ width: `${progressPercentage}%` }"
-          ></div>
-        </div>
-      </div>
-
-      <!-- Question Card -->
-      <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
-        <h2 class="text-lg font-semibold text-slate-800 mb-6">{{ currentQuestion.text || currentQuestion.question }}</h2>
-
-        <!-- Options -->
-        <div v-if="currentQuestion.type === 'multiple-choice' || currentQuestion.options" class="space-y-3">
-          <label 
-            v-for="(opt, j) in currentQuestion.options || ['true', 'false']" 
-            :key="j" 
-            class="flex items-center p-4 rounded-xl border cursor-pointer transition-all hover:border-indigo-200 hover:bg-indigo-50/30"
-            :class="userAnswers[currentQuestionIndex] === (opt.text || opt) ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200'"
-          >
-            <input type="radio" :value="opt.text || opt" v-model="userAnswers[currentQuestionIndex]" class="sr-only"/>
-            <div 
-              class="w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center transition-colors"
-              :class="userAnswers[currentQuestionIndex] === (opt.text || opt) ? 'border-indigo-500' : 'border-gray-300'"
-            >
-              <div v-if="userAnswers[currentQuestionIndex] === (opt.text || opt)" class="w-2.5 h-2.5 rounded-full bg-indigo-500"></div>
+            <div class="header-actions">
+              <button @click="mobileView = 'game'" class="ai-tutor-btn lg-hide">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                <span>{{ t.aiTutor }}</span>
+              </button>
+              <button @click="isModalOpen = true" class="new-exam-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon"><path d="M12 5v14M5 12h14"/></svg>
+                <span>{{ t.newExam }}</span>
+              </button>
             </div>
-            <span class="text-slate-700">{{ opt.text || opt }}</span>
-          </label>
-        </div>
+          </div>
 
-        <!-- Text Input -->
-        <div v-else>
-          <textarea
-            v-model="userAnswers[currentQuestionIndex]"
-            class="w-full p-4 rounded-xl border border-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 outline-none transition-all text-slate-700 resize-none"
-            :placeholder="$t('tests.typeAnswer')"
-            rows="4"
-          ></textarea>
+          <!-- Stats Overview -->
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-header indigo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="stat-icon"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <span class="stat-label">{{ t.nextUp }}</span>
+              </div>
+              <p class="stat-value-lg">{{ activePathways.length > 0 ? activePathways[0].examTitle : t.introPhysics }}</p>
+              <p class="stat-sub">{{ activePathways.length > 0 ? `${t.target}: ${activePathways[0].targetDate}` : 'Nov 02 • 10:00' }}</p>
+            </div>
+            <div class="stat-card">
+              <div class="stat-header emerald">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="stat-icon"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                <span class="stat-label">{{ t.averageScore }}</span>
+              </div>
+              <p class="stat-value-big">88%</p>
+              <p class="stat-sub emerald-text">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mini-icon"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+                +2.4% {{ t.vsLastMonth }}
+              </p>
+            </div>
+            <div class="stat-card">
+              <div class="stat-header amber">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="stat-icon"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                <span class="stat-label">{{ t.completed }}</span>
+              </div>
+              <p class="stat-value-big">12</p>
+              <p class="stat-sub muted">{{ t.testsTaken }}</p>
+            </div>
+          </div>
+
+          <!-- Active Study Pathways -->
+          <div v-if="activePathways.length > 0" class="pathways-section">
+            <h3 class="section-title"><span class="section-icon">🗺️</span> {{ t.activePathways }}</h3>
+            <div v-for="pathway in activePathways" :key="pathway.id" class="pathway-card">
+              <div class="pathway-header">
+                <div>
+                  <div class="pathway-badges">
+                    <span class="pw-badge indigo">{{ t[pathway.subject] || pathway.subject }}</span>
+                    <span class="pw-badge gray">{{ t[pathway.level?.toLowerCase()] || pathway.level }}</span>
+                  </div>
+                  <h4 class="pathway-title">{{ pathway.examTitle }}</h4>
+                  <p class="pathway-goal">{{ t.goal }}: {{ pathway.topics }}</p>
+                </div>
+                <div class="pathway-date-badge">🕐 {{ pathway.targetDate }}</div>
+              </div>
+              <div class="pathway-timeline">
+                <div class="timeline-line"></div>
+                <div class="timeline-items">
+                  <div v-for="(ms, idx) in pathway.milestones" :key="ms.id" class="timeline-item">
+                    <div :class="['timeline-dot', idx === 0 && 'active']"></div>
+                    <div class="timeline-content">
+                      <div class="timeline-content-inner">
+                        <div>
+                          <h5 class="timeline-title">{{ ms.title }} <span v-if="idx === 0" class="next-badge">{{ t.nextUpBadge }}</span></h5>
+                          <p class="timeline-desc">{{ ms.description }}</p>
+                        </div>
+                        <div class="timeline-type">{{ t[ms.type?.toLowerCase()] || ms.type }}</div>
+                      </div>
+                      <button v-if="idx === 0" @click="handleStartTest(pathway.subject, pathway.level, ms.description, true)" class="timeline-start-btn">
+                        <span>▶</span> {{ t.startFullTest }}
+                      </button>
+                    </div>
+                  </div>
+                  <div class="timeline-item">
+                    <div class="timeline-dot final"></div>
+                    <div class="timeline-final">
+                      <h5 class="timeline-final-title">{{ t.examDay }}</h5>
+                      <p class="timeline-final-date">{{ pathway.targetDate }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Activity -->
+          <div class="activity-card">
+            <div class="activity-header">
+              <h3 class="activity-title">{{ t.recentActivity }}</h3>
+              <span class="view-all">{{ t.viewAll }}</span>
+            </div>
+            <div class="activity-list">
+              <div v-for="test in mockTests" :key="test.id" class="activity-item">
+                <div class="activity-item-left">
+                  <div :class="['activity-icon', test.status === 'Completed' ? 'completed' : 'upcoming']">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  </div>
+                  <div>
+                    <h4 class="activity-name">{{ test.title }}</h4>
+                    <p class="activity-meta">{{ test.date }} • {{ test.status }}</p>
+                  </div>
+                </div>
+                <div class="activity-item-right">
+                  <div v-if="test.score" class="activity-score">
+                    <p class="score-num">{{ test.score }}<span class="score-total">/{{ test.total }}</span></p>
+                    <p class="score-label">{{ t.passed }}</p>
+                  </div>
+                  <button v-else @click="handleStartTest('General', 'Intermediate', test.title, true)" class="prepare-btn">{{ t.prepare }}</button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- Navigation -->
-      <div class="flex justify-end">
-        <button
-          @click="handleNextQuestion"
-          :disabled="!userAnswers[currentQuestionIndex] || userAnswers[currentQuestionIndex].trim() === ''"
-          class="px-6 py-3 bg-indigo-500 text-white font-medium rounded-xl hover:bg-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2"
-        >
-          {{ isLastQuestion ? $t('tests.finish') : $t('tests.next') }}
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M5 12h14M12 5l7 7-7 7"/>
-          </svg>
-        </button>
-      </div>
+      <!-- Mobile FAB -->
+      <button @click="mobileView = 'game'" class="mobile-fab lg-hide">🧠</button>
+    </main>
+
+    <!-- Right: Game Panel -->
+    <div :class="['game-panel-wrap', mobileView === 'tests' && 'hide-mobile']">
+      <TestGamePanel
+        :externalConfig="activeGameConfig"
+        :currentLanguage="currentLanguage"
+        :showBackButton="true"
+        @mobileBack="mobileView = 'tests'"
+      />
     </div>
 
-    <!-- Results -->
-    <div v-else class="max-w-md mx-auto px-6 py-16 text-center">
-      <div class="text-6xl mb-6">{{ score >= 70 ? '🎉' : score >= 50 ? '👍' : '💪' }}</div>
-
-      <h2 class="text-2xl font-bold text-slate-800 mb-2">
-        {{ score >= 70 ? $t('tests.greatJob') : score >= 50 ? $t('tests.goodEffort') : $t('tests.keepPracticing') }}
-      </h2>
-      <p class="text-slate-500 mb-8">{{ $t('tests.youScored', { score: score }) }}</p>
-
-      <!-- Score Ring -->
-      <div class="relative w-32 h-32 mx-auto mb-8">
-        <svg class="transform -rotate-90 w-full h-full">
-          <circle class="text-gray-100" stroke-width="8" stroke="currentColor" fill="transparent" r="56" cx="64" cy="64"/>
-          <circle 
-            class="transition-all duration-1000 ease-out"
-            :class="score >= 70 ? 'text-green-500' : score >= 50 ? 'text-amber-500' : 'text-red-400'"
-            stroke-width="8" stroke-linecap="round" stroke="currentColor" fill="transparent" r="56" cx="64" cy="64"
-            :style="{ strokeDasharray: 352, strokeDashoffset: 352 - (score / 100) * 352 }"
-          />
-        </svg>
-        <div class="absolute inset-0 flex items-center justify-center">
-          <span class="text-3xl font-bold text-slate-800">{{ score }}%</span>
+    <!-- Schedule Modal -->
+    <div v-if="isModalOpen" class="modal-overlay" @click.self="!isGenerating && (isModalOpen = false)">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 class="modal-title">{{ t.createStudyPlan }}</h3>
+          <button @click="!isGenerating && (isModalOpen = false)" class="modal-close">✕</button>
         </div>
+        <form @submit.prevent="handleCreatePlan" class="modal-form">
+          <div class="form-group">
+            <label class="form-label">{{ t.subject }}</label>
+            <select v-model="formSubject" class="form-select" required>
+              <option v-for="s in subjects" :key="s.id" :value="s.name">{{ s.icon }} {{ t[s.name] || s.name }}</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">{{ t.targetDate }}</label>
+              <input type="date" v-model="formDate" class="form-input" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">{{ t.currentLevel }}</label>
+              <select v-model="formLevel" class="form-select">
+                <option v-for="d in difficulties" :key="d" :value="d">{{ t[d.toLowerCase()] || d }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">{{ t.topicsToCover }}</label>
+            <textarea v-model="formTopics" class="form-textarea" :placeholder="t.topicsPlaceholder" required></textarea>
+            <p class="form-hint">{{ t.tailorTests }}</p>
+          </div>
+          <button type="submit" :disabled="isGenerating" :class="['submit-btn', isGenerating && 'disabled']">
+            <template v-if="isGenerating"><div class="submit-spinner"></div> {{ t.generating }}</template>
+            <template v-else><span>✨</span> {{ t.generate }}</template>
+          </button>
+        </form>
       </div>
-
-      <!-- Stats -->
-      <div class="flex justify-center gap-6 mb-8">
-        <div class="text-center">
-          <div class="text-2xl font-bold text-green-500">{{ correctCount }}</div>
-          <div class="text-xs text-slate-500">{{ $t('tests.correct') }}</div>
-        </div>
-        <div class="text-center">
-          <div class="text-2xl font-bold text-slate-800">{{ activeTest.questions.length }}</div>
-          <div class="text-xs text-slate-500">{{ $t('tests.total') }}</div>
-        </div>
-      </div>
-
-      <button
-        @click="handleGoBack"
-        class="px-6 py-3 bg-slate-800 text-white font-medium rounded-xl hover:bg-slate-900 transition-all"
-      >
-        {{ $t('tests.backToTests') }}
-      </button>
     </div>
   </div>
 </template>
 
 <script>
-import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
-import api from '@/api';
-import { auth } from '@/firebase';
-import { useI18n } from 'vue-i18n';
+import { ref, computed } from 'vue';
+import TestGamePanel from './TestGamePanel.vue';
+import { SUBJECTS, DIFFICULTIES, MOCK_TESTS_DATA, TRANSLATIONS } from '@/services/testConstants';
+import { generateStudyPlan } from '@/services/geminiService';
 
 export default {
   name: 'TestsPage',
-  
+  components: { TestGamePanel },
   setup() {
-    const loading = ref(true);
-    const tests = ref([]);
-    const activeTest = ref(null);
-    const userAnswers = ref([]);
-    const currentQuestionIndex = ref(0);
+    const mobileView = ref('tests');
+    const currentLanguage = ref(localStorage.getItem('lang') || 'en');
+    const activeGameConfig = ref(null);
+    const isModalOpen = ref(false);
+    const isGenerating = ref(false);
+    const activePathways = ref([]);
+    const formSubject = ref(SUBJECTS[0].name);
+    const formDate = ref('');
+    const formLevel = ref('Intermediate');
+    const formTopics = ref('');
+    const subjects = SUBJECTS;
+    const difficulties = DIFFICULTIES;
+    const mockTests = MOCK_TESTS_DATA;
 
-    const searchQuery = ref('');
-    const selectedSubject = ref('');
-    const selectedLevel = ref('');
-    const error = ref(null);
-    
-    const uniqueSubjects = computed(() => 
-      [...new Set(tests.value.map(test => test.subject).filter(Boolean))].sort()
-    );
+    const t = computed(() => TRANSLATIONS[currentLanguage.value] || TRANSLATIONS.en);
 
-    const uniqueLevels = computed(() => 
-      [...new Set(tests.value.map(test => test.level).filter(Boolean))].sort((a, b) => a - b)
-    );
-
-    const filteredTests = computed(() => {
-      return tests.value.filter(test => {
-        const matchesSubject = !selectedSubject.value || test.subject === selectedSubject.value;
-        const matchesLevel = !selectedLevel.value || test.level == selectedLevel.value;
-        const matchesSearch = !searchQuery.value || 
-          test.title?.toLowerCase().includes(searchQuery.value.toLowerCase());
-        return matchesSubject && matchesLevel && matchesSearch;
-      });
-    });
-
-    const currentQuestion = computed(() => {
-      if (!activeTest.value?.questions) return null;
-      return activeTest.value.questions[currentQuestionIndex.value];
-    });
-
-    const progressPercentage = computed(() => 
-      Math.round(((currentQuestionIndex.value + 1) / (activeTest.value?.questions?.length || 1)) * 100)
-    );
-
-    const isLastQuestion = computed(() => 
-      currentQuestionIndex.value === (activeTest.value?.questions?.length || 0) - 1
-    );
-
-    const isTestCompleted = computed(() => 
-      activeTest.value && currentQuestionIndex.value >= activeTest.value.questions?.length
-    );
-
-    const correctCount = computed(() => {
-      if (!activeTest.value?.questions) return 0;
-      return activeTest.value.questions.reduce((acc, question, index) => {
-        const userAnswer = userAnswers.value[index];
-        const isCorrect = checkAnswer(question, userAnswer);
-        return acc + (isCorrect ? 1 : 0);
-      }, 0);
-    });
-
-    const score = computed(() => {
-      if (!activeTest.value?.questions?.length) return 0;
-      return Math.round((correctCount.value / activeTest.value.questions.length) * 100);
-    });
-
-    const hasActiveFilters = computed(() => 
-      !!(searchQuery.value || selectedSubject.value || selectedLevel.value)
-    );
-
-    const getSubjectEmoji = (subject) => {
-      const emojis = {
-        'Mathematics': '📐', 'Math': '📐',
-        'English': '📚', 'Language': '📚',
-        'Science': '🔬', 'Physics': '⚛️',
-        'Chemistry': '⚗️', 'Biology': '🧬',
-        'History': '📜', 'Geography': '🌍',
-        'Computer Science': '💻', 'Programming': '👨‍💻',
-        'Art': '🎨', 'Music': '🎵',
-      };
-      return emojis[subject] || '📖';
+    const handleStartTest = (subject, level, topic, isFullTest = false) => {
+      activeGameConfig.value = { subject, level, topic, timestamp: Date.now(), isFullTest };
+      mobileView.value = 'game';
     };
 
-    const getTranslatedSubject = (subject) => {
-      if (!subject) return 'General';
-
-      const subjectKeyMap = {
-        'Mathematics': 'mathematics',
-        'Math': 'math',
-        'English': 'english',
-        'Science': 'science',
-        'Physics': 'physics',
-        'Chemistry': 'chemistry',
-        'Biology': 'biology',
-        'History': 'history',
-        'Geography': 'geography',
-        'Computer Science': 'computerScience',
-        'Programming': 'programming',
-        'Coding': 'coding',
-        'Art': 'art',
-        'Music': 'music',
-        'Languages': 'languages',
-        'Russian': 'russian',
-        'Uzbek': 'uzbek',
-        'Literature': 'literature',
-        'Economics': 'economics',
-        'Social Studies': 'socialStudies'
-      };
-
-      const key = subjectKeyMap[subject] || subject.toLowerCase();
-
-      // Use i18n to get translation
-      const { t } = useI18n();
-      const translated = t(`subjects.${key}`);
-
-      return translated.startsWith('subjects.') ? subject : translated;
-    };
-
-    const loadTests = async () => {
-      try {
-        loading.value = true;
-        const user = auth.currentUser;
-        if (!user) throw new Error('Not authenticated');
-
-        const token = await user.getIdToken();
-        const userId = user.uid;
-
-        let loadedTests = [];
-        try {
-          const { data } = await api.get(`/users/${userId}/tests`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          loadedTests = data?.tests || [];
-        } catch {
-          const { data } = await api.get('/tests', {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          loadedTests = Array.isArray(data?.data || data) ? (data?.data || data) : [];
-        }
-        
-        tests.value = loadedTests.filter(t => t.isActive !== false);
-      } catch (err) {
-        error.value = err.message;
-      } finally {
-        loading.value = false;
+    const handleCreatePlan = async () => {
+      isGenerating.value = true;
+      const newPathway = await generateStudyPlan(formSubject.value, formLevel.value, formDate.value, formTopics.value, currentLanguage.value);
+      if (newPathway) {
+        activePathways.value = [newPathway, ...activePathways.value];
+        isModalOpen.value = false;
+        formTopics.value = '';
+        formDate.value = '';
       }
+      isGenerating.value = false;
     };
-
-    const handleStartTest = async (test) => {
-      if (!test) return;
-      try {
-        loading.value = true;
-        const user = auth.currentUser;
-        if (!user) throw new Error('Not authenticated');
-
-        const token = await user.getIdToken();
-        const userId = user.uid;
-
-        let fullTest;
-        try {
-          const { data } = await api.get(`/users/${userId}/tests/${test._id}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          fullTest = data?.test || data?.data || data;
-        } catch {
-          const { data } = await api.get(`/tests/${test._id}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          fullTest = data?.data || data;
-        }
-
-        if (!fullTest?.questions?.length) throw new Error('No questions');
-
-        activeTest.value = {
-          ...fullTest,
-          questions: fullTest.questions.map(q => ({
-            ...q,
-            text: q.text || q.question,
-            type: q.type || 'multiple-choice',
-            options: q.options || [],
-            correctAnswer: q.correctAnswer
-          }))
-        };
-
-        userAnswers.value = Array(activeTest.value.questions.length).fill('');
-        currentQuestionIndex.value = 0;
-      } catch (err) {
-        error.value = err.message;
-        activeTest.value = null;
-      } finally {
-        loading.value = false;
-      }
-    };
-
-    const handleNextQuestion = () => {
-      const answer = userAnswers.value[currentQuestionIndex.value];
-      if (!answer || answer.trim() === '') return;
-
-      if (currentQuestionIndex.value + 1 < activeTest.value.questions.length) {
-        currentQuestionIndex.value++;
-      } else {
-        nextTick(() => handleSubmitTest());
-      }
-    };
-
-    const handleSubmitTest = async () => {
-      try {
-        const user = auth.currentUser;
-        if (!user) return;
-
-        const token = await user.getIdToken();
-        const answers = userAnswers.value.map((answer, index) => ({ questionIndex: index, answer }));
-
-        try {
-          await api.post(`/users/${user.uid}/tests/${activeTest.value._id}/submit`, { answers }, { headers: { Authorization: `Bearer ${token}` } });
-        } catch {
-          await api.post(`/tests/${activeTest.value._id}/submit`, { userId: user.uid, answers }, { headers: { Authorization: `Bearer ${token}` } });
-        }
-
-        currentQuestionIndex.value = activeTest.value.questions.length;
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
-    const handleGoBack = () => {
-      activeTest.value = null;
-      userAnswers.value = [];
-      currentQuestionIndex.value = 0;
-    };
-
-    const clearFilters = () => {
-      selectedSubject.value = '';
-      selectedLevel.value = '';
-      searchQuery.value = '';
-    };
-
-    const checkAnswer = (question, userAnswer) => {
-      if (!userAnswer) return false;
-      const correct = question.correctAnswer;
-      if (question.type === 'multiple-choice' && Array.isArray(question.options)) {
-        if (typeof correct === 'number') {
-          return userAnswer === (question.options[correct]?.text || question.options[correct]);
-        }
-        return userAnswer === correct;
-      }
-      return userAnswer.toString().toLowerCase().trim() === correct.toString().toLowerCase().trim();
-    };
-
-    onMounted(() => loadTests());
-    onBeforeUnmount(() => { activeTest.value = null; userAnswers.value = []; });
 
     return {
-      loading, tests, activeTest, userAnswers, currentQuestionIndex,
-      searchQuery, selectedSubject, selectedLevel, error,
-      uniqueSubjects, uniqueLevels, filteredTests, currentQuestion,
-      progressPercentage, isLastQuestion, isTestCompleted, correctCount, score, hasActiveFilters,
-      getSubjectEmoji, getTranslatedSubject, handleStartTest, handleNextQuestion, handleGoBack, clearFilters
+      mobileView, currentLanguage, activeGameConfig, isModalOpen, isGenerating,
+      activePathways, formSubject, formDate, formLevel, formTopics,
+      subjects, difficulties, mockTests, t,
+      handleStartTest, handleCreatePlan
     };
   }
 };
 </script>
 
 <style scoped>
-/* Modern enhancements */
-.group:hover h3 {
-  background: linear-gradient(135deg, #6366f1, #a855f7);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+/* === LAYOUT === */
+.tests-page-wrapper { display: flex; height: calc(100vh - 73px); width: 100%; overflow: hidden; background: #f8fafc; }
+.tests-dashboard { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+.game-panel-wrap { width: 400px; flex-shrink: 0; border-left: 1px solid #e2e8f0; height: 100%; }
+@media (max-width: 1024px) {
+  .tests-page-wrapper { height: 100vh; }
+  .game-panel-wrap { width: 100%; position: absolute; inset: 0; z-index: 30; background: #fafbfc; }
+  .hide-mobile { display: none !important; }
+  .lg-hide { display: flex !important; }
 }
+@media (min-width: 1025px) { .lg-hide { display: none !important; } }
 
-/* Mobile first responsive adjustments */
-@media (max-width: 640px) {
-  .min-h-screen { padding: 1rem !important; }
-  .max-w-6xl { padding-left: 1rem !important; padding-right: 1rem !important; }
-  .text-2xl { font-size: 1.25rem !important; }
-  .gap-4 { gap: 0.75rem !important; }
-  .grid-cols-1 { grid-template-columns: 1fr !important; }
-  .p-5 { padding: 1rem !important; }
-  .hidden.md\\:flex { display: none !important; }
-  .relative.flex-1.min-w-64 { min-width: 100% !important; }
-  .flex-wrap { flex-wrap: wrap !important; }
-  .flex-wrap > select { flex: 1 1 45%; min-width: 120px; }
-}
+/* Mobile header */
+.mobile-header { height: 56px; background: white; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; padding: 0 20px; justify-content: space-between; flex-shrink: 0; }
+.mobile-brand { display: flex; align-items: center; gap: 8px; }
+.brand-icon { width: 32px; height: 32px; background: linear-gradient(135deg, #8b5cf6, #7c3aed); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 1.1rem; }
+.brand-text { font-weight: 800; font-size: 1.15rem; color: #1e293b; letter-spacing: -0.02em; }
 
-@media (min-width: 641px) and (max-width: 1023px) {
-  .grid { grid-template-columns: repeat(2, 1fr) !important; }
-  .lg\\:grid-cols-3 { grid-template-columns: repeat(2, 1fr) !important; }
-}
+/* Scroll area */
+.dashboard-scroll { flex: 1; overflow-y: auto; padding: 20px; }
+.dashboard-scroll::-webkit-scrollbar { width: 6px; }
+.dashboard-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 99px; }
+.dashboard-inner { max-width: 960px; margin: 0 auto; }
+@media (min-width: 1025px) { .dashboard-scroll { padding: 28px 36px; } }
 
-@media (min-width: 1024px) {
-  .lg\\:grid-cols-3 { grid-template-columns: repeat(3, 1fr) !important; }
-}
+/* Page Header */
+.page-header { display: flex; flex-direction: column; gap: 14px; border-bottom: 1px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 24px; }
+@media (min-width: 768px) { .page-header { flex-direction: row; align-items: flex-end; justify-content: space-between; } }
+.page-header-left { flex: 1; }
+.title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+@media (min-width: 768px) { .title-row { justify-content: flex-start; } }
+.page-title { font-size: 1.75rem; font-weight: 800; color: #1e293b; margin: 0; letter-spacing: -0.02em; }
+.lang-picker { display: flex; background: white; border-radius: 8px; padding: 3px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+.lang-btn { padding: 4px 10px; font-size: 0.7rem; font-weight: 700; border: none; border-radius: 5px; cursor: pointer; transition: all 0.2s; background: transparent; color: #64748b; font-family: inherit; }
+.lang-btn.active { background: #8b5cf6; color: white; }
+.page-subtitle { color: #64748b; margin: 6px 0 0; font-size: 0.9rem; }
+.header-actions { display: flex; gap: 10px; width: 100%; }
+@media (min-width: 768px) { .header-actions { width: auto; } }
+.ai-tutor-btn, .new-exam-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 16px; border-radius: 10px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; border: none; font-family: inherit; }
+@media (min-width: 768px) { .ai-tutor-btn, .new-exam-btn { flex: none; } }
+.ai-tutor-btn { background: white; color: #475569; border: 1px solid #d1d5db; }
+.ai-tutor-btn:hover { background: #f8fafc; }
+.new-exam-btn { background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; box-shadow: 0 4px 12px rgba(139,92,246,0.3); }
+.new-exam-btn:hover { box-shadow: 0 6px 18px rgba(139,92,246,0.4); transform: translateY(-1px); }
+.btn-icon { width: 18px; height: 18px; }
+
+/* Stats */
+.stats-grid { display: grid; grid-template-columns: 1fr; gap: 14px; margin-bottom: 28px; }
+@media (min-width: 768px) { .stats-grid { grid-template-columns: repeat(3, 1fr); } }
+.stat-card { background: white; padding: 20px; border-radius: 16px; border: 1px solid #f1f5f9; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+.stat-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.stat-header.indigo { color: #8b5cf6; }
+.stat-header.emerald { color: #10b981; }
+.stat-header.amber { color: #f59e0b; }
+.stat-icon { width: 18px; height: 18px; }
+.stat-label { font-weight: 600; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.stat-value-lg { font-size: 1.15rem; font-weight: 700; color: #1e293b; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stat-value-big { font-size: 1.75rem; font-weight: 700; color: #1e293b; margin: 0; }
+.stat-sub { font-size: 0.8rem; color: #94a3b8; margin: 4px 0 0; display: flex; align-items: center; gap: 2px; }
+.stat-sub.emerald-text { color: #10b981; }
+.stat-sub.muted { color: #94a3b8; }
+.mini-icon { width: 12px; height: 12px; }
+
+/* Pathways */
+.pathways-section { margin-bottom: 28px; }
+.section-title { font-weight: 700; font-size: 1.15rem; color: #1e293b; margin: 0 0 16px; display: flex; align-items: center; gap: 8px; }
+.section-icon { font-size: 1.1rem; }
+.pathway-card { background: white; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+.pathway-header { padding: 20px; border-bottom: 1px solid #f1f5f9; background: linear-gradient(135deg, #faf5ff, white); display: flex; flex-direction: column; gap: 12px; }
+@media (min-width: 768px) { .pathway-header { flex-direction: row; justify-content: space-between; align-items: flex-start; } }
+.pathway-badges { display: flex; gap: 6px; margin-bottom: 8px; }
+.pw-badge { padding: 3px 8px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; border-radius: 4px; }
+.pw-badge.indigo { background: #eef2ff; color: #6366f1; }
+.pw-badge.gray { background: #f1f5f9; color: #475569; }
+.pathway-title { font-size: 1.35rem; font-weight: 700; color: #1e293b; margin: 0; }
+.pathway-goal { font-size: 0.85rem; color: #64748b; margin: 4px 0 0; }
+.pathway-date-badge { display: flex; align-items: center; gap: 6px; font-weight: 500; color: #475569; background: white; padding: 6px 14px; border-radius: 999px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.04); font-size: 0.85rem; align-self: flex-start; white-space: nowrap; }
+.pathway-timeline { padding: 20px; background: #fafbfc; position: relative; }
+.timeline-line { position: absolute; left: 44px; top: 36px; bottom: 36px; width: 2px; background: #e2e8f0; }
+.timeline-items { display: flex; flex-direction: column; gap: 18px; }
+.timeline-item { position: relative; display: flex; align-items: flex-start; }
+.timeline-dot { position: absolute; left: 24px; width: 14px; height: 14px; border-radius: 50%; background: #cbd5e1; border: 3px solid white; margin-top: 6px; transform: translateX(-50%); z-index: 1; }
+.timeline-dot.active { background: #8b5cf6; box-shadow: 0 0 0 4px #ede9fe; }
+.timeline-dot.final { background: #8b5cf6; border-color: #ddd6fe; }
+.timeline-content { margin-left: 48px; flex: 1; background: white; padding: 14px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.03); transition: all 0.2s; cursor: pointer; }
+.timeline-content:hover { border-color: #c4b5fd; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.timeline-content-inner { display: flex; flex-direction: column; gap: 8px; }
+@media (min-width: 768px) { .timeline-content-inner { flex-direction: row; justify-content: space-between; align-items: flex-start; } }
+.timeline-title { font-weight: 700; color: #1e293b; margin: 0; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; }
+.next-badge { padding: 2px 8px; background: #dcfce7; color: #166534; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; border-radius: 999px; }
+.timeline-desc { font-size: 0.8rem; color: #64748b; margin: 4px 0 0; }
+.timeline-type { padding: 4px 10px; background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 8px; font-size: 0.7rem; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap; align-self: flex-start; }
+.timeline-start-btn { margin-top: 12px; width: 100%; padding: 8px; background: #8b5cf6; color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: background 0.2s; font-family: inherit; }
+.timeline-start-btn:hover { background: #7c3aed; }
+.timeline-final { margin-left: 48px; }
+.timeline-final-title { font-weight: 700; color: #5b21b6; margin: 0; font-size: 0.9rem; }
+.timeline-final-date { font-size: 0.8rem; color: #8b5cf6; margin: 2px 0 0; }
+
+/* Activity */
+.activity-card { background: white; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+.activity-header { padding: 14px 20px; border-bottom: 1px solid #f1f5f9; background: #fafbfc; display: flex; justify-content: space-between; align-items: center; }
+.activity-title { font-weight: 700; color: #1e293b; margin: 0; font-size: 0.95rem; }
+.view-all { font-size: 0.8rem; color: #8b5cf6; font-weight: 500; cursor: pointer; }
+.view-all:hover { text-decoration: underline; }
+.activity-list { }
+.activity-item { padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; transition: background 0.15s; }
+.activity-item:not(:last-child) { border-bottom: 1px solid #f8fafc; }
+.activity-item:hover { background: #fafbfc; }
+.activity-item-left { display: flex; align-items: center; gap: 12px; }
+.activity-icon { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.activity-icon.completed { background: #eef2ff; color: #8b5cf6; }
+.activity-icon.upcoming { background: #f1f5f9; color: #64748b; }
+.activity-icon svg { width: 20px; height: 20px; }
+.activity-name { font-weight: 700; color: #1e293b; margin: 0; font-size: 0.9rem; transition: color 0.2s; }
+.activity-item:hover .activity-name { color: #8b5cf6; }
+.activity-meta { font-size: 0.78rem; color: #94a3b8; margin: 2px 0 0; }
+.activity-item-right { flex-shrink: 0; }
+.activity-score { text-align: right; }
+.score-num { font-weight: 700; color: #1e293b; font-size: 1.1rem; margin: 0; }
+.score-total { color: #94a3b8; font-size: 0.8rem; font-weight: 400; }
+.score-label { font-size: 0.7rem; font-weight: 600; color: #10b981; margin: 0; }
+.prepare-btn { padding: 8px 16px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.8rem; font-weight: 600; color: #475569; background: white; cursor: pointer; transition: all 0.2s; font-family: inherit; }
+.prepare-btn:hover { background: #f8fafc; border-color: #94a3b8; }
+
+/* Mobile FAB */
+.mobile-fab { position: fixed; bottom: 20px; right: 20px; z-index: 50; width: 52px; height: 52px; background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; border: none; border-radius: 50%; font-size: 1.6rem; cursor: pointer; box-shadow: 0 4px 20px rgba(139,92,246,0.4); display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+.mobile-fab:hover { transform: scale(1.08) translateY(-2px); box-shadow: 0 8px 28px rgba(139,92,246,0.5); }
+
+/* Modal */
+.modal-overlay { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(0,0,0,0.45); backdrop-filter: blur(4px); overflow-y: auto; }
+.modal-card { background: white; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.15); width: 100%; max-width: 480px; overflow: hidden; animation: zoomIn 0.2s ease; }
+@keyframes zoomIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: none; } }
+.modal-header { padding: 16px 20px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; background: #fafbfc; }
+.modal-title { font-weight: 700; font-size: 1.1rem; color: #1e293b; margin: 0; }
+.modal-close { background: none; border: none; font-size: 1.1rem; color: #94a3b8; cursor: pointer; padding: 4px; transition: color 0.2s; }
+.modal-close:hover { color: #475569; }
+.modal-form { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.form-group { display: flex; flex-direction: column; gap: 4px; }
+.form-label { font-size: 0.8rem; font-weight: 600; color: #475569; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-select, .form-input { width: 100%; padding: 10px 12px; border-radius: 12px; border: 1px solid #e2e8f0; font-size: 0.85rem; font-family: inherit; outline: none; transition: border-color 0.2s; background: white; box-sizing: border-box; }
+.form-select:focus, .form-input:focus { border-color: #8b5cf6; box-shadow: 0 0 0 3px rgba(139,92,246,0.1); }
+.form-textarea { width: 100%; padding: 10px 12px; border-radius: 12px; border: 1px solid #e2e8f0; font-size: 0.85rem; font-family: inherit; outline: none; min-height: 90px; resize: vertical; transition: border-color 0.2s; box-sizing: border-box; }
+.form-textarea:focus { border-color: #8b5cf6; box-shadow: 0 0 0 3px rgba(139,92,246,0.1); }
+.form-hint { font-size: 0.72rem; color: #94a3b8; margin: 0; }
+.submit-btn { width: 100%; padding: 12px; border-radius: 12px; border: none; font-weight: 700; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; box-shadow: 0 4px 12px rgba(139,92,246,0.3); font-family: inherit; }
+.submit-btn:hover { box-shadow: 0 6px 18px rgba(139,92,246,0.4); }
+.submit-btn.disabled { opacity: 0.6; cursor: not-allowed; }
+.submit-spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 </style>

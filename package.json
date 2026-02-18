@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@firebasegen/default-connector": "file:dataconnect-generated/js/default-connector",
+    "@google/genai": "^1.41.0",
     "@splinetool/viewer": "^1.9.29",
     "@tailwindcss/postcss": "^4.1.17",
     "@translate-tools/core": "^2.1.0",
